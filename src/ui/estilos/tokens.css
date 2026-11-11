@@ -19,6 +19,8 @@
   --rtm-th-fondo: #e4e3de;
   --rtm-th-texto: #1a1a1a;
   --rtm-th-borde: #bdbab2;
+  /* Borde de campos y controles de entrada: minimo 3:1 contra todas las superficies (WCAG 1.4.11). */
+  --rtm-campo-borde: #8f8b82;
   --rtm-ink: #1a1a1a;
   --rtm-ink-2: #555555;
   --rtm-ink-3: #666666;
@@ -96,6 +98,7 @@
   --rtm-th-fondo: #3a3935;
   --rtm-th-texto: #f3f2ee;
   --rtm-th-borde: #5a5852;
+  --rtm-campo-borde: #7d786e;
   --rtm-ink: #f3f2ee;
   --rtm-ink-2: #b9b7b1;
   --rtm-ink-3: #9c9a94;

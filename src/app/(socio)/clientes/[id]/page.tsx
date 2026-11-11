@@ -38,6 +38,7 @@ export default async function Pagina({ params }: { params: Promise<{ id: string 
         antes="Cliente"
         enfasis={f.nombre}
         contexto={`${f.tabulador.length} modelos con precio vigente. Un precio de una nota no cambia el tabulador: solo cambia cuando un socio lo indica.`}
+        acciones={<><Link className="rtm-boton rtm-boton-primario" href={`/clientes/${f.id}/precios`} data-testid="editar-precios">Editar precios</Link><Link className="rtm-boton" href={`/clientes/${f.id}/editar`}>Editar cliente</Link></>}
       />
       <div className="rtm-etiquetas" aria-label="Datos del cliente">
         {f.esBodega && <span className="rtm-etiqueta">Presta la bodega (Omar Yacaman, desactivado hasta M2)</span>}

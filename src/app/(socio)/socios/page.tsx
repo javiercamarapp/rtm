@@ -38,7 +38,14 @@ export default async function Pagina() {
         <p className="rtm-nota">Diferencia por la compra (+ Javier debe a Angelo, − Angelo debe a Javier)</p>
         <p className="rtm-hero-cifra" data-testid="diferencia-socios"><CifraComprobada texto={formatearMoneda(d, { conSigno: true })} cifra="socios:diferencia" comprobacion={c.cuadra ? 'cuadra' : 'no_cuadra'} /></p>
         <div className="rtm-divergente" role="img" aria-label={parejo ? 'Cuenta pareja, cero al centro' : `${quien}: ${formatearMoneda(abs)}`}>
-          {!parejo && <i data-lado={d > 0n ? 'der' : 'izq'} data-ancho={Math.max(1, ancho)} />}
+          {!parejo && (
+            <svg className="rtm-divergente-svg" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <pattern id="rtm-rayas" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" className="rtm-rayas-fondo" /><rect width="2" height="4" className="rtm-rayas-trazo" /></pattern>
+              </defs>
+              <rect x={d > 0n ? 50 : 50 - ancho} y="0" width={ancho} height="10" className={d > 0n ? 'rtm-divergente-der' : 'rtm-divergente-izq'} />
+            </svg>
+          )}
         </div>
         <div className="rtm-divergente-pie"><span>Angelo debe a Javier</span><span>0</span><span>Javier debe a Angelo</span></div>
         <p><EstadoTexto tono={c.cuadra ? 'ok' : 'atencion'}>{c.cuadra ? 'Cuadra por las dos vías' : 'No cuadra: parte del costo no lo pusieron los socios'}</EstadoTexto></p>

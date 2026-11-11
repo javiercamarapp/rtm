@@ -19,6 +19,7 @@ export default async function Pagina() {
         antes="Tus"
         enfasis={`${clientes.length} clientes`}
         contexto="Cada cliente tiene un tabulador por modelo con su historial. Solo se guardan nombre y precios: sin teléfonos ni direcciones."
+        acciones={<Link className="rtm-boton rtm-boton-primario" href="/clientes/nuevo" data-testid="nuevo-cliente">Nuevo cliente</Link>}
       />
       <DataTable
         etiqueta="Clientes"

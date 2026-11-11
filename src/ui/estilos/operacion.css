@@ -1,6 +1,6 @@
 /* Pantallas de F2: pedidos y notas, compras, paquetes, cuentas por cobrar y avisos. Solo tokens; sin colores literales. */
 
-.rtm-segmentado { align-self: flex-start; display: inline-flex; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); padding: 2px; gap: 2px; }
+.rtm-segmentado { align-self: flex-start; display: inline-flex; border: 1px solid var(--rtm-campo-borde); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); padding: 2px; gap: 2px; }
 .rtm-segmentado a, .rtm-segmentado button { display: inline-flex; align-items: center; height: 30px; padding: 0 var(--rtm-e-4); border: 0; border-radius: var(--rtm-r-pildora); background: transparent; color: var(--rtm-ink-2); text-decoration: none; font-size: 13px; font-weight: 500; cursor: pointer; }
 .rtm-segmentado [aria-current='true'] { background: var(--rtm-fill-active); color: var(--rtm-ink); font-weight: 600; }
 
@@ -19,6 +19,14 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 .rtm-aviso p { margin: 0; color: var(--rtm-ink-2); font-size: 13px; }
 .rtm-avisos { display: flex; flex-direction: column; gap: var(--rtm-e-2); list-style: none; margin: 0; padding: 0; }
 .rtm-error { color: var(--rtm-bad); font-size: 13px; margin: 0; }
+.rtm-casilla { display: flex; align-items: center; gap: var(--rtm-e-2); flex-wrap: wrap; font-size: 13px; color: var(--rtm-ink); }
+.rtm-casilla input { width: 18px; height: 18px; margin: 0; accent-color: var(--rtm-ink); }
+.rtm-casilla .rtm-nota { width: 100%; }
+.rtm-eco { border: 1px solid var(--rtm-line-2); border-left: 3px solid var(--rtm-line-strong); border-radius: var(--rtm-r-2); background: var(--rtm-surface); padding: var(--rtm-e-3) var(--rtm-e-4); }
+.rtm-eco p { margin: 0; }
+.rtm-eco p + p { margin-top: var(--rtm-e-2); }
+.rtm-eco[data-tono='ok'] { border-left-color: var(--rtm-ok); }
+.rtm-eco[data-tono='error'] { border-left-color: var(--rtm-bad); color: var(--rtm-bad); }
 .rtm-acciones-fila { display: flex; gap: var(--rtm-e-2); flex-wrap: wrap; align-items: center; }
 .rtm-lineas-form { display: flex; flex-direction: column; gap: var(--rtm-e-2); }
 
@@ -53,7 +61,18 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
   .rtm-nota-fila > :nth-child(3) { text-align: right; }
   .rtm-hero-cifra { font-size: 40px; line-height: 44px; }
   .rtm-campo-num { width: 96px; }
-  .rtm-form-fila > * { flex: 1 1 140px; }
+  .rtm-form-fila > * { flex-grow: 1; min-width: min(140px, 100%); }
+  /* Un campo por renglon en pantallas angostas: sin huecos laterales ni controles de ancho fijo que se salgan (plegable cerrado 344). */
+  .rtm-form-fila .rtm-campo-num { width: 100%; }
+  .rtm-form { max-width: none; }
+  .rtm-dialogo { padding: var(--rtm-e-5); }
+  .rtm-dialogo-acciones { flex-wrap: wrap; }
+  .rtm-dialogo-acciones > .rtm-boton { flex-grow: 1; }
+}
+
+@media (max-width: 380px) {
+  .rtm-hero-cifra { font-size: 34px; line-height: 38px; }
+  .rtm-bloque, .rtm-nota-doc { padding-inline: var(--rtm-e-3); }
 }
 
 /* En pantallas tactiles o angostas los campos de formulario miden 16 px (en iOS evita el zoom) y ganan a la regla de color de la etiqueta. */
@@ -67,9 +86,11 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 /* F3a: barra divergente (cero al centro, el signo siempre escrito), pasos de la cascada y bloques de cuentas de socios. */
 .rtm-divergente { position: relative; height: 14px; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); max-width: 520px; }
 .rtm-divergente::after { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--rtm-ink); }
-.rtm-divergente > i { position: absolute; top: 0; bottom: 0; background: var(--rtm-ink); border-radius: var(--rtm-r-pildora); }
-.rtm-divergente > i[data-lado='der'] { left: 50%; }
-.rtm-divergente > i[data-lado='izq'] { right: 50%; background-image: repeating-linear-gradient(135deg, var(--rtm-ink) 0 3px, var(--rtm-surface) 3px 5px); }
+.rtm-divergente-svg { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: var(--rtm-r-pildora); }
+.rtm-divergente-der { fill: var(--rtm-ink); }
+.rtm-divergente-izq { fill: url(#rtm-rayas); }
+.rtm-rayas-fondo { fill: var(--rtm-surface); }
+.rtm-rayas-trazo { fill: var(--rtm-ink); }
 .rtm-divergente-pie { display: flex; justify-content: space-between; max-width: 520px; font-size: 12px; color: var(--rtm-ink-3); }
 .rtm-copiar { display: inline-flex; flex-direction: column; gap: var(--rtm-e-2); align-items: flex-start; max-width: 100%; }
 .rtm-copiar pre { max-width: 100%; }

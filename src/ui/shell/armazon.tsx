@@ -8,6 +8,7 @@ import { Logo } from '../logo/logo';
 import { IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
+import type { Pulso as DatosPulso } from '@/dominio/operacion/pulso';
 import { Pulso } from './pulso';
 
 const SECCIONES = [
@@ -34,9 +35,10 @@ interface Props {
   children: ReactNode;
   nombreSocio: string;
   accionSalir: () => Promise<void>;
+  pulso: DatosPulso;
 }
 
-export function Armazon({ children, nombreSocio, accionSalir }: Props) {
+export function Armazon({ children, nombreSocio, accionSalir, pulso }: Props) {
   const ruta = usePathname();
   const [abierto, setAbierto] = useState(false);
   const activo = indiceActivo(ruta);
@@ -84,7 +86,7 @@ export function Armazon({ children, nombreSocio, accionSalir }: Props) {
             {MARCA.nombre} / <strong>{activo >= 0 ? SECCIONES[activo]!.etiqueta : 'Diseño'}</strong>
           </span>
           <div className="rtm-pulso">
-            <Pulso />
+            <Pulso chips={pulso.chips} />
           </div>
           <div className="rtm-barra-acciones">
             <Apariencia />
@@ -95,13 +97,13 @@ export function Armazon({ children, nombreSocio, accionSalir }: Props) {
           <div className="rtm-panel-scroll">
             <div className="rtm-pagina">
               <div className="rtm-pulso-movil" aria-label="Pulso">
-                <Pulso />
+                <Pulso chips={pulso.chips} />
               </div>
               {children}
             </div>
           </div>
           <footer className="rtm-pie">
-            <span>Corte: sin datos todavía</span>
+            <span data-testid="pie-corte">{pulso.corte ? `Corte: al ${pulso.corte}` : 'Corte: sin datos todavía'}</span>
             <span aria-hidden="true">·</span>
             <span>Fuente: libro de eventos</span>
           </footer>
