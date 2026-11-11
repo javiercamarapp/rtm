@@ -148,6 +148,7 @@ begin
   else
     -- H10: un retiro sale de la utilidad que ya se le asigno; solo puede adelantarse hasta el limite de anticipos que fijen los dos (por omision 0).
     v_tope := operacion.utilidad_por_distribuir(v_socio) + coalesce((catalogo.config_valor('retiro_anticipo_max_cent'))::text::bigint, 0);
+    v_tope := least(v_tope, operacion.neto_socio(v_socio) + coalesce((catalogo.config_valor('retiro_anticipo_max_cent'))::text::bigint, 0));
     if p_monto_cent > greatest(v_tope, 0) then raise exception 'el retiro (% centavos) excede la utilidad asignada que se le debe a % (% centavos)', p_monto_cent, p_socio, greatest(v_tope, 0) using errcode = '23514'; end if;
   end if;
   if operacion.saldo_efectivo(v_cuenta) < p_monto_cent then raise exception 'la caja de la empresa solo tiene % centavos', operacion.saldo_efectivo(v_cuenta) using errcode = '23514'; end if;
