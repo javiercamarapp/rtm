@@ -10,6 +10,8 @@ const F2 = /[\\/]f2\.spec\.ts$/;
 const MOVIL_F2 = /movil-f2\.spec\.ts/;
 const F3A = /[\\/]f3a\.spec\.ts$/;
 const MOVIL_F3A = /movil-f3a\.spec\.ts/;
+const F3B = /[\\/]f3b\.spec\.ts$/;
+const MOVIL_F3B = /movil-f3b\.spec\.ts/;
 
 export default defineConfig({
   testDir: 'test/e2e',
@@ -22,10 +24,10 @@ export default defineConfig({
   reporter: [['list']],
   use: { baseURL: 'http://127.0.0.1:3100', trace: 'off' },
   projects: [
-    { name: 'laptop-1440', testMatch: [ACCESO, F1, CONFIRMAR, F2, F3A], use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-    { name: 'iphone-16-pro', testMatch: [CONFIRMAR, MOVIL, MOVIL_F2, MOVIL_F3A], use: { ...devices['iPhone 15 Pro'], viewport: { width: 402, height: 874 }, screen: { width: 402, height: 874 }, deviceScaleFactor: 3 } },
-    { name: 'fold-cerrado', testMatch: [CONFIRMAR, MOVIL, MOVIL_F2, MOVIL_F3A], use: { ...devices['Pixel 7'], viewport: { width: 344, height: 882 }, screen: { width: 344, height: 882 } } },
-    { name: 'fold-abierto', testMatch: [CONFIRMAR, MOVIL, MOVIL_F2, MOVIL_F3A], use: { ...devices['Pixel 7'], viewport: { width: 880, height: 860 }, screen: { width: 880, height: 860 } } },
+    { name: 'laptop-1440', testMatch: [ACCESO, F1, CONFIRMAR, F2, F3A, F3B], use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
+    { name: 'iphone-16-pro', testMatch: [CONFIRMAR, MOVIL, MOVIL_F2, MOVIL_F3A, MOVIL_F3B], use: { ...devices['iPhone 15 Pro'], viewport: { width: 402, height: 874 }, screen: { width: 402, height: 874 }, deviceScaleFactor: 3 } },
+    { name: 'fold-cerrado', testMatch: [CONFIRMAR, MOVIL, MOVIL_F2, MOVIL_F3A, MOVIL_F3B], use: { ...devices['Pixel 7'], viewport: { width: 344, height: 882 }, screen: { width: 344, height: 882 } } },
+    { name: 'fold-abierto', testMatch: [CONFIRMAR, MOVIL, MOVIL_F2, MOVIL_F3A, MOVIL_F3B], use: { ...devices['Pixel 7'], viewport: { width: 880, height: 860 }, screen: { width: 880, height: 860 } } },
   ],
   webServer: {
     command: 'sh -c "npx next build && npx next start -p 3100"',
