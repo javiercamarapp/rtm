@@ -212,5 +212,10 @@ test('movimientos: pegar, contar sin escribir, importar, reimportar da cero, cla
   await page.getByTestId('dim-proveedor').click();
   await expect(page.getByText(`Pago ${SUF}`)).toHaveCount(0);
   await expect(page.getByTestId('quien-debe')).toBeVisible();
+  // La cifra entre socios de la pantalla es la del encabezado, no otra por otra via.
+  const chip = page.getByTestId('pulso-socios').first();
+  const encabezado = ((await chip.innerText()).match(/(Angelo|Javier)\s*\+\$([\d,.]+)/));
+  if (encabezado) await expect(page.getByTestId('quien-debe')).toContainText(`${encabezado[1]} +$${encabezado[2]}`);
+  else await expect(page.getByTestId('quien-debe')).toContainText('en paz');
   await expect(page.getByTestId('utilidad-total')).toContainText('Utilidad total acumulada');
 });

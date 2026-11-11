@@ -282,11 +282,11 @@ as $$
 $$;
 
 -- Utilidad por pedido (la de la nota vigente de cada pedido enviado), utilidad acumulada por socio (50/50, el centavo impar a Angelo) con lo retirado y lo retenido, y
--- quien debe a quien segun la cuenta de socios. Todas las cifras salen de funciones existentes: aqui no se calcula nada nuevo.
+-- la posicion de cada socio con la sociedad (la misma cifra del encabezado) y, aparte, la diferencia por la compra de la cuenta de socios. Todas las cifras salen de funciones existentes: aqui no se calcula nada nuevo.
 create function operacion.movimientos_utilidad() returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
-declare v_u jsonb; v_total bigint; v_ped jsonb; v_socios jsonb; v_cs jsonb;
+declare v_u jsonb; v_total bigint; v_ped jsonb; v_socios jsonb; v_cs jsonb; v_na bigint; v_nj bigint;
 begin
   select coalesce(jsonb_agg(jsonb_build_object('pedido_id', x.id, 'folio', x.folio, 'cliente', x.cliente, 'fecha_envio', x.fecha_envio, 'utilidad_cent', x.u, 'provisional', x.prov, 'cobrado_cent', x.cobrado) order by x.fecha_envio desc, x.id desc), '[]'::jsonb),
          coalesce(sum(x.u), 0)::bigint
@@ -303,7 +303,11 @@ begin
            'retirado_cent', operacion.libro_socio(s.id, 'retiro'), 'retenido_cent', operacion.saldo_socio(s.id, 'fondos')) order by s.nombre), '[]'::jsonb)
     into v_socios from catalogo.socio s;
   v_cs := operacion.cuenta_socios();
-  return jsonb_build_object('pedidos', v_ped, 'utilidad_pedidos_cent', v_total, 'utilidad_total_cent', (v_u->>'utilidad_cent')::bigint, 'provisional', (v_u->>'provisional')::boolean,
+  -- Posicion de cada socio con la sociedad: la MISMA cifra que el encabezado de la app (api.pulso): neto_socio, + la sociedad le debe, - el debe.
+  v_na := operacion.neto_socio((select id from catalogo.socio where nombre = 'Angelo'));
+  v_nj := operacion.neto_socio((select id from catalogo.socio where nombre = 'Javier'));
+  return jsonb_build_object('posicion_angelo_cent', v_na, 'posicion_javier_cent', v_nj,
+    'posicion_mayor', case when v_na >= v_nj then 'Angelo' else 'Javier' end, 'posicion_diferencia_cent', abs(v_na - v_nj), 'pedidos', v_ped, 'utilidad_pedidos_cent', v_total, 'utilidad_total_cent', (v_u->>'utilidad_cent')::bigint, 'provisional', (v_u->>'provisional')::boolean,
     'socios', v_socios, 'javier_debe_a_angelo_cent', (v_cs->>'javier_debe_a_angelo_cent')::bigint, 'cuadra', (v_cs->>'cuadra')::boolean, 'costo_cent', (v_cs->>'costo_cent')::bigint);
 end $$;
 

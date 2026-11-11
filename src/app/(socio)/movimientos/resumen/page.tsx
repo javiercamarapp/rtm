@@ -16,8 +16,8 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
   const lector = await movimientosDeSocio();
   const [grupos, utilidad, desglose] = await Promise.all([lector.agrupado(dim), lector.utilidad(), idSel ? lector.desglose(dim, idSel) : Promise.resolve(null)]);
   const sel = idSel ? grupos.find((g) => g.id === idSel) : null;
-  const debe = utilidad.javier_debe_a_angelo_cent;
-  const frase = debe === 0n ? 'Los socios están en paz.' : debe > 0n ? `Javier le debe a Angelo ${formatearMoneda(debe)}.` : `Angelo le debe a Javier ${formatearMoneda(-debe)}.`;
+  const dif = utilidad.posicion_diferencia_cent;
+  const frase = dif === 0n ? 'Entre socios: en paz.' : `Entre socios: ${utilidad.posicion_mayor} +${formatearMoneda(dif)}.`;
   return (
     <>
       <EncabezadoPagina
@@ -96,8 +96,8 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
 
       <section className="rtm-seccion" aria-label="Quién debe a quién">
         <h2>Quién debe a quién</h2>
-        <p data-testid="quien-debe"><EstadoTexto tono={debe === 0n ? 'ok' : 'atencion'}>{frase}</EstadoTexto></p>
-        <p className="rtm-nota">Sale de la cuenta de socios: lo puesto por cada uno contra la mitad del costo de la compra ({formatearMoneda(utilidad.costo_cent)}). {utilidad.cuadra ? 'Las dos vías de la cifra coinciden.' : 'Las dos vías no coinciden: revisa la cuenta de socios.'} <Link href="/socios">Ver la cuenta de socios</Link>.</p>
+        <p data-testid="quien-debe"><EstadoTexto tono={dif === 0n ? 'ok' : 'atencion'}>{frase}</EstadoTexto></p>
+        <p className="rtm-nota" data-testid="posiciones-socios">Posición de cada socio con la sociedad (más: la sociedad le debe; menos: él le debe): Angelo {formatearMoneda(utilidad.posicion_angelo_cent, { conSigno: true })}, Javier {formatearMoneda(utilidad.posicion_javier_cent, { conSigno: true })}. Es la misma cifra del encabezado; sale de lo aportado, lo pagado y lo que cada uno tiene en su poder. <Link href="/socios">Ver la cuenta de socios</Link>.</p>
       </section>
     </>
   );

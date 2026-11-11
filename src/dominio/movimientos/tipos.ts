@@ -49,6 +49,11 @@ export interface UtilidadMovimientos {
   utilidad_total_cent: Cent;
   provisional: boolean;
   socios: UtilidadSocio[];
+  /** Posicion de cada socio con la sociedad (+ la sociedad le debe): la misma cifra del encabezado de la app. */
+  posicion_angelo_cent: Cent;
+  posicion_javier_cent: Cent;
+  posicion_mayor: 'Angelo' | 'Javier';
+  posicion_diferencia_cent: Cent;
   javier_debe_a_angelo_cent: Cent;
   cuadra: boolean;
   costo_cent: Cent;

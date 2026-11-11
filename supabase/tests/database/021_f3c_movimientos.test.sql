@@ -81,6 +81,9 @@ select is((api.mov_resumen() ->> 'total')::int, 5, 'cinco movimientos en total')
 select is(jsonb_typeof(api.mov_utilidad() -> 'pedidos'), 'array', 'la utilidad por pedido es una lista');
 select is(jsonb_array_length(api.mov_utilidad() -> 'socios'), 2, 'la utilidad acumulada trae a los dos socios');
 select is(((api.mov_utilidad() -> 'socios') -> 0 ->> 'socio'), 'Angelo', 'Angelo primero');
+select is((api.mov_utilidad() ->> 'posicion_diferencia_cent')::bigint, (api.pulso() -> 'entre_socios' ->> 'diferencia_cent')::bigint, 'Movimientos y el encabezado muestran la misma diferencia entre socios');
+select is((api.mov_utilidad() ->> 'posicion_mayor'), (api.pulso() -> 'entre_socios' ->> 'socio'), 'y del mismo lado');
+select is((api.mov_utilidad() ->> 'posicion_angelo_cent')::bigint, operacion.neto_socio((select id from catalogo.socio where nombre = 'Angelo')), 'la posicion de Angelo es su neto con la sociedad');
 select is((select sum((s ->> 'mitad_cent')::bigint)::bigint from jsonb_array_elements(api.mov_utilidad() -> 'socios') s), (api.mov_utilidad() ->> 'utilidad_total_cent')::bigint, 'las dos mitades suman la utilidad total');
 select is(jsonb_array_length(api.mov_referencias() -> 'proveedores'), 2, 'las referencias traen a Isaac y a Karen');
 select is(has_function_privilege('authenticated', 'operacion.importar_movimientos(text, text, text, text, jsonb, boolean)', 'execute'), false, 'la funcion interna no se ejecuta desde la web');
