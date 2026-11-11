@@ -1,6 +1,6 @@
 // `npm run verificar`: la unica puerta de F0. Corre, en orden y deteniendose en el primer fallo:
 //   tipos -> lint (fronteras) -> guardas de diseno -> escaner de secretos -> pruebas unitarias y de contratos
-//   -> Supabase local (si hace falta) -> pruebas de base de datos (pgTAP) -> pruebas del acceso (Playwright + Mailpit)
+//   -> Supabase local (si hace falta) -> pruebas de base de datos (pgTAP) -> integracion con la base (concurrencia) -> pruebas del acceso (Playwright + Mailpit)
 // Si el verificador levanto Supabase, lo deja DETENIDO al terminar (usa --mantener para dejarlo corriendo).
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -86,6 +86,7 @@ if (!corriendo()) {
 // Siempre se regenera: le pone la contrasena local al rol `servidor` (un `db reset` la borra) y conserva la pimienta.
 correr('Entorno local (.env.local y rol servidor)', 'node', ['scripts/entorno/generar-env-local.mjs']);
 correr('Pruebas de base de datos (pgTAP)', 'npx', ['supabase', 'test', 'db']);
+correr('Pruebas de integracion con la base local (concurrencia del limite de intentos)', 'npx', ['vitest', 'run', '--config', 'vitest.integracion.config.mts']);
 const F = 'test/fixtures/importacion';
 correr('Importador: idempotencia con fixtures (dos aplicaciones en una transaccion revertida)', 'npx', [
   'tsx', 'scripts/importacion/importar.mts', '--prueba-idempotencia', '--angelo', `${F}/angelo.md`, '--javier', `${F}/javier.md`, '--karen', `${F}/javier.md`,

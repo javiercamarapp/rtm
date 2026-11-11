@@ -16,6 +16,7 @@
     "db:iniciar": "node scripts/entorno/supabase.mjs iniciar",
     "db:detener": "node scripts/entorno/supabase.mjs detener",
     "db:probar": "supabase test db",
+    "test:integracion": "vitest run --config vitest.integracion.config.mts",
     "e2e": "playwright test",
     "capturas": "playwright test --config playwright.capturas.config.ts",
     "verificar": "node scripts/ci/verificar.mjs",
