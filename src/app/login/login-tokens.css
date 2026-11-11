@@ -1,0 +1,31 @@
+/* Puente entre login.css (copiado de Likida Bitacoras, que habla en --bg/--ink/--surface/...) y los tokens de RTM.
+   Se importa DESPUES de login.css. El formulario sigue el tema (claro/oscuro); el panel del arte es negro en los dos. */
+
+.login {
+  --bg: var(--rtm-panel);
+  --surface: var(--rtm-surface);
+  --ink: var(--rtm-ink);
+  --muted: var(--rtm-ink-2);
+  --faint: var(--rtm-ink-3);
+  --line: var(--rtm-line-2);
+  --line-boton: var(--rtm-line-strong);
+  --foco: var(--rtm-ink);
+  --bad: var(--rtm-bad);
+  --badbg: var(--rtm-tint);
+  --crema: var(--rtm-tint);
+  --font-mono: var(--font-jetbrains);
+  --font-mono-id: var(--font-plexmono), 'IBM Plex Mono', ui-monospace, monospace;
+  color-scheme: inherit;
+}
+
+/* El panel del arte: tinta negra fija, sin importar el tema. */
+.login-visual {
+  --ink: var(--rtm-login-panel);
+}
+
+.login .sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+.login-glifo svg { display: block; width: 17px; height: 17px; }
