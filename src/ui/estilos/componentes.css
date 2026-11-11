@@ -128,6 +128,12 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
   .rtm-campo { font-size: 16px; min-height: 44px; }
 }
 
+/* Carga de pagina: esqueleto con la forma de una pagina; alturas del contenido, no de la ventana. */
+.rtm-cargando { display: flex; flex-direction: column; gap: var(--rtm-e-4); }
+.rtm-cargando > .rtm-cargando-eyebrow { width: 160px; }
+.rtm-cargando > .rtm-cargando-titular { height: 28px; width: min(420px, 80%); }
+.rtm-cargando > .rtm-cargando-bloque { height: 72px; width: 100%; border-radius: var(--rtm-r-3); }
+
 /* Estados de los campos: placeholder legible (>= 4.5:1), foco visible con borde de tinta y deshabilitado reconocible sin depender solo del color. */
 .rtm-campo::placeholder { color: var(--rtm-ink-3); opacity: 1; }
 .rtm-campo:focus-visible { border-color: var(--rtm-ink); outline: 2px solid var(--rtm-ink); outline-offset: 1px; }
