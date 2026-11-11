@@ -124,13 +124,14 @@ test('T10 teclado en los dialogos: foco inicial en Cancelar, el foco queda atrap
   await boton.click();
   const dialogo = page.getByRole('dialog');
   await expect(dialogo.getByRole('button', { name: 'Cancelar' })).toBeFocused();
+  // En Chromium un <dialog> modal cicla por la interfaz del navegador (activeElement = body): lo prohibido es que el foco llegue a la pagina de fondo.
   for (let i = 0; i < 12; i++) {
     await page.keyboard.press('Tab');
-    expect(await dialogo.evaluate((el) => el.contains(document.activeElement)), `Tab ${i + 1} sigue dentro del dialogo`).toBe(true);
+    expect(await dialogo.evaluate((el) => el.contains(document.activeElement) || document.activeElement === document.body), `Tab ${i + 1} sigue dentro del dialogo`).toBe(true);
   }
   for (let i = 0; i < 12; i++) {
     await page.keyboard.press('Shift+Tab');
-    expect(await dialogo.evaluate((el) => el.contains(document.activeElement)), `Shift+Tab ${i + 1} sigue dentro del dialogo`).toBe(true);
+    expect(await dialogo.evaluate((el) => el.contains(document.activeElement) || document.activeElement === document.body), `Shift+Tab ${i + 1} sigue dentro del dialogo`).toBe(true);
   }
   await page.keyboard.press('Escape');
   await expect(dialogo).toBeHidden();
@@ -205,7 +206,13 @@ test('T13 H-33 (ESPERADO-FALLA-HASTA): una lectura que falla muestra "No se pudo
 test('M-06 despues de cerrar sesion, Atras no muestra datos protegidos', async ({ page }) => {
   await sesionSocio(page, '/pedidos');
   await page.getByTestId('cerrar-sesion').click();
+  await expect(page).toHaveURL(/\/login/);
   await page.goBack();
   await page.reload();
+  // Atras puede dejar en la pantalla publica de confirmacion del enlace ya usado o en el acceso; nunca en la pagina protegida ni con sus datos.
+  await expect(page).toHaveURL(/\/(login|auth\/confirm)/);
+  await expect(page.getByTestId('cerrar-sesion')).toHaveCount(0);
+  await expect(page.locator('body')).not.toContainText(/Por cobrar|Pedidos y notas/);
+  await page.goto('/pedidos');
   await expect(page).toHaveURL(/\/login/);
 });

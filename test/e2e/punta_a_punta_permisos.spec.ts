@@ -33,12 +33,13 @@ test.describe('sin sesion', () => {
   });
 });
 
+// /avisos queda fuera: el estado leido/sin leer es por socio (lo cubre F12).
 test('Angelo y Javier ven las mismas pantallas y los mismos datos (un solo negocio)', async ({ page, browser }) => {
   await sesionSocio(page, '/', 'Angelo');
   const otra = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
   const pj = await otra.newPage();
   await sesionSocio(pj, '/', 'Javier');
-  for (const ruta of ['/pedidos', '/catalogo', '/inventario', '/clientes', '/cuentas-por-cobrar', '/proveedores?p=Isaac', '/socios', '/socios/cascada', '/avisos']) {
+  for (const ruta of ['/pedidos', '/catalogo', '/inventario', '/clientes', '/cuentas-por-cobrar', '/proveedores?p=Isaac', '/socios', '/socios/cascada']) {
     await page.goto(ruta);
     await pj.goto(ruta);
     // Esperar a que termine el flujo de carga de las dos (la pantalla de carga se reemplaza por la pagina real).
@@ -91,8 +92,8 @@ test('correo fuera de la lista: misma respuesta, ninguna fila nueva en auth.user
   const antes = await contarUsuariosAuth();
   await page.goto('/login');
   await page.getByLabel(/correo/i).fill(correoUnico('pap-intruso'));
-  await page.getByRole('button', { name: /Entrar con correo/i }).click();
-  await expect(page.locator('main:not(.rtm-documento)')).toContainText(/enviado|revisa/i);
+  await page.getByRole('button', { name: /Continuar con correo/i }).click();
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText(/enlace a tu correo/i);
   expect(await contarUsuariosAuth()).toBe(antes);
 });
 
