@@ -34,7 +34,7 @@ test('T01 pedido sin renglones: "Agrega al menos un renglón." y DialogoSimple s
   await sesionSocio(page, `/pedidos/nuevo?cliente=${d.clienteId}`);
   const antes = await contarEventos('pedido_creado');
   await page.getByTestId('crear-pedido').click();
-  await expect(page.locator('main')).toContainText('Agrega al menos un renglón.');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('Agrega al menos un renglón.');
   expect(await contarEventos('pedido_creado')).toBe(antes);
   await page.goto(`/pedidos/${d.pedidoBodegaId}`);
   const anulados = await contarEventos('pedido_anulado');
@@ -165,7 +165,7 @@ test('T15 rutas invalidas: nunca un 500 ni la pantalla generica de error', async
 test('T15 H-30 (ESPERADO-FALLA-HASTA): la cascada rechaza una caja negativa en vez de calcularla', async ({ page }) => {
   test.fail(true, 'H-30: cascada?caja=-500 se acepta como caja negativa');
   await sesionSocio(page, '/socios/cascada?caja=-500');
-  await expect(page.locator('main')).toContainText(/caja.*(negativa|inválid|invalid)|monto válido/i);
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText(/caja.*(negativa|inválid|invalid)|monto válido/i);
 });
 
 test('T15 atras y adelante despues de una accion y F5 con el dialogo abierto no repiten ni rompen nada', async ({ page }) => {

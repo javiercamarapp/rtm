@@ -40,8 +40,8 @@ test('Angelo y Javier ven las mismas pantallas y los mismos datos (un solo negoc
   for (const ruta of ['/pedidos', '/catalogo', '/inventario', '/clientes', '/cuentas-por-cobrar', '/proveedores?p=Isaac', '/socios', '/socios/cascada', '/avisos']) {
     await page.goto(ruta);
     await pj.goto(ruta);
-    const a = await page.locator('main').innerText();
-    const j = await pj.locator('main').innerText();
+    const a = await page.locator('main:not(.rtm-documento)').innerText();
+    const j = await pj.locator('main:not(.rtm-documento)').innerText();
     expect(j, `${ruta}: mismo contenido para los dos socios`).toBe(a);
   }
   await otra.close();
@@ -86,7 +86,7 @@ test('correo fuera de la lista: misma respuesta, ninguna fila nueva en auth.user
   await page.goto('/login');
   await page.getByLabel(/correo/i).fill(correoUnico('pap-intruso'));
   await page.getByRole('button', { name: /Entrar con correo/i }).click();
-  await expect(page.locator('main')).toContainText(/enviado|revisa/i);
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText(/enviado|revisa/i);
   expect(await contarUsuariosAuth()).toBe(antes);
 });
 

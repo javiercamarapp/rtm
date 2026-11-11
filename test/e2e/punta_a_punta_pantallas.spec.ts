@@ -56,7 +56,7 @@ for (const tema of TEMAS) {
         const r = await page.goto(ruta.ruta);
         expect(r?.status() ?? 0, `${ruta.id}: estado HTTP`).toBeLessThan(400);
         await page.waitForLoadState('networkidle');
-        await expect(page.locator('main')).toBeVisible();
+        await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
         await expect(page.getByRole('heading').first()).toBeVisible();
         await expect(page.locator('html')).toHaveAttribute('data-tema', tema);
         await expect(page.locator('body')).not.toContainText(/Application error|Internal Server Error|This page could not be found/i);
@@ -90,7 +90,7 @@ for (const tema of TEMAS) {
       await page.goto('/clientes');
       await expect(page.getByRole('link', { name: /^De Angelo$/ })).toHaveCount(0);
       await page.goto('/paquetes/por-hacer');
-      await expect(page.locator('main')).not.toContainText(/Dueño:/);
+      await expect(page.locator('main:not(.rtm-documento)')).not.toContainText(/Dueño:/);
     });
 
     test('H-32 (ESPERADO-FALLA-HASTA): una ruta inexistente muestra una pagina propia con salida, no la de Next', async ({ page }) => {

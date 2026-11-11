@@ -80,7 +80,7 @@ for (const tema of TEMAS) {
         await page.getByRole('link', { name: chip, exact: true }).first().click();
         await page.waitForLoadState('networkidle');
         if (estado) await expect(page).toHaveURL(new RegExp(`estado=`));
-        await expect(page.locator('main')).toBeVisible();
+        await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
       await page.getByRole('link', { name: /Con aviso/ }).first().click();
       await expect(page).toHaveURL(/aviso=1/);
@@ -96,7 +96,7 @@ for (const tema of TEMAS) {
       }
       for (const vista of ['Nota', 'Hoja interna', 'Versiones']) {
         await page.getByRole('link', { name: vista, exact: true }).click();
-        await expect(page.locator('main')).toBeVisible();
+        await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
       await page.getByRole('link', { name: 'Nota', exact: true }).click();
       await expect(page.getByTestId('descargar-pdf')).toBeVisible();
@@ -113,7 +113,7 @@ for (const tema of TEMAS) {
       await expect(page.getByTestId(`empacar-${confirmadoId}`)).toBeVisible();
       await abrirYCancelar(page, info, tema, page.getByTestId(`marcar-enviado-${confirmadoId}`), 'marcar-enviado-lista');
       await page.goto('/paquetes/en-trayecto');
-      await expect(page.locator('main')).toBeVisible();
+      await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       await capturar(page, info, tema, 'paquetes');
     });
 
@@ -122,7 +122,7 @@ for (const tema of TEMAS) {
       await abrirYCancelar(page, info, tema, page.getByTestId('nuevo-pago'), 'nuevo-pago');
       for (const chip of ['Todos', 'Solo vencido']) {
         await page.getByRole('link', { name: chip, exact: true }).first().click();
-        await expect(page.locator('main')).toBeVisible();
+        await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
       await page.goto('/cuentas-por-cobrar');
       await expect(page.getByRole('button', { name: 'Filtrar' })).toBeVisible();
@@ -137,20 +137,20 @@ for (const tema of TEMAS) {
       await sesionSocio(page, '/catalogo');
       await page.getByRole('searchbox').or(page.getByRole('textbox', { name: /Buscar|modelo|marca/i })).first().fill('%');
       await page.getByRole('button', { name: 'Buscar' }).click();
-      await expect(page.locator('main')).not.toContainText(/Application error/i);
+      await expect(page.locator('main:not(.rtm-documento)')).not.toContainText(/Application error/i);
       await page.goto('/catalogo');
       for (const chip of ['Todos', 'Disponibles', 'Sin disponibilidad']) {
         await page.getByRole('link', { name: chip, exact: true }).first().click();
-        await expect(page.locator('main')).toBeVisible();
+        await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
       await page.goto(`/catalogo?modelo=${d.modeloId}`);
-      await expect(page.locator('main')).toContainText(d.cliente);
+      await expect(page.locator('main:not(.rtm-documento)')).toContainText(d.cliente);
       await page.goto('/catalogo');
       const fila = page.getByRole('row').filter({ hasText: d.modeloA }).first();
       await abrirYCancelar(page, info, tema, fila.getByRole('button', { name: /disponibilidad|disponible/i }).first(), 'disponibilidad');
       await page.goto('/clientes');
       await page.getByRole('link', { name: d.cliente }).first().click();
-      await expect(page.locator('main')).toContainText(d.cliente);
+      await expect(page.locator('main:not(.rtm-documento)')).toContainText(d.cliente);
       await page.goto('/inventario');
       await expect(page.getByRole('table').first()).toBeVisible();
       await capturar(page, info, tema, 'catalogo-clientes-inventario');
@@ -196,7 +196,7 @@ for (const tema of TEMAS) {
       await page.getByRole('link', { name: 'Todos', exact: true }).first().click();
       await expect(page.getByRole('table', { name: 'Avisos' })).toBeVisible();
       await page.getByRole('link', { name: 'Pendientes', exact: true }).first().click();
-      await expect(page.locator('main')).toBeVisible();
+      await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       await capturar(page, info, tema, 'avisos');
     });
 

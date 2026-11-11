@@ -40,7 +40,7 @@ const noNativos = (page: Page): string[] => {
 
 async function crearPedido(page: Page, piezas: string, sabor: 'Fresa' | 'Uva', envio = '300'): Promise<number> {
   await page.goto('/pedidos/nuevo');
-  await page.getByTestId('elegir-cliente').selectOption({ label: `${d.cliente} (Angelo)` });
+  await page.getByTestId('elegir-cliente').selectOption({ label: d.cliente });
   await page.getByRole('button', { name: 'Elegir cliente' }).click();
   await page.waitForURL(`**/pedidos/nuevo?cliente=${d.clienteId}`);
   await page.getByTestId('modelo').selectOption({ label: `${d.marca} · ${d.modelo}` });
@@ -72,6 +72,7 @@ test('F00 acceso y permisos: sin sesion se pide acceso; Angelo y Javier ven lo m
   await otra.close();
   // Cerrar sesion: /pedidos vuelve a pedir acceso.
   await page.getByTestId('cerrar-sesion').click();
+  await expect(page).toHaveURL(/\/login/);
   await page.goto('/pedidos');
   await expect(page).toHaveURL(/\/login/);
   await capturar(page, info, 'claro', 'F00-acceso');
@@ -81,26 +82,33 @@ test('F01 alta de cliente y precios: costo, precio, margen vs Isaac 50.00 y vs K
   noNativos(page);
   await sesionSocio(page, `/catalogo?modelo=${d.modeloId}`);
   await expect(page.getByText(d.cliente).first()).toBeVisible();
-  await expect(page.locator('main')).toContainText('$150.00');
-  await expect(page.locator('main')).toContainText('$50.00'); // 150.00 - 100.00 (Isaac)
-  await expect(page.locator('main')).toContainText('$40.00'); // 150.00 - 110.00 (Karen, supuesto)
-  await expect(page.locator('main')).toContainText(/supuesto/i);
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$150.00');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$50.00'); // 150.00 - 100.00 (Isaac)
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$40.00'); // 150.00 - 110.00 (Karen, supuesto)
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText(/supuesto/i);
   await capturar(page, info, 'claro', 'F01-margen');
   // Segunda via: una fila de tabulador vigente.
   const tab = await consultar<{ n: number }>('select count(*)::int as n from catalogo.tabulador_precio t where t.cliente_id = $1 and t.vigente_hasta is null', [d.clienteId]);
   expect(tab[0]!.n).toBe(1);
-  // Nuevo precio 160.00 desde hoy: historial de 2 puntos y margenes 60.00 y 50.00.
-  await conDb(async (c) => {
+  // Nuevo precio 160.00 desde hoy en un SEGUNDO cliente (el cliente de los flujos F04 a F06 debe seguir a 150.00): historial de 2 puntos y margenes 60.00 y 50.00.
+  const cliente2 = `${d.cliente} B`;
+  const cliente2Id = await conDb(async (c) => {
     await c.query('begin');
     await c.query("select set_config('rtm.canal', 'importacion', true)");
-    await c.query("select catalogo.fijar_precio($1,$2,$3,16000,negocio.hoy(),'chat')", [`qa:p2:${d.sufijo}`, d.cliente, d.modelo]);
+    await c.query("select catalogo.asegurar_cliente($1,'Angelo')", [cliente2]);
+    await c.query("select catalogo.fijar_precio($1,$2,$3,15000,negocio.hoy() - 30,'chat')", [`qa:p2a:${d.sufijo}`, cliente2, d.modelo]);
+    await c.query("select catalogo.fijar_precio($1,$2,$3,16000,negocio.hoy(),'chat')", [`qa:p2:${d.sufijo}`, cliente2, d.modelo]);
+    const r = await c.query('select id from catalogo.cliente where nombre_canonico = $1', [cliente2]);
     await c.query('commit');
+    return Number(r.rows[0].id);
   });
-  await page.goto(`/clientes/${d.clienteId}`);
-  await expect(page.locator('main')).toContainText('$160.00');
+  await page.goto(`/clientes/${cliente2Id}`);
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$160.00');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$150.00'); // historial: el precio anterior
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$60.00');
   await page.goto(`/catalogo?modelo=${d.modeloId}`);
-  await expect(page.locator('main')).toContainText('$60.00');
-  await expect(page.locator('main')).toContainText('$50.00');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$60.00');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$50.00');
   // Disponibilidad: marcar sin disponibilidad cambia la tabla y se puede pedir igual.
   await page.goto('/catalogo');
   const fila = page.getByRole('row').filter({ hasText: d.modelo });
@@ -109,7 +117,7 @@ test('F01 alta de cliente y precios: costo, precio, margen vs Isaac 50.00 y vs K
   await expect(page.getByRole('row').filter({ hasText: d.modelo })).toContainText(/Sin disponibilidad/i);
   await page.getByRole('row').filter({ hasText: d.modelo }).getByRole('button', { name: /disponible/i }).first().click();
   await page.getByTestId('confirmar').click();
-  await expect(page.getByRole('row').filter({ hasText: d.modelo })).not.toContainText(/Sin disponibilidad/i);
+  await expect(page.getByRole('row').filter({ hasText: d.modelo })).not.toContainText(/Marcar disponible/i);
 });
 
 test('F02 compra a Isaac: 100 Fresa + 100 Uva a 100.00, guia 450.00 pagada por Angelo; confirmar carga 20,000.00; pago del socio; recepcion; cerrar', async ({ page }, info) => {
@@ -148,12 +156,12 @@ test('F02 compra a Isaac: 100 Fresa + 100 Uva a 100.00, guia 450.00 pagada por A
   await page.getByTestId('oc-enviada').click();
   await expect(page.getByTestId('estado-oc')).toContainText('Enviada');
   await page.getByTestId(`guia-${oc1}`).click();
-  await page.getByLabel('Número de guía').fill('QA-OC1');
+  await page.getByLabel('Número de guía').fill(`QA-OC1-${d.sufijo}`);
   await page.getByTestId('confirmar').click();
   await expect(page.getByTestId('estado-oc')).toContainText('En trayecto');
   expect((await piezasYValor(d.modelo)).piezas).toBe(200); // la semilla ya trae 200; la recepcion de la OC-1 se prueba por delta
   await page.goto('/paquetes/en-trayecto');
-  await expect(page.getByRole('row', { name: /QA-OC1/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(`QA-OC1-${d.sufijo}`) })).toBeVisible();
   await page.getByTestId(`llego-${oc1}`).click();
   await page.goto(`/proveedores/compras/${oc1}`);
   const antes = await piezasYValor(d.modelo);
@@ -176,9 +184,9 @@ test('F03 recepcion e inventario: 400 piezas a promedio 102.25, "Explicar este n
   expect(inv.valor).toBe(4_090_000n); // 200 de la semilla + 200 de la OC-1, ambas a 102.25
   await sesionSocio(page, '/inventario');
   await expect(page.getByRole('table').first()).toContainText(d.modelo);
-  await expect(page.locator('main')).toContainText('400 pz');
-  await expect(page.locator('main')).toContainText('$40,900.00');
-  await expect(page.locator('main')).toContainText('$102.25');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('400 pz');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$40,900.00');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$102.25');
   await page.getByRole('row').filter({ hasText: d.modelo }).getByRole('button', { name: /Explicar este número/ }).first().click();
   await expect(page.getByTestId('explicar-cajon')).toContainText('Cuadra');
   await capturar(page, info, 'claro', 'F03-explicar');
@@ -192,7 +200,7 @@ test('F04 pedido de 50 piezas donde salen 40: total 6,300.00, utilidad 1,950.00 
   pedido1 = await crearPedido(page, '50', 'Fresa');
   await expect(page.getByTestId('estado-pedido')).toContainText('Borrador');
   await expect(page.getByText('Total estimado si sale todo')).toBeVisible();
-  await expect(page.locator('main')).toContainText('$7,800.00');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$7,800.00');
   await expect(page.getByTestId('aviso-pedido')).toHaveCount(0);
   await page.getByTestId('confirmar-pedido').click();
   await expect(page.getByTestId('estado-pedido')).toContainText('Confirmado');
@@ -202,12 +210,12 @@ test('F04 pedido de 50 piezas donde salen 40: total 6,300.00, utilidad 1,950.00 
   await page.getByTestId(`marcar-enviado-${pedido1}`).click();
   const dialogo = page.getByRole('dialog');
   await dialogo.getByLabel(/Surtidas de/).fill('40');
-  await dialogo.getByLabel('Número de guía').fill('QA-P1');
+  await dialogo.getByLabel('Número de guía').fill(`QA-P1-${d.sufijo}`);
   await dialogo.getByLabel('Paquetería').fill('Castores');
   await dialogo.getByLabel('Costo real de la guía').fill('180');
   await page.getByTestId('confirmar').click();
   await expect(page.getByTestId('estado-pedido')).toContainText('Enviado');
-  await expect(page.locator('main')).toContainText('$6,300.00');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$6,300.00');
   await expect(page.getByText('Pendiente de surtir: 10 pz')).toBeVisible();
   const despues = await piezasYValor(d.modelo);
   expect(antes.piezas - despues.piezas).toBe(40);
@@ -245,7 +253,7 @@ test('F05 pago parcial y total: 5,000.00, correccion de envio a 350 (6,350.00), 
   await page.getByTestId('confirmar').click();
   await expect(page.getByText('Abonado').locator('..')).toContainText('$5,000.00');
   await expect(page.getByText('Por cobrar', { exact: true }).locator('..')).toContainText('$1,300.00');
-  expect(await saldoSocio('Angelo', 'fondos')).toBeGreaterThanOrEqual(500_000n);
+  expect(await saldoSocio('Angelo')).toBeGreaterThanOrEqual(500_000n);
   // Correccion: envio 350.
   await page.getByTestId('corregir-nota').click();
   await page.getByLabel('Motivo de la corrección').fill('el envío fue de 350');
@@ -253,37 +261,38 @@ test('F05 pago parcial y total: 5,000.00, correccion de envio a 350 (6,350.00), 
   await page.getByTestId('confirmar').click();
   await page.getByRole('link', { name: 'Versiones' }).click();
   await expect(page.getByRole('table', { name: 'Versiones de la nota' })).toContainText('-C1');
-  await expect(page.locator('main')).toContainText('$6,350.00');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('$6,350.00');
   const saldo = await consultar<{ s: string }>('select operacion.pedido_saldo($1)::text as s', [pedido1]);
   expect(saldo[0]!.s).toBe('135000'); // 6,350.00 - 5,000.00 = 1,350.00
-  // Cuentas por cobrar: acordar plazo de 0 dias hace que el pedido venza ya; recargo sugerido 10 % de 1,350.00 = 135.00.
+  // Cuentas por cobrar: acordar plazo de 0 dias hace que el pedido venza ya; recargo sugerido 10 % del subtotal de mercancia (6,000.00) = 600.00, no del saldo (regla vigente del SQL; ver docs/campania-punta-a-punta.md).
   await page.goto('/cuentas-por-cobrar');
   await expect(page.getByRole('table', { name: 'Cuentas por cobrar por pedido' })).toContainText(d.cliente);
   await page.getByTestId(`plazo-${pedido1}`).click();
-  await page.getByLabel(/días/i).fill('0');
+  await page.getByTestId('campo-p_dias').fill('0');
   await page.getByTestId('confirmar').click();
   await page.reload();
   await page.getByTestId(`recargo-${pedido1}`).click();
-  await expect(page.getByRole('dialog')).toContainText('135.00');
+  await expect(page.getByRole('dialog')).toContainText('600.00');
   await page.getByTestId('confirmar').click();
-  await expect.poll(async () => (await consultar<{ s: string }>('select operacion.pedido_saldo($1)::text as s', [pedido1]))[0]!.s).toBe('148500');
+  await expect.poll(async () => (await consultar<{ s: string }>('select operacion.pedido_saldo($1)::text as s', [pedido1]))[0]!.s).toBe('195000');
   await page.reload();
-  await page.getByTestId('copiar-texto').first().click();
-  await expect(page.getByTestId('texto-copiable').first()).toContainText('1,485.00');
+  // Hay un texto por cliente con saldo (la base trae clientes de otras pruebas): se abren todos y se busca el de este cliente.
+  for (const b of await page.getByTestId('copiar-texto').all()) await b.click();
+  await expect(page.getByTestId('texto-copiable').filter({ hasText: '1,950.00' }).first()).toBeVisible();
   await capturar(page, info, 'claro', 'F05-cobro');
-  // Pago final de 1,485.00 a la cuenta de Javier.
+  // Pago final de 1,950.00 a la cuenta de Javier.
   await page.getByTestId('nuevo-pago').click();
   await elegirOpcion(page, 'pago-cliente', d.cliente);
   await page.getByTestId('pago-cuenta').selectOption('Javier');
-  await page.getByTestId('pago-monto').fill('1485');
+  await page.getByTestId('pago-monto').fill('1950');
   await page.getByTestId('confirmar').click();
   await expect.poll(async () => (await consultar<{ s: string }>('select operacion.pedido_saldo($1)::text as s', [pedido1]))[0]!.s).toBe('0');
   // Entregas: Angelo entrega 5,000.00 a la sociedad.
-  const antesAngelo = await saldoSocio('Angelo', 'fondos');
+  const antesAngelo = await saldoSocio('Angelo');
   await page.getByTestId('entrega-Angelo').click();
   await page.getByLabel(/Monto/).fill('5000');
   await page.getByTestId('confirmar').click();
-  await expect.poll(async () => saldoSocio('Angelo', 'fondos')).toBe(antesAngelo - 500_000n);
+  await expect.poll(async () => saldoSocio('Angelo')).toBe(antesAngelo - 500_000n);
 });
 
 test('F06 paquetes por hacer y en trayecto: Uva 30 pz a 150.00 + envio 300 = 4,800.00; utilidad 1,472.50; doble clic en Marcar enviado = una sola salida', async ({ page }, info) => {
@@ -297,11 +306,11 @@ test('F06 paquetes por hacer y en trayecto: Uva 30 pz a 150.00 + envio 300 = 4,8
   await expect(page.getByRole('table', { name: 'Paquetes por hacer' }).getByRole('row', { name: new RegExp(d.cliente) }).last()).toContainText('Empacado');
   const salidasAntes = await contarEventos('pedido_enviado');
   await page.getByTestId(`marcar-enviado-${pedido2}`).click();
-  await page.getByLabel('Número de guía').fill('QA-P2');
+  await page.getByLabel('Número de guía').fill(`QA-P2-${d.sufijo}`);
   await page.getByLabel('Costo real de la guía').fill('200');
   await page.getByTestId('confirmar').dblclick();
-  await expect(page.getByRole('table', { name: 'Enviados recientemente' })).toContainText('QA-P2');
-  expect((await contarEventos('pedido_enviado')) - salidasAntes).toBe(1);
+  await expect(page.getByRole('table', { name: 'Enviados recientemente' })).toContainText(`QA-P2-${d.sufijo}`);
+  await expect.poll(async () => (await contarEventos('pedido_enviado')) - salidasAntes).toBe(1);
   const util = await consultar<{ u: string }>("select (snapshot_interno->'cascada'->>'utilidad_cent') as u from operacion.nota where pedido_id = $1 order by id desc limit 1", [pedido2]);
   expect(util[0]!.u).toBe('147250'); // 4,800 - 3,067.50 - 60.00 - 200.00
   // OC-2 a Isaac: Fresa 50 a 100.00, en trayecto sin subir existencia.
@@ -316,17 +325,18 @@ test('F06 paquetes por hacer y en trayecto: Uva 30 pz a 150.00 + envio 300 = 4,8
   await page.getByTestId('confirmar-oc').click();
   await page.getByTestId('oc-enviada').click();
   await page.getByTestId(`guia-${oc2}`).click();
-  await page.getByLabel('Número de guía').fill('QA-OC2');
+  await page.getByLabel('Número de guía').fill(`QA-OC2-${d.sufijo}`);
   await page.getByTestId('confirmar').click();
   const antes = await piezasYValor(d.modelo);
   await page.goto('/paquetes/en-trayecto');
-  await expect(page.getByRole('row', { name: /QA-OC2/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(`QA-OC2-${d.sufijo}`) })).toBeVisible();
   expect((await piezasYValor(d.modelo)).piezas).toBe(antes.piezas);
   await page.getByTestId(`llego-${oc2}`).click();
+  await expect.poll(async () => (await consultar<{ n: number }>("select count(*)::int as n from operacion.compra where id = $1 and estado = 'llego_merida'", [oc2]))[0]!.n).toBe(1);
   await page.goto(`/proveedores/compras/${oc2}#recepcion`);
   await page.getByLabel(/Piezas recibidas de/).first().fill('50');
   await page.getByTestId('confirmar-recepcion').click();
-  expect((await piezasYValor(d.modelo)).piezas - antes.piezas).toBe(50);
+  await expect.poll(async () => (await piezasYValor(d.modelo)).piezas - antes.piezas).toBe(50);
   await capturar(page, info, 'claro', 'F06-recibida');
 });
 
@@ -371,6 +381,13 @@ test('F08 gasto de socio y reembolso: el gasto baja la utilidad una sola vez; no
   await page.getByTestId('campo-p_categoria').fill(`envio QA ${d.sufijo}`);
   await page.getByTestId('confirmar').click();
   await expect.poll(async () => (await reembolsoPendiente('Angelo')) - pend0).toBe(50_000n);
+  // Regla de fondeo (B, 11-nov): el pago a un socio sale primero de la caja de la empresa; se le da saldo inicial de 5,000.00 (sintetico) a la caja.
+  await conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    await c.query("select operacion.registrar_movimiento_efectivo($1,'Caja de la empresa','saldo_inicial',500000,'QA PaP saldo inicial de caja')", [`qa:caja:${d.sufijo}`]);
+    await c.query('commit');
+  });
   // Pago a socio: reembolso de 400.00 y luego un intento de 1,200.00 que excede lo pendiente.
   await page.getByTestId('pago-a-socio').click();
   await page.getByTestId('campo-p_socio').selectOption('Angelo');
@@ -391,7 +408,7 @@ test('F08 gasto de socio y reembolso: el gasto baja la utilidad una sola vez; no
   expect(gastos[0]!.n).toBe(1);
 });
 
-test('F09 aportacion de capital: 1,000.00 de Javier, devolucion parcial y deshacer', async ({ page }) => {
+test('F09 aportacion de capital: 1,000.00 de Javier, la devolucion automatica ya no existe y deshacer', async ({ page }) => {
   await sesionSocio(page, '/socios', 'Javier');
   await page.getByTestId('aportacion').click();
   await page.getByTestId('campo-p_socio').selectOption('Javier');
@@ -401,9 +418,22 @@ test('F09 aportacion de capital: 1,000.00 de Javier, devolucion parcial y deshac
   await expect(page.getByText(`Capital adicional ${d.sufijo}`)).toBeVisible();
   await page.getByTestId('pago-a-socio').click();
   await page.getByTestId('campo-p_socio').selectOption('Javier');
-  await page.getByTestId('campo-p_monto_cent').fill('400');
-  await page.getByTestId('campo-p_tipo').selectOption('devolucion_aportacion');
-  await page.getByTestId('confirmar').click();
+  // Decision del 11-nov: la devolucion de capital ya NO es automatica (retiro de capital explicito). El formulario no la ofrece y el SQL la rechaza.
+  await expect(page.getByTestId('campo-p_tipo').locator('option')).toHaveText(['Reembolso de gastos', 'Retiro de utilidad ya asignada']);
+  await page.getByRole('button', { name: 'Cancelar' }).click();
+  const rechazo = await conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    try {
+      await c.query("select operacion.registrar_pago_a_socio($1,'Javier',40000,'devolucion_aportacion','transferencia')", [`qa:dev:${d.sufijo}`]);
+      return 'sin error';
+    } catch (e) {
+      return (e as { code?: string }).code ?? 'otro';
+    } finally {
+      await c.query('rollback');
+    }
+  });
+  expect(rechazo).toBe('P0428');
   const fila = page.getByRole('row').filter({ hasText: `Capital adicional ${d.sufijo}` });
   await fila.getByRole('button', { name: 'Deshacer' }).click();
   await page.getByTestId('campo-motivo').fill('captura de prueba');
@@ -455,7 +485,7 @@ test('F11 anulacion: anular el pedido P-2 regresa las 30 piezas a su costo origi
   const antes = await piezasYValor(d.modelo);
   await sesionSocio(page, `/pedidos/${pedido2}`, 'Javier');
   await page.getByTestId('anular-pedido').click();
-  await page.getByTestId('campo-motivo').fill('devolucion total del cliente');
+  await page.getByRole('dialog').getByLabel('Motivo').fill('devolucion total del cliente');
   await page.getByTestId('confirmar').click();
   await expect(page.getByTestId('estado-pedido')).toContainText('Anulado');
   const despues = await piezasYValor(d.modelo);
@@ -469,7 +499,7 @@ test('F11 anulacion: anular el pedido P-2 regresa las 30 piezas a su costo origi
   await expect(page.getByTestId('anular-pedido')).toHaveCount(0);
   // Deshacer un movimiento de proveedor: contramovimiento unico.
   await page.goto('/proveedores/liquidacion?p=Isaac&ambito=todo');
-  await expect(page.locator('main')).toBeVisible();
+  await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
 });
 
 test('F12 avisos: Pendientes y Todos, enlace a la entidad, marcar leido baja en uno y doble clic cuenta una vez', async ({ page }, info) => {
@@ -509,7 +539,7 @@ test('F13 liquidacion semanal con Isaac: hoja con comprobacion, ambito sociedad/
   await expect(page.getByTestId('texto-copiable')).not.toContainText(d.cliente);
   const hoyEsViernes = new Date(Date.now() - 6 * 3_600_000).getUTCDay() === 5;
   if (!hoyEsViernes) await expect(page.getByTestId('cerrar-liquidacion')).toBeDisabled();
-  await page.getByTestId('semana-anterior').click();
+  await page.getByRole('link', { name: 'Semana anterior' }).click();
   await expect(page.getByTestId('comprobacion')).toBeVisible();
   await capturar(page, info, 'claro', 'F13-liquidacion');
 });
