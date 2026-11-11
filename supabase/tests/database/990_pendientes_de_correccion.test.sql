@@ -57,124 +57,9 @@ do $$ begin
   end if;
 end $$;
 
--- =====================================================================================================================================================
--- G1 retiro previo (informe 01, H1; pregunta 2 del dueño). Utilidad 12,000.00 sin fondos; Angelo retiro 5,000.00 el lunes.
--- Esperado (propuesto: el retiro es anticipo de utilidad): lo ya recibido entra en el resultado, Angelo asignado < Javier.
--- =====================================================================================================================================================
-select pg_temp.pedido_util('n990g1', '2020-10-06', 100, 22000);
-select operacion.registrar_aportacion('n990g1a', 'Angelo', 500000, 'Capital para el retiro', 'capital', '2020-10-05');
-select operacion.registrar_pago_a_socio('n990g1r', 'Angelo', 500000, 'retiro', 'transferencia', '2020-10-07');
-create temp table _g1 as select operacion.cascada_periodo('2020-10-05', '2020-10-11', 1200000, false) as c;
-select todo_start('ESPERADO-FALLA-HASTA: H1 (retiros previos no entran a la cascada)');
-select is((select (c->>'repartible_cent')::bigint from _g1), 1200000::bigint, 'G1: utilidad repartible 12,000.00');
-select ok((select (c->'por_socio'->'Angelo'->>'asignado_cent')::bigint < (c->'por_socio'->'Javier'->>'asignado_cent')::bigint from _g1), 'G1: Angelo, que retiro 5,000.00, recibe 1,000.00 y Javier 6,000.00');
-select todo_end();
-
--- =====================================================================================================================================================
--- G2 utilidad retenida y G3 perdida arrastrada (H2, adenda 31 punto D: perdidas 50/50 y se arrastran al periodo siguiente)
--- =====================================================================================================================================================
-select pg_temp.pedido_util('n990g2a', '2020-10-13', 100, 20000);   -- utilidad 10,000.00
-select pg_temp.pedido_util('n990g2b', '2020-10-20', 100, 12000);   -- utilidad 2,000.00
-create temp table _s1 as select operacion.proponer_cierre_reparto('n990cr1', '2020-10-12', '2020-10-18', 300000, false) as r;
-select is((select (r->'cascada'->>'repartible_cent')::bigint from _s1), 300000::bigint, 'S1: caja 3,000.00 limita el reparto de 10,000.00');
-select operacion.firmar_cierre_reparto('n990cf1', (select id from operacion.cierre_reparto order by id desc limit 1));
-select pg_temp.como('Javier');
-select operacion.firmar_cierre_reparto('n990cf2', (select id from operacion.cierre_reparto order by id desc limit 1));
-select pg_temp.como('Angelo');
-select todo_start('ESPERADO-FALLA-HASTA: H2 (utilidad no repartida se pierde de un periodo al siguiente)');
-select is((operacion.cascada_periodo('2020-10-19', '2020-10-25', 900000, false)->>'repartible_cent')::bigint, 900000::bigint, 'G2: S2 utilidad 2,000.00 + 7,000.00 retenidos de S1 = 9,000.00 con efectivo 9,000.00');
-select todo_end();
-
--- G3: S3 pierde 6,000.00 y S4 gana 5,000.00 con efectivo de sobra: repartible 0 y arrastre -1,000.00
-select pg_temp.pedido_util('n990g3a', '2020-11-03', 100, 4000);    -- utilidad -6,000.00
-select pg_temp.pedido_util('n990g3b', '2020-11-10', 100, 15000);   -- utilidad +5,000.00
-do $$ begin
-  perform operacion.proponer_cierre_reparto('n990cr3', '2020-11-02', '2020-11-08', 5000000, false);
-  perform operacion.firmar_cierre_reparto('n990cf3', (select id from operacion.cierre_reparto order by id desc limit 1));
-  perform pg_temp.como('Javier');
-  perform operacion.firmar_cierre_reparto('n990cf4', (select id from operacion.cierre_reparto order by id desc limit 1));
-exception when others then null;   -- si hoy un cierre con perdida no se puede proponer, G3 falla abajo y no aborta el archivo
-end $$;
-select pg_temp.como('Angelo');
-select todo_start('ESPERADO-FALLA-HASTA: H2 (las perdidas no se arrastran al periodo siguiente)');
-select is((operacion.cascada_periodo('2020-11-09', '2020-11-15', 5000000, false)->>'repartible_cent')::bigint, 0::bigint, 'G3: S4 +5,000.00 despues de S3 -6,000.00 no reparte nada (acumulado -1,000.00)');
-select todo_end();
-
--- G7 gasto con fecha dentro de un periodo ya firmado (H7): S1 (12 a 18 oct) esta cerrado
-select todo_start('ESPERADO-FALLA-HASTA: H7 (movimientos con fecha anterior al cierre no se reconcilian)');
-select throws_like($$select operacion.registrar_gasto_socio('n990g7', 'Javier', 100000, 'envio', 'variable', '2020-10-14')$$, '%', 'G7: un gasto fechado en un periodo firmado se rechaza o genera ajuste explicito');
-select todo_end();
-
--- =====================================================================================================================================================
--- G4 perdida con capital desigual: regla D del dueño = perdidas 50/50. Angelo 70,000.00 y Javier 30,000.00 de capital, efectivo 90,000.00,
--- utilidad -10,000.00: Angelo 65,000.00 y Javier 25,000.00 (no 63,000 / 27,000 proporcional).
--- =====================================================================================================================================================
-create temp table _g4 as select operacion.cascada_calcular(-1000000, 9000000, '{"Angelo":0,"Javier":0}', '{"Angelo":7000000,"Javier":3000000}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}', true) as c;
-select todo_start('ESPERADO-FALLA-HASTA: H4 (la devolucion con perdida es proporcional a lo aportado, no 50/50)');
-select is((select (c->'por_socio'->'Angelo'->>'paga_aportacion_cent')::bigint from _g4), 6500000::bigint, 'G4: Angelo recibe 65,000.00');
-select is((select (c->'por_socio'->'Javier'->>'paga_aportacion_cent')::bigint from _g4), 2500000::bigint, 'G4: Javier recibe 25,000.00');
-select todo_end();
-
--- G16 identidad real: una deuda que no es efectivo (faltante 1,098.55) no puede dejar que la UI diga "cuadra" sin explicarlo
-create temp table _g16 as select operacion.cascada_calcular(1200000, 0, '{"Angelo":50000,"Javier":122100}', '{"Angelo":0,"Javier":100000}', '{"Angelo":800000,"Javier":672100}', '{"Angelo":909855,"Javier":672100}', '{"Angelo":500000,"Javier":500000}', true) as c;
-select todo_start('ESPERADO-FALLA-HASTA: H8 (identidad_cuadra es una tautologia)');
-select is((select (c->>'identidad_cuadra')::boolean from _g16), false, 'G16: con una deuda que no es efectivo la suma de resultados no es 0 y la identidad no debe decir "cuadra" sin explicarlo');
-select todo_end();
-
--- H-30: una caja negativa capturada a mano en la cascada se rechaza
-select todo_start('ESPERADO-FALLA-HASTA: H-30 (cascada acepta caja negativa)');
-select throws_like($$select operacion.cascada_periodo('2020-10-12', '2020-10-18', -50000, false)$$, '%', 'H-30: caja negativa rechazada');
-select todo_end();
-
--- =====================================================================================================================================================
--- G5 foto vieja de un cierre: reembolso pendiente 500.00, propuesta, pago manual de 500.00, firma. Esperado: la firma rechaza o recalcula.
--- =====================================================================================================================================================
-select operacion.registrar_gasto_socio('n990g5', 'Angelo', 50000, 'envio', 'variable', '2020-12-01');
-select operacion.proponer_cierre_reparto('n990cr5', '2020-11-30', '2020-12-06', 100000, false);
-select operacion.registrar_pago_a_socio('n990g5p', 'Angelo', 50000, 'reembolso', 'efectivo', '2020-12-07');
-select operacion.firmar_cierre_reparto('n990cf5', (select id from operacion.cierre_reparto order by id desc limit 1));
-select pg_temp.como('Javier');
-select todo_start('ESPERADO-FALLA-HASTA: H5 (cierre firmado con foto vieja, sin revalidar)');
-select throws_ok($$select operacion.firmar_cierre_reparto('n990cf6', (select id from operacion.cierre_reparto order by id desc limit 1))$$, 'P0428', null, 'G5: firmar un cierre cuyo reembolso ya se pago por fuera se rechaza');
-select todo_end();
-select pg_temp.como('Angelo');
-
--- =====================================================================================================================================================
--- G6 gasto de envio duplicado (H6): la guia del pedido ya cuesta 500.00 pagada por Angelo; capturarla como gasto de socio la descontaria dos veces.
--- =====================================================================================================================================================
-select catalogo.fijar_precio('n990g6p', 'N990 Cliente', 'N990 Modelo 30K', 20000, '2021-01-04', 'chat');
-select operacion.crear_pedido('n990g6', pg_temp.cid('N990 Cliente'), '[{"modelo":"N990 Modelo 30K","sabor":"Sandia","piezas":25}]'::jsonb, 'isaac_directo', null, 0, 0, 0, '2021-01-04');
-select operacion.confirmar_pedido('n990g6c', pg_temp.pid('n990g6'));
-select operacion.enviar_pedido('n990g6s', pg_temp.pid('n990g6'), null, '{"paqueteria":"Castores","numero":"N990-G6","costo_cent":50000,"pagada_por":"Angelo"}'::jsonb, '2021-01-04', true);
-create temp table _g6a as select operacion.reembolso_pendiente(pg_temp.sid('Angelo')) as r;
-select todo_start('ESPERADO-FALLA-HASTA: H6 (un gasto de envio con pedido duplica la guia)');
-select throws_like($$select operacion.registrar_gasto_socio('n990g6x', 'Angelo', 50000, 'envio', 'variable', '2021-01-04', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n990g6'))$$, '%', 'G6: un gasto de envio de un pedido que ya tiene guia costeada se rechaza');
-select is(operacion.reembolso_pendiente(pg_temp.sid('Angelo')), (select r from _g6a), 'G6: el reembolso total sigue siendo 500.00 (una sola vez)');
-select todo_end();
-
--- =====================================================================================================================================================
--- G8 anular un gasto ya reembolsado: el sobrepago de 500.00 debe quedar como deuda de Angelo y no ocultarse con el clamp a 0 (H11).
--- =====================================================================================================================================================
-select operacion.registrar_gasto_socio('n990g8', 'Javier', 50000, 'costos del sistema', 'fijo', '2021-01-05');
-select operacion.registrar_pago_a_socio('n990g8p', 'Javier', 50000, 'reembolso', 'efectivo', '2021-01-06');
-select operacion.anular_movimiento_socio('n990g8a', 'aportacion', (select a.id from operacion.aportacion_socio a join operacion.gasto g on g.id = a.ref_id and a.ref_tipo = 'gasto' where g.fecha_neg = '2021-01-05' and a.reversa_de is null order by a.id desc limit 1), 'gasto repetido');
-select todo_start('ESPERADO-FALLA-HASTA: H11 (anular un gasto ya reembolsado oculta el sobrepago)');
-select is(operacion.saldo_socio(pg_temp.sid('Javier'), 'general'), 50000::bigint, 'G8: el sobrepago de 500.00 queda como deuda de Javier con la sociedad');
-select todo_end();
-
--- G9 y G10: retiro y liquidacion sin respaldo (H10). Esperado propuesto: rechazo (pregunta 12 del dueño pendiente).
-select todo_start('ESPERADO-FALLA-HASTA: H10 (retiros y liquidaciones sin tope; pregunta 12)');
-select throws_like($$select operacion.registrar_pago_a_socio('n990g9', 'Angelo', 100000000, 'retiro', 'transferencia', '2021-01-07')$$, '%', 'G9: un retiro mayor que lo que la sociedad le debe al socio se rechaza (propuesto)');
-select throws_like($$select operacion.registrar_liquidacion_entre_socios('n990g10', 'Javier', 'Angelo', 100000000, 'sin deuda', '2021-01-07')$$, '%', 'G10: quien paga una liquidacion debe tener esa deuda');
-select todo_end();
-
--- =====================================================================================================================================================
--- G12 un anticipo de cliente no es efectivo repartible (H3c): 9,000.00 en la cuenta de Angelo sin pedido enviado.
--- =====================================================================================================================================================
-select operacion.registrar_pago('n990g12', 'Angelo', 900000, pg_temp.cid('N990 Cliente'), null, false, 'anticipo', '2021-02-01');
-select todo_start('ESPERADO-FALLA-HASTA: H3 (los anticipos cuentan como efectivo repartible)');
-select is((operacion.cascada_periodo('2021-02-01', '2021-02-07', 0, false)->'efectivo'->>'total_cent')::bigint - (select coalesce(sum(operacion.saldo_socio(s.id, 'fondos')), 0)::bigint - 900000 from catalogo.socio s), 0::bigint, 'G12: el anticipo de 9,000.00 no suma al efectivo de la cascada');
-select todo_end();
+-- G1 a G18 (dinero entre socios: retiros previos, utilidad retenida, perdidas, cierre con foto vieja, gasto duplicado, anular gasto, topes, anticipos de cliente, identidad):
+-- los resolvio la rama fix/dinero-socios y sus pruebas definitivas viven en 015_dinero_socios_cascada y 016_dinero_socios_acta (G1 a G20), segun el protocolo de este archivo.
+-- Sus bloques usaban la firma anterior de cascada_periodo y las aportaciones automaticas, que ya no existen; se retiraron de aqui porque ya estan movidos.
 
 -- =====================================================================================================================================================
 -- GD-01 guia tardia: la utilidad baja cuando la guia se costea despues de la nota. Pedido directo 10 pz a 300.00 (utilidad 2,000.00), guia 450.00.
@@ -195,20 +80,12 @@ select catalogo.fijar_precio('n990d5p', 'N990 Cliente', 'N990 Modelo 30K', 15000
 select operacion.crear_pedido('n990d5', pg_temp.cid('N990 Cliente'), '[{"modelo":"N990 Modelo 30K","sabor":"Sandia","piezas":120}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2021-04-02');
 select operacion.confirmar_pedido('n990d5c', pg_temp.pid('n990d5'));
 select todo_start('ESPERADO-FALLA-HASTA: GD-05 (P0423 con mensaje crudo)');
-select throws_like($$select operacion.enviar_pedido('n990d5s', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n990d5'), '%', '2021-04-02', true)$$, '%faltan 20%', 'GD-05: el error dice cuantas piezas faltan');
+select throws_like($$select operacion.enviar_pedido('n990d5s', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n990d5'), null, null, '2021-04-02', true)$$, '%faltan 20%', 'GD-05: el error dice cuantas piezas faltan');
 select todo_end();
 
 -- GD-25 un movimiento con signo incoherente se rechaza
 select todo_start('ESPERADO-FALLA-HASTA: GD-25 (el signo del tipo de movimiento no se valida)');
 select throws_like($$select operacion.registrar_movimiento('n990d25', 'N990 Modelo 30K', 'Sandia', 'bodega_omar', 'salida_pedido', 100, 5000, '2021-04-03')$$, '%', 'GD-25: salida_pedido con cantidad positiva se rechaza');
-select todo_end();
-
--- GD-07 merma en utilidad: el conteo con faltante de 5 piezas a 102.25 baja la utilidad del periodo en 511.25
-create temp table _m0 as select (operacion.utilidad_periodo(negocio.hoy(), negocio.hoy())->>'utilidad_cent')::bigint as u;
-select operacion.abrir_conteo('n990k1', 'bodega_omar', 'semanal', now());
-select operacion.cerrar_conteo('n990k2', (select max(id) from operacion.conteo), jsonb_build_array(jsonb_build_object('modelo', 'N990 Modelo 30K', 'sabor', 'Sandia', 'contado', 95)));
-select todo_start('ESPERADO-FALLA-HASTA: GD-07 / A3 (la merma de un conteo no llega a la utilidad)');
-select is((operacion.utilidad_periodo(negocio.hoy(), negocio.hoy())->>'utilidad_cent')::bigint, (select u from _m0) - 51125, 'GD-07: merma de 5 pz x 102.25 = 511.25 baja la utilidad');
 select todo_end();
 
 -- =====================================================================================================================================================
@@ -259,7 +136,7 @@ select operacion.registrar_movimiento('n990e9', 'N990 Modelo 30K', 'Sandia', 'bo
 select catalogo.fijar_precio('n990d9p', 'N990 Cliente', 'N990 Modelo 30K', 15000, '2021-07-05', 'chat');
 select operacion.crear_pedido('n990d9', pg_temp.cid('N990 Cliente'), '[{"modelo":"N990 Modelo 30K","sabor":"Sandia","piezas":62}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2021-07-05');
 select operacion.confirmar_pedido('n990d9c', pg_temp.pid('n990d9'));
-select operacion.enviar_pedido('n990d9s', pg_temp.pid('n990d9'), '%', '2021-07-05', true);
+select operacion.enviar_pedido('n990d9s', pg_temp.pid('n990d9'), null, null, '2021-07-05', true);
 select operacion.cerrar_liquidacion_omar('n990l9', '2021-07-05', false, '2021-07-12');
 select todo_start('ESPERADO-FALLA-HASTA: GD-09 (anular un pedido de una semana ya liquidada da P0422)');
 select lives_ok($$select operacion.anular_pedido('n990d9a', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n990d9'), 'devolucion total')$$, 'GD-09: se puede anular; la renta se revierte en la semana abierta (-124.00)');
@@ -273,6 +150,15 @@ select operacion.cancelar_pedido('n990c24k', pg_temp.pid('n990c24'), 'el cliente
 select todo_start('ESPERADO-FALLA-HASTA: CP24 (cancelar un pedido empacado no limpia empacado_at)');
 select is((select empacado_at from operacion.pedido where id = pg_temp.pid('n990c24')), null, 'CP24: empacado_at queda limpio');
 select is((select count(*)::int from operacion.aviso where entidad_tipo = 'pedido' and entidad_id = pg_temp.pid('n990c24') and titulo ~* 'desarmar'), 1, 'CP24: aviso "desarmar paquete"');
+select todo_end();
+
+-- GD-07 va al final: el conteo se fecha hoy y un movimiento de hoy impediria registrar despues los movimientos de 2021 del mismo modelo.
+-- GD-07 merma en utilidad: el conteo con faltante de 5 piezas a 102.25 baja la utilidad del periodo en 511.25
+create temp table _m0 as select (operacion.utilidad_periodo(negocio.hoy(), negocio.hoy())->>'utilidad_cent')::bigint as u;
+select operacion.abrir_conteo('n990k1', 'bodega_omar', 'semanal', now());
+select operacion.cerrar_conteo('n990k2', (select max(id) from operacion.conteo), jsonb_build_array(jsonb_build_object('modelo', 'N990 Modelo 30K', 'sabor', 'Sandia', 'contado', 95)));
+select todo_start('ESPERADO-FALLA-HASTA: GD-07 / A3 (la merma de un conteo no llega a la utilidad)');
+select is((operacion.utilidad_periodo(negocio.hoy(), negocio.hoy())->>'utilidad_cent')::bigint, (select u from _m0) - 51125, 'GD-07: merma de 5 pz x 102.25 = 511.25 baja la utilidad');
 select todo_end();
 
 select * from finish();
