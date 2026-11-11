@@ -1,0 +1,17 @@
+[
+  {
+    "alias": "Alfa 50",
+    "destinos": [
+      "Alfa Uno 50K",
+      "Alfa Dos 50K"
+    ],
+    "nota": "grupo"
+  },
+  {
+    "alias": "Modelo Propio",
+    "destinos": [
+      "Alfa Uno 50K"
+    ],
+    "nota": "choca"
+  }
+]

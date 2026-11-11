@@ -1,0 +1,16 @@
+{
+  "nombre_completo": {
+    "Cliente Alfa": "Cliente Alfa Completo"
+  },
+  "mismo_tabulador": {
+    "Cliente Lago": "Cliente Sierra"
+  },
+  "alias_confirmados": [],
+  "equivalencias": [
+    {
+      "nombre": "Uno Basico",
+      "modelo": "Alfa Uno 50K"
+    }
+  ],
+  "persona_bodega": "Cliente Mar"
+}

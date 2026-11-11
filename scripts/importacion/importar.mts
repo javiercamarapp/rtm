@@ -13,6 +13,7 @@ import pg from 'pg';
 import { leerListaAngelo } from '@/dominio/importacion/lista_angelo';
 import { leerCostosKaren, leerListaJavier } from '@/dominio/importacion/lista_javier';
 import { construirPlan } from '@/dominio/importacion/plan';
+import type { ReglaAlias } from '@/dominio/importacion/alias_angelo';
 import type { Decisiones } from '@/dominio/importacion/tipos';
 import { formatearMoneda } from '@/dominio/formato';
 import { normalizar } from '@/dominio/catalogo/normalizar';
@@ -26,6 +27,7 @@ const rutaAngelo = valor('angelo', join(homedir(), 'Downloads/logica-negocio-ang
 const rutaJavier = valor('javier', join(memoria, 'clientes-vapes-javier-perfiles.md'));
 const rutaKaren = valor('karen', join(memoria, 'software-bodega-merida-decisiones-10nov.md'));
 const carpeta = valor('carpeta-tabuladores', join(homedir(), 'Downloads'));
+const rutaAlias = valor('alias', '');
 const rutaDec = valor('decisiones', join(homedir(), '.rtm-datos/decisiones-importacion.json'));
 
 function leerArchivo(prefijo: string): string | null {
@@ -41,7 +43,7 @@ const decisiones: Decisiones = existsSync(rutaDec)
 const angelo = leerListaAngelo(readFileSync(rutaAngelo, 'utf8'));
 const javier = leerListaJavier(readFileSync(rutaJavier, 'utf8'), leerArchivo);
 const karen = leerCostosKaren(readFileSync(rutaKaren, 'utf8'));
-const { plan, verificacion: v } = construirPlan(angelo, javier, karen, decisiones);
+const { plan, verificacion: v } = construirPlan(angelo, javier, karen, decisiones, rutaAlias ? (JSON.parse(readFileSync(rutaAlias, 'utf8')) as ReglaAlias[]) : undefined);
 
 const m = (c: bigint) => formatearMoneda(c);
 console.log('== Verificacion (calculada con codigo)');

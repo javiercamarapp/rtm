@@ -48,7 +48,18 @@ if (!corriendo()) {
   iniciar();
   levantado = true;
 }
-if (!existsSync(`${raiz}/.env.local`)) correr('Generando .env.local', 'node', ['scripts/entorno/generar-env-local.mjs']);
+// Siempre se regenera: le pone la contrasena local al rol `servidor` (un `db reset` la borra) y conserva la pimienta.
+correr('Entorno local (.env.local y rol servidor)', 'node', ['scripts/entorno/generar-env-local.mjs']);
 correr('Pruebas de base de datos (pgTAP)', 'npx', ['supabase', 'test', 'db']);
-correr('Pruebas del acceso (Playwright, Chromium, Mailpit local)', 'npx', ['playwright', 'test']);
+const F = 'test/fixtures/importacion';
+correr('Importador: idempotencia con fixtures (dos aplicaciones en una transaccion revertida)', 'npx', [
+  'tsx', 'scripts/importacion/importar.mts', '--prueba-idempotencia', '--angelo', `${F}/angelo.md`, '--javier', `${F}/javier.md`, '--karen', `${F}/javier.md`,
+  '--carpeta-tabuladores', `${F}/tabuladores`, '--decisiones', `${F}/decisiones.json`, '--alias', `${F}/alias.json`,
+]);
+if (existsSync(`${process.env.HOME}/Downloads/logica-negocio-angelo.md`)) {
+  correr('Importador sobre las fuentes reales (43 costos, 19 clientes, 179 lineas, 12 en cero, 17 de Karen)', 'npx', ['tsx', 'scripts/importacion/importar.mts', '--verificar']);
+} else {
+  console.log('\n== Importador sobre las fuentes reales: OMITIDO (no estan en este equipo)');
+}
+correr('Pruebas de pantallas y acceso (Playwright: laptop 1440, iPhone 16 Pro, plegable cerrado y abierto)', 'npx', ['playwright', 'test']);
 terminar(0);

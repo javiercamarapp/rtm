@@ -94,3 +94,69 @@ export async function enlaceDe(correo: string, indice = 0): Promise<string> {
   if (!hit) throw new Error('el correo no trae enlace de verificacion');
   return hit[0];
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// F1: enlace por token_hash (plan alterno) y datos ILUSTRATIVOS de prueba que la propia prueba crea y limpia.
+// ---------------------------------------------------------------------------------------------------------------------------------
+
+/** Enlace de /auth/confirm con token_hash, generado por la API de administracion LOCAL (sin correo). Es el enlace del plan alterno. */
+export async function enlaceConfirmacion(correo: string, next = '/catalogo'): Promise<string> {
+  const e = estado();
+  const r = await fetch(`${e.API_URL}/auth/v1/admin/generate_link`, {
+    method: 'POST',
+    headers: { apikey: e.SERVICE_ROLE_KEY, authorization: `Bearer ${e.SERVICE_ROLE_KEY}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ type: 'magiclink', email: correo }),
+  });
+  if (!r.ok) throw new Error(`generate_link fallo: ${r.status}`);
+  const j = (await r.json()) as { hashed_token?: string; properties?: { hashed_token?: string } };
+  const token = j.hashed_token ?? j.properties?.hashed_token;
+  if (!token) throw new Error('generate_link no devolvio token_hash');
+  return `/auth/confirm?token_hash=${encodeURIComponent(token)}&type=magiclink&next=${encodeURIComponent(next)}`;
+}
+
+const PREFIJO = 'E2E Prueba';
+export interface DatosE2E { clienteId: number; cliente: string; modelo: string; modeloId: number }
+
+/** Crea un cliente, un modelo, costos y dos precios (para tener historial) con nombres claramente ficticios. */
+export async function sembrarCatalogoE2E(): Promise<DatosE2E> {
+  const modelo = `${PREFIJO} Modelo 50K`;
+  const cliente = `${PREFIJO} Cliente`;
+  return conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    await c.query("select catalogo.asegurar_modelo($1,$2,50000,'angelo')", [`${PREFIJO} Marca`, modelo]);
+    await c.query("select catalogo.asegurar_cliente($1,'Javier')", [cliente]);
+    await c.query("select catalogo.fijar_costo('e2e:c1','Isaac',$1,20000,'2026-11-01','e2e')", [modelo]);
+    await c.query("select catalogo.fijar_costo('e2e:c2','Karen',$1,15000,'2026-11-01','e2e',null,true)", [modelo]);
+    await c.query("select catalogo.fijar_precio('e2e:p1',$1,$2,24000,'2026-11-01','chat')", [cliente, modelo]);
+    await c.query("select catalogo.fijar_precio('e2e:p2',$1,$2,26000,'2026-11-08','chat')", [cliente, modelo]);
+    const ids = await c.query('select (select id from catalogo.cliente where nombre_canonico = $1) as c, (select id from catalogo.modelo where nombre_canonico = $2) as m', [cliente, modelo]);
+    await c.query('commit');
+    return { clienteId: Number(ids.rows[0].c), cliente, modelo, modeloId: Number(ids.rows[0].m) };
+  });
+}
+
+export async function limpiarCatalogoE2E(): Promise<void> {
+  await conDb(async (c) => {
+    await c.query('begin');
+    const m = `${PREFIJO}%`;
+    await c.query('delete from catalogo.precio_historico_externo where cliente_id in (select id from catalogo.cliente where nombre_canonico like $1)', [m]);
+    await c.query('delete from catalogo.tabulador_precio where cliente_id in (select id from catalogo.cliente where nombre_canonico like $1)', [m]);
+    await c.query('delete from catalogo.costo_proveedor where modelo_id in (select id from catalogo.modelo where nombre_canonico like $1)', [m]);
+    await c.query('delete from catalogo.cliente_alias where cliente_id in (select id from catalogo.cliente where nombre_canonico like $1)', [m]);
+    await c.query('delete from catalogo.cliente where nombre_canonico like $1', [m]);
+    await c.query('delete from catalogo.modelo_alias where modelo_id in (select id from catalogo.modelo where nombre_canonico like $1)', [m]);
+    await c.query('delete from catalogo.sku where modelo_id in (select id from catalogo.modelo where nombre_canonico like $1)', [m]);
+    await c.query('delete from catalogo.modelo where nombre_canonico like $1', [m]);
+    await c.query('delete from catalogo.marca where nombre like $1', [m]);
+    await c.query("delete from seguridad.operacion where clave like 'e2e:%'");
+    await c.query('commit');
+  });
+}
+
+/** Entra por el plan alterno (token_hash + boton) y espera la ruta destino. */
+export async function entrarComo(page: import('@playwright/test').Page, correo: string, destino: string): Promise<void> {
+  await page.goto(await enlaceConfirmacion(correo, destino));
+  await page.getByTestId('confirmar-acceso').click();
+  await page.waitForURL(`**${destino.split('?')[0]}**`);
+}
