@@ -75,7 +75,6 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
             vacio={{ titulo: 'Ningún cliente tiene precio', texto: 'Este modelo todavía no está en el tabulador de nadie.' }}
             columnas={[
               { id: 'c', titulo: 'Cliente', celda: (p) => <Link href={`/clientes/${p.clienteId}`}>{p.cliente}</Link> },
-              { id: 'd', titulo: 'Dueño', secundaria: true, celda: (p) => p.duenio },
               { id: 'p', titulo: 'Precio', numerica: true, celda: (p) => formatearMoneda(p.precioCent) },
               { id: 'mi', titulo: 'Margen vs Isaac', numerica: true, celda: (p) => { const m = p.margenes.find((x) => x.proveedor === 'Isaac'); return m ? <CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${p.clienteId}:${elegido.id}`} comprobacion="cuadra" /> : <SinDato />; } },
               { id: 'mk', titulo: 'Margen vs Karen', numerica: true, celda: (p) => { const m = p.margenes.find((x) => x.proveedor === 'Karen'); return m ? <><CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${p.clienteId}:${elegido.id}`} comprobacion="cuadra" /> {m.supuesto && <EstadoTexto tono="atencion">supuesto</EstadoTexto>}</> : <SinDato />; } },

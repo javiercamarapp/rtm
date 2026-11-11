@@ -227,7 +227,7 @@ export async function pdfHojaInterna(n: NotaFuente): Promise<Uint8Array> {
     h.bajar(10);
     h.linea();
     h.bajar(20);
-    h.texto(`${i.cliente} · dueño ${i.duenio} · origen ${i.origen.replaceAll('_', ' ')}`, M, 10, { ancho: UTIL });
+    h.texto(`${i.cliente} · origen ${i.origen.replaceAll('_', ' ')}`, M, 10, { ancho: UTIL });
     h.bajar(24);
 
     const x = { a: M, b: M + 190, c: M + 280, d: M + 360, e: M + 440, f: M + UTIL };

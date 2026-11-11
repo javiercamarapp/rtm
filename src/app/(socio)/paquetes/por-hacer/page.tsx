@@ -35,7 +35,7 @@ export default async function Pagina() {
           vacio={{ titulo: 'Nada por empacar', texto: 'Cuando confirmes un pedido que sale de la Bodega Omar, aparecerá aquí con su lista de surtido.', accion: <Link className="rtm-boton" href="/pedidos/nuevo">Nuevo pedido</Link> }}
           columnas={[
             { id: 'f', titulo: 'Pedido', celda: (p) => <Link className="rtm-mono" href={`/pedidos/${p.id}`}>{p.folio}</Link> },
-            { id: 'c', titulo: 'Cliente', celda: (p) => <>{p.cliente}<br /><span className="rtm-nota">Dueño: {p.duenio} · {ORIGEN[p.origen]}</span></> },
+            { id: 'c', titulo: 'Cliente', celda: (p) => <>{p.cliente}<br /><span className="rtm-nota">{ORIGEN[p.origen]}</span></> },
             { id: 'z', titulo: 'Piezas', numerica: true, celda: (p) => formatearPiezas(p.piezas) },
             { id: 'r', titulo: 'Por modelo y sabor', secundaria: true, celda: (p) => p.renglones.map((r) => `${r.modelo} ${r.sabor} ${r.piezas}`).join(' · ') },
             { id: 'e', titulo: 'Envío cobrado', numerica: true, secundaria: true, celda: (p) => (p.envio_cent > 0n ? formatearMoneda(p.envio_cent) : 'No se cobra') },

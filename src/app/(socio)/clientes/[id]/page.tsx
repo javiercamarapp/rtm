@@ -35,13 +35,11 @@ export default async function Pagina({ params }: { params: Promise<{ id: string 
       <p className="rtm-migaja"><Link href="/clientes">Clientes</Link> / {f.nombre}</p>
       <EncabezadoPagina
         eyebrow={`Ficha de cliente · ${etiquetaHoy()}`}
-        antes="Cliente de"
-        enfasis={f.duenio}
-        despues={`: ${f.nombre}`}
+        antes="Cliente"
+        enfasis={f.nombre}
         contexto={`${f.tabulador.length} modelos con precio vigente. Un precio de una nota no cambia el tabulador: solo cambia cuando un socio lo indica.`}
       />
       <div className="rtm-etiquetas" aria-label="Datos del cliente">
-        <span className="rtm-etiqueta">Dueño: {f.duenio}</span>
         {f.esBodega && <span className="rtm-etiqueta">Presta la bodega (Omar Yacaman, desactivado hasta M2)</span>}
         {f.alias.map((a) => <span key={a.alias} className="rtm-etiqueta">También: {a.alias}{a.porConfirmar ? ' (por confirmar)' : ''}{a.ambiguo ? ' (ambiguo)' : ''}</span>)}
         {f.destinos.map((d) => <span key={d.etiqueta} className="rtm-etiqueta">Destino: {d.etiqueta}</span>)}

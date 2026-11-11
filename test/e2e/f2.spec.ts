@@ -21,7 +21,7 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   const nativos: string[] = [];
   page.on('dialog', (x) => { nativos.push(x.message()); void x.dismiss(); });
   await sesion(page, '/pedidos/nuevo');
-  await page.getByTestId('elegir-cliente').selectOption({ label: `${d.cliente} (Angelo)` });
+  await page.getByTestId('elegir-cliente').selectOption({ label: d.cliente });
   await page.getByRole('button', { name: 'Elegir cliente' }).click();
   await page.waitForURL(`**/pedidos/nuevo?cliente=${d.clienteId}`);
 
@@ -179,7 +179,7 @@ test('paquetes por hacer: lista de surtido, empacar y enviar desde la lista; los
   const porHacer = page.getByRole('table', { name: 'Paquetes por hacer' });
   const fila = porHacer.getByRole('row', { name: new RegExp(d.cliente) });
   await expect(fila).toContainText('Por empacar');
-  await expect(fila).toContainText('Dueño: Angelo');
+  await expect(fila).not.toContainText('Dueño');
   await expect(page.getByRole('table', { name: 'Lista de surtido por modelo y sabor' })).toContainText(d.modeloA);
   await page.getByTestId(`empacar-${idPedido}`).click();
   await expect(porHacer.getByRole('row', { name: new RegExp(d.cliente) })).toContainText('Empacado');
