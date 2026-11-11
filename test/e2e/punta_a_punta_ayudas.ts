@@ -7,7 +7,7 @@ export const TEMAS: readonly Tema[] = ['claro', 'oscuro'];
 
 /** Fija el tema ANTES de que cargue cualquier pagina (el script bloqueante lee localStorage `rtm-tema`). */
 export async function fijarTema(page: Page, tema: Tema): Promise<void> {
-  await page.addInitScript((t) => { try { localStorage.setItem('rtm-tema', t); } catch { /* sin almacenamiento: la visita usa el tema del sistema */ } }, tema);
+  await page.addInitScript((t) => { try { if (localStorage.getItem('rtm-tema') === null) localStorage.setItem('rtm-tema', t); } catch { /* sin almacenamiento: la visita usa el tema del sistema */ } }, tema);
 }
 
 /** Sesion de un socio por el plan alterno (token_hash). Devuelve el correo usado. */

@@ -6,7 +6,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { pedidoConfirmadoE2E } from './ayudas';
 import { TEMAS, capturar, contarEventos, dialogoCabeEnPantalla, fijarTema, ipFalsa, sembrarQA, sesionSocio, vigilarErrores, type DatosQA, type Tema } from './punta_a_punta_ayudas';
 
-test.describe.configure({ mode: 'serial' });
+// Las pantallas y los botones no dependen unos de otros: un fallo no debe ocultar el resto (cada prueba abre su propia sesion).
+test.describe.configure({ mode: 'default' });
 test.use({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
 
 let d: DatosQA;
@@ -182,7 +183,8 @@ for (const tema of TEMAS) {
       await expect(page.getByTestId('ir-cascada')).toBeVisible();
       await page.goto('/socios/cascada');
       await expect(page.getByTestId('semana-anterior')).toBeVisible();
-      await expect(page.getByTestId('caja')).toBeVisible();
+      await expect(page.getByTestId('efectivo-calculado')).toBeVisible();
+      await page.getByTestId('semana-anterior').click(); // el cierre solo se propone sobre una semana ya terminada
       await abrirYCancelar(page, info, tema, page.getByTestId('proponer-cierre'), 'proponer-cierre');
       await page.goto('/omar');
       await abrirYCancelar(page, info, tema, page.getByTestId('nueva-toma'), 'nueva-toma');
@@ -213,8 +215,7 @@ for (const tema of TEMAS) {
   });
 }
 
-test('H-15 (ESPERADO-FALLA-HASTA): el Pulso del encabezado muestra cifras reales cuando hay datos, no "Sin dato" fijo', async ({ page }) => {
-  test.fail(true, 'H-15: src/ui/shell/pulso.tsx tiene los cuatro chips fijos en "Sin dato"');
+test('H-15 (corregido en la integracion): el Pulso del encabezado muestra cifras reales cuando hay datos, no "Sin dato" fijo', async ({ page }) => {
   await sesionSocio(page, '/');
   await expect(page.locator('header, [data-testid=pulso]').first()).not.toContainText('Sin dato');
 });

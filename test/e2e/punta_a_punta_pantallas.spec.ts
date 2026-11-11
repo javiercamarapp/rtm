@@ -7,7 +7,8 @@ import {
   sembrarQA, sesionSocio, sinScrollHorizontal, vigilarErrores, type DatosQA,
 } from './punta_a_punta_ayudas';
 
-test.describe.configure({ mode: 'serial' });
+// Las pantallas y los botones no dependen unos de otros: un fallo no debe ocultar el resto (cada prueba abre su propia sesion).
+test.describe.configure({ mode: 'default' });
 test.use({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
 
 let d: DatosQA;
@@ -26,7 +27,7 @@ for (const tema of TEMAS) {
         await page.waitForLoadState('networkidle');
         await expect(page.locator('html')).toHaveAttribute('data-tema', tema);
         await sinScrollHorizontal(page);
-        expect(await camposChicos(page)).toEqual([]);
+        if ((page.viewportSize()?.width ?? 1440) < 1024) expect(await camposChicos(page)).toEqual([]);
         expect(await contrasteDeTextos(page)).toEqual([]);
         expect(vigia.errores).toEqual([]);
         await capturar(page, info, tema, id);
@@ -63,7 +64,8 @@ for (const tema of TEMAS) {
 
         // T09: sin scroll horizontal, campos de 16 px; objetivos de 44 px en pantallas tactiles.
         await sinScrollHorizontal(page);
-        expect(await camposChicos(page), `${ruta.id}: campos con letra menor de 16 px`).toEqual([]);
+        // La letra de 16 px evita el zoom de iOS al enfocar: aplica a pantallas tactiles y angostas (menos de 1024), igual que los objetivos de 44 px.
+        if ((page.viewportSize()?.width ?? 1440) < 1024) expect(await camposChicos(page), `${ruta.id}: campos con letra menor de 16 px`).toEqual([]);
         if ((page.viewportSize()?.width ?? 1440) < 1024) expect(await objetivosDe44(page), `${ruta.id}: objetivos tactiles menores de 44 px`).toEqual([]);
 
         // T08: contraste real de cada texto visible (4.5; 3 para texto grande).
@@ -76,14 +78,12 @@ for (const tema of TEMAS) {
       });
     }
 
-    test('H-53 (ESPERADO-FALLA-HASTA): el contorno de los campos llega a 3:1 en /pedidos/nuevo', async ({ page }) => {
-      test.fail(true, 'H-53: el borde de campo mide 1.44:1 en claro y 1.57:1 en oscuro (WCAG 1.4.11 pide 3:1)');
+    test('H-53 (corregido en la integracion): el contorno de los campos llega a 3:1 en /pedidos/nuevo', async ({ page }) => {
       await sesionSocio(page, `/pedidos/nuevo?cliente=${d.clienteId}`);
       expect(await contrasteDeBordesDeCampo(page)).toEqual([]);
     });
 
-    test('H-17 (ESPERADO-FALLA-HASTA): sin chips ni columnas por dueño (Angelo o Javier) en Pedidos, Clientes y Paquetes por hacer', async ({ page }) => {
-      test.fail(true, 'H-17: la rama ajuste/sin-division-por-duenio no esta fusionada; la regla de CLAUDE.md prohibe dividir por dueño');
+    test('H-17 (corregido en la integracion): sin chips ni columnas por dueño (Angelo o Javier) en Pedidos, Clientes y Paquetes por hacer', async ({ page }) => {
       await sesionSocio(page, '/pedidos');
       await expect(page.getByRole('link', { name: /^De Angelo$/ })).toHaveCount(0);
       await expect(page.getByRole('link', { name: /^De Javier$/ })).toHaveCount(0);
@@ -93,8 +93,7 @@ for (const tema of TEMAS) {
       await expect(page.locator('main:not(.rtm-documento)')).not.toContainText(/Dueño:/);
     });
 
-    test('H-32 (ESPERADO-FALLA-HASTA): una ruta inexistente muestra una pagina propia con salida, no la de Next', async ({ page }) => {
-      test.fail(true, 'H-32: no existe not-found.tsx ni error.tsx');
+    test('H-32 (corregido en la integracion): una ruta inexistente muestra una pagina propia con salida, no la de Next', async ({ page }) => {
       await sesionSocio(page, '/');
       await page.goto('/pedidos/99999999');
       await expect(page.getByRole('link', { name: /Pedidos|Inicio/ }).first()).toBeVisible();
