@@ -49,7 +49,7 @@ Capa infra (`src/infra/reportes/`): `render_pdf_chromium.ts` (Chromium de Playwr
 - `npm test`: 28 archivos, 384 pruebas, todas pasan; 10 archivos y 234 pruebas son del modulo (`test/unit/reportes`).
 - Cobertura de lineas del modulo: 94.88 % (2781 de 2931 lineas, 22 archivos) con `node scripts/ci/cobertura-reportes.mjs` (minimo 90 %). Por archivo el menor es `render_pdf_chromium.ts` con 69.8 %, porque la prueba de PDF real con Chromium se omite si no hay Chromium instalado; `dominio/reportes/entrega.ts` queda en 87.3 %. El agregado del modulo cumple el minimo.
 - Reportes dorados semanal y mensual en `test/fixtures/reportes`, guardia de numeros con mutacion, casos de datos escasos y fallo de bloqueantes.
-- Pendiente: las pruebas con propiedades (fast-check) del puente y de las cifras se cubren con casos deterministas y mutacion, no con generacion aleatoria; no hay componentes de interfaz en este carril, por eso no aplica axe.
+- Pruebas de propiedades con fast-check en formato, estado, guardia, puente, proyecciones y reportes dorados. No hay componentes de interfaz en este carril, por eso no aplica axe.
 
 ## Choques con la spec y adendas
 
