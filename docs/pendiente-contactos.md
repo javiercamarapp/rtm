@@ -8,7 +8,7 @@ Regla del dueño (11-nov): todos los números de las bases (Toocloudy, Vapeunion
 
 - Dominio puro: `src/dominio/contactos/` (`telefono.ts`, `csv.ts`, `leer.ts`, `consolidar.ts`, `vista.ts`, `tipos.ts`).
 - Script de importación (solo lectura de las fuentes): `scripts/contactos/importar.mts` y `scripts/contactos/xlsx.mts`.
-- Migración nueva: `supabase/migrations/20261111000100_contactos_menudeo.sql` (esquema `contactos`).
+- Migración nueva: `supabase/migrations/20261111006000_contactos_menudeo.sql` (esquema `contactos`).
 - Prueba pgTAP escrita, sin ejecutar: `supabase/tests/database/015_contactos.test.sql`.
 - Pantalla: `src/app/(socio)/contactos/` y entrada «Contactos» en el sidebar.
 - Pruebas vitest: `test/unit/contactos*.test.ts` (datos sintéticos).
