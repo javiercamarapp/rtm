@@ -12,7 +12,7 @@ import { repartoMitades } from '@/dominio/costos/reparto';
 import { resumenDelMes } from '@/dominio/costos/resumen';
 import { CUENTAS, lineasDeEvento, reversaDeLineas, verificarCuadre } from '@/dominio/costos/eventos';
 import { deudaEntreSocios, posicionTrasGastos, saldoPorPagar, validarReembolso } from '@/dominio/costos/cuenta';
-import type { CargoCosto } from '@/dominio/costos/tipos';
+import { NOMBRE_CUENTA_POR_PAGAR, NOMBRE_GASTO, type CargoCosto } from '@/dominio/costos/tipos';
 
 const TC = { tcMicro: 18_500_000n, fecha: '2026-11-10', fuente: 'banxico_fix' as const };
 const SHA = 'a'.repeat(64);
@@ -417,5 +417,25 @@ describe('reversa de un cargo', () => {
     expect(resumenDelMes('2026-11', [orig, rev.cargo]).total.redondeadoCent).toBe(0n);
     expect(() => calcularReversa(rev.cargo, 'otra', '2026-11-12', '')).toThrowError(ErrorCostos);
     expect(Object.isFrozen(rev.cargo)).toBe(true);
+  });
+});
+
+describe('nombres contables y casos limite', () => {
+  it('el gasto y la cuenta por pagar llevan el nombre unico de la decision 20', () => {
+    expect(NOMBRE_GASTO).toBe('Costos de mantenimiento del sistema');
+    expect(NOMBRE_CUENTA_POR_PAGAR).toBe('Reembolso de costos del sistema');
+  });
+  it('regla del mayor: montos negativos se rechazan', () => {
+    expect(() => reglaDelMayor({ facturaOrigMicro: -1n, cuotaDocumentoOrigMicro: 0n, participacionAplicadaPpm: 0n, tcMicro: 1n })).toThrowError(ErrorCostos);
+  });
+  it('un cargo con la regla del mayor donde gana el consumo cobra la participacion aplicada', () => {
+    const c = cargo(cmd({ servicioSlug: 'supabase', claveIdem: 'k-mayor-consumo', baseOrigMicro: usd(200), atribucion: { tipo: 'mayor', cuotaDocumentoOrigMicro: usd(25), consumoRtm: 40n, consumoTotal: 100n } }));
+    expect(c.pctAplicadoPpm).toBe(400_000n);
+    expect(c.baseOrigMicro).toBe(usd(200));
+    expect(c.montoCent).toBe(c.comoDeberiaCent);
+    expect(c.comoSeriaCent).toBeLessThan(c.comoDeberiaCent as bigint);
+  });
+  it('conciliar con libro en cero y diferencia ya fuera de tolerancia usa 100 %', () => {
+    expect(conciliar(0n, 5n).diferenciaPpm).toBe(1_000_000n);
   });
 });
