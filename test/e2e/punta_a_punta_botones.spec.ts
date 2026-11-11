@@ -57,7 +57,6 @@ for (const tema of TEMAS) {
         if (esMovil(page)) await expect(page.getByRole('button', { name: /Abrir menú/i })).toHaveAttribute('aria-expanded', 'false');
       }
       // Boton de tema: alterna y persiste.
-      if (esMovil(page)) await page.getByRole('button', { name: /Abrir menú/i }).click();
       const otro: Tema = tema === 'claro' ? 'oscuro' : 'claro';
       await page.getByTestId('boton-tema').click();
       await expect(page.locator('html')).toHaveAttribute('data-tema', otro);
@@ -84,6 +83,7 @@ for (const tema of TEMAS) {
         await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
       await page.getByRole('link', { name: /Con aviso/ }).first().click();
+      await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page).toHaveURL(/aviso=1/);
       await page.goto(`/pedidos/nuevo?cliente=${d.clienteId}`);
       for (const id of ['modelo', 'sabor', 'piezas', 'precio', 'motivo', 'agregar-renglon', 'envio', 'crear-pedido']) await expect(page.getByTestId(id), `campo ${id}`).toBeVisible();
@@ -97,9 +97,11 @@ for (const tema of TEMAS) {
       }
       for (const vista of ['Nota', 'Hoja interna', 'Versiones']) {
         await page.getByRole('link', { name: vista, exact: true }).click();
+        await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
         await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
       await page.getByRole('link', { name: 'Nota', exact: true }).click();
+      await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page.getByTestId('descargar-pdf')).toBeVisible();
       await expect(page.getByTestId('texto-whatsapp')).toBeVisible();
       await expect(page.getByRole('button', { name: /Copiar/ }).first()).toBeVisible();
@@ -123,8 +125,10 @@ for (const tema of TEMAS) {
       await abrirYCancelar(page, info, tema, page.getByTestId('nuevo-pago'), 'nuevo-pago');
       for (const chip of ['Todos', 'Solo vencido']) {
         await page.getByRole('link', { name: chip, exact: true }).first().click();
+        await page.waitForLoadState('networkidle'); // la navegacion del chip debe terminar antes del siguiente goto
         await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
+      await expect(page).toHaveURL(/vencido=1/);
       await page.goto('/cuentas-por-cobrar');
       await expect(page.getByRole('button', { name: 'Filtrar' })).toBeVisible();
       await abrirYCancelar(page, info, tema, page.getByTestId(`plazo-${d.pedidoVencidoId}`), 'plazo');
@@ -142,8 +146,10 @@ for (const tema of TEMAS) {
       await page.goto('/catalogo');
       for (const chip of ['Todos', 'Disponibles', 'Sin disponibilidad']) {
         await page.getByRole('link', { name: chip, exact: true }).first().click();
+        await page.waitForLoadState('networkidle'); // la navegacion del chip debe terminar antes del siguiente goto
         await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
+      await expect(page).toHaveURL(/estado=sin_disponibilidad/);
       await page.goto(`/catalogo?modelo=${d.modeloId}`);
       await expect(page.locator('main:not(.rtm-documento)')).toContainText(d.cliente);
       await page.goto('/catalogo');
@@ -151,6 +157,7 @@ for (const tema of TEMAS) {
       await abrirYCancelar(page, info, tema, fila.getByRole('button', { name: /disponibilidad|disponible/i }).first(), 'disponibilidad');
       await page.goto('/clientes');
       await page.getByRole('link', { name: d.cliente }).first().click();
+      await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page.locator('main:not(.rtm-documento)')).toContainText(d.cliente);
       await page.goto('/inventario');
       await expect(page.getByRole('table').first()).toBeVisible();
@@ -160,8 +167,10 @@ for (const tema of TEMAS) {
     test('Proveedores: selector Isaac/Karen, nueva OC, pago de socio, pago de la sociedad, ajuste, hoja y liquidacion (B-100 a B-117)', async ({ page }, info) => {
       await sesionSocio(page, '/proveedores?p=Isaac');
       await page.getByRole('link', { name: 'Karen', exact: true }).first().click();
+      await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page).toHaveURL(/p=Karen/);
       await page.getByRole('link', { name: 'Isaac', exact: true }).first().click();
+      await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page.getByTestId('nueva-oc')).toBeVisible();
       await abrirYCancelar(page, info, tema, page.getByTestId('pago-socio'), 'pago-socio');
       await abrirYCancelar(page, info, tema, page.getByTestId('pago-sociedad'), 'pago-sociedad');
@@ -196,8 +205,10 @@ for (const tema of TEMAS) {
     test('Avisos: chips Pendientes y Todos y marcar leido (B-89 a B-91)', async ({ page }, info) => {
       await sesionSocio(page, '/avisos');
       await page.getByRole('link', { name: 'Todos', exact: true }).first().click();
+      await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page.getByRole('table', { name: 'Avisos' })).toBeVisible();
       await page.getByRole('link', { name: 'Pendientes', exact: true }).first().click();
+      await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       await capturar(page, info, tema, 'avisos');
     });

@@ -52,7 +52,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso }: Props) {
     <div className="rtm-app">
       <aside className="rtm-lateral" data-abierto={abierto} aria-label="Navegación principal">
         <div className="rtm-lateral-marca">
-          <Link href="/" aria-label={`${MARCA.nombre}, inicio`}>
+          <Link href="/" aria-label={`${MARCA.nombre}, inicio`} onClick={() => setAbierto(false)}>
             <Logo alto={22} />
           </Link>
         </div>
@@ -61,7 +61,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso }: Props) {
           <ul className="rtm-nav">
             {SECCIONES.map((s, i) => (
               <li key={s.href}>
-                <Link href={s.href} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined}>
+                <Link href={s.href} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined} onClick={() => setAbierto(false)}>
                   {s.icono}
                   <span>{s.etiqueta}</span>
                 </Link>

@@ -15,6 +15,8 @@ export async function sesionSocio(page: Page, ruta: string, socio: 'Angelo' | 'J
   const correo = correoUnico('pap');
   await altaUsuario({ correo, socio });
   await entrarComo(page, correo, ruta);
+  // WebKit registra 'Load failed' en consola cuando la siguiente navegacion cancela peticiones en vuelo de la pagina de aterrizaje: se espera a que terminen.
+  await page.waitForLoadState('networkidle');
   return correo;
 }
 
@@ -223,8 +225,12 @@ export async function huecosMuertos(page: Page): Promise<string[]> {
 /** Errores de consola y de pagina durante la navegacion (React #418 de hidratacion incluido). */
 export function vigilarErrores(page: Page): { errores: string[] } {
   const estado = { errores: [] as string[] };
-  page.on('pageerror', (e) => estado.errores.push(`pageerror: ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error') estado.errores.push(`console: ${m.text()}`); });
+  // WebKit (iPhone) a veces cancela las precargas `?_rsc=` de Next cuando la pagina navega; Next se recupera solo ("Falling back to browser navigation") y la
+  // persona no ve nada. Solo en WebKit se ignoran esas dos senales exactas; cualquier otro error de consola o de pagina sigue contando.
+  const webkit = page.context().browser()?.browserType().name() === 'webkit';
+  const ruido = (t: string) => webkit && (/Failed to fetch RSC payload .* Falling back to browser navigation/.test(t) || /\?_rsc=[\w-]+ due to access control checks/.test(t) || /^TypeError: Load failed$/.test(t));
+  page.on('pageerror', (e) => { if (!ruido(e.message)) estado.errores.push(`pageerror: ${e.message}`); });
+  page.on('console', (m) => { if (m.type() === 'error' && !ruido(m.text())) estado.errores.push(`console: ${m.text()}`); });
   return estado;
 }
 
