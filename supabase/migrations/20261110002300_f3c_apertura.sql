@@ -729,6 +729,26 @@ begin
   return v_res;
 end $$;
 
+-- Descartar una sesion que aun no se publico (borrador o en firma): queda registrada como revertida con su motivo; las partidas se conservan.
+create function apertura.descartar(p_clave text, p_sesion bigint, p_motivo text) returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare v_prev jsonb; s apertura.sesion; v_res jsonb;
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  v_prev := seguridad.iniciar_operacion(p_clave, jsonb_build_object('fn', 'apertura_descartar', 's', p_sesion, 'm', p_motivo));
+  if v_prev is not null then return v_prev; end if;
+  if nullif(btrim(p_motivo), '') is null then raise exception 'descartar exige motivo' using errcode = '23502'; end if;
+  select * into s from apertura.sesion where id = p_sesion for update;
+  if not found then raise exception 'sesión de apertura desconocida' using errcode = '22023'; end if;
+  if s.estado not in ('borrador', 'en_firma') then raise exception 'solo se descarta una sesión sin publicar; una apertura firmada se revierte' using errcode = 'P0441'; end if;
+  update apertura.firma set retirada_at = clock_timestamp() where sesion_id = p_sesion and retirada_at is null;
+  update apertura.sesion set estado = 'reversada', motivo_reversa = btrim(p_motivo), reversada_at = clock_timestamp() where id = p_sesion;
+  v_res := jsonb_build_object('sesion_id', p_sesion, 'descartada', true);
+  perform seguridad.terminar_operacion(p_clave, v_res);
+  return v_res;
+end $$;
+
 -- ---------------------------------------------------------------------------
 -- Lectura para la web
 -- ---------------------------------------------------------------------------
@@ -792,6 +812,8 @@ create function api.apertura_firmar(p_clave_idem text, p_sesion bigint) returns 
 as $$ begin perform seguridad.exigir_rol(array['socio']); return apertura.firmar(p_clave_idem, p_sesion); end $$;
 create function api.apertura_retirar_firma(p_clave_idem text, p_sesion bigint) returns jsonb language plpgsql security definer set search_path = ''
 as $$ begin perform seguridad.exigir_rol(array['socio']); return apertura.retirar_firma(p_clave_idem, p_sesion); end $$;
+create function api.apertura_descartar(p_clave_idem text, p_sesion bigint, p_motivo text) returns jsonb language plpgsql security definer set search_path = ''
+as $$ begin perform seguridad.exigir_rol(array['socio']); return apertura.descartar(p_clave_idem, p_sesion, p_motivo); end $$;
 create function api.apertura_reversar(p_clave_idem text, p_sesion bigint, p_motivo text) returns jsonb language plpgsql security definer set search_path = ''
 as $$ begin perform seguridad.exigir_rol(array['socio']); return apertura.reversar(p_clave_idem, p_sesion, p_motivo); end $$;
 
@@ -799,5 +821,5 @@ revoke execute on all functions in schema apertura from public, anon, authentica
 revoke execute on all functions in schema api from public, anon;
 grant execute on function api.apertura_estado(bigint), api.apertura_catalogos(), api.apertura_crear(text, date, text), api.apertura_fijar_corte(text, bigint, date),
   api.apertura_resolucion(text, bigint, text, text), api.apertura_agregar(text, bigint, text, jsonb), api.apertura_quitar(text, bigint), api.apertura_vista_previa(bigint),
-  api.apertura_ensayo(bigint), api.apertura_firmar(text, bigint), api.apertura_retirar_firma(text, bigint), api.apertura_reversar(text, bigint, text) to authenticated;
+  api.apertura_ensayo(bigint), api.apertura_firmar(text, bigint), api.apertura_retirar_firma(text, bigint), api.apertura_reversar(text, bigint, text), api.apertura_descartar(text, bigint, text) to authenticated;
 revoke execute on all functions in schema contabilidad, operacion, catalogo from public, anon, authenticated;

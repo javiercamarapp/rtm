@@ -8,7 +8,7 @@ import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } fr
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { EncabezadoPagina } from '@/ui/componentes/pagina';
-import { BotonEnsayo, FijarCorte, Firmar, QuitarPartida, Resolucion, Reversar } from '../../acciones-sesion';
+import { BotonEnsayo, Descartar, FijarCorte, Firmar, QuitarPartida, Resolucion, Reversar } from '../../acciones-sesion';
 import { FormularioPartida } from '../../formulario-partida';
 
 export const metadata: Metadata = { title: 'Apertura · paso' };
@@ -182,6 +182,7 @@ export default async function Pagina({ params }: { params: Promise<{ n: string }
           {s.estado !== 'firmada' && v?.listo_para_firma && <Firmar sesion={s.id} yo={e.yo} yaFirmo={yaFirmo} />}
           {s.estado !== 'firmada' && v && !v.listo_para_firma && <span className="rtm-nota" data-testid="no-lista">No se puede firmar todavía: {v.alertas.join(' ')}</span>}
           {s.estado === 'firmada' && <Reversar sesion={s.id} />}
+          {s.estado !== 'firmada' && <Descartar sesion={s.id} />}
         </p>
       </section>
       {navegacion}

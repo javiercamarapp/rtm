@@ -145,6 +145,16 @@ select is((select count(*)::int from contabilidad.reproducir_saldos() where not 
 select is(contabilidad.verificar_cadena(), null::bigint, 'cadena sana tras la reversa');
 select is(contabilidad.apertura_saldo('3110'), 0::bigint, 'una apertura reversada no cuenta como auxiliar');
 
+-- Descartar una sesion sin publicar -----------------------------------------------------------------------------------------------------------------
+create temp table _sd as select (api.apertura_crear('f3c:d1', negocio.hoy()) ->> 'sesion_id')::bigint as id;
+select api.apertura_agregar('f3c:d2', (select id from _sd), 'caja', '{"socio": "Angelo", "monto_cent": 5000}');
+select throws_ok($$ select api.apertura_descartar('f3c:d3', (select id from _sd), ' ') $$, '23502', 'descartar exige motivo', 'descartar exige motivo');
+select is((api.apertura_descartar('f3c:d4', (select id from _sd), 'sesion de prueba') ->> 'descartada')::boolean, true, 'se descarta un borrador');
+select is((select estado from apertura.sesion where id = (select id from _sd)), 'reversada', 'queda registrada como revertida');
+select is((select count(*)::int from apertura.partida where sesion_id = (select id from _sd)), 1, 'y conserva sus partidas');
+select throws_ok($$ select api.apertura_descartar('f3c:d5', (select id from _sd), 'otra vez') $$, 'P0441', null, 'no se descarta dos veces');
+select is((select count(*)::int from contabilidad.asiento a where a.es_apertura and a.evento_id in (select evento_id from apertura.sesion where id = (select id from _sd))), 0, 'descartar no deja asientos');
+
 -- Segunda sesion: la diferencia pasa al capital 50/50 con justificacion --------------------------------------------------------------------------
 create temp table _s2 as select (api.apertura_crear('f3c:t1', negocio.hoy()) ->> 'sesion_id')::bigint as id;
 select api.apertura_agregar('f3c:t2', (select id from _s2), 'caja', '{"socio": "Angelo", "monto_cent": 100001}');

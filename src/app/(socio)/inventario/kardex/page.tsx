@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: 'Kárdex' };
 
 const TIPO: Record<string, string> = {
   entrada_compra: 'Entrada de compra', salida_pedido: 'Salida de pedido', salida_toma_omar: 'Toma de Omar', devolucion: 'Devolución', merma: 'Merma',
-  ajuste_conteo: 'Ajuste de conteo', traspaso_puente: 'Traspaso del puente', reversa: 'Reversa',
+  ajuste_conteo: 'Ajuste de conteo', traspaso_puente: 'Traspaso del puente', reversa: 'Reversa', apertura: 'Apertura',
 };
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 

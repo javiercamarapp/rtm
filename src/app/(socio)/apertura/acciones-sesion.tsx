@@ -68,6 +68,14 @@ export function Reversar({ sesion }: { sesion: number }) {
   );
 }
 
+export function Descartar({ sesion }: { sesion: number }) {
+  return (
+    <FormularioAccion boton="Descartar la sesión" titulo="Descartar la sesión de apertura" confirmar="Descartar" accion="apertura_descartar" fijos={{ p_sesion: sesion }} testid="apertura-descartar"
+      campos={[{ nombre: 'p_motivo', etiqueta: 'Motivo', tipo: 'texto', requerido: true }]}
+      nota="Solo para una sesión que aún no se publicó. No deja asientos ni movimientos; las partidas quedan como registro." />
+  );
+}
+
 export function QuitarPartida({ id }: { id: number }) {
   const { correr, ocupado, error } = useAccion();
   return (
