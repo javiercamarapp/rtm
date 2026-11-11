@@ -14,29 +14,36 @@ revoke all on schema contactos from public, anon, authenticated;
 create table contactos.contacto (
   id bigint generated always as identity primary key,
   tipo text not null default 'menudeo' check (tipo = 'menudeo'),
-  telefono_principal text not null unique check (telefono_principal ~ '^\+[1-9][0-9]{7,14}$'),
+  telefono_principal text not null unique check (telefono_principal ~ '^\+[1-9][0-9]{7,14}$' or telefono_principal ~ '^sl:[0-9]{7,8}$'),
   nombre text not null default '',
+  -- Comparte un correo con otro contacto de nombre distinto: no se unieron; queda marcado para revision.
+  correo_compartido boolean not null default false,
   creado_at timestamptz not null default now(),
   actualizado_at timestamptz not null default now()
 );
 
--- Sin duplicados: un telefono (E.164) o un correo pertenece a un solo contacto.
+-- Sin duplicados: un telefono pertenece a un solo contacto. Un numero de 7 u 8 digitos sin lada se conserva como 'sl:<digitos>' (no es E.164,
+-- no se inventa la lada) y se deduplica por sus digitos.
 create table contactos.telefono (
-  e164 text primary key check (e164 ~ '^\+[1-9][0-9]{7,14}$'),
-  contacto_id bigint not null references contactos.contacto (id) on delete cascade
+  e164 text primary key check (e164 ~ '^\+[1-9][0-9]{7,14}$' or e164 ~ '^sl:[0-9]{7,8}$'),
+  contacto_id bigint not null references contactos.contacto (id) on delete cascade,
+  sin_lada boolean generated always as (e164 like 'sl:%') stored
 );
 create index telefono_contacto_idx on contactos.telefono (contacto_id);
 
+-- Un correo se une a un solo contacto SOLO si el nombre normalizado coincide; si no, dos contactos pueden tener el mismo correo (marcados correo_compartido).
 create table contactos.correo (
-  correo text primary key check (correo = lower(correo) and correo ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]{2,}$'),
-  contacto_id bigint not null references contactos.contacto (id) on delete cascade
+  correo text not null check (correo = lower(correo) and correo ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]{2,}$'),
+  contacto_id bigint not null references contactos.contacto (id) on delete cascade,
+  primary key (contacto_id, correo)
 );
+create index correo_correo_idx on contactos.correo (correo);
 create index correo_contacto_idx on contactos.correo (contacto_id);
 
 -- Todos los origenes de cada contacto se conservan. Cadena vacia = no aplica (para poder usarlos en la llave primaria).
 create table contactos.origen (
   contacto_id bigint not null references contactos.contacto (id) on delete cascade,
-  origen text not null check (origen ~ '^(meta|toocloudy|vapeunion|google-lote:[a-z0-9-]+)$'),
+  origen text not null check (origen ~ '^(meta|toocloudy|toocloudy-whatsapp|vapeunion|google-lote:[a-z0-9-]+|google-vcf:[a-z0-9-]+)$'),
   anuncio text not null default '',
   formulario text not null default '',
   campana text not null default '',
@@ -144,8 +151,11 @@ begin
     v_cors := array(select distinct lower(jsonb_array_elements_text(coalesce(v -> 'correos', '[]'::jsonb))) order by 1);
     if coalesce(array_length(v_tels, 1), 0) = 0 then raise exception 'contacto sin telefono en el lote %', p_lote_id using errcode = '22023'; end if;
 
+    -- Union por telefono siempre; por correo solo con el mismo nombre normalizado (sin acentos, mayusculas ni espacios extra).
     v_ids := array(select contacto_id from contactos.telefono where e164 = any (v_tels)
-                   union select contacto_id from contactos.correo where correo = any (v_cors) order by 1);
+                   union select r.contacto_id from contactos.correo r join contactos.contacto k on k.id = r.contacto_id
+                          where r.correo = any (v_cors) and catalogo.normalizar(v ->> 'nombre') <> '' and catalogo.normalizar(k.nombre) = catalogo.normalizar(v ->> 'nombre')
+                   order by 1);
     if coalesce(array_length(v_ids, 1), 0) = 0 then
       insert into contactos.contacto (telefono_principal, nombre) values (v_tels[1], btrim(coalesce(v ->> 'nombre', ''))) returning id into v_id;
       v_nuevos := v_nuevos + 1;
@@ -165,7 +175,7 @@ begin
     end if;
 
     insert into contactos.telefono (e164, contacto_id) select t, v_id from unnest(v_tels) t on conflict (e164) do nothing;
-    insert into contactos.correo (correo, contacto_id) select c, v_id from unnest(v_cors) c where c <> '' on conflict (correo) do nothing;
+    insert into contactos.correo (correo, contacto_id) select c, v_id from unnest(v_cors) c where c <> '' on conflict do nothing;
     insert into contactos.origen (contacto_id, origen, anuncio, formulario, campana)
       select v_id, o ->> 'origen', coalesce(o ->> 'anuncio', ''), coalesce(o ->> 'formulario', ''), coalesce(o ->> 'campana', '')
       from jsonb_array_elements(v -> 'origenes') o on conflict do nothing;
@@ -175,10 +185,15 @@ begin
     -- Nombre: el mas largo; telefono principal: el menor de sus telefonos (determinista).
     update contactos.contacto c set
       nombre = case when length(btrim(coalesce(v ->> 'nombre', ''))) > length(c.nombre) then btrim(v ->> 'nombre') else c.nombre end,
-      telefono_principal = (select min(e164) from contactos.telefono where contacto_id = v_id),
+      telefono_principal = (select e164 from contactos.telefono where contacto_id = v_id order by sin_lada, e164 limit 1),
       actualizado_at = now()
     where c.id = v_id
-      and (length(btrim(coalesce(v ->> 'nombre', ''))) > length(c.nombre) or c.telefono_principal is distinct from (select min(e164) from contactos.telefono where contacto_id = v_id));
+      and (length(btrim(coalesce(v ->> 'nombre', ''))) > length(c.nombre) or c.telefono_principal is distinct from (select e164 from contactos.telefono where contacto_id = v_id order by sin_lada, e164 limit 1));
+
+    -- Correo compartido con otro contacto (nombre distinto): ambos quedan marcados para revision.
+    update contactos.contacto k set correo_compartido = true
+    where k.id in (select r2.contacto_id from contactos.correo r1 join contactos.correo r2 on r2.correo = r1.correo and r2.contacto_id <> r1.contacto_id where r1.contacto_id = v_id)
+       or (k.id = v_id and exists (select 1 from contactos.correo r1 join contactos.correo r2 on r2.correo = r1.correo and r2.contacto_id <> r1.contacto_id where r1.contacto_id = v_id));
   end loop;
 
   insert into contactos.carga (lote_id, huella, contactos, nuevos) values (p_lote_id, v_huella, v_total, v_nuevos);
@@ -220,6 +235,8 @@ begin
              'nombre', c.nombre,
              'telefono_mascara', '+** **** **' || right(c.telefono_principal, 2),
              'telefonos', (select count(*) from contactos.telefono t where t.contacto_id = c.id),
+             'sin_lada', exists (select 1 from contactos.telefono t where t.contacto_id = c.id and t.sin_lada),
+             'correo_compartido', c.correo_compartido,
              'correo', (select min(r.correo) from contactos.correo r where r.contacto_id = c.id),
              'origenes', coalesce((select jsonb_agg(distinct o.origen) from contactos.origen o where o.contacto_id = c.id), '[]'::jsonb),
              'anuncios', coalesce((select jsonb_agg(distinct o.anuncio) from contactos.origen o where o.contacto_id = c.id and o.anuncio <> ''), '[]'::jsonb),
@@ -240,6 +257,8 @@ begin
   return jsonb_build_object(
     'total', (select count(*) from contactos.contacto),
     'con_correo', (select count(distinct contacto_id) from contactos.correo),
+    'correo_compartido', (select count(*) from contactos.contacto where correo_compartido),
+    'sin_lada', (select count(distinct contacto_id) from contactos.telefono where sin_lada),
     'por_origen', coalesce((select jsonb_agg(jsonb_build_object('origen', origen, 'contactos', n) order by n desc, origen)
                             from (select origen, count(distinct contacto_id) n from contactos.origen group by origen) x), '[]'::jsonb),
     'por_anuncio', coalesce((select jsonb_agg(jsonb_build_object('anuncio', anuncio, 'formulario', formulario, 'contactos', n) order by n desc, anuncio)

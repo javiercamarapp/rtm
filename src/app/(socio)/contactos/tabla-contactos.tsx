@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { etiquetaOrigen, type ContactoFila, type FiltroContactos } from '@/dominio/contactos/vista';
+import { etiquetaOrigen, telefonoLegible, type ContactoFila, type FiltroContactos } from '@/dominio/contactos/vista';
 import { formatearEntero } from '@/dominio/formato';
+import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { DataTable } from '@/ui/componentes/data-table';
 import { exportarContactos, revelarTelefono } from './acciones';
 
@@ -95,13 +96,13 @@ export function TablaContactos({ filas, total, filtro }: Props) {
               const r = reveladas.get(f.id);
               return (
                 <>
-                  {r ? r.join(' · ') : f.telefonoMascara}{' '}
+                  {r ? r.map(telefonoLegible).join(' · ') : f.telefonoMascara}{f.sinLada && !r ? ' · sin lada' : ''}{' '}
                   <button type="button" className="rtm-boton rtm-boton-chico" disabled={ocupado} onClick={() => revelar(f.id)}>{r ? 'Ocultar' : 'Revelar'}</button>
                 </>
               );
             },
           },
-          { id: 'c', titulo: 'Correo', secundaria: true, celda: (f) => f.correo ?? '—' },
+          { id: 'c', titulo: 'Correo', secundaria: true, celda: (f) => <>{f.correo ?? '—'}{f.correoCompartido && <> · <EstadoTexto tono="atencion">correo compartido</EstadoTexto></>}</> },
           { id: 'o', titulo: 'Origen', secundaria: true, celda: (f) => f.origenes.map(etiquetaOrigen).join(', ') },
           { id: 'a', titulo: 'Anuncio', secundaria: true, celda: (f) => (f.anuncios.length ? f.anuncios.join(', ') : '—') },
         ]}

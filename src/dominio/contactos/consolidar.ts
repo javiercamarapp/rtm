@@ -1,37 +1,67 @@
-// Deduplicacion por telefono (y por correo si existe) conservando todos los origenes, etiquetas y lotes. Determinista e idempotente.
+// Deduplicacion conservando todos los origenes, etiquetas y lotes. Determinista e idempotente.
+// Reglas: un telefono compartido une siempre (cierre transitivo). Un correo compartido une SOLO si ademas el nombre normalizado
+// (sin acentos, mayusculas ni espacios extra) es el mismo; con nombre distinto quedan separados y marcados `correo_compartido`.
 import type { ContactoConsolidado, Descartes, InformeContactos, OrigenContacto, RegistroLeido, ResultadoLectura } from './tipos';
 import { descartesVacios } from './leer';
+import { esSinLada } from './telefono';
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const unicos = (xs: string[]) => [...new Set(xs)].sort(cmp);
 const claveOrigen = (o: OrigenContacto) => [o.origen, o.anuncio ?? '', o.formulario ?? '', o.campana ?? ''].join('\u0001');
 
-/** Une registros que comparten telefono o correo (cierre transitivo). El orden de entrada no cambia el resultado. */
-export function consolidar(registros: RegistroLeido[]): ContactoConsolidado[] {
+/** Nombre para comparar: sin acentos, en minusculas, solo letras y numeros separados por un espacio. */
+export function nombreNormalizado(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function orden(registros: RegistroLeido[]): RegistroLeido[] {
   // Orden canonico de entrada: el resultado no depende del orden de los archivos.
-  const lista = [...registros].sort((a, b) => cmp(a.telefonos[0] ?? '', b.telefonos[0] ?? '') || cmp(a.archivo, b.archivo) || cmp(a.nombre, b.nombre) || cmp(a.correos.join(), b.correos.join()));
+  return [...registros].sort((a, b) => cmp(a.telefonos[0] ?? '', b.telefonos[0] ?? '') || cmp(a.archivo, b.archivo) || cmp(a.nombre, b.nombre) || cmp(a.correos.join(), b.correos.join()));
+}
+
+/** Raiz de grupo por registro. `porCorreo` activa la union por correo (solo con el mismo nombre normalizado). */
+function agrupar(lista: RegistroLeido[], porCorreo: boolean): number[] {
   const padre = lista.map((_, i) => i);
   const raiz = (i: number): number => { while (padre[i] !== i) { padre[i] = padre[padre[i]!]!; i = padre[i]!; } return i; };
   const unir = (a: number, b: number) => { const ra = raiz(a); const rb = raiz(b); if (ra !== rb) padre[Math.max(ra, rb)] = Math.min(ra, rb); };
   const dueno = new Map<string, number>();
+  const ver = (k: string, i: number) => { const previo = dueno.get(k); if (previo === undefined) dueno.set(k, i); else unir(previo, i); };
   lista.forEach((r, i) => {
-    for (const k of [...r.telefonos.map((t) => `t:${t}`), ...r.correos.map((c) => `c:${c}`)]) {
-      const previo = dueno.get(k);
-      if (previo === undefined) dueno.set(k, i);
-      else unir(previo, i);
-    }
+    for (const t of r.telefonos) ver(`t:${t}`, i);
+    const nombre = nombreNormalizado(r.nombre);
+    if (porCorreo && nombre !== '') for (const c of r.correos) ver(`c:${c}\u0001${nombre}`, i);
   });
+  return lista.map((_, i) => raiz(i));
+}
+
+export interface ResultadoConsolidacion {
+  contactos: ContactoConsolidado[];
+  /** Uniones que solo ocurrieron por correo + mismo nombre (no habrian ocurrido por telefono). */
+  unidos_por_correo_y_nombre: number;
+}
+
+export function consolidarConEstadisticas(registros: RegistroLeido[]): ResultadoConsolidacion {
+  const lista = orden(registros);
+  const raices = agrupar(lista, true);
+  const soloTelefono = new Set(agrupar(lista, false)).size;
   const grupos = new Map<number, RegistroLeido[]>();
-  lista.forEach((r, i) => { const g = raiz(i); (grupos.get(g) ?? grupos.set(g, []).get(g)!).push(r); });
+  lista.forEach((r, i) => { const g = raices[i]!; (grupos.get(g) ?? grupos.set(g, []).get(g)!).push(r); });
+
+  // Correos que aparecen en mas de un grupo final: nombre distinto, no se unieron -> revision.
+  const gruposPorCorreo = new Map<string, Set<number>>();
+  lista.forEach((r, i) => { for (const c of r.correos) (gruposPorCorreo.get(c) ?? gruposPorCorreo.set(c, new Set()).get(c)!).add(raices[i]!); });
+  const compartidos = new Set<number>();
+  for (const gs of gruposPorCorreo.values()) if (gs.size > 1) for (const g of gs) compartidos.add(g);
+
   const salida: ContactoConsolidado[] = [];
-  for (const miembros of grupos.values()) {
+  for (const [g, miembros] of grupos) {
     const telefonos = unicos(miembros.flatMap((m) => m.telefonos));
     const origenes = new Map<string, OrigenContacto>();
     for (const m of miembros) for (const o of m.origenes) origenes.set(claveOrigen(o), o);
     // Nombre: el mas largo (mas informacion); empate por orden alfabetico.
     const nombre = miembros.map((m) => m.nombre).filter((n) => n !== '').sort((a, b) => b.length - a.length || cmp(a, b))[0] ?? '';
     salida.push({
-      telefono: telefonos[0]!,
+      telefono: telefonos.find((t) => !esSinLada(t)) ?? telefonos[0]!,
       nombre,
       telefonos,
       correos: unicos(miembros.flatMap((m) => m.correos)),
@@ -39,15 +69,14 @@ export function consolidar(registros: RegistroLeido[]): ContactoConsolidado[] {
       lotes: unicos(miembros.map((m) => m.archivo)),
       origenes: [...origenes.values()].sort((a, b) => cmp(claveOrigen(a), claveOrigen(b))),
       tipo: 'menudeo',
+      correo_compartido: compartidos.has(g),
     });
   }
-  return salida.sort((a, b) => cmp(a.telefono, b.telefono));
+  return { contactos: salida.sort((a, b) => cmp(a.telefono, b.telefono)), unidos_por_correo_y_nombre: soloTelefono - grupos.size };
 }
 
-function sumar(a: Descartes, b: Descartes): Descartes {
-  const r = descartesVacios();
-  for (const k of Object.keys(r) as Array<keyof Descartes>) r[k] = a[k] + b[k];
-  return r;
+export function consolidar(registros: RegistroLeido[]): ContactoConsolidado[] {
+  return consolidarConEstadisticas(registros).contactos;
 }
 
 function contar<T>(items: T[], clave: (t: T) => string): Map<string, number> {
@@ -57,7 +86,7 @@ function contar<T>(items: T[], clave: (t: T) => string): Map<string, number> {
 }
 
 /** Informe de conteos SIN datos personales: nada de telefonos, correos ni nombres. */
-export function construirInforme(lecturas: ResultadoLectura[], contactos: ContactoConsolidado[]): InformeContactos {
+export function construirInforme(lecturas: ResultadoLectura[], contactos: ContactoConsolidado[], unidosPorCorreoYNombre = 0): InformeContactos {
   const validos = lecturas.reduce((s, l) => s + l.registros.length, 0);
   const filas = lecturas.reduce((s, l) => s + l.filas, 0);
   const invalidos = lecturas.reduce((s, l) => s + l.descartes.sin_telefono + l.descartes.fila_vacia, 0);
@@ -77,19 +106,22 @@ export function construirInforme(lecturas: ResultadoLectura[], contactos: Contac
     }
   }
   const etiquetas = contar(contactos.flatMap((c) => c.etiquetas.map((e) => ({ e }))), (x) => x.e);
-  const telefonosUnicos = new Set(contactos.flatMap((c) => c.telefonos)).size;
+  const todosTelefonos = new Set(contactos.flatMap((c) => c.telefonos));
   const conCorreo = contactos.filter((c) => c.correos.length > 0).length;
   return {
-    por_archivo: lecturas.map((l) => ({ archivo: l.archivo, tipo: l.tipo, filas: l.filas, con_telefono_valido: l.registros.length, descartes: l.descartes, extranjeros: l.extranjeros })),
+    por_archivo: lecturas.map((l) => ({ archivo: l.archivo, tipo: l.tipo, filas: l.filas, con_telefono_valido: l.registros.length, descartes: l.descartes, extranjeros: l.extranjeros, sin_lada: l.sin_lada })),
     totales: {
       filas,
       registros_validos: validos,
       contactos_unicos: contactos.length,
       duplicados_eliminados: validos - contactos.length,
-      telefonos_unicos: telefonosUnicos,
+      telefonos_unicos: todosTelefonos.size,
       con_correo: conCorreo,
       sin_correo: contactos.length - conCorreo,
       invalidos,
+      telefonos_sin_lada: [...todosTelefonos].filter(esSinLada).length,
+      unidos_por_correo_y_nombre: unidosPorCorreoYNombre,
+      correo_compartido_nombre_distinto: contactos.filter((c) => c.correo_compartido).length,
     },
     por_origen: [...porOrigen].map(([origen, contactosN]) => ({ origen, contactos: contactosN })).sort((a, b) => b.contactos - a.contactos || cmp(a.origen, b.origen)),
     por_anuncio: [...anuncios.values()].map((a) => ({ anuncio: a.anuncio, formulario: a.formulario, contactos: a.n })).sort((a, b) => b.contactos - a.contactos || cmp(a.anuncio, b.anuncio)),
@@ -97,4 +129,8 @@ export function construirInforme(lecturas: ResultadoLectura[], contactos: Contac
   };
 }
 
-export { sumar as sumarDescartes };
+export function sumarDescartes(a: Descartes, b: Descartes): Descartes {
+  const r = descartesVacios();
+  for (const k of Object.keys(r) as Array<keyof Descartes>) r[k] = a[k] + b[k];
+  return r;
+}

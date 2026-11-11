@@ -7,7 +7,7 @@ const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCa
 export const CORREO_VALIDO = /^[^\s@,;:]+@[^\s@,;:]+\.[^\s@,;:]{2,}$/;
 
 export function descartesVacios(): Descartes {
-  return { fila_vacia: 0, sin_telefono: 0, telefono_vacio: 0, corto: 0, largo: 0, patron_falso: 0, sin_lada: 0, correo_invalido: 0 };
+  return { fila_vacia: 0, sin_telefono: 0, telefono_vacio: 0, corto: 0, largo: 0, patron_falso: 0, correo_invalido: 0 };
 }
 
 interface Columnas {
@@ -63,7 +63,12 @@ function origenesDe(fuente: FuenteTabla, fila: string[], cols: Columnas, etiquet
   if (fuente.tipo === 'meta') {
     return [{ origen: 'meta', anuncio: cols.anuncio >= 0 ? (fila[cols.anuncio] ?? '').trim() || null : null, formulario: cols.formulario >= 0 ? (fila[cols.formulario] ?? '').trim() || null : null, campana: cols.campana >= 0 ? (fila[cols.campana] ?? '').trim() || null : null }];
   }
-  if (fuente.tipo === 'toocloudy' || fuente.tipo === 'vapeunion') return [{ origen: fuente.tipo, anuncio: null, formulario: null, campana: null }];
+  if (fuente.tipo === 'toocloudy') return [{ origen: 'toocloudy-whatsapp', anuncio: null, formulario: null, campana: null }];
+  if (fuente.tipo === 'vapeunion') return [{ origen: 'vapeunion', anuncio: null, formulario: null, campana: null }];
+  if (fuente.tipo === 'vcf') {
+    const base = fuente.archivo.split('/').pop()!.replace(/\.[^.]+$/, '');
+    return [{ origen: `google-vcf:${slugEtiqueta(base)}`, anuncio: null, formulario: null, campana: null }];
+  }
   const lista = etiquetas.length ? etiquetas.map(slugEtiqueta) : ['sin-etiqueta'];
   return [...new Set(lista)].map((e) => ({ origen: `google-lote:${e}`, anuncio: null, formulario: null, campana: null }));
 }
@@ -75,13 +80,14 @@ function origenesDe(fuente: FuenteTabla, fila: string[], cols: Columnas, etiquet
 export function leerTabla(tabla: string[][], fuente: FuenteTabla): ResultadoLectura {
   const descartes = descartesVacios();
   const registros: RegistroLeido[] = [];
-  const telefonosInvalidos: Record<MotivoTelefonoInvalido, number> = { vacio: 0, corto: 0, largo: 0, patron_falso: 0, sin_lada: 0 };
+  const telefonosInvalidos: Record<MotivoTelefonoInvalido, number> = { vacio: 0, corto: 0, largo: 0, patron_falso: 0 };
   let extranjeros = 0;
+  let sinLada = 0;
   const cab = tabla[0] ?? [];
   const cols = detectarColumnas(cab);
   const filas = tabla.slice(1);
   if (cols.telefonos.length === 0) {
-    return { archivo: fuente.archivo, tipo: fuente.tipo, filas: filas.length, registros, descartes: { ...descartes, sin_telefono: filas.length }, columnas_telefono: 0, extranjeros: 0, etiquetas_vistas: [] };
+    return { archivo: fuente.archivo, tipo: fuente.tipo, filas: filas.length, registros, descartes: { ...descartes, sin_telefono: filas.length }, columnas_telefono: 0, extranjeros: 0, sin_lada: 0, etiquetas_vistas: [] };
   }
   const etiquetasVistas: string[] = [];
   for (const fila of filas) {
@@ -94,6 +100,7 @@ export function leerTabla(tabla: string[][], fuente: FuenteTabla): ResultadoLect
         const r = normalizarTelefono(t);
         if (r.ok) {
           if (!tels.has(r.e164) && r.extranjero) extranjeros++;
+          if (!tels.has(r.e164) && r.sinLada) sinLada++;
           tels.add(r.e164);
         } else {
           telefonosInvalidos[r.motivo]++;
@@ -126,5 +133,5 @@ export function leerTabla(tabla: string[][], fuente: FuenteTabla): ResultadoLect
       origenes: origenesDe(fuente, fila, cols, etiquetas),
     });
   }
-  return { archivo: fuente.archivo, tipo: fuente.tipo, filas: filas.length, registros, descartes, columnas_telefono: cols.telefonos.length, extranjeros, etiquetas_vistas: [...new Set(etiquetasVistas)].sort() };
+  return { archivo: fuente.archivo, tipo: fuente.tipo, filas: filas.length, registros, descartes, columnas_telefono: cols.telefonos.length, extranjeros, sin_lada: sinLada, etiquetas_vistas: [...new Set(etiquetasVistas)].sort() };
 }

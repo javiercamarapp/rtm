@@ -1,6 +1,6 @@
 // Pruebas con datos SINTETICOS (numeros 555 / ficticios). Nunca datos reales.
 import { describe, expect, it } from 'vitest';
-import { construirInforme, consolidar } from '@/dominio/contactos/consolidar';
+import { construirInforme, consolidar, consolidarConEstadisticas } from '@/dominio/contactos/consolidar';
 import { decodificarTexto, parsearCsv } from '@/dominio/contactos/csv';
 import { leerEtiquetas, leerTabla, slugEtiqueta } from '@/dominio/contactos/leer';
 import { enmascararTelefono, normalizarTelefono, separarTelefonos } from '@/dominio/contactos/telefono';
@@ -26,18 +26,23 @@ describe('telefonos', () => {
     ['p:+5219995550101', '+529995550101'],
     ['999 555 0101 ext. 22', '+529995550101'],
   ])('normaliza %s', (entrada, esperado) => {
-    expect(normalizarTelefono(entrada)).toEqual({ ok: true, e164: esperado, extranjero: false });
+    expect(normalizarTelefono(entrada)).toEqual({ ok: true, e164: esperado, extranjero: false, sinLada: false });
+  });
+
+  it('conserva los numeros de 7 u 8 digitos como sin lada, sin inventar la lada ni pasarlos a E.164', () => {
+    expect(normalizarTelefono('555-0101')).toEqual({ ok: true, e164: 'sl:5550101', extranjero: false, sinLada: true });
+    expect(normalizarTelefono('5555 0101')).toEqual({ ok: true, e164: 'sl:55550101', extranjero: false, sinLada: true });
+    expect(normalizarTelefono('5555555')).toEqual({ ok: false, motivo: 'patron_falso' });
   });
 
   it('acepta extranjeros con + explicito y los marca', () => {
-    expect(normalizarTelefono('+1 415 555 0123')).toEqual({ ok: true, e164: '+14155550123', extranjero: true });
+    expect(normalizarTelefono('+1 415 555 0123')).toEqual({ ok: true, e164: '+14155550123', extranjero: true, sinLada: false });
   });
 
   it.each([
     ['', 'vacio'],
     ['   ', 'vacio'],
     ['911', 'corto'],
-    ['555 0101', 'sin_lada'],
     ['99955501012345', 'largo'],
     ['0000000000', 'patron_falso'],
     ['1234567890', 'patron_falso'],
@@ -123,7 +128,7 @@ describe('lectura de tablas', () => {
 
   it('Toocloudy y Vapeunion llevan su origen fijo', () => {
     const t = leerTabla([['COLONIA', 'WHATSAPP'], ['Centro', '9995550106']], { archivo: 't.xlsx', tipo: 'toocloudy' });
-    expect(t.registros[0]!.origenes[0]!.origen).toBe('toocloudy');
+    expect(t.registros[0]!.origenes[0]!.origen).toBe('toocloudy-whatsapp');
     const v = leerTabla([['First Name', 'Labels', 'Phone # - Value'], ['Ivo', '', '9995550107']], { archivo: 'v.csv', tipo: 'vapeunion' });
     expect(v.registros[0]!.origenes[0]!.origen).toBe('vapeunion');
   });
@@ -169,6 +174,41 @@ describe('consolidacion', () => {
     expect(r).toHaveLength(1);
     expect(r[0]!.telefonos).toEqual(['+529995550101', '+529995550102']);
     expect(r[0]!.telefono).toBe('+529995550101');
+  });
+
+  it('un correo compartido une solo con el mismo nombre normalizado (sin acentos, mayusculas ni espacios extra) y conserva todos los telefonos', () => {
+    const regs = [
+      ...lec('a.csv', 'google', [['First Name', 'Labels', 'E-mail 1 - Value', 'Phone 1 - Value', 'Phone 2 - Value'], ['José  Pérez', 'Uno', 'j@example.test', '9995550101', '9995550102']]).registros,
+      ...lec('b.csv', 'vapeunion', [['First Name', 'Labels', 'E-mail 1 - Value', 'Phone 1 - Value', 'Phone 2 - Value'], ['jose perez', '', 'j@example.test', '9995550103', '555 0104']]).registros,
+    ];
+    const { contactos, unidos_por_correo_y_nombre } = consolidarConEstadisticas(regs);
+    expect(contactos).toHaveLength(1);
+    expect(unidos_por_correo_y_nombre).toBe(1);
+    expect(contactos[0]!.telefonos).toEqual(['+529995550101', '+529995550102', '+529995550103', 'sl:5550104']);
+    expect(contactos[0]!.origenes.map((o) => o.origen)).toEqual(['google-lote:uno', 'vapeunion']);
+    expect(contactos[0]!.correo_compartido).toBe(false);
+  });
+
+  it('mismo correo con nombre distinto NO une: quedan separados y marcados correo compartido', () => {
+    const t = (n: string, tel: string) => [['First Name', 'E-mail 1 - Value', 'Phone 1 - Value'], [n, 'familia@example.test', tel]];
+    const regs = [...lec('a.csv', 'google', t('Ana', '9995550101')).registros, ...lec('b.csv', 'google', t('Beto', '9995550102')).registros, ...lec('c.csv', 'google', t('Cris', '9995550103')).registros];
+    const { contactos, unidos_por_correo_y_nombre } = consolidarConEstadisticas(regs);
+    expect(contactos).toHaveLength(3);
+    expect(unidos_por_correo_y_nombre).toBe(0);
+    expect(contactos.every((c) => c.correo_compartido)).toBe(true);
+    const inf = construirInforme([], contactos, unidos_por_correo_y_nombre);
+    expect(inf.totales.correo_compartido_nombre_distinto).toBe(3);
+  });
+
+  it('sin nombre no se une por correo; el telefono sin lada se deduplica por sus digitos y no es el principal', () => {
+    const t = (tel: string) => [['Phone 1 - Value', 'E-mail 1 - Value'], [tel, 'x@example.test']];
+    const sinNombre = consolidar([...lec('a.csv', 'google', t('9995550101')).registros, ...lec('b.csv', 'google', t('9995550102')).registros]);
+    expect(sinNombre).toHaveLength(2);
+    const sl = consolidar([...lec('a.csv', 'google', [['Phone 1 - Value'], ['555 0101 ::: 9995550109']]).registros, ...lec('b.csv', 'google', [['Phone 1 - Value'], ['5550101']]).registros]);
+    expect(sl).toHaveLength(1);
+    expect(sl[0]!.telefono).toBe('+529995550109');
+    expect(sl[0]!.telefonos).toEqual(['+529995550109', 'sl:5550101']);
+    expect(construirInforme([], sl).totales.telefonos_sin_lada).toBe(1);
   });
 
   it('no mezcla contactos distintos y es determinista sin importar el orden', () => {

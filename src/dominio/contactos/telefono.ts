@@ -1,8 +1,12 @@
 // Normalizacion de telefonos a E.164 (Mexico por omision). Funciones puras.
 
-export type MotivoTelefonoInvalido = 'vacio' | 'corto' | 'largo' | 'patron_falso' | 'sin_lada';
+export type MotivoTelefonoInvalido = 'vacio' | 'corto' | 'largo' | 'patron_falso';
 
-export type ResultadoTelefono = { ok: true; e164: string; extranjero: boolean } | { ok: false; motivo: MotivoTelefonoInvalido };
+/** Un numero de 7 u 8 digitos sin lada se CONSERVA como `sl:<digitos>` (no es E.164 y no se inventa la lada). */
+export const PREFIJO_SIN_LADA = 'sl:';
+export const esSinLada = (t: string) => t.startsWith(PREFIJO_SIN_LADA);
+
+export type ResultadoTelefono = { ok: true; e164: string; extranjero: boolean; sinLada: boolean } | { ok: false; motivo: MotivoTelefonoInvalido };
 
 /** Separa varios telefonos en una celda: ' ::: ' (Google), punto y coma, barra, salto de linea, coma o ' y '. */
 export function separarTelefonos(celda: string): string[] {
@@ -34,7 +38,7 @@ export function normalizarTelefono(crudo: string): ResultadoTelefono {
     if (d.length < 8) return { ok: false, motivo: 'corto' };
     if (d.length > 15) return { ok: false, motivo: 'largo' };
     if (/^(\d)\1+$/.test(d)) return { ok: false, motivo: 'patron_falso' };
-    return { ok: true, e164: `+${d}`, extranjero: true };
+    return { ok: true, e164: `+${d}`, extranjero: true, sinLada: false };
   }
 
   // Prefijos mexicanos antiguos y de marcacion.
@@ -45,10 +49,14 @@ export function normalizarTelefono(crudo: string): ResultadoTelefono {
   else if ((d.startsWith('044') || d.startsWith('045')) && d.length === 12) d = d.slice(3);
 
   if (d.length < 7) return { ok: false, motivo: 'corto' };
-  if (d.length < 10) return { ok: false, motivo: d.length === 7 || d.length === 8 ? 'sin_lada' : 'corto' };
+  if (d.length === 7 || d.length === 8) {
+    if (/^(\d)\1+$/.test(d) || d === '1234567' || d === '12345678') return { ok: false, motivo: 'patron_falso' };
+    return { ok: true, e164: `${PREFIJO_SIN_LADA}${d}`, extranjero: false, sinLada: true };
+  }
+  if (d.length < 10) return { ok: false, motivo: 'corto' };
   if (d.length > 10) return { ok: false, motivo: 'largo' };
   if (!/^[2-9]/.test(d) || esPatronFalso(d)) return { ok: false, motivo: 'patron_falso' };
-  return { ok: true, e164: `+52${d}`, extranjero: false };
+  return { ok: true, e164: `+52${d}`, extranjero: false, sinLada: false };
 }
 
 /** Ultimos 2 digitos para mostrar al agente de IA y en vistas enmascaradas. */

@@ -111,7 +111,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<P
         ))}
       </nav>
       <p className="rtm-nota">
-        {formatearEntero(lista.total)} {lista.total === 1 ? 'contacto coincide' : 'contactos coinciden'} · {formatearEntero(resumen.conCorreo)} con correo · página {formatearEntero(pagina)} de {formatearEntero(paginas)}
+        {formatearEntero(lista.total)} {lista.total === 1 ? 'contacto coincide' : 'contactos coinciden'} · {formatearEntero(resumen.conCorreo)} con correo · {formatearEntero(resumen.sinLada)} con número sin lada · {formatearEntero(resumen.correoCompartido)} con correo compartido por revisar · página {formatearEntero(pagina)} de {formatearEntero(paginas)}
       </p>
       <TablaContactos filas={lista.filas} total={lista.total} filtro={filtro} />
       <nav className="rtm-barra-filtros" aria-label="Páginas">

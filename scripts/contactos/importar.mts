@@ -9,9 +9,10 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join, resolve, relative } from 'node:path';
-import { construirInforme, consolidar } from '@/dominio/contactos/consolidar';
+import { construirInforme, consolidar, consolidarConEstadisticas } from '@/dominio/contactos/consolidar';
 import { decodificarTexto, parsearCsv } from '@/dominio/contactos/csv';
 import { leerTabla } from '@/dominio/contactos/leer';
+import { leerVcf } from '@/dominio/contactos/vcard';
 import type { ContactoConsolidado, FuenteTabla, ResultadoLectura, TipoFuente } from '@/dominio/contactos/tipos';
 import { leerXlsx } from './xlsx.mjs';
 
@@ -30,10 +31,12 @@ function fuentesPorOmision(): Fuente[] {
   const vapes = join(escritorio, 'NÚMEROS VAPES');
   if (existsSync(vapes)) {
     for (const n of readdirSync(vapes).sort()) {
-      if (!/\.(csv|xlsx)$/i.test(n)) continue;
-      out.push({ ruta: join(vapes, n), id: `numeros-vapes/${n}`, tipo: /^VAPEUNION/i.test(n) ? 'vapeunion' : 'google' });
+      if (!/\.(csv|xlsx|vcf)$/i.test(n)) continue;
+      out.push({ ruta: join(vapes, n), id: `numeros-vapes/${n}`, tipo: /^VAPEUNION/i.test(n) ? 'vapeunion' : /\.vcf$/i.test(n) ? 'vcf' : 'google' });
     }
   }
+  const suelto = join(escritorio, '1573.vcf');
+  if (existsSync(suelto)) out.push({ ruta: suelto, id: 'toocloudy/1573.vcf', tipo: 'vcf' });
   const leads = join(escritorio, 'leads whatsapp FINAL.xlsx');
   if (existsSync(leads)) out.push({ ruta: leads, id: 'toocloudy/leads whatsapp FINAL.xlsx', tipo: 'toocloudy' });
   for (const n of ['contacts-12.xlsx', 'contacts (1).xlsx']) {
@@ -55,7 +58,7 @@ function fuentesExplicitas(): Fuente[] {
 
 function leerFuente(f: Fuente): ResultadoLectura {
   const bytes = readFileSync(f.ruta);
-  const tabla = /\.xlsx$/i.test(f.ruta) ? leerXlsx(bytes) : parsearCsv(decodificarTexto(bytes));
+  const tabla = /\.xlsx$/i.test(f.ruta) ? leerXlsx(bytes) : /\.vcf$/i.test(f.ruta) ? leerVcf(decodificarTexto(bytes)) : parsearCsv(decodificarTexto(bytes));
   const fuente: FuenteTabla = { archivo: f.id, tipo: f.tipo };
   return leerTabla(tabla, fuente);
 }
@@ -77,8 +80,8 @@ for (const f of fuentes) {
   try { lecturas.push(leerFuente(f)); } catch (e) { console.error(`No se pudo leer ${f.id}: ${(e as Error).message}`); process.exitCode = 1; }
 }
 const registros = lecturas.flatMap((l) => l.registros);
-const contactos = consolidar(registros);
-const informe = construirInforme(lecturas, contactos);
+const { contactos, unidos_por_correo_y_nombre: unidosPorCorreo } = consolidarConEstadisticas(registros);
+const informe = construirInforme(lecturas, contactos, unidosPorCorreo);
 
 if (flag('prueba-idempotencia')) {
   const a = huella(contactos);
@@ -89,7 +92,7 @@ if (flag('prueba-idempotencia')) {
 }
 
 console.log('== Informe de contactos de menudeo (sin datos personales) ==');
-console.table(informe.por_archivo.map((a) => ({ archivo: a.archivo, tipo: a.tipo, filas: a.filas, validos: a.con_telefono_valido, vacias: a.descartes.fila_vacia, sin_tel: a.descartes.sin_telefono, cortos: a.descartes.corto, largos: a.descartes.largo, falsos: a.descartes.patron_falso, sin_lada: a.descartes.sin_lada, correo_inv: a.descartes.correo_invalido, extranj: a.extranjeros })));
+console.table(informe.por_archivo.map((a) => ({ archivo: a.archivo, tipo: a.tipo, filas: a.filas, validos: a.con_telefono_valido, vacias: a.descartes.fila_vacia, sin_tel: a.descartes.sin_telefono, cortos: a.descartes.corto, largos: a.descartes.largo, falsos: a.descartes.patron_falso, sin_lada: a.sin_lada, correo_inv: a.descartes.correo_invalido, extranj: a.extranjeros })));
 console.log('Totales:', JSON.stringify(informe.totales));
 console.log('Por origen (un contacto puede tener varios):');
 console.table(informe.por_origen);

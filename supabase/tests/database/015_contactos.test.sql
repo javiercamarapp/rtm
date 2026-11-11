@@ -36,6 +36,19 @@ select is((select count(*)::int from contactos.contacto), 2, 'sin duplicados: si
 select is((select count(*)::int from contactos.origen where contacto_id = (select contacto_id from contactos.telefono where e164 = '+529995550101')), 2, 'el contacto fusionado conserva sus dos origenes');
 select is((select count(*)::int from contactos.correo where contacto_id = (select contacto_id from contactos.telefono where e164 = '+529995550101')), 2, 'y sus dos correos');
 select is((select nombre from contactos.contacto where telefono_principal = '+529995550101'), 'Ana Prueba', 'el nombre conserva el mas largo');
+-- Telefono sin lada (7 u 8 digitos) se conserva sin inventar la lada; mismo correo con nombre distinto NO une y marca correo compartido.
+select is((contactos.cargar_lote('lote-prueba-3', $j$[
+  {"telefono":"sl:5550104","nombre":"Cris Prueba","telefonos":["sl:5550104"],"correos":["ana@example.test"],"etiquetas":[],"lotes":["c.csv"],
+   "origenes":[{"origen":"toocloudy","anuncio":null,"formulario":null,"campana":null}]}
+]$j$::jsonb)->>'nuevos')::int, 1, 'un numero sin lada se conserva como contacto nuevo');
+select is((select count(*)::int from contactos.telefono where sin_lada), 1, 'el telefono sin lada queda marcado');
+select is((select count(*)::int from contactos.contacto where correo_compartido), 2, 'mismo correo con nombre distinto: no se unen y ambos quedan marcados para revision');
+select is((select count(*)::int from contactos.contacto), 3, 'siguen separados: 3 contactos');
+select is((contactos.cargar_lote('lote-prueba-4', $j$[
+  {"telefono":"+529995550105","nombre":"ANA  prueba","telefonos":["+529995550105"],"correos":["ana@example.test"],"etiquetas":[],"lotes":["d.csv"],
+   "origenes":[{"origen":"vapeunion","anuncio":null,"formulario":null,"campana":null}]}
+]$j$::jsonb)->>'nuevos')::int, 0, 'mismo correo y mismo nombre normalizado: se une y conserva todos los telefonos');
+select is((select count(*)::int from contactos.telefono where contacto_id = (select contacto_id from contactos.telefono where e164 = '+529995550105')), 3, 'el contacto unido por correo y nombre conserva sus 3 telefonos');
 select throws_ok($$select contactos.cargar_lote('lote-malo', '[{"telefonos":[],"origenes":[]}]'::jsonb)$$, '22023', null, 'un contacto sin telefono se rechaza');
 select throws_ok($$select contactos.cargar_lote('lote-malo2', '[{"telefonos":["no-es-telefono"],"origenes":[]}]'::jsonb)$$, '23514', null, 'un telefono fuera de E.164 se rechaza por la restriccion');
 select set_config('rtm.canal', '', true);
@@ -61,7 +74,7 @@ reset role;
 select set_config('request.jwt.claim.sub', 'd4444444-4444-4444-4444-444444444441', true);
 set local role authenticated;
 select throws_ok($$select * from contactos.contacto$$, '42501', null, 'ni el socio lee las tablas directo: solo por api');
-select is((api.contactos_lista()->>'total')::int, 2, 'el socio ve 2 contactos');
+select is((api.contactos_lista()->>'total')::int, 3, 'el socio ve 3 contactos');
 select is((api.contactos_lista('ana')->>'total')::int, 1, 'busqueda por nombre');
 select is((api.contactos_lista('5550101')->>'total')::int, 1, 'busqueda por digitos del telefono');
 select is((api.contactos_lista(null, 'meta')->>'total')::int, 1, 'filtro por origen meta');
@@ -69,7 +82,7 @@ select is((api.contactos_lista(null, null, 'Anuncio A')->>'total')::int, 1, 'fil
 select is((api.contactos_lista(null, 'google-lote')->>'total')::int, 1, 'el prefijo google-lote agrupa los lotes de Google');
 select is((api.contactos_lista()->'filas'->0->>'telefono_mascara') like '%01', true, 'el telefono sale enmascarado con los ultimos 2 digitos');
 select is(api.contactos_lista()::text like '%99955501%', false, 'la lista nunca trae el telefono completo');
-select is((api.contactos_resumen()->>'total')::int, 2, 'resumen: total');
+select is((api.contactos_resumen()->>'total')::int, 3, 'resumen: total');
 select is((api.contactos_resumen()->'por_origen') @> '[{"origen":"meta","contactos":1}]'::jsonb, true, 'resumen: por origen');
 select is((api.contactos_resumen()->'por_anuncio') @> '[{"anuncio":"Anuncio A","formulario":"Formulario 1","contactos":1}]'::jsonb, true, 'resumen: por anuncio y formulario');
 
@@ -81,9 +94,9 @@ select throws_ok($$delete from contactos.revelacion$$, '42501', null, 'y no se b
 
 select set_config('request.jwt.claim.sub', 'd4444444-4444-4444-4444-444444444441', true);
 set local role authenticated;
-select is((api.contactos_exportar((select array_agg((f->>'id')::bigint) from jsonb_array_elements(api.contactos_lista()->'filas') f))->>'total')::int, 2, 'exportar la seleccion entrega 2 contactos');
+select is((api.contactos_exportar((select array_agg((f->>'id')::bigint) from jsonb_array_elements(api.contactos_lista()->'filas') f))->>'total')::int, 3, 'exportar la seleccion entrega 3 contactos');
 reset role;
-select is((select count(*)::int from contactos.revelacion where accion = 'exportar'), 2, 'exportar registra una revelacion por contacto');
+select is((select count(*)::int from contactos.revelacion where accion = 'exportar'), 3, 'exportar registra una revelacion por contacto');
 
 -- ---- Vista del agente: sin telefonos ni correos -------------------------------------------------------------------------------------------------------
 select is((select count(*)::int from information_schema.columns where table_schema = 'contactos' and table_name = 'v_contacto_agente' and column_name in ('telefono_principal', 'e164', 'correo')), 0, 'la vista del agente no tiene columnas de telefono completo ni de correo');

@@ -4,17 +4,17 @@ import type { LectorContactos } from '@/aplicacion/contactos/puertos';
 import { crearClienteServidor } from './cliente-servidor';
 
 const fila = z.object({
-  id: z.number(), nombre: z.string(), telefono_mascara: z.string(), telefonos: z.number(), correo: z.string().nullable(),
+  id: z.number(), nombre: z.string(), telefono_mascara: z.string(), telefonos: z.number(), sin_lada: z.boolean(), correo_compartido: z.boolean(), correo: z.string().nullable(),
   origenes: z.array(z.string()), anuncios: z.array(z.string()), etiquetas: z.array(z.string()),
-}).transform((f) => ({ id: f.id, nombre: f.nombre, telefonoMascara: f.telefono_mascara, telefonos: f.telefonos, correo: f.correo, origenes: f.origenes, anuncios: f.anuncios, etiquetas: f.etiquetas }));
+}).transform((f) => ({ id: f.id, nombre: f.nombre, telefonoMascara: f.telefono_mascara, telefonos: f.telefonos, sinLada: f.sin_lada, correoCompartido: f.correo_compartido, correo: f.correo, origenes: f.origenes, anuncios: f.anuncios, etiquetas: f.etiquetas }));
 
 const lista = z.object({ total: z.number(), limite: z.number(), desplazamiento: z.number(), filas: z.array(fila) });
 
 const resumen = z.object({
-  total: z.number(), con_correo: z.number(),
+  total: z.number(), con_correo: z.number(), correo_compartido: z.number(), sin_lada: z.number(),
   por_origen: z.array(z.object({ origen: z.string(), contactos: z.number() })),
   por_anuncio: z.array(z.object({ anuncio: z.string(), formulario: z.string(), contactos: z.number() })),
-}).transform((r) => ({ total: r.total, conCorreo: r.con_correo, porOrigen: r.por_origen, porAnuncio: r.por_anuncio }));
+}).transform((r) => ({ total: r.total, conCorreo: r.con_correo, correoCompartido: r.correo_compartido, sinLada: r.sin_lada, porOrigen: r.por_origen, porAnuncio: r.por_anuncio }));
 
 const revelado = z.object({ id: z.number(), telefonos: z.array(z.string()) });
 

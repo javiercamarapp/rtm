@@ -1,6 +1,6 @@
 // Tipos del modulo de contactos de menudeo. Ningun tipo del informe lleva datos personales.
 
-export type TipoFuente = 'google' | 'meta' | 'toocloudy' | 'vapeunion';
+export type TipoFuente = 'google' | 'vcf' | 'meta' | 'toocloudy' | 'vapeunion';
 
 export interface FuenteTabla {
   /** Identificador estable del archivo (nombre de archivo sin ruta). */
@@ -33,7 +33,6 @@ export interface Descartes {
   corto: number;
   largo: number;
   patron_falso: number;
-  sin_lada: number;
   correo_invalido: number;
 }
 
@@ -45,6 +44,8 @@ export interface ResultadoLectura {
   descartes: Descartes;
   columnas_telefono: number;
   extranjeros: number;
+  /** Telefonos sin lada conservados (7 u 8 digitos, `sl:<digitos>`). */
+  sin_lada: number;
   etiquetas_vistas: string[];
 }
 
@@ -58,10 +59,12 @@ export interface ContactoConsolidado {
   lotes: string[];
   origenes: OrigenContacto[];
   tipo: 'menudeo';
+  /** Comparte un correo con otro contacto de nombre distinto: no se unieron; queda para revision. */
+  correo_compartido: boolean;
 }
 
 export interface InformeContactos {
-  por_archivo: Array<{ archivo: string; tipo: TipoFuente; filas: number; con_telefono_valido: number; descartes: Descartes; extranjeros: number }>;
+  por_archivo: Array<{ archivo: string; tipo: TipoFuente; filas: number; con_telefono_valido: number; descartes: Descartes; extranjeros: number; sin_lada: number }>;
   totales: {
     filas: number;
     registros_validos: number;
@@ -71,6 +74,9 @@ export interface InformeContactos {
     con_correo: number;
     sin_correo: number;
     invalidos: number;
+    telefonos_sin_lada: number;
+    unidos_por_correo_y_nombre: number;
+    correo_compartido_nombre_distinto: number;
   };
   por_origen: Array<{ origen: string; contactos: number }>;
   por_anuncio: Array<{ anuncio: string; formulario: string | null; contactos: number }>;

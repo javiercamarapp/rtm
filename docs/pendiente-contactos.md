@@ -32,14 +32,20 @@ npx tsx scripts/contactos/importar.mts --lotes CARPETA         escribe lotes JSO
 6. Borrar los lotes JSON locales cuando termine la carga.
 7. Si se quiere un rol dedicado para el agente de IA, crear `agente_ia` (la migración le da solo `contactos.v_contacto_agente` si el rol existe). Hoy el agente puede consultar mediante `api.contactos_agente`, siempre enmascarado.
 
-## Decisiones tomadas por criterio propio (revisables)
+## Decisiones del dueño aplicadas (11-nov)
 
-- Teléfonos de otros países con prefijo `+` explícito se conservan como válidos y se cuentan aparte (`extranjeros` en el informe). Los números mexicanos sin lada (7 u 8 dígitos) se descartan.
-- Un contacto se une a otro si comparten teléfono o correo (cierre transitivo). Dos personas que compartan un correo quedarían unidas.
-- El origen de los contactos de Google es `google-lote:<etiqueta>`; los que no traen etiqueta quedan en `google-lote:sin-etiqueta`. La etiqueta de sistema `myContacts` se ignora.
-- `Todos.csv` está corrupto (bytes binarios en lugar de texto) y se cuenta como archivo sin datos.
-- El correo se muestra a los socios; el teléfono solo al revelarlo, y cada revelación y cada exportación quedan en `contactos.revelacion` (solo inserción).
-- Las revelaciones no tienen llave foránea al contacto para sobrevivir a fusiones de contactos.
+- Teléfonos de otros países con «+» explícito: se conservan y se cuentan aparte (`extranjeros`).
+- Números de 7 u 8 dígitos sin lada: se conservan como `sl:<dígitos>` (no son E.164 y no se inventa la lada), deduplicados por sus dígitos, marcados como «sin lada» en la pantalla y contados aparte (`telefonos_sin_lada`). Solo se descartan vacíos y basura real (cortos, largos, patrones falsos como 0000000 o 1234567).
+- Un teléfono compartido une siempre. Un correo compartido une SOLO si el nombre normalizado (sin acentos, mayúsculas ni espacios extra) es el mismo; al unir se conservan todos los teléfonos, orígenes, etiquetas y lotes. Con nombre distinto no se unen y ambos quedan con `correo_compartido` para revisión (la tabla `contactos.correo` ya no exige correo único). Sin nombre no se une por correo.
+- Orígenes: `meta` (anuncio y formulario), `toocloudy-whatsapp` (leads whatsapp FINAL.xlsx), `vapeunion`, `google-lote:<etiqueta>` y `google-vcf:<archivo>` (archivos .vcf: Todos.vcf, contacts.vcf y 1573.vcf; vCard 2.1/3.0, líneas dobladas y quoted-printable).
+- Se ignoran `Download.PDF` y `TooCloudyMX 2.zip`. `Todos.csv` está corrupto y se cuenta como archivo sin datos; su versión legible es `Todos.vcf`.
+- Una tarjeta vCard sin teléfono (1573.vcf) se cuenta como descartada.
+
+## Otras decisiones (revisables)
+
+- La etiqueta de sistema `myContacts` de Google se ignora; sin etiqueta queda `google-lote:sin-etiqueta`.
+- El correo se muestra a los socios; el teléfono solo al revelarlo, y cada revelación y cada exportación quedan en `contactos.revelacion` (solo inserción, sin llave foránea para sobrevivir a fusiones).
+- En la base la unión por correo compara contra el nombre vigente del contacto (el más largo); puede diferir de la comparación del importador si los nombres cambian entre cargas. Los lotes salen ya consolidados, así que no debería ocurrir.
 
 ## Pendiente de verificación humana
 

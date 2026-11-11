@@ -6,6 +6,10 @@ export interface ContactoFila {
   /** Siempre enmascarado: el telefono completo solo sale al revelarlo (con registro). */
   telefonoMascara: string;
   telefonos: number;
+  /** Tiene algun numero de 7 u 8 digitos sin lada (no se inventa la lada). */
+  sinLada: boolean;
+  /** Comparte correo con otro contacto de nombre distinto: pendiente de revision. */
+  correoCompartido: boolean;
   correo: string | null;
   origenes: string[];
   anuncios: string[];
@@ -22,6 +26,8 @@ export interface ListaContactos {
 export interface ResumenContactos {
   total: number;
   conCorreo: number;
+  correoCompartido: number;
+  sinLada: number;
   porOrigen: Array<{ origen: string; contactos: number }>;
   porAnuncio: Array<{ anuncio: string; formulario: string; contactos: number }>;
 }
@@ -41,9 +47,16 @@ export interface FilaExportada {
   anuncios: string[];
 }
 
+/** Muestra un telefono revelado: los de 7 u 8 digitos se guardan como 'sl:<digitos>' y se rotulan sin lada. */
+export function telefonoLegible(t: string): string {
+  return t.startsWith('sl:') ? `${t.slice(3)} (sin lada)` : t;
+}
+
 /** "google-lote:importado-el-9-10" -> "Google · importado el 9 10"; 'meta' -> 'Meta'. */
 export function etiquetaOrigen(origen: string): string {
   if (origen.startsWith('google-lote:')) return `Google · ${origen.slice('google-lote:'.length).replace(/-/g, ' ')}`;
+  if (origen.startsWith('google-vcf:')) return `Google vCard · ${origen.slice('google-vcf:'.length).replace(/-/g, ' ')}`;
+  if (origen === 'toocloudy-whatsapp') return 'Toocloudy WhatsApp';
   if (origen === 'google-lote') return 'Google (todos los lotes)';
   return origen === '' ? 'Todos los orígenes' : origen.charAt(0).toUpperCase() + origen.slice(1);
 }
