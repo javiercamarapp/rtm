@@ -68,7 +68,7 @@ test('el dialogo de Marcar enviado cabe en pantalla y sus campos son de 16 px', 
     expect(await campo.evaluate((e) => parseFloat(getComputedStyle(e).fontSize))).toBeGreaterThanOrEqual(16);
   }
   await sinScrollHorizontal(page);
-  await page.getByRole('button', { name: 'Cancelar' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancelar', exact: true }).click();
 });
 
 test('plegado a desplegado en vivo con un renglon a medio escribir: sin recarga y sin perder lo escrito', async ({ page }, info) => {

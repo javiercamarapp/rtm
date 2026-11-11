@@ -53,3 +53,11 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
   .rtm-campo-num { width: 96px; }
   .rtm-form-fila > * { flex: 1 1 140px; }
 }
+
+/* En pantallas tactiles o angostas los campos de formulario miden 16 px (en iOS evita el zoom) y ganan a la regla de color de la etiqueta. */
+@media (pointer: coarse), (max-width: 767px) {
+  .rtm-etiqueta-campo > .rtm-campo, .rtm-etiqueta-campo > select, .rtm-etiqueta-campo > textarea, .rtm-form-fila .rtm-campo { font-size: 16px; min-height: 44px; }
+}
+@media (pointer: coarse) {
+  .rtm-segmentado a, .rtm-segmentado button { min-height: 44px; }
+}

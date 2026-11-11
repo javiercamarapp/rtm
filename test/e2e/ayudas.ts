@@ -224,7 +224,7 @@ export async function compraBorradorE2E(d: DatosF2, clave: string): Promise<numb
   return conDb(async (c) => {
     await c.query('begin');
     await c.query("select set_config('rtm.canal', 'importacion', true)");
-    const r = await c.query("select (operacion.crear_compra($1,'Karen',$2::jsonb)->>'compra_id')::bigint as id", [`e2e2:${clave}:${d.sufijo}`, JSON.stringify([{ modelo: d.modeloB, sabor: 'Uva', pagadas: 120 }])]);
+    const r = await c.query("select (operacion.crear_compra($1,'Karen',$2::jsonb)->>'compra_id')::bigint as id", [`e2e2:oc-${clave}:${d.sufijo}`, JSON.stringify([{ modelo: d.modeloB, sabor: 'Uva', pagadas: 120 }])]);
     await c.query('commit');
     return Number(r.rows[0].id);
   });
