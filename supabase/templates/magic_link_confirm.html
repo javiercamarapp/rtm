@@ -1,0 +1,9 @@
+<!-- Plantilla del correo del enlace magico para el PLAN ALTERNO (iPhone con la app instalada). NO esta activa por omision.
+     Para activarla: en supabase/config.toml, bajo [auth.email.template.magic_link], poner
+       subject = "Tu enlace para entrar a RTM"
+       content_path = "./supabase/templates/magic_link_confirm.html"
+     El enlace apunta a /auth/confirm: el GET no lo consume, lo consume el boton "Entrar". Sin PKCE. Probar primero en un telefono real. -->
+<h2>Entrar a RTM</h2>
+<p>Abre este enlace para entrar. Vale una sola vez y caduca en una hora.</p>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/">Entrar a RTM</a></p>
+<p>Si no pediste este correo, ignóralo.</p>

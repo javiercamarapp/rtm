@@ -25,7 +25,11 @@ describe('/login no se autoregistra ni se queda sin limite', () => {
 
   it('con la base caida, login falla ABIERTO (valvula de escape): es la unica via de entrada', () => {
     expect(LIMITADOR).toMatch(/Falla ABIERTO/);
-    expect(LIMITADOR).toMatch(/if \(error \|\| typeof data !== 'number'\) return false/);
+    expect(LIMITADOR).toMatch(/if \(!Number\.isFinite\(n\)\) return false/);
+    expect(LIMITADOR).toMatch(/catch \{\s*return false;/);
+    // Ya no usa la llave anon: se conecta con el rol servidor.
+    expect(LIMITADOR).not.toMatch(/ANON_KEY|createClient/);
+    expect(LIMITADOR).toMatch(/SERVIDOR_DATABASE_URL/);
   });
 
   it('la decision enviado/error pasa por respuestaOtp y el piso de tiempo', () => {
