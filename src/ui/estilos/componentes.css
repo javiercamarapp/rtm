@@ -7,7 +7,7 @@
 .rtm-dt-fila { display: table-row; }
 .rtm-dt-celda { display: table-cell; padding: 0 var(--rtm-e-4); height: var(--rtm-fila); vertical-align: middle; border-top: 1px solid var(--rtm-line); font-size: var(--rtm-cuerpo); }
 .rtm-dt-cabecera .rtm-dt-celda { border-top: 0; height: 32px; font-size: 12px; font-weight: 600; color: var(--rtm-ink-3); background: var(--rtm-tint); white-space: nowrap; }
-.rtm-dt-celda[data-num] { text-align: right; font-variant-numeric: tabular-nums; }
+.rtm-dt-celda[data-num] { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rtm-dt-grupo:last-child .rtm-dt-fila:hover { background: var(--rtm-tint); }
 .rtm-dt-celda a { text-decoration: none; font-weight: 600; }
 .rtm-dt-celda a:hover { text-decoration: underline; }

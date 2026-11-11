@@ -23,7 +23,8 @@
     "acceso:alta:probar": "node scripts/acceso/alta-usuarios.mjs --dry-run",
     "importar": "tsx scripts/importacion/importar.mts",
     "importar:verificar": "tsx scripts/importacion/importar.mts --verificar",
-    "importar:idempotencia": "tsx scripts/importacion/importar.mts --prueba-idempotencia"
+    "importar:idempotencia": "tsx scripts/importacion/importar.mts --prueba-idempotencia",
+    "capturas:f1": "node scripts/capturas/capturas-f1.mjs --restaurar-real"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

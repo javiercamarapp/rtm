@@ -6,6 +6,9 @@ export type Rol = 'socio' | 'omar';
 export const ACCIONES = [
   'ver_inicio',
   'ver_pedidos',
+  'ver_catalogo',
+  'ver_clientes',
+  'cambiar_disponibilidad',
   'ver_inventario',
   'ver_proveedores',
   'ver_cuenta_socios',
@@ -16,6 +19,9 @@ export type Accion = (typeof ACCIONES)[number];
 export const CAPACIDADES: Record<Accion, readonly Rol[]> = {
   ver_inicio: ['socio'],
   ver_pedidos: ['socio'],
+  ver_catalogo: ['socio'],
+  ver_clientes: ['socio'],
+  cambiar_disponibilidad: ['socio'],
   ver_inventario: ['socio'],
   ver_proveedores: ['socio'],
   ver_cuenta_socios: ['socio'],
