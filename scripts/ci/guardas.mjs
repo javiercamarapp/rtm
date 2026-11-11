@@ -54,6 +54,8 @@ for (const f of archivos(join(raiz, 'src'))) {
       if (/\bduenio\b|\bDuenio\b/.test(codigo)) falla(f, n, 'parametro o campo duenio en la interfaz (RTM es un solo negocio; no se divide por dueno)');
       if (/Due(ñ|n)o\b/.test(codigo) && !/Dueño? de la sociedad/.test(codigo)) falla(f, n, "columna, etiqueta o texto 'Dueño' en la interfaz");
       if (/titulo:\s*['"`]Atiende['"`]|>\s*Atiende\s*</.test(codigo)) falla(f, n, "columna 'Atiende' en la interfaz");
+      if (/(Documento|Lista) de (Angelo|Javier)/.test(codigo)) falla(f, n, "origen del tabulador: usar 'Precio pactado por Angelo' o 'Precio pactado por Javier'");
+      if (/Precio pactado por (?!(Angelo|Javier)\b)/.test(codigo)) falla(f, n, "'Precio pactado por' solo admite Angelo o Javier");
       if (/[>'"`]\s*[Dd]e (Angelo|Javier)\s*[<'"`]|aria-label="[^"]*por due(ñ|n)o/.test(codigo)) falla(f, n, "chip o filtro 'De Angelo' / 'De Javier' / 'por dueño' en la interfaz");
     }
     if (/upstash|ioredis|from 'redis'|signInWithOAuth|provider:\s*'google'/i.test(codigo) && !exento) falla(f, n, 'Redis/Upstash/Google fuera del alcance de RTM');

@@ -10,10 +10,10 @@ import { EncabezadoPagina } from '@/ui/componentes/pagina';
 import { GraficaBarras } from '@/ui/graficas/barras';
 import { GraficaLinea } from '@/ui/graficas/linea';
 import { etiquetaHoy } from '../../contexto';
+import { etiquetaOrigen } from './origen';
 
 export const metadata: Metadata = { title: 'Ficha de cliente' };
 
-const ORIGEN: Record<string, string> = { documento: 'Documento de Angelo', chat: 'Indicación de un socio', lista_javier: 'Lista de Javier' };
 
 export default async function Pagina({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -59,7 +59,7 @@ export default async function Pagina({ params }: { params: Promise<{ id: string 
             { id: 'mi', titulo: 'Margen vs Isaac', numerica: true, celda: (t) => { const m = t.margenes.find((x) => x.proveedor === 'Isaac'); return m ? <CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${f.id}:${t.modeloId}`} comprobacion="cuadra" /> : <SinDato />; } },
             { id: 'mk', titulo: 'Margen vs Karen', numerica: true, celda: (t) => { const m = t.margenes.find((x) => x.proveedor === 'Karen'); return m ? <><CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${f.id}:${t.modeloId}`} comprobacion="cuadra" /> {m.supuesto && <EstadoTexto tono="atencion">supuesto</EstadoTexto>}</> : <SinDato />; } },
             { id: 'd', titulo: 'Desde', secundaria: true, celda: (t) => etiquetaFecha(t.desde) },
-            { id: 'o', titulo: 'Origen', secundaria: true, celda: (t) => <>{ORIGEN[t.origen] ?? t.origen}{t.nota && <><br /><span className="rtm-nota">{t.nota}</span></>}</> },
+            { id: 'o', titulo: 'Origen', secundaria: true, celda: (t) => <>{etiquetaOrigen(t.origen)}{t.nota && <><br /><span className="rtm-nota">{t.nota}</span></>}</> },
           ]}
         />
       </section>
