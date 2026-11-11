@@ -6,14 +6,16 @@ export function centavosABigint<T>(valor: unknown): T {
   return convertir(valor) as T;
 }
 
-function convertir(v: unknown, clave?: string): unknown {
+function convertir(v: unknown, clave?: string, mapaCent = false): unknown {
   if (Array.isArray(v)) return v.map((x) => convertir(x));
   if (v !== null && typeof v === 'object') {
+    // Un objeto cuya clave termina en `_cent` es un mapa de montos (por ejemplo antiguedad_cent): todos sus valores son centavos.
+    const hereda = clave !== undefined && clave.endsWith('_cent');
     const salida: Record<string, unknown> = {};
-    for (const [k, x] of Object.entries(v as Record<string, unknown>)) salida[k] = convertir(x, k);
+    for (const [k, x] of Object.entries(v as Record<string, unknown>)) salida[k] = convertir(x, k, hereda);
     return salida;
   }
-  if (typeof v === 'number' && clave !== undefined && clave.endsWith('_cent')) {
+  if (typeof v === 'number' && ((clave !== undefined && clave.endsWith('_cent')) || mapaCent)) {
     if (!Number.isSafeInteger(v)) throw new RangeError(`centavos no enteros o fuera de rango en ${clave}`);
     return BigInt(v);
   }

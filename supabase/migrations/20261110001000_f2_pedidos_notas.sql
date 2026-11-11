@@ -185,7 +185,7 @@ begin
     execute format('create trigger %I before truncate on operacion.%I for each statement execute function seguridad.t1_solo_insercion()', t || '_t1t', t);
     execute format('revoke delete, truncate on operacion.%I from postgres', t);
   end loop;
-  revoke update on operacion.pedido_cargo, operacion.pedido_ajuste, operacion.pedido_aviso_decision, operacion.nota_documento from postgres;
+  -- UPDATE se conserva para el duenio: una llave foranea lo exige al borrar el padre (FOR KEY SHARE); el trigger T1 lo bloquea de todos modos.
   for t in select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'operacion' and c.relkind = 'r' loop
     execute format('alter table operacion.%I enable row level security', t);
     execute format('alter table operacion.%I force row level security', t);

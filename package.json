@@ -24,7 +24,8 @@
     "importar": "tsx scripts/importacion/importar.mts",
     "importar:verificar": "tsx scripts/importacion/importar.mts --verificar",
     "importar:idempotencia": "tsx scripts/importacion/importar.mts --prueba-idempotencia",
-    "capturas:f1": "node scripts/capturas/capturas-f1.mjs --restaurar-real"
+    "capturas:f1": "node scripts/capturas/capturas-f1.mjs --restaurar-real",
+    "capturas:f2": "node scripts/capturas/capturas-f2.mjs --restaurar-real"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",

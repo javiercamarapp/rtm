@@ -389,7 +389,7 @@ begin
   v_ev := operacion.crear_evento('compra_recibida', v_fecha, p_clave_idem, jsonb_build_object('compra', c.folio));
 
   create temporary table if not exists _recepcion_tmp (linea_id bigint, sku_id bigint, piezas int) on commit drop;
-  delete from _recepcion_tmp;
+  delete from _recepcion_tmp where true; -- pg_safeupdate (PostgREST) exige WHERE
   insert into _recepcion_tmp
   select (x->>'linea_id')::bigint,
          case when x ? 'sku_id' then (x->>'sku_id')::bigint

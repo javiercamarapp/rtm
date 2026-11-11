@@ -62,7 +62,7 @@ begin
     execute format('alter table operacion.%I force row level security', t);
     execute format('revoke all on operacion.%I from public, anon, authenticated', t);
   end loop;
-  revoke update on operacion.pago_identificacion, operacion.pago_anulacion from postgres;
+  -- UPDATE se conserva para el duenio: una llave foranea lo exige al borrar el padre (FOR KEY SHARE); el trigger T1 lo bloquea de todos modos.
 end $$;
 revoke all on all sequences in schema operacion from public, anon, authenticated;
 

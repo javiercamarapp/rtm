@@ -97,7 +97,7 @@ begin
   v_rec := coalesce((p_ajustes->>'recargo_cent')::bigint, ped.recargo_cent);
 
   create temporary table if not exists _nota_rows (linea_id bigint, modelo text, sabor text, piezas int, precio bigint, costo bigint) on commit drop;
-  delete from _nota_rows;
+  delete from _nota_rows where true; -- pg_safeupdate (PostgREST) exige WHERE
   insert into _nota_rows
   select l.id, m.nombre_canonico, sa.nombre_canonico, s.piezas, coalesce((v_precios->>(l.id::text))::bigint, l.precio_cent), s.costo_valor_cent
   from operacion.pedido_surtido s join operacion.pedido_linea l on l.id = s.pedido_linea_id join catalogo.sku k on k.id = s.sku_id
@@ -337,7 +337,7 @@ begin
   end if;
 
   create temporary table if not exists _surtido_tmp (linea_id bigint, sku_id bigint, piezas int) on commit drop;
-  delete from _surtido_tmp;
+  delete from _surtido_tmp where true; -- pg_safeupdate (PostgREST) exige WHERE
   if p_surtido is null then
     insert into _surtido_tmp select id, sku_id, piezas_pedidas from operacion.pedido_linea where pedido_id = ped.id;
   else
@@ -401,7 +401,7 @@ begin
   -- Aceptacion de avisos.
   if v_pend > 0 then
     insert into operacion.pedido_aviso_decision (aviso_id, decidido_por, decidido_por_nombre, evento_id)
-      select a.id, nullif(current_setting('request.jwt.claim.sub', true), '')::uuid, (select s2.nombre from catalogo.socio s2 where s2.id = operacion.actor_socio()), v_ev
+      select a.id, auth.uid(), (select s2.nombre from catalogo.socio s2 where s2.id = operacion.actor_socio()), v_ev
       from operacion.pedido_aviso a where a.pedido_id = ped.id and not exists (select 1 from operacion.pedido_aviso_decision d where d.aviso_id = a.id);
     get diagnostics v_n_aceptados = row_count;
   end if;
@@ -418,7 +418,7 @@ begin
   v_nota := operacion.armar_nota(ped.id, '{}'::jsonb);
   v_texto := operacion.texto_nota(v_nota->'cliente');
   insert into operacion.nota (pedido_id, folio_documento, tipo, texto_whatsapp, snapshot_cliente, snapshot_interno, total_cent, emitida_por, evento_id)
-    values (ped.id, ped.folio, 'original', v_texto, v_nota->'cliente', v_nota->'interno', (v_nota->>'total_cent')::bigint, nullif(current_setting('request.jwt.claim.sub', true), '')::uuid, v_ev) returning id into v_nota_id;
+    values (ped.id, ped.folio, 'original', v_texto, v_nota->'cliente', v_nota->'interno', (v_nota->>'total_cent')::bigint, auth.uid(), v_ev) returning id into v_nota_id;
   insert into operacion.nota_documento (nota_id, variante, sha256, contenido) values (v_nota_id, 'cliente_texto', encode(sha256(convert_to(v_texto, 'UTF8')), 'hex'), convert_to(v_texto, 'UTF8'));
 
   -- El saldo a favor del cliente (anticipos, piezas que no llegaron) se aplica a este pedido.
@@ -506,7 +506,7 @@ begin
   v_texto := operacion.texto_nota(v_nota->'cliente');
   v_ev := operacion.crear_evento('nota_correccion', negocio.hoy(), p_clave_idem, jsonb_build_object('pedido', ped.folio, 'folio_documento', v_folio));
   insert into operacion.nota (pedido_id, folio_documento, tipo, corrige_nota_id, motivo_correccion, texto_whatsapp, snapshot_cliente, snapshot_interno, ajustes, total_cent, emitida_por, evento_id)
-    values (ped.id, v_folio, 'correccion', ult.id, p_motivo, v_texto, v_nota->'cliente', v_nota->'interno', v_aj, (v_nota->>'total_cent')::bigint, nullif(current_setting('request.jwt.claim.sub', true), '')::uuid, v_ev) returning id into v_id;
+    values (ped.id, v_folio, 'correccion', ult.id, p_motivo, v_texto, v_nota->'cliente', v_nota->'interno', v_aj, (v_nota->>'total_cent')::bigint, auth.uid(), v_ev) returning id into v_id;
   insert into operacion.nota_documento (nota_id, variante, sha256, contenido) values (v_id, 'cliente_texto', encode(sha256(convert_to(v_texto, 'UTF8')), 'hex'), convert_to(v_texto, 'UTF8'));
   perform operacion.avisar('nota_corregida_o_anulada', 'NT-008', 'nota_corregida:' || v_id, 'I', 'Nota ' || ult.folio_documento || ' corregida por ' || v_folio, 'pedido', ped.id,
     jsonb_build_object('folio', ped.folio, 'documento', v_folio), ped.duenio_id, v_ev, true, array['software', 'telegram']);

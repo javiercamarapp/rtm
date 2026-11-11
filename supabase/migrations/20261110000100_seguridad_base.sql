@@ -156,7 +156,7 @@ create function seguridad.registrar_auditoria(p_tabla text, p_accion text, p_reg
 returns void language sql set search_path = ''
 as $$
   insert into seguridad.auditoria (actor, canal, tabla, accion, registro_id, antes, despues)
-  values (nullif(current_setting('request.jwt.claim.sub', true), '')::uuid, p_canal, p_tabla, p_accion, p_registro, p_antes, p_despues)
+  values (auth.uid(), p_canal, p_tabla, p_accion, p_registro, p_antes, p_despues)
 $$;
 
 create function seguridad.verificar_cadena_auditoria() returns boolean

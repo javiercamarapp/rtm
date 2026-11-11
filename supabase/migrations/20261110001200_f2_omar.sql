@@ -95,7 +95,7 @@ begin
     execute format('create trigger %I before truncate on operacion.%I for each statement execute function seguridad.t1_solo_insercion()', t || '_t1t', t);
     execute format('revoke delete, truncate on operacion.%I from postgres', t);
   end loop;
-  revoke update on operacion.pago_omar from postgres;
+  -- UPDATE se conserva para el duenio: una llave foranea lo exige al borrar el padre (FOR KEY SHARE); el trigger T1 lo bloquea de todos modos.
   for t in select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'operacion' and c.relkind = 'r' loop
     execute format('alter table operacion.%I enable row level security', t);
     execute format('alter table operacion.%I force row level security', t);
@@ -179,7 +179,7 @@ begin
   end if;
   insert into operacion.toma_omar (folio, persona_bodega_id, sku_id, modelo_id, piezas, precio_cent, fecha_neg, via, estado, resuelta_at, resuelta_por, movimiento_id, evento_id)
     values (v_folio, pb.id, (r->>'sku_id')::bigint, (r->>'modelo_id')::bigint, p_piezas, v_precio, v_fecha, p_via, v_estado,
-            case when v_estado = 'autorizada' then now() end, case when v_estado = 'autorizada' then nullif(current_setting('request.jwt.claim.sub', true), '')::uuid end, v_mov, v_ev) returning id into v_id;
+            case when v_estado = 'autorizada' then now() end, case when v_estado = 'autorizada' then auth.uid() end, v_mov, v_ev) returning id into v_id;
   if v_estado = 'pendiente' then
     insert into operacion.reserva (sku_id, piezas, origen_tipo, origen_id) values ((r->>'sku_id')::bigint, p_piezas, 'toma_omar', v_id);
   end if;
@@ -210,7 +210,7 @@ begin
     perform operacion.exigir_semana_omar_abierta(negocio.hoy());
     insert into operacion.movimiento_inventario (fecha_neg, sku_id, modelo_id, ubicacion, tipo, cantidad, evento_id)
       values (negocio.hoy(), t.sku_id, t.modelo_id, 'bodega_omar', 'salida_toma_omar', -t.piezas, v_ev) returning id into v_mov;
-    update operacion.toma_omar set estado = 'autorizada', resuelta_at = now(), resuelta_por = nullif(current_setting('request.jwt.claim.sub', true), '')::uuid, movimiento_id = v_mov where id = t.id;
+    update operacion.toma_omar set estado = 'autorizada', resuelta_at = now(), resuelta_por = auth.uid(), movimiento_id = v_mov where id = t.id;
     update operacion.reserva set estado = 'aplicada', resuelta_at = now() where origen_tipo = 'toma_omar' and origen_id = t.id and estado = 'activa';
     v_nuevo := 'autorizada';
     if t.precio_cent is null then
@@ -219,7 +219,7 @@ begin
     end if;
   elsif p_accion in ('rechazar', 'caducar') then
     v_nuevo := case p_accion when 'rechazar' then 'rechazada' else 'caducada' end;
-    update operacion.toma_omar set estado = v_nuevo, resuelta_at = now(), resuelta_por = nullif(current_setting('request.jwt.claim.sub', true), '')::uuid where id = t.id;
+    update operacion.toma_omar set estado = v_nuevo, resuelta_at = now(), resuelta_por = auth.uid() where id = t.id;
     update operacion.reserva set estado = 'liberada', resuelta_at = now() where origen_tipo = 'toma_omar' and origen_id = t.id and estado = 'activa';
   else
     perform operacion.exigir_semana_omar_abierta(t.fecha_neg);

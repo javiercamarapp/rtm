@@ -1,6 +1,6 @@
 /* Pantallas de F2: pedidos y notas, compras, paquetes, cuentas por cobrar y avisos. Solo tokens; sin colores literales. */
 
-.rtm-segmentado { display: inline-flex; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); padding: 2px; gap: 2px; }
+.rtm-segmentado { align-self: flex-start; display: inline-flex; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); padding: 2px; gap: 2px; }
 .rtm-segmentado a, .rtm-segmentado button { display: inline-flex; align-items: center; height: 30px; padding: 0 var(--rtm-e-4); border: 0; border-radius: var(--rtm-r-pildora); background: transparent; color: var(--rtm-ink-2); text-decoration: none; font-size: 13px; font-weight: 500; cursor: pointer; }
 .rtm-segmentado [aria-current='true'] { background: var(--rtm-fill-active); color: var(--rtm-ink); font-weight: 600; }
 

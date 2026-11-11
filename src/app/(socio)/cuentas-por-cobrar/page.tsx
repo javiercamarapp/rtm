@@ -23,7 +23,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
     for (const [k, v] of [...q.entries()]) if (!v) q.delete(k);
     return q.toString() ? `/cuentas-por-cobrar?${q.toString()}` : '/cuentas-por-cobrar';
   };
-  const barras = (Object.keys(CUBETA) as (keyof typeof d.antiguedad)[]).map((k) => ({ etiqueta: CUBETA[k]!, valor: Number(d.antiguedad[k]), texto: formatearMoneda(d.antiguedad[k]), destacado: false }));
+  const barras = (Object.keys(CUBETA) as (keyof typeof d.antiguedad_cent)[]).map((k) => ({ etiqueta: CUBETA[k]!, valor: Number(d.antiguedad_cent[k]), texto: formatearMoneda(d.antiguedad_cent[k]), destacado: false }));
   const hayAntiguedad = barras.some((b) => b.valor > 0);
 
   return (
@@ -40,8 +40,8 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
       <div className="rtm-kpis">
         <div className="rtm-kpi"><span>Total por cobrar</span><strong><CifraComprobada texto={formatearMoneda(d.total_cent)} cifra="cxc:total" comprobacion="cuadra" /></strong></div>
         <div className="rtm-kpi"><span>Vencido</span><strong>{formatearMoneda(d.vencido_cent)}</strong></div>
-        <div className="rtm-kpi"><span>De Angelo</span><strong>{formatearMoneda(d.por_duenio['Angelo'] ?? 0n)}</strong></div>
-        <div className="rtm-kpi"><span>De Javier</span><strong>{formatearMoneda(d.por_duenio['Javier'] ?? 0n)}</strong></div>
+        <div className="rtm-kpi"><span>De Angelo</span><strong>{formatearMoneda(d.por_duenio_cent['Angelo'] ?? 0n)}</strong></div>
+        <div className="rtm-kpi"><span>De Javier</span><strong>{formatearMoneda(d.por_duenio_cent['Javier'] ?? 0n)}</strong></div>
       </div>
 
       <div className="rtm-barra-filtros" aria-label="Filtros">

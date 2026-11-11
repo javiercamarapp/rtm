@@ -196,7 +196,7 @@ create function operacion.actor_socio() returns bigint
 language sql stable security definer set search_path = ''
 as $$
   select s.id from seguridad.usuario u join catalogo.socio s on s.nombre = u.socio_nombre
-  where u.id = nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+  where u.id = auth.uid()
 $$;
 
 -- Emision idempotente: misma clave => solo sube el conteo (un asunto recurrente no se duplica). Nunca se llama desde la web: solo desde
@@ -223,7 +223,7 @@ as $$
 declare v_n int;
 begin
   update operacion.aviso set estado = 'resuelta', resuelto_at = now(), actualizado_at = now(),
-         resuelto_por = nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+         resuelto_por = auth.uid()
    where codigo = p_codigo and entidad_tipo = p_entidad_tipo and entidad_id = p_entidad_id and estado = 'abierta';
   get diagnostics v_n = row_count;
   return v_n;
@@ -241,7 +241,7 @@ begin
     -- Una llave foranea exige UPDATE al duenio (FOR KEY SHARE): en las tablas que se referencian a si mismas lo bloquea el trigger T1.
     execute format('revoke delete, truncate on operacion.%I from postgres', t);
   end loop;
-  revoke update on operacion.aportacion_socio from postgres;
+  -- UPDATE se conserva para el duenio: una llave foranea lo exige al borrar el padre (FOR KEY SHARE); el trigger T1 lo bloquea de todos modos.
   -- La partida fuera de la sociedad cambia de estado (se aplica, se reembolsa o se condona): [ME] controlada por funcion.
   drop trigger partida_fuera_sociedad_t1 on operacion.partida_fuera_sociedad;
   for t in select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'operacion' and c.relkind = 'r' loop

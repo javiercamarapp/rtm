@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState, useTransition } from 'react';
+import { centavosDesdeTexto } from '@/dominio/dinero';
+import { bigintACentavos } from '@/dominio/operacion/json';
 import { ejecutar } from './acciones';
 
 /**
@@ -33,11 +35,12 @@ export function useAccion() {
   return { correr, ocupado, error, limpiarError: () => setError(null) };
 }
 
-/** Pesos escritos por una persona ("250", "1,234.50") a centavos enteros para la base; null si no es un monto valido. Sin decimales flotantes. */
+/** Pesos escritos por una persona ("250", "1,234.50") a centavos enteros para la base; null si no es un monto valido o es negativo. Sin decimales flotantes. */
 export function centavosDeTexto(texto: string): number | null {
-  const limpio = texto.trim().replace(/[$,\s]/g, '');
-  const m = /^(\d+)(?:\.(\d{1,2}))?$/.exec(limpio);
-  if (!m) return null;
-  const cent = BigInt(m[1]!) * 100n + BigInt((m[2] ?? '').padEnd(2, '0') || '0');
-  return cent <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(cent) : null;
+  try {
+    const c = centavosDesdeTexto(texto);
+    return c < 0n ? null : bigintACentavos(c);
+  } catch {
+    return null;
+  }
 }

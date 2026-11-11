@@ -160,3 +160,72 @@ export async function entrarComo(page: import('@playwright/test').Page, correo: 
   await page.getByTestId('confirmar-acceso').click();
   await page.waitForURL(`**${destino.split('?')[0]}**`);
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// F2: datos ILUSTRATIVOS de operacion (modelos, cliente, existencias y un pago redirigido a Karen). Los hechos de negocio son de solo
+// insercion y no se pueden borrar: cada corrida usa un sufijo propio ("E2E F2 ... <sufijo>") y `verificar` reinicia la base antes y despues.
+// ---------------------------------------------------------------------------------------------------------------------------------
+export interface DatosF2 {
+  sufijo: string; cliente: string; clienteId: number; pagador: string; modeloA: string; modeloB: string; marca: string;
+}
+
+export async function sembrarOperacionE2E(): Promise<DatosF2> {
+  const sufijo = Date.now().toString(36);
+  const marca = 'E2E F2 Marca';
+  const modeloA = `E2E F2 Alfa ${sufijo}`;
+  const modeloB = `E2E F2 Beta ${sufijo}`;
+  const cliente = `E2E F2 Cliente ${sufijo}`;
+  const pagador = `E2E F2 Pagador ${sufijo}`;
+  return conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    await c.query("select catalogo.asegurar_cliente($1,'Javier')", [`E2E F2 Omar ${sufijo}`]);
+    await c.query('select catalogo.asegurar_persona_bodega($1,$1)', [`E2E F2 Omar ${sufijo}`]);
+    await c.query("select catalogo.asegurar_cliente($1,'Angelo')", [cliente]);
+    await c.query("select catalogo.asegurar_cliente($1,'Javier')", [pagador]);
+    await c.query("select catalogo.asegurar_modelo($1,$2,50000,'ambas')", [marca, modeloA]);
+    await c.query("select catalogo.asegurar_modelo($1,$2,15000,'ambas')", [marca, modeloB]);
+    for (const s of ['Fresa', 'Mango']) await c.query('select catalogo.asegurar_sku($1,$2)', [modeloA, s]);
+    await c.query('select catalogo.asegurar_sku($1,$2)', [modeloB, 'Uva']);
+    await c.query("select catalogo.fijar_costo($1,'Isaac',$2,10000,'2026-11-01','e2e')", [`e2e2:ci:${sufijo}`, modeloA]);
+    await c.query("select catalogo.fijar_costo($1,'Karen',$2,11000,'2026-11-01','e2e')", [`e2e2:ck:${sufijo}`, modeloB]);
+    await c.query("select catalogo.fijar_costo($1,'Isaac',$2,12000,'2026-11-01','e2e')", [`e2e2:cib:${sufijo}`, modeloB]);
+    await c.query("select catalogo.fijar_precio($1,$2,$3,15000,'2026-11-01','chat')", [`e2e2:p:${sufijo}`, cliente, modeloA]);
+    await c.query("select operacion.registrar_movimiento($1,$2,'Fresa','bodega_omar','entrada_compra',100,1000000,negocio.hoy(),'Entrada ilustrativa')", [`e2e2:m1:${sufijo}`, modeloA]);
+    await c.query("select operacion.registrar_movimiento($1,$2,'Mango','bodega_omar','entrada_compra',60,600000,negocio.hoy(),'Entrada ilustrativa')", [`e2e2:m2:${sufijo}`, modeloA]);
+    // Un cliente le manda 30,500 directo a Karen: saldo a favor de la sociedad con ese proveedor.
+    const id = await c.query('select id from catalogo.cliente where nombre_canonico = $1', [pagador]);
+    await c.query("select operacion.registrar_pago($1,'Karen',3050000,$2,null,false,'anticipo',negocio.hoy(),null,'Pago ilustrativo redirigido a Karen')", [`e2e2:pk:${sufijo}`, Number(id.rows[0].id)]);
+    const cid = await c.query('select id from catalogo.cliente where nombre_canonico = $1', [cliente]);
+    await c.query('commit');
+    return { sufijo, cliente, clienteId: Number(cid.rows[0].id), pagador, modeloA, modeloB, marca };
+  });
+}
+
+export async function consultar<T = Record<string, unknown>>(sql: string, args: unknown[] = []): Promise<T[]> {
+  return conDb(async (c) => (await c.query(sql, args)).rows as T[]);
+}
+
+/** Crea y confirma un pedido por la via de importacion (para probar Paquetes por hacer sin pasar otra vez por el formulario). */
+export async function pedidoConfirmadoE2E(d: DatosF2, piezas: number, clave: string): Promise<number> {
+  return conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    const r = await c.query("select (operacion.crear_pedido($1,$2,$3::jsonb,'bodega_omar',null,0,0,0)->>'pedido_id')::bigint as id", [`e2e2:${clave}:${d.sufijo}`, d.clienteId, JSON.stringify([{ modelo: d.modeloA, sabor: 'Mango', piezas }])]);
+    const id = Number(r.rows[0].id);
+    await c.query('select operacion.confirmar_pedido($1,$2)', [`e2e2:${clave}c:${d.sufijo}`, id]);
+    await c.query('commit');
+    return id;
+  });
+}
+
+/** Una orden de compra en borrador a Karen (por la via de importacion) para recorrer su pantalla en movil. */
+export async function compraBorradorE2E(d: DatosF2, clave: string): Promise<number> {
+  return conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    const r = await c.query("select (operacion.crear_compra($1,'Karen',$2::jsonb)->>'compra_id')::bigint as id", [`e2e2:${clave}:${d.sufijo}`, JSON.stringify([{ modelo: d.modeloB, sabor: 'Uva', pagadas: 120 }])]);
+    await c.query('commit');
+    return Number(r.rows[0].id);
+  });
+}

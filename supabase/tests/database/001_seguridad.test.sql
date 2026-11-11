@@ -24,12 +24,14 @@ select is(negocio.redondear_medio_arriba(-1, 2), 0::bigint, '-.5 -> 0 (medio arr
 select is(negocio.redondear_medio_arriba(-3, 2), -1::bigint, '-1.5 -> -1');
 
 -- Folios sin huecos: un rollback no consume folio -------------------------------
-select is(seguridad.siguiente_folio('P'), 'P-0001', 'primer folio de pedido');
-select is(seguridad.siguiente_folio('P'), 'P-0002', 'segundo folio');
+create temp table _fol as select ultimo as p0 from seguridad.contador_folio where serie = 'P';
+create function pg_temp.fol(k int) returns text language sql as $$ select 'P-' || lpad(((select p0 from _fol) + k)::text, 4, '0') $$;
+select is(seguridad.siguiente_folio('P'), pg_temp.fol(1), 'primer folio de pedido (consecutivo)');
+select is(seguridad.siguiente_folio('P'), pg_temp.fol(2), 'segundo folio');
 savepoint a;
 select seguridad.siguiente_folio('P'); -- consume P-0003 dentro del savepoint
 rollback to savepoint a;
-select is(seguridad.siguiente_folio('P'), 'P-0003', 'tras el rollback el folio P-0003 no se consumio');
+select is(seguridad.siguiente_folio('P'), pg_temp.fol(3), 'tras el rollback el folio no se consumio');
 select throws_ok($$select seguridad.siguiente_folio('X')$$, '22023', null, 'serie desconocida rechazada');
 
 -- Limite de intentos: conteo atomico por ventana -------------------------------------

@@ -183,7 +183,7 @@ as $$
 declare v_id bigint;
 begin
   insert into operacion.evento (tipo, fecha_neg, actor_id, canal, mensaje_origen, payload, clave_idem, reversa_de, motivo_reversa)
-  values (p_tipo, p_fecha, nullif(current_setting('request.jwt.claim.sub', true), '')::uuid, seguridad.canal_actual(), p_origen, p_payload, p_clave, p_reversa_de, p_motivo)
+  values (p_tipo, p_fecha, auth.uid(), seguridad.canal_actual(), p_origen, p_payload, p_clave, p_reversa_de, p_motivo)
   returning id into v_id;
   return v_id;
 end $$;
@@ -242,7 +242,7 @@ begin
   v_prev := seguridad.iniciar_operacion(p_clave_idem, jsonb_build_object('fn', 'abrir_conteo', 'u', p_ubicacion, 't', p_tipo, 'c', p_contado_at));
   if v_prev is not null then return v_prev; end if;
   if p_contado_at is null then raise exception 'el conteo exige fecha y hora' using errcode = '23502'; end if;
-  insert into operacion.conteo (ubicacion, tipo, contado_at, contado_por) values (p_ubicacion, p_tipo, p_contado_at, nullif(current_setting('request.jwt.claim.sub', true), '')::uuid) returning id into v_id;
+  insert into operacion.conteo (ubicacion, tipo, contado_at, contado_por) values (p_ubicacion, p_tipo, p_contado_at, auth.uid()) returning id into v_id;
   v_res := jsonb_build_object('conteo_id', v_id);
   perform seguridad.terminar_operacion(p_clave_idem, v_res);
   return v_res;
@@ -266,7 +266,7 @@ begin
   v_ev := operacion.crear_evento('conteo_cerrado', negocio.fecha_neg(c.contado_at), p_clave_idem, jsonb_build_object('conteo', c.id));
 
   create temporary table if not exists _conteo_tmp (modelo_id bigint, sku_id bigint, contado int, esperado int, expl_tipo text, expl_ref text) on commit drop;
-  delete from _conteo_tmp;
+  delete from _conteo_tmp where true; -- pg_safeupdate (PostgREST) exige WHERE
   insert into _conteo_tmp
   select s.modelo_id, s.id, (x->>'contado')::int, coalesce(u.piezas, 0), x->>'explicacion_tipo', x->>'explicacion_ref'
   from jsonb_array_elements(p_lineas) x

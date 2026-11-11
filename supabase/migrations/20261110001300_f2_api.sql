@@ -269,8 +269,8 @@ begin
     'hoy', v_hoy, 'filas', v_filas,
     'total_cent', (select coalesce(sum((f->>'saldo_cent')::bigint) filter (where (f->>'saldo_cent')::bigint > 0), 0) from jsonb_array_elements(v_filas) f),
     'vencido_cent', (select coalesce(sum((f->>'saldo_cent')::bigint) filter (where f->>'estado' = 'vencido'), 0) from jsonb_array_elements(v_filas) f),
-    'antiguedad', (select jsonb_object_agg(k, coalesce((select sum((f->>'saldo_cent')::bigint) from jsonb_array_elements(v_filas) f where f->>'cubeta' = k and (f->>'saldo_cent')::bigint > 0), 0)) from unnest(array['0_7', '8_14', '15_30', 'mas_30']) k),
-    'por_duenio', (select coalesce(jsonb_object_agg(d, coalesce((select sum((f->>'saldo_cent')::bigint) from jsonb_array_elements(v_filas) f where f->>'duenio' = d and (f->>'saldo_cent')::bigint > 0), 0)), '{}'::jsonb) from unnest(array['Angelo', 'Javier']) d),
+    'antiguedad_cent', (select jsonb_object_agg(k, coalesce((select sum((f->>'saldo_cent')::bigint) from jsonb_array_elements(v_filas) f where f->>'cubeta' = k and (f->>'saldo_cent')::bigint > 0), 0)) from unnest(array['0_7', '8_14', '15_30', 'mas_30']) k),
+    'por_duenio_cent', (select coalesce(jsonb_object_agg(d, coalesce((select sum((f->>'saldo_cent')::bigint) from jsonb_array_elements(v_filas) f where f->>'duenio' = d and (f->>'saldo_cent')::bigint > 0), 0)), '{}'::jsonb) from unnest(array['Angelo', 'Javier']) d),
     'saldos_a_favor', coalesce((select jsonb_agg(jsonb_build_object('cliente_id', c.id, 'cliente', c.nombre_canonico, 'duenio', s.nombre, 'monto_cent', operacion.saldo_favor_cliente(c.id)) order by c.nombre_canonico)
       from catalogo.cliente c join catalogo.socio s on s.id = c.duenio_id where operacion.saldo_favor_cliente(c.id) > 0), '[]'::jsonb),
     'pagos_sin_identificar', coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'folio', p.folio, 'fecha_neg', p.fecha_neg, 'monto_cent', p.monto_cent, 'cuenta', cd.nombre) order by p.id)
@@ -325,7 +325,7 @@ end $$;
 create function api.avisos_lista(p_estado text default 'abierta') returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
-declare v_yo bigint := operacion.actor_socio(); v_uid uuid := nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
+declare v_yo bigint := operacion.actor_socio(); v_uid uuid := auth.uid();
 begin
   perform seguridad.exigir_rol(array['socio']);
   return jsonb_build_object('sin_leer', (select count(*) from operacion.aviso a where a.estado = 'abierta' and not (a.solo_otro and a.actor_socio_id = v_yo) and not exists (select 1 from operacion.aviso_lectura l where l.aviso_id = a.id and l.usuario_id = v_uid)),
@@ -338,7 +338,7 @@ end $$;
 create function operacion.aviso_marcar_leido(p_clave_idem text, p_aviso bigint) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
-declare v_uid uuid := nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
+declare v_uid uuid := auth.uid();
 begin
   perform seguridad.exigir_rol(array['socio']);
   if v_uid is null then raise exception 'sin sesion' using errcode = '42501'; end if;

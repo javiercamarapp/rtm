@@ -10,6 +10,13 @@ insert into auth.users (id, instance_id, aud, role, email) values
   ('53333333-3333-3333-3333-333333333333', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'api.socio2@example.test');
 
 select set_config('rtm.canal', 'importacion', true);
+-- Punto de partida conocido sin depender de datos previos: se neutralizan, DENTRO de la transaccion (que se revierte), los saldos de socios.
+select operacion.crear_evento('ajuste_prueba', negocio.hoy(), 'neutro-010', '{}'::jsonb);
+insert into operacion.cuenta_socio_mov (socio_id, fecha_neg, concepto, aplica_a, monto_cent, nota, evento_id)
+  select s.id, negocio.hoy(), 'entrega_a_sociedad', a.k, -operacion.saldo_socio(s.id, a.k), 'neutraliza para la prueba', (select max(id) from operacion.evento)
+  from catalogo.socio s cross join (values ('fondos'), ('diferencia'), ('general')) a(k) where operacion.saldo_socio(s.id, a.k) <> 0;
+create temp table _c0 as select coalesce(sum(operacion.pedido_saldo(id)), 0)::bigint as total from operacion.pedido where estado = 'enviado' and operacion.pedido_saldo(id) > 0;
+grant select on _c0 to authenticated;
 select catalogo.asegurar_cliente('Api Omar Persona', 'Javier');
 select catalogo.asegurar_persona_bodega('Api Omar Persona', 'Api Omar Persona');
 select catalogo.asegurar_cliente('Api Cliente', 'Javier');
@@ -31,16 +38,16 @@ select is((api.pedido_detalle((select (x->>'id')::bigint from jsonb_array_elemen
 select ok((api.pedido_catalogo((select (x->>'id')::bigint from jsonb_array_elements(api.clientes_lista()) x where x->>'nombre' = 'Api Cliente'))->'skus') @> '[{"modelo":"Api Modelo 50K","precio_cent":15000}]'::jsonb, 'api.pedido_catalogo(): precio del tabulador y existencia');
 select lives_ok($$select api.confirmar_pedido('apx1c', (select (x->>'id')::bigint from jsonb_array_elements(api.pedidos_lista()) x where x->>'cliente' = 'Api Cliente' limit 1))$$, 'api.confirmar_pedido');
 select is(jsonb_array_length(api.paquetes_por_hacer()->'pedidos') >= 1, true, 'api.paquetes_por_hacer(): el pedido confirmado aparece');
-select is((api.paquetes_por_hacer()->'surtido'->0->>'piezas')::int, 40, 'lista de surtido por modelo y sabor');
+select is((select (x->>'piezas')::int from jsonb_array_elements(api.paquetes_por_hacer()->'surtido') x where x->>'modelo' = 'Api Modelo 50K'), 40, 'lista de surtido por modelo y sabor');
 select lives_ok($$select api.enviar_pedido('apx1s', (select (x->>'id')::bigint from jsonb_array_elements(api.pedidos_lista()) x where x->>'cliente' = 'Api Cliente' limit 1), null, null, '2026-11-10', true)$$, 'api.enviar_pedido');
 select is((api.explicar_cifra('pedido:total:' || (select (x->>'id') from jsonb_array_elements(api.pedidos_lista()) x where x->>'cliente' = 'Api Cliente' limit 1))->'comprobacion'->>'cuadra')::boolean, true, 'Explicar el total del pedido: cuadra por dos vias');
 select lives_ok($$select api.registrar_pago('apx1p', 'Javier', 200000, (select (x->>'id')::bigint from jsonb_array_elements(api.clientes_lista()) x where x->>'nombre' = 'Api Cliente'))$$, 'api.registrar_pago a la cuenta de un socio');
 select is((api.explicar_cifra('pedido:saldo:' || (select (x->>'id') from jsonb_array_elements(api.pedidos_lista()) x where x->>'cliente' = 'Api Cliente' limit 1))->'comprobacion'->>'cuadra')::boolean, true, 'Explicar el saldo del pedido: cuadra');
 select is((api.explicar_cifra('socio:deuda:Javier')->'comprobacion'->>'cuadra')::boolean, true, 'Explicar la deuda del socio: cuadra');
 select is((api.explicar_cifra('socio:deuda:Javier')->>'valor')::bigint, 200000::bigint, 'Javier debe lo que cayo en su cuenta');
-select is((api.explicar_cifra('cxc:total')->>'valor')::bigint, 400000::bigint, 'por cobrar: 40 x 150 = 6,000 menos 2,000');
-select is((api.cuentas_por_cobrar()->>'total_cent')::bigint, 400000::bigint, 'api.cuentas_por_cobrar()');
-select is((api.cuentas_por_cobrar()->'filas'->0->>'estado'), 'sin_plazo', 'sin plazo acordado: estado en palabra');
+select is((api.explicar_cifra('cxc:total')->>'valor')::bigint - (select total from _c0), 400000::bigint, 'por cobrar: 40 x 150 = 6,000 menos 2,000');
+select is((api.cuentas_por_cobrar()->>'total_cent')::bigint - (select total from _c0), 400000::bigint, 'api.cuentas_por_cobrar()');
+select is((select f->>'estado' from jsonb_array_elements(api.cuentas_por_cobrar()->'filas') f where f->>'cliente' = 'Api Cliente'), 'sin_plazo', 'sin plazo acordado: estado en palabra');
 select is((api.proveedor_cuenta('Vapemate')->>'proveedor'), 'Karen', 'Vapemate es el alias de Karen');
 select ok(api.proveedor_cuenta('Karen') ? 'etiqueta', 'api.proveedor_cuenta()');
 select ok(api.avisos_lista()->'avisos' is not null, 'api.avisos_lista()');

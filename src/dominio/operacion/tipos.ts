@@ -83,7 +83,7 @@ export interface FilaCxc {
   original_cent: Cent; abonos_cent: Cent; saldo_cent: Cent; dias: number; dias_atraso: number | null; estado: 'al_corriente' | 'por_vencer' | 'vencido' | 'sin_plazo' | 'saldo_a_favor'; cubeta: '0_7' | '8_14' | '15_30' | 'mas_30';
 }
 export interface CuentasPorCobrar {
-  hoy: string; filas: FilaCxc[]; total_cent: Cent; vencido_cent: Cent; antiguedad: Record<'0_7' | '8_14' | '15_30' | 'mas_30', Cent>; por_duenio: Record<string, Cent>;
+  hoy: string; filas: FilaCxc[]; total_cent: Cent; vencido_cent: Cent; antiguedad_cent: Record<'0_7' | '8_14' | '15_30' | 'mas_30', Cent>; por_duenio_cent: Record<string, Cent>;
   saldos_a_favor: { cliente_id: number; cliente: string; duenio: string; monto_cent: Cent }[];
   pagos_sin_identificar: { id: number; folio: string; fecha_neg: string; monto_cent: Cent; cuenta: string }[];
   socios: { socio: 'Angelo' | 'Javier'; deuda_cent: Cent; fondos_cent: Cent; diferencia_cent: Cent }[];
