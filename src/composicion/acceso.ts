@@ -2,7 +2,7 @@
 // que conoce infra y aplicacion a la vez; las paginas importan de aqui y nunca de infra.
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { completarAcceso, type SalidaCallback } from '@/aplicacion/acceso/completar_acceso';
+import { completarAcceso, completarConfirmacion, type SalidaCallback } from '@/aplicacion/acceso/completar_acceso';
 import { correoExcedeTopes, ipExcedeTope } from '@/aplicacion/acceso/limites';
 import type { DepsAcceso, Perfil } from '@/aplicacion/acceso/puertos';
 import { reenviarEnlaceCaducado, urlCallback } from '@/aplicacion/acceso/reenvio';
@@ -75,4 +75,8 @@ export async function exigirSocio(): Promise<SesionActiva> {
   const perfil = estado.perfil;
   if (!perfil || !perfil.activo || perfil.rol !== 'socio') redirect('/login?error=desactivada');
   return { perfil };
+}
+
+export function procesarConfirmacion(entrada: { tokenHash: string | null; tipo: string | null; next: string | null }): Promise<SalidaCallback> {
+  return ipActual().then((ip) => completarConfirmacion(deps(), { ...entrada, ip }));
 }

@@ -7,6 +7,8 @@ export interface ErrorOtp {
   status?: number;
 }
 
+export type TipoEnlace = 'magiclink' | 'email';
+
 export interface Perfil {
   rol: Rol;
   socio_nombre: 'Angelo' | 'Javier' | null;
@@ -20,6 +22,8 @@ export interface Autenticador {
   /** Pide el enlace magico. Nunca crea usuarios (shouldCreateUser: false). */
   enviarEnlace(correo: string, redirectTo: string): Promise<{ error: ErrorOtp | null }>;
   canjearCodigo(code: string): Promise<{ error: ErrorOtp | null }>;
+  /** Plan alterno del enlace magico (iPhone con la app instalada): verifica el token_hash sin depender del navegador que pidio el enlace. */
+  canjearTokenHash(tokenHash: string, tipo: TipoEnlace): Promise<{ error: ErrorOtp | null }>;
   sesion(): Promise<EstadoSesion>;
   cerrarSesion(): Promise<void>;
 }

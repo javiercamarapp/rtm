@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { completarAcceso } from '@/aplicacion/acceso/completar_acceso';
+import { completarAcceso, completarConfirmacion } from '@/aplicacion/acceso/completar_acceso';
 import { correoExcedeTopes, TOPE_GLOBAL, TOPE_IP, TOPE_POR_CORREO } from '@/aplicacion/acceso/limites';
 import type { Autenticador, DepsAcceso, EstadoSesion, LimitadorIntentos, TipoClave } from '@/aplicacion/acceso/puertos';
 import { reenviarEnlaceCaducado } from '@/aplicacion/acceso/reenvio';
@@ -31,6 +31,9 @@ function armar(over: { estado?: EstadoSesion; canje?: { code?: string; message?:
       return { error: null };
     },
     async canjearCodigo() {
+      return { error: over.canje ?? null };
+    },
+    async canjearTokenHash() {
       return { error: over.canje ?? null };
     },
     async sesion() {
@@ -119,6 +122,32 @@ describe('completar el acceso (callback)', () => {
   it('error generico sin code', async () => {
     const a = armar();
     expect((await completarAcceso(a.deps, { code: null, next: null, errorCode: null, ip: '1.1.1.1' })).destino).toBe('/login?error=1');
+  });
+});
+
+describe('confirmar el acceso (plan alterno token_hash)', () => {
+  const ent = { tokenHash: 'abc', tipo: 'magiclink', next: '/catalogo', ip: '1.1.1.1' };
+  it('cuenta activa con rol socio entra al destino', async () => {
+    const { deps } = armar({ estado: activo });
+    expect(await completarConfirmacion(deps, ent)).toEqual({ destino: '/catalogo' });
+  });
+  it('un next externo cae a la raiz', async () => {
+    const { deps } = armar({ estado: activo });
+    expect((await completarConfirmacion(deps, { ...ent, next: 'https://externo.example.test' })).destino).toBe('/');
+  });
+  it('sin token o con tipo desconocido no intenta nada', async () => {
+    const { deps } = armar({ estado: activo });
+    expect((await completarConfirmacion(deps, { ...ent, tokenHash: null })).destino).toBe('/login?error=enlace');
+    expect((await completarConfirmacion(deps, { ...ent, tipo: 'recovery' })).destino).toBe('/login?error=enlace');
+  });
+  it('token caducado o usado manda al login con el motivo', async () => {
+    const { deps } = armar({ canje: { code: 'otp_expired', message: 'Email link is invalid or has expired' } });
+    expect((await completarConfirmacion(deps, ent)).destino).toBe('/login?error=caducado');
+  });
+  it('cuenta inactiva (Omar): cierra la sesion', async () => {
+    const { deps, cerrada } = armar({ estado: { autenticado: true, perfil: { rol: 'omar', socio_nombre: null, activo: false } } });
+    expect((await completarConfirmacion(deps, ent)).destino).toBe('/login?error=desactivada');
+    expect(cerrada()).toBe(true);
   });
 });
 

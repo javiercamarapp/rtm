@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { destinoSeguro, rutaPropiaSegura } from '@/dominio/acceso/ruta_segura';
 
 describe('ruta propia segura (next)', () => {
-  it.each(['/', '/pedidos', '/pedidos/nuevo', '/inventario?x=1', '/socios#a', '/omar', '/proveedores/'])('acepta %s', (r) => {
+  it.each(['/', '/pedidos', '/pedidos/nuevo', '/catalogo?modelo=3', '/clientes/7', '/inventario?x=1', '/socios#a', '/omar', '/proveedores/'])('acepta %s', (r) => {
     expect(rutaPropiaSegura(r)).toBe(true);
   });
   it.each([

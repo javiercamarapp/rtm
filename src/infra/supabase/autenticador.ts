@@ -28,6 +28,12 @@ export function autenticadorSupabase(): Autenticador {
       return { error: error ? { code: error.code, message: error.message, status: error.status } : null };
     },
 
+    async canjearTokenHash(tokenHash, tipo) {
+      const sb = await crearClienteServidor();
+      const { error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: tipo });
+      return { error: error ? { code: error.code, message: error.message, status: error.status } : null };
+    },
+
     async sesion(): Promise<EstadoSesion> {
       const sb = await crearClienteServidor();
       // getUser valida el token contra Auth; getSession solo leeria la cookie.
