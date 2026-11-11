@@ -65,6 +65,10 @@
   font-size: 12px; color: var(--rtm-chip-texto); background: var(--rtm-chip-fondo);
 }
 .rtm-chip b { font-weight: 600; color: var(--rtm-ink); font-variant-numeric: tabular-nums; }
+.rtm-chip b .rtm-cifra, .rtm-chip-enlace { font-weight: 600; color: var(--rtm-ink); text-decoration: none; }
+.rtm-chip-enlace:hover { text-decoration: underline; }
+.rtm-chip-detalle { font-size: 11px; color: var(--rtm-ink-3); }
+.rtm-chip .rtm-sin-dato { font-weight: 400; color: var(--rtm-ink-3); }
 .rtm-barra-acciones { display: flex; align-items: center; gap: var(--rtm-e-2); flex: none; }
 .rtm-menu-movil { display: none; }
 
@@ -181,3 +185,10 @@
 }
 .rtm-pulso-movil { gap: var(--rtm-e-2); overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .rtm-pulso-movil::-webkit-scrollbar { display: none; }
+
+/* Tactil: los chips del pulso crecen a 44 px para que la cifra explicable y el enlace sean tocables. */
+@media (pointer: coarse) {
+  .rtm-chip { height: auto; min-height: 44px; }
+  .rtm-chip .rtm-cifra { min-height: 0; min-width: 0; }
+  .rtm-chip-enlace { display: inline-flex; align-items: center; min-height: 44px; }
+}
