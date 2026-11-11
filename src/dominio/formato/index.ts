@@ -45,3 +45,18 @@ export function etiquetaDia(f: string, diaLunes0: number): string {
   const p = partes(f);
   return `${DIAS[diaLunes0]} ${p.dia} ${p.mes}`;
 }
+
+/** "2026-11-10" -> "10 nov 2026". */
+export function etiquetaFecha(f: string): string {
+  const p = partes(f);
+  return `${p.dia} ${p.mes} ${f.slice(0, 4)}`;
+}
+
+/** Instante ISO -> "10 nov 14:32" en la hora de Merida (UTC-6 fijo), sin pasar por el formato regional del motor. */
+export function etiquetaFechaHora(iso: string): string {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) throw new RangeError(`instante invalido: ${iso}`);
+  const d = new Date(ms - 6 * 3_600_000);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCDate()} ${MESES[d.getUTCMonth()]} ${dos(d.getUTCHours())}:${dos(d.getUTCMinutes())}`;
+}

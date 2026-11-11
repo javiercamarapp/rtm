@@ -34,10 +34,10 @@ select is(catalogo.resolver_modelo('algo raro')->>'tipo', 'desconocido', 'descon
 
 -- Disponibilidad reversible; los precios se conservan.
 select catalogo.asegurar_cliente('Cliente Prueba A', 'Angelo');
-select catalogo.fijar_precio('p1', 'Cliente Prueba A', 'Marca Prueba Uno 50K', 25000, '2026-11-10', 'documento');
+select catalogo.fijar_precio('p1', 'Cliente Prueba A', 'Marca Prueba Uno 50K', 25757, '2026-11-10', 'documento');
 select catalogo.fijar_disponibilidad('d1', 'Marca Prueba Uno 50K', 'sin_disponibilidad');
 select is((select estado from catalogo.modelo where nombre_canonico = 'Marca Prueba Uno 50K'), 'sin_disponibilidad', 'sin disponibilidad ahora');
-select is((select count(*)::int from catalogo.tabulador_precio where precio_cent = 25000), 1, 'el tabulador se conserva');
+select is((select count(*)::int from catalogo.tabulador_precio where precio_cent = 25757), 1, 'el tabulador se conserva');
 select catalogo.fijar_disponibilidad('d2', 'Marca Prueba Uno 50K', 'disponible');
 select is((select estado from catalogo.modelo where nombre_canonico = 'Marca Prueba Uno 50K'), 'disponible', 'vuelve a disponible');
 

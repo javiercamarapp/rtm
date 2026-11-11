@@ -7,6 +7,7 @@ import '@/ui/estilos/tokens.css';
 import '@/ui/estilos/base.css';
 import '@/ui/estilos/movimiento.css';
 import '@/ui/estilos/shell.css';
+import '@/ui/estilos/componentes.css';
 
 export const metadata: Metadata = {
   title: { default: MARCA.nombre, template: `%s · ${MARCA.nombre}` },

@@ -49,7 +49,7 @@ update seguridad.usuario set activo = true where id = '42222222-2222-2222-2222-2
 select set_config('request.jwt.claim.sub', '42222222-2222-2222-2222-222222222222', true);
 set local role authenticated;
 select is((select count(*)::int from omar.v_mercancia where modelo = 'Marca Rol Uno 50K'), 1, 'omar activo: ve la mercancia de Bodega Omar');
-select is((select precio from omar.v_mis_precios limit 1), 24000::bigint, 'omar activo: ve su tabulador');
+select is((select precio from omar.v_mis_precios where modelo = 'Marca Rol Uno 50K'), 24000::bigint, 'omar activo: ve su tabulador');
 select throws_ok($$select * from catalogo.tabulador_precio$$, '42501', null, 'omar: select fuera de omar.* falla (tabulador)');
 select throws_ok($$select * from catalogo.costo_proveedor$$, '42501', null, 'omar: select fuera de omar.* falla (costos)');
 select throws_ok($$select api.clientes_lista()$$, '42501', null, 'omar: ninguna lectura de socio');

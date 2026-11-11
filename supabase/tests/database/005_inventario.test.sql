@@ -1,6 +1,6 @@
 -- pgTAP: inventario (F1). Cifras de G3/G4/G5 del documento de Angelo; los esperados no salen del codigo.
 begin;
-select plan(26);
+select plan(30);
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('inv.socio@example.test', 'socio', 'Angelo', true);
 insert into auth.users (id, instance_id, aud, role, email) values ('31111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'inv.socio@example.test');
@@ -60,6 +60,12 @@ select lives_ok($$select operacion.cerrar_conteo('g4c', (select max(id) from ope
     from unnest(array[175,192,200,200,166,28,100,159,133,171]) with ordinality t(c, n)) q))$$, 'cierra el conteo');
 select is((select piezas from operacion.existencia_modelo e join catalogo.modelo m on m.id = e.modelo_id where m.nombre_canonico = 'Marca Inv Puente 50K'), 1524, 'G4: piezas fisicas 1,524');
 select is((select valor_cent from operacion.existencia_modelo e join catalogo.modelo m on m.id = e.modelo_id where m.nombre_canonico = 'Marca Inv Puente 50K'), 13951645::bigint, 'G4: inventario restante $139,516.45 (140,615.00 - 1,098.55)');
+
+-- "Explicar este numero": la cifra, su segunda via y los movimientos que la forman.
+select is(api.explicar_cifra('existencia:modelo:' || (select id from catalogo.modelo where nombre_canonico = 'Marca Inv Puente 50K'))->'comprobacion'->>'cuadra', 'true', 'explicar existencia: las dos vias cuadran');
+select is((api.explicar_cifra('existencia:modelo:' || (select id from catalogo.modelo where nombre_canonico = 'Marca Inv Puente 50K'))->>'valor')::int, 1524, 'explicar existencia: 1,524 piezas');
+select ok(jsonb_array_length(api.explicar_cifra('existencia:modelo:' || (select id from catalogo.modelo where nombre_canonico = 'Marca Inv Puente 50K'))->'movimientos') >= 11, 'explicar existencia: trae los movimientos con hora y autor');
+select throws_ok($$select api.explicar_cifra('cualquier cosa')$$, '22023', null, 'cifra desconocida rechazada');
 
 select * from finish();
 rollback;

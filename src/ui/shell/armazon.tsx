@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
-import { IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPedidos, IconoProveedores, IconoSocios } from '../iconos';
+import { IconoCatalogo, IconoClientes, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPedidos, IconoProveedores, IconoSocios } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
 import { Pulso } from './pulso';
@@ -13,6 +13,8 @@ import { Pulso } from './pulso';
 const SECCIONES = [
   { href: '/', etiqueta: 'Inicio', icono: <IconoInicio /> },
   { href: '/pedidos', etiqueta: 'Pedidos y notas', icono: <IconoPedidos /> },
+  { href: '/catalogo', etiqueta: 'Catálogo y precios', icono: <IconoCatalogo /> },
+  { href: '/clientes', etiqueta: 'Clientes', icono: <IconoClientes /> },
   { href: '/inventario', etiqueta: 'Inventario', icono: <IconoInventario /> },
   { href: '/proveedores', etiqueta: 'Proveedores', icono: <IconoProveedores /> },
   { href: '/socios', etiqueta: 'Cuenta de socios', icono: <IconoSocios /> },

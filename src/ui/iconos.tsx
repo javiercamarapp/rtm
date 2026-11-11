@@ -19,3 +19,5 @@ export const IconoSol = () => <Base><circle cx="12" cy="12" r="4" /><path d="M12
 export const IconoLuna = () => <Base><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" /></Base>;
 export const IconoMenu = () => <Base><path d="M4 7h16M4 12h16M4 17h16" /></Base>;
 export const IconoAjustes = () => <Base><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></Base>;
+export const IconoCatalogo = () => <Base><path d="M5 5h9l5 5v9H5z" /><path d="M14 5v5h5M9 14h6M9 17h4" /></Base>;
+export const IconoClientes = () => <Base><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20c.7-3.6 3.2-5.5 6.5-5.5s5.8 1.9 6.5 5.5" /></Base>;
