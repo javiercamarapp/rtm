@@ -49,6 +49,7 @@ for (const f of archivos(join(raiz, 'src'))) {
     if (!enFormato && /\.toLocale(String|DateString|TimeString)\(|Intl\.NumberFormat/.test(codigo) && !exento) falla(f, n, 'formato regional fuera de src/dominio/formato');
     if (enDominio && /Date\.now\(|new Date\(\)|Math\.random\(|process\.env/.test(codigo)) falla(f, n, 'dominio impuro (reloj, azar o entorno)');
     if (!exento && /next\/font\/google|fonts\.googleapis|fonts\.gstatic/.test(codigo)) falla(f, n, 'fuente por red prohibida (usar archivos locales)');
+    if (!exento && f.endsWith('.css') && /flex:\s*\d+\s+\d+\s+\d+px/.test(codigo) && !/>/.test(codigo.split('{')[0])) falla(f, n, 'flex con base en px fuera de un selector de fila (>): en una columna se vuelve alto y deja un hueco en blanco');
     if (!exento && /^src\/(app|ui)\//.test(rel)) {
       if (/\bduenio\b|\bDuenio\b/.test(codigo)) falla(f, n, 'parametro o campo duenio en la interfaz (RTM es un solo negocio; no se divide por dueno)');
       if (/Due(ñ|n)o\b/.test(codigo) && !/Dueño? de la sociedad/.test(codigo)) falla(f, n, "columna, etiqueta o texto 'Dueño' en la interfaz");
