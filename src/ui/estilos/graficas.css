@@ -1,0 +1,175 @@
+/* Biblioteca de graficas SVG propias. Solo tokens (sin colores literales). Blanco y negro con el acento como token; claro y oscuro por los tokens.
+   Una serie = gris tinta con el elemento focal en el acento. Movimiento: solo transform, opacity y stroke-dashoffset, y solo con data-anim="on"
+   (modo full). Con reducido o apagado no hay ninguna animacion y el estado final es el mismo. */
+
+/* ---- Marco ---- */
+.rtm-g { min-width: 0; }
+.rtm-g-cabeza { display: flex; align-items: center; justify-content: space-between; gap: var(--rtm-e-3); flex-wrap: wrap; }
+.rtm-g-pie { margin: 0; font-size: 12px; color: var(--rtm-ink-3); }
+.rtm-g-lectura { margin: 0; font-size: 13px; color: var(--rtm-ink-2); }
+.rtm-g-aviso { display: flex; flex-direction: column; gap: var(--rtm-e-1); padding: var(--rtm-e-5); border: 1px dashed var(--rtm-line-strong); border-radius: var(--rtm-r-3); color: var(--rtm-ink-2); }
+.rtm-g-aviso p { margin: 0; }
+.rtm-g-lienzo { overflow-x: auto; }
+.rtm-g-svg { display: block; width: 100%; height: auto; min-width: 480px; max-height: 340px; }
+
+/* ---- Tipografia y trazos ---- */
+.rtm-g-texto { fill: var(--rtm-ink-3); font-size: 12px; font-family: var(--rtm-fuente-ui); }
+.rtm-g-texto-fuerte { fill: var(--rtm-ink); font-size: 12px; font-weight: 600; font-family: var(--rtm-fuente-ui); font-variant-numeric: tabular-nums; }
+.rtm-g-texto-inverso { fill: var(--rtm-surface); font-size: 12px; font-weight: 600; font-family: var(--rtm-fuente-ui); font-variant-numeric: tabular-nums; }
+.rtm-g-texto-celda { fill: var(--rtm-ink); font-size: 12px; font-weight: 600; font-family: var(--rtm-fuente-ui); font-variant-numeric: tabular-nums; }
+.rtm-g-eje { stroke: var(--rtm-line-2); stroke-width: 1; }
+.rtm-g-anillo { stroke: var(--rtm-line-2); stroke-width: 1; }
+.rtm-g-referencia { stroke: var(--rtm-line-strong); stroke-width: 1; stroke-dasharray: 4 4; }
+.rtm-g-guia { stroke: var(--rtm-ink-3); stroke-width: 1; }
+.rtm-g-llave { stroke: var(--rtm-accent); stroke-width: 2; }
+.rtm-g-conector { stroke: var(--rtm-line-strong); stroke-width: 1; stroke-dasharray: 2 3; }
+.rtm-g-traza { stroke: var(--rtm-line-strong); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+.rtm-g-traza-fina { stroke-width: 1.75; }
+.rtm-g-traza-estimada { stroke: var(--rtm-line-strong); stroke-width: 2.25; stroke-dasharray: 6 5; stroke-linejoin: round; }
+.rtm-g-traza-bump { stroke: var(--rtm-line-strong); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+.rtm-g-bump-foco .rtm-g-traza-bump { stroke: var(--rtm-accent); stroke-width: 3.5; }
+.rtm-g-radar-1 { stroke: var(--rtm-accent); stroke-width: 2.5; }
+.rtm-g-radar-2 { stroke: var(--rtm-ink-2); }
+.rtm-g-banda { fill: var(--rtm-accent-soft); }
+.rtm-g-banda-trama { opacity: 0.55; pointer-events: none; }
+.rtm-g-punto { fill: var(--rtm-line-strong); }
+.rtm-g-punto-linea { fill: var(--rtm-surface); stroke: var(--rtm-ink-2); stroke-width: 1.5; }
+.rtm-g-punto-foco { fill: var(--rtm-accent); }
+.rtm-g-punto-segunda { fill: var(--rtm-surface); stroke: var(--rtm-ink-2); stroke-width: 1.75; }
+.rtm-g-punto-estimado { fill: var(--rtm-surface); stroke: var(--rtm-ink-2); stroke-width: 1.75; }
+.rtm-g-zona { fill: transparent; }
+.rtm-g-traza-leyenda { stroke: var(--rtm-accent); stroke-width: 2.25; }
+.rtm-g-traza-leyenda-disc { stroke: var(--rtm-ink-2); stroke-dasharray: 5 4; }
+
+/* ---- Rellenos ---- */
+.rtm-g-base { fill: var(--rtm-line-strong); }
+.rtm-g-foco { fill: var(--rtm-accent); }
+.rtm-g-total { fill: var(--rtm-ink-2); }
+.rtm-g-fondo { fill: var(--rtm-line); }
+.rtm-g-sin-dato { fill: none; stroke: var(--rtm-line-strong); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.rtm-g-trama-capa { pointer-events: none; }
+.rtm-g-pat-linea { stroke: var(--rtm-surface); stroke-width: 1.6; }
+.rtm-g-pat-punto { fill: var(--rtm-surface); }
+.rtm-g-pat-linea-t { stroke: var(--rtm-ink); stroke-width: 1.2; opacity: 0.55; }
+.rtm-g-pat-punto-t { fill: var(--rtm-ink); opacity: 0.55; }
+
+/* Paleta de datos (8 matices); orden de asignacion de la especificacion: tinta, lila, verde azulado, azul marino, ocre, terracota, gris, malva. */
+.rtm-g-s0 { fill: var(--rtm-d-tinta); }
+.rtm-g-s1 { fill: var(--rtm-d-lila); }
+.rtm-g-s2 { fill: var(--rtm-d-verde-azulado); }
+.rtm-g-s3 { fill: var(--rtm-d-azul-marino); }
+.rtm-g-s4 { fill: var(--rtm-d-ocre); }
+.rtm-g-s5 { fill: var(--rtm-d-terracota); }
+.rtm-g-s6 { fill: var(--rtm-d-gris); }
+.rtm-g-s7 { fill: var(--rtm-d-malva); }
+.rtm-g-suave { fill-opacity: 0.28; }
+
+/* Mapa de calor: un solo matiz (tinta) en 5 niveles. */
+.rtm-g-calor-0 { fill: var(--rtm-ink); fill-opacity: 0.06; }
+.rtm-g-calor-1 { fill: var(--rtm-ink); fill-opacity: 0.16; }
+.rtm-g-calor-2 { fill: var(--rtm-ink); fill-opacity: 0.32; }
+.rtm-g-calor-3 { fill: var(--rtm-ink); fill-opacity: 0.6; }
+.rtm-g-calor-4 { fill: var(--rtm-ink); fill-opacity: 0.85; }
+.rtm-g-calor-vacia { fill: none; stroke: var(--rtm-line-strong); stroke-width: 1.5; stroke-dasharray: 3 3; }
+
+/* ---- Marcas con foco por teclado ---- */
+.rtm-g-marca { outline: none; }
+.rtm-g-marca:focus-visible { outline: 2px solid var(--rtm-accent); outline-offset: 2px; }
+.rtm-g-marca:focus-visible .rtm-g-zona { stroke: var(--rtm-accent); stroke-width: 2; }
+
+/* ---- Leyendas y muestras ---- */
+.rtm-g-leyenda { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--rtm-e-2) var(--rtm-e-4); align-items: center; font-size: 12px; color: var(--rtm-ink-2); }
+.rtm-g-leyenda li { display: inline-flex; align-items: center; gap: var(--rtm-e-2); }
+.rtm-g-muestra { flex: none; }
+.rtm-g-calor-muestra { display: inline-block; width: 16px; height: 16px; border-radius: 4px; background: var(--rtm-ink); }
+.rtm-g-calor-muestra.rtm-g-calor-0 { opacity: 0.06; }
+.rtm-g-calor-muestra.rtm-g-calor-1 { opacity: 0.16; }
+.rtm-g-calor-muestra.rtm-g-calor-2 { opacity: 0.32; }
+.rtm-g-calor-muestra.rtm-g-calor-3 { opacity: 0.6; }
+.rtm-g-calor-muestra.rtm-g-calor-4 { opacity: 0.85; }
+.rtm-g-calor-muestra.rtm-g-calor-vacia { background: none; border: 1.5px dashed var(--rtm-line-strong); }
+.rtm-g-marca-umbral { display: inline-block; width: 2px; height: 14px; background: var(--rtm-ink); }
+
+/* ---- Filas (barras con delta, apiladas, cobertura) ---- */
+.rtm-g-ranking { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--rtm-e-2); }
+.rtm-g-fila { display: grid; grid-template-columns: 24px minmax(80px, 180px) minmax(0, 1fr) 92px minmax(0, 120px); gap: var(--rtm-e-3); align-items: center; padding: 2px var(--rtm-e-1); border-radius: var(--rtm-r-2); }
+.rtm-g-fila-apilada { grid-template-columns: minmax(80px, 180px) minmax(0, 1fr) 92px; }
+.rtm-g-fila-cobertura { grid-template-columns: minmax(80px, 180px) minmax(0, 1fr) 72px minmax(0, 190px); }
+.rtm-g-fila:focus-visible { outline: 2px solid var(--rtm-accent); outline-offset: 1px; }
+.rtm-g-rango { color: var(--rtm-ink-3); font-size: 12px; }
+.rtm-g-etiqueta { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtm-g-valor { font-size: 13px; }
+.rtm-g-cambio { font-size: 12px; }
+.rtm-g-barra { display: block; width: 100%; height: 12px; border-radius: var(--rtm-r-pildora); overflow: hidden; }
+.rtm-g-barra-apilada, .rtm-g-barra-cobertura { height: 14px; border-radius: 4px; }
+.rtm-g-umbral { stroke: var(--rtm-ink); stroke-width: 1.5; }
+.rtm-g-estado { display: inline-flex; align-items: center; gap: var(--rtm-e-2); font-size: 12px; font-weight: 600; }
+.rtm-g-medidor { display: inline-flex; gap: 2px; }
+.rtm-g-segmento { width: 6px; height: 12px; border-radius: 2px; border: 1px solid var(--rtm-line-strong); }
+.rtm-g-segmento-lleno { background: var(--rtm-ink); border-color: var(--rtm-ink); }
+
+/* ---- Delta y procedencia ---- */
+.rtm-g-delta { display: inline-flex; align-items: center; gap: var(--rtm-e-1); font-size: 12px; font-weight: 600; color: var(--rtm-ink); }
+.rtm-g-delta-flecha { font-size: 11px; }
+.rtm-g-procedencia { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--rtm-ink-2); border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); padding: 2px var(--rtm-e-2); }
+.rtm-g-proc-lleno { fill: var(--rtm-ink); }
+.rtm-g-proc-discontinuo { fill: none; stroke: var(--rtm-ink); stroke-width: 1.5; stroke-dasharray: 2.5 2; }
+.rtm-g-proc-vacio { fill: none; stroke: var(--rtm-ink); stroke-width: 1.5; }
+
+/* ---- Sparkline y contador ---- */
+.rtm-g-spark { display: inline-flex; align-items: center; vertical-align: middle; }
+.rtm-g-spark-svg { display: block; }
+.rtm-g-contador { font-variant-numeric: tabular-nums; }
+
+/* ---- Tarjeta de insight ---- */
+.rtm-g-insight { display: flex; flex-direction: column; gap: var(--rtm-e-2); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-4) var(--rtm-e-5); }
+.rtm-g-insight-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: var(--rtm-e-3); }
+.rtm-g-insight-etiqueta { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rtm-ink-3); }
+.rtm-g-severidad { font-size: 12px; font-weight: 600; color: var(--rtm-ink-2); }
+.rtm-g-insight[data-severidad='Acción'] .rtm-g-severidad { color: var(--rtm-bad); }
+.rtm-g-insight-cifra { margin: 0; display: flex; align-items: baseline; gap: var(--rtm-e-2); flex-wrap: wrap; font-family: var(--rtm-fuente-serif); font-size: 44px; line-height: 48px; }
+.rtm-g-insight-unidad { font-family: var(--rtm-fuente-ui); font-size: 13px; color: var(--rtm-ink-3); }
+.rtm-g-insight-frase { margin: 0; color: var(--rtm-ink-2); }
+.rtm-g-insight-mini { min-height: 32px; }
+.rtm-g-insight-pie { display: flex; justify-content: space-between; align-items: center; gap: var(--rtm-e-3); flex-wrap: wrap; }
+.rtm-g-insight-enlace { font-size: 13px; font-weight: 600; }
+
+/* ---- Esqueleto con la forma final (estatico) ---- */
+.rtm-g-esq { fill: var(--rtm-fill-active); }
+.rtm-g-esq-trazo { stroke: var(--rtm-fill-active); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; fill: none; }
+.rtm-g-esqueleto { max-height: 220px; }
+
+/* ---- Catalogo ---- */
+.rtm-g-catalogo { display: grid; gap: var(--rtm-e-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); margin-top: var(--rtm-e-6); }
+.rtm-g-catalogo > * { min-width: 0; }
+.rtm-g-insights { display: grid; gap: var(--rtm-e-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); margin-top: var(--rtm-e-6); }
+
+/* ---- Movimiento: solo con data-anim="on" (modo full) ---- */
+@keyframes rtm-g-crece-x { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes rtm-g-crece-y { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes rtm-g-aparece { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rtm-g-escala { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
+
+.rtm-g[data-anim='on'] .rtm-g-crece-x { transform-box: fill-box; transform-origin: left center; animation: rtm-g-crece-x 600ms var(--rtm-mov-curva) both; animation-delay: calc(var(--rtm-i, 0) * 30ms); }
+.rtm-g[data-anim='on'] .rtm-g-crece-y { transform-box: fill-box; transform-origin: center bottom; animation: rtm-g-crece-y 600ms var(--rtm-mov-curva) both; animation-delay: calc(var(--rtm-i, 0) * 80ms); }
+.rtm-g[data-anim='on'] .rtm-g-aparece { animation: rtm-g-aparece 360ms linear both; animation-delay: calc(var(--rtm-i, 0) * 20ms); }
+.rtm-g[data-anim='on'] .rtm-g-escala { transform-box: fill-box; transform-origin: center; animation: rtm-g-escala 600ms var(--rtm-mov-curva) both; animation-delay: calc(var(--rtm-i, 0) * 20ms); }
+.rtm-g[data-anim='on'] .rtm-g-traza,
+.rtm-g[data-anim='on'] .rtm-g-traza-bump { stroke-dasharray: 1; animation: rtm-trazo 900ms var(--rtm-mov-curva) both; }
+
+/* Defensa en profundidad: si el atributo del documento dice reducido o apagado, nada anima aunque el componente aun diga "on". */
+:root[data-movimiento='reduced'] .rtm-g *,
+:root[data-movimiento='off'] .rtm-g *,
+:root[data-movimiento='reduced'] .rtm-g-insight,
+:root[data-movimiento='off'] .rtm-g-insight { animation: none !important; transition: none !important; }
+
+@media (max-width: 767px) {
+  .rtm-g-fila { grid-template-columns: 22px minmax(0, 1fr) 84px; }
+  .rtm-g-fila .rtm-g-barra { grid-column: 1 / -1; grid-row: 2; }
+  .rtm-g-fila .rtm-g-cambio { grid-column: 2 / -1; }
+  .rtm-g-fila-apilada { grid-template-columns: minmax(0, 1fr) 84px; }
+  .rtm-g-fila-cobertura { grid-template-columns: minmax(0, 1fr) 72px; }
+  .rtm-g-fila-cobertura .rtm-g-estado { grid-column: 1 / -1; }
+  .rtm-g-insight-cifra { font-size: 36px; line-height: 40px; }
+}
+.rtm-g-subtitulo { margin: var(--rtm-e-8) 0 0; font-size: 18px; font-weight: 600; }
