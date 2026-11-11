@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
-import { IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
+import { IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
 import { Pulso } from './pulso';
@@ -22,6 +22,7 @@ const SECCIONES = [
   { href: '/proveedores', etiqueta: 'Proveedores', icono: <IconoProveedores /> },
   { href: '/socios', etiqueta: 'Cuenta de socios', icono: <IconoSocios /> },
   { href: '/omar', etiqueta: 'Cuenta con Omar', icono: <IconoOmar /> },
+  { href: '/contabilidad', etiqueta: 'Contabilidad', icono: <IconoContabilidad /> },
   { href: '/avisos', etiqueta: 'Avisos', icono: <IconoAviso /> },
 ] as const;
 

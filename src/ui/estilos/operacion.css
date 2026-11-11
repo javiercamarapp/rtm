@@ -125,3 +125,16 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 .rtm-divergente > i[data-ancho='48'] { width: 48%; }
 .rtm-divergente > i[data-ancho='49'] { width: 49%; }
 .rtm-divergente > i[data-ancho='50'] { width: 50%; }
+
+/* F3b: seccion Contabilidad */
+.rtm-subnav { overflow-x: auto; margin-bottom: var(--rtm-e-3); border-bottom: 1px solid var(--rtm-line); }
+.rtm-subnav ul { display: flex; gap: var(--rtm-e-1); list-style: none; margin: 0; padding: 0; min-width: max-content; }
+.rtm-subnav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--rtm-e-3); color: var(--rtm-ink-3); text-decoration: none; border-bottom: 2px solid transparent; font-size: 14px; }
+.rtm-subnav a:hover { color: var(--rtm-ink); }
+.rtm-subnav a[aria-current='page'] { color: var(--rtm-ink); border-bottom-color: var(--rtm-ink); }
+.rtm-rango ul { display: flex; gap: var(--rtm-e-2); flex-wrap: wrap; list-style: none; margin: 0 0 var(--rtm-e-1); padding: 0; }
+.rtm-rango a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--rtm-e-3); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); color: var(--rtm-ink-2); text-decoration: none; font-size: 14px; }
+.rtm-rango a[aria-current='true'] { border-color: var(--rtm-ink); color: var(--rtm-ink); }
+.rtm-verificar { display: flex; flex-direction: column; gap: var(--rtm-e-2); align-items: flex-start; }
+.rtm-verificar-lista { list-style: none; margin: 0; padding: 0; font-size: 13px; display: flex; flex-direction: column; gap: var(--rtm-e-1); }
+.rtm-asiento .rtm-acciones-fila { margin-top: var(--rtm-e-2); }
