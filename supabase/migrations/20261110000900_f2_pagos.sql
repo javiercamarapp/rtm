@@ -14,6 +14,7 @@ create table operacion.pago (
   cuenta_destino_id bigint not null references operacion.cuenta_dinero (id),
   tipo text not null default 'abono' check (tipo in ('abono', 'anticipo', 'pago_faltante_credito')),
   identificacion text not null check (identificacion in ('identificado', 'sin_identificar')),
+  pedido_destino_id bigint,
   comprobante_sha256 text unique check (comprobante_sha256 is null or comprobante_sha256 ~ '^[0-9a-f]{64}$'),
   nota text,
   evento_id bigint not null references operacion.evento (id),
@@ -88,23 +89,31 @@ as $$
   select coalesce(sum(operacion.pago_disponible(p.id)), 0)::bigint from operacion.pago p where operacion.pago_cliente(p.id) = p_cliente
 $$;
 
--- Aplica el saldo a favor del cliente a sus pedidos enviados con saldo, del mas antiguo al mas nuevo (y del pago mas antiguo).
+-- Aplica el saldo a favor del cliente a sus pedidos enviados con saldo, del mas antiguo al mas nuevo. Un anticipo destinado a un pedido
+-- (pedido_destino_id) se aplica primero a ESE pedido; en una segunda vuelta lo que sobre cubre cualquier otro saldo.
 create function operacion.aplicar_fifo(p_cliente bigint, p_evento bigint) returns bigint
 language plpgsql security definer set search_path = ''
 as $$
-declare ped record; pg record; v_saldo bigint; v_disp bigint; v_monto bigint; v_total bigint := 0;
+declare ped record; pg record; v_saldo bigint; v_disp bigint; v_monto bigint; v_total bigint := 0; v_pasada int;
 begin
-  for ped in select pe.id from operacion.pedido pe where pe.cliente_id = p_cliente and pe.estado = 'enviado' order by pe.fecha_envio, pe.id loop
-    v_saldo := operacion.pedido_saldo(ped.id);
-    exit when v_saldo is null;
-    continue when v_saldo <= 0;
-    for pg in select p.id from operacion.pago p where operacion.pago_cliente(p.id) = p_cliente order by p.fecha_neg, p.id loop
-      exit when v_saldo <= 0;
-      v_disp := operacion.pago_disponible(pg.id);
-      continue when v_disp <= 0;
-      v_monto := least(v_disp, v_saldo);
-      insert into operacion.pago_aplicacion (pago_id, pedido_id, monto_cent, evento_id) values (pg.id, ped.id, v_monto, p_evento);
-      v_saldo := v_saldo - v_monto; v_total := v_total + v_monto;
+  for v_pasada in 1..2 loop
+    for ped in select pe.id from operacion.pedido pe where pe.cliente_id = p_cliente and pe.estado = 'enviado' order by pe.fecha_envio, pe.id loop
+      v_saldo := operacion.pedido_saldo(ped.id);
+      continue when v_saldo is null or v_saldo <= 0;
+      for pg in
+        select p.id from operacion.pago p
+         where operacion.pago_cliente(p.id) = p_cliente
+           and (p.pedido_destino_id is null or p.pedido_destino_id = ped.id
+                or exists (select 1 from operacion.pedido d where d.id = p.pedido_destino_id and (d.estado in ('cancelado', 'anulado') or (v_pasada = 2 and d.estado = 'enviado'))))
+         order by (p.pedido_destino_id = ped.id) desc nulls last, p.fecha_neg, p.id
+      loop
+        exit when v_saldo <= 0;
+        v_disp := operacion.pago_disponible(pg.id);
+        continue when v_disp <= 0;
+        v_monto := least(v_disp, v_saldo);
+        insert into operacion.pago_aplicacion (pago_id, pedido_id, monto_cent, evento_id) values (pg.id, ped.id, v_monto, p_evento);
+        v_saldo := v_saldo - v_monto; v_total := v_total + v_monto;
+      end loop;
     end loop;
   end loop;
   return v_total;
@@ -117,7 +126,7 @@ end $$;
 -- p_aplicar: true aplica a los pedidos con saldo (del mas antiguo); false lo deja como saldo a favor; p_pedidos [{pedido_id, monto_cent}] aplica a esos.
 create function operacion.registrar_pago(p_clave_idem text, p_cuenta text, p_monto_cent bigint, p_cliente_id bigint default null, p_pedidos jsonb default null,
                                          p_aplicar boolean default true, p_tipo text default 'abono', p_fecha date default null, p_comprobante_sha256 text default null,
-                                         p_nota text default null, p_mensaje_origen text default null) returns jsonb
+                                         p_nota text default null, p_mensaje_origen text default null, p_pedido_destino bigint default null) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
 declare
@@ -125,12 +134,15 @@ declare
   v_existente text; v_aplicado bigint := 0; v_disp bigint; v_saldo bigint; v_monto bigint; v_ident text;
 begin
   perform seguridad.exigir_rol(array['socio', 'importacion']);
-  v_prev := seguridad.iniciar_operacion(p_clave_idem, jsonb_build_object('fn', 'registrar_pago', 'c', p_cuenta, 'm', p_monto_cent, 'cl', p_cliente_id, 'p', p_pedidos, 'ap', p_aplicar, 't', p_tipo, 'f', p_fecha, 'h', p_comprobante_sha256, 'n', p_nota));
+  v_prev := seguridad.iniciar_operacion(p_clave_idem, jsonb_build_object('fn', 'registrar_pago', 'c', p_cuenta, 'm', p_monto_cent, 'cl', p_cliente_id, 'p', p_pedidos, 'ap', p_aplicar, 't', p_tipo, 'f', p_fecha, 'h', p_comprobante_sha256, 'n', p_nota, 'pd', p_pedido_destino));
   if v_prev is not null then return v_prev; end if;
   if p_monto_cent is null or p_monto_cent <= 0 then raise exception 'el pago debe ser positivo' using errcode = '23514'; end if;
   select * into cu from operacion.cuenta_dinero where nombre = p_cuenta;
   if not found then raise exception 'cuenta desconocida: %', p_cuenta using errcode = '22023'; end if;
   if p_cliente_id is not null and not exists (select 1 from catalogo.cliente where id = p_cliente_id) then raise exception 'cliente desconocido' using errcode = '22023'; end if;
+  if p_pedido_destino is not null and not exists (select 1 from operacion.pedido where id = p_pedido_destino and cliente_id = p_cliente_id and estado in ('borrador', 'confirmado', 'enviado')) then
+    raise exception 'el pedido destino no es de este cliente o ya no esta vigente' using errcode = '22023';
+  end if;
   v_ident := case when p_cliente_id is null then 'sin_identificar' else 'identificado' end;
   -- Mismo comprobante no entra dos veces (T7): se avisa y no se registra.
   if p_comprobante_sha256 is not null then
@@ -145,8 +157,8 @@ begin
   end if;
   v_ev := operacion.crear_evento('pago_cliente', v_fecha, p_clave_idem, jsonb_build_object('cuenta', p_cuenta, 'monto_cent', p_monto_cent, 'cliente_id', p_cliente_id), p_mensaje_origen);
   v_folio := seguridad.siguiente_folio('PG');
-  insert into operacion.pago (folio, fecha_neg, monto_cent, cliente_id, cuenta_destino_id, tipo, identificacion, comprobante_sha256, nota, evento_id)
-    values (v_folio, v_fecha, p_monto_cent, p_cliente_id, cu.id, p_tipo, v_ident, p_comprobante_sha256, p_nota, v_ev) returning id into v_id;
+  insert into operacion.pago (folio, fecha_neg, monto_cent, cliente_id, cuenta_destino_id, tipo, identificacion, pedido_destino_id, comprobante_sha256, nota, evento_id)
+    values (v_folio, v_fecha, p_monto_cent, p_cliente_id, cu.id, p_tipo, v_ident, p_pedido_destino, p_comprobante_sha256, p_nota, v_ev) returning id into v_id;
   -- Efecto del destino.
   if cu.titular_tipo = 'socio' then
     insert into operacion.cuenta_socio_mov (socio_id, fecha_neg, concepto, aplica_a, monto_cent, pago_id, cliente_id, nota, evento_id)
