@@ -192,3 +192,6 @@ export interface OmarCuenta {
   liquidaciones: { folio: string; semana_ini: string; semana_fin: string; renta_cent: Cent; tomas_cent: Cent; compensado_cent: Cent; neto_cent: Cent; palabra: string; fecha_cierre: string }[];
   skus: { sku_id: number; marca: string; modelo: string; sabor: string; existencia: number; precio_cent: Cent | null }[];
 }
+
+/** Umbrales de las paginas de paquetes (config): horas sin empacar o enviar, y dias de gracia sobre el plazo del proveedor. */
+export interface UmbralesPaquetes { horas_sin_empacar: number; trayecto_dias_extra: number; plazo_dias: Record<string, number> }

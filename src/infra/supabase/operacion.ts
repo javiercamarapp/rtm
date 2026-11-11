@@ -25,6 +25,7 @@ export function lectorOperacionSupabase(): LectorOperacion {
     documento: (id, v) => leer('nota_documento', { p_nota: id, p_variante: v }),
     porHacer: () => leer('paquetes_por_hacer'),
     enTransito: () => leer('paquetes_en_transito'),
+    umbralesPaquetes: () => leer('paquetes_umbrales'),
     compras: (p) => leer('compras_lista', { p_proveedor: p ?? null }),
     compra: (id) => leer('compra_detalle', { p_compra: id }),
     cuentaProveedor: (p) => leer('proveedor_cuenta', { p_proveedor: p }),

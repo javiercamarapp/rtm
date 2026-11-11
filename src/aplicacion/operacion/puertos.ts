@@ -1,7 +1,7 @@
 import type {
   AmbitoHoja, CascadaProyeccion, CierreReparto, CuentaSocios, EstadoCuentaSocio, HojaProveedor, LiquidacionProveedor, OmarCuenta,
   CatalogoCompra, CatalogoPedido, CompraDetalle, CompraResumen, ContextoPagos, CuentaProveedor, CuentasPorCobrar, CxcCliente, DocumentoGuardado, EstadoSocio, ListaAvisos,
-  NotaFuente, PaqueteEnTransito, PaquetesPorHacer, PedidoDetalle, PedidoResumen,
+  NotaFuente, PaqueteEnTransito, PaquetesPorHacer, UmbralesPaquetes, PedidoDetalle, PedidoResumen,
 } from '@/dominio/operacion/tipos';
 
 /** Lo que la web lee de pedidos, compras, pagos, paquetes y avisos. Cada lectura es una funcion de la base; la interfaz no calcula dinero. */
@@ -13,6 +13,7 @@ export interface LectorOperacion {
   documento(notaId: number, variante: 'cliente_pdf' | 'interna_pdf'): Promise<DocumentoGuardado | null>;
   porHacer(): Promise<PaquetesPorHacer>;
   enTransito(): Promise<PaqueteEnTransito[]>;
+  umbralesPaquetes(): Promise<UmbralesPaquetes>;
   compras(proveedor?: string): Promise<CompraResumen[]>;
   compra(id: number): Promise<CompraDetalle | null>;
   cuentaProveedor(proveedor: string): Promise<CuentaProveedor>;

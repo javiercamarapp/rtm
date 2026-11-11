@@ -13,8 +13,12 @@ import { ORIGEN } from '../../operacion/etiquetas';
 export const metadata: Metadata = { title: 'Paquetes por hacer' };
 
 export default async function Pagina() {
-  const d = await (await operacionDeSocio()).porHacer();
+  const lector = await operacionDeSocio();
+  const [d, umbral] = await Promise.all([lector.porHacer(), lector.umbralesPaquetes()]);
   const faltan = d.surtido.filter((s) => s.falta > 0);
+  const porEmpacar = d.pedidos.filter((p) => !p.empacado).length;
+  const atrasados = d.pedidos.filter((p) => p.horas >= umbral.horas_sin_empacar).length;
+  const piezasPorTomar = d.surtido.reduce((a, s) => a + s.piezas, 0);
   return (
     <>
       <EncabezadoPagina
@@ -23,6 +27,12 @@ export default async function Pagina() {
         enfasis={d.pedidos.length === 0 ? 'paquetes' : `${d.pedidos.length} ${d.pedidos.length === 1 ? 'paquete' : 'paquetes'}`}
         contexto="Los despachos los hacen Angelo y Javier; Omar solo presta el lugar. Al marcar enviado se registra la guía y su costo real, se descuenta el inventario y se devenga la renta de bodega."
       />
+      <section className="rtm-kpis rtm-entra rtm-i-1" aria-label="Resumen de paquetes por hacer">
+        <div className="rtm-kpi" data-testid="ph-por-empacar"><span>Por empacar</span><strong>{porEmpacar}</strong></div>
+        <div className="rtm-kpi" data-testid="ph-empacados"><span>Empacados sin enviar</span><strong>{d.pedidos.length - porEmpacar}</strong></div>
+        <div className="rtm-kpi" data-testid="ph-piezas"><span>Piezas por tomar</span><strong>{formatearPiezas(piezasPorTomar)}</strong></div>
+        <div className="rtm-kpi" data-testid="ph-atrasados"><span>Con más de {umbral.horas_sin_empacar} h</span><strong>{atrasados}</strong></div>
+      </section>
       {faltan.length > 0 && (
         <p className="rtm-aviso" role="status" data-testid="falta-sabor"><strong>Falta existencia antes de empacar</strong>{faltan.map((f) => <span key={f.sku_id}>{f.modelo} · {f.sabor}: faltan {formatearPiezas(f.falta)}</span>)}</p>
       )}
@@ -35,11 +45,15 @@ export default async function Pagina() {
           vacio={{ titulo: 'Nada por empacar', texto: 'Cuando confirmes un pedido que sale de la Bodega Omar, aparecerá aquí con su lista de surtido.', accion: <Link className="rtm-boton" href="/pedidos/nuevo">Nuevo pedido</Link> }}
           columnas={[
             { id: 'f', titulo: 'Pedido', celda: (p) => <Link className="rtm-mono" href={`/pedidos/${p.id}`}>{p.folio}</Link> },
-            { id: 'c', titulo: 'Cliente', celda: (p) => <>{p.cliente}<br /><span className="rtm-nota">Dueño: {p.duenio} · {ORIGEN[p.origen]}</span></> },
+            { id: 'c', titulo: 'Cliente', celda: (p) => <>{p.cliente}<br /><span className="rtm-nota">{ORIGEN[p.origen]}{p.paqueteria ? ` · ${p.paqueteria}` : ''}</span></> },
             { id: 'z', titulo: 'Piezas', numerica: true, celda: (p) => formatearPiezas(p.piezas) },
             { id: 'r', titulo: 'Por modelo y sabor', secundaria: true, celda: (p) => p.renglones.map((r) => `${r.modelo} ${r.sabor} ${r.piezas}`).join(' · ') },
             { id: 'e', titulo: 'Envío cobrado', numerica: true, secundaria: true, celda: (p) => (p.envio_cent > 0n ? formatearMoneda(p.envio_cent) : 'No se cobra') },
-            { id: 'h', titulo: 'Antigüedad', secundaria: true, celda: (p) => (p.horas < 1 ? 'Menos de 1 h' : p.horas < 48 ? `${p.horas} h` : `${Math.floor(p.horas / 24)} días`) },
+            { id: 'g', titulo: 'Guía', secundaria: true, celda: () => 'Pendiente' },
+            { id: 'h', titulo: 'Antigüedad', celda: (p) => {
+              const t = p.horas < 1 ? 'Menos de 1 h' : p.horas < 48 ? `${p.horas} h` : `${Math.floor(p.horas / 24)} días`;
+              return p.horas >= umbral.horas_sin_empacar ? <EstadoTexto tono="atencion">{t}</EstadoTexto> : t;
+            } },
             { id: 's', titulo: 'Estado', celda: (p) => <EstadoTexto tono={p.empacado ? 'ok' : 'atencion'}>{p.empacado ? 'Empacado' : 'Por empacar'}</EstadoTexto> },
             { id: 'a', titulo: 'Acciones', celda: (p) => (
               <span className="rtm-acciones-fila">
