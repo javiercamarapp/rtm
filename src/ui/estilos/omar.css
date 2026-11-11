@@ -1,5 +1,5 @@
 /* Vista de Omar: blanco y negro, solo tokens. Laptop, Samsung plegable (344 cerrado / 880 abierto) y movil.
-   Las columnas se reparten con grid auto-fit: sin flex-basis y sin huecos muertos; el cambio de plegado a desplegado es solo un redimensionado. */
+   Las columnas se reparten con grid auto-fit: sin bases flex y sin huecos muertos; el cambio de plegado a desplegado es solo un redimensionado. */
 
 .omar-app { min-height: 100dvh; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
 .omar-barra {
