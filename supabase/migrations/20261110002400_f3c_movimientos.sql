@@ -345,7 +345,19 @@ begin
     end, '[]'::jsonb);
 end $$;
 
+create function api.mov_referencias() returns jsonb language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  return jsonb_build_object(
+    'clientes', coalesce((select jsonb_agg(jsonb_build_object('id', c.id, 'nombre', c.nombre_canonico) order by c.nombre_canonico) from catalogo.cliente c where c.activo), '[]'::jsonb),
+    'proveedores', coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'nombre', p.nombre) order by p.nombre) from catalogo.proveedor p), '[]'::jsonb),
+    'pedidos', coalesce((select jsonb_agg(jsonb_build_object('id', x.id, 'folio', x.folio, 'cliente', x.cliente) order by x.id desc)
+                           from (select pe.id, pe.folio, c.nombre_canonico as cliente from operacion.pedido pe join catalogo.cliente c on c.id = pe.cliente_id
+                                  where pe.estado in ('confirmado', 'enviado') order by pe.id desc limit 300) x), '[]'::jsonb));
+end $$;
+
 revoke execute on all functions in schema operacion, catalogo, contabilidad, apertura from public, anon, authenticated;
 revoke execute on all functions in schema api from public, anon;
 grant execute on function api.mov_importar(text, text, text, text, jsonb, boolean), api.mov_clasificar(text, bigint, text, jsonb, text), api.mov_conciliar(text, bigint, text, bigint),
-  api.mov_marcar(text, bigint, text, text), api.mov_resumen(), api.mov_lista(text, int, int), api.mov_agrupado(text), api.mov_desglose(text, bigint), api.mov_utilidad(), api.mov_candidatas(text, bigint) to authenticated;
+  api.mov_marcar(text, bigint, text, text), api.mov_resumen(), api.mov_lista(text, int, int), api.mov_agrupado(text), api.mov_desglose(text, bigint), api.mov_utilidad(), api.mov_candidatas(text, bigint), api.mov_referencias() to authenticated;

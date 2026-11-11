@@ -780,8 +780,8 @@ create function api.apertura_fijar_corte(p_clave_idem text, p_sesion bigint, p_f
 as $$ begin perform seguridad.exigir_rol(array['socio']); return apertura.fijar_corte(p_clave_idem, p_sesion, p_fecha_corte); end $$;
 create function api.apertura_resolucion(p_clave_idem text, p_sesion bigint, p_resolucion text, p_justificacion text default null) returns jsonb language plpgsql security definer set search_path = ''
 as $$ begin perform seguridad.exigir_rol(array['socio']); return apertura.fijar_resolucion(p_clave_idem, p_sesion, p_resolucion, p_justificacion); end $$;
-create function api.apertura_agregar(p_clave_idem text, p_sesion bigint, p_categoria text, p jsonb) returns jsonb language plpgsql security definer set search_path = ''
-as $$ begin perform seguridad.exigir_rol(array['socio']); return apertura.agregar_partida(p_clave_idem, p_sesion, p_categoria, p); end $$;
+create function api.apertura_agregar(p_clave_idem text, p_sesion bigint, p_categoria text, p_datos jsonb) returns jsonb language plpgsql security definer set search_path = ''
+as $$ begin perform seguridad.exigir_rol(array['socio']); return apertura.agregar_partida(p_clave_idem, p_sesion, p_categoria, p_datos); end $$;
 create function api.apertura_quitar(p_clave_idem text, p_partida bigint) returns jsonb language plpgsql security definer set search_path = ''
 as $$ begin perform seguridad.exigir_rol(array['socio']); return apertura.quitar_partida(p_clave_idem, p_partida); end $$;
 create function api.apertura_vista_previa(p_sesion bigint) returns jsonb language plpgsql stable security definer set search_path = ''

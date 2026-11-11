@@ -82,6 +82,7 @@ select is(jsonb_typeof(api.mov_utilidad() -> 'pedidos'), 'array', 'la utilidad p
 select is(jsonb_array_length(api.mov_utilidad() -> 'socios'), 2, 'la utilidad acumulada trae a los dos socios');
 select is(((api.mov_utilidad() -> 'socios') -> 0 ->> 'socio'), 'Angelo', 'Angelo primero');
 select is((select sum((s ->> 'mitad_cent')::bigint)::bigint from jsonb_array_elements(api.mov_utilidad() -> 'socios') s), (api.mov_utilidad() ->> 'utilidad_total_cent')::bigint, 'las dos mitades suman la utilidad total');
+select is(jsonb_array_length(api.mov_referencias() -> 'proveedores'), 2, 'las referencias traen a Isaac y a Karen');
 select is(has_function_privilege('authenticated', 'operacion.importar_movimientos(text, text, text, text, jsonb, boolean)', 'execute'), false, 'la funcion interna no se ejecuta desde la web');
 select is(has_table_privilege('authenticated', 'operacion.movimiento_crudo', 'select'), false, 'las tablas no se leen desde la web');
 select throws_ok($$ update operacion.movimiento_crudo set monto_cent = 1 $$, '42501', null, 'los movimientos crudos son de solo insercion');
