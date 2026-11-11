@@ -15,7 +15,7 @@ export function NavPasos() {
         </li>
         {PASOS.map((p) => (
           <li key={p.n}>
-            <Link href={`/apertura/paso/${p.n}`} aria-current={ruta === `/apertura/paso/${p.n}` ? 'page' : undefined} data-testid={`apertura-paso-${p.n}`}>{p.n}. {p.titulo.split(' ')[0]}</Link>
+            <Link href={`/apertura/paso/${p.n}`} aria-current={ruta === `/apertura/paso/${p.n}` ? 'page' : undefined} data-testid={`apertura-paso-${p.n}`}>{p.n}. {p.corto}</Link>
           </li>
         ))}
       </ul>
