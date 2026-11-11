@@ -852,7 +852,7 @@ begin
     'por_cobrar_cent', case when v_pedidos > 0 then v_cxc end,
     'entre_socios', case when v_socios_hay then jsonb_build_object(
         'socio', case when v_neto_a >= v_neto_j then 'Angelo' else 'Javier' end,
-        'cent', greatest(v_neto_a, v_neto_j) - least(v_neto_a, v_neto_j)) end,
+        'diferencia_cent', greatest(v_neto_a, v_neto_j) - least(v_neto_a, v_neto_j)) end,
     'en_bodega', case when v_mov > 0 then jsonb_build_object('piezas', v_pz, 'valor_cent', v_val) end);
 end $$;
 
