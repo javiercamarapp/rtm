@@ -26,3 +26,5 @@ export const IconoTrayecto = () => <Base><path d="M3 12h13M12 7l5 5-5 5" /><path
 export const IconoCobrar = () => <Base><rect x="3.5" y="6" width="17" height="12" rx="2" /><circle cx="12" cy="12" r="2.4" /><path d="M7 9v.01M17 15v.01" /></Base>;
 export const IconoAviso = () => <Base><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15L6 17Z" /><path d="M10 21h4" /></Base>;
 export const IconoContabilidad = () => <Base><path d="M5 4h14v16H5z" /><path d="M8 8h8M8 12h3M13 12h3M8 16h3M13 16h3" /></Base>;
+export const IconoApertura = () => <Base><path d="M5 20V4" /><path d="M5 5h11l-2 3.5 2 3.5H5" /><path d="M9 20h10" /></Base>;
+export const IconoMovimientos = () => <Base><path d="M4 8h13M14 5l3 3-3 3" /><path d="M20 16H7M10 13l-3 3 3 3" /></Base>;

@@ -1,0 +1,20 @@
+/* Apertura y Movimientos: pasos del asistente, formularios en linea y bloques de cifras. Solo tokens; sin colores literales. */
+.rtm-pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--rtm-e-2); }
+.rtm-pasos li { display: grid; grid-template-columns: 32px 1fr auto; gap: var(--rtm-e-3); align-items: center; padding: var(--rtm-e-3) var(--rtm-e-4); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
+.rtm-pasos .rtm-paso-n { font-family: var(--rtm-fuente-serif); font-size: 20px; color: var(--rtm-ink-3); font-variant-numeric: tabular-nums; }
+.rtm-pasos a { color: inherit; text-decoration: none; font-weight: 600; }
+.rtm-pasos a:hover { text-decoration: underline; }
+.rtm-pasos p { margin: 0; font-size: 12px; color: var(--rtm-ink-3); }
+.rtm-form-linea { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--rtm-e-3); align-items: end; padding: var(--rtm-e-4); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
+.rtm-form-linea .rtm-campo { width: 100%; }
+.rtm-identidad { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--rtm-e-3); }
+.rtm-resultado-ensayo { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); padding: var(--rtm-e-4); background: var(--rtm-surface); display: grid; gap: var(--rtm-e-2); }
+.rtm-pegado { width: 100%; min-height: 160px; font-family: var(--rtm-fuente-mono, monospace); }
+.rtm-filtros-estado { display: flex; flex-wrap: wrap; gap: var(--rtm-e-2); margin: var(--rtm-e-3) 0; }
+.rtm-filtros-estado a { padding: var(--rtm-e-2) var(--rtm-e-3); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-pildora); color: inherit; text-decoration: none; font-size: 13px; min-height: 36px; display: inline-flex; align-items: center; }
+.rtm-filtros-estado a[aria-current="true"] { background: var(--rtm-ink); color: var(--rtm-surface); }
+@media (max-width: 640px) {
+  .rtm-pasos li { grid-template-columns: 28px 1fr; }
+  .rtm-pasos li > :last-child { grid-column: 2; }
+  .rtm-filtros-estado a { min-height: 44px; }
+}
