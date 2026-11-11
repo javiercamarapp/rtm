@@ -46,6 +46,9 @@ export const ACCIONES_OPERACION = [
   'registrar_ajuste_proveedor', 'registrar_pago_proveedor_sociedad', 'anular_movimiento_proveedor', 'fijar_ambito_pedido', 'registrar_dicho_proveedor', 'cerrar_liquidacion_proveedor', 'registrar_recargo_credito',
   // F3b
   'conta_preparar_periodo', 'conta_aprobar_periodo', 'conta_publicar_periodo', 'conta_reabrir_periodo', 'conta_asiento_manual', 'conta_reversar_asiento',
+  // F3c: apertura y zona Movimientos
+  'apertura_crear', 'apertura_fijar_corte', 'apertura_resolucion', 'apertura_agregar', 'apertura_quitar', 'apertura_firmar', 'apertura_retirar_firma', 'apertura_reversar',
+  'mov_importar', 'mov_clasificar', 'mov_conciliar', 'mov_marcar',
 ] as const;
 export type AccionOperacion = (typeof ACCIONES_OPERACION)[number];
 
