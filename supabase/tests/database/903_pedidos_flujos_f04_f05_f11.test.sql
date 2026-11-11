@@ -1,6 +1,7 @@
 -- pgTAP 903 (QA de punta a punta, H-01, H-02, H-04): pedidos con cifras a mano de los flujos F04, F05 y F11:
 -- cancelar_pedido (CP24), marcar_entregado, fijar_costo_guia / costear_guia, armar_nota, texto_nota, fmt_pesos, origen_es_bodega,
 -- pedido de 50 piezas donde salen 40: total 6,300.00 y utilidad 1,950.00 (provisional: 2,130.00 sin guia).
+-- Fechas de noviembre de 2026 (no futuras): la reversa de una anulacion se fecha hoy y no puede ser anterior al ultimo movimiento.
 -- Inventario sembrado a costo 102.25 por pieza (la OC de 200 pz x 100.00 + guia 450.00). ESCRITA SIN EJECUTAR (sin Docker). Datos "N903".
 begin;
 select no_plan();
@@ -19,10 +20,10 @@ select catalogo.asegurar_cliente('N903 Cliente QA 1', 'Angelo');
 select catalogo.asegurar_modelo('N903 Marca', 'N903 Modelo QA 50K', 50000, 'ambas');
 select catalogo.asegurar_sku('N903 Modelo QA 50K', 'Fresa');
 select catalogo.asegurar_sku('N903 Modelo QA 50K', 'Uva');
-select catalogo.fijar_costo('n903c1', 'Isaac', 'N903 Modelo QA 50K', 10000, '2027-03-01', 'prueba');
-select catalogo.fijar_precio('n903p1', 'N903 Cliente QA 1', 'N903 Modelo QA 50K', 15000, '2027-03-01', 'chat');
-select operacion.registrar_movimiento('n903m1', 'N903 Modelo QA 50K', 'Fresa', 'bodega_omar', 'entrada_compra', 100, 1022500, '2027-03-04');
-select operacion.registrar_movimiento('n903m2', 'N903 Modelo QA 50K', 'Uva', 'bodega_omar', 'entrada_compra', 100, 1022500, '2027-03-04');
+select catalogo.fijar_costo('n903c1', 'Isaac', 'N903 Modelo QA 50K', 10000, '2026-11-01', 'prueba');
+select catalogo.fijar_precio('n903p1', 'N903 Cliente QA 1', 'N903 Modelo QA 50K', 15000, '2026-11-01', 'chat');
+select operacion.registrar_movimiento('n903m1', 'N903 Modelo QA 50K', 'Fresa', 'bodega_omar', 'entrada_compra', 100, 1022500, '2026-11-01');
+select operacion.registrar_movimiento('n903m2', 'N903 Modelo QA 50K', 'Uva', 'bodega_omar', 'entrada_compra', 100, 1022500, '2026-11-01');
 select is(pg_temp.piezas('N903 Modelo QA 50K'), 200, 'inventario de partida: 200 piezas');
 select is(pg_temp.valor('N903 Modelo QA 50K'), 2045000::bigint, 'inventario de partida: 20,450.00 (promedio 102.25)');
 
@@ -39,7 +40,7 @@ select is(operacion.origen_es_bodega('isaac_directo'), false, 'isaac_directo no 
 select is(operacion.origen_es_bodega('karen_directo'), false, 'karen_directo no es bodega');
 
 -- F04: pedido de 50 piezas, 7,800.00 si saliera todo -----------------------------------------------------------------------------
-select is((operacion.crear_pedido('n903a', pg_temp.cid('N903 Cliente QA 1'), '[{"modelo":"N903 Modelo QA 50K","sabor":"Fresa","piezas":50}]'::jsonb, 'bodega_omar', null, 30000, 0, 0, '2027-03-01')->>'piezas')::int, 50, 'crear: 50 piezas');
+select is((operacion.crear_pedido('n903a', pg_temp.cid('N903 Cliente QA 1'), '[{"modelo":"N903 Modelo QA 50K","sabor":"Fresa","piezas":50}]'::jsonb, 'bodega_omar', null, 30000, 0, 0, '2026-11-02')->>'piezas')::int, 50, 'crear: 50 piezas');
 select is((select estado from operacion.pedido where id = pg_temp.pid('n903a')), 'borrador', 'nace en borrador');
 select is((select count(*)::int from operacion.pedido_aviso where pedido_id = pg_temp.pid('n903a')), 0, 'sin avisos: >= 20 piezas y precio del tabulador');
 select is((select precio_cent from operacion.pedido_linea where pedido_id = pg_temp.pid('n903a')), 15000::bigint, 'el precio sale del tabulador: 150.00');
@@ -50,7 +51,7 @@ select is((operacion.marcar_empacado('n903ae', pg_temp.pid('n903a'))->>'empacado
 -- Se surten 40 de 50, guia SIN costo todavia (provisional) -------------------------------------------------------------------------
 select is((operacion.enviar_pedido('n903as', pg_temp.pid('n903a'),
   jsonb_build_array(jsonb_build_object('linea_id', (select id from operacion.pedido_linea where pedido_id = pg_temp.pid('n903a')), 'piezas', 40)),
-  '{"paqueteria":"Castores","numero":"QA-P1"}'::jsonb, '2027-03-01', false, 'entrega_diferida')->>'total_cent')::bigint, 630000::bigint, 'total a saldar 6,300.00 (40 x 150 + 300), no 7,800.00');
+  '{"paqueteria":"Castores","numero":"QA-P1"}'::jsonb, '2026-11-02', false, 'entrega_diferida')->>'total_cent')::bigint, 630000::bigint, 'total a saldar 6,300.00 (40 x 150 + 300), no 7,800.00');
 select is(pg_temp.int(pg_temp.pid('n903a'), 'costo_cent'), 409000::bigint, 'costo 40 x 102.25 = 4,090.00');
 select is(pg_temp.int(pg_temp.pid('n903a'), 'renta_cent'), 8000::bigint, 'renta de Omar 40 x 2.00 = 80.00');
 select is(pg_temp.int(pg_temp.pid('n903a'), 'utilidad_cent'), 213000::bigint, 'sin costear la guia: utilidad 2,130.00');
@@ -95,7 +96,7 @@ select is((select count(*)::int from operacion.nota where pedido_id = pg_temp.pi
 select throws_ok($$select operacion.emitir_correccion('n903k0', (select id from operacion.pedido where id = (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n903a')), '')$$, '23502', null, 'la correccion exige motivo');
 
 -- F05: pago parcial, plazo y anulacion de pago (sin UI: anular_pago) ------------------------------------------------------------------
-select is((operacion.registrar_pago('n903pg', 'Angelo', 500000, pg_temp.cid('N903 Cliente QA 1'), null, true, 'abono', '2027-03-02')->>'aplicado_cent')::bigint, 500000::bigint, 'pago de 5,000.00 aplicado');
+select is((operacion.registrar_pago('n903pg', 'Angelo', 500000, pg_temp.cid('N903 Cliente QA 1'), null, true, 'abono', '2026-11-03')->>'aplicado_cent')::bigint, 500000::bigint, 'pago de 5,000.00 aplicado');
 select is(operacion.pedido_saldo(pg_temp.pid('n903a')), 135000::bigint, 'por cobrar 1,350.00');
 select is(operacion.pedido_cobrado(pg_temp.pid('n903a')), 500000::bigint, 'cobrado 5,000.00');
 select is(operacion.pedido_aplicado(pg_temp.pid('n903a')), 500000::bigint, 'aplicado 5,000.00');
@@ -104,7 +105,7 @@ select throws_ok($$select operacion.acordar_plazo('n903pz0', (select (resultado-
 select throws_ok($$select operacion.acordar_plazo('n903pz1', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n903a'), -3)$$, '23514', null, 'plazo negativo se rechaza');
 select is((operacion.registrar_recargo_credito('n903rc', pg_temp.pid('n903a'))->>'recargo_cent')::bigint, 13500::bigint, 'recargo sugerido: 10 % de 1,350.00 = 135.00');
 select is(operacion.pedido_saldo(pg_temp.pid('n903a')), 148500::bigint, 'por cobrar con recargo: 1,485.00');
-select is((operacion.registrar_pago('n903pg2', 'Javier', 148500, pg_temp.cid('N903 Cliente QA 1'), null, true, 'abono', '2027-03-09')->>'aplicado_cent')::bigint, 148500::bigint, 'pago de 1,485.00');
+select is((operacion.registrar_pago('n903pg2', 'Javier', 148500, pg_temp.cid('N903 Cliente QA 1'), null, true, 'abono', '2026-11-10')->>'aplicado_cent')::bigint, 148500::bigint, 'pago de 1,485.00');
 select is(operacion.pedido_saldo(pg_temp.pid('n903a')), 0::bigint, 'por cobrar 0.00');
 select is(operacion.saldo_socio((select id from catalogo.socio where nombre = 'Javier'), 'fondos'), 148500::bigint, 'fondos de Javier 1,485.00');
 select is(operacion.saldo_socio((select id from catalogo.socio where nombre = 'Angelo'), 'fondos'), 500000::bigint, 'fondos de Angelo 5,000.00');
@@ -114,7 +115,7 @@ select is(operacion.saldo_socio((select id from catalogo.socio where nombre = 'A
 select throws_ok($$select operacion.anular_pago('n903an2', (select id from operacion.pago where monto_cent = 500000 order by id desc limit 1), 'otra vez')$$, 'P0428', null, 'anular dos veces se rechaza');
 
 -- cancelar_pedido (H-01 / CP24) ------------------------------------------------------------------------------------------------------
-select operacion.crear_pedido('n903b', pg_temp.cid('N903 Cliente QA 1'), '[{"modelo":"N903 Modelo QA 50K","sabor":"Uva","piezas":30}]'::jsonb, 'bodega_omar', null, 30000, 0, 0, '2027-03-02');
+select operacion.crear_pedido('n903b', pg_temp.cid('N903 Cliente QA 1'), '[{"modelo":"N903 Modelo QA 50K","sabor":"Uva","piezas":30}]'::jsonb, 'bodega_omar', null, 30000, 0, 0, '2026-11-03');
 select throws_ok($$select operacion.cancelar_pedido('n903bx', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n903b'), '')$$, '23502', null, 'cancelar exige motivo');
 select operacion.confirmar_pedido('n903bc', pg_temp.pid('n903b'));
 select is((select count(*)::int from operacion.reserva where origen_tipo = 'pedido' and origen_id = pg_temp.pid('n903b') and estado = 'activa'), 1, 'confirmado: reserva activa');
