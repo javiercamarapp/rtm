@@ -8,6 +8,10 @@
   --rtm-surface: #ffffff;
   --rtm-tint: #f5f4f0;
   --rtm-fill-active: #ecece4;
+  /* Indicadores del pulso (chips de arriba): blanco en claro, gris que contrasta en oscuro. */
+  --rtm-chip-fondo: #ffffff;
+  --rtm-chip-borde: #d9d7d0;
+  --rtm-chip-texto: #555555;
   --rtm-line: #ecebe6;
   --rtm-line-2: #d9d7d0;
   --rtm-line-strong: #8f8b82;
@@ -79,6 +83,9 @@
   --rtm-surface: #222220;
   --rtm-tint: #262624;
   --rtm-fill-active: #2b2a27;
+  --rtm-chip-fondo: #35342f;
+  --rtm-chip-borde: #55534d;
+  --rtm-chip-texto: #d6d4ce;
   --rtm-line: #2e2d2a;
   --rtm-line-2: #3a3935;
   --rtm-line-strong: #7d786e;
