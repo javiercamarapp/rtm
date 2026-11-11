@@ -8,6 +8,7 @@ const config: NextConfig = {
   turbopack: { root: process.cwd() },
   // Sin fuentes por red: todas las tipografias son archivos locales (src/fuentes).
   agentRules: false,
+  serverExternalPackages: ['pg'],
 };
 
 export default config;

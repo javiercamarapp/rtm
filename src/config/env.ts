@@ -6,6 +6,8 @@ const esquema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(20),
   LIMITE_PIMIENTA: z.string().min(16),
+  // Conexion del rol de base `servidor` (sin BYPASSRLS). Nunca NEXT_PUBLIC_.
+  SERVIDOR_DATABASE_URL: z.string().startsWith('postgres'),
 });
 
 export type Env = z.infer<typeof esquema>;
@@ -19,6 +21,7 @@ export function env(): Env {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     LIMITE_PIMIENTA: process.env.LIMITE_PIMIENTA,
+    SERVIDOR_DATABASE_URL: process.env.SERVIDOR_DATABASE_URL,
   });
   if (!r.success) {
     const campos = r.error.issues.map((i) => i.path.join('.')).join(', ');
