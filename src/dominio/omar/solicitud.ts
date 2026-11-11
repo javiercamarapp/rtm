@@ -67,3 +67,18 @@ export function tiempoRestante(caducaIso: string, ahora: Date): string {
 export function claveValida(clave: unknown): clave is string {
   return typeof clave === 'string' && /^web:[0-9a-f-]{8,64}$/.test(clave);
 }
+
+/** Modelos distintos de la bodega, en orden. */
+export function modelosDe(disponible: readonly PiezaDisponible[]): string[] {
+  return [...new Set(disponible.map((p) => p.modelo))];
+}
+
+/** Sabores de un modelo con su existencia fisica. */
+export function saboresDe(disponible: readonly PiezaDisponible[], modelo: string): PiezaDisponible[] {
+  return disponible.filter((p) => p.modelo === modelo);
+}
+
+/** Maximo que se puede pedir de una pieza: el menor entre el tope por toma y lo que hay. */
+export function maximoPara(disponible: readonly PiezaDisponible[], modelo: string, sabor: string, tope: number): number {
+  return Math.max(0, Math.min(tope, existenciaDe(disponible, modelo, sabor) ?? 0));
+}
