@@ -34,7 +34,7 @@ OK     Guardas estaticas de diseno y dominio
 OK     Escaner de secretos y correos
 OK     Pruebas unitarias y de contratos (vitest)                 1206 pruebas en 66 archivos
 OK     Entorno local (.env.local y rol servidor)
-OK     Pruebas de base de datos (pgTAP)                          693 afirmaciones en 16 archivos
+OK     Pruebas de base de datos (pgTAP)                          738 afirmaciones en 17 archivos
 OK     Pruebas de integracion con la base local                  4 pruebas (dos son de asientos al confirmar)
 OK     Importador: idempotencia con fixtures
 OK     Importador sobre las fuentes reales (43 costos, 19 clientes, 179 lineas, 12 en cero, 17 de Karen)
@@ -74,7 +74,7 @@ Capturas: 224 en `docs/capturas/f3b-asientos/` (Chromium y WebKit, claro y oscur
 - `anular_compra` (F2) revierte el cargo con el proveedor pero **no** la guia pagada por un socio: el libro conserva esa guia en 1320 y en 2310/2320, y `reproducir_saldos` la cuenta aparte para que C4 no falle. Convendria revertirla.
 - `anular_pedido` no revierte el gasto de guia del pedido: el libro lo conserva (y C7 lo cuenta), la hoja de proveedor de F3a excluye el pedido anulado completo. Pueden diferir cuando se anula un pedido con guia.
 - El script de demostracion de F1 registra una salida de 30 piezas "de pedido" sin pedido: C15 y C16 la marcan correctamente como fuga y C20 muestra el cuadre inicial pendiente; en las capturas esas tres comprobaciones aparecen en rojo a proposito.
-- Los eventos de la spec 14 sin funcion operativa todavia no tienen asiento: devoluciones (4220), cruce entre clientes (1330), incobrables (6310), ganancia o perdida cambiaria, gastos pagados por anticipado (1410), comision de terminal y las resoluciones de una diferencia de recepcion (reponer, acreditar, castigar). Las cuentas existen, inactivas donde corresponde. Los costos del sistema entran hoy por `registrar_gasto_socio` con categoria vercel, supabase, openrouter, claude, dominio o mantenimiento_sistema.
+- Reparacion de la ronda 1: las resoluciones de una diferencia de recepcion ya tienen funcion operativa y asiento (migracion 0020): castigar (Dr 5300 / Cr 1340), reponer (Dr 1310 / Cr 1340, con entrada al kardex) y acreditar (`asignar_diferencia` al proveedor, Dr 2110 / Cr 1340); la comision de terminal entra por `registrar_gasto_socio` con categoria `terminal` (Dr 6140). Siguen sin funcion operativa y por tanto sin asiento: devoluciones de dinero (4220), cruce entre clientes (1330), incobrables (6310), ganancia o perdida cambiaria y gastos pagados por anticipado (1410). Las cuentas existen, inactivas donde corresponde; cada una necesita antes su efecto en el estado de cuenta del cliente o del proveedor. Los costos del sistema entran por `registrar_gasto_socio` con categoria vercel, supabase, openrouter, claude, dominio o mantenimiento_sistema.
 
 ## Problemas y avisos
 
@@ -94,4 +94,4 @@ Builds de Vercel: 0. Despliegues: 0. Paquetes npm agregados: ninguno. Commits at
 4. ¿Aceptas que el residuo de un centavo del reparto 50/50 vaya siempre a Angelo?
 5. Saldos de apertura: ¿construimos ya la pantalla guiada del cuadre inicial (hoy solo existe el asiento manual de apertura por funcion)?
 6. ¿Revertimos la guia pagada por un socio al anular una orden de compra, y el gasto de guia al anular un pedido (hallazgos de arriba)?
-7. Las devoluciones, el cruce entre clientes, los incobrables y las resoluciones de una diferencia de recepcion necesitan primero su funcion operativa: ¿en que ola?
+7. Las devoluciones de dinero, el cruce entre clientes, los incobrables, la ganancia o perdida cambiaria y los gastos pagados por anticipado necesitan primero su funcion operativa (nota de credito al cliente, ajuste en dolares con el proveedor, devengo mensual): ¿en que ola?
