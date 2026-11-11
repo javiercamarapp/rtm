@@ -1,0 +1,256 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOGIN COMO EL DE VEXA (lote L, decisión de Javier del 1-nov-2026), SOLO EN /login.
+   Panel oscuro con el arte animado a la izquierda y formulario a la derecha; el panel se oculta por
+   debajo de 1024 px. Paleta negro / gris / blanco: el botón principal es de TINTA, el de Google blanco
+   con borde gris y el foco usa `--foco`. Sin azul y SIN `style=` en el árbol (CSP con nonce): los
+   retardos de entrada (`.login-d0…d8`) y los tamaños viven aquí.
+
+   `login.css` YA NO es idéntico al de ~/likida (Likida AI): Javier lo asumió el 1-nov-2026; la
+   comprobación de paridad que lo exigía se retiró de `scripts/e2e/paridad.sh` (ver PARIDAD-VEXA.md, lote L).
+   Los colores salen de los tokens de `globals.css`; los grises del panel (siempre oscuro) son literales neutros.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.login {
+  /* La crema del papel secundario: el único valor que el software no tenía en `globals.css`. */
+  --crema: #f2f1ee;
+  --serif-marca: var(--font-fraunces), Fraunces, Georgia, 'Times New Roman', serif;
+  --sans-marca: var(--font-instrument), 'Instrument Sans', var(--font-sans-ui), var(--font-sans);
+
+  font-family: var(--sans-marca);
+  /* `html, body` aprieta el texto a -0.011em (calibrado para la sans de la app); Instrument Sans ya trae su ajuste óptico. */
+  letter-spacing: 0;
+  color-scheme: light;
+  background: var(--bg);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ── Las tres voces ───────────────────────────────────────────────────────── */
+.login-serif {
+  font-family: var(--serif-marca);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.login-kicker {
+  font-family: var(--font-mono), ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ── Columna del formulario ───────────────────────────────────────────────── */
+.login-column { padding: 28px 24px; min-width: 0; display: flex; flex-direction: column; }
+.login-inner { width: 100%; max-width: 530px; margin-inline: auto; flex: 1; display: flex; flex-direction: column; }
+.login-column .auth-brand { display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%; }
+.login-copy { width: 100%; max-width: 470px; margin: auto; padding: 40px 0 24px; }
+.login-h1 { font-size: 36px; line-height: 1.13; margin: 20px 0 16px; color: var(--ink); text-wrap: pretty; }
+.login-intro { font-size: 15px; line-height: 1.6; margin: 0; color: var(--muted); }
+.login-divider { height: 1px; margin-top: 36px; background: var(--line); }
+.login-google { margin-top: 32px; }
+.login-o { display: flex; align-items: center; gap: 10px; margin: 24px 0 32px; font-size: 12px; text-align: center; }
+.login-o > span:not(.login-o-letra) { flex: 1; min-width: 16px; height: 1px; background: var(--line); }
+.login-o-letra { font-size: 13px; text-transform: lowercase; color: var(--faint); }
+.login-email { display: flex; flex-direction: column; gap: 16px; }
+.login-email-solo { margin-top: 32px; }
+.login-aviso { margin: 20px 0 0; font-size: 14px; line-height: 1.6; text-wrap: pretty; color: var(--muted); }
+.login-aviso strong { font-weight: 600; color: var(--ink); }
+.login-legal { margin: 28px 0 0; font-size: 12px; line-height: 1.7; text-wrap: pretty; color: var(--faint); }
+.login-enlace { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.login-enlace:hover { opacity: 0.7; }
+.login-enlace-centro { text-align: center; font-size: 14px; }
+.login-error { margin: 20px 0 0; font-size: 14px; }
+.login [role='alert'] { padding: 10px 14px; border-radius: 12px; background: var(--badbg); color: var(--bad); line-height: 1.5; }
+
+/* La tarjeta de «enviado»: crema con filete, radio de lámina. */
+.login-tarjeta { margin-top: 32px; padding: 20px; border-radius: 18px; background: var(--crema); border: 1px solid var(--line); }
+.login-tarjeta-titulo { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+.login-tarjeta-correo { margin: 6px 0 0; font-size: 14px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.login-tarjeta-texto { margin: 6px 0 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.login-salidas { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ── Píldoras ─────────────────────────────────────────────────────────────
+   Botón de FORMULARIO: ancho completo, 52 px. Primario en TINTA (negro), Google blanco con borde gris. */
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 52px;
+  border-radius: 999px;
+  padding: 14px 22px;
+  font-family: var(--sans-marca);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.005em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+.login-btn:disabled { cursor: progress; opacity: 0.72; }
+.login-btn-tinta { background: var(--ink); color: var(--bg); }
+.login-btn-tinta:not(:disabled):hover { background: color-mix(in srgb, var(--ink) 86%, var(--surface)); box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 15%, transparent); }
+.login-btn-borde { background: var(--surface); border-color: var(--line-boton, var(--line)); color: var(--ink); }
+.login-btn-borde:hover { border-color: color-mix(in srgb, var(--ink) 26%, transparent); }
+
+/* ── EL GESTO: el glifo de Likida se revela al pasar el cursor (los mismos números que `.btn .glifo` de la landing) ── */
+.login-glifo {
+  display: block;
+  height: 17px;
+  width: 0;
+  margin-right: -9px;
+  opacity: 0;
+  overflow: hidden;
+  transform: scale(0.55) rotate(-35deg);
+  transform-origin: center;
+}
+.login-btn:hover .login-glifo,
+.login-btn:focus-visible .login-glifo { width: 17px; margin-right: 0; opacity: 1; transform: none; }
+
+/* ── Campo de correo ─────────────────────────────────────────────────────── */
+.login-campo {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 18px;
+  border: 1px solid var(--line-boton, var(--line));
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans-marca);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.login-campo::placeholder { color: var(--faint); }
+.login-campo:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.login-btn:focus-visible,
+.login a:focus-visible { outline: 2px solid var(--foco); outline-offset: 3px; }
+
+/* ── El panel del arte (oculto por debajo de 1024 px) ─────────────────────── */
+.login-visual { display: none; }
+.login-story-surface {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 0;
+  border-radius: 24px;
+  background: radial-gradient(ellipse at 50% 90%, #ffffff12, transparent 65%), var(--ink);
+  color: #f4f4f5;
+}
+.login-story-copy { position: relative; z-index: 1; padding: clamp(32px, 4vw, 56px); padding-bottom: 0; }
+.login-story-copy .login-kicker { color: #a3a3ab; letter-spacing: 0.18em; }
+.login-story-copy h2 { margin: 24px 0 0; max-width: 17ch; font-size: clamp(32px, 3.5vw, 50px); line-height: 1.08; color: #f4f4f5; }
+.login-story-description { max-width: 43ch; margin: 20px 0 0; font-size: 15px; line-height: 1.7; color: #b4b4bb; text-wrap: pretty; }
+
+/* El arte: el cuadro estático de respaldo es el propio degradado (un halo gris sobre el negro); el canvas entra con un fundido cuando el motor termina de cargar. */
+.login-artwork {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin-top: 16px;
+  overflow: hidden;
+  background: radial-gradient(ellipse 60% 55% at 50% 78%, #ffffff1c, #ffffff08 55%, transparent 72%);
+  --login-particle-glow: #ffffff22;
+  --login-particle-wash: #ffffff0a;
+  --login-particle-clear: #ffffff00;
+  --login-particle-front: #ffffff;
+  --login-particle-middle: #c8c8cf;
+  --login-particle-rear: #6b6b73;
+  --login-particle-ambient: #9b9ba3;
+}
+.login-artwork canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  font-family: var(--font-mono-id);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.login-artwork[data-listo] canvas { opacity: 1; }
+.login-artwork-floor { position: absolute; inset: 90% 0 0; pointer-events: none; background: linear-gradient(transparent, var(--ink)); }
+
+/* ── Escritorio: panel a la izquierda, formulario a la derecha ───────────── */
+@media (min-width: 1024px) {
+  .login { display: grid; grid-template-columns: 1fr 1fr; }
+  .login-column { grid-column: 2; grid-row: 1; padding: 28px clamp(32px, 4vw, 70px); }
+  .login-visual { display: flex; grid-column: 1; grid-row: 1; min-height: 100vh; min-height: 100dvh; padding: 12px 0 12px 12px; }
+  .login-copy { padding: 32px 0; }
+}
+/* Ventanas bajas (laptops de 720–860 px): el login y «enviado» caben SIN scroll. */
+@media (min-width: 1024px) and (max-height: 860px) {
+  .login-column { padding-block: 16px; }
+  .login-copy { padding: 20px 0; }
+  .login-h1 { font-size: 34px; margin: 14px 0; }
+  .login-divider, .login-google, .login-email-solo { margin-top: 20px; }
+  .login-o { margin-block: 16px 20px; }
+  .login-email { gap: 12px; }
+  .login-aviso { margin-top: 14px; }
+  .login-legal { margin-top: 16px; }
+  .login-tarjeta { margin-top: 20px; }
+  .login-story-copy { padding-top: 32px; }
+  .login-story-copy h2 { font-size: clamp(32px, 3.15vw, 48px); }
+}
+/* Teléfono: solo el formulario. Campo de 16 px (con menos, iOS hace zoom) y márgenes seguros de la muesca y la barra de inicio. */
+@media (max-width: 1023px) {
+  .login-column { padding-top: max(20px, env(safe-area-inset-top)); padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+  .login-copy { padding: 24px 0 16px; }
+  .login-h1 { font-size: 34px; margin: 14px 0; }
+  .login-divider, .login-google, .login-email-solo { margin-top: 24px; }
+  .login-o { margin-block: 18px 22px; }
+  .login-campo { font-size: 16px; }
+  .login-btn { min-height: 48px; }
+}
+@media (max-width: 380px) {
+  .login-column { padding-inline: 20px; }
+  .login-h1 { font-size: 32px; }
+}
+
+/* ── Movimiento, todo detrás de la misma puerta ──────────────────────────
+   `opacity: 0` vive DENTRO de la media query: si el CSS no llega o la persona pidió menos movimiento, el contenido está visible. */
+@media (prefers-reduced-motion: no-preference) {
+  .login-btn { transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease; }
+  .login-btn:hover { transform: translateY(-1px); }
+  .login-glifo {
+    transition:
+      width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      margin-right 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.2s ease,
+      transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .login-entra { opacity: 0; animation: login-sube 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .login-d0 { animation-delay: 0ms; }
+  .login-d1 { animation-delay: 40ms; }
+  .login-d2 { animation-delay: 90ms; }
+  .login-d3 { animation-delay: 140ms; }
+  .login-d4 { animation-delay: 180ms; }
+  .login-d5 { animation-delay: 220ms; }
+  .login-d6 { animation-delay: 280ms; }
+  .login-d7 { animation-delay: 320ms; }
+  .login-d8 { animation-delay: 360ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-entra { animation: none; opacity: 1; transform: none; }
+  .login-btn, .login-glifo, .login-artwork canvas { transition: none; transform: none; }
+}
+@keyframes login-sube {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
