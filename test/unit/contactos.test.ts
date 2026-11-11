@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { construirInforme, consolidar, consolidarConEstadisticas } from '@/dominio/contactos/consolidar';
 import { decodificarTexto, parsearCsv } from '@/dominio/contactos/csv';
+import { tablaSinCabecera } from '@/dominio/contactos/plana';
 import { leerEtiquetas, leerTabla, slugEtiqueta } from '@/dominio/contactos/leer';
 import { enmascararTelefono, normalizarTelefono, separarTelefonos } from '@/dominio/contactos/telefono';
 
@@ -142,6 +143,25 @@ describe('lectura de tablas', () => {
   it('lee etiquetas y su slug', () => {
     expect(leerEtiquetas('* myContacts ::: Restored from X - 1 ::: starred')).toEqual(['Restored from X - 1', 'starred']);
     expect(slugEtiqueta('Se restableció/eron')).toBe('se-restablecio-eron');
+  });
+});
+
+describe('hoja sin cabeceras', () => {
+  it('detecta telefonos y texto por contenido, ignora contadores y usa el texto de la fila como nombre', () => {
+    const filas = [
+      ['1', '', '529995550101', '', '1', '', ''],
+      ['2', 'Ana Prueba', '529995550102', '', '2', '', ''],
+      ['3', '', '529995550103', '', '3', 'nota Beto', '529995550104'],
+      ['4', '', '', '', '4', '', '529995550105'],
+      ['5', '', '9995550106', '', '5', '', '529995550107'],
+    ].map((f) => f.map((c) => c));
+    const r = leerTabla(tablaSinCabecera(filas), { archivo: 'descargas-base-de-datos.xlsx', tipo: 'plano' });
+    expect(r.filas).toBe(5);
+    expect(r.registros).toHaveLength(5);
+    expect(r.registros[1]!.nombre).toBe('Ana Prueba');
+    expect(r.registros[2]!.telefonos).toEqual(['+529995550103', '+529995550104']);
+    expect(r.registros[2]!.nombre).toBe('nota Beto');
+    expect(r.registros[0]!.origenes[0]!.origen).toBe('descargas-base-de-datos');
   });
 });
 

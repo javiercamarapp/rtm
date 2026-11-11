@@ -38,6 +38,7 @@ npx tsx scripts/contactos/importar.mts --lotes CARPETA         escribe lotes JSO
 - Números de 7 u 8 dígitos sin lada: se conservan como `sl:<dígitos>` (no son E.164 y no se inventa la lada), deduplicados por sus dígitos, marcados como «sin lada» en la pantalla y contados aparte (`telefonos_sin_lada`). Solo se descartan vacíos y basura real (cortos, largos, patrones falsos como 0000000 o 1234567).
 - Un teléfono compartido une siempre. Un correo compartido une SOLO si el nombre normalizado (sin acentos, mayúsculas ni espacios extra) es el mismo; al unir se conservan todos los teléfonos, orígenes, etiquetas y lotes. Con nombre distinto no se unen y ambos quedan con `correo_compartido` para revisión (la tabla `contactos.correo` ya no exige correo único). Sin nombre no se une por correo.
 - Orígenes: `meta` (anuncio y formulario), `toocloudy-whatsapp` (leads whatsapp FINAL.xlsx), `vapeunion`, `google-lote:<etiqueta>` y `google-vcf:<archivo>` (archivos .vcf: Todos.vcf, contacts.vcf y 1573.vcf; vCard 2.1/3.0, líneas dobladas y quoted-printable).
+- `descargas-base-de-datos.xlsx` (BASE DE DATOS.xlsx): hoja sin cabeceras; se detectan por contenido las columnas de teléfono y de texto (el texto de la fila se usa como nombre), se ignoran los contadores y se reconstruyen los teléfonos en notación científica. Origen `descargas-base-de-datos`.
 - Se ignoran `Download.PDF` y `TooCloudyMX 2.zip`. `Todos.csv` está corrupto y se cuenta como archivo sin datos; su versión legible es `Todos.vcf`.
 - Una tarjeta vCard sin teléfono (1573.vcf) se cuenta como descartada.
 

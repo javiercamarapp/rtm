@@ -1,6 +1,6 @@
 // Tipos del modulo de contactos de menudeo. Ningun tipo del informe lleva datos personales.
 
-export type TipoFuente = 'google' | 'vcf' | 'meta' | 'toocloudy' | 'vapeunion';
+export type TipoFuente = 'google' | 'vcf' | 'plano' | 'meta' | 'toocloudy' | 'vapeunion';
 
 export interface FuenteTabla {
   /** Identificador estable del archivo (nombre de archivo sin ruta). */

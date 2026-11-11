@@ -12,6 +12,7 @@ import { basename, join, resolve, relative } from 'node:path';
 import { construirInforme, consolidar, consolidarConEstadisticas } from '@/dominio/contactos/consolidar';
 import { decodificarTexto, parsearCsv } from '@/dominio/contactos/csv';
 import { leerTabla } from '@/dominio/contactos/leer';
+import { tablaSinCabecera } from '@/dominio/contactos/plana';
 import { leerVcf } from '@/dominio/contactos/vcard';
 import type { ContactoConsolidado, FuenteTabla, ResultadoLectura, TipoFuente } from '@/dominio/contactos/tipos';
 import { leerXlsx } from './xlsx.mjs';
@@ -42,6 +43,7 @@ function fuentesPorOmision(): Fuente[] {
   for (const n of ['contacts-12.xlsx', 'contacts (1).xlsx']) {
     if (existsSync(join(descargas, n))) out.push({ ruta: join(descargas, n), id: `descargas/${n}`, tipo: 'google' });
   }
+  if (existsSync(join(descargas, 'BASE DE DATOS.xlsx'))) out.push({ ruta: join(descargas, 'BASE DE DATOS.xlsx'), id: 'descargas-base-de-datos.xlsx', tipo: 'plano' });
   if (existsSync(join(descargas, 'contacts.csv'))) out.push({ ruta: join(descargas, 'contacts.csv'), id: 'descargas-contacts.csv', tipo: 'google' });
   if (existsSync(join(descargas, 'contacts (1).csv'))) out.push({ ruta: join(descargas, 'contacts (1).csv'), id: 'descargas-contacts-1.csv', tipo: 'google' });
   if (existsSync(descargas)) {
@@ -60,7 +62,7 @@ function fuentesExplicitas(): Fuente[] {
 
 function leerFuente(f: Fuente): ResultadoLectura {
   const bytes = readFileSync(f.ruta);
-  const tabla = /\.xlsx$/i.test(f.ruta) ? leerXlsx(bytes) : /\.vcf$/i.test(f.ruta) ? leerVcf(decodificarTexto(bytes)) : parsearCsv(decodificarTexto(bytes));
+  const tabla = f.tipo === 'plano' ? tablaSinCabecera(leerXlsx(bytes)) : /\.xlsx$/i.test(f.ruta) ? leerXlsx(bytes) : /\.vcf$/i.test(f.ruta) ? leerVcf(decodificarTexto(bytes)) : parsearCsv(decodificarTexto(bytes));
   const fuente: FuenteTabla = { archivo: f.id, tipo: f.tipo };
   return leerTabla(tabla, fuente);
 }

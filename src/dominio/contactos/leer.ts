@@ -65,6 +65,7 @@ function origenesDe(fuente: FuenteTabla, fila: string[], cols: Columnas, etiquet
   }
   if (fuente.tipo === 'toocloudy') return [{ origen: 'toocloudy-whatsapp', anuncio: null, formulario: null, campana: null }];
   if (fuente.tipo === 'vapeunion') return [{ origen: 'vapeunion', anuncio: null, formulario: null, campana: null }];
+  if (fuente.tipo === 'plano') return [{ origen: slugEtiqueta(fuente.archivo.split('/').pop()!.replace(/\.[^.]+$/, '')), anuncio: null, formulario: null, campana: null }];
   if (fuente.tipo === 'vcf') {
     const base = fuente.archivo.split('/').pop()!.replace(/\.[^.]+$/, '');
     return [{ origen: `google-vcf:${slugEtiqueta(base)}`, anuncio: null, formulario: null, campana: null }];

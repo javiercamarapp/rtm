@@ -43,7 +43,7 @@ create index correo_contacto_idx on contactos.correo (contacto_id);
 -- Todos los origenes de cada contacto se conservan. Cadena vacia = no aplica (para poder usarlos en la llave primaria).
 create table contactos.origen (
   contacto_id bigint not null references contactos.contacto (id) on delete cascade,
-  origen text not null check (origen ~ '^(meta|toocloudy|toocloudy-whatsapp|vapeunion|google-lote:[a-z0-9-]+|google-vcf:[a-z0-9-]+)$'),
+  origen text not null check (origen ~ '^(meta|toocloudy|toocloudy-whatsapp|vapeunion|google-lote:[a-z0-9-]+|google-vcf:[a-z0-9-]+|descargas-[a-z0-9-]+)$'),
   anuncio text not null default '',
   formulario text not null default '',
   campana text not null default '',
