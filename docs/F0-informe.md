@@ -15,7 +15,18 @@ Fecha: 10-nov-2026. Alcance: repo y Supabase locales, tokens, armazón visual, a
 
 ## Cómo se verificó
 
-`npm run verificar` encadena: tipos, lint y fronteras, guardas, escáner de secretos, vitest (unitarias y contratos), pgTAP y Playwright (Chromium) contra el Supabase local y la app de producción local. Si el verificador levantó Supabase, lo deja detenido. Resultado final en la sección siguiente.
+`npm run verificar` encadena: tipos, lint y fronteras, guardas, escáner de secretos, vitest (unitarias y contratos), pgTAP y Playwright (Chromium) contra el Supabase local y la app de producción local. Si el verificador levantó Supabase, lo deja detenido. Última corrida (los siete pasos, con Supabase detenido al terminar):
+
+```
+OK     Tipos (tsc) (0.8 s)
+OK     Lint y fronteras entre capas (eslint) (0.7 s)
+OK     Guardas estaticas de diseno y dominio (0.0 s)
+OK     Escaner de secretos y correos (0.2 s)
+OK     Pruebas unitarias y de contratos (vitest) (0.7 s)      127 pruebas en 17 archivos
+OK     Pruebas de base de datos (pgTAP) (1.9 s)               50 afirmaciones en 3 archivos
+OK     Pruebas del acceso (Playwright, Chromium, Mailpit local) (65.2 s)   11 pruebas
+VERIFICAR: OK (7 pasos, 100.7 s)
+```
 
 Las ocho pruebas del acceso (Playwright, buzón Mailpit local, correos `@example.test`): envío del enlace, uso del enlace, rechazo de un correo no permitido (misma pantalla, ningún mensaje, `auth.users` sin cambios, piso de 1.5 s en ambas ramas), límite de intentos (tope por correo y por IP), enlace caducado (reenvío automático), doble uso, cierre de sesión y ruta protegida. Más tres de refuerzo: alta directa (`/otp` con `create_user:true` y `/signup`) rechazada por el GoTrue real, cuenta inactiva con enlace válido más `next` externo que cae a la raíz, y movimiento reducido (el arte pinta un solo cuadro).
 
