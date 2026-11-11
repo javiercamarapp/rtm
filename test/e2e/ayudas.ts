@@ -229,3 +229,33 @@ export async function compraBorradorE2E(d: DatosF2, clave: string): Promise<numb
     return Number(r.rows[0].id);
   });
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// F3a: cuentas con proveedores, socios y Omar. Datos ILUSTRATIVOS encima de los de F2 (renta, toma, pedidos directos de Isaac y un saldo vencido).
+// ---------------------------------------------------------------------------------------------------------------------------------
+export interface DatosF3a extends DatosF2 { pedidoBodegaId: number; pedidoVencidoId: number; pedidoDirectoId: number; folioDirecto: string }
+
+export async function sembrarCuentasE2E(): Promise<DatosF3a> {
+  const d = await sembrarOperacionE2E();
+  const s = d.sufijo;
+  return conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    const ped = async (clave: string, origen: string, piezas: number, fecha: string, plazo: number | null, guia: object | null) => {
+      const r = await c.query("select (operacion.crear_pedido($1,$2,$3::jsonb,$4,null,0,0,0,$5::date,null,$6)->>'pedido_id')::bigint as id", [`e2e3:${clave}:${s}`, d.clienteId, JSON.stringify([{ modelo: d.modeloA, sabor: 'Mango', piezas, precio_cent: 15000, motivo_precio: 'prueba' }]), origen, fecha, plazo]);
+      const id = Number(r.rows[0].id);
+      await c.query('select operacion.confirmar_pedido($1,$2)', [`e2e3:${clave}c:${s}`, id]);
+      await c.query('select operacion.enviar_pedido($1,$2,null,$3::jsonb,$4::date,true)', [`e2e3:${clave}s:${s}`, id, guia ? JSON.stringify(guia) : null, fecha]);
+      return id;
+    };
+    const hoy = (await c.query('select negocio.hoy()::text as h')).rows[0].h as string;
+    const hace10 = (await c.query("select (negocio.hoy() - 8)::text as h")).rows[0].h as string;
+    const pedidoBodegaId = await ped('bod', 'bodega_omar', 30, hoy, null, null);
+    const pedidoVencidoId = await ped('venc', 'isaac_directo', 25, hace10, 5, { paqueteria: 'Castores', numero: `E2E3-V-${s}`, costo_cent: 18000 });
+    const pedidoDirectoId = await ped('dir', 'isaac_directo', 40, hoy, null, { paqueteria: 'Castores', numero: `E2E3-D-${s}`, costo_cent: 30700 });
+    await c.query("select operacion.registrar_toma_omar($1,$2::jsonb,2,15000,negocio.hoy())", [`e2e3:toma:${s}`, JSON.stringify({ modelo: d.modeloA, sabor: 'Fresa' })]);
+    const folio = (await c.query('select folio from operacion.pedido where id = $1', [pedidoDirectoId])).rows[0].folio as string;
+    await c.query('commit');
+    return { ...d, pedidoBodegaId, pedidoVencidoId, pedidoDirectoId, folioDirecto: folio };
+  });
+}
