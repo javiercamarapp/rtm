@@ -1,6 +1,6 @@
 # RTM
 
-Software de la bodega de Mérida (mayoreo de vapes entre Angelo y Javier). Esta carpeta contiene la **fase F0**: acceso por enlace al correo, armazón visual, sistema de diseño, esquema de seguridad en Postgres y las guardas. Todo es **local**: sin remoto, sin despliegues, sin cuentas de pago.
+Software de la bodega de Mérida (mayoreo de vapes entre Angelo y Javier). Esta carpeta contiene las **fases F0 y F1**: acceso por enlace al correo (más el plan alterno `auth/confirm`), armazón visual, sistema de diseño, esquema de seguridad, catálogo, clientes, costos, precios e inventario en Postgres, importador y las guardas. Todo es **local**: sin remoto, sin despliegues, sin cuentas de pago.
 
 Nombre provisional: vive en una sola constante (`src/config/marca.ts`).
 
@@ -26,6 +26,17 @@ npm run acceso:alta:probar   # solo valida y cuenta
 npm run acceso:alta
 ```
 
+## Importar listas (F1)
+
+```bash
+npm run importar:verificar    # lee las fuentes reales y comprueba 43 costos, 19 clientes, 179 lineas, 12 en cero y 17 de Karen (no toca la base)
+npm run importar              # aplica a la base LOCAL, idempotente (decisiones del dueno en ~/.rtm-datos/decisiones-importacion.json)
+npm run importar:idempotencia # dos aplicaciones en una transaccion revertida
+npm run capturas:f1           # capturas con datos ilustrativos (reinicia la base y vuelve a importar las listas reales)
+```
+
+Los datos reales se leen de los archivos fuente en tiempo de ejecucion; nunca se versionan.
+
 ## Probar
 
 ```bash
@@ -48,4 +59,4 @@ pkill -f "next (dev|start)"  # si dejaste un servidor corriendo
 
 `src/dominio` (puro: dinero en centavos `bigint`, formato, calendario con reloj inyectado, capacidades), `src/aplicacion` (casos de uso y puertos), `src/infra` (Supabase, límite de intentos en Postgres), `src/composicion` (cableado de puertos), `src/app` y `src/ui` (Next 16 y sistema de diseño), `supabase/` (configuración local, migraciones y pruebas pgTAP), `scripts/ci` (guardas, escáner de secretos y `verificar`), `test/` (contratos y Playwright), `docs/` (informe y capturas).
 
-Informe de la fase: `docs/F0-informe.md`.
+Informes: `docs/F0-informe.md` y `docs/F1-informe.md`.
