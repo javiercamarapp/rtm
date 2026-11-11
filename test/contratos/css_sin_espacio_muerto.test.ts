@@ -40,7 +40,8 @@ describe('responsive', () => {
   });
   it('objetivos tactiles de 44 px para chips, campos y botones en pantallas tactiles', () => {
     expect(leer('componentes.css')).toMatch(/@media \(pointer: coarse\) \{[^@]*\.rtm-boton[^@]*min-height: 44px/);
-    expect(leer('shell.css')).toMatch(/@media \(pointer: coarse\) \{[^}]*\.rtm-chip \{ height: auto; min-height: 44px; \}/);
+    // El chip llega a 44 px en pantallas tactiles y tambien en anchos de tableta o menos (el pulso movil), donde el puntero puede ser fino.
+    expect(leer('shell.css')).toMatch(/@media \(pointer: coarse\)(?:, \(max-width: 1023px\))? \{[^}]*\.rtm-chip \{ height: auto; min-height: 44px; \}/);
   });
   it('los campos de formulario miden 16 px en pantallas angostas (iOS no hace zoom)', () => {
     expect(leer('operacion.css')).toMatch(/@media \(pointer: coarse\), \(max-width: 767px\) \{[^}]*font-size: 16px/);
