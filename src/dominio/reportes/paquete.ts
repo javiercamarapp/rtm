@@ -285,8 +285,8 @@ export function armarPaquete(ins: InsumosSemanal | InsumosMensual): Paquete {
     L.agregar('liq.porPagar', `Por pagar a ${liq.proveedor}`, porPagar, 'cent', { ...base, clase: 'Calculado', fuente: 'mercancía + guías - pagos', n: 1, ...(liq.segunProveedorCent !== undefined ? { via2: liq.segunProveedorCent } : {}) });
     const cob = coberturaViernes(liq.fondosDisponiblesCent, liq.cobrosEsperadosHastaViernesCent, porPagar);
     if (cob !== null) L.agregar('liq.cobertura', 'Cobertura del viernes', cob, 'milesimas', { ...base, clase: 'Calculado', fuente: '(fondos + cobros esperados) / saldo', n: 1 });
-    L.agregar('liq.fondos', 'Fondos y cobros esperados hasta el viernes', liq.fondosDisponiblesCent + liq.cobrosEsperadosHastaViernesCent, 'cent', { ...base, clase: 'Estimado', fuente: 'fondos + cobros esperados', n: 1 });
-    L.agregar('liq.holgura', 'Holgura de la liquidación', liq.fondosDisponiblesCent + liq.cobrosEsperadosHastaViernesCent - porPagar, 'cent', { ...base, clase: 'Estimado', fuente: 'fondos + cobros esperados - saldo', n: 1 });
+    L.agregar('liq.fondos', 'Fondos y cobros esperados hasta el viernes', liq.fondosDisponiblesCent + liq.cobrosEsperadosHastaViernesCent, 'cent', { ...base, clase: 'Calculado', fuente: 'fondos + cobros prometidos con fecha (los entrega contabilidad)', n: 1 });
+    L.agregar('liq.holgura', 'Holgura de la liquidación', liq.fondosDisponiblesCent + liq.cobrosEsperadosHastaViernesCent - porPagar, 'cent', { ...base, clase: 'Calculado', fuente: 'fondos + cobros prometidos - saldo', n: 1 });
   }
 
   const fp = ins.flujo ? flujoCaja(ins.flujo) : null;

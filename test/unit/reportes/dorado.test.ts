@@ -14,7 +14,11 @@ import { PEDIDOS_SEMANA, PEDIDOS_SEMANA_ANTERIOR, insumosMensualDorado, insumosS
 const DIR = join(__dirname, '../../fixtures/reportes');
 const ACTUALIZAR = process.env.ACTUALIZAR_DORADOS === '1';
 
-function dorado(nombre: string, actual: string): void {
+/** El folio y la huella van aparte (spec 16, sec. 9.2): se normaliza la huella para que el dorado compare solo el texto. */
+const sinHuella = (t: string): string => t.replace(/(huella:?\s+)[0-9a-f]{6}/gi, '$1<huella>');
+
+function dorado(nombre: string, textoReal: string): void {
+  const actual = sinHuella(textoReal);
   const ruta = join(DIR, nombre);
   if (ACTUALIZAR || !existsSync(ruta)) {
     mkdirSync(dirname(ruta), { recursive: true });

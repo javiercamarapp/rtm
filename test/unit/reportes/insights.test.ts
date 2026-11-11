@@ -3,7 +3,7 @@ import { LibroCifras } from '@/dominio/reportes/cifras';
 import { PLANTILLAS, anexoUmbrales, crearContexto, evaluarInsights, slug, type Insight } from '@/dominio/reportes/insights';
 import type { HistoriaCliente, InsumosSemanal, LineaPedido, ModeloInventario, PedidoHistoria, PedidoInsumo } from '@/dominio/reportes/insumos';
 import { renderMarcadores } from '@/dominio/reportes/texto';
-import { CARTERA, INVENTARIO, insumosSemanalDorado } from '../../fixtures/reportes/datos';
+import { CARTERA, insumosSemanalDorado } from '../../fixtures/reportes/datos';
 
 const FIN = '2026-11-08';
 const sumarDias = (f: string, d: number): string => {
