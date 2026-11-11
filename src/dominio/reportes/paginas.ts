@@ -102,6 +102,21 @@ function crearAyuda(p: Paquete): Ayuda {
   };
 }
 
+/** Renderiza una plantilla con marcadores contra el paquete y la pasa por la guardia (para Telegram y correo). */
+export function renderizarVerificado(p: Paquete, plantilla: string, extra: readonly string[] = []): string {
+  const idx = new Map(p.cifras.map((c) => [c.id, c]));
+  const guardia = contextoGuardia(p, extra);
+  const t = renderMarcadores(plantilla, {
+    obtener: (id) => {
+      const c = idx.get(id);
+      if (!c) throw new ErrorReporte('CIFRA_INEXISTENTE', `la cifra ${id} no existe en el paquete`);
+      return c;
+    },
+  });
+  exigirTextoVerificado(t, guardia);
+  return t;
+}
+
 const M = (id: string, mod?: string): string => `{{cifra:${id}${mod ? `|${mod}` : ''}}}`;
 
 function dirVar(a: Ayuda, id: string): 'sube' | 'baja' | 'se mantiene' {
@@ -368,7 +383,7 @@ export function construirReporte(p: Paquete): ReporteModelo {
   }
   const anexo = [
     { titulo: 'Comprobaciones', lineas: p.comprobaciones.map((c) => `${c.id}  ${c.nombre}: ${c.ok ? 'cuadra' : 'no cuadra'}`) },
-    { titulo: 'Insights: umbrales vigentes (config)', lineas: anexoUmbrales().map((u) => `${u.id}  ${u.nombre}. ${u.regla}. Umbral: ${u.umbral}. Muestra: ${u.muestra}.`) },
+    { titulo: 'Insights: umbrales vigentes (config)', lineas: anexoUmbrales().map((u) => `${u.id}  ${u.nombre}. Umbral: ${u.umbral}. Muestra: ${u.muestra}.`) },
     { titulo: 'Parámetros de proyección (config)', lineas: [`Promedio móvil exponencial: alfa ${PARAMETROS.alfaEma}, ventana ${PARAMETROS.ventanaEma} semanas, mínimo ${PARAMETROS.minSemanasEma}.`, `Rango empírico al ochenta por ciento: z ${PARAMETROS.z80}.`, `Tendencia: de ${PARAMETROS.tendencia.minSemanas} a ${PARAMETROS.tendencia.maxSemanas} semanas, t mínimo ${PARAMETROS.tendencia.tMinimo}, horizonte máximo ${PARAMETROS.tendencia.horizonteMax} semanas.`, `Punto de reorden: z ${PARAMETROS.reorden.z}, revisión ${PARAMETROS.reorden.revisionDias} días.`] },
     ...(p.insights.pocosDatos.length ? [{ titulo: 'Pocos datos', lineas: p.insights.pocosDatos.map((x) => x.frase) }] : []),
   ];

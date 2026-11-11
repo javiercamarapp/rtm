@@ -338,9 +338,9 @@ export function armarPaquete(ins: InsumosSemanal | InsumosMensual): Paquete {
 
   // ---------- Comprobaciones ----------
   const internas: ResultadoComprobacion[] = [
-    { id: 'R.PEDIDOS', nombre: 'Σ de pedidos = Σ por modelo', via1: contrib, via2: contribVia2, ok: contrib === contribVia2 },
+    { id: 'R.PEDIDOS', nombre: 'Suma de pedidos = suma por modelo', via1: contrib, via2: contribVia2, ok: contrib === contribVia2 },
   ];
-  if (puente) internas.push({ id: 'R.PUENTE', nombre: 'Inicio + Σ de pasos = fin (el puente suma exacto)', via1: puente.inicioCent + sumaBig(puente.pasos.map((x) => x.deltaCent)), via2: puente.finCent, ok: puenteCuadra(puente) });
+  if (puente) internas.push({ id: 'R.PUENTE', nombre: 'Inicio más suma de pasos = fin (el puente suma exacto)', via1: puente.inicioCent + sumaBig(puente.pasos.map((x) => x.deltaCent)), via2: puente.finCent, ok: puenteCuadra(puente) });
   const cifrasFinal = L.todas();
   const comprobaciones: ResultadoComprobacion[] = [...ins.comprobaciones, ...internas, ...L.comprobaciones()];
   const estado = decidirEstado({ comprobaciones, periodoAprobado: ins.aprobadoEn !== undefined, enCurso: ins.enCurso, datosIncompletos: ins.datosIncompletos });

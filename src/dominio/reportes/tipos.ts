@@ -40,6 +40,8 @@ export interface ResultadoComprobacion {
   readonly via2: bigint;
   readonly ok: boolean;
   readonly detalle?: string;
+  /** Unidad de via1 y via2 (por omision cuenta de elementos). Con 'cent' el aviso muestra la diferencia en pesos. */
+  readonly unidad?: 'cent' | 'pz' | 'n';
 }
 
 export type EtiquetaEstado = 'DEFINITIVO' | 'PRELIMINAR' | 'PARCIAL';

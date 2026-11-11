@@ -103,9 +103,9 @@ export function svgCascada(pasos: readonly PasoCascada[]): string {
 
 export function svgPareto(items: readonly ItemPareto[], totalCent: bigint): string {
   if (items.length === 0 || totalCent <= 0n) return '';
-  const alto = 190;
-  const base = alto - 40;
-  const top = 18;
+  const alto = 150;
+  const base = alto - 36;
+  const top = 14;
   const ancho = ANCHO - 50;
   const n = Math.min(items.length, 8);
   const paso = ancho / n;
@@ -180,11 +180,11 @@ export function svgAntiguedad(cubetas: readonly CubetaAntiguedad[]): string {
 
 export function svgFlujo(f: DatosFlujo): string {
   if (f.semanas.length === 0) return '';
-  const alto = 200;
-  const medio = 96;
+  const alto = 160;
+  const medio = 78;
   const todos = f.semanas.flatMap((s) => [s.cobrosCent, -(s.pagosProvCent + s.omarCent + s.gastosCent), s.saldoCent, s.saldoLoCent, s.saldoHiCent]);
   const maxA = Math.max(1, ...todos.map((v) => Math.abs(num(v))));
-  const y = (v: bigint) => medio - (num(v) / maxA) * 78;
+  const y = (v: bigint) => medio - (num(v) / maxA) * 58;
   const paso = (ANCHO - 60) / f.semanas.length;
   let c = linea(40, medio, ANCHO - 10, medio, { stroke: G[3] });
   const linSaldo: string[] = [];
@@ -281,9 +281,9 @@ export function svgCalor(calor: NonNullable<GraficasPaquete['calor']>): string {
 // ---------- Bump chart ----------
 
 export function svgBump(b: NonNullable<GraficasPaquete['bump']>): string {
-  const alto = 40 + b.series.length * 24;
+  const alto = 28 + b.series.length * 16;
   const x = (i: number) => 110 + (i / Math.max(1, b.periodos - 1)) * (ANCHO - 200);
-  const y = (r: number) => 22 + (r - 1) * 24;
+  const y = (r: number) => 14 + (r - 1) * 16;
   let c = '';
   b.series.forEach((s, k) => {
     const foco = k === 0;

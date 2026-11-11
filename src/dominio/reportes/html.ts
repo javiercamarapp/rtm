@@ -20,9 +20,9 @@ html,body{margin:0;padding:0;background:var(--rep-g0);color:var(--rep-g4);font-f
 .cab{display:flex;justify-content:space-between;align-items:baseline;border-bottom:0.75pt solid var(--rep-g4);padding-bottom:4pt;margin-bottom:10pt;font-size:8.5pt}
 .cab .estado{font-weight:700;letter-spacing:0.04em}
 .banda{border:1pt solid var(--rep-g4);padding:3pt 6pt;margin-bottom:8pt;font-weight:600;font-size:8.5pt;background:url(#rep-rayado-fino)}
-h1{font-family:"EB Garamond",Georgia,serif;font-weight:500;font-size:19pt;line-height:1.15;margin:0 0 8pt 0;font-variant-numeric:lining-nums}
+h1{font-family:"EB Garamond",Georgia,serif;font-weight:400;font-size:19pt;line-height:1.15;margin:0 0 8pt 0;font-variant-numeric:lining-nums}
 .heroe{margin:2pt 0 8pt 0}
-.heroe .cifra{font-family:"EB Garamond",Georgia,serif;font-size:44pt;line-height:1;font-weight:500;font-variant-numeric:lining-nums}
+.heroe .cifra{font-family:"EB Garamond",Georgia,serif;font-size:44pt;line-height:1;font-weight:400;font-variant-numeric:lining-nums}
 .heroe .det{font-size:8.5pt;color:var(--rep-g3)}
 .apoyo{display:grid;grid-template-columns:repeat(4,1fr);gap:8pt;border-top:0.5pt solid var(--rep-g2);border-bottom:0.5pt solid var(--rep-g2);padding:6pt 0;margin-bottom:8pt}
 .apoyo .e{font-size:8pt;color:var(--rep-g3)}.apoyo .v{font-size:13pt;font-weight:600}.apoyo .c{font-size:8pt;color:var(--rep-g3)}
@@ -40,9 +40,9 @@ td.n,th.n{text-align:right}
 .impl p{margin:0 0 2pt 0}.impl b{font-weight:700}
 .proc{font-size:8pt;color:var(--rep-g3);border-top:0.4pt solid var(--rep-g2);margin-top:6pt;padding-top:3pt}
 .folio{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:8pt;display:flex;justify-content:space-between}
-.marca{position:absolute;left:0;right:0;top:330pt;text-align:center;font-family:"EB Garamond",Georgia,serif;font-size:96pt;font-weight:600;letter-spacing:0.1em;color:var(--rep-g1);transform:rotate(-24deg);pointer-events:none;z-index:0;opacity:0.55}
+.marca{position:absolute;left:0;right:0;top:330pt;text-align:center;font-family:"EB Garamond",Georgia,serif;font-size:96pt;font-weight:400;letter-spacing:0.1em;color:var(--rep-g1);transform:rotate(-24deg);pointer-events:none;z-index:0;opacity:0.55}
 .pagina>*:not(.marca){position:relative;z-index:1}
-.anexo h2{margin-top:10pt}.anexo p{margin:0 0 2pt 0;font-size:8.5pt}
+.anexo .cols{column-count:2;column-gap:14pt}.anexo h2{margin-top:6pt;break-after:avoid}.anexo p{margin:0 0 2pt 0;font-size:8pt;break-inside:avoid}
 `;
 
 function tablaHtml(t: Tabla): string {
@@ -79,7 +79,7 @@ export function renderHtml(r: ReporteModelo, o: OpcionesHtml): string {
 ${!r.sale ? '<div class="marca" aria-hidden="true">BORRADOR</div>' : ''}
 <div class="cab"><span>${esc(r.encabezado)}</span><span class="estado">${esc(r.estado)}</span></div>
 <h1>Método y control</h1>
-${r.anexo.map((x) => `<h2>${esc(x.titulo)}</h2>${x.lineas.map((l) => `<p>${esc(l)}</p>`).join('')}`).join('')}
+<div class="cols">${r.anexo.map((x) => `<h2>${esc(x.titulo)}</h2>${x.lineas.map((l) => `<p>${esc(l)}</p>`).join('')}`).join('')}</div>
 <div class="pie-pagina"><div class="folio"><span>${esc(r.folio)}</span><span>anexo</span><span>huella ${esc(r.huella)}</span></div></div>
 </section>`;
   return `<!doctype html>

@@ -27,7 +27,7 @@ export interface ResultadoGuardia {
 const MESES_TXT = '(?:ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[a-zé]*';
 const RE_FECHA = new RegExp(`\\d{1,2}(?:\\s*(?:a|al|-)\\s*\\d{1,2})?[\\s-]*(?:de\\s+)?${MESES_TXT}(?:\\s+(?:de\\s+)?\\d{4})?`, 'gi');
 const RE_FOLIO = /\b[A-Z]{2,3}-\d{4}-\d{2}\b/g;
-const RE_HUELLA = /huella\s+[0-9a-f]{6,64}/gi;
+const RE_HUELLA = /huella:?\s+[0-9a-f]{6,64}/gi;
 const RE_HORA = /\b\d{1,2}:\d{2}\b/g;
 const RE_PAGINA = /\bp\.\s*\d+\/\d+/gi;
 const RE_ID = /\b(?:C|I|R)\d{1,2}\b|\bR\.[A-Z]+\b/g;

@@ -125,7 +125,11 @@ const K = [
 
 /** sha256 en hexadecimal de un texto (UTF-8). Implementacion pura, verificada contra node:crypto en las pruebas. */
 export function sha256Hex(texto: string): string {
-  const bytes = new TextEncoder().encode(texto);
+  return sha256BytesHex(new TextEncoder().encode(texto));
+}
+
+/** sha256 en hexadecimal de bytes (el PDF). */
+export function sha256BytesHex(bytes: Uint8Array): string {
   const bitLen = bytes.length * 8;
   const total = (((bytes.length + 9 + 63) >> 6) << 6) >>> 0;
   const buf = new Uint8Array(total);
