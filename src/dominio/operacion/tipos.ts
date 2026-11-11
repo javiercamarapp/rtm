@@ -81,12 +81,15 @@ export interface CatalogoCompra { modalidad: 'semanal_viernes' | 'prepago_total'
 export interface FilaCxc {
   pedido_id: number; folio: string; cliente_id: number; cliente: string; duenio: 'Angelo' | 'Javier'; fecha_envio: string; plazo_dias: number | null; vence: string | null;
   original_cent: Cent; abonos_cent: Cent; saldo_cent: Cent; dias: number; dias_atraso: number | null; estado: 'al_corriente' | 'por_vencer' | 'vencido' | 'sin_plazo' | 'saldo_a_favor'; cubeta: '0_7' | '8_14' | '15_30' | 'mas_30';
+  recargo_cent: Cent; recargo_sugerido_cent: Cent;
 }
 export interface CuentasPorCobrar {
   hoy: string; filas: FilaCxc[]; total_cent: Cent; vencido_cent: Cent; antiguedad_cent: Record<'0_7' | '8_14' | '15_30' | 'mas_30', Cent>; por_duenio_cent: Record<string, Cent>;
   saldos_a_favor: { cliente_id: number; cliente: string; duenio: string; monto_cent: Cent }[];
   pagos_sin_identificar: { id: number; folio: string; fecha_neg: string; monto_cent: Cent; cuenta: string }[];
-  socios: { socio: 'Angelo' | 'Javier'; deuda_cent: Cent; fondos_cent: Cent; diferencia_cent: Cent }[];
+  socios: { socio: 'Angelo' | 'Javier'; deuda_cent: Cent; fondos_cent: Cent; diferencia_cent: Cent; dias_fondos: number | null; alerta_fondos: boolean }[];
+  recargo_bp: number;
+  por_cliente: { cliente_id: number; cliente: string; duenio: 'Angelo' | 'Javier'; saldo_cent: Cent; vencido_cent: Cent; pedidos: number; dias_max: number; proximo_vence: string | null }[];
 }
 export interface CxcCliente {
   cliente: { id: number; nombre: string; duenio: string }; saldo_cent: Cent; saldo_favor_cent: Cent;
@@ -112,3 +115,80 @@ export interface DocumentoGuardado { sha256: string; base64: string; creado_at: 
 
 /** Respuesta uniforme de las acciones de escritura de la web. */
 export type ResultadoAccion<T = Record<string, unknown>> = { ok: true; datos: T } | { ok: false; mensaje: string; codigo: string | null };
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+// F3a: proveedores (hoja y liquidacion), cuenta de socios y cascada de reparto, cuenta con Omar y cuentas por cobrar completa.
+export type AmbitoHoja = 'sociedad' | 'todo';
+export interface HojaRenglon {
+  tipo: 'pedido' | 'oc'; id: number; folio: string; fecha: string; cliente: string | null; duenio: 'Angelo' | 'Javier' | null; es_de_sociedad: boolean; origen: string; piezas: number;
+  mercancia_cent: Cent; seguro_cent: Cent; guia_cent: Cent; guia_pendiente: boolean; costo_cent: Cent; detalle_cent: Cent; cuadra: boolean;
+  detalle: { modelo: string; piezas: number; costo_cent: Cent; costo_unit_cent: Cent }[];
+}
+export interface HojaAbono extends EventoInfo { id: number; fecha_neg: string; concepto: string; monto_cent: Cent; cliente: string | null; pedido: string | null; cuenta_origen: string | null; nota: string | null; deshecho: boolean }
+export interface HojaAjuste extends EventoInfo { id: number; fecha_neg: string; concepto: string; monto_cent: Cent; nota: string | null; deshecho: boolean }
+export interface HojaProveedor {
+  proveedor: 'Isaac' | 'Karen'; modalidad: 'semanal_viernes' | 'prepago_total'; ambito: AmbitoHoja; semana_ini: string; semana_fin: string; desde: string; viernes_cerrado: boolean;
+  renglones: HojaRenglon[]; abonos: HojaAbono[]; ajustes: HojaAjuste[]; pagos_por_concepto_cent: Record<string, Cent>;
+  totales: { saldo_anterior_cent: Cent; mercancia_cent: Cent; seguros_cent: Cent; guias_cent: Cent; costo_total_cent: Cent; pagos_cent: Cent; ajustes_cent: Cent; falta_por_saldar_cent: Cent };
+  comprobaciones: {
+    renglon_igual_detalle: boolean; renglones_igual_mercancia: boolean; mercancia_independiente_cent: Cent; renglones_igual_seguros: boolean; seguros_independiente_cent: Cent;
+    guias_igual_envios: boolean; guias_independiente_cent: Cent; abonos_igual_depositos: boolean; depositos_independiente_cent: Cent; cuadra: boolean;
+  };
+  guias_pendientes: number;
+  conciliacion: { dicho_cent: Cent; nuestro_cent: Cent; diferencia_cent: Cent; nota: string | null; renglones: { folio: string; dice_cent: Cent | null; nuestro_cent: Cent | null; diferencia_cent: Cent; en_nuestra_hoja: boolean }[] } | null;
+  cierre: { folio: string; fecha_cierre: string; falta_por_saldar_cent: Cent; dicho_cent: Cent | null; diferencia_cent: Cent | null } | null;
+}
+export interface LiquidacionProveedor {
+  id: number; folio: string; semana_ini: string; semana_fin: string; ambito: AmbitoHoja; saldo_anterior_cent: Cent; mercancia_cent: Cent; seguros_cent: Cent; guias_cent: Cent; pagos_cent: Cent;
+  ajustes_cent: Cent; falta_por_saldar_cent: Cent; dicho_cent: Cent | null; diferencia_cent: Cent | null; fecha_cierre: string; nota: string | null;
+}
+
+export interface SocioResumen {
+  socio: 'Angelo' | 'Javier'; neto_cent: Cent; aportado_cent: Cent; capital_pendiente_cent: Cent; reembolso_pendiente_cent: Cent; fondos_cent: Cent; debe_cent: Cent; dias_fondos: number | null; alerta_fondos: boolean;
+}
+export interface MovimientoSocios extends EventoInfo {
+  orden: number; tipo: 'aportacion' | 'libro'; id: number; socio: string; fecha_neg: string; concepto: string; monto_cent: Cent; clasificacion: string; deshecho: boolean; deshacible: boolean;
+}
+export interface ParteSocio { aportado_cent: Cent; puso_capital_cent: Cent; puso_reembolsable_cent: Cent; fuera_sociedad_cent: Cent; debe_cent: Cent; diferencia_cent: Cent }
+export interface CuentaSocios {
+  hoy: string; costo_cent: Cent; mitad_cent: Cent; angelo: ParteSocio; javier: ParteSocio; javier_debe_a_angelo_cent: Cent; via1_cent: Cent; via2_cent: Cent; via2_resto_cent: Cent;
+  financiado_por_sociedad_cent: Cent; cuadra: boolean; partidas_fuera_sociedad: { socio: string; monto_cent: Cent; concepto: string; estado: string; piezas: number | null }[];
+  socios: SocioResumen[]; movimientos: MovimientoSocios[];
+}
+export interface MovimientoEstadoSocio extends EventoInfo { tipo: 'aportacion' | 'libro' | 'deuda'; id: number; fecha_neg: string; concepto: string; efecto_cent: Cent; saldo_cent: Cent; deshacible: boolean }
+export interface EstadoCuentaSocio {
+  socio: 'Angelo' | 'Javier'; neto_cent: Cent; aportaciones_capital_cent: Cent; gastos_pagados_cent: Cent; reembolsos_recibidos_cent: Cent; devoluciones_recibidas_cent: Cent; retiros_cent: Cent;
+  utilidad_asignada_cent: Cent; fondos_cent: Cent; faltantes_cent: Cent; debe_cent: Cent; reembolso_pendiente_cent: Cent; aportacion_pendiente_cent: Cent; dias_fondos: number | null;
+  movimientos: MovimientoEstadoSocio[];
+}
+export interface ResultadoSocioCascada {
+  reembolso_pendiente_cent: Cent; aportacion_pendiente_cent: Cent; paga_reembolso_cent: Cent; paga_aportacion_cent: Cent; utilidad_cent: Cent; asignado_cent: Cent;
+  tiene_en_poder_cent: Cent; debe_cent: Cent; resultado_cent: Cent; sigue_pendiente_cent: Cent;
+}
+export interface Cascada {
+  periodo_ini: string; periodo_fin: string; utilidad_cent: Cent; perdida_cent: Cent; utilidad_provisional: boolean;
+  utilidad_detalle: { utilidad_pedidos_cent: Cent; pedidos: number; utilidad_tomas_cent: Cent; gastos_cent: Cent; provisional: boolean; utilidad_cent: Cent };
+  efectivo: { en_poder_cent: Cent; caja_cent: Cent; total_cent: Cent };
+  reembolsos: { pendiente_cent: Cent; pagado_cent: Cent }; aportaciones: { pendiente_cent: Cent; pagado_cent: Cent };
+  repartible_cent: Cent; remanente_cent: Cent; limitado_por_efectivo: boolean; devolver_aportaciones_antes: boolean;
+  por_socio: Record<'Angelo' | 'Javier', ResultadoSocioCascada>; suma_asignada_cent: Cent; suma_resultados_cent: Cent; identidad_cuadra: boolean;
+  liquidar: { de: 'Angelo' | 'Javier'; a: 'Angelo' | 'Javier'; monto_cent: Cent } | null;
+}
+export interface CascadaProyeccion extends Cascada { hoy: string; en_vivo: boolean }
+export interface CierreReparto {
+  id: number; folio: string; periodo_ini: string; periodo_fin: string; utilidad_cent: Cent; utilidad_provisional: boolean; efectivo_caja_cent: Cent; nota: string | null; snapshot: Cascada;
+  creado_at: string; propuesto_por: string | null; firmas: { socio: string; firmado_at: string }[]; estado: 'propuesto' | 'firmado_por_uno' | 'cerrado' | 'anulado'; yo_firme: boolean;
+}
+
+export interface OmarFila { id: number; fecha: string; modelo: string; piezas: number }
+export interface OmarCuenta {
+  semana_ini: string; semana_fin: string; hoy: string; persona: string; estado: 'abierta' | 'cerrada'; liquidacion: string | null; palabra: 'Le debemos' | 'Omar debe' | 'Saldo cero';
+  renta_cent: Cent; tomas_cent: Cent; compensado_cent: Cent; neto_cent: Cent; pagos_semana_cent: Cent; tomas_pendientes: number; tomas_sin_precio: number; renta_por_pieza_cent: Cent;
+  puede_cerrar: boolean; semana_anterior_sin_cerrar: string | null; saldo_cuenta_cent: Cent;
+  renta: { id: number; folio: string; fecha: string; modelo: string; piezas: number; monto_cent: Cent; tarifa_cent: Cent | null; reversa: boolean; sabores: string | null }[];
+  tomas: { id: number; folio: string; fecha: string; modelo: string; sabor: string; piezas: number; precio_cent: Cent | null; subtotal_cent: Cent | null; estado: string; via: string; falta_precio: boolean }[];
+  pendientes: { id: number; folio: string; fecha: string; modelo: string; sabor: string; piezas: number; precio_cent: Cent | null; solicitada_at: string; caduca_at: string; falta_precio: boolean }[];
+  pagos: { id: number; folio: string; fecha: string; monto_cent: Cent; sentido: 'a_omar' | 'de_omar'; via: string; socio: string | null }[];
+  liquidaciones: { folio: string; semana_ini: string; semana_fin: string; renta_cent: Cent; tomas_cent: Cent; compensado_cent: Cent; neto_cent: Cent; palabra: string; fecha_cierre: string }[];
+  skus: { sku_id: number; marca: string; modelo: string; sabor: string; existencia: number; precio_cent: Cent | null }[];
+}

@@ -34,6 +34,15 @@ export function lectorOperacionSupabase(): LectorOperacion {
     contextoPagos: () => leer('pagos_contexto'),
     estadoSocio: (s) => leer('estado_socio', { p_socio: s }),
     avisos: (e) => leer('avisos_lista', { p_estado: e === undefined ? 'abierta' : e }),
+    hojaProveedor: (p, s, a) => leer('proveedor_hoja', { p_proveedor: p, p_semana_ini: s, p_ambito: a }),
+    notaProveedor: (p, s, a) => leer('nota_proveedor', { p_proveedor: p, p_semana_ini: s, p_ambito: a }),
+    liquidacionesProveedor: (p) => leer('liquidaciones_proveedor', { p_proveedor: p }),
+    cuentaSocios: () => leer('socios_cuenta'),
+    socioCuenta: (s) => leer('socio_cuenta', { p_socio: s }),
+    cascadaProyeccion: (i, f, c) => leer('cascada_proyeccion', { p_ini: i, p_fin: f, p_caja_cent: Number(c) }),
+    cierresReparto: () => leer('cierres_reparto'),
+    omarCuenta: (s) => leer('omar_cuenta', { p_semana_ini: s }),
+    textoCobro: (id) => leer('texto_cobro', { p_cliente: id }),
   };
 }
 

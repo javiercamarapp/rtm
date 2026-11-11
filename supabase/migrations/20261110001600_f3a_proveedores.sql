@@ -297,7 +297,7 @@ begin
 
   return jsonb_build_object(
     'proveedor', p_proveedor, 'modalidad', (select modalidad from catalogo.proveedor where id = v_prov), 'ambito', p_ambito, 'semana_ini', v_ini, 'semana_fin', v_fin, 'desde', v_desde, 'viernes_cerrado', negocio.hoy() >= v_fin,
-    'renglones', v_rengs, 'abonos', v_abonos, 'ajustes', v_ajustes, 'pagos_por_concepto', v_pagos_conc,
+    'renglones', v_rengs, 'abonos', v_abonos, 'ajustes', v_ajustes, 'pagos_por_concepto_cent', v_pagos_conc,
     'totales', jsonb_build_object('saldo_anterior_cent', v_ant, 'mercancia_cent', v_mercancia, 'seguros_cent', v_seguros, 'guias_cent', v_guias, 'costo_total_cent', v_mercancia + v_seguros + v_guias,
                                   'pagos_cent', v_pagos, 'ajustes_cent', v_ajus, 'falta_por_saldar_cent', v_falta),
     'comprobaciones', jsonb_build_object(

@@ -61,3 +61,14 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 @media (pointer: coarse) {
   .rtm-segmentado a, .rtm-segmentado button { min-height: 44px; }
 }
+
+/* F3a: barra divergente (cero al centro, el signo siempre escrito), pasos de la cascada y bloques de cuentas de socios. */
+.rtm-divergente { position: relative; height: 14px; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); max-width: 520px; }
+.rtm-divergente::after { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--rtm-ink); }
+.rtm-divergente > i { position: absolute; top: 0; bottom: 0; background: var(--rtm-ink); border-radius: var(--rtm-r-pildora); }
+.rtm-divergente > i[data-lado='der'] { left: 50%; }
+.rtm-divergente > i[data-lado='izq'] { right: 50%; background-image: repeating-linear-gradient(135deg, var(--rtm-ink) 0 3px, var(--rtm-surface) 3px 5px); }
+.rtm-divergente-pie { display: flex; justify-content: space-between; max-width: 520px; font-size: 12px; color: var(--rtm-ink-3); }
+.rtm-copiar { display: inline-flex; flex-direction: column; gap: var(--rtm-e-2); align-items: flex-start; max-width: 100%; }
+.rtm-copiar pre { max-width: 100%; }
+.rtm-celda-sub { display: block; font-size: 12px; color: var(--rtm-ink-3); }

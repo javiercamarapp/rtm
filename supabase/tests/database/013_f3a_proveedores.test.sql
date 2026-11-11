@@ -73,7 +73,7 @@ select operacion.pago_proveedor_de_socio('f3hpg2', 'Isaac', 10000000, 'Angelo', 
 select operacion.registrar_ajuste_proveedor('f3haj', 'Isaac', 100000, 'descuento_proveedor', 'descuento por volumen', '2020-06-04');
 create temp table _h2 as select operacion.hoja_proveedor('Isaac', '2020-06-01', 'todo') as h;
 select is((select (h->'totales'->>'pagos_cent')::bigint from _h2), 25000000::bigint, 'pagos de la semana 250,000.00 (deposito de cliente + pago de un socio)');
-select is((select (h->'pagos_por_concepto'->>'pago_cliente_redirigido')::bigint from _h2), 15000000::bigint, 'el deposito de cliente se distingue del pago del socio');
+select is((select (h->'pagos_por_concepto_cent'->>'pago_cliente_redirigido')::bigint from _h2), 15000000::bigint, 'el deposito de cliente se distingue del pago del socio');
 select is((select count(*)::int from _h2, jsonb_array_elements(h->'abonos') a where a->>'cliente' = 'F3 Cliente Isaac'), 1, 'cada abono de cliente trae su cliente aunque el proveedor no lo vea');
 select is((select (h->'totales'->>'ajustes_cent')::bigint from _h2), 100000::bigint, 'ajuste a favor de 1,000.00');
 select is((select (h->'totales'->>'falta_por_saldar_cent')::bigint from _h2), 4064500::bigint, 'falta por saldar = 291,645.00 - 250,000.00 - 1,000.00 = 40,645.00');
