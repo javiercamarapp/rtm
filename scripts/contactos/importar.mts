@@ -38,6 +38,9 @@ function fuentesPorOmision(): Fuente[] {
   }
   const suelto = join(escritorio, '1573.vcf');
   if (existsSync(suelto)) out.push({ ruta: suelto, id: 'toocloudy/1573.vcf', tipo: 'vcf' });
+  for (const n of ['leads whatsapp FINAL (1).xlsx']) {
+    if (existsSync(join(descargas, n))) out.push({ ruta: join(descargas, n), id: 'descargas-leads-whatsapp-final.xlsx', tipo: 'toocloudy' });
+  }
   const leads = join(escritorio, 'leads whatsapp FINAL.xlsx');
   if (existsSync(leads)) out.push({ ruta: leads, id: 'toocloudy/leads whatsapp FINAL.xlsx', tipo: 'toocloudy' });
   for (const n of ['contacts-12.xlsx', 'contacts (1).xlsx']) {
@@ -101,6 +104,8 @@ console.log('Totales:', JSON.stringify(informe.totales));
 console.log('Por origen (un contacto puede tener varios):');
 console.table(informe.por_origen);
 if (informe.por_anuncio.length) { console.log('Meta por anuncio y formulario:'); console.table(informe.por_anuncio); }
+console.log(`Colonias distintas: ${informe.totales.colonias_distintas}; contactos con colonia: ${informe.totales.con_colonia}; en conflicto: ${informe.totales.colonia_en_conflicto}. Las 10 mas frecuentes:`);
+console.table(informe.por_colonia.slice(0, 10));
 console.log(`Etiquetas y grupos distintos: ${informe.etiquetas.length}`);
 console.table(informe.etiquetas);
 

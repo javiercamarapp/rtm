@@ -18,6 +18,9 @@ create table contactos.contacto (
   nombre text not null default '',
   -- Comparte un correo con otro contacto de nombre distinto: no se unieron; queda marcado para revision.
   correo_compartido boolean not null default false,
+  -- Colonia (opcional): texto original para mostrar; si hay colonias distintas se unen con ' / ' y queda colonia_conflicto para revision.
+  colonia text not null default '',
+  colonia_conflicto boolean not null default false,
   creado_at timestamptz not null default now(),
   actualizado_at timestamptz not null default now()
 );
@@ -51,6 +54,15 @@ create table contactos.origen (
 );
 create index origen_origen_idx on contactos.origen (origen);
 create index origen_anuncio_idx on contactos.origen (anuncio) where anuncio <> '';
+
+-- Colonias de cada contacto: una por clave normalizada (sin acentos, mayusculas ni espacios extra); se conserva el texto original.
+create table contactos.colonia (
+  contacto_id bigint not null references contactos.contacto (id) on delete cascade,
+  colonia_norm text not null check (btrim(colonia_norm) <> ''),
+  colonia text not null check (btrim(colonia) <> ''),
+  primary key (contacto_id, colonia_norm)
+);
+create index colonia_norm_idx on contactos.colonia (colonia_norm);
 
 create table contactos.etiqueta (
   contacto_id bigint not null references contactos.contacto (id) on delete cascade,
@@ -91,7 +103,7 @@ create trigger revelacion_t1_truncate before truncate on contactos.revelacion fo
 do $$
 declare t text;
 begin
-  foreach t in array array['contacto', 'telefono', 'correo', 'origen', 'etiqueta', 'lote_contacto', 'carga', 'revelacion'] loop
+  foreach t in array array['contacto', 'telefono', 'correo', 'origen', 'colonia', 'etiqueta', 'lote_contacto', 'carga', 'revelacion'] loop
     execute format('alter table contactos.%I enable row level security', t);
     execute format('alter table contactos.%I force row level security', t);
     execute format('revoke all on contactos.%I from public, anon, authenticated', t);
@@ -123,7 +135,7 @@ end $$;
 
 -- ---------------------------------------------------------------------------
 -- Carga idempotente por lotes (canal de importacion: postgres con rtm.canal = 'importacion'; nadie de la web llega aqui).
--- Entrada: arreglo JSON de {telefono, nombre, telefonos[], correos[], etiquetas[], lotes[], origenes[{origen, anuncio, formulario, campana}]}.
+-- Entrada: arreglo JSON de {telefono, nombre, telefonos[], correos[], colonias[], etiquetas[], lotes[], origenes[{origen, anuncio, formulario, campana}]}.
 -- Un contacto que comparte telefono o correo con uno existente se FUSIONA (se unen todos sus datos); varios existentes se unifican en el menor id.
 -- Correrlo dos veces con el mismo lote no cambia nada.
 -- ---------------------------------------------------------------------------
@@ -167,6 +179,7 @@ begin
         update contactos.telefono set contacto_id = v_id where contacto_id = v_otro;
         update contactos.correo set contacto_id = v_id where contacto_id = v_otro;
         insert into contactos.origen select v_id, origen, anuncio, formulario, campana from contactos.origen where contacto_id = v_otro on conflict do nothing;
+        insert into contactos.colonia select v_id, colonia_norm, colonia from contactos.colonia where contacto_id = v_otro on conflict do nothing;
         insert into contactos.etiqueta select v_id, etiqueta from contactos.etiqueta where contacto_id = v_otro on conflict do nothing;
         insert into contactos.lote_contacto select v_id, lote from contactos.lote_contacto where contacto_id = v_otro on conflict do nothing;
         update contactos.contacto set nombre = (select nombre from contactos.contacto where id = v_otro) where id = v_id and length(nombre) < (select length(nombre) from contactos.contacto where id = v_otro);
@@ -179,6 +192,12 @@ begin
     insert into contactos.origen (contacto_id, origen, anuncio, formulario, campana)
       select v_id, o ->> 'origen', coalesce(o ->> 'anuncio', ''), coalesce(o ->> 'formulario', ''), coalesce(o ->> 'campana', '')
       from jsonb_array_elements(v -> 'origenes') o on conflict do nothing;
+    insert into contactos.colonia (contacto_id, colonia_norm, colonia)
+      select v_id, catalogo.normalizar(c), btrim(c) from jsonb_array_elements_text(coalesce(v -> 'colonias', '[]'::jsonb)) c where catalogo.normalizar(c) <> '' on conflict do nothing;
+    update contactos.contacto k set
+      colonia = coalesce((select string_agg(x.colonia, ' / ' order by x.colonia_norm) from contactos.colonia x where x.contacto_id = k.id), ''),
+      colonia_conflicto = (select count(*) from contactos.colonia x where x.contacto_id = k.id) > 1
+    where k.id = v_id;
     insert into contactos.etiqueta (contacto_id, etiqueta) select v_id, e from jsonb_array_elements_text(coalesce(v -> 'etiquetas', '[]'::jsonb)) e on conflict do nothing;
     insert into contactos.lote_contacto (contacto_id, lote) select v_id, l from jsonb_array_elements_text(coalesce(v -> 'lotes', '[]'::jsonb)) l on conflict do nothing;
 
@@ -205,7 +224,7 @@ revoke all on function contactos.cargar_lote(text, jsonb, text) from public, ano
 -- ---------------------------------------------------------------------------
 -- Lectura para socios (esquema api). El telefono sale enmascarado; revelarlo o exportarlo queda registrado.
 -- ---------------------------------------------------------------------------
-create function contactos.ids_filtrados(p_busqueda text, p_origen text, p_anuncio text) returns setof bigint
+create function contactos.ids_filtrados(p_busqueda text, p_origen text, p_anuncio text, p_colonia text default null) returns setof bigint
 language sql stable security definer set search_path = ''
 as $$
   select c.id from contactos.contacto c
@@ -218,16 +237,18 @@ as $$
          or exists (select 1 from contactos.origen o where o.contacto_id = c.id and (o.origen = p_origen or (p_origen = 'google-lote' and o.origen like 'google-lote:%'))))
     and (nullif(p_anuncio, '') is null
          or exists (select 1 from contactos.origen o where o.contacto_id = c.id and o.origen = 'meta' and o.anuncio = p_anuncio))
+    and (nullif(btrim(p_colonia), '') is null
+         or exists (select 1 from contactos.colonia k where k.contacto_id = c.id and k.colonia_norm = catalogo.normalizar(p_colonia)))
 $$;
-revoke all on function contactos.ids_filtrados(text, text, text) from public, anon, authenticated;
+revoke all on function contactos.ids_filtrados(text, text, text, text) from public, anon, authenticated;
 
-create function api.contactos_lista(p_busqueda text default null, p_origen text default null, p_anuncio text default null, p_limite int default 50, p_desplazamiento int default 0) returns jsonb
+create function api.contactos_lista(p_busqueda text default null, p_origen text default null, p_anuncio text default null, p_limite int default 50, p_desplazamiento int default 0, p_colonia text default null) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare v_limite int := least(greatest(coalesce(p_limite, 50), 1), 200); v_total bigint; v_filas jsonb;
 begin
   perform seguridad.exigir_rol(array['socio']);
-  select count(*) into v_total from contactos.ids_filtrados(p_busqueda, p_origen, p_anuncio);
+  select count(*) into v_total from contactos.ids_filtrados(p_busqueda, p_origen, p_anuncio, p_colonia);
   select coalesce(jsonb_agg(q.fila order by q.id), '[]'::jsonb) into v_filas from (
     select c.id,
            jsonb_build_object(
@@ -237,13 +258,15 @@ begin
              'telefonos', (select count(*) from contactos.telefono t where t.contacto_id = c.id),
              'sin_lada', exists (select 1 from contactos.telefono t where t.contacto_id = c.id and t.sin_lada),
              'correo_compartido', c.correo_compartido,
+             'colonia', c.colonia,
+             'colonia_conflicto', c.colonia_conflicto,
              'correo', (select min(r.correo) from contactos.correo r where r.contacto_id = c.id),
              'origenes', coalesce((select jsonb_agg(distinct o.origen) from contactos.origen o where o.contacto_id = c.id), '[]'::jsonb),
              'anuncios', coalesce((select jsonb_agg(distinct o.anuncio) from contactos.origen o where o.contacto_id = c.id and o.anuncio <> ''), '[]'::jsonb),
              'etiquetas', coalesce((select jsonb_agg(e.etiqueta order by e.etiqueta) from contactos.etiqueta e where e.contacto_id = c.id), '[]'::jsonb)
            ) as fila
     from contactos.contacto c
-    where c.id in (select contactos.ids_filtrados(p_busqueda, p_origen, p_anuncio))
+    where c.id in (select contactos.ids_filtrados(p_busqueda, p_origen, p_anuncio, p_colonia))
     order by c.id offset greatest(coalesce(p_desplazamiento, 0), 0) limit v_limite
   ) q;
   return jsonb_build_object('total', v_total, 'limite', v_limite, 'desplazamiento', greatest(coalesce(p_desplazamiento, 0), 0), 'filas', v_filas);
@@ -259,6 +282,10 @@ begin
     'con_correo', (select count(distinct contacto_id) from contactos.correo),
     'correo_compartido', (select count(*) from contactos.contacto where correo_compartido),
     'sin_lada', (select count(distinct contacto_id) from contactos.telefono where sin_lada),
+    'con_colonia', (select count(distinct contacto_id) from contactos.colonia),
+    'colonia_en_conflicto', (select count(*) from contactos.contacto where colonia_conflicto),
+    'por_colonia', coalesce((select jsonb_agg(jsonb_build_object('colonia', colonia, 'contactos', n) order by n desc, colonia)
+                             from (select min(colonia) colonia, count(*) n from contactos.colonia group by colonia_norm order by count(*) desc, min(colonia) limit 300) x), '[]'::jsonb),
     'por_origen', coalesce((select jsonb_agg(jsonb_build_object('origen', origen, 'contactos', n) order by n desc, origen)
                             from (select origen, count(distinct contacto_id) n from contactos.origen group by origen) x), '[]'::jsonb),
     'por_anuncio', coalesce((select jsonb_agg(jsonb_build_object('anuncio', anuncio, 'formulario', formulario, 'contactos', n) order by n desc, anuncio)
@@ -279,7 +306,7 @@ begin
 end $$;
 
 -- Exporta la seleccion (ids) o, sin ids, todo lo que coincide con los filtros (tope 20000). Registra una revelacion por contacto exportado.
-create function api.contactos_exportar(p_ids bigint[] default null, p_busqueda text default null, p_origen text default null, p_anuncio text default null) returns jsonb
+create function api.contactos_exportar(p_ids bigint[] default null, p_busqueda text default null, p_origen text default null, p_anuncio text default null, p_colonia text default null) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
 declare v_ids bigint[]; v_filas jsonb;
@@ -289,7 +316,7 @@ begin
     if cardinality(p_ids) > 20000 then raise exception 'seleccion demasiado grande' using errcode = '22023'; end if;
     v_ids := array(select c.id from contactos.contacto c where c.id = any (p_ids) order by c.id);
   else
-    v_ids := array(select i from contactos.ids_filtrados(p_busqueda, p_origen, p_anuncio) i order by i limit 20000);
+    v_ids := array(select i from contactos.ids_filtrados(p_busqueda, p_origen, p_anuncio, p_colonia) i order by i limit 20000);
   end if;
   insert into contactos.revelacion (contacto_id, telefono_ult2, accion, actor, motivo)
     select c.id, right(c.telefono_principal, 2), 'exportar', auth.uid(), 'exportacion de ' || cardinality(v_ids) || ' contactos' from contactos.contacto c where c.id = any (v_ids);
@@ -298,6 +325,7 @@ begin
       'telefono', c.telefono_principal,
       'telefonos', (select jsonb_agg(t.e164 order by t.e164) from contactos.telefono t where t.contacto_id = c.id),
       'correo', (select min(r.correo) from contactos.correo r where r.contacto_id = c.id),
+      'colonia', c.colonia,
       'origenes', coalesce((select jsonb_agg(distinct o.origen) from contactos.origen o where o.contacto_id = c.id), '[]'::jsonb),
       'anuncios', coalesce((select jsonb_agg(distinct o.anuncio) from contactos.origen o where o.contacto_id = c.id and o.anuncio <> ''), '[]'::jsonb)
     ) order by c.id), '[]'::jsonb) into v_filas
@@ -317,7 +345,7 @@ begin
     order by a.id limit least(greatest(coalesce(p_limite, 50), 1), 200)) v), '[]'::jsonb);
 end $$;
 
-revoke execute on function api.contactos_lista(text, text, text, int, int), api.contactos_resumen(), api.contacto_revelar(bigint, text),
-  api.contactos_exportar(bigint[], text, text, text), api.contactos_agente(text, int) from public, anon;
-grant execute on function api.contactos_lista(text, text, text, int, int), api.contactos_resumen(), api.contacto_revelar(bigint, text),
-  api.contactos_exportar(bigint[], text, text, text), api.contactos_agente(text, int) to authenticated;
+revoke execute on function api.contactos_lista(text, text, text, int, int, text), api.contactos_resumen(), api.contacto_revelar(bigint, text),
+  api.contactos_exportar(bigint[], text, text, text, text), api.contactos_agente(text, int) from public, anon;
+grant execute on function api.contactos_lista(text, text, text, int, int, text), api.contactos_resumen(), api.contacto_revelar(bigint, text),
+  api.contactos_exportar(bigint[], text, text, text, text), api.contactos_agente(text, int) to authenticated;

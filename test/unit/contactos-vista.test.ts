@@ -11,11 +11,11 @@ describe('vista de contactos', () => {
   });
 
   it('exporta CSV con BOM, comillas escapadas y sin formulas ejecutables', () => {
-    const csv = aCsv([{ nombre: '=SUMA(1)', telefono: '+529995550101', telefonos: ['+529995550101', '+529995550102'], correo: null, origenes: ['meta', 'vapeunion'], anuncios: ['Anuncio "A", uno'] }]);
+    const csv = aCsv([{ nombre: '=SUMA(1)', telefono: '+529995550101', telefonos: ['+529995550101', '+529995550102'], correo: null, colonia: 'Centro', origenes: ['meta', 'vapeunion'], anuncios: ['Anuncio "A", uno'] }]);
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     const lineas = csv.slice(1).split('\r\n');
-    expect(lineas[0]).toBe('nombre,telefono,otros_telefonos,correo,origenes,anuncios');
-    expect(lineas[1]).toBe(`'=SUMA(1),+529995550101,+529995550102,,meta ; vapeunion,"Anuncio ""A"", uno"`);
+    expect(lineas[0]).toBe('nombre,telefono,otros_telefonos,correo,colonia,origenes,anuncios');
+    expect(lineas[1]).toBe(`'=SUMA(1),+529995550101,+529995550102,,Centro,meta ; vapeunion,"Anuncio ""A"", uno"`);
   });
 
   it('pagina desde 1 y tolera basura', () => {

@@ -10,6 +10,9 @@ export interface ContactoFila {
   sinLada: boolean;
   /** Comparte correo con otro contacto de nombre distinto: pendiente de revision. */
   correoCompartido: boolean;
+  /** Colonia para mostrar (varias unidas con ' / ' si hay conflicto). */
+  colonia: string;
+  coloniaConflicto: boolean;
   correo: string | null;
   origenes: string[];
   anuncios: string[];
@@ -28,6 +31,9 @@ export interface ResumenContactos {
   conCorreo: number;
   correoCompartido: number;
   sinLada: number;
+  conColonia: number;
+  coloniaEnConflicto: number;
+  porColonia: Array<{ colonia: string; contactos: number }>;
   porOrigen: Array<{ origen: string; contactos: number }>;
   porAnuncio: Array<{ anuncio: string; formulario: string; contactos: number }>;
 }
@@ -36,6 +42,7 @@ export interface FiltroContactos {
   busqueda: string;
   origen: string;
   anuncio: string;
+  colonia: string;
 }
 
 export interface FilaExportada {
@@ -43,6 +50,7 @@ export interface FilaExportada {
   telefono: string;
   telefonos: string[];
   correo: string | null;
+  colonia: string;
   origenes: string[];
   anuncios: string[];
 }
@@ -69,9 +77,9 @@ function celdaCsv(valor: string, telefono = false): string {
 
 /** CSV de la seleccion exportada, con BOM para que Excel lea los acentos. Todos los telefonos van en una celda separados por ' ; '. */
 export function aCsv(filas: FilaExportada[]): string {
-  const cab = ['nombre', 'telefono', 'otros_telefonos', 'correo', 'origenes', 'anuncios'];
+  const cab = ['nombre', 'telefono', 'otros_telefonos', 'correo', 'colonia', 'origenes', 'anuncios'];
   const lineas = filas.map((f) =>
-    [f.nombre, f.telefono, f.telefonos.filter((t) => t !== f.telefono).join(' ; '), f.correo ?? '', f.origenes.join(' ; '), f.anuncios.join(' ; ')].map((v, i) => celdaCsv(v, i === 1 || i === 2)).join(','),
+    [f.nombre, f.telefono, f.telefonos.filter((t) => t !== f.telefono).join(' ; '), f.correo ?? '', f.colonia, f.origenes.join(' ; '), f.anuncios.join(' ; ')].map((v, i) => celdaCsv(v, i === 1 || i === 2)).join(','),
   );
   return `${String.fromCharCode(0xfeff)}${[cab.join(','), ...lineas].join('\r\n')}\r\n`;
 }

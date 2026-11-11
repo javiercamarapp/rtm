@@ -18,6 +18,7 @@ interface Columnas {
   anuncio: number;
   formulario: number;
   campana: number;
+  colonia: number;
 }
 
 function detectarColumnas(cab: string[]): Columnas {
@@ -39,6 +40,7 @@ function detectarColumnas(cab: string[]): Columnas {
     anuncio: una((t) => t === 'ad_name'),
     formulario: una((t) => t === 'form_name'),
     campana: una((t) => t === 'campaign_name'),
+    colonia: una((t) => t === 'colonia'),
   };
 }
 
@@ -131,6 +133,7 @@ export function leerTabla(tabla: string[][], fuente: FuenteTabla): ResultadoLect
       telefonos: [...tels].sort(),
       correos: [...correos].sort(),
       etiquetas: [...new Set(etiquetas)].sort(),
+      colonias: cols.colonia >= 0 && (fila[cols.colonia] ?? '').trim() !== '' ? [(fila[cols.colonia] ?? '').trim().replace(/\s+/g, ' ')] : [],
       origenes: origenesDe(fuente, fila, cols, etiquetas),
     });
   }

@@ -12,7 +12,7 @@ insert into auth.users (id, instance_id, aud, role, email) values
   ('d4444444-4444-4444-4444-444444444442', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ctc.omar@example.test');
 
 -- ---- Estructura: RLS forzada y sin politicas en las ocho tablas --------------------------------------------------------------------------------------
-select is((select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'contactos' and c.relkind = 'r' and c.relrowsecurity and c.relforcerowsecurity), 8, 'las 8 tablas de contactos tienen RLS activa y forzada');
+select is((select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'contactos' and c.relkind = 'r' and c.relrowsecurity and c.relforcerowsecurity), 9, 'las 9 tablas de contactos tienen RLS activa y forzada');
 select is((select count(*)::int from pg_policies where schemaname = 'contactos'), 0, 'sin politicas: deniega por omision');
 select is((select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'contactos' and c.relkind = 'r' and not c.relforcerowsecurity), 0, 'ninguna tabla de contactos sin RLS forzada');
 
@@ -36,6 +36,19 @@ select is((select count(*)::int from contactos.contacto), 2, 'sin duplicados: si
 select is((select count(*)::int from contactos.origen where contacto_id = (select contacto_id from contactos.telefono where e164 = '+529995550101')), 2, 'el contacto fusionado conserva sus dos origenes');
 select is((select count(*)::int from contactos.correo where contacto_id = (select contacto_id from contactos.telefono where e164 = '+529995550101')), 2, 'y sus dos correos');
 select is((select nombre from contactos.contacto where telefono_principal = '+529995550101'), 'Ana Prueba', 'el nombre conserva el mas largo');
+-- Colonia: se fusiona por telefono aportando la colonia; colonias distintas se conservan ambas y se marcan; el filtro compara sin acentos.
+select is((contactos.cargar_lote('lote-prueba-col-1', $j$[
+  {"telefono":"+529995550103","nombre":"Beto Prueba","telefonos":["+529995550103"],"correos":[],"colonias":["Santa Lucía"],"etiquetas":[],"lotes":["w.xlsx"],
+   "origenes":[{"origen":"toocloudy-whatsapp","anuncio":null,"formulario":null,"campana":null}]}
+]$j$::jsonb)->>'nuevos')::int, 0, 'la colonia llega por fusion con un contacto existente');
+select is((select colonia from contactos.contacto where telefono_principal = '+529995550103'), 'Santa Lucía', 'el contacto trae su colonia');
+select is((contactos.cargar_lote('lote-prueba-col-2', $j$[
+  {"telefono":"+529995550103","nombre":"Beto Prueba","telefonos":["+529995550103"],"correos":[],"colonias":["SANTA LUCIA","Centro"],"etiquetas":[],"lotes":["w2.xlsx"],
+   "origenes":[{"origen":"toocloudy-whatsapp","anuncio":null,"formulario":null,"campana":null}]}
+]$j$::jsonb)->>'nuevos')::int, 0, 'segunda colonia para el mismo telefono');
+select is((select count(*)::int from contactos.colonia where contacto_id = (select id from contactos.contacto where telefono_principal = '+529995550103')), 2, 'SANTA LUCIA y Santa Lucía son la misma colonia; Centro es otra: quedan 2');
+select is((select colonia_conflicto from contactos.contacto where telefono_principal = '+529995550103'), true, 'colonias distintas: queda marcada colonia en conflicto');
+
 -- Telefono sin lada (7 u 8 digitos) se conserva sin inventar la lada; mismo correo con nombre distinto NO une y marca correo compartido.
 select is((contactos.cargar_lote('lote-prueba-3', $j$[
   {"telefono":"sl:5550104","nombre":"Cris Prueba","telefonos":["sl:5550104"],"correos":["ana@example.test"],"etiquetas":[],"lotes":["c.csv"],
@@ -80,6 +93,7 @@ select is((api.contactos_lista('5550101')->>'total')::int, 1, 'busqueda por digi
 select is((api.contactos_lista(null, 'meta')->>'total')::int, 1, 'filtro por origen meta');
 select is((api.contactos_lista(null, null, 'Anuncio A')->>'total')::int, 1, 'filtro por anuncio');
 select is((api.contactos_lista(null, 'google-lote')->>'total')::int, 1, 'el prefijo google-lote agrupa los lotes de Google');
+select is((api.contactos_lista(null, null, null, 50, 0, 'santa lucia')->>'total')::int, 1, 'el filtro por colonia compara sin acentos ni mayusculas');
 select is((api.contactos_lista()->'filas'->0->>'telefono_mascara') like '%01', true, 'el telefono sale enmascarado con los ultimos 2 digitos');
 select is(api.contactos_lista()::text like '%99955501%', false, 'la lista nunca trae el telefono completo');
 select is((api.contactos_resumen()->>'total')::int, 3, 'resumen: total');

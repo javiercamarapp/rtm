@@ -24,6 +24,8 @@ export interface RegistroLeido {
   correos: string[];
   etiquetas: string[];
   origenes: OrigenContacto[];
+  /** Colonia tal como viene en la fuente (para mostrar); vacia si no hay. */
+  colonias: string[];
 }
 
 export interface Descartes {
@@ -61,6 +63,10 @@ export interface ContactoConsolidado {
   tipo: 'menudeo';
   /** Comparte un correo con otro contacto de nombre distinto: no se unieron; queda para revision. */
   correo_compartido: boolean;
+  /** Una por colonia normalizada distinta (texto original para mostrar). */
+  colonias: string[];
+  /** Mas de una colonia distinta para el mismo contacto: se conservan ambas y queda para revision. */
+  colonia_conflicto: boolean;
 }
 
 export interface InformeContactos {
@@ -77,8 +83,12 @@ export interface InformeContactos {
     telefonos_sin_lada: number;
     unidos_por_correo_y_nombre: number;
     correo_compartido_nombre_distinto: number;
+    con_colonia: number;
+    colonias_distintas: number;
+    colonia_en_conflicto: number;
   };
   por_origen: Array<{ origen: string; contactos: number }>;
   por_anuncio: Array<{ anuncio: string; formulario: string | null; contactos: number }>;
   etiquetas: Array<{ etiqueta: string; contactos: number }>;
+  por_colonia: Array<{ colonia: string; contactos: number }>;
 }

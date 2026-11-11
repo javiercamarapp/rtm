@@ -6,7 +6,7 @@ import { aCsv, type FiltroContactos } from '@/dominio/contactos/vista';
 const texto = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
 function filtroSeguro(f: Partial<FiltroContactos> | undefined): FiltroContactos {
-  return { busqueda: texto(f?.busqueda, 80), origen: texto(f?.origen, 80), anuncio: texto(f?.anuncio, 200) };
+  return { busqueda: texto(f?.busqueda, 80), origen: texto(f?.origen, 80), anuncio: texto(f?.anuncio, 200), colonia: texto(f?.colonia, 120) };
 }
 
 export type RespuestaRevelar = { ok: true; telefonos: string[] } | { ok: false; mensaje: string };

@@ -4,14 +4,25 @@
 import type { ContactoConsolidado, Descartes, InformeContactos, OrigenContacto, RegistroLeido, ResultadoLectura } from './tipos';
 import { descartesVacios } from './leer';
 import { esSinLada } from './telefono';
+import { normalizarTexto } from './texto';
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const unicos = (xs: string[]) => [...new Set(xs)].sort(cmp);
 const claveOrigen = (o: OrigenContacto) => [o.origen, o.anuncio ?? '', o.formulario ?? '', o.campana ?? ''].join('\u0001');
 
 /** Nombre para comparar: sin acentos, en minusculas, solo letras y numeros separados por un espacio. */
-export function nombreNormalizado(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+export const nombreNormalizado = normalizarTexto;
+
+/** Una colonia por clave normalizada (se conserva el original menor en orden para mostrar), ordenadas por clave. */
+function coloniasDe(lista: string[]): string[] {
+  const m = new Map<string, string>();
+  for (const c of lista) {
+    const k = normalizarTexto(c);
+    if (k === '') continue;
+    const previa = m.get(k);
+    if (previa === undefined || c < previa) m.set(k, c);
+  }
+  return [...m.entries()].sort((a, b) => cmp(a[0], b[0])).map(([, v]) => v);
 }
 
 function orden(registros: RegistroLeido[]): RegistroLeido[] {
@@ -70,6 +81,8 @@ export function consolidarConEstadisticas(registros: RegistroLeido[]): Resultado
       origenes: [...origenes.values()].sort((a, b) => cmp(claveOrigen(a), claveOrigen(b))),
       tipo: 'menudeo',
       correo_compartido: compartidos.has(g),
+      colonias: coloniasDe(miembros.flatMap((m) => m.colonias)),
+      colonia_conflicto: coloniasDe(miembros.flatMap((m) => m.colonias)).length > 1,
     });
   }
   return { contactos: salida.sort((a, b) => cmp(a.telefono, b.telefono)), unidos_por_correo_y_nombre: soloTelefono - grupos.size };
@@ -105,6 +118,16 @@ export function construirInforme(lecturas: ResultadoLectura[], contactos: Contac
       anuncios.set(k, e);
     }
   }
+  const colonias = new Map<string, { colonia: string; n: number }>();
+  for (const k of contactos) {
+    for (const col of k.colonias) {
+      const clave = normalizarTexto(col);
+      const e = colonias.get(clave) ?? { colonia: col, n: 0 };
+      e.n++;
+      if (col < e.colonia) e.colonia = col;
+      colonias.set(clave, e);
+    }
+  }
   const etiquetas = contar(contactos.flatMap((c) => c.etiquetas.map((e) => ({ e }))), (x) => x.e);
   const todosTelefonos = new Set(contactos.flatMap((c) => c.telefonos));
   const conCorreo = contactos.filter((c) => c.correos.length > 0).length;
@@ -122,9 +145,13 @@ export function construirInforme(lecturas: ResultadoLectura[], contactos: Contac
       telefonos_sin_lada: [...todosTelefonos].filter(esSinLada).length,
       unidos_por_correo_y_nombre: unidosPorCorreoYNombre,
       correo_compartido_nombre_distinto: contactos.filter((c) => c.correo_compartido).length,
+      con_colonia: contactos.filter((k) => k.colonias.length > 0).length,
+      colonias_distintas: colonias.size,
+      colonia_en_conflicto: contactos.filter((k) => k.colonia_conflicto).length,
     },
     por_origen: [...porOrigen].map(([origen, contactosN]) => ({ origen, contactos: contactosN })).sort((a, b) => b.contactos - a.contactos || cmp(a.origen, b.origen)),
     por_anuncio: [...anuncios.values()].map((a) => ({ anuncio: a.anuncio, formulario: a.formulario, contactos: a.n })).sort((a, b) => b.contactos - a.contactos || cmp(a.anuncio, b.anuncio)),
+    por_colonia: [...colonias.values()].map((e) => ({ colonia: e.colonia, contactos: e.n })).sort((a, b) => b.contactos - a.contactos || cmp(a.colonia, b.colonia)),
     etiquetas: [...etiquetas].map(([etiqueta, contactosN]) => ({ etiqueta, contactos: contactosN })).sort((a, b) => b.contactos - a.contactos || cmp(a.etiqueta, b.etiqueta)),
   };
 }

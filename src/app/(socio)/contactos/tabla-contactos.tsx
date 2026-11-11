@@ -103,6 +103,7 @@ export function TablaContactos({ filas, total, filtro }: Props) {
             },
           },
           { id: 'c', titulo: 'Correo', secundaria: true, celda: (f) => <>{f.correo ?? '—'}{f.correoCompartido && <> · <EstadoTexto tono="atencion">correo compartido</EstadoTexto></>}</> },
+          { id: 'l', titulo: 'Colonia', secundaria: true, celda: (f) => <>{f.colonia || '—'}{f.coloniaConflicto && <> · <EstadoTexto tono="atencion">colonia en conflicto</EstadoTexto></>}</> },
           { id: 'o', titulo: 'Origen', secundaria: true, celda: (f) => f.origenes.map(etiquetaOrigen).join(', ') },
           { id: 'a', titulo: 'Anuncio', secundaria: true, celda: (f) => (f.anuncios.length ? f.anuncios.join(', ') : '—') },
         ]}

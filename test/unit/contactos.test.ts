@@ -165,6 +165,51 @@ describe('hoja sin cabeceras', () => {
   });
 });
 
+describe('colonia', () => {
+  const wa = (archivo: string, filas: string[][]) => leerTabla([['COLONIA', 'WHATSAPP'], ...filas], { archivo, tipo: 'toocloudy' });
+
+  it('lee la colonia de la fuente y fusiona por telefono con contactos existentes aportando la colonia', () => {
+    const g = leerTabla([['First Name', 'Phone 1 - Value'], ['Ana', '9995550101']], { archivo: 'g.csv', tipo: 'google' });
+    const w = wa('descargas-leads-whatsapp-final.xlsx', [['Santa  Lucía', '9995550101'], ['', '9995550102']]);
+    expect(w.registros[0]!.colonias).toEqual(['Santa Lucía']);
+    expect(w.registros[1]!.colonias).toEqual([]);
+    expect(w.registros[0]!.origenes[0]!.origen).toBe('toocloudy-whatsapp');
+    const todos = consolidar([...g.registros, ...w.registros]);
+    expect(todos).toHaveLength(2);
+    const ana = todos.find((c) => c.telefonos.includes('+529995550101'))!;
+    expect(ana.nombre).toBe('Ana');
+    expect(ana.colonias).toEqual(['Santa Lucía']);
+    expect(ana.colonia_conflicto).toBe(false);
+    expect(ana.origenes.map((o) => o.origen)).toEqual(['google-lote:sin-etiqueta', 'toocloudy-whatsapp']);
+  });
+
+  it('la misma colonia con distinto acento, mayusculas o espacios no es conflicto', () => {
+    const a = wa('a.xlsx', [['SANTA LUCIA', '9995550101']]);
+    const b = wa('b.xlsx', [['Santa Lucía', '9995550101']]);
+    const [k] = consolidar([...a.registros, ...b.registros]);
+    expect(k!.colonias).toHaveLength(1);
+    expect(k!.colonia_conflicto).toBe(false);
+  });
+
+  it('colonias distintas para un mismo telefono se conservan ambas y se marca conflicto', () => {
+    const a = wa('a.xlsx', [['Centro', '9995550101']]);
+    const b = wa('b.xlsx', [['Francisco de Montejo', '9995550101']]);
+    const todos = consolidar([...a.registros, ...b.registros]);
+    expect(todos).toHaveLength(1);
+    expect(todos[0]!.colonias).toEqual(['Centro', 'Francisco de Montejo']);
+    expect(todos[0]!.colonia_conflicto).toBe(true);
+    const inf = construirInforme([a, b], todos);
+    expect(inf.totales).toMatchObject({ con_colonia: 1, colonias_distintas: 2, colonia_en_conflicto: 1 });
+  });
+
+  it('el informe cuenta contactos con colonia y ordena las colonias por frecuencia', () => {
+    const w = wa('w.xlsx', [['Centro', '9995550101'], ['centro', '9995550102'], ['Norte', '9995550103'], ['', '9995550104']]);
+    const inf = construirInforme([w], consolidar(w.registros));
+    expect(inf.totales.con_colonia).toBe(3);
+    expect(inf.por_colonia).toEqual([{ colonia: 'Centro', contactos: 2 }, { colonia: 'Norte', contactos: 1 }]);
+  });
+});
+
 describe('consolidacion', () => {
   const tabla = (nombre: string, tel: string, extra: string[] = ['', '']) => [['First Name', 'Labels', 'E-mail 1 - Value', 'Phone 1 - Value'], [nombre, extra[0]!, extra[1]!, tel]];
   const lec = (archivo: string, tipo: 'google' | 'meta' | 'toocloudy' | 'vapeunion', t: string[][]) => leerTabla(t, { archivo, tipo });
@@ -248,7 +293,7 @@ describe('consolidacion', () => {
       ...lec('b.csv', 'google', tabla('Ana', '9995550102')).registros,
     ];
     const uno = consolidar(regs);
-    const dos = consolidar(uno.map((k) => ({ archivo: k.lotes[0]!, nombre: k.nombre, telefonos: k.telefonos, correos: k.correos, etiquetas: k.etiquetas, origenes: k.origenes })));
+    const dos = consolidar(uno.map((k) => ({ archivo: k.lotes[0]!, nombre: k.nombre, telefonos: k.telefonos, correos: k.correos, etiquetas: k.etiquetas, origenes: k.origenes, colonias: k.colonias })));
     expect(dos.map((k) => [k.telefono, k.telefonos, k.correos])).toEqual(uno.map((k) => [k.telefono, k.telefonos, k.correos]));
   });
 

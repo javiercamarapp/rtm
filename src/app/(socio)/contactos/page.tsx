@@ -10,13 +10,14 @@ import { TablaContactos } from './tabla-contactos';
 export const metadata: Metadata = { title: 'Contactos' };
 
 const LIMITE = 50;
-type Params = { q?: string; origen?: string; anuncio?: string; pag?: string };
+type Params = { q?: string; origen?: string; anuncio?: string; colonia?: string; pag?: string };
 
 function enlace(f: FiltroContactos, pag: number): string {
   const p = new URLSearchParams();
   if (f.busqueda) p.set('q', f.busqueda);
   if (f.origen) p.set('origen', f.origen);
   if (f.anuncio) p.set('anuncio', f.anuncio);
+  if (f.colonia) p.set('colonia', f.colonia);
   if (pag > 1) p.set('pag', String(pag));
   const s = p.toString();
   return s ? `/contactos?${s}` : '/contactos';
@@ -24,7 +25,7 @@ function enlace(f: FiltroContactos, pag: number): string {
 
 export default async function Pagina({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
-  const filtro: FiltroContactos = { busqueda: (sp.q ?? '').trim().slice(0, 80), origen: (sp.origen ?? '').slice(0, 80), anuncio: (sp.anuncio ?? '').slice(0, 200) };
+  const filtro: FiltroContactos = { busqueda: (sp.q ?? '').trim().slice(0, 80), origen: (sp.origen ?? '').slice(0, 80), anuncio: (sp.anuncio ?? '').slice(0, 200), colonia: (sp.colonia ?? '').trim().slice(0, 120) };
   const desplazamiento = desplazamientoDePagina(sp.pag, LIMITE);
   const lector = await lectorContactosDeSocio();
 
@@ -74,7 +75,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<P
 
   const pagina = desplazamiento / LIMITE + 1;
   const paginas = Math.max(1, Math.ceil(lista.total / LIMITE));
-  const sinPagina = (o: string) => enlace({ busqueda: filtro.busqueda, origen: o, anuncio: '' }, 1);
+  const sinPagina = (o: string) => enlace({ busqueda: filtro.busqueda, origen: o, anuncio: '', colonia: filtro.colonia }, 1);
 
   return (
     <>
@@ -101,6 +102,13 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<P
             </select>
           </label>
         )}
+        <label className="rtm-etiqueta-campo">
+          Colonia
+          <input className="rtm-campo" type="search" name="colonia" list="colonias-contactos" defaultValue={filtro.colonia} maxLength={120} />
+          <datalist id="colonias-contactos">
+            {resumen.porColonia.map((c) => <option key={c.colonia} value={c.colonia}>{formatearEntero(c.contactos)}</option>)}
+          </datalist>
+        </label>
         <button type="submit" className="rtm-boton rtm-boton-primario">Buscar</button>
         <Link className="rtm-boton" href="/contactos">Limpiar</Link>
       </form>
@@ -111,7 +119,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<P
         ))}
       </nav>
       <p className="rtm-nota">
-        {formatearEntero(lista.total)} {lista.total === 1 ? 'contacto coincide' : 'contactos coinciden'} · {formatearEntero(resumen.conCorreo)} con correo · {formatearEntero(resumen.sinLada)} con número sin lada · {formatearEntero(resumen.correoCompartido)} con correo compartido por revisar · página {formatearEntero(pagina)} de {formatearEntero(paginas)}
+        {formatearEntero(lista.total)} {lista.total === 1 ? 'contacto coincide' : 'contactos coinciden'} · {formatearEntero(resumen.conCorreo)} con correo · {formatearEntero(resumen.conColonia)} con colonia · {formatearEntero(resumen.sinLada)} con número sin lada · {formatearEntero(resumen.correoCompartido)} con correo compartido por revisar · página {formatearEntero(pagina)} de {formatearEntero(paginas)}
       </p>
       <TablaContactos filas={lista.filas} total={lista.total} filtro={filtro} />
       <nav className="rtm-barra-filtros" aria-label="Páginas">
