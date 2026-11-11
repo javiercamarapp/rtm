@@ -23,10 +23,10 @@ test('T01 campos vacios en FormularioAccion: mensaje local "Falta:" y ninguna ll
   await page.getByTestId('confirmar').click();
   await expect(page.getByRole('dialog')).toContainText(/Falta:/);
   expect(await contarEventos('aportacion_socio')).toBe(antes);
-  // Con monto pero sin concepto sigue faltando el concepto.
+  // Con monto pero sin motivo (la intencion del deposito) sigue faltando el motivo.
   await page.getByTestId('campo-p_monto_cent').fill('10');
   await page.getByTestId('confirmar').click();
-  await expect(page.getByRole('dialog')).toContainText(/Falta: concepto/i);
+  await expect(page.getByRole('dialog')).toContainText(/Falta: motivo/i);
   expect(await contarEventos('aportacion_socio')).toBe(antes);
 });
 
@@ -70,7 +70,7 @@ test('T02 H-29 (ESPERADO-FALLA-HASTA): "9,5" es ambiguo y se rechaza en vez de l
 test('T04 doble clic en Crear pedido y Enter repetido: un solo evento', async ({ page }) => {
   await sesionSocio(page, `/pedidos/nuevo?cliente=${d.clienteId}`);
   const antes = await contarEventos('pedido_creado');
-  await page.getByTestId('modelo').selectOption({ index: 1 });
+  await page.getByTestId('modelo').selectOption((await page.locator('[data-testid=modelo] option', { hasText: d.modeloA }).getAttribute('value'))!);
   await page.getByTestId('sabor').selectOption({ index: 1 });
   await page.getByTestId('piezas').fill('25');
   await page.getByTestId('agregar-renglon').click();

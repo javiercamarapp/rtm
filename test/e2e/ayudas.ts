@@ -158,7 +158,9 @@ export async function limpiarCatalogoE2E(): Promise<void> {
 export async function entrarComo(page: import('@playwright/test').Page, correo: string, destino: string): Promise<void> {
   await page.goto(await enlaceConfirmacion(correo, destino));
   await page.getByTestId('confirmar-acceso').click();
-  await page.waitForURL(`**${destino.split('?')[0]}**`);
+  // El patron `**/**` coincidia con la propia pagina de confirmacion cuando el destino era la raiz: se espera a salir de /auth/.
+  const ruta = destino.split('?')[0]!;
+  await page.waitForURL((u) => !u.pathname.startsWith('/auth/') && (ruta === '/' ? u.pathname === '/' : u.pathname.startsWith(ruta)));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------

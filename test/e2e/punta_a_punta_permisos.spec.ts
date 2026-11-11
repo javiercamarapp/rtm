@@ -19,6 +19,7 @@ test.describe('sin sesion', () => {
       await page.goto(ruta.ruta);
       await expect(page).toHaveURL(/\/login/);
       const next = new URL(page.url()).searchParams.get('next');
+      if (ruta.ruta === '/') return; // la raiz es el destino por omision: no lleva next
       expect(next, `${ruta.id}: next`).toBeTruthy();
       expect(next!.startsWith('/')).toBe(true);
     });
@@ -40,9 +41,14 @@ test('Angelo y Javier ven las mismas pantallas y los mismos datos (un solo negoc
   for (const ruta of ['/pedidos', '/catalogo', '/inventario', '/clientes', '/cuentas-por-cobrar', '/proveedores?p=Isaac', '/socios', '/socios/cascada', '/avisos']) {
     await page.goto(ruta);
     await pj.goto(ruta);
+    // Esperar a que termine el flujo de carga de las dos (la pantalla de carga se reemplaza por la pagina real).
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(pj.getByRole('heading', { level: 1 })).toBeVisible();
     const a = await page.locator('main:not(.rtm-documento)').innerText();
     const j = await pj.locator('main:not(.rtm-documento)').innerText();
-    expect(j, `${ruta}: mismo contenido para los dos socios`).toBe(a);
+    // Las paginas de cuentas de los socios llevan el nombre del socio que mira ("Mi desglose (Angelo)"): es lo unico que puede diferir.
+    const normal = (t: string) => t.replace(/\((Angelo|Javier)\)/g, '(socio)');
+    expect(normal(j), `${ruta}: mismo contenido para los dos socios`).toBe(normal(a));
   }
   await otra.close();
 });
