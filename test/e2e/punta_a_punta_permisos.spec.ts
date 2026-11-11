@@ -77,7 +77,7 @@ test('un `next` externo cae a la raiz despues de entrar', async ({ page }) => {
   await page.goto(await enlaceConfirmacion(correo, 'https://malo.example/robo'));
   await page.getByTestId('confirmar-acceso').click();
   await page.waitForLoadState('networkidle');
-  expect(new URL(page.url()).origin).toBe('http://127.0.0.1:3100');
+  expect(new URL(page.url()).origin).toBe((process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100'));
   expect(new URL(page.url()).pathname).toBe('/');
 });
 

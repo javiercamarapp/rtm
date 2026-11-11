@@ -20,7 +20,7 @@ export default defineConfig({
   retries: 0,
   timeout: 90_000,
   reporter: [['list']],
-  use: { baseURL: 'http://127.0.0.1:3100', trace: 'off' },
+  use: { baseURL: process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100', trace: 'off' },
   projects: [
     { name: 'laptop-1440', testMatch: [ACCESO, F1, CONFIRMAR, F2, F3A], use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'iphone-16-pro', testMatch: [CONFIRMAR, MOVIL, MOVIL_F2, MOVIL_F3A], use: { ...devices['iPhone 15 Pro'], viewport: { width: 402, height: 874 }, screen: { width: 402, height: 874 }, deviceScaleFactor: 3 } },
@@ -29,7 +29,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'sh -c "npx next build && npx next start -p 3100"',
-    url: 'http://127.0.0.1:3100/api/health',
+    url: (process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100') + '/api/health',
     reuseExistingServer: true,
     timeout: 300_000,
   },

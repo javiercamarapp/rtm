@@ -30,7 +30,7 @@ test('el GET no consume el enlace; el boton entra y respeta next', async ({ page
   // Usado una vez: el mismo enlace en otra sesion ya no sirve y avisa que caduco.
   const otra = await context.browser()!.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
   const p2 = await otra.newPage();
-  await p2.goto(new URL(ruta, 'http://127.0.0.1:3100').toString());
+  await p2.goto(new URL(ruta, (process.env.APP_URL_E2E ?? (process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100'))).toString());
   await p2.getByTestId('confirmar-acceso').click();
   await p2.waitForURL('**/login**');
   await expect(p2.locator('.login-error')).toContainText(/ya se usó|caducó/);
@@ -60,5 +60,5 @@ test('un next externo cae a la raiz', async ({ page }) => {
   await altaUsuario({ correo, socio: 'Angelo' });
   await page.goto(await enlaceConfirmacion(correo, 'https://externo.example.test'));
   await page.getByTestId('confirmar-acceso').click();
-  await page.waitForURL('http://127.0.0.1:3100/');
+  await page.waitForURL((process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100') + '/');
 });
