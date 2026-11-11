@@ -158,6 +158,16 @@ export class RegistroCifras {
     return this.registrar(String(n));
   }
 
+  /** Texto que entrego el servidor (nombres de catalogo, advertencias): sus digitos son legitimos. */
+  servidor(texto: string): string {
+    return this.registrar(texto);
+  }
+
+  /** Cita literal de lo que escribio el socio (procedencia: su propio mensaje, no el modelo). */
+  citaUsuario(texto: string): string {
+    return this.registrar(texto);
+  }
+
   cifra(c: CifraServidor): string {
     switch (c.tipo) {
       case 'pesos':

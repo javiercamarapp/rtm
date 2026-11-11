@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MAX_CARACTERES, debeProcesarConIa, detectarInyeccion, envolverMensaje, sanitizar } from '@/dominio/agente/entrada';
+import { MAX_CARACTERES, debeProcesarConIa, detectarInyeccion, envolverMensaje, redactarContactos, sanitizar } from '@/dominio/agente/entrada';
 
 describe('sanitizar', () => {
   it('quita controles y ceros de ancho, normaliza NFKC y recorta', () => {
@@ -52,5 +52,13 @@ describe('envolverMensaje', () => {
     expect(e.endsWith('</mensaje>')).toBe(true);
     expect(e.slice(0, -'</mensaje>'.length)).not.toContain('</mensaje>');
     expect(e).not.toContain('<system>');
+  });
+});
+
+describe('redactarContactos', () => {
+  it('oculta correos y telefonos, no montos', () => {
+    expect(redactarContactos('mandale a juan@example.test o al 999 123 4567')).toBe('mandale a [correo oculto] o al [telefono oculto]');
+    expect(redactarContactos('+52 999-123-4567')).toBe('[telefono oculto]');
+    expect(redactarContactos('pago 7,000 y 28 piezas, 1500000')).toBe('pago 7,000 y 28 piezas, 1500000');
   });
 });
