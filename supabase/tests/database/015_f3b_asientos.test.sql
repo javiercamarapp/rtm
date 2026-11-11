@@ -202,6 +202,29 @@ select pg_temp.flush();
 select is((select periodo_afectado_id from contabilidad.asiento where evento_id = pg_temp.ev('f3m2')), (select id from _per), 'se registra en el periodo abierto con marca de periodo afectado');
 select isnt((select periodo_semana_id from contabilidad.asiento where evento_id = pg_temp.ev('f3m2')), (select id from _per), 'y no dentro del periodo aprobado');
 select ok(pg_temp.ok('C11'), 'C11 periodo cerrado sin asientos nuevos');
+
+-- El reporte de un periodo aprobado no cambia cuando llega un asiento tardio de ingresos: la fecha contable cae en el primer periodo abierto.
+create temp table _antes as select contabilidad.estado_resultados('2026-10-05', '2026-10-11') as er, contabilidad.balance_general('2026-10-11') as bg;
+select lives_ok($$select contabilidad.registrar_asiento_manual('f3m3', '2026-10-06', 'venta tardia de prueba', '[{"cuenta":"1101","debe_cent":700},{"cuenta":"4110","haber_cent":700}]'::jsonb)$$, 'asiento tardio de ingresos con fecha de un periodo aprobado');
+select pg_temp.flush();
+select is(contabilidad.estado_resultados('2026-10-05', '2026-10-11'), (select er from _antes), 'el estado de resultados del periodo aprobado no cambia con el asiento tardio');
+select is(contabilidad.balance_general('2026-10-11'), (select bg from _antes), 'el balance al cierre del periodo aprobado no cambia con el asiento tardio');
+select is((select fecha_contable from contabilidad.asiento where evento_id = pg_temp.ev('f3m3')), '2026-10-12'::date, 'la fecha contable del asiento tardio es el inicio del primer periodo abierto');
+select is(((contabilidad.estado_resultados('2026-10-12', '2026-10-18'))->>'ventas_brutas_cent')::bigint, 700::bigint, 'el ingreso tardio aparece en el periodo abierto');
+select is(((contabilidad.estado_resultados('2026-10-12', '2026-10-18'))->>'ajustes_periodos_anteriores_cent')::bigint, 700::bigint, 'y se informa como ajuste de periodos anteriores');
+
+-- Estado de resultados con envio cobrado, descuentos, costo y gastos variables y fijos (asientos manuales en una semana propia).
+select lives_ok($$select contabilidad.registrar_asiento_manual('f3er1', '2026-09-08', 'caso de estado de resultados',
+  '[{"cuenta":"1101","debe_cent":3430},{"cuenta":"4210","debe_cent":500},{"cuenta":"5100","debe_cent":6000},{"cuenta":"6110","debe_cent":200},{"cuenta":"6210","debe_cent":300},
+    {"cuenta":"4110","haber_cent":10000},{"cuenta":"4300","haber_cent":430}]'::jsonb)$$, 'asiento de estado de resultados');
+select pg_temp.flush();
+create temp table _er as select contabilidad.estado_resultados('2026-09-07', '2026-09-13') as j;
+select is((select (j->>'ventas_netas_cent')::bigint from _er), 9500::bigint, 'ventas netas = 10,000 menos descuento de 500');
+select is((select (j->>'ingresos_operativos_cent')::bigint from _er), 9930::bigint, 'ingresos operativos incluyen el envio cobrado de 430');
+select is((select (j->>'utilidad_bruta_cent')::bigint from _er), 3930::bigint, 'utilidad bruta = ingresos operativos (con envio) menos costo de 6,000');
+select is((select (j->>'utilidad_contribucion_cent')::bigint from _er), 3730::bigint, 'contribucion = bruta menos gastos variables de 200');
+select is((select (j->>'utilidad_neta_cent')::bigint from _er), 3430::bigint, 'utilidad neta = contribucion menos gastos fijos de 300');
+select ok((select (j->'comprobacion'->>'cuadra')::boolean from _er), 'las dos vias del estado coinciden con envio, descuento y gastos');
 select throws_ok($$update contabilidad.periodo set estado = 'preparado' where id = (select id from _per)$$, 'P0431', null, 'un periodo aprobado no vuelve atras por UPDATE directo');
 select is((contabilidad.publicar_periodo('f3pu1', (select id from _per))->>'estado'), 'publicado', 'publicar');
 select throws_ok($$select contabilidad.reabrir_periodo('f3pr0', (select id from _per), ' ')$$, '23502', null, 'reabrir exige motivo');
