@@ -83,9 +83,9 @@ describe('csv', () => {
 describe('lectura de tablas', () => {
   const google = [
     ['First Name', 'Last Name', 'Labels', 'E-mail 1 - Value', 'Phone 1 - Value', 'Phone 2 - Value'],
-    ['Ana', 'Prueba', '* myContacts ::: Importado el 9/10', 'ana@ejemplo.test', '999 555 0101', '+52 999 555 0102'],
+    ['Ana', 'Prueba', '* myContacts ::: Importado el 9/10', 'ana@example.test', '999 555 0101', '+52 999 555 0102'],
     ['', '', '', '', '', ''],
-    ['Sin', 'Telefono', '', 'x@ejemplo.test', '', ''],
+    ['Sin', 'Telefono', '', 'x@example.test', '', ''],
     ['Basura', 'Corta', '', '', '123', '0000000000'],
     ['Mala', 'Mezcla', '', 'no-es-correo', '9995550103 ::: 12', ''],
   ];
@@ -96,7 +96,7 @@ describe('lectura de tablas', () => {
     expect(r.registros).toHaveLength(2);
     expect(r.registros[0]!.telefonos).toEqual(['+529995550101', '+529995550102']);
     expect(r.registros[0]!.origenes.map((o) => o.origen)).toEqual(['google-lote:importado-el-9-10']);
-    expect(r.registros[0]!.correos).toEqual(['ana@ejemplo.test']);
+    expect(r.registros[0]!.correos).toEqual(['ana@example.test']);
     expect(r.descartes.fila_vacia).toBe(1);
     expect(r.descartes.sin_telefono).toBe(2);
     expect(r.descartes.telefono_vacio).toBe(1);
@@ -114,7 +114,7 @@ describe('lectura de tablas', () => {
   it('Meta conserva anuncio, formulario y campana y acepta el prefijo p:', () => {
     const meta = [
       ['id', 'ad_name', 'form_name', 'campaign_name', 'full_name', 'phone_number', 'email'],
-      ['1', 'Anuncio A', 'Formulario 1', 'Campana 1', 'Eva', 'p:+5219995550105', 'eva@ejemplo.test'],
+      ['1', 'Anuncio A', 'Formulario 1', 'Campana 1', 'Eva', 'p:+5219995550105', 'eva@example.test'],
     ];
     const r = leerTabla(meta, { archivo: 'm.csv', tipo: 'meta' });
     expect(r.registros[0]!.origenes).toEqual([{ origen: 'meta', anuncio: 'Anuncio A', formulario: 'Formulario 1', campana: 'Campana 1' }]);
@@ -146,13 +146,13 @@ describe('consolidacion', () => {
 
   it('deduplica entre archivos y conserva todos los origenes, etiquetas y lotes', () => {
     const a = lec('a.csv', 'google', tabla('Ana', '999 555 0101', ['Lote Uno', '']));
-    const b = lec('b.csv', 'google', tabla('Ana Prueba', '+52 999 555 0101', ['Lote Dos', 'ana@ejemplo.test']));
+    const b = lec('b.csv', 'google', tabla('Ana Prueba', '+52 999 555 0101', ['Lote Dos', 'ana@example.test']));
     const c = lec('c.csv', 'vapeunion', tabla('A.', '9995550101'));
     const todos = consolidar([a, b, c].flatMap((l) => l.registros));
     expect(todos).toHaveLength(1);
     const k = todos[0]!;
     expect(k.nombre).toBe('Ana Prueba');
-    expect(k.correos).toEqual(['ana@ejemplo.test']);
+    expect(k.correos).toEqual(['ana@example.test']);
     expect(k.etiquetas).toEqual(['Lote Dos', 'Lote Uno']);
     expect(k.lotes).toEqual(['a.csv', 'b.csv', 'c.csv']);
     expect(k.origenes.map((o) => o.origen)).toEqual(['google-lote:lote-dos', 'google-lote:lote-uno', 'vapeunion']);
@@ -161,8 +161,8 @@ describe('consolidacion', () => {
 
   it('une por correo cuando los telefonos difieren y por cierre transitivo', () => {
     const regs = [
-      ...lec('a.csv', 'google', tabla('Ana', '9995550101', ['', 'misma@ejemplo.test'])).registros,
-      ...lec('b.csv', 'google', tabla('Ana', '9995550102', ['', 'misma@ejemplo.test'])).registros,
+      ...lec('a.csv', 'google', tabla('Ana', '9995550101', ['', 'misma@example.test'])).registros,
+      ...lec('b.csv', 'google', tabla('Ana', '9995550102', ['', 'misma@example.test'])).registros,
       ...lec('c.csv', 'google', tabla('Ana', '9995550102')).registros,
     ];
     const r = consolidar(regs);
@@ -194,7 +194,7 @@ describe('consolidacion', () => {
 
   it('el informe cuenta duplicados e invalidos y no trae datos personales', () => {
     const l1 = lec('a.csv', 'google', [['First Name', 'Labels', 'Phone 1 - Value'], ['Ana Secreta', 'Lote Uno', '9995550101'], ['Dup', 'Lote Uno', '9995550101'], ['Mala', '', '12']]);
-    const l2 = lec('m.csv', 'meta', [['ad_name', 'form_name', 'full_name', 'phone_number', 'email'], ['Anuncio A', 'F1', 'Beto Secreto', '9995550101', 'beto@ejemplo.test'], ['Anuncio B', 'F1', 'Cris', '9995550109', '']]);
+    const l2 = lec('m.csv', 'meta', [['ad_name', 'form_name', 'full_name', 'phone_number', 'email'], ['Anuncio A', 'F1', 'Beto Secreto', '9995550101', 'beto@example.test'], ['Anuncio B', 'F1', 'Cris', '9995550109', '']]);
     const contactos = consolidar([...l1.registros, ...l2.registros]);
     const inf = construirInforme([l1, l2], contactos);
     expect(inf.totales).toMatchObject({ filas: 5, registros_validos: 4, contactos_unicos: 2, duplicados_eliminados: 2, invalidos: 1, con_correo: 1, sin_correo: 1, telefonos_unicos: 2 });
@@ -202,6 +202,6 @@ describe('consolidacion', () => {
     expect(inf.por_anuncio.map((a) => a.anuncio).sort()).toEqual(['Anuncio A', 'Anuncio B']);
     expect(inf.etiquetas).toEqual([{ etiqueta: 'Lote Uno', contactos: 1 }]);
     const texto = JSON.stringify(inf);
-    for (const dato of ['Secreta', 'Secreto', '9995550101', '5550109', 'ejemplo.test']) expect(texto).not.toContain(dato);
+    for (const dato of ['Secreta', 'Secreto', '9995550101', '5550109', 'example.test']) expect(texto).not.toContain(dato);
   });
 });

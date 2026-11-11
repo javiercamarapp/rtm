@@ -19,7 +19,7 @@ select is((select count(*)::int from pg_class c join pg_namespace n on n.oid = c
 -- ---- Carga por el canal de importacion (postgres + bandera de sesion) -------------------------------------------------------------------------------
 select set_config('rtm.canal', 'importacion', true);
 select is((contactos.cargar_lote('lote-prueba-1', $j$[
-  {"telefono":"+529995550101","nombre":"Ana Prueba","telefonos":["+529995550101","+529995550102"],"correos":["ana@ejemplo.test"],"etiquetas":["Lote Uno"],"lotes":["a.csv"],
+  {"telefono":"+529995550101","nombre":"Ana Prueba","telefonos":["+529995550101","+529995550102"],"correos":["ana@example.test"],"etiquetas":["Lote Uno"],"lotes":["a.csv"],
    "origenes":[{"origen":"google-lote:lote-uno","anuncio":null,"formulario":null,"campana":null}]},
   {"telefono":"+529995550103","nombre":"Beto Prueba","telefonos":["+529995550103"],"correos":[],"etiquetas":[],"lotes":["m.csv"],
    "origenes":[{"origen":"meta","anuncio":"Anuncio A","formulario":"Formulario 1","campana":"Campana 1"}]}
@@ -29,7 +29,7 @@ select throws_ok($$select contactos.cargar_lote('lote-prueba-1', '[]'::jsonb, 'o
 
 -- Un lote nuevo con un telefono ya conocido (+529995550102) y un correo ya conocido se fusiona, sin duplicar.
 select is((contactos.cargar_lote('lote-prueba-2', $j$[
-  {"telefono":"+529995550102","nombre":"Ana P.","telefonos":["+529995550102"],"correos":["otro@ejemplo.test"],"etiquetas":[],"lotes":["b.csv"],
+  {"telefono":"+529995550102","nombre":"Ana P.","telefonos":["+529995550102"],"correos":["otro@example.test"],"etiquetas":[],"lotes":["b.csv"],
    "origenes":[{"origen":"vapeunion","anuncio":null,"formulario":null,"campana":null}]}
 ]$j$::jsonb)->>'nuevos')::int, 0, 'un telefono ya existente fusiona y no crea contacto');
 select is((select count(*)::int from contactos.contacto), 2, 'sin duplicados: siguen 2 contactos');
