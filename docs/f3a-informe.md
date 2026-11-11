@@ -60,12 +60,13 @@ Playwright: laptop 1440, iPhone 16 Pro (WebKit 402x874), plegable cerrado (344) 
 3. **Efectivo de la cascada.** El sistema no sigue la cuenta bancaria de la sociedad: el efectivo es lo que los socios tienen en su poder más el "efectivo en la cuenta de la sociedad" que se captura al calcular o proponer (por omisión cero).
 4. **Utilidad del periodo.** Aproximación operativa: utilidad de pedidos enviados (con sus correcciones) + tomas de Omar a su precio − gastos generales (incluidos los pagados por socios y sin los de guía, que ya están en el pedido). No incluye mermas ni diferencias de recepción; el estado de resultados contable llega con los asientos. Es provisional mientras haya guías sin costo real.
 5. **Cierre.** Se propone solo para un periodo que ya terminó, sin traslapes. Al firmar los dos se asientan la utilidad asignada y los reembolsos y devoluciones pagados por la cascada, que se compensan contra lo que cada socio tenía. La utilidad asignada queda en la posición neta hasta que se liquide entre socios o se pague. Un cierre firmado no se anula: se corrige en el siguiente periodo.
-6. **Puntos abiertos del documento 31 tratados como parámetros:** A (devolver aportación antes de repartir: sí, con bandera `cascada_devolver_aportaciones_antes`), B (sin reserva de inventario), D (la pérdida no se reparte ni se carga a los socios: solo se muestra), E (el centavo suelto va a favor de quien tiene más reembolso y aportación pendientes), F (50/50 fijo; las aportaciones desiguales solo se devuelven).
-7. **Semana de liquidación con proveedores:** de sábado a viernes (lo enviado el fin de semana entra a la siguiente), cierre a partir del viernes.
-8. **Recordatorios con tiempo** (NT-035, NT-043): el emisor `emitir_recordatorios_cobro` existe y es idempotente, pero nadie lo llama solo hasta que haya reloj (M2d).
-9. **"Cada renglón abre el cajón"** en el libro de movimientos: las cifras clave sí abren el cajón; el renglón del libro muestra evento, quién y mensaje original pero no abre uno propio.
-10. **Vista de Omar:** solo la vista de base de datos, cerrada; no hay página para Omar. "Exportar" es un CSV de la semana generado en el navegador a partir de textos ya calculados.
-11. Los pgTAP de F3a neutralizan los saldos de partida dentro de su transacción, pero asumen una base sin hechos de pantallas: corren bien en `verificar` (que reinicia antes de Playwright y restaura después) y pueden fallar si se corre Playwright a mano y luego pgTAP sin reiniciar.
+6. **Reglas de reparto que el dueño resolvió el 11-nov, después de construir la cascada (CLAUDE.md, líneas B, D, E, F):** E y F ya coinciden con lo construido. Faltan por ajustar: (D) las pérdidas se reparten 50/50 y se arrastran al periodo siguiente (hoy la pérdida solo se muestra y no se arrastra); (B) orden de fondeo con efectivo de caja primero y "cuentas de efectivo" por persona extensibles a bancos (hoy el efectivo de la sociedad es una captura manual); (F) el dinero extra de un socio como financiamiento temporal y no como capital por omisión (hoy `registrar_aportacion` y el pago de un socio a un proveedor con dinero propio entran como capital). Quedan como trabajo del siguiente paso.
+7. **Puntos abiertos del documento 31 que se trataron como parámetros antes de esa resolución:** A (devolver aportación antes de repartir: sí, con bandera `cascada_devolver_aportaciones_antes`), B (sin reserva de inventario), D (la pérdida no se reparte ni se carga a los socios: solo se muestra), E (el centavo suelto va a favor de quien tiene más reembolso y aportación pendientes), F (50/50 fijo; las aportaciones desiguales solo se devuelven).
+8. **Semana de liquidación con proveedores:** de sábado a viernes (lo enviado el fin de semana entra a la siguiente), cierre a partir del viernes.
+9. **Recordatorios con tiempo** (NT-035, NT-043): el emisor `emitir_recordatorios_cobro` existe y es idempotente, pero nadie lo llama solo hasta que haya reloj (M2d).
+10. **"Cada renglón abre el cajón"** en el libro de movimientos: las cifras clave sí abren el cajón; el renglón del libro muestra evento, quién y mensaje original pero no abre uno propio.
+11. **Vista de Omar:** solo la vista de base de datos, cerrada; no hay página para Omar. "Exportar" es un CSV de la semana generado en el navegador a partir de textos ya calculados.
+12. Los pgTAP de F3a neutralizan los saldos de partida dentro de su transacción, pero asumen una base sin hechos de pantallas: corren bien en `verificar` (que reinicia antes de Playwright y restaura después) y pueden fallar si se corre Playwright a mano y luego pgTAP sin reiniciar.
 
 ## Problemas y avisos
 
@@ -78,7 +79,7 @@ Builds de Vercel: 0. Despliegues: 0. Paquetes npm agregados: ninguno.
 
 ## Preguntas para el dueño
 
-1. Documento 31, A a F: aportación de capital en el primer cierre con efectivo o dejada en inventario; reserva mínima de reposición; frecuencia del cierre y quién firma; pérdida 50/50 o no repartida; redondeo (a favor de quien paga o a favor de Javier); aportaciones desiguales.
+1. Documento 31, puntos A y C siguen abiertos: aportación de capital en el primer cierre con efectivo o dejada en inventario; frecuencia del cierre y quién firma.
 2. ¿De dónde sale el efectivo en la cuenta de la sociedad para la cascada: captura manual en cada cierre o una cuenta que se lleva en el sistema?
 3. ¿Plazo de cobro por omisión por cliente y recargo de 10 % automático o a mano (hoy a mano, con 10 % sugerido)? ¿A cuántos días sin entregar se alerta a un socio (hoy 7) y a cuántos es crítica?
 4. ¿La liquidación con Isaac se cierra siempre con "Todo" (la hoja que él cobra) o con "Solo de la sociedad"? Hoy cada alcance tiene su propio cierre.
