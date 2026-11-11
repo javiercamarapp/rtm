@@ -45,7 +45,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
           vacio={{ titulo: 'Sin avisos', texto: 'Los avisos aparecen cuando una operación necesita atención: una diferencia de recepción, un paquete por empacar, un pago sin identificar...' }}
           columnas={[
             { id: 's', titulo: 'Severidad', celda: (a) => <EstadoTexto tono={SEVERIDAD[a.severidad]!.tono}>{SEVERIDAD[a.severidad]!.texto}</EstadoTexto> },
-            { id: 't', titulo: 'Aviso', celda: (a) => { const d = destino(a.entidad_tipo, a.entidad_id); return <>{d ? <Link href={d}>{a.titulo}</Link> : a.titulo}<br /><span className="rtm-nota">{a.nt}{a.duenio ? ` · cliente de ${a.duenio}` : ''}{a.conteo > 1 ? ` · ${a.conteo} veces` : ''}</span></>; } },
+            { id: 't', titulo: 'Aviso', celda: (a) => { const d = destino(a.entidad_tipo, a.entidad_id); return <>{d ? <Link href={d}>{a.titulo}</Link> : a.titulo}<br /><span className="rtm-nota">{a.nt}{a.conteo > 1 ? ` · ${a.conteo} veces` : ''}</span></>; } },
             { id: 'h', titulo: 'Cuándo', secundaria: true, celda: (a) => etiquetaFechaHora(a.creado_at) },
             { id: 'e', titulo: 'Estado', secundaria: true, celda: (a) => (a.estado === 'abierta' ? 'Pendiente' : a.estado === 'resuelta' ? 'Resuelto' : a.estado) },
             { id: 'a', titulo: 'Acción', celda: (a) => (a.leido ? <span className="rtm-nota">Leído</span> : <BotonLeido avisoId={a.id} />) },

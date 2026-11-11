@@ -84,7 +84,7 @@ export interface FilaCxc {
   recargo_cent: Cent; recargo_sugerido_cent: Cent;
 }
 export interface CuentasPorCobrar {
-  hoy: string; filas: FilaCxc[]; total_cent: Cent; vencido_cent: Cent; antiguedad_cent: Record<'0_7' | '8_14' | '15_30' | 'mas_30', Cent>; por_duenio_cent: Record<string, Cent>;
+  hoy: string; filas: FilaCxc[]; total_cent: Cent; vencido_cent: Cent; antiguedad_cent: Record<'0_7' | '8_14' | '15_30' | 'mas_30', Cent>;
   saldos_a_favor: { cliente_id: number; cliente: string; duenio: string; monto_cent: Cent }[];
   pagos_sin_identificar: { id: number; folio: string; fecha_neg: string; monto_cent: Cent; cuenta: string }[];
   socios: { socio: 'Angelo' | 'Javier'; deuda_cent: Cent; fondos_cent: Cent; diferencia_cent: Cent; dias_fondos: number | null; alerta_fondos: boolean }[];

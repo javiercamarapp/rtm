@@ -15,6 +15,10 @@
   --rtm-line: #ecebe6;
   --rtm-line-2: #d9d7d0;
   --rtm-line-strong: #8f8b82;
+  /* Encabezado de tablas: gris que contrasta con las filas, texto en tinta plena. */
+  --rtm-th-fondo: #e4e3de;
+  --rtm-th-texto: #1a1a1a;
+  --rtm-th-borde: #bdbab2;
   --rtm-ink: #1a1a1a;
   --rtm-ink-2: #555555;
   --rtm-ink-3: #666666;
@@ -89,6 +93,9 @@
   --rtm-line: #2e2d2a;
   --rtm-line-2: #3a3935;
   --rtm-line-strong: #7d786e;
+  --rtm-th-fondo: #3a3935;
+  --rtm-th-texto: #f3f2ee;
+  --rtm-th-borde: #5a5852;
   --rtm-ink: #f3f2ee;
   --rtm-ink-2: #b9b7b1;
   --rtm-ink-3: #9c9a94;
