@@ -26,7 +26,7 @@ npx tsx scripts/contactos/importar.mts --lotes CARPETA         escribe lotes JSO
 
 1. El dueño revisa los conteos del informe y autoriza la carga a producción.
 2. Revisar la migración con la base local (Docker) y correr `supabase test db` para ejecutar `015_contactos.test.sql`. Aún no se ha ejecutado: el SQL se revisó solo a ojo.
-3. Aplicar la migración `20261111000100` por el flujo de despliegue autorizado (respaldo antes; la migración solo crea objetos nuevos).
+3. Aplicar la migración `20261111006000` por el flujo de despliegue autorizado (respaldo antes; la migración solo crea objetos nuevos).
 4. Generar los lotes con `--lotes` en una carpeta fuera del repo (permisos 0700) y cargarlos uno por uno con `contactos.cargar_lote(lote_id, contactos)` conectado como `postgres` con `set rtm.canal = 'importacion'`. Cada lote lleva un `lote_id` estable (por ejemplo el nombre del archivo `lote-0001`); repetir el mismo lote no cambia nada y un lote con otro contenido se rechaza.
 5. Verificar después de la carga: `select count(*) from contactos.contacto` contra `contactos_unicos` del informe, y que `api.contactos_resumen()` cuadre por origen.
 6. Borrar los lotes JSON locales cuando termine la carga.

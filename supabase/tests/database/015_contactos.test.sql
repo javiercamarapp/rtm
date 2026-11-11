@@ -1,4 +1,4 @@
--- pgTAP de contactos de menudeo (ESCRITA, SIN EJECUTAR: la migracion 20261111000100 no se ha aplicado en ninguna base).
+-- pgTAP de contactos de menudeo (ESCRITA, SIN EJECUTAR: la migracion 20261111006000 no se ha aplicado en ninguna base).
 -- Describe la RLS esperada: esquema cerrado, RLS forzada sin politicas, solo socios, Omar y anon sin acceso, vista del agente sin telefonos,
 -- registro de revelaciones y carga idempotente. Todos los datos son sinteticos (numeros 555).
 begin;
