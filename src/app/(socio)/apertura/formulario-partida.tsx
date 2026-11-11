@@ -6,7 +6,7 @@ import { centavosDeTexto, useAccion } from '../operacion/usar-accion';
 
 const SOCIOS = ['Angelo', 'Javier'];
 
-/** Alta de una partida de apertura. Los montos viajan como centavos enteros; el costo del inventario se multiplica en la base. */
+/** Alta de una partida de apertura. Los montos viajan como centavos enteros; el valor del inventario se calcula en la base, por costo por pieza o por valor total del sabor. */
 export function FormularioPartida({ sesion, categoria, catalogos }: { sesion: number; categoria: CategoriaApertura; catalogos: CatalogosApertura }) {
   const { correr, ocupado, error, limpiarError } = useAccion();
   const [socio, setSocio] = useState(SOCIOS[0]!);
@@ -17,6 +17,7 @@ export function FormularioPartida({ sesion, categoria, catalogos }: { sesion: nu
   const [monto, setMonto] = useState('');
   const [piezas, setPiezas] = useState('');
   const [costo, setCosto] = useState('');
+  const [valorSabor, setValorSabor] = useState('');
   const [fecha, setFecha] = useState('');
   const [nota, setNota] = useState('');
   const [local, setLocal] = useState<string | null>(null);
@@ -37,12 +38,15 @@ export function FormularioPartida({ sesion, categoria, catalogos }: { sesion: nu
     }
     if (esInventario) {
       const c = centavosDeTexto(costo);
+      const v = valorSabor.trim() ? centavosDeTexto(valorSabor) : null;
       const n = Number(piezas);
       if (!skuElegido || !Number.isInteger(n) || n <= 0) return setLocal('Elige el sabor y escribe las piezas contadas.');
-      if (c === null) return setLocal('Escribe el costo unitario, por ejemplo 91.55.');
+      if (valorSabor.trim() && (v === null || v === 0)) return setLocal('Escribe el valor total del sabor, por ejemplo 4,577.31.');
+      if (v === null && c === null) return setLocal('Escribe el costo por pieza (por ejemplo 91.55) o el valor total del sabor.');
       datos['sku_id'] = Number(skuElegido);
       datos['piezas'] = n;
-      datos['costo_unit_cent'] = c;
+      // El valor total manda: un costo promedio con subcentavo solo se carga al centavo como total por sabor.
+      if (v !== null) datos['monto_cent'] = v; else datos['costo_unit_cent'] = c;
     } else {
       const c = centavosDeTexto(monto);
       if (c === null || c === 0) return setLocal('Escribe un monto válido, por ejemplo 9,000.50.');
@@ -51,7 +55,7 @@ export function FormularioPartida({ sesion, categoria, catalogos }: { sesion: nu
     }
     if (nota.trim()) datos['descripcion'] = nota.trim();
     setLocal(null);
-    correr('apertura_agregar', { p_sesion: sesion, p_categoria: categoria.codigo, p_datos: datos }, () => { setMonto(''); setPiezas(''); setCosto(''); setNota(''); setFecha(''); });
+    correr('apertura_agregar', { p_sesion: sesion, p_categoria: categoria.codigo, p_datos: datos }, () => { setMonto(''); setPiezas(''); setCosto(''); setValorSabor(''); setNota(''); setFecha(''); });
   };
 
   return (
@@ -88,6 +92,9 @@ export function FormularioPartida({ sesion, categoria, catalogos }: { sesion: nu
           </label>
           <label className="rtm-etiqueta-campo">Costo puesto por pieza
             <input className="rtm-campo rtm-campo-num" inputMode="decimal" value={costo} onChange={(e) => setCosto(e.target.value)} data-testid="campo-costo" />
+          </label>
+          <label className="rtm-etiqueta-campo">O valor total del sabor (opcional; manda sobre el costo por pieza)
+            <input className="rtm-campo rtm-campo-num" inputMode="decimal" value={valorSabor} onChange={(e) => setValorSabor(e.target.value)} data-testid="campo-valor-sabor" />
           </label>
         </>
       ) : (

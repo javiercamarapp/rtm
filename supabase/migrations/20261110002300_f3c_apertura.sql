@@ -269,7 +269,8 @@ create table apertura.partida (
   descripcion text,
   creada_at timestamptz not null default clock_timestamp(),
   check ((categoria = 'inventario') = (sku_id is not null)),
-  check (categoria <> 'inventario' or (piezas is not null and costo_unit_cent is not null and monto_cent = piezas * costo_unit_cent))
+  -- El valor del sabor es el monto total (verdad contable); el costo unitario es solo su promedio redondeado, para mostrarlo. Asi un costo promedio con subcentavo se carga al centavo.
+  check (categoria <> 'inventario' or (piezas is not null and costo_unit_cent is not null and costo_unit_cent = round(monto_cent::numeric / piezas)))
 );
 create unique index partida_un_sku on apertura.partida (sesion_id, sku_id) where sku_id is not null;
 create index partida_sesion_idx on apertura.partida (sesion_id, categoria);
@@ -495,6 +496,7 @@ begin
 end $$;
 
 -- p: {socio: 'Angelo'|'Javier', cliente_id, proveedor_id, sku_id, piezas, costo_unit_cent, monto_cent, fecha_ref, descripcion}
+-- Inventario: monto_cent (valor total del sabor, para costos con subcentavo) o costo_unit_cent (piezas x costo); si llegan los dos, deben coincidir.
 create function apertura.agregar_partida(p_clave text, p_sesion bigint, p_categoria text, p jsonb) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
@@ -525,9 +527,13 @@ begin
   if c.codigo = 'inventario' then
     select k.modelo_id into v_modelo from catalogo.sku k where k.id = v_sku;
     if v_modelo is null then raise exception 'el inventario necesita un modelo y sabor del catálogo' using errcode = '23502'; end if;
-    if v_pzs is null or v_pzs <= 0 or v_costo is null or v_costo < 0 then raise exception 'el inventario necesita piezas y costo unitario' using errcode = '23514'; end if;
-    v_monto := v_pzs::bigint * v_costo;
+    v_monto := nullif(p->>'monto_cent', '')::bigint;
+    if v_pzs is null or v_pzs <= 0 or (v_costo is null and v_monto is null) or v_costo < 0 then raise exception 'el inventario necesita piezas y costo unitario o el valor total' using errcode = '23514'; end if;
+    if v_monto is null then v_monto := v_pzs::bigint * v_costo;
+    elsif v_costo is not null and v_monto <> v_pzs::bigint * v_costo then raise exception 'el valor total del inventario no coincide con piezas por costo unitario' using errcode = '23514';
+    end if;
     if v_monto <= 0 then raise exception 'el valor del inventario debe ser mayor que cero' using errcode = '23514'; end if;
+    v_costo := round(v_monto::numeric / v_pzs)::bigint;
     v_cuenta := '1310';
   else
     v_monto := nullif(p->>'monto_cent', '')::bigint;

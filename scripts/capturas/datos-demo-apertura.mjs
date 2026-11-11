@@ -32,9 +32,9 @@ try {
   await agregar('aportacion', { socio: 'Angelo', monto_cent: 8461500 });
   await agregar('aportacion', { socio: 'Javier', monto_cent: 5600000 });
   await agregar('reembolso_socio', { socio: 'Javier', monto_cent: 122100, descripcion: 'Costos del sistema pagados por Javier' });
-  await agregar('inventario', { sku_id: skus[0], piezas: 500, costo_unit_cent: 9155 });
-  await agregar('inventario', { sku_id: skus[1], piezas: 600, costo_unit_cent: 9155 });
-  await agregar('inventario', { sku_id: skus[2], piezas: 424, costo_unit_cent: 9155 });
+  await agregar('inventario', { sku_id: skus[0], piezas: 500, monto_cent: 4577311 });
+  await agregar('inventario', { sku_id: skus[1], piezas: 600, monto_cent: 5492773 });
+  await agregar('inventario', { sku_id: skus[2], piezas: 424, monto_cent: 3881561 });
   await agregar('caja', { socio: 'Angelo', monto_cent: 50000 });
   await agregar('fondos_en_poder', { socio: 'Javier', monto_cent: 900000 });
   const fechas = (await q("select (negocio.hoy() - g)::text as d from generate_series(0, 60) g order by g")).rows.map((r) => r.d);

@@ -1,9 +1,9 @@
 -- pgTAP F3c: saldos de apertura. Cifras ilustrativas calculadas a mano antes del codigo (aportaciones 84,615.00 y 56,000.00 del caso dorado de la compra inicial,
 -- el faltante de 12 piezas por 1,098.55 de Angelo y el saldo a favor de 30,500.00 con Karen de la adenda 23). Nada de esto son datos reales.
---   activo   = inventario 139,522.20 + faltante 1,098.55 + caja 500.00 + fondos 9,000.00 + por cobrar 7,500.00        = 157,620.75
+--   activo   = inventario 139,516.45 + faltante 1,098.55 + caja 500.00 + fondos 9,000.00 + por cobrar 7,500.00        = 157,615.00
 --   pasivo   = reembolso 1,221.00 + Isaac 3,000.00 - saldo a favor con Karen 30,500.00                              = -26,279.00
 --   capital  = aportaciones 140,615.00 + utilidad no repartida 2,000.00 - retiro previo 1,000.00                    = 141,615.00
---   puente   = 157,620.75 + 26,279.00 - 141,615.00                                                                  = 42,284.75
+--   puente   = 157,615.00 + 26,279.00 - 141,615.00                                                                  = 42,279.00
 begin;
 select no_plan();
 
@@ -51,9 +51,12 @@ select throws_ok($$ select pg_temp.add('f3c:p0e', 'inventario', '{"piezas": 5, "
 select is((pg_temp.add('f3c:p1', 'aportacion', '{"socio": "Angelo", "monto_cent": 8461500}') ->> 'cuenta'), '3110', 'aportacion de Angelo a 3110');
 select is((pg_temp.add('f3c:p2', 'aportacion', '{"socio": "Javier", "monto_cent": 5600000}') ->> 'cuenta'), '3120', 'aportacion de Javier a 3120');
 select is((pg_temp.add('f3c:p3', 'reembolso_socio', '{"socio": "Javier", "monto_cent": 122100}') ->> 'cuenta'), '2320', 'reembolso pendiente de Javier a 2320');
-select is((pg_temp.add('f3c:p4', 'inventario', format('{"sku_id": %s, "piezas": 500, "costo_unit_cent": 9155}', pg_temp.sku('F3C Nexa 50K', 'Uno'))::jsonb) ->> 'monto_cent')::bigint, 4577500::bigint, 'inventario: 500 x 91.55');
-select pg_temp.add('f3c:p5', 'inventario', format('{"sku_id": %s, "piezas": 600, "costo_unit_cent": 9155}', pg_temp.sku('F3C Nexa 50K', 'Dos'))::jsonb);
-select pg_temp.add('f3c:p6', 'inventario', format('{"sku_id": %s, "piezas": 424, "costo_unit_cent": 9155}', pg_temp.sku('F3C Nexa 50K', 'Tres'))::jsonb);
+select is((pg_temp.add('f3c:p4', 'inventario', format('{"sku_id": %s, "piezas": 500, "monto_cent": 4577311}', pg_temp.sku('F3C Nexa 50K', 'Uno'))::jsonb) ->> 'monto_cent')::bigint, 4577311::bigint, 'inventario: 500 piezas por su valor total (costo promedio con subcentavo)');
+select throws_ok(format($$ select pg_temp.add('f3c:p4x', 'inventario', '{"sku_id": %s, "piezas": 10, "costo_unit_cent": 100, "monto_cent": 1005}'::jsonb) $$, pg_temp.sku('F3C Nexa 50K', 'Dos')), '23514', 'el valor total del inventario no coincide con piezas por costo unitario', 'monto y costo contradictorios se rechazan');
+select pg_temp.add('f3c:p5', 'inventario', format('{"sku_id": %s, "piezas": 600, "monto_cent": 5492773}', pg_temp.sku('F3C Nexa 50K', 'Dos'))::jsonb);
+select pg_temp.add('f3c:p6', 'inventario', format('{"sku_id": %s, "piezas": 424, "monto_cent": 3881561}', pg_temp.sku('F3C Nexa 50K', 'Tres'))::jsonb);
+select is((select costo_unit_cent from apertura.partida where piezas = 500 and categoria = 'inventario' order by id desc limit 1), 9155::bigint, 'el costo por pieza queda como promedio redondeado');
+select is((select sum(monto_cent)::bigint from apertura.partida where categoria = 'inventario' and sesion_id = (select id from _s)), 13951645::bigint, 'el inventario del caso dorado se carga al centavo: 139,516.45');
 select throws_ok(format($$ select pg_temp.add('f3c:p6b', 'inventario', '{"sku_id": %s, "piezas": 1, "costo_unit_cent": 1}'::jsonb) $$, pg_temp.sku('F3C Nexa 50K', 'Tres')), '23505', null, 'un sabor no se carga dos veces');
 select is((pg_temp.add('f3c:p7', 'deuda_faltante_socio', '{"socio": "Angelo", "piezas": 12, "monto_cent": 109855}') ->> 'cuenta'), '1170', 'las 12 piezas son deuda de Angelo en 1170');
 select is((pg_temp.add('f3c:p8', 'caja', '{"socio": "Angelo", "monto_cent": 50000}') ->> 'cuenta'), '1101', 'caja en 1101 con la persona');
@@ -69,10 +72,10 @@ select is((select count(*)::int from apertura.partida), 14, 'catorce partidas');
 
 -- Validacion: identidad contable y puente ---------------------------------------------------------------------------------------------------------
 create function pg_temp.val() returns jsonb language sql as $$ select api.apertura_estado() -> 'validacion' $$;
-select is((pg_temp.val() ->> 'activo_cent')::bigint, 15762075::bigint, 'activo 157,620.75');
+select is((pg_temp.val() ->> 'activo_cent')::bigint, 15761500::bigint, 'activo 157,615.00');
 select is((pg_temp.val() ->> 'pasivo_cent')::bigint, -2627900::bigint, 'pasivo -26,279.00 (el saldo a favor con Karen resta)');
 select is((pg_temp.val() ->> 'capital_cent')::bigint, 14161500::bigint, 'capital 141,615.00');
-select is((pg_temp.val() ->> 'puente_cent')::bigint, 4228475::bigint, 'la diferencia contra la identidad es 42,284.75');
+select is((pg_temp.val() ->> 'puente_cent')::bigint, 4227900::bigint, 'la diferencia contra la identidad es 42,279.00');
 select is((pg_temp.val() ->> 'identidad_cent')::bigint, 0::bigint, 'activo = pasivo + capital + puente');
 select is((pg_temp.val() ->> 'listo_para_firma')::boolean, true, 'lista para firma con mantener la diferencia en 3990');
 select is(jsonb_array_length(pg_temp.val() -> 'pasos'), 6, 'seis pasos con partidas');
@@ -82,12 +85,12 @@ create temp table _antes as select (select count(*) from contabilidad.asiento) a
   (select ultimo from seguridad.contador_folio where serie = 'A') as folio_a, (select count(*) from seguridad.operacion) as ops;
 select is((api.apertura_vista_previa((select id from _s)) ->> 'cuadra')::boolean, true, 'la vista previa cuadra');
 select is((api.apertura_vista_previa((select id from _s)) ->> 'haber_cent')::bigint, (api.apertura_vista_previa((select id from _s)) ->> 'debe_cent')::bigint, 'debe = haber en la vista previa');
-select is((select (e ->> 'apertura_cent')::bigint from jsonb_array_elements(api.apertura_vista_previa((select id from _s)) -> 'efecto') e where e ->> 'cuenta' = '3990'), 4228475::bigint, 'la vista previa muestra el puente 3990');
+select is((select (e ->> 'apertura_cent')::bigint from jsonb_array_elements(api.apertura_vista_previa((select id from _s)) -> 'efecto') e where e ->> 'cuenta' = '3990'), 4227900::bigint, 'la vista previa muestra el puente 3990');
 create temp table _ens as select api.apertura_ensayo((select id from _s)) as r;
-select is((select (r ->> 'puente_3990_cent')::bigint from _ens), 4228475::bigint, 'el ensayo deja el puente 3990 en la diferencia');
+select is((select (r ->> 'puente_3990_cent')::bigint from _ens), 4227900::bigint, 'el ensayo deja el puente 3990 en la diferencia');
 select is((select (r ->> 'bloqueantes_en_rojo')::int from _ens), 0, 'el ensayo no deja ninguna comprobacion bloqueante en rojo');
-select is((select (r ->> 'inventario_1310_cent')::bigint from _ens), 13952220::bigint, 'el ensayo carga el inventario al libro');
-select is((select (r ->> 'inventario_kardex_cent')::bigint from _ens), 13952220::bigint, 'y al kardex por el mismo valor');
+select is((select (r ->> 'inventario_1310_cent')::bigint from _ens), 13951645::bigint, 'el ensayo carga el inventario al libro');
+select is((select (r ->> 'inventario_kardex_cent')::bigint from _ens), 13951645::bigint, 'y al kardex por el mismo valor');
 select is((select (r ->> 'cadena_ok')::boolean from _ens), true, 'la cadena de hash queda sana');
 select is((select count(*) from contabilidad.asiento), (select asientos from _antes), 'el ensayo no deja asientos');
 select is((select count(*) from operacion.movimiento_inventario), (select movs from _antes), 'el ensayo no deja movimientos de inventario');
@@ -112,9 +115,9 @@ select is((select estado from apertura.sesion), 'firmada', 'sesion firmada');
 select is((select count(*)::int from contabilidad.asiento where es_apertura), 1, 'un asiento de apertura');
 select is((select count(*)::int from operacion.movimiento_inventario where tipo = 'apertura'), 3, 'tres movimientos de inventario de apertura');
 select is((select piezas from operacion.existencia_modelo where modelo_id = (select id from catalogo.modelo where nombre_canonico = 'F3C Nexa 50K')), 1524, 'existencia de 1,524 piezas');
-select is((select valor_cent from operacion.existencia_modelo where modelo_id = (select id from catalogo.modelo where nombre_canonico = 'F3C Nexa 50K')), 13952220::bigint, 'valor 139,522.20');
-select is(contabilidad.saldo('1310'), 13952220::bigint, '1310 coincide con el kardex');
-select is(contabilidad.saldo('3990'), 4228475::bigint, '3990 guarda la diferencia hasta resolverla');
+select is((select valor_cent from operacion.existencia_modelo where modelo_id = (select id from catalogo.modelo where nombre_canonico = 'F3C Nexa 50K')), 13951645::bigint, 'valor 139,516.45');
+select is(contabilidad.saldo('1310'), 13951645::bigint, '1310 coincide con el kardex');
+select is(contabilidad.saldo('3990'), 4227900::bigint, '3990 guarda la diferencia hasta resolverla');
 select is(contabilidad.saldo('3110'), 8461500::bigint, '3110 trae la aportacion de Angelo');
 select is(contabilidad.saldo('1170'), 109855::bigint, '1170 trae la deuda de Angelo por 12 piezas');
 select is(contabilidad.saldo('1210'), 750000::bigint, '1210 trae lo por cobrar');
