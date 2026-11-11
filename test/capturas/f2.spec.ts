@@ -39,7 +39,7 @@ test('capturas de F2', async ({ browser, browserName }) => {
   mkdirSync(SALIDA, { recursive: true });
   const ids = await conDb(async (c) => {
     const ped = (await c.query('select id from operacion.pedido order by id')).rows.map((r) => Number(r.id));
-    const oc = (await c.query('select id, p.nombre from operacion.compra co join catalogo.proveedor p on p.id = co.proveedor_id order by co.id')).rows.map((r) => ({ id: Number(r.id), proveedor: String(r.nombre) }));
+    const oc = (await c.query('select co.id, p.nombre from operacion.compra co join catalogo.proveedor p on p.id = co.proveedor_id order by co.id')).rows.map((r) => ({ id: Number(r.id), proveedor: String(r.nombre) }));
     const cli = Number((await c.query("select id from catalogo.cliente where nombre_canonico = 'Cliente Beta'")).rows[0].id);
     const prov = Number((await c.query("select id from catalogo.proveedor where nombre = 'Isaac'")).rows[0].id);
     return { ped, oc, cli, prov };
