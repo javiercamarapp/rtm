@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { exigirSocio } from '@/composicion/acceso';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
@@ -13,7 +14,9 @@ import { AccionesSocios } from './formularios';
 export const metadata: Metadata = { title: 'Cuenta de socios' };
 
 export default async function Pagina() {
+  const { perfil } = await exigirSocio();
   const c = await (await operacionDeSocio()).cuentaSocios();
+  const mio = perfil.socio_nombre === 'Angelo' || perfil.socio_nombre === 'Javier' ? perfil.socio_nombre : null;
   const d = c.javier_debe_a_angelo_cent;
   const parejo = d === 0n;
   const quien = d > 0n ? 'Javier debe a Angelo' : 'Angelo debe a Javier';
@@ -76,7 +79,7 @@ export default async function Pagina() {
             { id: 'f', titulo: 'Fondos de la sociedad en su poder', numerica: true, celda: (s) => <><CifraComprobada texto={formatearMoneda(s.fondos_cent)} cifra={`socio:fondos:${s.socio}`} comprobacion="cuadra" />{s.alerta_fondos && <span className="rtm-celda-sub"><EstadoTexto tono="atencion">Lleva {s.dias_fondos} días sin entregar</EstadoTexto></span>}</> },
           ]}
         />
-        <div className="rtm-acciones-fila"><Link className="rtm-boton" href="/socios/cascada" data-testid="ir-cascada">Cascada de reparto</Link></div>
+        <div className="rtm-acciones-fila">{mio && <Link className="rtm-boton" href={`/socios/${mio}`} data-testid="ir-mi-desglose">Mi desglose ({mio})</Link>}<Link className="rtm-boton" href="/socios/cascada" data-testid="ir-cascada">Cascada de reparto</Link></div>
       </section>
 
       <section className="rtm-seccion rtm-entra rtm-i-4" aria-label="Libro de movimientos entre socios">

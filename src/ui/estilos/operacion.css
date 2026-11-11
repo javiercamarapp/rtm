@@ -74,3 +74,12 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 .rtm-copiar { display: inline-flex; flex-direction: column; gap: var(--rtm-e-2); align-items: flex-start; max-width: 100%; }
 .rtm-copiar pre { max-width: 100%; }
 .rtm-celda-sub { display: block; font-size: 12px; color: var(--rtm-ink-3); }
+
+/* Desglose por socio: lista de cifras con su explicacion; sin flex-basis, la etiqueta crece y el importe se ajusta a su contenido. */
+.rtm-desglose { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--rtm-e-4); align-items: start; }
+.rtm-desglose-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.rtm-desglose-lista li { display: grid; grid-template-columns: 1fr auto; column-gap: var(--rtm-e-3); align-items: baseline; padding: var(--rtm-e-2) 0; border-top: 1px solid var(--rtm-line); }
+.rtm-desglose-lista li:first-child { border-top: 0; }
+.rtm-desglose-importe { font-variant-numeric: tabular-nums; text-align: right; }
+.rtm-desglose-explica { grid-column: 1 / -1; font-size: 12px; color: var(--rtm-ink-3); }
+.rtm-desglose-explica summary { cursor: pointer; width: fit-content; }
