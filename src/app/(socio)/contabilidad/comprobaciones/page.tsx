@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { contabilidadDeSocio } from '@/composicion/contabilidad';
 import { formatearMoneda, formatearPiezas, etiquetaFecha, etiquetaFechaHora } from '@/dominio/formato';
 import type { Comprobacion } from '@/dominio/contabilidad/tipos';
+import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { EncabezadoPagina } from '@/ui/componentes/pagina';
@@ -45,7 +46,7 @@ export default async function Pagina() {
           { id: 'n', titulo: 'Comprobación', celda: (x) => <>{x.nombre}{x.bloqueante && <span className="rtm-nota"> · bloqueante</span>}</> },
           { id: 'a', titulo: 'Vía A', numerica: true, celda: (x) => <>{mostrar(x, x.via_a_cent)}<br /><span className="rtm-nota">{x.via_a_nombre}</span></> },
           { id: 'b', titulo: 'Vía B', numerica: true, secundaria: true, celda: (x) => <>{mostrar(x, x.via_b_cent)}<br /><span className="rtm-nota">{x.via_b_nombre}</span></> },
-          { id: 'o', titulo: 'Estado', celda: (x) => <EstadoTexto tono={x.ok ? 'ok' : x.bloqueante ? 'malo' : 'atencion'}>{x.ok ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
+          { id: 'o', titulo: 'Estado', celda: (x) => <><EstadoTexto tono={x.ok ? 'ok' : x.bloqueante ? 'malo' : 'atencion'}>{x.ok ? 'Cuadra' : 'No cuadra'}</EstadoTexto>{x.codigo === 'C23' && <><br /><span className="rtm-nota">Diferencia: </span><CifraComprobada texto={formatearMoneda(x.via_a_cent - x.via_b_cent)} cifra="conta:efectivo" comprobacion={x.ok ? 'cuadra' : 'no_cuadra'} /></>}</> },
         ]}
       />
 
