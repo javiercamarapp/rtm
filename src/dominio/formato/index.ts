@@ -60,3 +60,11 @@ export function etiquetaFechaHora(iso: string): string {
   const dos = (n: number) => String(n).padStart(2, '0');
   return `${d.getUTCDate()} ${MESES[d.getUTCMonth()]} ${dos(d.getUTCHours())}:${dos(d.getUTCMinutes())}`;
 }
+
+/** Pesos sin signo de moneda para el texto de WhatsApp: "7,000" (enteros) o "13,590.00" (con centavos). Misma regla que `operacion.fmt_pesos` de la base. */
+export function formatearPesosCorto(cent: bigint, forzarCentavos = false): string {
+  const negativo = cent < 0n;
+  const abs = negativo ? -cent : cent;
+  const cuerpo = `${agrupar((abs / 100n).toString())}${forzarCentavos || abs % 100n !== 0n ? `.${(abs % 100n).toString().padStart(2, '0')}` : ''}`;
+  return negativo ? `-${cuerpo}` : cuerpo;
+}

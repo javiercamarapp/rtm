@@ -10,7 +10,7 @@ export async function salir(): Promise<void> {
 
 /** "Explicar este numero": cada accion exige sesion de socio antes de tocar la base. */
 export async function explicarCifra(cifra: string): Promise<Explicacion> {
-  if (!/^(existencia:modelo:\d+|margen:\d+:\d+)$/.test(cifra)) throw new Error('cifra no explicable');
+  if (!/^(existencia:modelo:\d+|margen:\d+:\d+|pedido:(total|saldo):\d+|proveedor:saldo:\d+|socio:(deuda|fondos|diferencia):(Angelo|Javier)|cxc:total)$/.test(cifra)) throw new Error('cifra no explicable');
   return (await lectorDeSocio()).explicar(cifra);
 }
 

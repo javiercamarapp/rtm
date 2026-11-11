@@ -98,6 +98,23 @@ function Contenido({ d }: { d: Explicacion }) {
           <p className="rtm-nota">Precio del tabulador {formatearMoneda(d.precioCent)}. Margen = precio − costo.</p>
         </section>
       )}
+      {d.renglones.length > 0 && (
+        <section className="rtm-cajon-bloque" aria-label="Renglones">
+          <h3>Renglones que forman la cifra</h3>
+          <DataTable
+            etiqueta="Renglones que forman la cifra"
+            clave={(r) => `${r.evento ?? ''}-${r.concepto}-${r.montoCent}-${r.hora ?? ''}`}
+            filas={d.renglones}
+            columnas={[
+              { id: 'h', titulo: 'Fecha', celda: (r) => (r.hora ? etiquetaFechaHora(r.hora) : r.fechaNeg ?? '') },
+              { id: 'c', titulo: 'Concepto', celda: (r) => r.concepto },
+              { id: 'm', titulo: 'Monto', numerica: true, celda: (r) => formatearMoneda(r.montoCent) },
+              { id: 's', titulo: 'Saldo', numerica: true, secundaria: true, celda: (r) => (r.saldoCent === null ? '' : formatearMoneda(r.saldoCent)) },
+              { id: 'q', titulo: 'Quién', secundaria: true, celda: (r) => <>{r.autor ?? r.canal ?? ''}<br /><span className="rtm-nota rtm-mono">{r.evento ?? ''}</span>{r.mensajeOrigen && <><br /><span className="rtm-nota">{r.mensajeOrigen}</span></>}</> },
+            ]}
+          />
+        </section>
+      )}
       {d.unidad === 'pz' && (
         <section className="rtm-cajon-bloque" aria-label="Movimientos">
           <h3>Movimientos</h3>

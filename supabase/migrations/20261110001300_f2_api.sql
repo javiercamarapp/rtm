@@ -47,6 +47,7 @@ begin
     'excepcion_minimo_motivo', pe.excepcion_minimo_motivo,
     'cliente', (select jsonb_build_object('id', c.id, 'nombre', c.nombre_canonico, 'duenio', s.nombre) from catalogo.cliente c join catalogo.socio s on s.id = c.duenio_id where c.id = pe.cliente_id),
     'cobrado_cent', operacion.pedido_cobrado(pe.id), 'aplicado_cent', operacion.pedido_aplicado(pe.id), 'saldo_cent', case when pe.estado = 'enviado' then operacion.pedido_saldo(pe.id) end,
+    'estimado_cent', (select coalesce(sum(l.piezas_pedidas * l.precio_cent), 0) from operacion.pedido_linea l where l.pedido_id = pe.id) + pe.envio_cent + pe.recargo_cent - pe.descuento_cent,
     'saldo_favor_cliente_cent', operacion.saldo_favor_cliente(pe.cliente_id),
     'lineas', coalesce((select jsonb_agg(jsonb_build_object(
         'id', l.id, 'sku_id', l.sku_id, 'modelo', m.nombre_canonico, 'sabor', sa.nombre_canonico, 'piezas_pedidas', l.piezas_pedidas, 'piezas_surtidas', l.piezas_surtidas,

@@ -21,3 +21,7 @@ export const IconoMenu = () => <Base><path d="M4 7h16M4 12h16M4 17h16" /></Base>
 export const IconoAjustes = () => <Base><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></Base>;
 export const IconoCatalogo = () => <Base><path d="M5 5h9l5 5v9H5z" /><path d="M14 5v5h5M9 14h6M9 17h4" /></Base>;
 export const IconoClientes = () => <Base><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20c.7-3.6 3.2-5.5 6.5-5.5s5.8 1.9 6.5 5.5" /></Base>;
+export const IconoPaquete = () => <Base><path d="M4 8l8-4 8 4v8l-8 4-8-4V8Z" /><path d="M4 8l8 4 8-4M12 12v8M8 6l8 4" /></Base>;
+export const IconoTrayecto = () => <Base><path d="M3 12h13M12 7l5 5-5 5" /><path d="M19 6v12" /></Base>;
+export const IconoCobrar = () => <Base><rect x="3.5" y="6" width="17" height="12" rx="2" /><circle cx="12" cy="12" r="2.4" /><path d="M7 9v.01M17 15v.01" /></Base>;
+export const IconoAviso = () => <Base><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15L6 17Z" /><path d="M10 21h4" /></Base>;

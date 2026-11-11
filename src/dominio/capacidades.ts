@@ -13,6 +13,12 @@ export const ACCIONES = [
   'ver_proveedores',
   'ver_cuenta_socios',
   'ver_cuenta_omar',
+  'ver_paquetes',
+  'ver_cuentas_por_cobrar',
+  'ver_avisos',
+  'operar_pedidos',
+  'operar_compras',
+  'operar_pagos',
 ] as const;
 export type Accion = (typeof ACCIONES)[number];
 
@@ -26,6 +32,12 @@ export const CAPACIDADES: Record<Accion, readonly Rol[]> = {
   ver_proveedores: ['socio'],
   ver_cuenta_socios: ['socio'],
   ver_cuenta_omar: ['socio'],
+  ver_paquetes: ['socio'],
+  ver_cuentas_por_cobrar: ['socio'],
+  ver_avisos: ['socio'],
+  operar_pedidos: ['socio'],
+  operar_compras: ['socio'],
+  operar_pagos: ['socio'],
 };
 
 export function puede(rol: Rol | null | undefined, accion: Accion): boolean {

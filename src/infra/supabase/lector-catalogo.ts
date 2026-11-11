@@ -55,12 +55,15 @@ const explicacion = z.object({
   movimientos: z.array(z.object({ hora: z.string(), fecha_neg: z.string(), tipo: z.string(), sabor: z.string(), ubicacion: z.string(), cantidad: z.number(), saldo: z.number(), valor_cent: cent, evento: z.string(), canal: z.string(), mensaje_origen: z.string().nullable(), autor: z.string().nullable() })),
   precio_cent: centN.optional(),
   costos: z.array(z.object({ proveedor: z.string(), costo_cent: cent, desde: z.string(), supuesto: z.boolean(), fuente: z.string(), margen_cent: cent, cuadra: z.boolean() })).optional(),
+  renglones: z.array(z.object({ concepto: z.string(), monto_cent: cent, saldo_cent: centN.optional(), hora: z.string().nullable().optional(), fecha_neg: z.string().nullable().optional(), evento: z.string().nullable().optional(),
+                              canal: z.string().nullable().optional(), autor: z.string().nullable().optional(), mensaje_origen: z.string().nullable().optional() })).optional(),
 }).transform((e) => ({
   cifra: e.cifra, titulo: e.titulo, unidad: e.unidad, valor: e.valor,
   comprobacion: e.comprobacion ? { via1: e.comprobacion.via1, via1Valor: e.comprobacion.via1_valor, via2: e.comprobacion.via2, via2Valor: e.comprobacion.via2_valor, cuadra: e.comprobacion.cuadra } : null,
   movimientos: e.movimientos.map((m) => ({ hora: m.hora, fechaNeg: m.fecha_neg, tipo: m.tipo, sabor: m.sabor, ubicacion: m.ubicacion, cantidad: m.cantidad, saldo: m.saldo, valorCent: m.valor_cent, evento: m.evento, canal: m.canal, mensajeOrigen: m.mensaje_origen, autor: m.autor })),
   precioCent: e.precio_cent ?? null,
   costos: (e.costos ?? []).map((c) => ({ proveedor: c.proveedor, costoCent: c.costo_cent, desde: c.desde, supuesto: c.supuesto, fuente: c.fuente, margenCent: c.margen_cent, cuadra: c.cuadra })),
+  renglones: (e.renglones ?? []).map((r) => ({ concepto: r.concepto, montoCent: r.monto_cent, saldoCent: r.saldo_cent ?? null, hora: r.hora ?? null, fechaNeg: r.fecha_neg ?? null, evento: r.evento ?? null, canal: r.canal ?? null, autor: r.autor ?? null, mensajeOrigen: r.mensaje_origen ?? null })),
 }));
 
 async function llamar<T>(fn: string, args: Record<string, unknown>, esquema: z.ZodType<T, unknown>): Promise<T> {
