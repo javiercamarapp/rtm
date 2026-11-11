@@ -90,8 +90,8 @@ Datos en conflicto o dudosos que encontré al importar:
 9. **Happy Spot** no tiene precio de Nexa 50K definido (Fer Vazquez lo tiene a $150): ¿mismo precio?
 10. **Cancún** lleva copia del tabulador de Campeche por regla del dueño (y su dato "Waka 15 a $200" ya no se usa porque el modelo de Campeche se llama "Waka 15K"): ¿se confirma con el cliente?
 11. **Campeche Vapes:** recalcular la utilidad mensual de ≈ $30,000 con la lista correcta; y ¿existen precios de "Empire" con fecha posterior en el Excel de Angelo (no está en este equipo)?
-12. **Márgenes cero:** hay 12 líneas de la lista de Angelo con margen cero contra Isaac (Andrés DM 15K; Angel DM 15K, GO 10K y Nexa 35K; Antonio IPLAY Box 4K; Ariel Burst 36K; Marce GO 10K; Omar Aguilar Box Pro Max y DM 15K; Otto Box Pro Max; Pablo DM 15K y GO 10K): ¿son intencionales (se compensan con Karen)?
+12. **Márgenes cero:** hay 12 líneas de la lista de Angelo con margen cero contra Isaac (el importador las imprime con `npm run importar:verificar`; no se listan aquí por no versionar datos de clientes): ¿son intencionales (se compensan con Karen)?
 13. **Costos de Karen:** los 17 son "supuesto" desde 2026-11-10; ¿tienen lista o documento con fecha? Instabar 70K, Fifty Bar, Snowwolf, Lost Mary Ultrasonic y Elfbar 40K no existen en la lista de Isaac (se crearon como modelos de la lista de Javier).
-14. **Nombre completo del cliente repetido:** el dato "Andrés Carrillo" vive solo en el archivo local de decisiones del importador (no en el repo); ¿es el definitivo?
+14. **Nombre completo del cliente repetido:** el nombre completo del cliente repetido vive solo en el archivo local de decisiones del importador (no en el repo); ¿es el definitivo?
 15. **"Omar" a secas:** el documento de Angelo dice que es el de la bodega y la especificación manda preguntar (Omar Yacaman vs Omar Aguilar); ¿se confirma que el agente siempre pregunte?
 16. **Teléfono real:** ¿pueden probar el enlace en el iPhone de Javier y Angelo (con la app de correo instalada) y en el Samsung plegable? Con eso se decide si se activa la plantilla de `auth/confirm`.
