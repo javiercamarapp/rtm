@@ -138,3 +138,38 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 .rtm-verificar { display: flex; flex-direction: column; gap: var(--rtm-e-2); align-items: flex-start; }
 .rtm-verificar-lista { list-style: none; margin: 0; padding: 0; font-size: 13px; display: flex; flex-direction: column; gap: var(--rtm-e-1); }
 .rtm-asiento .rtm-acciones-fila { margin-top: var(--rtm-e-2); }
+
+/* F3b-2: inventario, kardex, conteo, exportacion y campana */
+.rtm-reversa { display: inline-block; border-left: 2px dashed var(--rtm-ink-3); padding-left: var(--rtm-e-2); }
+.rtm-kpi-enlace { text-decoration: none; color: inherit; }
+.rtm-kpi-enlace:hover { border-color: var(--rtm-line-strong); }
+.rtm-kpi-enlace strong { font-size: 22px; line-height: 28px; }
+.rtm-conteo-grupo { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); padding: var(--rtm-e-3) var(--rtm-e-4); margin: 0; display: flex; flex-direction: column; gap: var(--rtm-e-2); }
+.rtm-conteo-grupo legend { font-weight: 600; font-size: 14px; padding: 0 var(--rtm-e-2); }
+.rtm-conteo-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--rtm-e-3); }
+.rtm-exportar { position: relative; }
+.rtm-exportar-panel { margin-top: var(--rtm-e-3); display: flex; flex-direction: column; gap: var(--rtm-e-3); max-width: 720px; }
+.rtm-exportar-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--rtm-e-3); }
+.rtm-exportar-opciones { display: flex; flex-wrap: wrap; gap: var(--rtm-e-2) var(--rtm-e-4); font-size: 14px; }
+.rtm-exportar-opciones label { display: inline-flex; align-items: center; gap: var(--rtm-e-2); min-height: 32px; }
+.rtm-exportar-resultado { display: flex; flex-direction: column; gap: var(--rtm-e-2); border-top: 1px solid var(--rtm-line); padding-top: var(--rtm-e-3); }
+.rtm-exportar-resultado textarea { height: auto; padding: var(--rtm-e-2) var(--rtm-e-3); border-radius: var(--rtm-r-2); }
+.rtm-campana { position: relative; }
+.rtm-campana-boton { position: relative; }
+.rtm-campana-cuenta { position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--rtm-ink); color: var(--rtm-surface); font-size: 11px; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+.rtm-campana-panel { position: absolute; right: 0; top: calc(100% + 8px); width: min(380px, calc(100vw - 32px)); max-height: min(70vh, 520px); overflow: auto; z-index: 40; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-surface); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); padding: var(--rtm-e-3); display: flex; flex-direction: column; gap: var(--rtm-e-2); }
+.rtm-campana-pestanas { display: flex; gap: var(--rtm-e-1); border-bottom: 1px solid var(--rtm-line); }
+.rtm-campana-pestana { background: none; border: 0; border-bottom: 2px solid transparent; padding: var(--rtm-e-2) var(--rtm-e-3); font: inherit; font-size: 13px; color: var(--rtm-ink-3); cursor: pointer; min-height: 40px; }
+.rtm-campana-pestana[aria-selected='true'] { color: var(--rtm-ink); border-bottom-color: var(--rtm-ink); font-weight: 600; }
+.rtm-campana-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rtm-campana-item { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; padding: var(--rtm-e-2) 0; border-bottom: 1px solid var(--rtm-line); font-size: 13px; }
+.rtm-campana-item[data-leida] { opacity: 0.7; }
+.rtm-campana-sev { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--rtm-ink-3); }
+.rtm-campana-sev[data-sev='C'] { color: var(--rtm-ink); font-weight: 700; }
+.rtm-campana-vacia { padding: var(--rtm-e-3) 0; }
+.rtm-campana-pie { display: flex; justify-content: space-between; align-items: center; gap: var(--rtm-e-2); font-size: 13px; }
+@media (max-width: 640px) {
+  /* En pantallas angostas la campana no queda en el borde derecho: el panel ocupa el ancho entre los margenes de 16 px. */
+  .rtm-campana { position: static; }
+  .rtm-campana-panel { position: fixed; left: var(--rtm-e-4); right: var(--rtm-e-4); top: 56px; width: auto; max-height: calc(100dvh - 72px); }
+}
