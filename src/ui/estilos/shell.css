@@ -61,8 +61,8 @@
 .rtm-chip {
   display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap;
   height: 28px; padding: 0 var(--rtm-e-3); align-items: center;
-  border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora);
-  font-size: 12px; color: var(--rtm-ink-2); background: transparent;
+  border: 1px solid var(--rtm-chip-borde); border-radius: var(--rtm-r-pildora);
+  font-size: 12px; color: var(--rtm-chip-texto); background: var(--rtm-chip-fondo);
 }
 .rtm-chip b { font-weight: 600; color: var(--rtm-ink); font-variant-numeric: tabular-nums; }
 .rtm-barra-acciones { display: flex; align-items: center; gap: var(--rtm-e-2); flex: none; }
