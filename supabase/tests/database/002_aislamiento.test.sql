@@ -10,7 +10,7 @@ select is(
      join pg_namespace n on n.oid = c.relnamespace
     cross join (values ('anon'), ('authenticated')) r(rol)
     cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) p(priv)
-    where n.nspname in ('seguridad', 'negocio', 'api', 'omar')
+    where n.nspname in ('seguridad', 'negocio', 'api', 'catalogo', 'operacion')
       and c.relkind in ('r', 'p', 'v', 'm', 'f')
       and (has_table_privilege(r.rol, c.oid, p.priv)
            or (p.priv in ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES') and has_any_column_privilege(r.rol, c.oid, p.priv)))),
@@ -18,7 +18,7 @@ select is(
 
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname in ('seguridad', 'negocio', 'api', 'omar') and c.relkind = 'S'
+    where n.nspname in ('seguridad', 'negocio', 'api', 'omar', 'catalogo', 'operacion') and c.relkind = 'S'
       and (has_sequence_privilege('anon', c.oid, 'USAGE') or has_sequence_privilege('authenticated', c.oid, 'USAGE')
            or has_sequence_privilege('anon', c.oid, 'SELECT') or has_sequence_privilege('authenticated', c.oid, 'SELECT'))),
   0, 'capa 0: secuencias sin acceso para anon y authenticated');
@@ -46,7 +46,7 @@ select is(
   (select coalesce(string_agg(p.proname, ',' order by p.proname), '')
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname in ('seguridad', 'negocio', 'api') and p.prosecdef and has_function_privilege('anon', p.oid, 'EXECUTE')),
-  'registrar_intento_login', 'capa 1: anon solo ejecuta registrar_intento_login (limite de intentos previo a la sesion)');
+  '', 'capa 1: anon no ejecuta ninguna funcion SECURITY DEFINER (el limite de intentos lo llama el rol servidor)');
 
 select is(
   (select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
