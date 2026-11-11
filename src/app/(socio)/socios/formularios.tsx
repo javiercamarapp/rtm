@@ -8,14 +8,14 @@ const SOCIOS = [{ valor: 'Angelo', texto: 'Angelo' }, { valor: 'Javier', texto: 
 export function AccionesSocios() {
   return (
     <>
-      <FormularioAccion boton="Registrar aportación" titulo="Aportación de capital de un socio" confirmar="Registrar aportación" accion="registrar_aportacion" primario testid="aportacion"
+      <FormularioAccion boton="Registrar depósito de un socio" titulo="Dinero que un socio deposita" confirmar="Registrar aportación" accion="registrar_aportacion" primario testid="aportacion"
         campos={[
           { nombre: 'p_socio', etiqueta: 'Socio que aporta', tipo: 'seleccion', opciones: SOCIOS },
           { nombre: 'p_monto_cent', etiqueta: 'Monto', tipo: 'monto', requerido: true },
-          { nombre: 'p_concepto', etiqueta: 'Motivo', tipo: 'texto', requerido: true, defecto: 'Capital adicional' },
-          { nombre: 'p_clasificacion', etiqueta: 'Qué es', tipo: 'seleccion', opciones: [{ valor: 'capital', texto: 'Capital (se devuelve antes de repartir utilidad)' }, { valor: 'reembolsable', texto: 'Gasto que se reembolsa' }] },
+          { nombre: 'p_concepto', etiqueta: 'Motivo', tipo: 'texto', requerido: true },
+          { nombre: 'p_intencion', etiqueta: 'Intención (obligatoria)', tipo: 'seleccion', requerido: true, opciones: [{ valor: 'reembolso', texto: 'Reembolso: la sociedad se lo debe y se lo regresa pronto' }, { valor: 'capital', texto: 'Capital: metemos más lana para invertir' }] },
         ]}
-        nota="La sociedad se lo devuelve en la cascada de reparto, antes de repartir utilidades." />
+        nota="Solo es capital si el socio lo declara. Todo lo demás es cuenta por pagar al socio. Entra a la caja de la empresa; el capital se devuelve solo con un retiro de capital acordado por los dos." />
       <FormularioAccion boton="Registrar gasto pagado por un socio" titulo="Gasto pagado por un socio" confirmar="Registrar gasto" accion="registrar_gasto_socio" testid="gasto-socio"
         campos={[
           { nombre: 'p_socio', etiqueta: 'Socio que pagó', tipo: 'seleccion', opciones: SOCIOS },
@@ -29,7 +29,7 @@ export function AccionesSocios() {
         campos={[
           { nombre: 'p_socio', etiqueta: 'Socio que recibe', tipo: 'seleccion', opciones: SOCIOS },
           { nombre: 'p_monto_cent', etiqueta: 'Monto', tipo: 'monto', requerido: true },
-          { nombre: 'p_tipo', etiqueta: 'Qué se paga', tipo: 'seleccion', opciones: [{ valor: 'reembolso', texto: 'Reembolso de gastos' }, { valor: 'devolucion_aportacion', texto: 'Devolución de aportación' }, { valor: 'retiro', texto: 'Retiro' }] },
+          { nombre: 'p_tipo', etiqueta: 'Qué se paga', tipo: 'seleccion', opciones: [{ valor: 'reembolso', texto: 'Reembolso de gastos' }, { valor: 'retiro', texto: 'Retiro de utilidad ya asignada' }] },
           { nombre: 'p_via', etiqueta: 'Cómo', tipo: 'seleccion', opciones: [{ valor: 'transferencia', texto: 'Transferencia' }, { valor: 'efectivo', texto: 'Efectivo' }] },
         ]} />
       <FormularioAccion boton="Registrar liquidación entre socios" titulo="Liquidación entre socios" confirmar="Registrar liquidación" accion="registrar_liquidacion_entre_socios" testid="liquidacion-socios"
