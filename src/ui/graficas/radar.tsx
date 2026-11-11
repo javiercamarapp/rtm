@@ -1,7 +1,7 @@
 'use client';
 
 import { Marcador, formaDeSerie, useNavegacionTeclado } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { ErrorGrafica, MAX_EJES_RADAR, acotar, exigirNoNegativos, puntoRadar, r2, rutaPoligonal, seguro } from './geo';
 import type { BaseGrafica, TablaAlterna } from './tipos';
 
@@ -50,7 +50,7 @@ export function Radar({ ejes, series, maximo, tablaAbierta, ...base }: Props) {
     filas: ejes.map((e, i) => ({ clave: e, celdas: [e, ...series.map((s) => s.textos[i] ?? 'Sin dato')] })),
   };
   return (
-    <MarcoGrafica {...base} forma="radar" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}
+    <MarcoGrafica {...base} forma="radar" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}
       leyenda={calculo.ok ? (
         <ul className="rtm-g-leyenda" aria-label="Series">
           {series.map((s, si) => (

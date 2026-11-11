@@ -1,7 +1,7 @@
 'use client';
 
 import { DefsPatrones, MuestraLeyenda, patronDeSerie, urlPatron, useNavegacionTeclado, useUidSvg } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { calcularTreemap, claseEscalonado, partirEtiqueta, r2, seguro } from './geo';
 import { textoCifra } from './formato';
 import type { BaseGrafica, TablaAlterna } from './tipos';
@@ -35,7 +35,7 @@ export function Treemap({ nodos, unidad, grupos = [], tablaAbierta, ...base }: P
     }),
   };
   return (
-    <MarcoGrafica {...base} forma="treemap" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}
+    <MarcoGrafica {...base} forma="treemap" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}
       leyenda={calculo.ok && grupos.length ? (
         <ul className="rtm-g-leyenda" aria-label="Grupos">
           {grupos.map((g, gi) => <li key={g}><MuestraLeyenda uid={uid} indice={gi} suave />{g}</li>)}

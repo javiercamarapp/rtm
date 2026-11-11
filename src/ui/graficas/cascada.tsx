@@ -1,7 +1,7 @@
 'use client';
 
 import { DefsPatrones, urlPatron, useNavegacionTeclado, useUidSvg } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { calcularCascada, claseEscalonado, escala, partirEtiqueta, r2, seguro, type PasoCascada } from './geo';
 import type { BaseGrafica, TablaAlterna } from './tipos';
 
@@ -44,7 +44,7 @@ export function Cascada({ pasos, unidad, tablaAbierta, ...base }: Props) {
     }),
   };
   return (
-    <MarcoGrafica {...base} forma="cascada" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}>
+    <MarcoGrafica {...base} forma="cascada" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}>
       {calculo.ok && (
         <div className="rtm-g-lienzo">
           <svg className="rtm-g-svg" viewBox={`0 0 ${W} ${H}`} role="group" aria-label={base.descripcion} focusable="false">

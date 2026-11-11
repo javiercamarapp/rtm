@@ -1,7 +1,7 @@
 'use client';
 
 import { DefsPatrones, MuestraLeyenda, patronDeSerie, urlPatron, useNavegacionTeclado, useUidSvg } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { ErrorGrafica, claseEscalonado, escala, exigirNoNegativos, extremos, radioBurbuja, r2, seguro } from './geo';
 import type { BaseGrafica, TablaAlterna } from './tipos';
 
@@ -53,7 +53,7 @@ export function Burbujas({ puntos, ejeX, ejeY, ejeTamano, grupos, umbralX, umbra
     filas: puntos.map((p) => ({ clave: p.id, celdas: [p.etiqueta, p.grupo, p.textoX, p.textoY, p.textoTamano] })),
   };
   return (
-    <MarcoGrafica {...base} forma="burbujas" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}
+    <MarcoGrafica {...base} forma="burbujas" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}
       leyenda={calculo.ok ? (
         <ul className="rtm-g-leyenda" aria-label="Clasificaciones">
           {grupos.map((g, gi) => (

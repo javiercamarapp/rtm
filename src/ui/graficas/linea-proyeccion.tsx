@@ -1,7 +1,7 @@
 'use client';
 
 import { DefsPatrones, Marcador, useNavegacionTeclado, useUidSvg } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { ErrorGrafica, escala, exigirFinitos, extremos, r2, rutaBanda, rutaPoligonal, seguro } from './geo';
 import type { BaseGrafica, TablaAlterna } from './tipos';
 
@@ -54,7 +54,7 @@ export function LineaProyeccion({ puntos, unidad, anotacion, tablaAbierta, ...ba
   };
   const idxNota = anotacion ? puntos.findIndex((p) => p.id === anotacion.id) : -1;
   return (
-    <MarcoGrafica {...base} forma="linea" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}>
+    <MarcoGrafica {...base} forma="linea" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}>
       {calculo.ok && (
         <div className="rtm-g-lienzo">
           <svg className="rtm-g-svg" viewBox={`0 0 ${W} ${H}`} role="group" aria-label={base.descripcion} focusable="false">

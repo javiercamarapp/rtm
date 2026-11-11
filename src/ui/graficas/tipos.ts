@@ -33,3 +33,6 @@ export type NombrePatron = 'liso' | 'rayas' | 'puntos' | 'cuadros' | 'cruz';
 
 export const PATRONES_SERIE: readonly NombrePatron[] = ['liso', 'rayas', 'puntos', 'cuadros', 'cruz'];
 export const FORMAS_SERIE: readonly FormaMarcador[] = ['circulo', 'cuadrado', 'triangulo', 'rombo'];
+
+/** Tramos de antiguedad de saldos por omision (adenda 22, que corrige la spec: 0 a 7, 8 a 14, 15 a 30 y mas de 30 dias). */
+export const TRAMOS_ANTIGUEDAD = ['0 a 7 d', '8 a 14 d', '15 a 30 d', 'Más de 30 d'] as const;

@@ -1,7 +1,7 @@
 'use client';
 
 import { Marcador, useNavegacionTeclado } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { calcularPareto, claseEscalonado, elementosHasta, escala, partirEtiqueta, r2, rutaPoligonal, seguro } from './geo';
 import { textoCifra } from './formato';
 import type { BaseGrafica, TablaAlterna } from './tipos';
@@ -44,7 +44,7 @@ export function Pareto({ datos, unidad, umbral = 0.8, sustantivo, tablaAbierta, 
   };
   const lectura = calculo.ok ? `Los ${calculo.valor.hasta} primeros ${sustantivo} concentran ${pct(calculo.valor.acumHasta)} del total.` : '';
   return (
-    <MarcoGrafica {...base} forma="pareto" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message} leyenda={calculo.ok ? <p className="rtm-g-lectura">{lectura}</p> : undefined}>
+    <MarcoGrafica {...base} forma="pareto" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message} leyenda={calculo.ok ? <p className="rtm-g-lectura">{lectura}</p> : undefined}>
       {calculo.ok && (
         <div className="rtm-g-lienzo">
           <svg className="rtm-g-svg" viewBox={`0 0 ${W} ${H}`} role="group" aria-label={base.descripcion} focusable="false">

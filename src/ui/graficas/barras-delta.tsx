@@ -1,7 +1,7 @@
 'use client';
 
 import { Delta, useNavegacionTeclado } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { claseEscalonado, exigirNoNegativos, extremos, r2, seguro } from './geo';
 import { palabraSentido } from './formato';
 import type { BaseGrafica, DeltaTexto, TablaAlterna } from './tipos';
@@ -36,7 +36,7 @@ export function BarrasDelta({ datos, unidad, ordenar = true, tablaAbierta, ...ba
     filas: filas.map((d, i) => ({ clave: d.id, celdas: [String(i + 1), d.etiqueta, d.texto, d.delta ? `${palabraSentido(d.delta.sentido)} ${d.delta.texto}` : 'Sin comparación'] })),
   };
   return (
-    <MarcoGrafica {...base} forma="barras" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}>
+    <MarcoGrafica {...base} forma="barras" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}>
       {calculo.ok && (
         <ul className="rtm-g-ranking" aria-label={base.descripcion}>
           {filas.map((d, i) => (

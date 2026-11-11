@@ -1,7 +1,7 @@
 'use client';
 
 import { useNavegacionTeclado } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { ErrorGrafica, NIVELES_CALOR, claseEscalonado, exigirFinitos, extremos, nivelCalor, r2, seguro } from './geo';
 import type { BaseGrafica, TablaAlterna } from './tipos';
 
@@ -38,7 +38,7 @@ export function MapaCalor({ filas, columnas, celdas, unidad, tablaAbierta, ...ba
     filas: filas.map((f, r) => ({ clave: f, celdas: [f, ...columnas.map((_, c) => celdas[r]?.[c]?.texto ?? 'Sin dato')] })),
   };
   return (
-    <MarcoGrafica {...base} forma="calor" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}
+    <MarcoGrafica {...base} forma="calor" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}
       leyenda={calculo.ok ? (
         <p className="rtm-g-leyenda" aria-hidden="true">
           <span>Menos</span>

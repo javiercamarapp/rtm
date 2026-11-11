@@ -1,9 +1,9 @@
 'use client';
 
 import { DefsPatrones, MuestraLeyenda, patronDeSerie, urlPatron, useNavegacionTeclado, useUidSvg } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { ErrorGrafica, apilar, claseEscalonado, exigirNoNegativos, r2, seguro } from './geo';
-import type { BaseGrafica, TablaAlterna } from './tipos';
+import { TRAMOS_ANTIGUEDAD, type BaseGrafica, type TablaAlterna } from './tipos';
 
 export interface FilaAntiguedad {
   id: string;
@@ -17,12 +17,10 @@ export interface FilaAntiguedad {
 
 interface Props extends BaseGrafica {
   filas: readonly FilaAntiguedad[];
-  /** Tramos de antiguedad: por omision 0 a 7, 8 a 30, 31 a 60 y mas de 60 dias. */
+  /** Tramos de antiguedad: por omision 0 a 7, 8 a 14, 15 a 30 y mas de 30 dias (adenda 22). */
   tramos?: readonly string[];
   tablaAbierta?: boolean;
 }
-
-export const TRAMOS_ANTIGUEDAD = ['0 a 7 d', '8 a 30 d', '31 a 60 d', 'Más de 60 d'] as const;
 
 const ANCHO = 300;
 
@@ -45,7 +43,7 @@ export function AntiguedadSaldos({ filas, tramos = TRAMOS_ANTIGUEDAD, tablaAbier
     filas: filas.map((f) => ({ clave: f.id, celdas: [f.etiqueta, ...f.textos, f.total] })),
   };
   return (
-    <MarcoGrafica {...base} forma="apilada" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}
+    <MarcoGrafica {...base} forma="apilada" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}
       leyenda={calculo.ok ? (
         <ul className="rtm-g-leyenda" aria-label="Tramos de antigüedad">
           {tramos.map((t, ti) => <li key={t}><MuestraLeyenda uid={uid} indice={ti} />{t}</li>)}

@@ -1,7 +1,7 @@
 'use client';
 
 import { Marcador, formaDeSerie, useNavegacionTeclado } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { ErrorGrafica, escala, exigirFinitos, r2, rutaPoligonal, seguro } from './geo';
 import { flechaDe } from './piezas';
 import { sentidoDelta } from './geo';
@@ -55,7 +55,7 @@ export function Bump({ periodos, series, tablaAbierta, ...base }: Props) {
     }),
   };
   return (
-    <MarcoGrafica {...base} forma="bump" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}>
+    <MarcoGrafica {...base} forma="bump" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}>
       {calculo.ok && (
         <div className="rtm-g-lienzo">
           <svg className="rtm-g-svg" viewBox={`0 0 ${W} ${calculo.valor.alto}`} role="group" aria-label={base.descripcion} focusable="false">
@@ -66,7 +66,7 @@ export function Bump({ periodos, series, tablaAbierta, ...base }: Props) {
               const pts = s.posiciones.map((pos, i) => [calculo.valor.x(i), calculo.valor.y(pos)] as const);
               const forma = formaDeSerie(si);
               return (
-                <g key={s.id} role="img" aria-label={`${s.etiqueta}: ${s.posiciones.map((p, i) => `${periodos[i]} lugar ${p}`).join(', ')}. ${cambio(s)}`} data-marca={s.id} data-destacada={s.destacada || undefined} className={`rtm-g-marca rtm-g-bump ${s.destacada ? 'rtm-g-bump-foco' : ''}`} {...nav.props(si)}>
+                <g key={s.id} role="img" aria-label={`${s.etiqueta}: ${s.posiciones.map((p, i) => `${periodos[i]} lugar ${p}`).join(', ')}. ${cambio(s)}`} data-marca={s.id} data-destacada={s.destacada || undefined} className={s.destacada ? 'rtm-g-marca rtm-g-bump-foco' : 'rtm-g-marca'} {...nav.props(si)}>
                   <path d={rutaPoligonal(pts)} pathLength={1} fill="none" className="rtm-g-traza-bump" />
                   {pts.map(([x, y], i) => <Marcador key={i} forma={forma} x={x} y={y} r={4.5} className={s.destacada ? 'rtm-g-punto-foco' : 'rtm-g-punto'} />)}
                   <text x={M.i - 12} y={r2(pts[0]![1] + 4)} textAnchor="end" className="rtm-g-texto-fuerte">{`${s.posiciones[0]}. ${s.etiqueta}`}</text>

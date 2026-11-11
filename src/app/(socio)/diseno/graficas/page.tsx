@@ -23,6 +23,7 @@ export default function CatalogoGraficas() {
         contexto="SVG propio, blanco y negro con el acento como token. Cada gráfica trae su tabla equivalente, navegación por teclado y no depende solo del color. Con movimiento reducido todo se pinta ya en su estado final."
       />
 
+      <h2 className="rtm-g-subtitulo">Tarjetas de insight</h2>
       <section className="rtm-g-insights rtm-entra rtm-i-1" aria-label="Tarjetas de insight">
         <TarjetaInsight
           etiqueta="Piezas de la semana"
@@ -55,6 +56,7 @@ export default function CatalogoGraficas() {
         />
       </section>
 
+      <h2 className="rtm-g-subtitulo">Los doce tipos</h2>
       <div className="rtm-g-catalogo rtm-entra rtm-i-2">
         <BarrasDelta titulo="¿Qué modelo se vende más?" descripcion="Cinco modelos por piezas; el Modelo A va primero con 420 piezas." datos={EJ_BARRAS} unidad="Piezas" procedencia="observado" pie={PIE} />
         <LineaProyeccion

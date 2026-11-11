@@ -1,27 +1,12 @@
 'use client';
 
 import { useNavegacionTeclado } from './piezas';
-import { MarcoGrafica } from './marco';
+import { MarcoGrafica, estadoDe } from './marco';
 import { ErrorGrafica, claseEscalonado, escala, exigirNoNegativos, r2, seguro } from './geo';
+import { ESTADOS_COBERTURA as ESTADOS, type EstadoCobertura } from './cobertura';
 import type { BaseGrafica, TablaAlterna } from './tipos';
 
-/** Estados de la cobertura en dias (cifra S01 del servidor; ver docs de paridad 3.5). La grafica solo los pinta: nunca los calcula. */
-export type EstadoCobertura = 'urge' | 'brevedad' | 'siguiente' | 'buena' | 'excelente' | 'sobrestock' | 'sin_movimiento' | 'sin_historia';
-
-const ESTADOS: Record<EstadoCobertura, { palabra: string; nivel: number }> = {
-  urge: { palabra: 'Urge pedir', nivel: 1 },
-  brevedad: { palabra: 'Pedir a la brevedad', nivel: 2 },
-  siguiente: { palabra: 'Pedir siguiente pedido', nivel: 3 },
-  buena: { palabra: 'Buena cantidad', nivel: 4 },
-  excelente: { palabra: 'Excelente', nivel: 5 },
-  sobrestock: { palabra: 'Sobrestock', nivel: 5 },
-  sin_movimiento: { palabra: 'Sin movimiento', nivel: 0 },
-  sin_historia: { palabra: 'Sin historia (< 28 d)', nivel: 0 },
-};
-
-export function palabraCobertura(e: EstadoCobertura): string {
-  return ESTADOS[e].palabra;
-}
+export type { EstadoCobertura };
 
 export interface FilaCobertura {
   id: string;
@@ -57,7 +42,7 @@ export function CoberturaDias({ filas, umbrales, tablaAbierta, ...base }: Props)
     filas: filas.map((f) => ({ clave: f.id, celdas: [f.etiqueta, f.dias === null ? 'Sin dato' : f.textoDias, ESTADOS[f.estado].palabra] })),
   };
   return (
-    <MarcoGrafica {...base} forma="cobertura" tabla={tabla} tablaAbierta={tablaAbierta} estado={calculo.ok ? base.estado : 'error'} mensajeError={calculo.ok ? undefined : calculo.error.message}
+    <MarcoGrafica {...base} forma="cobertura" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}
       leyenda={calculo.ok ? (
         <ul className="rtm-g-leyenda" aria-label="Referencias de la escala">
           {umbrales.map((u) => <li key={u.id}><span className="rtm-g-marca-umbral" aria-hidden="true" />{`${u.etiqueta}: ${u.dias} d`}</li>)}

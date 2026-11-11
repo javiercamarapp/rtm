@@ -7,7 +7,13 @@ import { DataTable } from '../componentes/data-table';
 import { useAnimacionActiva } from '../movimiento/cliente';
 import { MarcaProcedencia } from './piezas';
 import { muestraSuficiente, r2 } from './geo';
-import type { BaseGrafica, TablaAlterna } from './tipos';
+import type { BaseGrafica, EstadoGrafica, TablaAlterna } from './tipos';
+
+/** Estado efectivo: cargando manda sobre un error de datos (aun no hay datos que validar); un error de calculo pasa a error. */
+export function estadoDe(pedido: EstadoGrafica | undefined, calculoOk: boolean): EstadoGrafica {
+  if (pedido === 'cargando') return 'cargando';
+  return calculoOk ? (pedido ?? 'listo') : 'error';
+}
 
 export type FormaEsqueleto = 'barras' | 'linea' | 'cascada' | 'pareto' | 'calor' | 'burbujas' | 'treemap' | 'radar' | 'bump' | 'apilada' | 'cobertura' | 'sparkline';
 
