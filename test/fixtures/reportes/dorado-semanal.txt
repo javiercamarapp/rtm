@@ -1,0 +1,211 @@
+RTM · Reporte semanal · 2 al 8 de noviembre de 2026
+Estado: DEFINITIVO
+
+--- Página 1 de 7: resumen ---
+La utilidad baja 9 % por mayor costo.
+$40,422  utilidad de contribución · $17.50 por pieza · 8.7 % de las ventas · promedio de cuatro semanas $44,400 [Calculado]
+Ventas: $463,900 (2 % más que el promedio de cuatro semanas) [Observado]
+Piezas: 2,310 pz (5 % menos que el promedio de cuatro semanas) [Observado]
+Cobrado: $398,200 (86 % de lo vendido) [Observado]
+Por cobrar: $183,400 (22 % con más de treinta días) [Observado]
+Lo que encontramos
+  1. Fasta Kit 40K: 21 días sin venta, $88,705 parados.
+  2. Distribuidora Sur compra 35 % menos que su promedio ($39,560 contra $60,500 por semana).
+  3. 22 % de la cartera pasa de treinta días ($40,348).
+Qué hacer
+  1. Ofrecer Fasta Kit 40K a quien lo compró y no reponer: libera $88,705. Quién: Angelo.
+  2. Cobrar $40,348 de cartera vencida: llamar esta semana. Quién: Javier.
+  3. Cobrar $21,500 a Plaza Norte con 38 días: llamar esta semana. Quién: Javier.
+Implicación: La utilidad de contribución cubre 8.7 % de las ventas antes de gastos fijos.
+Siguiente paso: Ofrecer Fasta Kit 40K a quien lo compró y no reponer: libera $88,705. Quién sugerido: Angelo.
+Fuente: pedidos confirmados 2 al 8 de noviembre de 2026 (n = 14), corte 9 nov 05:59 Mérida; C1, C2 en verde. Clase: Observado.
+
+--- Página 2 de 7: utilidad ---
+La utilidad baja 9 % por mayor costo.
+−$4,078  cambio de la utilidad contra el periodo anterior · de $44,500 a $40,422 [Calculado]
+Lo que encontramos
+  1. El margen de Icon cayó $15 por pieza por el nuevo costo; 3 clientes siguen al mismo precio.
+[Gráfica] Puente de utilidad
+Pedidos del periodo
+Folio | Cliente | Origen | Piezas | Cobrado | Contribución | Aviso
+P-0133 | Casa Poniente | Directo | 320 pz | $57,197 | $4,657 | —
+P-0120 | Plaza Norte | Directo | 250 pz | $41,864 | $4,512 | —
+P-0122 | Distribuidora Sur | Directo | 220 pz | $37,014 | $4,044 | —
+P-0121 | Plaza Norte | Directo | 200 pz | $34,898 | $3,635 | —
+P-0123 | Distribuidora Sur | Directo | 190 pz | $31,992 | $3,336 | —
+P-0126 | Mayoreo Costa | Directo | 190 pz | $30,478 | $3,216 | —
+P-0127 | Mayoreo Costa | Directo | 150 pz | $28,139 | $2,809 | —
+P-0128 | Vapes del Valle | Directo | 140 pz | $24,080 | $2,650 | —
+Resto: 6 pedidos, contribución $11,563
+Implicación: El paso mayor es costo, con −$7,321.
+Siguiente paso: Renegociar el precio de Icon con 3 clientes: recupera cerca de $3,015 por semana. Quién sugerido: Javier.
+Fuente: pedidos confirmados 2 al 8 de noviembre de 2026 (n = 14), corte 9 nov 05:59 Mérida; C1, C2, C14 en verde. Clase: Calculado.
+
+--- Página 3 de 7: clientes ---
+Dos clientes explican 39 % de las ventas; revisar el ritmo de compra.
+39 %  de las ventas en los dos mayores clientes · HHI 1,558 [Calculado]
+Lo que encontramos
+  1. Distribuidora Sur compra 35 % menos que su promedio ($39,560 contra $60,500 por semana).
+[Gráfica] Pareto de clientes
+Clientes del periodo
+Cliente | Piezas | Ventas | Contribución | Pedidos
+Casa Poniente | 440 pz | $92,430 | $7,018 | 2
+Plaza Norte | 450 pz | $89,260 | $8,147 | 2
+Distribuidora Sur | 410 pz | $80,240 | $7,380 | 2
+Mayoreo Costa | 340 pz | $68,160 | $6,025 | 2
+Tienda Centro | 250 pz | $49,770 | $4,222 | 2
+Punto Oriente | 220 pz | $44,160 | $3,964 | 2
+Vapes del Valle | 200 pz | $39,880 | $3,665 | 2
+Implicación: Una cartera concentrada depende del ritmo de pocos clientes.
+Siguiente paso: Dar seguimiento al ritmo de compra de los dos mayores clientes.
+Fuente: ventas por cliente 2 al 8 de noviembre de 2026 (n = 7), corte 9 nov 05:59 Mérida; C2, C14 en verde. Clase: Calculado.
+
+--- Página 4 de 7: productos ---
+Nexa 50K se acaba en 6 días. Revisar lo que no rota.
+$88,705  capital inmovilizado · 14 % del inventario a costo [Calculado]
+Lo que encontramos
+  1. Fasta Kit 40K: 21 días sin venta, $88,705 parados.
+  2. Nexa 50K se acaba en 6 días.
+  3. 41 de 44 líneas cuadran; 12 pz ($1,098.55) en puente.
+Qué hacer
+  1. Ofrecer Fasta Kit 40K a quien lo compró y no reponer: libera $88,705. Quién: Angelo.
+  2. Reponer Nexa 50K: cobertura 6 días; pedir 450 pz por cerca de $80,100. Quién: Angelo.
+[Gráfica] Cobertura en días
+Reposición sugerida (Estimado)
+Modelo | Existencia | Punto de reorden | Pedir | Costo | Proveedor
+Nexa 50K | 312 pz | 377 pz | 450 pz | $80,100 | Isaac $178/pz
+Waka Jupiter | 480 pz | 312 pz | 150 pz | $25,200 | Isaac $168/pz
+Icon | 300 pz | 209 pz | 150 pz | $28,500 | Isaac $190/pz
+Blast | 350 pz | 184 pz | 150 pz | $24,600 | Isaac $164/pz
+Implicación: Lo que más rota es lo que se acaba; lo parado es capital.
+Siguiente paso: Ofrecer Fasta Kit 40K a quien lo compró y no reponer: libera $88,705. Quién sugerido: Angelo.
+Fuente: kardex y ventas semanales, corte 9 nov 05:59 Mérida; C5, I5 en verde. Clase: Estimado.
+
+--- Página 5 de 7: dinero ---
+Se liquida el viernes con $126,832 de holgura; $183,400 está en la calle.
+$422,668  por pagar al proveedor · cobertura 1.3 [Calculado]
+Lo que encontramos
+  1. 22 % de la cartera pasa de treinta días ($40,348).
+  2. Plaza Norte: $21,500, 38 días, 0.48 tickets.
+[Gráfica] Antigüedad de saldos
+[Gráfica] Flujo de caja
+Liquidación con Isaac
+Concepto | Monto
+Mercancía | $415,570
+Guías | $7,098
+Pagado | $0
+Por pagar | $422,668
+Según el proveedor | $422,668
+Nota: La liquidación con el proveedor cubre lunes a viernes; el resto del reporte cubre lunes a domingo.
+Implicación: 22 % de la cartera pasa de treinta días.
+Siguiente paso: Cobrar $40,348 de cartera vencida: llamar esta semana. Quién sugerido: Javier.
+Fuente: cuentas por cobrar, pagos y hoja del proveedor, corte 9 nov 05:59 Mérida; C6, C7, L1 en verde. Clase: Calculado.
+
+--- Página 6 de 7: gastos ---
+Gastaste $9,068: 89 % es variable.
+$9,068  gasto total · 2.0 % de las ventas · $3.92 por pieza [Observado]
+[Gráfica] Composición del gasto
+[Gráfica] Plataforma contra su tope
+Gastos del periodo
+Concepto | Tipo | Pagó | Monto
+Renta de bodega (180 pz x $2) | Variable | Sociedad | $360
+Guías de salida | Variable | Angelo | $7,098
+Mensajeros | Variable | Javier | $450
+Comisión de terminal | Variable | Angelo | $120
+Vercel (cuota semanal) | Fijo | Javier | $400
+Supabase (cuota semanal) | Fijo | Javier | $500
+IA | Fijo | Javier | $120
+Dominio (un doceavo) | Fijo | Javier | $20
+Nota: No cuentan como gasto de la sociedad: empaque, publicidad, catálogos, fotos y regalos.
+Implicación: Los gastos fijos suman $1,040 y los variables $8,028.
+Siguiente paso: Registrar los gastos pendientes antes del cierre del periodo.
+Fuente: gastos registrados, corte 9 nov 05:59 Mérida; C22 en verde. Clase: Observado.
+
+--- Página 7 de 7: socios ---
+Javier debe a Angelo $9,307.50; Omar queda en −$260.
+$9,307.50  Javier debe a Angelo · antes $14,307.50 [Calculado]
+Lo que encontramos
+  1. La posición entre socios pasó de $14,308 a $9,308.
+  2. Omar debe $260: renta $440, tomas $700.
+[Gráfica] Posición entre socios
+Comprobaciones
+Id | Comprobación | Vía 1 | Vía 2 | Estado
+C1 | Nota de venta cuadra | 1 | 1 | Cuadra
+C2 | Fuga de piezas | 1 | 1 | Cuadra
+C3 | Balanza en cero | 1 | 1 | Cuadra
+C4 | Auxiliares = control | 1 | 1 | Cuadra
+C5 | Valuación del inventario | 1 | 1 | Cuadra
+C6 | Pagos aplicados | 1 | 1 | Cuadra
+C7 | Saldo del proveedor | 1 | 1 | Cuadra
+C8 | Saldo de Omar | 1 | 1 | Cuadra
+C9 | Saldo entre socios | 1 | 1 | Cuadra
+C10 | Asientos cuadrados | 1 | 1 | Cuadra
+C11 | Periodo cerrado sin asientos nuevos | 1 | 1 | Cuadra
+C12 | Pedidos a libro | 1 | 1 | Cuadra
+C14 | Desglose por cliente | 1 | 1 | Cuadra
+C22 | Gastos contra cuentas | 1 | 1 | Cuadra
+R.PEDIDOS | Suma de pedidos = suma por modelo | 4,042,200 | 4,042,200 | Cuadra
+R.PUENTE | Inicio más suma de pasos = fin (el puente suma exacto) | 4,042,200 | 4,042,200 | Cuadra
+R.CIFRAS | Cada cifra del paquete coincide por dos vías | 135 | 135 | Cuadra
+Implicación: La posición entre socios sale de la fórmula del documento de Angelo y se explica movimiento por movimiento.
+Siguiente paso: Revisar las comprobaciones que no cuadran y cerrar los puentes abiertos.
+Fuente: cuenta de socios y de Omar, corte 9 nov 05:59 Mérida; C8, C9 en verde. Clase: Calculado.
+
+--- Anexo: Comprobaciones ---
+C1  Nota de venta cuadra: cuadra
+C2  Fuga de piezas: cuadra
+C3  Balanza en cero: cuadra
+C4  Auxiliares = control: cuadra
+C5  Valuación del inventario: cuadra
+C6  Pagos aplicados: cuadra
+C7  Saldo del proveedor: cuadra
+C8  Saldo de Omar: cuadra
+C9  Saldo entre socios: cuadra
+C10  Asientos cuadrados: cuadra
+C11  Periodo cerrado sin asientos nuevos: cuadra
+C12  Pedidos a libro: cuadra
+C14  Desglose por cliente: cuadra
+C22  Gastos contra cuentas: cuadra
+R.PEDIDOS  Suma de pedidos = suma por modelo: cuadra
+R.PUENTE  Inicio más suma de pasos = fin (el puente suma exacto): cuadra
+R.CIFRAS  Cada cifra del paquete coincide por dos vías: cuadra
+
+--- Anexo: Insights: umbrales vigentes (config) ---
+I01  Cliente compra menos que su ritmo. Umbral: < 0.9 nota, < 0.8 atención, < 0.6 alerta. Muestra: 4 pedidos.
+I02  Recencia de compra. Umbral: > 1.5 atención, > 2.5 alerta. Muestra: 4 pedidos.
+I03  Concentración de clientes. Umbral: mayor > 30 % atención, > 40 % alerta; HHI > 2,500. Muestra: 5 clientes.
+I04  Cliente de más piezas que no es de más utilidad. Umbral: fuera del top 3. Muestra: 3 clientes.
+I05  Cambio de la posición entre socios. Umbral: > $5,000 o 20 %. Muestra: 1 periodo.
+I06  Ticket bajo. Umbral: < 70 %. Muestra: 4 pedidos.
+I07  Sabor abandonado. Umbral: participación reciente < mitad de la previa. Muestra: 3 pedidos y 60 pz.
+I08  Modelo de más piezas que no es de más utilidad. Umbral: fuera del top 3. Muestra: 20 pz.
+I09  Caída de margen por cambio de costo. Umbral: >= $10 o >= 30 %. Muestra: 1 cambio de costo registrado.
+I10  Líneas bajo el piso de margen. Umbral: precio - reposición < guía esperada + $2. Muestra: 1 línea.
+I11  Precio distinto del tabulador. Umbral: diferencia sin excepción. Muestra: 1 línea.
+I12  Modelo en cuadrante Revisar. Umbral: 3 semanas seguidas. Muestra: 8 modelos.
+I13  Se acaba pronto. Umbral: < 7 días atención, < 3 días alerta. Muestra: 4 semanas del modelo.
+I14  Capital parado. Umbral: > 56 d o 21 d sin venta. Muestra: 4 semanas del modelo.
+I15  Sabor sobrestockeado. Umbral: > 20 % del stock y < 5 % de la demanda. Muestra: 28 d y 20 pz.
+I16  Venta perdida por sabor agotado. Umbral: >= 10 pz en 4 semanas. Muestra: 28 d.
+I17  Exactitud del conteo. Umbral: < 98 % de líneas cuadran. Muestra: 1 conteo.
+I18  Fuga de piezas. Umbral: <> 0. Muestra: 1 pedido.
+I19  Cartera vencida. Umbral: > 20 % atención, partida > 60 d alerta. Muestra: cartera > 0.
+I20  Riesgo de cobro por cliente. Umbral: >= 3 puntos atención, >= 6 alerta. Muestra: 4 pedidos.
+I21  Cobertura del viernes. Umbral: < 1.2 atención, < 1.0 alerta. Muestra: fondos y saldo.
+I22  Proveedor más caro sin causa. Umbral: diferencia de costo > 0 con pedidos al caro. Muestra: ambos costos.
+I23  Margen bruto bajo. Umbral: < 8 % atención, < 5 % alerta. Muestra: 2 semanas.
+I24  Gasto variable o plataforma altos. Umbral: > 20 % sobre la mediana; > 80 % del tope. Muestra: 4 semanas.
+I25  Cuenta de Omar. Umbral: neto < 0 o toma pendiente > 72 h. Muestra: 1 semana.
+
+--- Anexo: Parámetros de proyección (config) ---
+Promedio móvil exponencial: alfa 0.3, ventana 8 semanas, mínimo 6.
+Rango empírico al ochenta por ciento: z 1.28.
+Tendencia: de 8 a 13 semanas, t mínimo 2, horizonte máximo 4 semanas.
+Punto de reorden: z 1.28, revisión 7 días.
+
+--- Anexo: Pocos datos ---
+Pocos datos para hablar de el ritmo de Casa Poniente (1 de 4).
+Pocos datos para hablar de la recencia de Casa Poniente (1 de 4).
+Pocos datos para hablar de el ticket de Casa Poniente (1 de 4).
+Pocos datos para hablar de los gustos de Casa Poniente (440 de 60).
+
