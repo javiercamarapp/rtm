@@ -70,13 +70,19 @@ test.describe('acceso por enlace magico', () => {
   });
 
   test('4. limite de intentos: tope por correo (3 por 10 min, sin mas correos y misma respuesta) y por IP (10 por 5 min, error generico)', async ({ page }) => {
+    // Determinista: el limite es de ventana deslizante exacta, asi que da igual en que minuto del reloj caigan los intentos.
+    // Claves propias de esta corrida: correo unico e IP falsa unica (beforeEach). El tope GLOBAL es compartido por todas las
+    // pruebas: se vacia aqui para que lo gastado por las demas no le reste correos a esta.
+    await conDb((c) => c.query(`delete from seguridad.limite_intento_evento where clave like 'global:%'`));
     const correo = correoUnico('tope');
     await altaUsuario({ correo });
     for (let i = 0; i < 4; i += 1) {
       await pedirEnlace(page, correo);
       await expect(page.getByText(TARJETA_ENVIADO)).toBeVisible(); // la respuesta es la de siempre, aun cuando ya no se manda nada
     }
-    await new Promise((r) => setTimeout(r, 1500));
+    // Espera hasta que lleguen los 3 permitidos (la maquina puede ir lenta) y luego un margen para comprobar que NO llega un cuarto.
+    expect(await esperarMensajes(correo, 3, 60_000)).toHaveLength(3);
+    await new Promise((r) => setTimeout(r, 3000));
     expect(await mensajesPara(correo)).toHaveLength(3);
 
     // Tope por IP: con 4 intentos ya contados, el undecimo de esta IP recibe el error generico.
