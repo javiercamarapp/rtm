@@ -43,6 +43,7 @@ function fuentesPorOmision(): Fuente[] {
     if (existsSync(join(descargas, n))) out.push({ ruta: join(descargas, n), id: `descargas/${n}`, tipo: 'google' });
   }
   if (existsSync(join(descargas, 'contacts.csv'))) out.push({ ruta: join(descargas, 'contacts.csv'), id: 'descargas-contacts.csv', tipo: 'google' });
+  if (existsSync(join(descargas, 'contacts (1).csv'))) out.push({ ruta: join(descargas, 'contacts (1).csv'), id: 'descargas-contacts-1.csv', tipo: 'google' });
   if (existsSync(descargas)) {
     for (const n of readdirSync(descargas).sort()) if (/^Simple form setup.*Leads.*\.csv$/i.test(n)) out.push({ ruta: join(descargas, n), id: `meta/${n.slice(0, 40)}`, tipo: 'meta' });
   }
