@@ -40,6 +40,10 @@ describe('contraste de tokens', () => {
         expect(contraste(valor(tema, 'ink-3'), valor(tema, s))).toBeGreaterThanOrEqual(4.5);
       });
     }
+    it(`${tema}: texto del pulso (chip-texto y tinta) >= 4.5:1 sobre el fondo del chip`, () => {
+      expect(contraste(valor(tema, 'chip-texto'), valor(tema, 'chip-fondo'))).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(valor(tema, 'ink'), valor(tema, 'chip-fondo'))).toBeGreaterThanOrEqual(4.5);
+    });
     it(`${tema}: estados ok, atencion y malo >= 4.5:1 sobre el panel`, () => {
       for (const t of ['ok', 'warn', 'bad']) expect(contraste(valor(tema, t), valor(tema, 'panel')), t).toBeGreaterThanOrEqual(4.5);
     });

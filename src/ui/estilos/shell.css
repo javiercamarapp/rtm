@@ -67,8 +67,9 @@
 .rtm-chip b { font-weight: 600; color: var(--rtm-ink); font-variant-numeric: tabular-nums; }
 .rtm-chip b .rtm-cifra, .rtm-chip-enlace { font-weight: 600; color: var(--rtm-ink); text-decoration: none; }
 .rtm-chip-enlace:hover { text-decoration: underline; }
-.rtm-chip-detalle { font-size: 11px; color: var(--rtm-ink-3); }
-.rtm-chip .rtm-sin-dato { font-weight: 400; color: var(--rtm-ink-3); }
+.rtm-chip-detalle { font-size: 11px; color: var(--rtm-chip-texto); }
+.rtm-chip .rtm-sin-dato { font-weight: 400; color: var(--rtm-chip-texto); }
+.rtm-pulso .rtm-chip, .rtm-pulso-movil .rtm-chip { flex: none; }
 .rtm-barra-acciones { display: flex; align-items: center; gap: var(--rtm-e-2); flex: none; }
 .rtm-menu-movil { display: none; }
 
@@ -185,6 +186,27 @@
 }
 .rtm-pulso-movil { gap: var(--rtm-e-2); overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .rtm-pulso-movil::-webkit-scrollbar { display: none; }
+
+/* Plegable abierto (880) y tabletas: sin migas, el pulso ocupa el ancho y se desliza en vez de cortarse. */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .rtm-migas { display: none; }
+  .rtm-pulso { overflow-x: auto; margin-inline: 0; flex: 1 1 auto; scrollbar-width: none; }
+  .rtm-pulso::-webkit-scrollbar { display: none; }
+}
+
+/* iPhone 16 Pro (402) y plegable cerrado (344): menos aire vertical, sin bloques sobredimensionados. */
+@media (max-width: 767px) {
+  .rtm-panel-scroll { padding-top: var(--rtm-e-5); padding-bottom: var(--rtm-e-5); }
+  .rtm-pagina { gap: var(--rtm-e-5); }
+  .rtm-vacio { padding: var(--rtm-e-5); }
+  .rtm-tarjeta { padding: var(--rtm-e-4); }
+  .rtm-acciones { margin-top: var(--rtm-e-4); }
+  .rtm-acciones > .rtm-boton, .rtm-acciones-fila > .rtm-boton { flex-grow: 1; }
+}
+@media (max-width: 380px) {
+  .rtm-panel-scroll { padding-inline: var(--rtm-e-4); }
+  .rtm-titular { font-size: 26px; line-height: 32px; }
+}
 
 /* Tactil: los chips del pulso crecen a 44 px para que la cifra explicable y el enlace sean tocables. */
 @media (pointer: coarse) {
