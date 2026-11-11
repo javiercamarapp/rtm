@@ -41,7 +41,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
   }
   const ultimo = k.movimientos[k.movimientos.length - 1];
   const cronologico = k.movimientos;
-  const puntos = cronologico.map((m) => ({ etiqueta: etiquetaFecha(m.fecha_neg), valor: m.saldo_piezas, texto: `${formatearPiezas(m.saldo_piezas)} pz` }));
+  const puntos = cronologico.map((m) => ({ etiqueta: etiquetaFecha(m.fecha_neg), valor: m.saldo_piezas, texto: `${formatearPiezas(m.saldo_piezas)}` }));
   const exportar = new URLSearchParams({ modelo: String(modeloId), ...(sku ? { sku: String(sku) } : {}), ...(ini ? { ini } : {}), ...(fin ? { fin } : {}) });
   return (
     <>
@@ -75,7 +75,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
         {' — '}
         <EstadoTexto tono={k.comprobacion.cuadra ? 'ok' : 'malo'}>{k.comprobacion.cuadra ? 'Cuadra' : 'No cuadra'}</EstadoTexto>
       </p>
-      {k.apertura && <p className="rtm-nota">Antes del periodo: {formatearPiezas(k.apertura.piezas)} pz, {formatearMoneda(k.apertura.valor_cent)}{k.apertura.costo_prom_cent === null ? '' : `, costo promedio ${formatearMoneda(k.apertura.costo_prom_cent)}`}.</p>}
+      {k.apertura && <p className="rtm-nota">Antes del periodo: {formatearPiezas(k.apertura.piezas)}, {formatearMoneda(k.apertura.valor_cent)}{k.apertura.costo_prom_cent === null ? '' : `, costo promedio ${formatearMoneda(k.apertura.costo_prom_cent)}`}.</p>}
       {k.truncado && <p className="rtm-nota">Se muestran los {k.movimientos.length} movimientos más recientes de {k.total}; usa las fechas para acotar o exporta el CSV.</p>}
 
       <section className="rtm-seccion rtm-entra rtm-i-2" aria-label="Movimientos del kárdex">
@@ -92,9 +92,9 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
               </span>
             ) },
             { id: 's', titulo: 'Sabor', secundaria: true, celda: (m) => m.sabor },
-            { id: 'e', titulo: 'Entra', numerica: true, celda: (m) => (m.entra_piezas === null ? '' : <>{formatearPiezas(m.entra_piezas)} pz<br /><span className="rtm-nota">{m.entra_unit_cent === null ? '' : `${formatearMoneda(m.entra_unit_cent)} c/u · ${formatearMoneda(m.entra_total_cent ?? 0n)}`}</span></>) },
-            { id: 'x', titulo: 'Sale', numerica: true, celda: (m) => (m.sale_piezas === null ? '' : <>{formatearPiezas(m.sale_piezas)} pz<br /><span className="rtm-nota">{m.sale_unit_cent === null ? '' : `${formatearMoneda(m.sale_unit_cent)} c/u · ${formatearMoneda(m.sale_total_cent ?? 0n)}`}</span></>) },
-            { id: 'ex', titulo: 'Existencia', numerica: true, celda: (m) => <>{formatearPiezas(m.saldo_piezas)} pz<br /><span className="rtm-nota">{formatearMoneda(m.saldo_valor_cent)}</span></> },
+            { id: 'e', titulo: 'Entra', numerica: true, celda: (m) => (m.entra_piezas === null ? '' : <>{formatearPiezas(m.entra_piezas)}<br /><span className="rtm-nota">{m.entra_unit_cent === null ? '' : `${formatearMoneda(m.entra_unit_cent)} c/u · ${formatearMoneda(m.entra_total_cent ?? 0n)}`}</span></>) },
+            { id: 'x', titulo: 'Sale', numerica: true, celda: (m) => (m.sale_piezas === null ? '' : <>{formatearPiezas(m.sale_piezas)}<br /><span className="rtm-nota">{m.sale_unit_cent === null ? '' : `${formatearMoneda(m.sale_unit_cent)} c/u · ${formatearMoneda(m.sale_total_cent ?? 0n)}`}</span></>) },
+            { id: 'ex', titulo: 'Existencia', numerica: true, celda: (m) => <>{formatearPiezas(m.saldo_piezas)}<br /><span className="rtm-nota">{formatearMoneda(m.saldo_valor_cent)}</span></> },
             { id: 'cp', titulo: 'Costo promedio', numerica: true, secundaria: true, celda: (m) => (m.costo_prom_cent === null ? 'Sin existencia' : formatearMoneda(m.costo_prom_cent)) },
             { id: 'q', titulo: 'Quién y mensaje original', secundaria: true, celda: (m) => <>{m.autor ?? 'Sistema'} · {m.canal}{m.mensaje_origen ? <><br /><span className="rtm-nota">“{m.mensaje_origen}”</span></> : null}</> },
           ]}

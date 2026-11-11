@@ -26,6 +26,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
   const sp = await searchParams;
   const [inv, documentos, clientes] = await Promise.all([(await inventarioDeSocio()).completo(), (await inventarioDeSocio()).documentos(), (await lectorDeSocio()).clientes()]);
   const conDato = inv.modelos.filter((m) => m.piezas !== null);
+  const sinMovimientos = inv.modelos.filter((m) => m.piezas === null);
   const filtro = FILTROS.find((f) => f.id === sp.estado) ?? null;
   const marcas = [...new Set(conDato.map((m) => m.marca))];
   const marca = marcas.includes(sp.marca ?? '') ? sp.marca! : null;
@@ -140,6 +141,24 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
         />
       </section>
 
+      {sinMovimientos.length > 0 && (
+        <section className="rtm-seccion rtm-entra rtm-i-4" aria-label="Modelos sin movimientos">
+          <h2>Sin movimientos registrados</h2>
+          <DataTable
+            etiqueta="Modelos del catálogo sin movimientos"
+            clave={(m) => m.modelo_id}
+            filas={sinMovimientos}
+            columnas={[
+              { id: 'marca', titulo: 'Marca', secundaria: true, celda: (m) => m.marca },
+              { id: 'm', titulo: 'Modelo', celda: (m) => m.modelo },
+              { id: 'e', titulo: 'Existencia', numerica: true, celda: () => <SinDato /> },
+              { id: 's', titulo: 'Semáforo', celda: () => <SinDato /> },
+            ]}
+          />
+          <p className="rtm-nota">Un modelo sin movimientos dice “Sin dato”, nunca cero: la existencia sale del libro y aparece con la primera compra recibida y contada.</p>
+        </section>
+      )}
+
       <section className="rtm-seccion rtm-entra rtm-i-4" aria-label="Pagadas, facturadas y recibidas">
         <h2>Compras: pagadas, facturadas y recibidas</h2>
         <DataTable
@@ -153,7 +172,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
             { id: 'a', titulo: 'Pagadas', numerica: true, celda: (c) => formatearPiezas(c.pagadas) },
             { id: 'b', titulo: 'Facturadas', numerica: true, celda: (c) => formatearPiezas(c.facturadas) },
             { id: 'r', titulo: 'Recibidas', numerica: true, celda: (c) => (c.recibidas === null ? <SinDato /> : formatearPiezas(c.recibidas)) },
-            { id: 'pu', titulo: 'Puente', numerica: true, celda: (c) => (c.puente_piezas === 0 ? 'Sin diferencia' : `${formatearPiezas(c.puente_piezas)} pz · ${formatearMoneda(c.puente_valor_cent)}`) },
+            { id: 'pu', titulo: 'Puente', numerica: true, celda: (c) => (c.puente_piezas === 0 ? 'Sin diferencia' : `${formatearPiezas(c.puente_piezas)} · ${formatearMoneda(c.puente_valor_cent)}`) },
             { id: 'fs', titulo: 'Pagado de más (fuera de la sociedad)', numerica: true, secundaria: true, celda: (c) => (c.fuera_sociedad_cent === 0n ? 'Ninguno' : formatearMoneda(c.fuera_sociedad_cent)) },
           ]}
         />

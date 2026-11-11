@@ -110,7 +110,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso = null, noLe
             </div>
           </div>
           <footer className="rtm-pie">
-            <span>Corte: sin datos todavía</span>
+            <span>Corte: al cargar la página</span>
             <span aria-hidden="true">·</span>
             <span>Fuente: libro de eventos</span>
           </footer>
