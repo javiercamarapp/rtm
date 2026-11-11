@@ -10,6 +10,7 @@ import { candidatasAccion } from './acciones';
 
 const SOCIOS = ['Angelo', 'Javier'];
 const NINGUNO = '';
+const HECHO: Record<string, string> = { pago: 'un pago', gasto: 'un gasto', aportacion: 'una aportación' };
 
 /** Clasificar, conciliar y descartar un movimiento. Nada de esto crea cobros, pagos ni asientos. */
 export function AccionesMovimiento({ fila, refs }: { fila: FilaMovimiento; refs: ReferenciasMovimientos }) {
@@ -85,7 +86,7 @@ export function AccionesMovimiento({ fila, refs }: { fila: FilaMovimiento; refs:
       )}
       {dialogo === 'conciliar' && (
         <ConfirmDialog abierto titulo="Conciliar con un hecho existente" confirmar="Conciliar" ocupado={ocupado} onConfirmar={() => (contraparte ? correr('mov_conciliar', { p_mov: fila.id, p_contraparte_tipo: tipoContraparte, p_contraparte_id: Number(contraparte) }, cerrar) : setLocal('No hay contraparte con la misma suma.'))} onCancelar={cerrar}>
-          <p className="rtm-nota">Solo concilia con un {tipoContraparte} que tenga exactamente la misma suma ({formatearMoneda(fila.monto_cent < 0n ? -fila.monto_cent : fila.monto_cent)}) y que no concilie otro movimiento.</p>
+          <p className="rtm-nota">Solo concilia con {HECHO[tipoContraparte]} que tenga exactamente la misma suma ({formatearMoneda(fila.monto_cent < 0n ? -fila.monto_cent : fila.monto_cent)}) y que no concilie otro movimiento.</p>
           {candidatas === null ? <p>Buscando…</p> : candidatas.length === 0 ? <p data-testid="sin-candidatas">No hay ninguna contraparte con la misma suma.</p> : (
             <label className="rtm-etiqueta-campo">Contraparte
               <select className="rtm-campo" value={contraparte} onChange={(e) => setContraparte(e.target.value)} data-testid="campo-contraparte">{candidatas.map((c) => <option key={c.id} value={c.id}>{c.texto} · {formatearMoneda(c.monto_cent)}</option>)}</select>
