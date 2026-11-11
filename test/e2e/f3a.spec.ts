@@ -26,11 +26,14 @@ test('hoja de Isaac: falta por saldar con comprobacion, lo que dice el proveedor
   await expect(page.getByText(d.folioDirecto).first()).toBeVisible();
   // Guias del dia: 307.00 de la guia del pedido directo se cuentan en la hoja.
   await page.getByTestId('ambito-todo').click();
+  await page.waitForURL('**ambito=todo**');
+  await expect(page.getByTestId('ambito-todo')).toHaveAttribute('aria-current', 'true');
   await expect(page.getByTestId('comprobacion')).toContainText('Cuadra');
   await page.getByTestId('registrar-dicho').click();
   await page.getByTestId('dicho-total').fill('100');
   await page.getByTestId('confirmar').click();
-  await expect(page.getByTestId('dicho')).toContainText('$100.00');
+  await expect(page.getByRole('dialog')).toBeHidden({ timeout: 20_000 });
+  await expect(page.getByTestId('dicho')).toContainText('$100.00', { timeout: 20_000 });
   await expect(page.getByTestId('diferencia')).not.toContainText('Sin dato');
   await page.getByTestId('copiar-texto').click();
   await expect(page.getByTestId('texto-copiable')).toContainText('Falta por saldar');

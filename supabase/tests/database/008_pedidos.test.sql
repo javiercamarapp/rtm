@@ -38,7 +38,7 @@ select operacion.registrar_movimiento('f2m3', 'F2 Fasta 40K', 'Mango', 'bodega_o
 select is((operacion.crear_pedido('f2v1', (select id from catalogo.cliente where nombre_canonico = 'F2 Villa'), '[
   {"modelo":"F2 Jupiter 50K","sabor":"Mango","piezas":16},{"modelo":"F2 Jupiter 50K","sabor":"Uva","piezas":12},
   {"modelo":"F2 DM 15K","sabor":"Mango","piezas":24},{"modelo":"F2 Fasta 40K","sabor":"Mango","piezas":10}]'::jsonb,
-  'bodega_omar', null, 30000, 0, 0, '2026-11-10')->>'folio'), pg_temp.fol(1), 'el primer pedido toma el siguiente folio consecutivo');
+  'bodega_omar', null, 30000, 0, 0, negocio.hoy())->>'folio'), pg_temp.fol(1), 'el primer pedido toma el siguiente folio consecutivo');
 select is((select count(*)::int from operacion.pedido_aviso where pedido_id = pg_temp.pid('f2v1')), 0, 'sin avisos: precios del tabulador, mas de 20 piezas, con existencia');
 select is((select estado from operacion.pedido where id = pg_temp.pid('f2v1')), 'borrador', 'nace en borrador');
 select is(pg_temp.salidas(), 0, 'crear no mueve inventario');
@@ -53,7 +53,7 @@ select lives_ok($$select operacion.marcar_empacado('f2v1e', pg_temp.pid('f2v1'))
 select ok((select empacado_at is not null from operacion.pedido where id = pg_temp.pid('f2v1')), 'queda empacado');
 select is((select estado from operacion.pedido where id = pg_temp.pid('f2v1')), 'confirmado', 'empacado aun no es enviado');
 
-select is((operacion.enviar_pedido('f2v1s', pg_temp.pid('f2v1'), null, '{"paqueteria":"Castores","numero":"CAS-1","costo_cent":18000,"pagada_por":"Javier"}'::jsonb, '2026-11-10')->>'total_cent')::bigint, 1359000::bigint, 'G1: total a saldar 13,590.00');
+select is((operacion.enviar_pedido('f2v1s', pg_temp.pid('f2v1'), null, '{"paqueteria":"Castores","numero":"CAS-1","costo_cent":18000,"pagada_por":"Javier"}'::jsonb, negocio.hoy())->>'total_cent')::bigint, 1359000::bigint, 'G1: total a saldar 13,590.00');
 select is((select texto_whatsapp from operacion.nota where pedido_id = pg_temp.pid('f2v1') and tipo = 'original'),
 $t$Nota F2 Villa
 F2 DM 15K 24pz x $185 = 4,440
@@ -93,11 +93,11 @@ select is(operacion.guardar_documento_nota((select id from operacion.nota where 
 select throws_ok($$update operacion.nota_documento set sha256 = repeat('0', 64)$$, '42501', null, 'los documentos guardados no se editan');
 
 -- Folios consecutivos y rollback que no consume folio ---------------------------------------------------------------------------------
-select is((operacion.crear_pedido('f2v2', (select id from catalogo.cliente where nombre_canonico = 'F2 Villa'), '[{"modelo":"F2 DM 15K","sabor":"Mango","piezas":50}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-10')->>'folio'), pg_temp.fol(2), 'folio consecutivo sin hueco');
+select is((operacion.crear_pedido('f2v2', (select id from catalogo.cliente where nombre_canonico = 'F2 Villa'), '[{"modelo":"F2 DM 15K","sabor":"Mango","piezas":50}]'::jsonb, 'bodega_omar', null, 0, 0, 0, negocio.hoy())->>'folio'), pg_temp.fol(2), 'folio consecutivo sin hueco');
 
 -- Pedido de 50 piezas donde salen 40 cobra solo 40 --------------------------------------------------------------------------------------
 select operacion.confirmar_pedido('f2v2c', pg_temp.pid('f2v2'));
-select is((operacion.enviar_pedido('f2v2s', pg_temp.pid('f2v2'), jsonb_build_array(jsonb_build_object('linea_id', (select id from operacion.pedido_linea where pedido_id = pg_temp.pid('f2v2')), 'piezas', 40)), null, '2026-11-10')->>'total_cent')::bigint,
+select is((operacion.enviar_pedido('f2v2s', pg_temp.pid('f2v2'), jsonb_build_array(jsonb_build_object('linea_id', (select id from operacion.pedido_linea where pedido_id = pg_temp.pid('f2v2')), 'piezas', 40)), null, negocio.hoy())->>'total_cent')::bigint,
   40 * 18500::bigint, 'pedido de 50 pz donde salen 40: cobra solo 40 (7,400.00)');
 select is((select piezas_surtidas from operacion.pedido_linea where pedido_id = pg_temp.pid('f2v2')), 40, 'piezas surtidas = 40');
 select is((select tipo || ':' || piezas from operacion.pedido_ajuste where pedido_id = pg_temp.pid('f2v2')), 'entrega_diferida:10', 'las 10 que no salieron quedan como entrega diferida');
@@ -115,26 +115,26 @@ select is((select count(*)::int from operacion.nota where pedido_id = pg_temp.pi
 select throws_ok($$select operacion.reversar_evento('f2v2x', (select evento_envio_id from operacion.pedido where id = pg_temp.pid('f2v2')), 'directo')$$, '22023', null, 'la reversa generica no sirve para un pedido enviado');
 
 -- Existencia insuficiente: T2 la rechaza y el pedido sigue confirmado ---------------------------------------------------------------------
-select operacion.crear_pedido('f2v3', (select id from catalogo.cliente where nombre_canonico = 'F2 Villa'), '[{"modelo":"F2 Fasta 40K","sabor":"Mango","piezas":95}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-10');
+select operacion.crear_pedido('f2v3', (select id from catalogo.cliente where nombre_canonico = 'F2 Villa'), '[{"modelo":"F2 Fasta 40K","sabor":"Mango","piezas":95}]'::jsonb, 'bodega_omar', null, 0, 0, 0, negocio.hoy());
 select is((select count(*)::int from operacion.pedido_aviso where pedido_id = pg_temp.pid('f2v3') and codigo = 'existencia_insuficiente'), 1, 'aviso: existencia insuficiente (disponible 90)');
 select operacion.confirmar_pedido('f2v3c', pg_temp.pid('f2v3'));
-select throws_ok($$select operacion.enviar_pedido('f2v3s0', pg_temp.pid('f2v3'), null, null, '2026-11-10')$$, 'P0427', null, 'avisos sin aceptar: pide Enviar de todos modos');
-select throws_ok($$select operacion.enviar_pedido('f2v3s', pg_temp.pid('f2v3'), null, null, '2026-11-10', true)$$, 'P0423', null, 'con avisos aceptados, la existencia insuficiente igual la bloquea el inventario');
+select throws_ok($$select operacion.enviar_pedido('f2v3s0', pg_temp.pid('f2v3'), null, null, negocio.hoy())$$, 'P0427', null, 'avisos sin aceptar: pide Enviar de todos modos');
+select throws_ok($$select operacion.enviar_pedido('f2v3s', pg_temp.pid('f2v3'), null, null, negocio.hoy(), true)$$, 'P0423', null, 'con avisos aceptados, la existencia insuficiente igual la bloquea el inventario');
 select is((select estado from operacion.pedido where id = pg_temp.pid('f2v3')), 'confirmado', 'el pedido sigue confirmado');
 
 -- Avisos de precio: distinto del tabulador y venta bajo costo -----------------------------------------------------------------------------
-select operacion.crear_pedido('f2v4', (select id from catalogo.cliente where nombre_canonico = 'F2 Villa'), '[{"modelo":"F2 DM 15K","sabor":"Mango","piezas":30,"precio_cent":12000,"motivo_precio":"cierre de inventario"}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-10');
+select operacion.crear_pedido('f2v4', (select id from catalogo.cliente where nombre_canonico = 'F2 Villa'), '[{"modelo":"F2 DM 15K","sabor":"Mango","piezas":30,"precio_cent":12000,"motivo_precio":"cierre de inventario"}]'::jsonb, 'bodega_omar', null, 0, 0, 0, negocio.hoy());
 select is((select string_agg(codigo, ',' order by codigo) from operacion.pedido_aviso where pedido_id = pg_temp.pid('f2v4')), 'precio_distinto_tabulador,venta_bajo_costo', 'avisa precio distinto y venta a costo, sin bloquear');
 select operacion.confirmar_pedido('f2v4c', pg_temp.pid('f2v4'));
-select is((operacion.enviar_pedido('f2v4s', pg_temp.pid('f2v4'), null, null, '2026-11-10', true)->>'avisos_aceptados')::int, 2, 'Enviar de todos modos acepta los avisos');
+select is((operacion.enviar_pedido('f2v4s', pg_temp.pid('f2v4'), null, null, negocio.hoy(), true)->>'avisos_aceptados')::int, 2, 'Enviar de todos modos acepta los avisos');
 select is((select decidido_por_nombre from operacion.pedido_aviso_decision d join operacion.pedido_aviso a on a.id = d.aviso_id where a.pedido_id = pg_temp.pid('f2v4') limit 1), 'Javier', 'queda registrado quien los acepto');
 select is((select count(*)::int from operacion.aviso where codigo = 'pedido_enviado_con_excepcion' and entidad_id = pg_temp.pid('f2v4')), 1, 'NT-006: pedido enviado con excepcion');
 
 -- Pedido directo de Isaac: sin renta y sin inventario (G1) -------------------------------------------------------------------------------
-select operacion.crear_pedido('f2v5', (select id from catalogo.cliente where nombre_canonico = 'F2 Villa'), '[{"modelo":"F2 DM 15K","sabor":"Mango","piezas":25}]'::jsonb, 'isaac_directo', null, 0, 0, 0, '2026-11-10');
+select operacion.crear_pedido('f2v5', (select id from catalogo.cliente where nombre_canonico = 'F2 Villa'), '[{"modelo":"F2 DM 15K","sabor":"Mango","piezas":25}]'::jsonb, 'isaac_directo', null, 0, 0, 0, negocio.hoy());
 select operacion.confirmar_pedido('f2v5c', pg_temp.pid('f2v5'));
 select is((select count(*)::int from operacion.reserva where origen_id = pg_temp.pid('f2v5')), 0, 'el directo no reserva en la bodega');
-select is((operacion.enviar_pedido('f2v5s', pg_temp.pid('f2v5'), null, null, '2026-11-10')->>'renta_cent')::bigint, 0::bigint, 'G1: con origen directo de Isaac la renta es $0.00');
+select is((operacion.enviar_pedido('f2v5s', pg_temp.pid('f2v5'), null, null, negocio.hoy())->>'renta_cent')::bigint, 0::bigint, 'G1: con origen directo de Isaac la renta es $0.00');
 select is((select count(*)::int from operacion.movimiento_inventario where evento_id = (select evento_envio_id from operacion.pedido where id = pg_temp.pid('f2v5'))), 0, 'el directo no mueve la bodega');
 select is((select costo_valor_cent from operacion.pedido_surtido where pedido_linea_id = (select id from operacion.pedido_linea where pedido_id = pg_temp.pid('f2v5'))), 25 * 12000::bigint, 'costo con el proveedor de origen');
 
