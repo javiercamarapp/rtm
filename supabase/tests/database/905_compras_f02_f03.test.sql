@@ -4,6 +4,8 @@
 -- ESPERADO-FALLA-HASTA para GD-16/17/18: ver 990_pendientes_de_correccion. ESCRITA SIN EJECUTAR (sin Docker). Datos "N905".
 begin;
 select no_plan();
+-- Las pruebas fechan sus operaciones antes del 10-nov-2026 (inicio de vigencia de la configuracion sembrada): se adelanta la vigencia dentro de la transaccion.
+update catalogo.config set vigente_desde = '2026-10-01' where vigente_desde = '2026-11-10';
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('n905.socio@example.test', 'socio', 'Angelo', true);
 insert into auth.users (id, instance_id, aud, role, email) values ('97777777-7777-7777-7777-777777777777', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'n905.socio@example.test');
@@ -38,7 +40,7 @@ select throws_ok($$select operacion.resolver_sku('{"modelo":"N905 Modelo QA 50K"
 select throws_ok($$select operacion.resolver_sku('{"sku_id":999999999}'::jsonb)$$, '22023', null, 'resolver_sku: sku_id desconocido');
 
 -- F02: OC-1 a Isaac: Fresa 100 + Uva 100 a 100.00, guia 450.00 pagada por Angelo -----------------------------------------------------
-select is((operacion.crear_compra('n905o1', 'Isaac', '[{"modelo":"N905 Modelo QA 50K","sabor":"Fresa","pagadas":100},{"modelo":"N905 Modelo QA 50K","sabor":"Uva","pagadas":100}]'::jsonb, 45000, 0, '2027-03-01', 'bodega', 'sociedad', 'Angelo')->>'total_cent')::bigint, 2000000::bigint, 'OC-1: mercancia 20,000.00');
+select is((operacion.crear_compra('n905o1', 'Isaac', '[{"modelo":"N905 Modelo QA 50K","sabor":"Fresa","pagadas":100},{"modelo":"N905 Modelo QA 50K","sabor":"Uva","pagadas":100}]'::jsonb, 45000, 0, '2027-03-01', 'bodega', 'sociedad', 'Angelo')->>'total_cent')::bigint, 2045000::bigint, 'OC-1: total 20,450.00 (mercancia 20,000.00 + guia 450.00)');
 select is(pg_temp.saldo('Isaac'), 0::bigint, 'antes de confirmar el saldo de Isaac es 0.00');
 create temp table _r0 as select operacion.reembolso_pendiente(pg_temp.sid('Angelo')) as r, operacion.aportacion_pendiente(pg_temp.sid('Angelo')) as c;
 select is((operacion.confirmar_compra('n905o1c', pg_temp.cid('n905o1'))->>'saldo_despues_cent')::bigint, -2000000::bigint, 'confirmar: saldo de Isaac -20,000.00 (la guia NO carga porque la pago Angelo)');
@@ -56,7 +58,7 @@ select is((select count(*)::int from operacion.guia where compra_id = pg_temp.ci
 select is((select llegada_estimada from operacion.compra where id = pg_temp.cid('n905o1')), '2027-03-04'::date, 'llegada estimada 4-mar');
 select is((operacion.registrar_guia_compra('n905o1g', pg_temp.cid('n905o1'), 'Castores', 'QA-OC1', '2027-03-04', '2027-03-02')->>'estado'), 'en_trayecto', 'misma clave: mismo resultado, sin segunda guia');
 select is((select count(*)::int from operacion.guia where compra_id = pg_temp.cid('n905o1') and numero = 'QA-OC1'), 1, 'una sola guia tras repetir la clave');
-select throws_ok($$select operacion.registrar_guia_compra('n905o1h', (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'n905o1'), 'Castores', 'QA-OC1', '2027-03-05')$$, 'P0409', null, 'misma clave de la guia con otro dato: P0409') ;
+select throws_ok($$select operacion.registrar_guia_compra('n905o1g', (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'n905o1'), 'Castores', 'QA-OC1', '2027-03-05')$$, 'P0409', null, 'misma clave de la guia con otro dato: P0409') ;
 select throws_ok($$select operacion.registrar_guia_compra('n905o1i', 999999999, 'Castores', 'X')$$, '22023', null, 'guia sobre una compra que no existe');
 select is((select count(*)::int from operacion.aviso where codigo = 'guia_registrada_trayecto' and entidad_id = pg_temp.cid('n905o1')), 1, 'NT-015: aviso de guia registrada');
 select is(pg_temp.piezas('N905 Modelo QA 50K'), 0, 'en trayecto el inventario sigue sin las piezas');

@@ -5,10 +5,18 @@
 -- Inventario sembrado a costo 102.25 por pieza (la OC de 200 pz x 100.00 + guia 450.00). ESCRITA SIN EJECUTAR (sin Docker). Datos "N903".
 begin;
 select no_plan();
+-- Las pruebas fechan sus operaciones antes del 10-nov-2026 (inicio de vigencia de la configuracion sembrada): se adelanta la vigencia dentro de la transaccion.
+update catalogo.config set vigente_desde = '2026-10-01' where vigente_desde = '2026-11-10';
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('n903.socio@example.test', 'socio', 'Javier', true);
 insert into auth.users (id, instance_id, aud, role, email) values ('95555555-5555-5555-5555-555555555555', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'n903.socio@example.test');
 select set_config('request.jwt.claim.sub', '95555555-5555-5555-5555-555555555555', true);
+do $$ begin
+  if not exists (select 1 from catalogo.persona_bodega) then
+    perform catalogo.asegurar_cliente('N903 Omar Cliente', 'Javier');
+    perform catalogo.asegurar_persona_bodega('N903 Omar Cliente', 'N903 Omar');
+  end if;
+end $$;
 
 create function pg_temp.pid(p_clave text) returns bigint language sql as $$ select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = $1 $$;
 create function pg_temp.cid(p text) returns bigint language sql as $$ select id from catalogo.cliente where nombre_canonico = $1 $$;
@@ -98,16 +106,16 @@ select throws_ok($$select operacion.emitir_correccion('n903k0', (select id from 
 -- F05: pago parcial, plazo y anulacion de pago (sin UI: anular_pago) ------------------------------------------------------------------
 select is((operacion.registrar_pago('n903pg', 'Angelo', 500000, pg_temp.cid('N903 Cliente QA 1'), null, true, 'abono', '2026-11-03')->>'aplicado_cent')::bigint, 500000::bigint, 'pago de 5,000.00 aplicado');
 select is(operacion.pedido_saldo(pg_temp.pid('n903a')), 135000::bigint, 'por cobrar 1,350.00');
-select is(operacion.pedido_cobrado(pg_temp.pid('n903a')), 500000::bigint, 'cobrado 5,000.00');
+select is(operacion.pedido_cobrado(pg_temp.pid('n903a')), 635000::bigint, 'cobrable 6,350.00 (pedido_cobrado es el total de la ultima nota, no lo pagado)');
 select is(operacion.pedido_aplicado(pg_temp.pid('n903a')), 500000::bigint, 'aplicado 5,000.00');
 select is((operacion.acordar_plazo('n903pz', pg_temp.pid('n903a'), 5)->>'plazo_dias')::int, 5, 'plazo de 5 dias');
 select throws_ok($$select operacion.acordar_plazo('n903pz0', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n903a'), 400)$$, '23514', null, 'plazo de mas de 365 dias se rechaza');
 select throws_ok($$select operacion.acordar_plazo('n903pz1', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n903a'), -3)$$, '23514', null, 'plazo negativo se rechaza');
-select is((operacion.registrar_recargo_credito('n903rc', pg_temp.pid('n903a'))->>'recargo_cent')::bigint, 13500::bigint, 'recargo sugerido: 10 % de 1,350.00 = 135.00');
-select is(operacion.pedido_saldo(pg_temp.pid('n903a')), 148500::bigint, 'por cobrar con recargo: 1,485.00');
-select is((operacion.registrar_pago('n903pg2', 'Javier', 148500, pg_temp.cid('N903 Cliente QA 1'), null, true, 'abono', '2026-11-10')->>'aplicado_cent')::bigint, 148500::bigint, 'pago de 1,485.00');
+select is((operacion.registrar_recargo_credito('n903rc', pg_temp.pid('n903a'))->>'recargo_cent')::bigint, 60000::bigint, 'recargo sugerido: 10 % del subtotal de mercancia 6,000.00 = 600.00');
+select is(operacion.pedido_saldo(pg_temp.pid('n903a')), 195000::bigint, 'por cobrar con recargo: 1,950.00 (6,350 - 5,000 + 600)');
+select is((operacion.registrar_pago('n903pg2', 'Javier', 195000, pg_temp.cid('N903 Cliente QA 1'), null, true, 'abono', '2026-11-10')->>'aplicado_cent')::bigint, 195000::bigint, 'pago de 1,950.00');
 select is(operacion.pedido_saldo(pg_temp.pid('n903a')), 0::bigint, 'por cobrar 0.00');
-select is(operacion.saldo_socio((select id from catalogo.socio where nombre = 'Javier'), 'fondos'), 148500::bigint, 'fondos de Javier 1,485.00');
+select is(operacion.saldo_socio((select id from catalogo.socio where nombre = 'Javier'), 'fondos'), 195000::bigint, 'fondos de Javier 1,950.00');
 select is(operacion.saldo_socio((select id from catalogo.socio where nombre = 'Angelo'), 'fondos'), 500000::bigint, 'fondos de Angelo 5,000.00');
 select lives_ok($$select operacion.anular_pago('n903an', (select id from operacion.pago where monto_cent = 500000 order by id desc limit 1), 'pago capturado en cuenta equivocada')$$, 'anular_pago');
 select is(operacion.pedido_saldo(pg_temp.pid('n903a')), 500000::bigint, 'anular el pago de 5,000 devuelve el por cobrar');
@@ -137,7 +145,7 @@ select is(pg_temp.piezas('N903 Modelo QA 50K') - (select p from _pre), 40, 'regr
 select is(pg_temp.valor('N903 Modelo QA 50K') - (select v from _pre), 409000::bigint, 'regresan a su costo original: 4,090.00');
 select is((select coalesce(sum(r.monto_cent), 0)::bigint from operacion.renta_devengo r join operacion.pedido_linea l on l.id = r.pedido_linea_id where l.pedido_id = pg_temp.pid('n903a')), 0::bigint, 'la renta de Omar del pedido queda en cero');
 select is(operacion.pedido_cobrado(pg_temp.pid('n903a')), 0::bigint, 'anulado no se cobra');
-select is((select count(*)::int from operacion.nota where pedido_id = pg_temp.pid('n903a')), 2, 'las notas originales siguen guardadas');
+select is((select count(*)::int from operacion.nota where pedido_id = pg_temp.pid('n903a')), 3, 'las notas siguen guardadas (original, correccion de envio y recargo)');
 select throws_ok($$select operacion.anular_pedido('n903an9b', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n903a'), 'otra vez')$$, 'P0428', null, 'anular dos veces se rechaza');
 select throws_ok($$select operacion.anular_pedido('n903an9c', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'n903a'), '')$$, '23502', null, 'anular exige motivo');
 

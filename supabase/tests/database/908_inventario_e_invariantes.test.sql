@@ -46,7 +46,7 @@ select is(pg_temp.val('N908 Modelo B'), 2836000::bigint - 283600 + 409000, 'GD-2
 select is(pg_temp.pz('N908 Modelo B'), 200 - 40 + 100 - 26 + 40, 'GD-28: piezas 274');
 select throws_ok($$select operacion.reversar_evento('n908r2', (select evento_id from operacion.movimiento_inventario where tipo = 'salida_pedido' and cantidad = -40 and valor_cent = -409000 limit 1), 'otra vez')$$, '23505', null, 'un evento solo se reversa una vez');
 -- Salida mayor que la existencia
-select throws_ok($$select operacion.registrar_movimiento('n908s6', 'N908 Modelo B', 'Uva', 'bodega_omar', 'salida_pedido', -9999, null, '2026-11-07')$$, 'P0423', null, 'salida mayor que la existencia: P0423 y nada cambia');
+select throws_ok(format($q$select operacion.registrar_movimiento('n908s6', 'N908 Modelo B', 'Uva', 'bodega_omar', 'salida_pedido', -9999, null, %L::date)$q$, negocio.hoy()), 'P0423', null, 'salida mayor que la existencia: P0423 y nada cambia');
 select is(pg_temp.pz('N908 Modelo B'), 274, 'tras el rechazo la existencia sigue en 274');
 -- Cantidad cero y valor en cero
 select throws_ok($$select operacion.registrar_movimiento('n908z1', 'N908 Modelo B', 'Uva', 'bodega_omar', 'entrada_compra', 0, 100, '2026-11-08')$$);

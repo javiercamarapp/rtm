@@ -3,10 +3,18 @@
 -- Cifras a mano en el comentario de cada prueba. ESCRITA SIN EJECUTAR (sin Docker). Datos sinteticos "N904".
 begin;
 select no_plan();
+-- Las pruebas fechan sus operaciones antes del 10-nov-2026 (inicio de vigencia de la configuracion sembrada): se adelanta la vigencia dentro de la transaccion.
+update catalogo.config set vigente_desde = '2026-10-01' where vigente_desde = '2026-11-10';
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('n904.socio@example.test', 'socio', 'Angelo', true);
 insert into auth.users (id, instance_id, aud, role, email) values ('96666666-6666-6666-6666-666666666666', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'n904.socio@example.test');
 select set_config('request.jwt.claim.sub', '96666666-6666-6666-6666-666666666666', true);
+do $$ begin
+  if not exists (select 1 from catalogo.persona_bodega) then
+    perform catalogo.asegurar_cliente('N904 Omar Cliente', 'Javier');
+    perform catalogo.asegurar_persona_bodega('N904 Omar Cliente', 'N904 Omar');
+  end if;
+end $$;
 
 -- Punto de partida: se neutralizan los saldos de socios dentro de la transaccion (se revierte).
 select operacion.crear_evento('ajuste_prueba', negocio.hoy(), 'neutro-904', '{}'::jsonb);
@@ -95,17 +103,17 @@ select is(operacion.pedido_saldo(pg_temp.pid('n904b1')), 0::bigint, 'el pedido d
 select throws_ok($$select operacion.identificar_pago('n904s4', (select (resultado->>'pago_id')::bigint from seguridad.operacion where clave = 'n904s1'), (select id from catalogo.cliente where nombre_canonico = 'N904 Cliente B'))$$, 'P0428', null, 'identificar dos veces se rechaza');
 
 -- Comprobante repetido ----------------------------------------------------------------------------------------------------------------
-select operacion.registrar_pago('n904h1', 'Javier', 10000, pg_temp.cid('N904 Cliente B'), null, false, 'abono', '2027-03-07', 'abc123');
-select is((operacion.registrar_pago('n904h2', 'Javier', 10000, pg_temp.cid('N904 Cliente B'), null, false, 'abono', '2027-03-07', 'abc123')->>'duplicado')::boolean, true, 'el mismo comprobante no entra dos veces');
-select is((select count(*)::int from operacion.pago where comprobante_sha256 = 'abc123'), 1, 'una sola fila');
+select operacion.registrar_pago('n904h1', 'Javier', 10000, pg_temp.cid('N904 Cliente B'), null, false, 'abono', '2027-03-07', 'abc1230000000000000000000000000000000000000000000000000000000000');
+select is((operacion.registrar_pago('n904h2', 'Javier', 10000, pg_temp.cid('N904 Cliente B'), null, false, 'abono', '2027-03-07', 'abc1230000000000000000000000000000000000000000000000000000000000')->>'duplicado')::boolean, true, 'el mismo comprobante no entra dos veces');
+select is((select count(*)::int from operacion.pago where comprobante_sha256 = 'abc1230000000000000000000000000000000000000000000000000000000000'), 1, 'una sola fila');
 
 -- Entregas de un socio ------------------------------------------------------------------------------------------------------------------
 select is(pg_temp.fondos('Javier') > 0, true, 'Javier tiene fondos de los pagos a su cuenta');
 create temp table _fj as select pg_temp.fondos('Javier') as f;
-select throws_ok($$select operacion.registrar_entrega_socio('n904r0', 'Javier', 999999999)$$, '23514', null, 'la entrega no excede lo que tiene');
+select throws_ok($$select operacion.registrar_entrega_socio('n904r0', 'Javier', 999999999, 'sociedad', null, 'fondos')$$, '23514', null, 'la entrega no excede lo que tiene');
 select throws_ok($$select operacion.registrar_entrega_socio('n904r1', 'Javier', 0)$$, '23514', null, 'entrega de 0 se rechaza');
 select throws_ok($$select operacion.registrar_entrega_socio('n904r2', 'Javier', 100, 'otro_socio', 'Javier')$$, '22023', null, 'no se entrega a si mismo');
-select lives_ok($$select operacion.registrar_entrega_socio('n904r3', 'Javier', 10000, 'otro_socio', 'Angelo')$$, 'entrega de Javier a Angelo');
+select lives_ok($$select operacion.registrar_entrega_socio('n904r3', 'Javier', 10000, 'otro_socio', 'Angelo', 'fondos')$$, 'entrega de Javier a Angelo');
 select is(pg_temp.fondos('Javier'), (select f from _fj) - 10000, 'fondos de Javier bajan 100.00');
 select is(pg_temp.fondos('Angelo') >= 10000, true, 'y quedan en poder de Angelo');
 

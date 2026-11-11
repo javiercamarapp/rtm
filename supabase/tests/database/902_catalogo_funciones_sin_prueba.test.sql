@@ -28,8 +28,8 @@ select catalogo.asegurar_modelo('N902 Marca', 'N902 Modelo 50K', 50000, 'ambas')
 select catalogo.asegurar_sku('N902 Modelo 50K', 'Fresa');
 
 -- agregar_destino ---------------------------------------------------------------------------------------------------------------
-select lives_ok($$select catalogo.agregar_destino('N902 Cliente', 'Bodega norte', 'norte')$$, 'agregar_destino: crea');
-select lives_ok($$select catalogo.agregar_destino('N902 Cliente', 'Bodega norte', 'norte')$$, 'agregar_destino: repetir no falla (on conflict do nothing)');
+select lives_ok($$select catalogo.agregar_destino('N902 Cliente', 'Bodega norte', 'merida')$$, 'agregar_destino: crea');
+select lives_ok($$select catalogo.agregar_destino('N902 Cliente', 'Bodega norte', 'merida')$$, 'agregar_destino: repetir no falla (on conflict do nothing)');
 select is((select count(*)::int from catalogo.cliente_destino d join catalogo.cliente c on c.id = d.cliente_id where c.nombre_canonico = 'N902 Cliente'), 1, 'agregar_destino: sin duplicado');
 select throws_ok($$select catalogo.agregar_destino('N902 Inexistente', 'x', 'y')$$, '22023', null, 'agregar_destino: cliente desconocido');
 

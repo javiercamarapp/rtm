@@ -88,7 +88,9 @@ select set_config('request.jwt.claim.sub', 'd4444444-4444-4444-4444-444444444441
 set local role authenticated;
 select throws_ok($$select * from contactos.contacto$$, '42501', null, 'ni el socio lee las tablas directo: solo por api');
 select is((api.contactos_lista()->>'total')::int, 3, 'el socio ve 3 contactos');
-select is((api.contactos_lista('ana')->>'total')::int, 1, 'busqueda por nombre');
+-- La busqueda tambien compara correos: 'ana' encuentra a Ana (nombre) y a Cris (comparte ana@example.test).
+select is((api.contactos_lista('ana')->>'total')::int, 2, 'busqueda por nombre o correo');
+select is((api.contactos_lista('ana prueba')->>'total')::int, 1, 'busqueda por nombre completo');
 select is((api.contactos_lista('5550101')->>'total')::int, 1, 'busqueda por digitos del telefono');
 select is((api.contactos_lista(null, 'meta')->>'total')::int, 1, 'filtro por origen meta');
 select is((api.contactos_lista(null, null, 'Anuncio A')->>'total')::int, 1, 'filtro por anuncio');
@@ -100,7 +102,7 @@ select is((api.contactos_resumen()->>'total')::int, 3, 'resumen: total');
 select is((api.contactos_resumen()->'por_origen') @> '[{"origen":"meta","contactos":1}]'::jsonb, true, 'resumen: por origen');
 select is((api.contactos_resumen()->'por_anuncio') @> '[{"anuncio":"Anuncio A","formulario":"Formulario 1","contactos":1}]'::jsonb, true, 'resumen: por anuncio y formulario');
 
-select is(jsonb_array_length(api.contacto_revelar((select (api.contactos_lista('ana')->'filas'->0->>'id')::bigint), 'llamar')->'telefonos'), 2, 'revelar entrega los telefonos del contacto');
+select is(jsonb_array_length(api.contacto_revelar((select (api.contactos_lista('ana prueba')->'filas'->0->>'id')::bigint), 'llamar')->'telefonos'), 3, 'revelar entrega los telefonos del contacto (3 tras unirse por correo y nombre)');
 reset role;
 select is((select count(*)::int from contactos.revelacion where accion = 'revelar' and actor = 'd4444444-4444-4444-4444-444444444441'), 1, 'revelar deja registro con el actor');
 select throws_ok($$update contactos.revelacion set motivo = 'x'$$, '42501', null, 'el registro de revelaciones es de solo insercion');
@@ -116,7 +118,7 @@ select is((select count(*)::int from contactos.revelacion where accion = 'export
 select is((select count(*)::int from information_schema.columns where table_schema = 'contactos' and table_name = 'v_contacto_agente' and column_name in ('telefono_principal', 'e164', 'correo')), 0, 'la vista del agente no tiene columnas de telefono completo ni de correo');
 select is((select telefono_ult2 from contactos.v_contacto_agente where nombre = 'Beto Prueba'), '***03', 'la vista del agente solo muestra los ultimos 2 digitos');
 select is((select tiene_correo from contactos.v_contacto_agente where nombre = 'Beto Prueba'), false, 'y si existe correo (booleano), nunca el correo');
-select is((select tiene_correo from contactos.v_contacto_agente where nombre = 'Ana Prueba'), true, 'Ana si tiene correo');
+select is((select tiene_correo from contactos.v_contacto_agente where telefono_ult2 = '***01'), true, 'Ana si tiene correo');
 
 select * from finish();
 rollback;

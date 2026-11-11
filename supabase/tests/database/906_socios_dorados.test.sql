@@ -32,16 +32,15 @@ insert into operacion.cuenta_socio_mov (socio_id, fecha_neg, concepto, aplica_a,
 -- ---- repartir_proporcional (H-07: sin prueba directa) ---------------------------------------------------------------------------------
 select is(operacion.repartir_proporcional(100001, '{"Angelo":500000,"Javier":500000}'), '{"Angelo": 50001, "Javier": 50000}'::jsonb, 'repartir: el centavo suelto va a Angelo por desempate alfabetico (regla E pendiente)');
 select is(operacion.repartir_proporcional(100001, '{"Angelo":500000,"Javier":500000}', '{"Javier":10}'), '{"Angelo": 50000, "Javier": 50001}'::jsonb, 'repartir: con desempate a favor de Javier, el centavo es de Javier');
-select is((select sum(value::bigint) from jsonb_each_text(operacion.repartir_proporcional(100, '{"a":1,"b":1,"c":1}'))), 100::bigint, 'repartir: 3 socios simulados suman exacto 100');
-select is((select sum(value::bigint) from jsonb_each_text(operacion.repartir_proporcional(1000003, '{"Angelo":3,"Javier":7}'))), 1000003::bigint, 'repartir: 30/70 suma exacto');
+select is((select sum(value::bigint)::bigint from jsonb_each_text(operacion.repartir_proporcional(100, '{"a":1,"b":1,"c":1}'))), 100::bigint, 'repartir: 3 socios simulados suman exacto 100');
+select is((select sum(value::bigint)::bigint from jsonb_each_text(operacion.repartir_proporcional(1000003, '{"Angelo":3,"Javier":7}'))), 1000003::bigint, 'repartir: 30/70 suma exacto');
 select is(operacion.repartir_proporcional(0, '{"Angelo":1,"Javier":1}'), '{"Angelo": 0, "Javier": 0}'::jsonb, 'repartir: total 0 = ceros');
 select is(operacion.repartir_proporcional(-500, '{"Angelo":1,"Javier":1}'), '{"Angelo": 0, "Javier": 0}'::jsonb, 'repartir: total negativo = ceros');
 select is(operacion.repartir_proporcional(500, '{"Angelo":0,"Javier":0}'), '{"Angelo": 0, "Javier": 0}'::jsonb, 'repartir: pesos en cero = ceros, no division por cero');
 select is(operacion.repartir_proporcional(1000, '{"Angelo":1,"Javier":0}'), '{"Angelo": 1000, "Javier": 0}'::jsonb, 'repartir: un solo socio con peso se lleva todo');
 
 -- ---- Caso del dueño con cascada pura: 20,000 - 2,221 - 500 = 17,279 ---------------------------------------------------------------------
-create temp table _dueno as select operacion.cascada_calcular(1727900, 0, '{"Angelo":50000,"Javier":222100}', '{"Angelo":0,"Javier":0}', '{"Angelo":1000000,"Javier":1000000}',
-                                                              '{"Angelo":1000000,"Javier":1000000}', '{"Angelo":500000,"Javier":500000}', true) as c;
+create temp table _dueno as select operacion.cascada_calcular(1727900, 0, 0, 0, '{"Angelo":50000,"Javier":222100}', '{"Angelo":0,"Javier":0}', '{"Angelo":1000000,"Javier":1000000}', '{"Angelo":1000000,"Javier":1000000}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}') as c;
 select is((select (c->'efectivo'->>'total_cent')::bigint from _dueno), 2000000::bigint, 'dueño: efectivo 20,000.00');
 select is((select (c->>'repartible_cent')::bigint from _dueno), 1727900::bigint, 'dueño: utilidad neta repartible 17,279.00');
 select is((select (c->'por_socio'->'Angelo'->>'utilidad_cent')::bigint from _dueno), 863950::bigint, 'dueño: 8,639.50 a Angelo');
@@ -57,37 +56,37 @@ select is((select (c->>'suma_resultados_cent')::bigint from _dueno), 0::bigint, 
 select is((select (c->>'identidad_cuadra')::boolean from _dueno), true, 'identidad cuadra');
 
 -- ---- Ejemplos B, C, D de la matriz (efectivo de medio peso, insuficiente, utilidad negativa) ---------------------------------------------
-create temp table _b1 as select operacion.cascada_calcular(1200000, 0, '{"Angelo":50000,"Javier":122100}', '{"Angelo":0,"Javier":100000}', '{"Angelo":800000,"Javier":500000}', '{"Angelo":800000,"Javier":500000}', '{"Angelo":500000,"Javier":500000}', false) as c;
+create temp table _b1 as select operacion.cascada_calcular(1200000, 0, 0, 0, '{"Angelo":50000,"Javier":122100}', '{"Angelo":0,"Javier":100000}', '{"Angelo":800000,"Javier":500000}', '{"Angelo":800000,"Javier":500000}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}') as c;
 select is((select (c->>'repartible_cent')::bigint from _b1), 1127900::bigint, 'B1 utilidad antes que capital: repartible 11,279.00');
 select is((select (c->'por_socio'->'Angelo'->>'utilidad_cent')::bigint from _b1), 563950::bigint, 'B1: 5,639.50 por socio');
 select is((select (c->'por_socio'->'Angelo'->>'resultado_cent')::bigint from _b1), -186050::bigint, 'B1: Angelo devuelve 1,860.50');
 select is((select (c->'por_socio'->'Javier'->>'resultado_cent')::bigint from _b1), 186050::bigint, 'B1: Javier recibe 1,860.50');
-create temp table _b2 as select operacion.cascada_calcular(1200000, 0, '{"Angelo":50000,"Javier":122100}', '{"Angelo":0,"Javier":100000}', '{"Angelo":800000,"Javier":500000}', '{"Angelo":800000,"Javier":500000}', '{"Angelo":500000,"Javier":500000}', true) as c;
-select is((select (c->>'repartible_cent')::bigint from _b2), 1027900::bigint, 'B2 devolver antes: repartible 10,279.00');
-select is((select (c->'por_socio'->'Angelo'->>'utilidad_cent')::bigint from _b2), 513950::bigint, 'B2: 5,139.50 por socio');
-select is((select (c->'por_socio'->'Angelo'->>'resultado_cent')::bigint from _b2), -236050::bigint, 'B2: Angelo devuelve 2,360.50');
-select is((select (c->'por_socio'->'Javier'->>'resultado_cent')::bigint from _b2), 236050::bigint, 'B2: Javier recibe 2,360.50');
-create temp table _c as select operacion.cascada_calcular(1200000, 0, '{"Angelo":50000,"Javier":122100}', '{"Angelo":0,"Javier":100000}', '{"Angelo":0,"Javier":200000}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}', true) as c;
-select is((select (c->>'repartible_cent')::bigint from _c), 0::bigint, 'C efectivo 2,000.00: nada de utilidad');
+create temp table _b2 as select operacion.cascada_calcular(1200000, 0, 0, 0, '{"Angelo":50000,"Javier":122100}', '{"Angelo":0,"Javier":100000}', '{"Angelo":800000,"Javier":500000}', '{"Angelo":800000,"Javier":500000}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}') as c;
+select is((select (c->>'repartible_cent')::bigint from _b2), 1127900::bigint, 'B2 (adenda 32: el capital ya no se devuelve antes): igual que B1, repartible 11,279.00');
+select is((select (c->'por_socio'->'Angelo'->>'utilidad_cent')::bigint from _b2), 563950::bigint, 'B2: 5,639.50 por socio');
+select is((select (c->'por_socio'->'Angelo'->>'resultado_cent')::bigint from _b2), -186050::bigint, 'B2: Angelo devuelve 1,860.50');
+select is((select (c->'por_socio'->'Javier'->>'resultado_cent')::bigint from _b2), 186050::bigint, 'B2: Javier recibe 1,860.50');
+create temp table _c as select operacion.cascada_calcular(1200000, 0, 0, 0, '{"Angelo":50000,"Javier":122100}', '{"Angelo":0,"Javier":100000}', '{"Angelo":0,"Javier":200000}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}') as c;
+select is((select (c->>'repartible_cent')::bigint from _c), 27900::bigint, 'C efectivo 2,000.00: tras los reembolsos solo sobran 279.00 de utilidad');
 select is((select (c->'por_socio'->'Angelo'->>'paga_reembolso_cent')::bigint from _c), 50000::bigint, 'C: reembolso de Angelo completo 500.00');
 select is((select (c->'por_socio'->'Javier'->>'paga_reembolso_cent')::bigint from _c), 122100::bigint, 'C: reembolso de Javier completo 1,221.00');
-select is((select (c->'por_socio'->'Javier'->>'paga_aportacion_cent')::bigint from _c), 27900::bigint, 'C: con los 279.00 que sobran se devuelve capital parcial');
+select is((select coalesce((c->'por_socio'->'Javier'->>'paga_aportacion_cent')::bigint, 0) from _c), 0::bigint, 'C: lo que sobra no devuelve capital (adenda 32): es utilidad');
 select is((select (c->>'limitado_por_efectivo')::boolean from _c), true, 'C: avisa que esta limitada por efectivo');
 select is((select (c->>'remanente_cent')::bigint from _c), 0::bigint, 'C: no sobra nada');
-create temp table _d as select operacion.cascada_calcular(-300000, 0, '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}', true) as c;
+create temp table _d as select operacion.cascada_calcular(-300000, 0, 0, 0, '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}') as c;
 select is((select (c->>'repartible_cent')::bigint from _d), 0::bigint, 'D sin efectivo y con perdida: nada que repartir');
 select is((select (c->'liquidar') is null or c->'liquidar' = 'null'::jsonb from _d), true, 'D: no hay liquidacion');
 -- Efectivo menor que los reembolsos: se reparte en proporcion a lo pendiente (H4: decision del dueño pendiente)
-create temp table _e as select operacion.cascada_calcular(0, 100000, '{"Angelo":300000,"Javier":100000}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}', true) as c;
+create temp table _e as select operacion.cascada_calcular(0, 0, 100000, 0, '{"Angelo":300000,"Javier":100000}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":0,"Javier":0}', '{"Angelo":500000,"Javier":500000}') as c;
 select is((select (c->'por_socio'->'Angelo'->>'paga_reembolso_cent')::bigint from _e), 75000::bigint, 'efectivo corto: Angelo recibe 750.00 de 3,000.00');
 select is((select (c->'por_socio'->'Javier'->>'paga_reembolso_cent')::bigint from _e), 25000::bigint, 'efectivo corto: Javier recibe 250.00 de 1,000.00');
 
 -- ---- Validaciones de las capturas de socios -------------------------------------------------------------------------------------------
-select throws_ok($$select operacion.registrar_aportacion('n906a0', 'Javier', 0, 'Capital adicional')$$, '23514', null, 'aportacion de 0 se rechaza');
-select throws_ok($$select operacion.registrar_aportacion('n906a1', 'Javier', -100, 'Capital adicional')$$, '23514', null, 'aportacion negativa se rechaza');
-select throws_ok($$select operacion.registrar_aportacion('n906a2', 'Javier', 100, '')$$, '23502', null, 'aportacion sin concepto se rechaza');
-select throws_ok($$select operacion.registrar_aportacion('n906a3', 'Javier', 100, 'x', 'regalo')$$, '22023', null, 'clasificacion invalida');
-select throws_ok($$select operacion.registrar_aportacion('n906a4', 'Fulano', 100, 'x')$$, '22023', null, 'socio desconocido');
+select throws_ok($$select operacion.registrar_aportacion('n906a0', 'Javier', 0, 'Capital adicional', 'capital')$$, '23514', null, 'aportacion de 0 se rechaza');
+select throws_ok($$select operacion.registrar_aportacion('n906a1', 'Javier', -100, 'Capital adicional', 'capital')$$, '23514', null, 'aportacion negativa se rechaza');
+select throws_ok($$select operacion.registrar_aportacion('n906a2', 'Javier', 100, '', 'capital')$$, '23502', null, 'aportacion sin concepto se rechaza');
+select throws_ok($$select operacion.registrar_aportacion('n906a3', 'Javier', 100, 'x', 'regalo')$$, '23502', null, 'intencion invalida: hay que declarar capital o reembolso');
+select throws_ok($$select operacion.registrar_aportacion('n906a4', 'Fulano', 100, 'x', 'capital')$$, '22023', null, 'socio desconocido');
 select throws_ok($$select operacion.registrar_gasto_socio('n906g0', 'Javier', 0, 'envio')$$, '23514', null, 'gasto de 0 se rechaza');
 select throws_ok($$select operacion.registrar_gasto_socio('n906g1', 'Javier', 100, '')$$, '23502', null, 'gasto sin categoria se rechaza');
 select throws_ok($$select operacion.registrar_gasto_socio('n906g2', 'Javier', 100, 'envio', 'raro')$$, '22023', null, 'naturaleza invalida');
@@ -101,9 +100,9 @@ select throws_ok($$select operacion.anular_movimiento_socio('n906u0', 'aportacio
 -- ---- Aportacion de capital (F09): 1,000.00 de Javier, devolucion parcial 400, exceso 700 rechazado -----------------------------------
 select is((operacion.registrar_aportacion('n906c1', 'Javier', 100000, 'Capital adicional', 'capital', '2020-09-07')->'eco'->>'neto_cent')::bigint, 100000::bigint, 'F09: aportacion de 1,000.00: neto a favor de Javier');
 select is(operacion.aportacion_pendiente(pg_temp.sid('Javier')), 100000::bigint, 'F09: devolucion pendiente 1,000.00');
-select lives_ok($$select operacion.registrar_pago_a_socio('n906c2', 'Javier', 40000, 'devolucion_aportacion')$$, 'F09: devolucion de 400.00');
-select is(operacion.aportacion_pendiente(pg_temp.sid('Javier')), 60000::bigint, 'F09: quedan 600.00');
-select throws_ok($$select operacion.registrar_pago_a_socio('n906c3', 'Javier', 70000, 'devolucion_aportacion')$$, '23514', null, 'F09: devolver 700.00 con 600.00 pendiente se rechaza');
+select throws_ok($$select operacion.registrar_pago_a_socio('n906c2', 'Javier', 40000, 'devolucion_aportacion')$$, 'P0428', null, 'F09: la devolucion de capital ya no es automatica (adenda 32): se rechaza y se usa retiro de capital');
+select is(operacion.aportacion_pendiente(pg_temp.sid('Javier')), 100000::bigint, 'F09: el capital sigue en 1,000.00 hasta un retiro de capital explicito');
+select throws_ok($$select operacion.registrar_pago_a_socio('n906c3', 'Javier', 70000, 'devolucion_aportacion')$$, 'P0428', null, 'F09: ninguna cantidad se devuelve por el pago a socio');
 select throws_ok($$select operacion.registrar_pago_a_socio('n906c4', 'Javier', 100, 'reembolso')$$, '23514', null, 'reembolso sin nada pendiente se rechaza');
 
 -- ---- Escenario completo en la base: utilidad 20,000.00, gastos Javier 2,221.00 y Angelo 500.00 -------------------------------------------
@@ -126,9 +125,9 @@ select operacion.registrar_pago('n906py1', 'Angelo', 1000000, pg_temp.cid('N906 
 select operacion.registrar_pago('n906py2', 'Javier', 1000000, pg_temp.cid('N906 Cliente'), null, true, 'abono', '2020-09-09');
 select is(operacion.saldo_socio(pg_temp.sid('Angelo'), 'fondos'), 1000000::bigint, 'Angelo tiene 10,000.00 de la sociedad');
 select is(operacion.saldo_socio(pg_temp.sid('Javier'), 'fondos'), 1000000::bigint, 'Javier tiene 10,000.00 de la sociedad');
-create temp table _vivo as select operacion.cascada_periodo('2020-09-07', '2020-09-13', 0, true) as c;
-select is((select (c->>'repartible_cent')::bigint from _vivo), 1667900::bigint, 'en la base: la aportacion de capital pendiente de Javier (600.00) se devuelve antes de repartir -> repartible 16,679.00');
-create temp table _vivo2 as select operacion.cascada_periodo('2020-09-07', '2020-09-13', 0, false) as c;
+create temp table _vivo as select operacion.cascada_periodo('2020-09-07', '2020-09-13') as c;
+select is((select (c->>'repartible_cent')::bigint from _vivo), 1727900::bigint, 'en la base: el capital pendiente de Javier (1,000.00) ya no se devuelve antes de repartir -> repartible 17,279.00');
+create temp table _vivo2 as select operacion.cascada_periodo('2020-09-07', '2020-09-13') as c;
 select is((select (c->>'repartible_cent')::bigint from _vivo2), 1727900::bigint, 'sin devolver antes: repartible 17,279.00');
 select is((select (c->'por_socio'->'Angelo'->>'utilidad_cent')::bigint from _vivo2), 863950::bigint, 'en la base: 8,639.50 a Angelo');
 select is((select (c->'por_socio'->'Javier'->>'utilidad_cent')::bigint from _vivo2), 863950::bigint, 'en la base: 8,639.50 a Javier');

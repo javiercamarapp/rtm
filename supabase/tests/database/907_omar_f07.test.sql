@@ -70,7 +70,7 @@ select throws_ok($$select operacion.resolver_toma_omar('n907r3', 1, 'inventar')$
 select throws_ok($$select operacion.registrar_pago_omar('n907po0', 0, 'de_omar', 'Javier')$$, '23514', null, 'pago de 0 se rechaza');
 select throws_ok($$select operacion.registrar_pago_omar('n907po1', 100, 'rumbo_raro', 'Javier')$$, '22023', null, 'sentido invalido');
 select throws_ok($$select operacion.registrar_pago_omar('n907po2', 100, 'a_omar')$$, '23502', null, 'pago a Omar sin indicar el socio');
-select is((operacion.registrar_pago_omar('n907po3', 31000, 'de_omar', 'Javier', 'efectivo', '2027-03-04')->>'saldo_omar_cent')::bigint - (select b from _o0), 0::bigint, 'Omar paga 310.00: saldo en cero');
+select is((operacion.registrar_pago_omar('n907po3', 31000, 'de_omar', 'Javier', 'efectivo', '2027-03-04')->>'saldo_omar_cent')::bigint - (select b from _o0), 31000::bigint, 'Omar paga 310.00 antes de liquidar: la cuenta queda a su favor en 310.00 hasta el cierre');
 select is((operacion.saldo_omar_semana('2027-03-01')->>'neto_cent')::bigint, -31000::bigint, 'el neto de la semana sigue siendo -310.00 (el pago va aparte)');
 
 -- 5. Cierre el lunes 8-mar --------------------------------------------------------------------------------------------------------------
@@ -80,6 +80,7 @@ select is((operacion.cerrar_liquidacion_omar('n907l2', '2027-03-01', false, '202
 select is((operacion.cerrar_liquidacion_omar('n907l2', '2027-03-01', false, '2027-03-08')->>'compensado_cent')::bigint, 14000::bigint, 'liquidacion: compensado 140.00');
 select is((operacion.cerrar_liquidacion_omar('n907l2', '2027-03-01', false, '2027-03-08')->>'neto_cent')::bigint, -31000::bigint, 'liquidacion: neto -310.00');
 select is((select count(*)::int from operacion.liquidacion_omar where semana_ini = '2027-03-01'), 1, 'una sola liquidacion tras repetir la clave');
+select is(operacion.saldo_omar_cuenta() - (select b from _o0), 0::bigint, 'cerrada la liquidacion (-310.00) y pagados 310.00: saldo de Omar en cero');
 select throws_ok($$select operacion.cerrar_liquidacion_omar('n907l3', '2027-03-01', false, '2027-03-08')$$, 'P0428', null, 'una semana no se liquida dos veces');
 select throws_ok($$select operacion.registrar_toma_omar('n907t9', '{"modelo":"N907 Modelo QA 50K","sabor":"Fresa"}'::jsonb, 1, 15000, '2027-03-04')$$, 'P0422', null, 'semana liquidada: no admite tomas nuevas');
 select throws_ok($$select operacion.exigir_semana_omar_abierta('2027-03-04')$$, 'P0422', null, 'exigir_semana_omar_abierta: cerrada');

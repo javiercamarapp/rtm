@@ -4,6 +4,8 @@
 -- ESCRITA SIN EJECUTAR (sin Docker). Datos sinteticos con prefijo "N901".
 begin;
 select no_plan();
+-- Las pruebas fechan sus operaciones antes del 10-nov-2026 (inicio de vigencia de la configuracion sembrada): se adelanta la vigencia dentro de la transaccion.
+update catalogo.config set vigente_desde = '2026-10-01' where vigente_desde = '2026-11-10';
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values
   ('n901.socio@example.test', 'socio', 'Javier', true), ('n901.omar@example.test', 'omar', null, true), ('n901.off@example.test', 'socio', 'Angelo', false);
@@ -12,6 +14,12 @@ insert into auth.users (id, instance_id, aud, role, email) values
   ('92222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'n901.omar@example.test'),
   ('93333333-3333-3333-3333-333333333333', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'n901.off@example.test');
 select set_config('request.jwt.claim.sub', '91111111-1111-1111-1111-111111111111', true);
+do $$ begin
+  if not exists (select 1 from catalogo.persona_bodega) then
+    perform catalogo.asegurar_cliente('N901 Omar Cliente', 'Javier');
+    perform catalogo.asegurar_persona_bodega('N901 Omar Cliente', 'N901 Omar');
+  end if;
+end $$;
 
 select set_config('rtm.canal', 'importacion', true);
 select catalogo.asegurar_cliente('N901 Cliente', 'Angelo');
