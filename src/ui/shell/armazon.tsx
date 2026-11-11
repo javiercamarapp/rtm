@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
-import { IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
+import { IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContactos, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
 import type { Pulso as DatosPulso } from '@/dominio/operacion/pulso';
@@ -19,6 +19,7 @@ const SECCIONES = [
   { href: '/cuentas-por-cobrar', etiqueta: 'Cuentas por cobrar', icono: <IconoCobrar /> },
   { href: '/catalogo', etiqueta: 'Catálogo y precios', icono: <IconoCatalogo /> },
   { href: '/clientes', etiqueta: 'Clientes', icono: <IconoClientes /> },
+  { href: '/contactos', etiqueta: 'Contactos', icono: <IconoContactos /> },
   { href: '/inventario', etiqueta: 'Inventario', icono: <IconoInventario /> },
   { href: '/proveedores', etiqueta: 'Proveedores', icono: <IconoProveedores /> },
   { href: '/socios', etiqueta: 'Cuenta de socios', icono: <IconoSocios /> },
