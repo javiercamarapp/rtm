@@ -259,3 +259,25 @@ export async function sembrarCuentasE2E(): Promise<DatosF3a> {
     return { ...d, pedidoBodegaId, pedidoVencidoId, pedidoDirectoId, folioDirecto: folio };
   });
 }
+
+// F3b-2
+/** Dos modelos ILUSTRATIVOS con 40 dias de historia: uno que se acaba (Urge pedir) y uno con mucho (Sobrestock). */
+export async function sembrarInventarioE2E(SUF: string): Promise<void> {
+  const URGE = `E2E Inv Urge ${SUF}`;
+  const SOBRE = `E2E Inv Sobre ${SUF}`;
+  await conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    for (const m of [URGE, SOBRE]) {
+      await c.query("select catalogo.asegurar_modelo('E2E Inv Marca', $1, 50000, 'ambas')", [m]);
+      for (const s of ['Fresa', 'Mango']) await c.query('select catalogo.asegurar_sku($1,$2)', [m, s]);
+    }
+    for (const [m, cant, valor] of [[URGE, 100, 1000000], [SOBRE, 400, 4000000]] as const) {
+      for (const s of ['Fresa', 'Mango']) await c.query("select operacion.registrar_movimiento($1,$2,$3,'bodega_omar','entrada_compra',$4::int,$5::bigint,negocio.hoy() - 40,'Compra ilustrativa')", [`e2einv:${SUF}:${m}:${s}:e`, m, s, cant, valor]);
+      const dias = [20, 15, 10, 5];
+      for (let i = 0; i < 4; i += 1) for (const s of ['Fresa', 'Mango']) await c.query("select operacion.registrar_movimiento($1,$2,$3,'bodega_omar','salida_pedido',-21,null,negocio.hoy() - $4::int,'Pedido ilustrativo')", [`e2einv:${SUF}:${m}:${s}:s${i}`, m, s, dias[i]]);
+    }
+    await c.query('commit');
+  });
+}
+

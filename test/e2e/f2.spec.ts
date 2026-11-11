@@ -179,7 +179,7 @@ test('paquetes por hacer: lista de surtido, empacar y enviar desde la lista; los
   const porHacer = page.getByRole('table', { name: 'Paquetes por hacer' });
   const fila = porHacer.getByRole('row', { name: new RegExp(d.cliente) });
   await expect(fila).toContainText('Por empacar');
-  await expect(fila).toContainText('Dueño: Angelo');
+  await expect(fila).not.toContainText('Dueño');
   await expect(page.getByRole('table', { name: 'Lista de surtido por modelo y sabor' })).toContainText(d.modeloA);
   await page.getByTestId(`empacar-${idPedido}`).click();
   await expect(porHacer.getByRole('row', { name: new RegExp(d.cliente) })).toContainText('Empacado');

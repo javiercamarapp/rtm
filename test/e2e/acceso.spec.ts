@@ -42,7 +42,7 @@ test.describe('acceso por enlace magico', () => {
     await expect(page).toHaveURL('http://127.0.0.1:3100/');
     await expect(page.getByRole('navigation', { name: 'Secciones' })).toBeVisible();
     await expect(page.getByText('Sesión de Angelo')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Primeros pasos' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Tu turno' })).toBeVisible();
   });
 
   test('3. rechazo de un correo no permitido: misma pantalla, ningun mensaje, auth.users sin cambios y piso de 1.5 s en ambas ramas', async ({ page }) => {
