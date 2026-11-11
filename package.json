@@ -2,7 +2,7 @@
   "name": "rtm",
   "version": "0.0.0",
   "private": true,
-  "description": "RTM: software de la bodega de M\u00e9rida (fase F0: acceso, armaz\u00f3n visual y guardas).",
+  "description": "RTM: software de la bodega de Mérida (fase F0: acceso, armazón visual y guardas).",
   "engines": {
     "node": ">=22"
   },
@@ -30,25 +30,28 @@
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
     "next": "^16.4.6",
+    "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "zod": "^4.6.7",
-    "pg": "^8.23.1"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.65.0",
     "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@vitest/coverage-v8": "^5.1.0",
+    "axe-core": "^4.14.0",
     "eslint": "^10.14.0",
     "eslint-import-resolver-typescript": "^3.10.1",
     "eslint-plugin-boundaries": "^7.4.2",
     "fast-check": "^4.10.2",
+    "jsdom": "^27.4.0",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.2",
-    "vitest": "^5.1.0",
-    "@types/pg": "^8.23.1"
+    "vitest": "^5.1.0"
   }
 }
