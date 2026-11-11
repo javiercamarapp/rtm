@@ -31,14 +31,15 @@ export async function capturar(page: Page, info: TestInfo, tema: Tema | 'sin-tem
 // ---------------------------------------------------------------------------------------------------------------------------------
 // Siembra del flujo de demostracion QA (cifras a mano de qa/01-inventario-y-matriz.md, flujos F01 a F13)
 // ---------------------------------------------------------------------------------------------------------------------------------
-export interface DatosQA extends DatosF3a { compraId: number }
+export interface DatosQA extends DatosF3a { compraId: number; modeloId: number }
 
 /** Reutiliza la siembra de F3a (cliente, modelos A y B, existencias 100 Fresa + 60 Mango, saldo a favor con Karen, pedidos de bodega, vencido y directo,
  *  una toma de Omar) y agrega una orden de compra en borrador a Karen. Sufijo propio por corrida. */
 export async function sembrarQA(): Promise<DatosQA> {
   const d = await sembrarCuentasE2E();
   const compraId = await compraBorradorE2E(d, 'qa');
-  return { ...d, compraId };
+  const modeloId = Number((await consultar<{ id: string }>('select id from catalogo.modelo where nombre_canonico = $1', [d.modeloA]))[0]!.id);
+  return { ...d, compraId, modeloId };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------
@@ -56,7 +57,7 @@ export function rutasSocio(d: DatosQA): RutaQA[] {
     { id: 'R13-en-trayecto', ruta: '/paquetes/en-trayecto', titulo: /en trayecto/i },
     { id: 'R14-cxc', ruta: '/cuentas-por-cobrar', titulo: /Cuentas por cobrar/i },
     { id: 'R15-catalogo', ruta: '/catalogo', titulo: /Cat[aá]logo/i },
-    { id: 'R15b-catalogo-modelo', ruta: '/catalogo', titulo: /Cat[aá]logo/i },
+    { id: 'R15b-catalogo-modelo', ruta: `/catalogo?modelo=${d.modeloId}`, titulo: /Cat[aá]logo/i },
     { id: 'R16-clientes', ruta: '/clientes', titulo: /Clientes/i },
     { id: 'R17-cliente', ruta: `/clientes/${d.clienteId}`, titulo: new RegExp(d.cliente) },
     { id: 'R18-inventario', ruta: '/inventario', titulo: /Inventario/i },
@@ -239,4 +240,55 @@ export async function dialogoCabeEnPantalla(page: Page): Promise<void> {
 /** Cuenta los eventos de un tipo (segunda via por SQL para el doble clic y la idempotencia). */
 export async function contarEventos(tipo: string): Promise<number> {
   return Number((await consultar<{ n: string }>('select count(*)::int as n from operacion.evento where tipo = $1', [tipo]))[0]!.n);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// Semilla de los flujos F01 a F13 (qa/01-inventario-y-matriz.md, 3.0): modelo con Fresa y Uva, 200 piezas a costo puesto 102.25
+// (20,450.00 en total), Isaac 100.00, Karen 110.00 supuesto, cliente con precio 150.00. Sufijo propio por corrida.
+// ---------------------------------------------------------------------------------------------------------------------------------
+export interface DatosFlujos { sufijo: string; marca: string; modelo: string; modeloId: number; cliente: string; clienteId: number; pagador: string; pagadorId: number }
+
+export async function sembrarFlujosQA(): Promise<DatosFlujos> {
+  const sufijo = Date.now().toString(36);
+  const marca = 'QA PaP Marca';
+  const modelo = `QA PaP Modelo 50K ${sufijo}`;
+  const cliente = `QA PaP Cliente 1 ${sufijo}`;
+  const pagador = `QA PaP Pagador ${sufijo}`;
+  return conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    await c.query("select catalogo.asegurar_cliente($1,'Javier')", [`QA PaP Omar ${sufijo}`]);
+    await c.query('select catalogo.asegurar_persona_bodega($1,$1)', [`QA PaP Omar ${sufijo}`]);
+    await c.query("select catalogo.asegurar_cliente($1,'Angelo')", [cliente]);
+    await c.query("select catalogo.asegurar_cliente($1,'Javier')", [pagador]);
+    await c.query("select catalogo.asegurar_modelo($1,$2,50000,'ambas')", [marca, modelo]);
+    for (const s of ['Fresa', 'Uva']) await c.query('select catalogo.asegurar_sku($1,$2)', [modelo, s]);
+    await c.query("select catalogo.fijar_costo($1,'Isaac',$2,10000,negocio.hoy() - 30,'qa')", [`qa:ci:${sufijo}`, modelo]);
+    await c.query("select catalogo.fijar_costo($1,'Karen',$2,11000,negocio.hoy() - 30,'qa',null,true)", [`qa:ck:${sufijo}`, modelo]);
+    await c.query("select catalogo.fijar_precio($1,$2,$3,15000,negocio.hoy() - 30,'chat')", [`qa:p:${sufijo}`, cliente, modelo]);
+    // 100 Fresa + 100 Uva con costo puesto 102.25 = 1,022,500 centavos por sabor.
+    await c.query("select operacion.registrar_movimiento($1,$2,'Fresa','bodega_omar','entrada_compra',100,1022500,negocio.hoy() - 20,'Entrada de la semilla QA')", [`qa:m1:${sufijo}`, modelo]);
+    await c.query("select operacion.registrar_movimiento($1,$2,'Uva','bodega_omar','entrada_compra',100,1022500,negocio.hoy() - 20,'Entrada de la semilla QA')", [`qa:m2:${sufijo}`, modelo]);
+    const ids = await c.query('select (select id from catalogo.cliente where nombre_canonico = $1) as c, (select id from catalogo.cliente where nombre_canonico = $2) as p, (select id from catalogo.modelo where nombre_canonico = $3) as m', [cliente, pagador, modelo]);
+    await c.query('commit');
+    return { sufijo, marca, modelo, modeloId: Number(ids.rows[0].m), cliente, clienteId: Number(ids.rows[0].c), pagador, pagadorId: Number(ids.rows[0].p) };
+  });
+}
+
+/** Saldo, piezas y valor desde la base: la "segunda via" de cada flujo. */
+export async function piezasYValor(modelo: string): Promise<{ piezas: number; valor: bigint }> {
+  const r = await consultar<{ piezas: number; valor: string }>('select e.piezas::int as piezas, e.valor_cent::text as valor from operacion.existencia_modelo e join catalogo.modelo m on m.id = e.modelo_id where m.nombre_canonico = $1', [modelo]);
+  return r.length === 0 ? { piezas: 0, valor: 0n } : { piezas: r[0]!.piezas, valor: BigInt(r[0]!.valor) };
+}
+
+export async function saldoProveedor(nombre: 'Isaac' | 'Karen'): Promise<bigint> {
+  return BigInt((await consultar<{ s: string }>('select operacion.saldo_proveedor(catalogo.proveedor_id($1))::text as s', [nombre]))[0]!.s);
+}
+
+export async function saldoSocio(nombre: 'Angelo' | 'Javier', aplicaA: string | null = null): Promise<bigint> {
+  return BigInt((await consultar<{ s: string }>('select operacion.saldo_socio(id, $2)::text as s from catalogo.socio where nombre = $1', [nombre, aplicaA]))[0]!.s);
+}
+
+export async function reembolsoPendiente(nombre: 'Angelo' | 'Javier'): Promise<bigint> {
+  return BigInt((await consultar<{ s: string }>('select operacion.reembolso_pendiente(id)::text as s from catalogo.socio where nombre = $1', [nombre]))[0]!.s);
 }
