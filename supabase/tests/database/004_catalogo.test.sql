@@ -1,6 +1,6 @@
 -- pgTAP: catalogo, clientes, costos y precios con vigencia (F1). Datos ILUSTRATIVOS; nada real.
 begin;
-select plan(24);
+select plan(28);
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('cat.socio@example.test', 'socio', 'Javier', true);
 insert into auth.users (id, instance_id, aud, role, email) values ('21111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'cat.socio@example.test');
@@ -49,6 +49,13 @@ select throws_ok($$select catalogo.fijar_costo('c3', 'Isaac', 'Marca Prueba Uno 
 select throws_ok($$select catalogo.fijar_costo('c4', 'Karen', 'Marca Prueba Uno 50K', 20000, '2026-11-10', 'prueba', null, false, false)$$, '23514', null, 'costo que no es de lista exige motivo');
 select is(catalogo.fijar_costo('c2', 'Isaac', 'Marca Prueba Uno 50K', 22000, '2026-11-10', 'prueba'), catalogo.fijar_costo('c2', 'Isaac', 'Marca Prueba Uno 50K', 22000, '2026-11-10', 'prueba'), 'misma clave y payload = mismo resultado');
 select throws_ok($$select catalogo.fijar_costo('c2', 'Isaac', 'Marca Prueba Uno 50K', 99999, '2026-11-10', 'prueba')$$, 'P0409', null, 'misma clave con otro payload = 409');
+
+-- Karen = Vapemate: un solo proveedor, dos nombres.
+select is((select count(*)::int from catalogo.proveedor), 2, 'solo dos proveedores (Vapemate no es un tercero)');
+select is(catalogo.proveedor_id('Vapemate'), catalogo.proveedor_id('Karen'), 'Vapemate resuelve a Karen');
+select is(catalogo.proveedor_id('Mr Cactus'), null::bigint, 'Mr Cactus NO es alias de Karen: no resuelve (se pregunta)');
+select catalogo.fijar_costo('k1', 'Vapemate', 'Marca Prueba Dos 15K', 15000, '2026-11-10', 'prueba', null, true);
+select is((select p.nombre from catalogo.costo_proveedor c join catalogo.proveedor p on p.id = c.proveedor_id where c.costo_cent = 15000 and c.fuente = 'prueba'), 'Karen', 'un costo dado como Vapemate queda en la cuenta de Karen');
 
 select * from finish();
 rollback;

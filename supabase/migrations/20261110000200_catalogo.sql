@@ -103,6 +103,21 @@ create table catalogo.proveedor (
 );
 insert into catalogo.proveedor (nombre, modalidad) values ('Isaac', 'semanal_viernes'), ('Karen', 'prepago_total');
 
+-- Karen = Vapemate: UN solo proveedor con dos nombres. Una sola cuenta. ("Mr Cactus" NO es alias: si alguien lo escribe, se pregunta.)
+create table catalogo.proveedor_alias (
+  alias_norm text primary key check (alias_norm = catalogo.normalizar(alias_norm) and alias_norm <> ''),
+  proveedor_id bigint not null references catalogo.proveedor (id)
+);
+insert into catalogo.proveedor_alias (alias_norm, proveedor_id)
+  select a, (select id from catalogo.proveedor where nombre = 'Karen') from unnest(array['vapemate']) a;
+
+create function catalogo.proveedor_id(p_nombre text) returns bigint
+language sql stable set search_path = ''
+as $$
+  select coalesce((select id from catalogo.proveedor where nombre = p_nombre),
+                  (select proveedor_id from catalogo.proveedor_alias where alias_norm = catalogo.normalizar(p_nombre)))
+$$;
+
 create table catalogo.costo_proveedor (
   id bigint generated always as identity primary key,
   proveedor_id bigint not null references catalogo.proveedor (id),
@@ -402,7 +417,7 @@ begin
   perform seguridad.exigir_rol(array['socio', 'importacion']);
   v_prev := seguridad.iniciar_operacion(p_clave_idem, jsonb_build_object('fn', 'fijar_costo', 'p', p_proveedor, 'm', p_modelo, 'c', p_costo_cent, 'd', p_desde, 'f', p_fuente, 'mo', p_motivo, 's', p_supuesto, 'l', p_es_lista));
   if v_prev is not null then return v_prev; end if;
-  select id into v_p from catalogo.proveedor where nombre = p_proveedor;
+  v_p := catalogo.proveedor_id(p_proveedor);
   select id into v_m from catalogo.modelo where nombre_norm = catalogo.normalizar(p_modelo);
   if v_p is null or v_m is null then raise exception 'proveedor o modelo desconocido' using errcode = '22023'; end if;
   perform pg_advisory_xact_lock(hashtextextended('costo:' || v_p || ':' || v_m, 0));
