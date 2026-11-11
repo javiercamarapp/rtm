@@ -38,7 +38,8 @@ export function decidirEstado(e: EntradaEstado): DecisionEstado {
 
 export const etiquetaEstadoTexto = (d: DecisionEstado): string => (d.etiquetas.length ? d.etiquetas.join(' · ') : 'NO SALE');
 
-/** Cuenta de comprobaciones: "14 de 14". */
+/** Cuenta de comprobaciones contables para mostrar ("14 de 14"). Las internas R.* se listan en el anexo pero no se cuentan. */
 export function resumenComprobaciones(cs: readonly ResultadoComprobacion[]): { ok: number; total: number } {
-  return { ok: cs.filter((c) => c.ok).length, total: cs.length };
+  const ext = cs.filter((c) => !c.id.startsWith('R.'));
+  return { ok: ext.filter((c) => c.ok).length, total: ext.length };
 }

@@ -17,6 +17,11 @@ export interface ContextoGuardia {
   readonly valoresExtra: readonly (bigint | number)[];
   /** Numeros autorizados por construccion (ejes, tope de 80 %, etc.). */
   readonly constantes: readonly string[];
+  /** Horas HH:MM autorizadas (el corte del reporte, hora de Merida). */
+  readonly horas: readonly string[];
+  /** Folios y huellas autorizados (los del propio reporte). */
+  readonly folios: readonly string[];
+  readonly huellas: readonly string[];
 }
 
 export interface ResultadoGuardia {
@@ -24,8 +29,8 @@ export interface ResultadoGuardia {
   readonly violaciones: readonly string[];
 }
 
-const MESES_TXT = '(?:ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[a-zé]*';
-const RE_FECHA = new RegExp(`\\d{1,2}(?:\\s*(?:a|al|-)\\s*\\d{1,2})?[\\s-]*(?:de\\s+)?${MESES_TXT}(?:\\s+(?:de\\s+)?\\d{4})?`, 'gi');
+const MESES_TXT = '(?:enero|ene|febrero|feb|marzo|mar|abril|abr|mayo|may|junio|jun|julio|jul|agosto|ago|septiembre|sept|sep|octubre|oct|noviembre|nov|diciembre|dic)';
+const RE_FECHA = new RegExp(`(?<![\\d,.$])\\d{1,2}(?:\\s*(?:a|al|-)\\s*\\d{1,2})?[\\s-]*(?:de\\s+)?${MESES_TXT}\\b(?:\\s+(?:de\\s+)?\\d{4})?`, 'gi');
 const RE_FOLIO = /\b[A-Z]{2,3}-\d{4}-\d{2}\b/g;
 const RE_HUELLA = /huella:?\s+[0-9a-f]{6,64}/gi;
 const RE_HORA = /\b\d{1,2}:\d{2}\b/g;
@@ -80,7 +85,21 @@ export function verificarTexto(texto: string, ctx: ContextoGuardia): ResultadoGu
   const diasFecha = numerosDeFechas(ctx.fechas);
   // Nombres propios (mas largos primero) con digitos.
   for (const n of [...ctx.nombres].filter((x) => /\d/.test(x)).sort((a, b) => b.length - a.length)) resto = resto.replace(new RegExp(escapar(n), 'gi'), ' ');
-  resto = resto.replace(RE_FOLIO, ' ').replace(RE_HUELLA, ' ').replace(RE_HORA, ' ').replace(RE_PAGINA, ' ').replace(RE_ID, ' ');
+  resto = resto
+    .replace(RE_FOLIO, (f) => {
+      if (!ctx.folios.includes(f)) violaciones.push(`folio ajeno al reporte: ${f}`);
+      return ' ';
+    })
+    .replace(RE_HUELLA, (h) => {
+      if (!ctx.huellas.some((x) => h.toLowerCase().endsWith(x.toLowerCase()))) violaciones.push(`huella ajena al reporte: ${h}`);
+      return ' ';
+    })
+    .replace(RE_HORA, (h) => {
+      if (!ctx.horas.includes(h.padStart(5, '0'))) violaciones.push(`hora fuera del paquete: ${h}`);
+      return ' ';
+    })
+    .replace(RE_PAGINA, ' ')
+    .replace(RE_ID, ' ');
   // Fechas: sus numeros se validan contra las fechas del periodo.
   resto = resto.replace(RE_FECHA, (frag) => {
     for (const n of frag.match(/\d+/g) ?? []) if (!diasFecha.has(canonNumero(n))) violaciones.push(`fecha fuera del periodo: ${n} en "${frag.trim()}"`);

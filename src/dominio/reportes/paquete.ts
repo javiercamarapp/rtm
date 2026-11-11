@@ -120,7 +120,7 @@ export function etiquetaPeriodoSemanal(inicio: string, fin: string): string {
   const a = mesNum(inicio);
   const b = mesNum(fin);
   const y = fin.slice(0, 4);
-  return a === b ? `${dia(inicio)} a ${dia(fin)} de ${MESES_LARGO[b - 1]} de ${y}` : `${dia(inicio)} de ${MESES_LARGO[a - 1]} a ${dia(fin)} de ${MESES_LARGO[b - 1]} de ${y}`;
+  return a === b ? `${dia(inicio)} al ${dia(fin)} de ${MESES_LARGO[b - 1]} de ${y}` : `${dia(inicio)} de ${MESES_LARGO[a - 1]} al ${dia(fin)} de ${MESES_LARGO[b - 1]} de ${y}`;
 }
 export const etiquetaMes = (mes: string): string => `${MESES_LARGO[Number(mes.slice(5, 7)) - 1]![0]!.toUpperCase()}${MESES_LARGO[Number(mes.slice(5, 7)) - 1]!.slice(1)} ${mes.slice(0, 4)}`;
 
@@ -358,7 +358,7 @@ export function armarPaquete(ins: InsumosSemanal | InsumosMensual): Paquete {
     textoCelda((p.avisos ?? []).join('; ') || '—'),
   ]);
   const resto = pedidosOrden.slice(PARAMETROS.maxRenglonesTabla);
-  tablas.pedidos = { id: 'pedidos', titulo: 'Pedidos del periodo', columnas: ['Folio', 'Cliente', 'Origen', 'Piezas', 'Cobrado', 'Contribución', 'Aviso'], filas: filasPed, ...(resto.length ? { nota: `Resto: ${resto.length} pedidos, contribución ${pesosEnteros(sumaBig(resto.map(contribPedido)))}` } : {}) };
+  tablas.pedidos = { id: 'pedidos', titulo: 'Pedidos del periodo', columnas: ['Folio', 'Cliente', 'Origen', 'Piezas', 'Cobrado', 'Contribución', 'Aviso'], filas: filasPed, ...(resto.length ? { nota: `Resto: ${resto.length} pedidos, contribución ${pesosEnteros(sumaBig(resto.map(contribPedido)))}`, valoresNota: [resto.length, sumaBig(resto.map(contribPedido))] } : {}) };
   tablas.clientes = {
     id: 'clientes',
     titulo: 'Clientes del periodo',
@@ -427,7 +427,7 @@ export function armarPaquete(ins: InsumosSemanal | InsumosMensual): Paquete {
     tendenciaCartera: mensual ? ins.tendenciaCarteraBp : [],
   };
 
-  const nombres = [...new Set([...clientes.map((c) => c.cliente), ...ins.clientes.map((c) => c.cliente), ...ins.inventario.flatMap((m) => [m.modelo, ...m.sabores.map((s) => s.sabor)]), ...modelos.map((m) => m.modelo), ...ins.cartera.map((c) => c.cliente), ...ins.pedidos.map((p) => p.folio)])].sort(cmpTexto);
+  const nombres = [...new Set([...clientes.map((c) => c.cliente), ...ins.clientes.map((c) => c.cliente), ...ins.inventario.flatMap((m) => [m.modelo, ...m.sabores.map((s) => s.sabor)]), ...modelos.map((m) => m.modelo), ...ins.cartera.map((c) => c.cliente), ...ins.pedidos.map((p) => p.folio), ...ins.gastos.map((g) => g.concepto)])].sort(cmpTexto);
   const sinHuella = { version: 1, tipo, periodo, corteIso: ins.corteIso, cifras: cifrasFinal, comprobaciones, estado, tablas, graficas, insights, nombres, notasProy: [...notasProy, ...(mens?.notas ?? [])] };
   const huella = sha256Hex(jsonCanonico(sinHuella)).slice(0, 6);
   return {

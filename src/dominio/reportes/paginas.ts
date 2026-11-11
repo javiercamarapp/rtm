@@ -61,8 +61,10 @@ export function contextoGuardia(p: Paquete, extra: readonly string[] = []): Cont
   recolectar(p.graficas, valores);
   const { ok, total } = resumenComprobaciones(p.comprobaciones);
   const fechas = fechasEntre(sumarDias(p.periodo.inicio, -1), sumarDias(p.periodo.fin, 3));
-  const constantes = [p.periodo.inicio.slice(0, 4), p.periodo.fin.slice(0, 4), String(ok), String(total), ...p.cifras.map((c) => String(c.nMuestra)), ...Array.from({ length: 14 }, (_, i) => String(i + 1)), '7', '28', '56', '80', String(PARAMETROS.maxRenglonesTabla), ...extra];
-  return { cifras: p.cifras, nombres: p.nombres, fechas: [...fechas, p.corteIso.slice(0, 10)], valoresExtra: valores, constantes };
+  const cubetas = PARAMETROS.carteraBuckets.flatMap((b) => b.etiqueta.match(/\d+/g) ?? []);
+  const constantes = [...cubetas, p.periodo.inicio.slice(0, 4), p.periodo.fin.slice(0, 4), String(ok), String(total), ...p.cifras.map((c) => String(c.nMuestra)), '7', '28', '56', '80', String(PARAMETROS.maxRenglonesTabla), ...extra];
+  const hora = /(\d{2}:\d{2})$/.exec(p.corteEtiqueta.replace(' Mérida', ''))?.[1];
+  return { cifras: p.cifras, nombres: p.nombres, fechas: [...fechas, p.corteIso.slice(0, 10)], valoresExtra: valores, constantes, horas: hora ? [hora] : [], folios: [p.periodo.folio], huellas: [p.huella] };
 }
 
 // ---------- ayudas ----------

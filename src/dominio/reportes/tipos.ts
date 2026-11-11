@@ -65,6 +65,8 @@ export interface Tabla {
   readonly filas: readonly (readonly CeldaTabla[])[];
   /** Renglones omitidos por el limite de 8 ("resto"). */
   readonly nota?: string;
+  /** Valores numericos que cita la nota (para que la guardia los autorice como parte del paquete). */
+  readonly valoresNota?: readonly (bigint | number)[];
 }
 
 export type Periodicidad = 'semanal' | 'mensual';
