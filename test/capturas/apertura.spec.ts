@@ -42,15 +42,27 @@ test.use({ actionTimeout: 30_000, navigationTimeout: 60_000 });
 test('capturas de la apertura y de Movimientos', async ({ browser, browserName }) => {
   test.setTimeout(2_400_000);
   mkdirSync(SALIDA, { recursive: true });
-  const correo = correoUnico(`apertura-${browserName}`);
-  await altaUsuario({ correo, socio: 'Javier' });
-  const entrada = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
-  const p0 = await entrada.newPage();
-  await p0.goto(BASE + (await enlaceConfirmacion(correo, '/apertura')));
-  await p0.getByTestId('confirmar-acceso').click();
-  await p0.waitForURL(`${BASE}/apertura`);
-  const estado = await entrada.storageState();
-  await entrada.close();
+  // Cada contexto inicia su propia sesion: compartir un mismo estado entre contextos hace que la rotacion de tokens de Supabase invalide a los demas.
+  async function iniciarSesion(ctx: Awaited<ReturnType<Browser['newContext']>>) {
+    let correo = correoUnico(`apertura-${browserName}`);
+    // El servicio de Auth local puede quedarse sin puertos efimeros hacia su base si se le piden muchas paginas seguidas: se reintenta con espera.
+    for (let intento = 1; ; intento += 1) {
+      try {
+        await altaUsuario({ correo, socio: 'Javier' });
+        break;
+      } catch (e) {
+        if (intento >= 6) throw e;
+        console.log(`ALTA REINTENTO ${intento}: ${String(e).split('\n')[0]}`);
+        await new Promise((r) => setTimeout(r, 20_000));
+        correo = correoUnico(`apertura-${browserName}`);
+      }
+    }
+    const pg = await ctx.newPage();
+    await pg.goto(BASE + (await enlaceConfirmacion(correo, '/apertura')));
+    await pg.getByTestId('confirmar-acceso').click();
+    await pg.waitForURL(`${BASE}/apertura`);
+    await pg.close();
+  }
 
   // Un contexto por perfil y tema (se reutiliza entre pantallas: mucho mas rapido que abrir uno por captura).
   const contextos = new Map<string, Awaited<ReturnType<Browser['newContext']>>>();
@@ -58,8 +70,9 @@ test('capturas de la apertura y de Movimientos', async ({ browser, browserName }
     const clave = `${p.nombre}-${tema}`;
     let ctx = contextos.get(clave);
     if (!ctx) {
-      ctx = await browser.newContext(opciones(p, tema, { storageState: estado }));
+      ctx = await browser.newContext(opciones(p, tema));
       await fijar(ctx, tema);
+      await iniciarSesion(ctx);
       contextos.set(clave, ctx);
     }
     return ctx;
@@ -74,11 +87,14 @@ test('capturas de la apertura y de Movimientos', async ({ browser, browserName }
       const page = await (await contexto(p, tema)).newPage();
       try {
         await page.goto(`${BASE}${ruta}`);
+        if (new URL(page.url()).pathname !== new URL(`${BASE}${ruta}`).pathname) throw new Error(`redirigida a ${page.url()}`);
         await page.evaluate(() => document.fonts.ready);
         if (preparar) await preparar(page);
         await page.waitForTimeout(450);
+        if (new URL(page.url()).pathname !== new URL(`${BASE}${ruta}`).pathname) throw new Error(`redirigida a ${page.url()}`);
         await page.screenshot({ path: join(SALIDA, `${browserName}-${p.nombre}-${tema}-${nombre}.png`), fullPage: false });
         await page.close();
+        await new Promise((r) => setTimeout(r, 900));
         return;
       } catch (e) {
         console.log(`REINTENTO ${intento} ${p.nombre} ${tema} ${nombre}: url=${page.url()} titulo=${await page.title().catch(() => '?')} error=${String(e).split('\n')[0]}`);
@@ -86,7 +102,8 @@ test('capturas de la apertura y de Movimientos', async ({ browser, browserName }
         const clave = `${p.nombre}-${tema}`;
         await contextos.get(clave)?.close().catch(() => {});
         contextos.delete(clave);
-        if (intento >= 3) throw e;
+        if (intento >= 5) throw e;
+        await new Promise((r) => setTimeout(r, 20_000));
       }
     }
   }
@@ -126,7 +143,8 @@ test('capturas de la apertura y de Movimientos', async ({ browser, browserName }
 
   await cerrarContextos();
   // La segunda firma (Javier) publica la apertura: de aqui en adelante las pantallas muestran la apertura publicada.
-  const firmante = await browser.newContext(opciones(PERFILES[0]!, 'claro', { storageState: estado }));
+  const firmante = await browser.newContext(opciones(PERFILES[0]!, 'claro'));
+  await iniciarSesion(firmante);
   const pf = await firmante.newPage();
   await pf.goto(`${BASE}/apertura/paso/10`);
   await pf.getByTestId('apertura-firmar').click();
