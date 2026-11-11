@@ -2,6 +2,9 @@
 begin;
 select plan(10);
 
+-- La auditoria es de solo insercion y persiste entre corridas: se compara contra el conteo inicial.
+create temp table _n0 as select count(*)::int as n from seguridad.auditoria where tabla = 'seguridad.usuario' and accion = 'INSERT';
+
 -- Un correo fuera de la lista no puede crear usuario en auth.users (defensa adicional a enable_signup = false) ----------
 select throws_ok(
   $$insert into auth.users (id, instance_id, aud, role, email) values (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'intruso@example.test')$$,
@@ -19,7 +22,7 @@ select is((select socio_nombre from seguridad.usuario where id = '11111111-1111-
 select is((select activo from seguridad.usuario where id = '22222222-2222-2222-2222-222222222222'), false, 'Omar nace con acceso desactivado');
 
 -- Las altas quedan auditadas ------------------------------------------------------------------------------------------------------
-select is((select count(*)::int from seguridad.auditoria where tabla = 'seguridad.usuario' and accion = 'INSERT'), 2, 'las dos altas de usuario quedaron en la auditoria');
+select is((select count(*)::int from seguridad.auditoria where tabla = 'seguridad.usuario' and accion = 'INSERT') - (select n from _n0), 2, 'las dos altas de usuario quedaron en la auditoria');
 select ok(seguridad.verificar_cadena_auditoria(), 'la cadena de auditoria sigue valida');
 
 -- rol_actual / exigir_rol / mi_sesion con una sesion simulada -------------------------------------------------------------------------
