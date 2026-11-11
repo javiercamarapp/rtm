@@ -1,0 +1,47 @@
+// Unico modulo donde se formatean numeros. Prohibido el formato regional del motor (toLocaleString) fuera de aqui (guarda estatica).
+// Moneda "$1,234.50", piezas "1,524 pz", signo real U+2212.
+
+export const MENOS = '−';
+
+function agrupar(enteros: string): string {
+  return enteros.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+export function formatearMoneda(cent: bigint, opciones: { conSigno?: boolean } = {}): string {
+  const negativo = cent < 0n;
+  const abs = negativo ? -cent : cent;
+  const enteros = (abs / 100n).toString();
+  const decimales = (abs % 100n).toString().padStart(2, '0');
+  const cuerpo = `$${agrupar(enteros)}.${decimales}`;
+  if (negativo) return `${MENOS}${cuerpo}`;
+  return opciones.conSigno && cent > 0n ? `+${cuerpo}` : cuerpo;
+}
+
+export function formatearPiezas(n: number): string {
+  if (!Number.isInteger(n)) throw new RangeError('piezas deben ser enteras');
+  const abs = Math.abs(n);
+  return `${n < 0 ? MENOS : ''}${agrupar(String(abs))} pz`;
+}
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
+const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'] as const;
+
+/** "2026-11-09" -> { dia: 9, mes: 'nov' } sin pasar por Date ni por el formato regional del motor. */
+function partes(f: string): { dia: number; mes: (typeof MESES)[number] } {
+  const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(f);
+  if (!m) throw new RangeError(`fecha invalida: ${f}`);
+  return { dia: Number(m[2]), mes: MESES[Number(m[1]) - 1]! };
+}
+
+/** "9 a 15 nov" (o "30 oct a 5 nov" si cruza de mes). */
+export function etiquetaRango(inicio: string, fin: string): string {
+  const a = partes(inicio);
+  const b = partes(fin);
+  return a.mes === b.mes ? `${a.dia} a ${b.dia} ${b.mes}` : `${a.dia} ${a.mes} a ${b.dia} ${b.mes}`;
+}
+
+/** Nombre del dia (lunes0 = 0 ... domingo = 6) y fecha corta: "martes 10 nov". */
+export function etiquetaDia(f: string, diaLunes0: number): string {
+  const p = partes(f);
+  return `${DIAS[diaLunes0]} ${p.dia} ${p.mes}`;
+}
