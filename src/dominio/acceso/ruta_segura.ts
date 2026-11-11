@@ -2,7 +2,7 @@
 // la raiz o una de las secciones, tal cual o seguida de `/...`, `?...` o `#...`. Se rechazan segmentos `..`/`.`
 // (tambien codificados), barras invertidas, caracteres de control, `//` y rutas absurdamente largas.
 
-const PROPIA = /^\/(?:(?:pedidos|paquetes|cuentas-por-cobrar|avisos|catalogo|clientes|inventario|proveedores|socios|omar|diseno)(?:[/?#]|$)|(?:[?#]|$))/;
+const PROPIA = /^\/(?:(?:pedidos|paquetes|cuentas-por-cobrar|avisos|catalogo|clientes|inventario|proveedores|socios|omar|mi-bodega|diseno)(?:[/?#]|$)|(?:[?#]|$))/;
 // eslint-disable-next-line no-control-regex -- detectar caracteres de control es justo el proposito
 const CONTROL = /[\u0000-\u001f\u007f\\]/;
 
@@ -28,6 +28,8 @@ export function rutaPropiaSegura(valor: string | null | undefined): valor is str
 }
 
 export const DESTINO_POR_OMISION = '/';
+/** Unica pantalla de la cuenta con rol omar. */
+export const DESTINO_OMAR = '/mi-bodega';
 
 export function destinoSeguro(valor: string | null | undefined): string {
   return rutaPropiaSegura(valor) ? valor : DESTINO_POR_OMISION;
