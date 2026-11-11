@@ -32,8 +32,11 @@ describe('T02 montos invalidos (el formulario muestra "Escribe un monto valido")
   it('negativo en el dominio sigue siendo representable (cascada?caja=-500, H-30)', () => {
     expect(centavosDesdeTexto('-500')).toBe(-50_000n);
   });
-  // ESPERADO-FALLA-HASTA: H-29. La coma se borra sin avisar: "9,5" pasa por $95.00. Lo correcto es rechazar el formato ambiguo.
-  it.fails('H-29: "9,5" y "1.234,56" se rechazan por ambiguos', () => {
+  // H-29 (corregido): la coma solo es separador de miles; "9,5" y "1.234,56" se rechazan por ambiguos en vez de leerse como $95.00.
+  it('H-29: "9,5" y "1.234,56" se rechazan por ambiguos', () => {
+    expect(centavosDeTexto('1,234.50')).toBe(123_450);
+    expect(centavosDeTexto('$1,234')).toBe(123_400);
+    expect(centavosDeTexto('1,2345')).toBeNull();
     expect(centavosDeTexto('9,5')).toBeNull();
     expect(centavosDeTexto('1.234,56')).toBeNull();
   });

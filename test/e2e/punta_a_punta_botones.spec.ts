@@ -17,7 +17,8 @@ test.beforeAll(async () => {
   confirmadoId = await pedidoConfirmadoE2E(d, 20, 'botones');
 });
 
-const esMovil = (page: Page) => (page.viewportSize()?.width ?? 1440) < 1024;
+// El menu lateral pasa a boton (hamburguesa) por debajo de 768 px (shell.css); de 768 a 1023 la barra lateral sigue fija y compacta.
+const esMovil = (page: Page) => (page.viewportSize()?.width ?? 1440) < 768;
 
 /** Abre el dialogo del boton, comprueba foco en Cancelar, que cabe en pantalla, captura y cierra con Esc sin escribir nada. */
 async function abrirYCancelar(page: Page, info: Parameters<typeof capturar>[1], tema: Tema, boton: Locator, nombre: string): Promise<void> {
