@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { construirInforme, consolidar, consolidarConEstadisticas } from '@/dominio/contactos/consolidar';
 import { decodificarTexto, parsearCsv } from '@/dominio/contactos/csv';
+import { tablaDeTextoPdf } from '@/dominio/contactos/pdf';
 import { tablaSinCabecera } from '@/dominio/contactos/plana';
 import { leerEtiquetas, leerTabla, slugEtiqueta } from '@/dominio/contactos/leer';
 import { enmascararTelefono, normalizarTelefono, separarTelefonos } from '@/dominio/contactos/telefono';
@@ -162,6 +163,20 @@ describe('hoja sin cabeceras', () => {
     expect(r.registros[2]!.telefonos).toEqual(['+529995550103', '+529995550104']);
     expect(r.registros[2]!.nombre).toBe('nota Beto');
     expect(r.registros[0]!.origenes[0]!.origen).toBe('descargas-base-de-datos');
+  });
+});
+
+describe('texto de PDF', () => {
+  it('extrae indice, telefono con espacios y nombre opcional; ignora encabezados', () => {
+    const texto = ['NUMERO DE CLIENTES   TELEFONO', '1       52 999 555 0101', '2       52 1 999 555 0102   Ana Prueba', '', '3', '4    5219995550103', '\f5   Sin    Telefono'].join('\n');
+    const tabla = tablaDeTextoPdf(texto);
+    expect(tabla).toHaveLength(5);
+    const r = leerTabla(tabla, { archivo: 'numero-de-clientes-pdf.pdf', tipo: 'plano' });
+    expect(r.filas).toBe(4);
+    expect(r.registros.map((x) => x.telefonos[0])).toEqual(['+529995550101', '+529995550102', '+529995550103']);
+    expect(r.registros[1]!.nombre).toBe('Ana Prueba');
+    expect(r.descartes.sin_telefono).toBe(1);
+    expect(r.registros[0]!.origenes[0]!.origen).toBe('numero-de-clientes-pdf');
   });
 });
 

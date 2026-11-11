@@ -5,6 +5,7 @@
 //   npx tsx scripts/contactos/importar.mts --prueba-idempotencia  corre dos veces con otro orden y compara huellas
 // Fuentes por omision: carpeta NUMEROS VAPES, leads de Toocloudy, contactos de Descargas y el CSV de Meta (UTF-16).
 // Para otras fuentes: --fuente tipo=ruta (tipo: google|meta|toocloudy|vapeunion), repetible.
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -12,6 +13,7 @@ import { basename, join, resolve, relative } from 'node:path';
 import { construirInforme, consolidar, consolidarConEstadisticas } from '@/dominio/contactos/consolidar';
 import { decodificarTexto, parsearCsv } from '@/dominio/contactos/csv';
 import { leerTabla } from '@/dominio/contactos/leer';
+import { tablaDeTextoPdf } from '@/dominio/contactos/pdf';
 import { tablaSinCabecera } from '@/dominio/contactos/plana';
 import { leerVcf } from '@/dominio/contactos/vcard';
 import type { ContactoConsolidado, FuenteTabla, ResultadoLectura, TipoFuente } from '@/dominio/contactos/tipos';
@@ -23,7 +25,7 @@ const valores = (n: string) => args.flatMap((a, i) => (a === `--${n}` && args[i 
 
 const raizRepo = resolve(new URL('../..', import.meta.url).pathname);
 
-interface Fuente { ruta: string; id: string; tipo: TipoFuente }
+interface Fuente { ruta: string; id: string; tipo: TipoFuente; /** Otros archivos de la misma fuente (PDF casi identicos): se leen juntos y se deduplican. */ extra?: string[] }
 
 function fuentesPorOmision(): Fuente[] {
   const escritorio = join(homedir(), 'Desktop/TOOCLOUDY');
@@ -40,6 +42,12 @@ function fuentesPorOmision(): Fuente[] {
   if (existsSync(suelto)) out.push({ ruta: suelto, id: 'toocloudy/1573.vcf', tipo: 'vcf' });
   for (const n of ['leads whatsapp FINAL (1).xlsx']) {
     if (existsSync(join(descargas, n))) out.push({ ruta: join(descargas, n), id: 'descargas-leads-whatsapp-final.xlsx', tipo: 'toocloudy' });
+  }
+  const pdfA = join(vapes, 'NÚMERO DE CLIENTES - Hoja 1.pdf');
+  const pdfB = join(vapes, 'NÚMERO DE CLIENTES vapemate - Hoja 1.pdf');
+  if (existsSync(pdfA)) out.push({ ruta: pdfA, id: 'numero-de-clientes-pdf.pdf', tipo: 'plano', extra: existsSync(pdfB) ? [pdfB] : [] });
+  for (const r of [join(descargas, 'NÚMERO DE CLIENTES vapemate.xlsx'), join(escritorio, 'NÚMERO DE CLIENTES vapemate.xlsx')]) {
+    if (existsSync(r)) { out.push({ ruta: r, id: 'numero-de-clientes-vapemate.xlsx', tipo: 'plano' }); break; }
   }
   const leads = join(escritorio, 'leads whatsapp FINAL.xlsx');
   if (existsSync(leads)) out.push({ ruta: leads, id: 'toocloudy/leads whatsapp FINAL.xlsx', tipo: 'toocloudy' });
@@ -64,6 +72,10 @@ function fuentesExplicitas(): Fuente[] {
 }
 
 function leerFuente(f: Fuente): ResultadoLectura {
+  if (/\.pdf$/i.test(f.ruta)) {
+    const textos = [f.ruta, ...(f.extra ?? [])].map((r) => execFileSync('pdftotext', ['-layout', r, '-'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
+    return leerTabla(tablaDeTextoPdf(textos.join('\n')), { archivo: f.id, tipo: f.tipo });
+  }
   const bytes = readFileSync(f.ruta);
   const tabla = f.tipo === 'plano' ? tablaSinCabecera(leerXlsx(bytes)) : /\.xlsx$/i.test(f.ruta) ? leerXlsx(bytes) : /\.vcf$/i.test(f.ruta) ? leerVcf(decodificarTexto(bytes)) : parsearCsv(decodificarTexto(bytes));
   const fuente: FuenteTabla = { archivo: f.id, tipo: f.tipo };
