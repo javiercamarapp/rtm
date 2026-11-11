@@ -218,6 +218,19 @@ alter table contabilidad.asiento_linea enable trigger asiento_linea_t1;
 select is(contabilidad.verificar_cadena(), (select id from contabilidad.asiento where evento_id = pg_temp.ev('f3b3')), 'GU-9: verificar_cadena devuelve exactamente el asiento manipulado');
 select ok(not (contabilidad.verificar_asiento((select id from contabilidad.asiento where evento_id = pg_temp.ev('f3b3')))->'cadena'->>'ok')::boolean, 'verificar: el asiento alterado ya no verifica');
 
+-- El asiento nace tambien cuando el hecho lo escribe la sesion del socio (rol authenticated, sin acceso directo al esquema de contabilidad) -----------
+select pg_temp.flush();
+set constraints all immediate;
+set constraints all deferred;
+set local role authenticated;
+select lives_ok($$select api.registrar_aportacion('f3rol1', 'Angelo', 12345, 'prueba con el rol de la web', 'capital')$$, 'la web escribe una aportacion con su rol');
+set constraints all immediate;
+set constraints all deferred;
+reset role;
+select is(pg_temp.haber('f3rol1', '3110'), 12345::bigint, 'el asiento de lo que escribio la web se genero al cerrar la transaccion (triggers con permisos del propietario)');
+select ok(pg_temp.cuadra('f3rol1'), 'y cuadra');
+select set_config('request.jwt.claim.sub', '73333333-3333-3333-3333-333333333333', true);
+
 -- Permisos ------------------------------------------------------------------------------------------------------------------------------------------
 select set_config('request.jwt.claim.sub', '', true);
 select throws_ok($$select api.conta_diario()$$, '42501', null, 'sin sesion de socio no se lee el diario');

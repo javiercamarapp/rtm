@@ -533,7 +533,7 @@ create constraint trigger evento_asentar after insert on operacion.evento deferr
 
 -- Σ debe = Σ haber por asiento, tambien diferido (cubre cualquier otro camino de escritura).
 create function contabilidad.t_cuadre() returns trigger
-language plpgsql set search_path = ''
+language plpgsql security definer set search_path = ''
 as $$
 declare v_d bigint; v_h bigint;
 begin
