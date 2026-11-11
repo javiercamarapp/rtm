@@ -57,7 +57,7 @@ if (args.has('--completo')) paso('Verificacion completa (pgTAP y pantallas, sobr
 
 // 2. Migraciones: local contra nube.
 console.log('\n== Migraciones locales contra la nube');
-const lista = sh('supabase', ['migration', 'list', '--linked', '-o', 'json']);
+const lista = sh('supabase', ['migration', 'list', '--linked']);
 let migs;
 try { migs = JSON.parse(lista.stdout.slice(lista.stdout.indexOf('{'), lista.stdout.lastIndexOf('}') + 1)).migrations; } catch { abortar('no se pudo leer la lista de migraciones de la nube'); }
 const soloNube = migs.filter((m) => m.remote && !m.local);
