@@ -6,3 +6,5 @@
 - Sin emojis; español; acento neutro estricto; blanco y negro.
 - Nada de datos reales de ventas, compras ni pagos en el repo; ningun secreto ni correo en el repo; no hacer push ni tocar Vercel o Supabase en la nube fuera del flujo de despliegue autorizado.
 - Documentos de decision: /private/tmp/claude-501/-Users-javiercamaraportepetit/8387d844-0acc-4e47-8b08-6746be09ac0c/scratchpad/investigacion/ (adendas 18 a 30; la 30 es la decision de no dividir por dueño).
+
+- CONTABILIDAD es una seccion de primer nivel del sidebar (decision del dueño, 11-nov): subpaginas Diario (asientos contables), Mayor, Estado de resultados, Balance general, Flujo de efectivo, Comprobaciones y PROYECCIONES Y ESTIMACIONES (flujo de caja a 4 semanas, utilidad proyectada, punto de reorden y escenarios de sensibilidad al costo de Isaac y Karen, siempre etiquetadas 'Estimado' con rango y muestra minima; sin historia no se emite proyeccion). Cada cifra con 'Explicar este numero' y su comprobacion por dos vias. El paso de asientos contables de la Ola B debe crear esta seccion completa y visible en el sidebar, aunque algunas paginas muestren 'Sin dato' mientras no haya movimientos.
