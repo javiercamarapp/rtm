@@ -191,6 +191,7 @@ begin
        - coalesce((select sum(s.costo_valor_cent) from operacion.pedido_surtido s join operacion.pedido_linea l on l.id = s.pedido_linea_id join operacion.pedido p on p.id = l.pedido_id where p.estado = 'enviado'), 0)
        - coalesce((select sum(-m.valor_cent) from operacion.toma_omar t join operacion.movimiento_inventario m on m.id = t.movimiento_id where t.estado = 'autorizada'), 0)
        - coalesce((select sum(monto_cent) from operacion.renta_devengo), 0)
+       - coalesce((select sum(monto_cent) from operacion.diferencia_asignacion where responsable = 'castigo'), 0)
        - coalesce((select sum(monto_cent) from operacion.gasto), 0) + coalesce((select sum(g.monto_cent) from operacion.gasto_anulacion an join operacion.gasto g on g.id = an.gasto_id), 0)
        + coalesce((select sum(case when coalesce(o.tipo, m.tipo) in ('merma', 'ajuste_conteo', 'devolucion') then m.valor_cent else 0 end) from operacion.movimiento_inventario m left join operacion.movimiento_inventario o on o.id = m.reversa_de), 0)
        + coalesce((select sum(c.monto_cent) from operacion.cuenta_proveedor_mov c left join operacion.cuenta_proveedor_mov o on o.id = c.reversa_de where coalesce(o.concepto, c.concepto) = 'ajuste'), 0)

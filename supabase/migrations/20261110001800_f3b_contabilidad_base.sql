@@ -307,6 +307,7 @@ begin
     from operacion.pedido_surtido s join operacion.pedido_linea l on l.id = s.pedido_linea_id join operacion.pedido pe on pe.id = l.pedido_id
     where s.movimiento_id is null and (s.evento_id = p_evento or (v_tipo = 'pedido_anulado' and pe.folio = v_payload->>'pedido'))),
   ren as (select r.monto_cent from operacion.renta_devengo r where r.evento_id = p_evento),
+  cas as (select a.monto_cent from operacion.diferencia_asignacion a where a.evento_id = p_evento and a.responsable = 'castigo'),
   tom as (
     select t.piezas, t.precio_cent, 1 as sgn from operacion.toma_omar t join operacion.movimiento_inventario m on m.id = t.movimiento_id and m.evento_id = p_evento and m.tipo = 'salida_toma_omar'
     union all
@@ -390,6 +391,9 @@ begin
                      null, case d.origen when 'isaac_directo' then catalogo.proveedor_id('Isaac') else catalogo.proveedor_id('Karen') end, null, d.modelo_id, d.pedido_id, 'Costo del pedido directo' from dir d
     union all select '5110', d.sgn * d.seg * d.piezas, d.cliente_id, null, null, d.modelo_id, d.pedido_id, 'Seguro de reenvío' from dir d where d.origen = 'karen_via_isaac'
     union all select '2110', -d.sgn * d.seg * d.piezas, null, catalogo.proveedor_id('Isaac'), null, d.modelo_id, d.pedido_id, 'Seguro de reenvío' from dir d where d.origen = 'karen_via_isaac'
+    -- Diferencia de recepcion castigada por la sociedad (la reposicion entra por el movimiento del kardex).
+    union all select '5300', c.monto_cent, null, null, null, null, null, 'Faltante de recepcion castigado' from cas c
+    union all select '1340', -c.monto_cent, null, null, null, null, null, 'Faltante de recepcion castigado' from cas c
     -- Renta de bodega (Omar).
     union all select '6110', r.monto_cent, null, null, null, null, null, 'Renta de bodega devengada' from ren r
     union all select '2210', -r.monto_cent, null, null, null, null, null, 'Renta de bodega devengada' from ren r

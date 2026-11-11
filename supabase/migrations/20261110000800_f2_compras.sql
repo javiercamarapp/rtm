@@ -465,6 +465,7 @@ begin
   -- Asignacion vigente: positiva y sin renglon que la cancele.
   select * into a from operacion.diferencia_asignacion x where x.diferencia_id = d.id and x.cancela_a is null and not exists (select 1 from operacion.diferencia_asignacion y where y.cancela_a = x.id) order by x.id desc limit 1;
   v_hay := found;
+  if v_hay and a.responsable in ('castigo', 'reposicion') then raise exception 'una diferencia castigada o repuesta no se reasigna' using errcode = 'P0428'; end if;
   if v_hay and ((p_responsable = 'socio' and a.responsable = 'socio' and a.socio_id = v_socio) or (p_responsable = 'proveedor' and a.responsable = 'proveedor')) then
     v_res := jsonb_build_object('diferencia_id', d.id, 'sin_cambio', true);
     perform seguridad.terminar_operacion(p_clave_idem, v_res);
