@@ -3,6 +3,7 @@
 //  - sin formato regional (toLocaleString, Intl.NumberFormat) fuera de src/dominio/formato
 //  - sin Date.now / new Date() / Math.random / process.env en el dominio
 //  - sin Google, Redis ni Upstash en el acceso
+//  - sin division por dueno en la interfaz (decision del 11-nov-2026): ni parametro duenio, ni chip 'De Angelo'/'De Javier', ni columna 'Dueno' o 'Atiende' en src/app y src/ui
 // Exencion por HASH para los archivos copiados del login (scripts/ci/exenciones-login.json): si el archivo cambia, la exencion cae.
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -48,6 +49,12 @@ for (const f of archivos(join(raiz, 'src'))) {
     if (!enFormato && /\.toLocale(String|DateString|TimeString)\(|Intl\.NumberFormat/.test(codigo) && !exento) falla(f, n, 'formato regional fuera de src/dominio/formato');
     if (enDominio && /Date\.now\(|new Date\(\)|Math\.random\(|process\.env/.test(codigo)) falla(f, n, 'dominio impuro (reloj, azar o entorno)');
     if (!exento && /next\/font\/google|fonts\.googleapis|fonts\.gstatic/.test(codigo)) falla(f, n, 'fuente por red prohibida (usar archivos locales)');
+    if (!exento && /^src\/(app|ui)\//.test(rel)) {
+      if (/\bduenio\b|\bDuenio\b/.test(codigo)) falla(f, n, 'parametro o campo duenio en la interfaz (RTM es un solo negocio; no se divide por dueno)');
+      if (/Due(ñ|n)o\b/.test(codigo) && !/Dueño? de la sociedad/.test(codigo)) falla(f, n, "columna, etiqueta o texto 'Dueño' en la interfaz");
+      if (/titulo:\s*['"`]Atiende['"`]|>\s*Atiende\s*</.test(codigo)) falla(f, n, "columna 'Atiende' en la interfaz");
+      if (/[>'"`]\s*[Dd]e (Angelo|Javier)\s*[<'"`]|aria-label="[^"]*por due(ñ|n)o/.test(codigo)) falla(f, n, "chip o filtro 'De Angelo' / 'De Javier' / 'por dueño' en la interfaz");
+    }
     if (/upstash|ioredis|from 'redis'|signInWithOAuth|provider:\s*'google'/i.test(codigo) && !exento) falla(f, n, 'Redis/Upstash/Google fuera del alcance de RTM');
   });
 }
