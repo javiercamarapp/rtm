@@ -121,8 +121,8 @@ describe('proveedores', () => {
     expect(resolverProveedor('Vape Mate')).toEqual({ estado: 'unico', id: 'karen', nombre: 'Karen' });
     expect(resolverProveedor('Isaac')).toEqual({ estado: 'unico', id: 'isaac', nombre: 'Isaac' });
   });
-  it('Mr Cactus NO es alias: se pregunta', () => {
-    expect(resolverProveedor('Mr Cactus')).toEqual({ estado: 'ninguno' });
+  it('un nombre ajeno NO es alias: se pregunta', () => {
+    expect(resolverProveedor('Proveedor Ajeno')).toEqual({ estado: 'ninguno' });
   });
   it('dos proveedores en una indicacion: se pregunta, nunca se mezclan', () => {
     expect(resolverProveedor('Isaac y Karen')).toMatchObject({ estado: 'varios' });

@@ -99,12 +99,12 @@ describe('criterio: "Omar" a secas y "Waka 50" siempre preguntan', () => {
     expect(opciones).toEqual(expect.arrayContaining(['Sandia', 'Mango']));
   });
 
-  it('proveedor: "Mr Cactus" no es alias y dos proveedores en una orden se preguntan', async () => {
+  it('proveedor: un nombre que no es Isaac, Karen ni Vapemate no es alias y dos proveedores en una orden se preguntan', async () => {
     const e = escenario([
-      unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Mr Cactus', monto_centavos: 100_000, pagado_por: 'angelo', cliente_texto: null, fuente_cita: 'cita' }),
+      unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Proveedor Ajeno', monto_centavos: 100_000, pagado_por: 'angelo', cliente_texto: null, fuente_cita: 'cita' }),
       unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Isaac y Karen', monto_centavos: 100_000, pagado_por: 'angelo', cliente_texto: null, fuente_cita: 'cita' }),
     ]);
-    await e.socio('angelo', 'pague 1,000 a Mr Cactus');
+    await e.socio('angelo', 'pague 1,000 a Proveedor Ajeno');
     expect(e.ultimoGrupo().texto).toContain('no encontre proveedor');
     await e.socio('angelo', 'pague 1,000 a Isaac y Karen');
     expect(e.ultimoGrupo().botones!.flat().map((b) => b.texto)).toEqual(expect.arrayContaining(['Isaac', 'Karen']));

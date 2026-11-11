@@ -158,7 +158,7 @@ export type ResolucionProveedor =
   | { estado: 'ninguno' }
   | { estado: 'vacio' };
 
-/** Karen y Vapemate son el mismo proveedor. "Mr Cactus" NO es alias (se pregunta). Dos proveedores en una indicacion: se pregunta. */
+/** Karen y Vapemate son el mismo proveedor. Cualquier otro nombre NO es alias (se pregunta). Dos proveedores en una indicacion: se pregunta. */
 export function resolverProveedor(texto: string): ResolucionProveedor {
   const q = normalizar(texto);
   if (q === '') return { estado: 'vacio' };

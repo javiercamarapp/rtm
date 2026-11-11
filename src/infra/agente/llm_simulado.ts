@@ -117,6 +117,9 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
     const prov = /^(isaac|karen|vapemate)$/i.test(sujeto);
     return respuesta([{ tipo: 'consulta', consulta: prov ? 'saldo_proveedor' : 'saldo', modelo_texto: null, sabor_texto: null, sujeto_texto: sujeto, folio: null, periodo: null }]);
   }
+  if (/^(cuanto )?saldo( tengo)?$/.test(n)) {
+    return respuesta([{ tipo: 'consulta', consulta: 'saldo', modelo_texto: null, sabor_texto: null, sujeto_texto: autor === 'omar' ? 'omar' : null, folio: null, periodo: null }]);
+  }
   if (/^(resumen|como vamos)/.test(n)) {
     return respuesta([{ tipo: 'consulta', consulta: 'resumen', modelo_texto: null, sabor_texto: null, sujeto_texto: null, folio: null, periodo: 'hoy' }]);
   }
@@ -158,7 +161,7 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
   }
 
   // Pedido: "Cliente 28 jupiter 24 dm", "Cliente 28 waka 50" o "Cliente: jupiter 28, dm 24"
-  if ((m = /^([^\d:]+?)[:,]?\s+(\d.*)$/.exec(t))) {
+  if ((m = /^([^\d:]+?):\s*(.+)$/.exec(t)) || (m = /^([^\d:]+?)[:,]?\s+(\d.*)$/.exec(t))) {
     const ls = lineasPedido(m[2]!);
     if (ls.length > 0) {
       return respuesta([
