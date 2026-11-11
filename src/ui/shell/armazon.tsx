@@ -8,6 +8,8 @@ import { Logo } from '../logo/logo';
 import { IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
+import type { ListaCampana, Pulso as DatosPulso } from '@/dominio/notificaciones/tipos';
+import { Campana } from './campana';
 import { Pulso } from './pulso';
 
 const SECCIONES = [
@@ -35,9 +37,14 @@ interface Props {
   children: ReactNode;
   nombreSocio: string;
   accionSalir: () => Promise<void>;
+  pulso?: DatosPulso | null;
+  noLeidas?: number;
+  cargarCampana?: (filtro: 'todas' | 'sin_leer') => Promise<ListaCampana>;
+  marcarLeida?: (id: number) => Promise<void>;
+  marcarTodasLeidas?: () => Promise<void>;
 }
 
-export function Armazon({ children, nombreSocio, accionSalir }: Props) {
+export function Armazon({ children, nombreSocio, accionSalir, pulso = null, noLeidas = 0, cargarCampana, marcarLeida, marcarTodasLeidas }: Props) {
   const ruta = usePathname();
   const [abierto, setAbierto] = useState(false);
   const activo = indiceActivo(ruta);
@@ -85,9 +92,10 @@ export function Armazon({ children, nombreSocio, accionSalir }: Props) {
             {MARCA.nombre} / <strong>{activo >= 0 ? SECCIONES[activo]!.etiqueta : 'Diseño'}</strong>
           </span>
           <div className="rtm-pulso">
-            <Pulso />
+            <Pulso datos={pulso} />
           </div>
           <div className="rtm-barra-acciones">
+            {cargarCampana && marcarLeida && marcarTodasLeidas && <Campana noLeidas={noLeidas} cargar={cargarCampana} marcar={marcarLeida} marcarTodas={marcarTodasLeidas} />}
             <Apariencia />
             <BotonTema />
           </div>
@@ -96,7 +104,7 @@ export function Armazon({ children, nombreSocio, accionSalir }: Props) {
           <div className="rtm-panel-scroll">
             <div className="rtm-pagina">
               <div className="rtm-pulso-movil" aria-label="Pulso">
-                <Pulso />
+                <Pulso datos={pulso} />
               </div>
               {children}
             </div>
