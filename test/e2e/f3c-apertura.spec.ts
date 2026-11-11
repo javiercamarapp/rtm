@@ -42,6 +42,9 @@ test('apertura: diez pasos, identidad contable, vista previa, ensayo, firma de l
   await altaUsuario({ correo: javier, socio: 'Javier' });
   await entrarComo(page, angelo, '/apertura');
 
+  // La cuenta puente puede traer saldo de otras pruebas de la misma corrida: se compara contra el valor de antes, no contra cero.
+  const puenteAntes = (await consultar<{ p: string }>("select contabilidad.saldo('3990')::text as p"))[0]!.p;
+
   // Sin sesion
   await expect(page.getByTestId('apertura-vacia')).toBeVisible();
   await expect(page.getByTestId('lista-pasos').getByRole('listitem')).toHaveCount(10);
@@ -122,7 +125,7 @@ test('apertura: diez pasos, identidad contable, vista previa, ensayo, firma de l
   // Publicada: inventario en el kardex, diferencia resuelta en cero, comprobaciones sin bloqueantes
   const s = (await consultar<{ p: string; inv: string; kardex: string; ap: string }>(
     "select contabilidad.saldo('3990')::text as p, contabilidad.saldo('1310')::text as inv, coalesce((select sum(valor_cent) from operacion.existencia_modelo e join catalogo.modelo m on m.id = e.modelo_id where m.nombre_canonico = $1), 0)::text as kardex, (select count(*)::text from operacion.movimiento_inventario where tipo = 'apertura') as ap", [MODELO]))[0]!;
-  expect(s.p).toBe('0');
+  expect(s.p).toBe(puenteAntes);
   expect(s.kardex).toBe('915500');
   expect(Number(s.inv)).toBeGreaterThanOrEqual(915500);
   expect(s.ap).toBe('1');
@@ -142,7 +145,7 @@ test('apertura: diez pasos, identidad contable, vista previa, ensayo, firma de l
   await expect(page.getByTestId('apertura-vacia')).toContainText('revertida');
   const r = (await consultar<{ p: string; kardex: string }>(
     "select contabilidad.saldo('3990')::text as p, coalesce((select sum(valor_cent) from operacion.existencia_modelo e join catalogo.modelo m on m.id = e.modelo_id where m.nombre_canonico = $1), 0)::text as kardex", [MODELO]))[0]!;
-  expect(r.p).toBe('0');
+  expect(r.p).toBe(puenteAntes);
   expect(r.kardex).toBe('0');
 });
 
