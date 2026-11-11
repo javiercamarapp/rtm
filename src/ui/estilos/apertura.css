@@ -13,6 +13,9 @@
 .rtm-filtros-estado { display: flex; flex-wrap: wrap; gap: var(--rtm-e-2); margin: var(--rtm-e-3) 0; }
 .rtm-filtros-estado a { padding: var(--rtm-e-2) var(--rtm-e-3); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-pildora); color: inherit; text-decoration: none; font-size: 13px; min-height: 36px; display: inline-flex; align-items: center; }
 .rtm-filtros-estado a[aria-current="true"] { background: var(--rtm-ink); color: var(--rtm-surface); }
+@media (pointer: coarse) {
+  .rtm-filtros-estado a { min-height: 44px; }
+}
 @media (max-width: 640px) {
   .rtm-pasos li { grid-template-columns: 28px 1fr; }
   .rtm-pasos li > :last-child { grid-column: 2; }
