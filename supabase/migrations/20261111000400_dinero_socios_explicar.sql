@@ -1,5 +1,8 @@
 -- Dinero entre socios / 4: 'Explicar este numero' del resultado de la cascada con las reglas nuevas (sin devolucion automatica de capital, con anticipos).
-create or replace function api.explicar_cifra(p_cifra text) returns jsonb
+-- Integracion con contabilidad (f3b): api.explicar_cifra ya es la de contabilidad (que delega las cifras que no son 'conta:' a la de f3a y esta a la de f2).
+-- Se conserva esa cadena: la de contabilidad pasa a explicar_cifra_f3b y esta funcion atiende primero las cifras de socios y de la cascada.
+alter function api.explicar_cifra(text) rename to explicar_cifra_f3b;
+create function api.explicar_cifra(p_cifra text) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare
@@ -79,7 +82,8 @@ begin
       'comprobacion', jsonb_build_object('via1', 'Cascada calculada', 'via1_valor', (v_x->>'resultado_cent')::bigint, 'via2', 'Suma de los pasos de este socio', 'via2_valor', v_via2, 'cuadra', (v_x->>'resultado_cent')::bigint = v_via2),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   end if;
-  return api.explicar_cifra_f2(p_cifra);
+  return api.explicar_cifra_f3b(p_cifra);
 end $$;
 grant execute on function api.explicar_cifra(text) to authenticated;
 revoke execute on function api.explicar_cifra(text) from public, anon;
+revoke execute on function api.explicar_cifra_f3b(text) from public, anon, authenticated;
