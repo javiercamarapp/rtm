@@ -37,6 +37,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
         enfasis={`${todos.length} modelos`}
         despues={sinDisp > 0 ? `y ${sinDisp} sin disponibilidad ahora` : ''}
         contexto="Costos de Isaac y de Karen con su vigencia, y el rango de precios del tabulador de cada cliente. Los nombres solo se unifican cuando son idénticos: lo demás son modelos distintos."
+        acciones={<Link className="rtm-boton" href="/catalogo/costos" data-testid="ir-costos">Editar costos de Isaac y Karen</Link>}
       />
       <form className="rtm-barra-filtros" method="get" role="search" aria-label="Filtrar el catálogo">
         <input className="rtm-campo" type="search" name="q" defaultValue={sp.q ?? ''} placeholder="Buscar marca, modelo o alias" aria-label="Buscar en el catálogo" />

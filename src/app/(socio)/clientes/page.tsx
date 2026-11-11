@@ -24,6 +24,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
         enfasis={`${todos.length} clientes`}
         despues={`: ${de('Angelo')} de Angelo y ${de('Javier')} de Javier`}
         contexto="Cada cliente tiene dueño y un tabulador por modelo con su historial. Solo se guardan nombre y precios: sin teléfonos ni direcciones."
+        acciones={<Link className="rtm-boton rtm-boton-primario" href="/clientes/nuevo" data-testid="nuevo-cliente">Nuevo cliente</Link>}
       />
       <nav className="rtm-barra-filtros" aria-label="Filtrar por dueño">
         <Link className="rtm-chip-filtro" href="/clientes" aria-current={!duenio}>Todos</Link>
