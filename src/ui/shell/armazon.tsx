@@ -8,7 +8,7 @@ import { Logo } from '../logo/logo';
 import { IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
-import type { Pulso as DatosPulso } from '@/aplicacion/operacion/pulso';
+import type { Pulso as DatosPulso } from '@/dominio/operacion/pulso';
 import { Pulso } from './pulso';
 
 const SECCIONES = [

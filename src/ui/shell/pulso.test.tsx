@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { armarPulso, type EntradasPulso } from '@/aplicacion/operacion/pulso';
+import { armarPulso, type EntradasPulso } from '@/dominio/operacion/pulso';
 import type { Existencia } from '@/dominio/catalogo/tipos';
 import type { CuentaProveedor, CuentaSocios, CuentasPorCobrar } from '@/dominio/operacion/tipos';
 import { ExplicarProvider } from '@/ui/componentes/explicar';

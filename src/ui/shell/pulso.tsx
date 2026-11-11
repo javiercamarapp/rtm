@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ChipPulso } from '@/aplicacion/operacion/pulso';
+import type { ChipPulso } from '@/dominio/operacion/pulso';
 import { CifraComprobada } from '../componentes/cifra';
 import { SinDato } from '../componentes/estado-texto';
 

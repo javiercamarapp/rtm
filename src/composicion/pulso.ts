@@ -1,5 +1,5 @@
 // Pulso del armazon: lee cuatro cuentas con la sesion del socio. Una lectura que falla no tumba la pagina: ese chip queda en "Sin dato".
-import { armarPulso, type Pulso } from '@/aplicacion/operacion/pulso';
+import { armarPulso, type Pulso } from '@/dominio/operacion/pulso';
 import { lectorCatalogoSupabase } from '@/infra/supabase/lector-catalogo';
 import { lectorOperacionSupabase } from '@/infra/supabase/operacion';
 import { exigirSocio } from './acceso';

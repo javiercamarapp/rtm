@@ -1,7 +1,7 @@
 // Pulso de arriba y pie de pagina: cifras reales de las lecturas existentes. Nunca un cero inventado: sin datos, "Sin dato".
-import type { Existencia } from '@/dominio/catalogo/tipos';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
-import type { CuentaProveedor, CuentaSocios, CuentasPorCobrar } from '@/dominio/operacion/tipos';
+import type { Existencia } from '../catalogo/tipos';
+import { etiquetaFecha, formatearMoneda, formatearPiezas } from '../formato';
+import type { CuentaProveedor, CuentaSocios, CuentasPorCobrar } from './tipos';
 
 export interface ChipPulso {
   clave: 'isaac' | 'cobrar' | 'socios' | 'bodega';
