@@ -28,7 +28,7 @@ export interface LectorOperacion {
   liquidacionesProveedor(proveedor: string): Promise<LiquidacionProveedor[]>;
   cuentaSocios(): Promise<CuentaSocios>;
   socioCuenta(socio: string): Promise<EstadoCuentaSocio>;
-  cascadaProyeccion(ini: string | null, fin: string | null, cajaCent: bigint): Promise<CascadaProyeccion>;
+  cascadaProyeccion(ini: string | null, fin: string | null): Promise<CascadaProyeccion>;
   cierresReparto(): Promise<CierreReparto[]>;
   omarCuenta(semanaIni: string | null): Promise<OmarCuenta>;
   textoCobro(clienteId: number): Promise<{ texto: string | null; total_cent: bigint; cliente: string; vencidos?: number }>;
@@ -42,6 +42,7 @@ export const ACCIONES_OPERACION = [
   'registrar_toma_omar', 'resolver_toma_omar', 'cerrar_liquidacion_omar', 'registrar_pago_omar', 'aviso_marcar_leido',
   // F3a
   'registrar_aportacion', 'registrar_gasto_socio', 'registrar_pago_a_socio', 'registrar_liquidacion_entre_socios', 'anular_movimiento_socio', 'proponer_cierre_reparto', 'firmar_cierre_reparto', 'anular_cierre_reparto',
+  'contra_acta_reparto', 'proponer_retiro_capital', 'confirmar_retiro_capital', 'registrar_movimiento_efectivo', 'registrar_gasto_empresa',
   'registrar_ajuste_proveedor', 'registrar_pago_proveedor_sociedad', 'anular_movimiento_proveedor', 'fijar_ambito_pedido', 'registrar_dicho_proveedor', 'cerrar_liquidacion_proveedor', 'registrar_recargo_credito',
 ] as const;
 export type AccionOperacion = (typeof ACCIONES_OPERACION)[number];
