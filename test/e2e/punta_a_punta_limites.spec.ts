@@ -57,8 +57,7 @@ test('T02 montos invalidos en el formulario de aportacion: 0, 0.00, -5, 9000.505
   expect(await contarEventos('aportacion_socio')).toBe(antes);
 });
 
-test('T02 H-29 (ESPERADO-FALLA-HASTA): "9,5" es ambiguo y se rechaza en vez de leerse como $95.00', async ({ page }) => {
-  test.fail(true, 'H-29: la coma se borra y 9,5 pasa por $95.00');
+test('T02 H-29 (corregido): "9,5" es ambiguo y se rechaza en vez de leerse como $95.00', async ({ page }) => {
   await sesionSocio(page, '/socios');
   await abrirAportacion(page);
   await page.getByTestId('campo-p_concepto').fill('Coma ambigua');
@@ -163,10 +162,12 @@ test('T15 rutas invalidas: nunca un 500 ni la pantalla generica de error', async
   }
 });
 
-test('T15 H-30 (ESPERADO-FALLA-HASTA): la cascada rechaza una caja negativa en vez de calcularla', async ({ page }) => {
-  test.fail(true, 'H-30: cascada?caja=-500 se acepta como caja negativa');
-  await sesionSocio(page, '/socios/cascada?caja=-500');
-  await expect(page.locator('main:not(.rtm-documento)')).toContainText(/caja.*(negativa|inválid|invalid)|monto válido/i);
+test('T15 H-30 (corregido por diseno): la cascada ya no acepta una caja tecleada; ?caja=-500 se ignora y el efectivo sale de las cajas', async ({ page }) => {
+  await sesionSocio(page, '/socios/cascada');
+  const base = await page.getByTestId('efectivo-calculado').innerText();
+  await page.goto('/socios/cascada?caja=-500');
+  await expect(page.getByTestId('efectivo-calculado')).toHaveText(base);
+  await expect(page.locator('main:not(.rtm-documento)')).not.toContainText(/-\$500\.00|−\$500\.00/);
 });
 
 test('T15 atras y adelante despues de una accion y F5 con el dialogo abierto no repiten ni rompen nada', async ({ page }) => {
@@ -194,8 +195,10 @@ test('T16 sesion vencida con un dialogo abierto: confirmar no pierde nada en sil
   expect(await contarEventos('aportacion_socio')).toBe(antes);
 });
 
-test('T13 H-33 (ESPERADO-FALLA-HASTA): una lectura que falla muestra "No se pudo cargar" con una accion, no la pantalla de Next', async ({ page }) => {
-  test.fail(true, 'H-33: ninguna pagina usa el estado de error de DataTable ni existe error.tsx');
+test('T13 H-33 (PENDIENTE): una lectura que falla muestra "No se pudo cargar" con una accion, no la pantalla de Next', async ({ page }) => {
+  // error.tsx ya existe, pero esta simulacion (fulfill 500 del documento) devuelve texto plano y nunca llega al limite de error de la app: hace falta
+  // forzar una falla de api.* en la base (por ejemplo revocando el permiso de la funcion dentro de una transaccion de prueba) para ejercer error.tsx.
+  test.fixme(true, 'H-33: falta un mecanismo para fallar una lectura del servidor sin tocar produccion; error.tsx existe y se ve en pantalla (ver F00/H-32)');
   await sesionSocio(page, '/pedidos');
   // Se simula el fallo de la lectura interceptando la peticion de datos del servidor para la ruta.
   await page.route('**/pedidos?*', (route) => route.fulfill({ status: 500, body: 'fallo simulado' }));

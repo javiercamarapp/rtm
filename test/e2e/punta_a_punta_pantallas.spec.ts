@@ -102,8 +102,8 @@ for (const tema of TEMAS) {
   });
 }
 
-test('menu movil: se abre, navega a cada seccion y se cierra (solo anchos menores de 1024)', async ({ page }, info) => {
-  test.skip((page.viewportSize()?.width ?? 1440) >= 1024, 'el menu lateral es fijo en laptop');
+test('menu movil: se abre, navega a cada seccion y se cierra (solo anchos menores de 768)', async ({ page }, info) => {
+  test.skip((page.viewportSize()?.width ?? 1440) >= 768, 'desde 768 px la barra lateral es fija (shell.css)');
   await sesionSocio(page, '/');
   const secciones = ['Pedidos y notas', 'Paquetes por hacer', 'Paquetes en trayecto', 'Cuentas por cobrar', 'Catálogo y precios', 'Clientes', 'Inventario', 'Proveedores', 'Cuenta de socios', 'Cuenta con Omar', 'Avisos'];
   for (const nombre of secciones) {

@@ -27,6 +27,8 @@ export function valorSalida(valor: Centavos, existencia: number, n: number): Cen
 
 /** "1234.50" o "1,234.5" -> 123450n. Rechaza mas de dos decimales y cualquier otra cosa. */
 export function centavosDesdeTexto(texto: string): Centavos {
+  // La coma solo vale como separador de miles ("1,234.50"): "9,5" o "1.234,56" son ambiguos (coma decimal) y se rechazan en vez de leerse como $95.00.
+  if (/,/.test(texto) && !/^\s*-?\$?\s*\d{1,3}(,\d{3})+(\.\d+)?\s*$/.test(texto)) throw new RangeError(`monto ambiguo: ${texto}`);
   const limpio = texto.trim().replace(/[$,\s]/g, '');
   const m = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(limpio);
   if (!m) throw new RangeError(`monto invalido: ${texto}`);
