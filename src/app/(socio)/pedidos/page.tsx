@@ -16,12 +16,12 @@ const ESTADOS: { clave: string; texto: string }[] = [
   { clave: '', texto: 'Todos' }, { clave: 'borrador', texto: 'Borradores' }, { clave: 'confirmado', texto: 'Por enviar' }, { clave: 'enviado', texto: 'Enviados' }, { clave: 'anulado', texto: 'Anulados' },
 ];
 
-export default async function Pagina({ searchParams }: { searchParams: Promise<{ estado?: string; duenio?: string; aviso?: string }> }) {
-  const { estado = '', duenio = '', aviso = '' } = await searchParams;
+export default async function Pagina({ searchParams }: { searchParams: Promise<{ estado?: string; aviso?: string }> }) {
+  const { estado = '', aviso = '' } = await searchParams;
   const todos = await (await operacionDeSocio()).pedidos();
-  const filas = todos.filter((p) => (!estado || p.estado === (estado as EstadoPedido)) && (!duenio || p.duenio === duenio) && (!aviso || p.avisos > 0));
+  const filas = todos.filter((p) => (!estado || p.estado === (estado as EstadoPedido)) && (!aviso || p.avisos > 0));
   const enlace = (cambios: Record<string, string>) => {
-    const q = new URLSearchParams({ ...(estado ? { estado } : {}), ...(duenio ? { duenio } : {}), ...(aviso ? { aviso } : {}), ...cambios });
+    const q = new URLSearchParams({ ...(estado ? { estado } : {}), ...(aviso ? { aviso } : {}), ...cambios });
     for (const [k, v] of [...q.entries()]) if (!v) q.delete(k);
     const s = q.toString();
     return s ? `/pedidos?${s}` : '/pedidos';
@@ -39,8 +39,6 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
       />
       <div className="rtm-barra-filtros" aria-label="Filtros">
         {ESTADOS.map((e) => <Link key={e.clave} className="rtm-chip-filtro" href={enlace({ estado: e.clave })} aria-current={estado === e.clave}>{e.texto}</Link>)}
-        <Link className="rtm-chip-filtro" href={enlace({ duenio: duenio === 'Angelo' ? '' : 'Angelo' })} aria-current={duenio === 'Angelo'}>De Angelo</Link>
-        <Link className="rtm-chip-filtro" href={enlace({ duenio: duenio === 'Javier' ? '' : 'Javier' })} aria-current={duenio === 'Javier'}>De Javier</Link>
         <Link className="rtm-chip-filtro" href={enlace({ aviso: aviso ? '' : '1' })} aria-current={aviso === '1'}>Con aviso</Link>
       </div>
       <section className="rtm-seccion rtm-entra rtm-i-2" aria-label="Lista de pedidos">
@@ -53,7 +51,6 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
             { id: 'f', titulo: 'Folio', celda: (p) => <Link className="rtm-mono" href={`/pedidos/${p.id}`}>{p.folio}</Link> },
             { id: 'd', titulo: 'Fecha', secundaria: true, celda: (p) => etiquetaFecha(p.fecha_neg) },
             { id: 'c', titulo: 'Cliente', celda: (p) => p.cliente },
-            { id: 'o', titulo: 'Dueño', secundaria: true, celda: (p) => p.duenio },
             { id: 'r', titulo: 'Origen', secundaria: true, celda: (p) => ORIGEN[p.origen] },
             { id: 'z', titulo: 'Piezas', numerica: true, celda: (p) => (p.estado === 'enviado' || p.estado === 'anulado' ? `${formatearPiezas(p.piezas_surtidas)} de ${p.piezas_pedidas}` : formatearPiezas(p.piezas_pedidas)) },
             { id: 'b', titulo: 'Cobrado', numerica: true, celda: (p) => (p.estado === 'enviado' ? <CifraComprobada texto={formatearMoneda(p.cobrado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" /> : <SinDato />) },

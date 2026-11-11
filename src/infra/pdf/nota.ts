@@ -9,13 +9,13 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import type { NotaFuente } from '@/dominio/operacion/tipos';
 
-const ANCHO = 612;
-const ALTO = 792;
-const M = 54;
-const UTIL = ANCHO - 2 * M;
+export const ANCHO = 612;
+export const ALTO = 792;
+export const M = 54;
+export const UTIL = ANCHO - 2 * M;
 const NEGRO = rgb(0, 0, 0);
 
-interface Fuentes { cuerpo: PDFFont; negrita: PDFFont; marca: PDFFont }
+export interface Fuentes { cuerpo: PDFFont; negrita: PDFFont; marca: PDFFont }
 
 function archivoFuente(nombre: string): Uint8Array {
   return readFileSync(join(process.cwd(), 'src', 'fuentes', nombre));
@@ -26,7 +26,7 @@ export function huella(bytes: Uint8Array): string {
 }
 
 /** Math.random fijo durante la generacion: pdf-lib sufija con azar el nombre de la fuente subconjunto; sin eso dos corridas no darian los mismos bytes. */
-async function sinAzar<T>(fn: () => Promise<T>): Promise<T> {
+export async function sinAzar<T>(fn: () => Promise<T>): Promise<T> {
   const original = Math.random;
   let semilla = 0x2f6e2b1;
   Math.random = () => {
@@ -40,7 +40,7 @@ async function sinAzar<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-async function nuevoDocumento(titulo: string, emitidaAt: string): Promise<{ pdf: PDFDocument; f: Fuentes }> {
+export async function nuevoDocumento(titulo: string, emitidaAt: string): Promise<{ pdf: PDFDocument; f: Fuentes }> {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
   const fecha = new Date(emitidaAt);
@@ -64,7 +64,7 @@ function limpio(fuente: PDFFont, t: string): string {
   return s;
 }
 
-class Hoja {
+export class Hoja {
   pagina!: PDFPage;
   y = 0;
   readonly paginas: PDFPage[] = [];
@@ -97,7 +97,7 @@ class Hoja {
   }
 }
 
-function pie(f: Fuentes, hoja: Hoja, folio: string): void {
+export function pie(f: Fuentes, hoja: Hoja, folio: string): void {
   const total = hoja.paginas.length;
   hoja.paginas.forEach((p, i) => {
     p.drawLine({ start: { x: M, y: M + 14 }, end: { x: M + UTIL, y: M + 14 }, thickness: 0.5, color: NEGRO });
@@ -227,7 +227,7 @@ export async function pdfHojaInterna(n: NotaFuente): Promise<Uint8Array> {
     h.bajar(10);
     h.linea();
     h.bajar(20);
-    h.texto(`${i.cliente} · dueño ${i.duenio} · origen ${i.origen.replaceAll('_', ' ')}`, M, 10, { ancho: UTIL });
+    h.texto(`${i.cliente} · origen ${i.origen.replaceAll('_', ' ')}`, M, 10, { ancho: UTIL });
     h.bajar(24);
 
     const x = { a: M, b: M + 190, c: M + 280, d: M + 360, e: M + 440, f: M + UTIL };

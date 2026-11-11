@@ -23,14 +23,17 @@ export function ExplicarProvider({ explicar, children }: { explicar: Explicar; c
   const [estado, setEstado] = useState<Estado>({ fase: 'cerrado' });
   const disparador = useRef<HTMLElement | null>(null);
   const cerrar = useRef<HTMLButtonElement>(null);
+  const peticion = useRef(0); // la respuesta de una cifra cerrada o reemplazada no debe reabrir el cajon
 
   const abrir = useCallback((cifra: string, d: HTMLElement | null) => {
     disparador.current = d;
+    const mia = ++peticion.current;
     setEstado({ fase: 'cargando', cifra });
-    explicar(cifra).then((datos) => setEstado({ fase: 'listo', datos }), () => setEstado({ fase: 'error', cifra }));
+    explicar(cifra).then((datos) => { if (peticion.current === mia) setEstado({ fase: 'listo', datos }); }, () => { if (peticion.current === mia) setEstado({ fase: 'error', cifra }); });
   }, [explicar]);
 
   const cerrarCajon = useCallback(() => {
+    peticion.current += 1;
     setEstado({ fase: 'cerrado' });
     disparador.current?.focus();
   }, []);

@@ -5,9 +5,10 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
-import { IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
+import { IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoContactos, IconoInicio, IconoInventario, IconoMenu, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
+import type { Pulso as DatosPulso } from '@/dominio/operacion/pulso';
 import { Pulso } from './pulso';
 
 const SECCIONES = [
@@ -18,10 +19,12 @@ const SECCIONES = [
   { href: '/cuentas-por-cobrar', etiqueta: 'Cuentas por cobrar', icono: <IconoCobrar /> },
   { href: '/catalogo', etiqueta: 'Catálogo y precios', icono: <IconoCatalogo /> },
   { href: '/clientes', etiqueta: 'Clientes', icono: <IconoClientes /> },
+  { href: '/contactos', etiqueta: 'Contactos', icono: <IconoContactos /> },
   { href: '/inventario', etiqueta: 'Inventario', icono: <IconoInventario /> },
   { href: '/proveedores', etiqueta: 'Proveedores', icono: <IconoProveedores /> },
   { href: '/socios', etiqueta: 'Cuenta de socios', icono: <IconoSocios /> },
   { href: '/omar', etiqueta: 'Cuenta con Omar', icono: <IconoOmar /> },
+  { href: '/contabilidad', etiqueta: 'Contabilidad', icono: <IconoContabilidad /> },
   { href: '/avisos', etiqueta: 'Avisos', icono: <IconoAviso /> },
 ] as const;
 
@@ -34,9 +37,10 @@ interface Props {
   children: ReactNode;
   nombreSocio: string;
   accionSalir: () => Promise<void>;
+  pulso: DatosPulso;
 }
 
-export function Armazon({ children, nombreSocio, accionSalir }: Props) {
+export function Armazon({ children, nombreSocio, accionSalir, pulso }: Props) {
   const ruta = usePathname();
   const [abierto, setAbierto] = useState(false);
   const activo = indiceActivo(ruta);
@@ -49,7 +53,7 @@ export function Armazon({ children, nombreSocio, accionSalir }: Props) {
     <div className="rtm-app">
       <aside className="rtm-lateral" data-abierto={abierto} aria-label="Navegación principal">
         <div className="rtm-lateral-marca">
-          <Link href="/" aria-label={`${MARCA.nombre}, inicio`}>
+          <Link href="/" aria-label={`${MARCA.nombre}, inicio`} onClick={() => setAbierto(false)}>
             <Logo alto={22} />
           </Link>
         </div>
@@ -58,7 +62,7 @@ export function Armazon({ children, nombreSocio, accionSalir }: Props) {
           <ul className="rtm-nav">
             {SECCIONES.map((s, i) => (
               <li key={s.href}>
-                <Link href={s.href} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined}>
+                <Link href={s.href} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined} onClick={() => setAbierto(false)}>
                   {s.icono}
                   <span>{s.etiqueta}</span>
                 </Link>
@@ -84,7 +88,7 @@ export function Armazon({ children, nombreSocio, accionSalir }: Props) {
             {MARCA.nombre} / <strong>{activo >= 0 ? SECCIONES[activo]!.etiqueta : 'Diseño'}</strong>
           </span>
           <div className="rtm-pulso">
-            <Pulso />
+            <Pulso chips={pulso.chips} />
           </div>
           <div className="rtm-barra-acciones">
             <Apariencia />
@@ -95,13 +99,13 @@ export function Armazon({ children, nombreSocio, accionSalir }: Props) {
           <div className="rtm-panel-scroll">
             <div className="rtm-pagina">
               <div className="rtm-pulso-movil" aria-label="Pulso">
-                <Pulso />
+                <Pulso chips={pulso.chips} />
               </div>
               {children}
             </div>
           </div>
           <footer className="rtm-pie">
-            <span>Corte: sin datos todavía</span>
+            <span data-testid="pie-corte">{pulso.corte ? `Corte: al ${pulso.corte}` : 'Corte: sin datos todavía'}</span>
             <span aria-hidden="true">·</span>
             <span>Fuente: libro de eventos</span>
           </footer>

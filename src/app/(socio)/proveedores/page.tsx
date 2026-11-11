@@ -9,6 +9,7 @@ import { EncabezadoPagina } from '@/ui/componentes/pagina';
 import { etiquetaHoy } from '../contexto';
 import { CONCEPTO_CUENTA, ESTADO_COMPRA } from '../operacion/etiquetas';
 import { PagoSocioProveedor } from './pago-socio';
+import { FormularioAccion } from '../operacion/formulario-accion';
 
 export const metadata: Metadata = { title: 'Proveedores' };
 
@@ -16,7 +17,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
   const { p } = await searchParams;
   const proveedor = p === 'Karen' ? 'Karen' : 'Isaac';
   const lector = await operacionDeSocio();
-  const [cuenta, compras] = await Promise.all([lector.cuentaProveedor(proveedor), lector.compras(proveedor)]);
+  const [cuenta, compras, hoja] = await Promise.all([lector.cuentaProveedor(proveedor), lector.compras(proveedor), lector.hojaProveedor(proveedor, null, 'sociedad')]);
   const palabra = cuenta.saldo_cent > 0n ? 'A favor de la sociedad' : cuenta.saldo_cent < 0n ? 'Se le debe al proveedor' : 'Saldo cero';
 
   return (
@@ -38,10 +39,31 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
         <p className="rtm-hero-cifra"><CifraComprobada texto={formatearMoneda(cuenta.saldo_cent)} cifra={`proveedor:saldo:${cuenta.id}`} comprobacion="cuadra" /></p>
         <p data-testid="etiqueta-saldo"><EstadoTexto tono={cuenta.saldo_cent < 0n ? 'atencion' : 'ok'}>{palabra}</EstadoTexto></p>
         <p className="rtm-nota">Diferencias de recepción por asignar (cuenta puente): {cuenta.puente_cent === 0n ? 'ninguna' : formatearMoneda(cuenta.puente_cent)}</p>
-        <div className="rtm-acciones-fila"><PagoSocioProveedor proveedor={proveedor} /></div>
+        <div className="rtm-acciones-fila">
+          <PagoSocioProveedor proveedor={proveedor} />
+          <FormularioAccion boton="Registrar pago de la sociedad" titulo={`Pago de la sociedad a ${proveedor}`} confirmar="Registrar pago" accion="registrar_pago_proveedor_sociedad" testid="pago-sociedad"
+            fijos={{ p_proveedor: proveedor }} campos={[{ nombre: 'p_monto_cent', etiqueta: 'Monto', tipo: 'monto', requerido: true }, { nombre: 'p_nota', etiqueta: 'Nota (opcional)', tipo: 'texto' }]}
+            nota="Sube el saldo a favor de la sociedad con este proveedor. Se puede deshacer con un movimiento contrario." />
+          <FormularioAccion boton="Registrar ajuste" titulo={`Ajuste con ${proveedor}`} confirmar="Registrar ajuste" accion="registrar_ajuste_proveedor" testid="ajuste-proveedor"
+            fijos={{ p_proveedor: proveedor }}
+            campos={[
+              { nombre: 'p_tipo', etiqueta: 'Tipo', tipo: 'seleccion', opciones: [
+                { valor: 'descuento_proveedor', texto: 'Descuento del proveedor (a favor)' }, { valor: 'saldo_a_favor', texto: 'Saldo a favor' }, { valor: 'pago_de_mas', texto: 'Pago de más' },
+                { valor: 'error_bodega', texto: 'Error de bodega' }, { valor: 'seguro_reenvio', texto: 'Seguro de reenvío' }] },
+              { nombre: 'p_monto_cent', etiqueta: 'Monto a favor de la sociedad', tipo: 'monto', requerido: true, ayuda: 'Un cargo a favor del proveedor se registra como orden de compra.' },
+              { nombre: 'p_motivo', etiqueta: 'Motivo', tipo: 'texto', requerido: true },
+            ]} />
+        </div>
       </section>
 
-      <section className="rtm-seccion rtm-entra rtm-i-3" aria-label="Órdenes de compra">
+      <section className="rtm-bloque rtm-entra rtm-i-3" aria-label="Liquidación de la semana">
+        <p className="rtm-nota">Liquidación de la semana del {etiquetaFecha(hoja.semana_ini)} al {etiquetaFecha(hoja.semana_fin)}: costo total con guías menos pagos</p>
+        <p className="rtm-hero-cifra" data-testid="falta-por-saldar"><CifraComprobada texto={formatearMoneda(hoja.totales.falta_por_saldar_cent)} cifra={`proveedor:falta:${proveedor}:${hoja.semana_ini}:${hoja.ambito}`} comprobacion={hoja.comprobaciones.cuadra ? 'cuadra' : 'no_cuadra'} /></p>
+        <p><EstadoTexto tono={hoja.comprobaciones.cuadra ? 'ok' : 'malo'}>{hoja.comprobaciones.cuadra ? 'Cuadra' : 'No cuadra'}</EstadoTexto> · falta por saldar</p>
+        <div className="rtm-acciones-fila"><Link className="rtm-boton rtm-boton-primario" href={`/proveedores/liquidacion?p=${proveedor}`} data-testid="abrir-liquidacion">Abrir hoja y liquidar</Link></div>
+      </section>
+
+      <section className="rtm-seccion rtm-entra rtm-i-4" aria-label="Órdenes de compra">
         <h2>Órdenes de compra</h2>
         <DataTable
           etiqueta={`Órdenes de compra de ${proveedor}`}
