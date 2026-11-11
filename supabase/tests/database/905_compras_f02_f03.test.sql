@@ -111,7 +111,7 @@ select is((operacion.confirmar_compra('n905k1d', pg_temp.cid('n905k1'))->>'saldo
 select throws_ok($$select operacion.crear_compra('n905z1', 'Isaac', '[{"modelo":"N905 Modelo QA 50K","sabor":"Fresa","pagadas":0}]'::jsonb)$$, '23514', null, 'pagadas = 0 se rechaza');
 select throws_ok($$select operacion.crear_compra('n905z2', 'Isaac', '[{"modelo":"N905 Modelo QA 50K","sabor":"Fresa","pagadas":-5}]'::jsonb)$$, '23514', null, 'pagadas negativas se rechazan');
 select throws_ok($$select operacion.crear_compra('n905z3', 'Proveedor Fantasma', '[{"modelo":"N905 Modelo QA 50K","sabor":"Fresa","pagadas":5}]'::jsonb)$$, '22023', null, 'proveedor desconocido');
-select throws_ok($$select operacion.crear_compra('n905z4', 'Isaac', '[]'::jsonb)$$, null, null, 'una orden sin renglones se rechaza');
+select throws_ok($$select operacion.crear_compra('n905z4', 'Isaac', '[]'::jsonb)$$, '22023', null, 'una orden sin renglones se rechaza');
 
 select * from finish();
 rollback;
