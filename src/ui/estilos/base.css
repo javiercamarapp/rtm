@@ -1,0 +1,55 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--rtm-chrome);
+  color: var(--rtm-ink);
+  font-family: var(--rtm-fuente-ui);
+  font-size: var(--rtm-cuerpo);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+
+:focus-visible { outline: 2px solid var(--rtm-accent); outline-offset: 2px; }
+:root:not([data-acento='lila']) :focus-visible { outline-color: var(--rtm-ink); }
+
+.rtm-solo-lectores {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Cifras tabulares, alineadas a la derecha en tablas. */
+.rtm-num { font-variant-numeric: tabular-nums; text-align: right; }
+.rtm-mono { font-family: var(--rtm-fuente-mono); }
+
+/* Botones */
+.rtm-boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--rtm-e-2);
+  height: var(--rtm-fila); padding: 0 var(--rtm-e-4);
+  border-radius: var(--rtm-r-pildora); border: 1px solid var(--rtm-line-2);
+  background: var(--rtm-surface); color: var(--rtm-ink);
+  font-size: var(--rtm-cuerpo); font-weight: 500; text-decoration: none; cursor: pointer;
+}
+.rtm-boton:hover { opacity: 0.8; }
+/* El boton primario es de tinta, nunca del acento. */
+.rtm-boton-primario { background: var(--rtm-ink); color: var(--rtm-panel); border-color: var(--rtm-ink); }
+
+.rtm-icono-boton {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0;
+  border-radius: var(--rtm-r-pildora); border: 1px solid var(--rtm-line-2);
+  background: var(--rtm-surface); cursor: pointer;
+}
+.rtm-icono-boton:hover { opacity: 0.8; }
+.rtm-icono-boton svg { width: 18px; height: 18px; }
+
+/* Paginas de texto (terminos, privacidad) */
+.rtm-documento { max-width: 62ch; margin: 0 auto; padding: var(--rtm-e-10) var(--rtm-e-5); display: flex; flex-direction: column; gap: var(--rtm-e-3); }
+.rtm-documento h1 { font-family: var(--rtm-fuente-serif); font-weight: 400; font-size: 36px; line-height: 42px; margin: 0; }

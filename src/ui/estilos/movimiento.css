@@ -1,0 +1,82 @@
+/* Movimiento: solo transform, opacity y stroke-dashoffset; maximo 600 ms (trazo de linea 900); una vez por entrada de pagina;
+   escalonado <= 6 elementos. Modo por atributo data-movimiento en <html>: full | reduced | off (ver src/ui/movimiento).
+   reduced = fundido lineal de 120 ms. off = sin animacion. */
+
+:root {
+  --rtm-mov-entrada: 360ms;
+  --rtm-mov-paso: 45ms;
+  --rtm-mov-curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes rtm-entra {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes rtm-fundido {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* A01 transicion de pagina y A04 entrada escalonada (maximo 6 elementos). */
+.rtm-entra {
+  animation: rtm-entra var(--rtm-mov-entrada) var(--rtm-mov-curva) both;
+  animation-delay: calc(var(--rtm-i, 0) * var(--rtm-mov-paso));
+}
+
+:root[data-movimiento='reduced'] .rtm-entra {
+  animation: rtm-fundido 120ms linear both;
+  animation-delay: 0ms;
+}
+
+:root[data-movimiento='off'] .rtm-entra {
+  animation: none;
+}
+
+/* A02 indicador deslizante del menu lateral (transform). */
+.rtm-nav-indicador {
+  transition: transform 220ms var(--rtm-mov-curva);
+}
+
+:root[data-movimiento='reduced'] .rtm-nav-indicador,
+:root[data-movimiento='off'] .rtm-nav-indicador {
+  transition: none;
+}
+
+/* A13 hover y A15 boton: solo transform y opacity. */
+.rtm-boton,
+.rtm-icono-boton {
+  transition: opacity 140ms linear, transform 140ms var(--rtm-mov-curva);
+}
+
+.rtm-boton:active,
+.rtm-icono-boton:active {
+  transform: scale(0.98);
+}
+
+:root[data-movimiento='reduced'] .rtm-boton,
+:root[data-movimiento='reduced'] .rtm-icono-boton,
+:root[data-movimiento='off'] .rtm-boton,
+:root[data-movimiento='off'] .rtm-icono-boton {
+  transition: none;
+}
+
+:root[data-movimiento='reduced'] .rtm-boton:active,
+:root[data-movimiento='reduced'] .rtm-icono-boton:active {
+  transform: none;
+}
+
+/* A23 esqueleto: estatico (sin brillo animado) cuando el movimiento esta reducido. */
+.rtm-esqueleto {
+  background: var(--rtm-fill-active);
+  border-radius: var(--rtm-r-2);
+}
+
+/* Indice de escalonado (A04): el componente elige una clase; el CSS fija la variable. Maximo 6. */
+.rtm-i-0 { --rtm-i: 0; }
+.rtm-i-1 { --rtm-i: 1; }
+.rtm-i-2 { --rtm-i: 2; }
+.rtm-i-3 { --rtm-i: 3; }
+.rtm-i-4 { --rtm-i: 4; }
+.rtm-i-5 { --rtm-i: 5; }
+.rtm-i-6 { --rtm-i: 6; }

@@ -1,0 +1,118 @@
+/* Tokens de diseno de RTM (prefijo --rtm-). UNICO archivo donde se permiten colores literales.
+   Claro y oscuro por atributo data-tema en <html>. Acento: dos variantes conmutables por data-acento (neutro | lila),
+   en <html> o en cualquier contenedor (vista lado a lado). Blanco y negro; el acento nunca es fondo de boton ni texto largo. */
+
+:root {
+  --rtm-chrome: #f5f4f0;
+  --rtm-panel: #fcfcfa;
+  --rtm-surface: #ffffff;
+  --rtm-tint: #f5f4f0;
+  --rtm-fill-active: #ecece4;
+  --rtm-line: #ecebe6;
+  --rtm-line-2: #d9d7d0;
+  --rtm-line-strong: #8f8b82;
+  --rtm-ink: #1a1a1a;
+  --rtm-ink-2: #555555;
+  --rtm-ink-3: #666666;
+  --rtm-ok: #14663a;
+  --rtm-warn: #7a4f00;
+  --rtm-bad: #b3261e;
+
+  /* Paleta de datos: una entidad = un color por espacio de nombres. Ocre nunca como texto. */
+  --rtm-d-tinta: var(--rtm-ink);
+  --rtm-d-lila: #6a37a0;
+  --rtm-d-verde-azulado: #0f6b6b;
+  --rtm-d-ocre: #b8860b;
+  --rtm-d-azul-marino: #1f3f7a;
+  --rtm-d-terracota: #b4472b;
+  --rtm-d-malva: #8e5a9b;
+  --rtm-d-gris: #8a867d;
+
+  --rtm-lila: #6a37a0;
+  --rtm-lila-soft: #f5ecfd;
+
+  /* Fondo del panel del arte del login: negro en los dos temas. */
+  --rtm-login-panel: #0e0e0e;
+  --rtm-login-panel-brillo: #ffffff12;
+
+  --rtm-velo: #00000066;
+
+  /* Sombra solo en popover y dialogo. */
+  --rtm-sombra-flotante: 0 8px 28px #00000026, 0 1px 3px #0000001f;
+
+  /* Radios */
+  --rtm-r-1: 5px;
+  --rtm-r-2: 8px;
+  --rtm-r-3: 12px;
+  --rtm-r-4: 16px;
+  --rtm-r-panel: 22px;
+  --rtm-r-pildora: 999px;
+
+  /* Espacio base 4 */
+  --rtm-e-1: 4px;
+  --rtm-e-2: 8px;
+  --rtm-e-3: 12px;
+  --rtm-e-4: 16px;
+  --rtm-e-5: 20px;
+  --rtm-e-6: 24px;
+  --rtm-e-8: 32px;
+  --rtm-e-10: 40px;
+
+  /* Densidad compacta en laptop: fila 36, nav 32, cuerpo 14 */
+  --rtm-fila: 36px;
+  --rtm-nav: 32px;
+  --rtm-sidebar: 216px;
+  --rtm-barra: 48px;
+  --rtm-inset: 10px;
+  --rtm-cuerpo: 14px;
+
+  --rtm-fuente-ui: var(--font-figtree), 'Figtree', system-ui, sans-serif;
+  --rtm-fuente-serif: var(--font-garamond), 'EB Garamond', Georgia, serif;
+  --rtm-fuente-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, monospace;
+
+  color-scheme: light;
+}
+
+:root[data-tema='oscuro'] {
+  --rtm-chrome: #1c1c1b;
+  --rtm-panel: #161615;
+  --rtm-surface: #222220;
+  --rtm-tint: #262624;
+  --rtm-fill-active: #2b2a27;
+  --rtm-line: #2e2d2a;
+  --rtm-line-2: #3a3935;
+  --rtm-line-strong: #7d786e;
+  --rtm-ink: #f3f2ee;
+  --rtm-ink-2: #b9b7b1;
+  --rtm-ink-3: #9c9a94;
+  --rtm-ok: #5fcb8f;
+  --rtm-warn: #e0b04c;
+  --rtm-bad: #ff8a80;
+
+  --rtm-d-lila: #c3a0ee;
+  --rtm-d-verde-azulado: #3fb0a6;
+  --rtm-d-ocre: #e0a64a;
+  --rtm-d-azul-marino: #5f8fe0;
+  --rtm-d-terracota: #f08a6b;
+  --rtm-d-malva: #efb3d3;
+  --rtm-d-gris: #8f8b82;
+
+  --rtm-lila: #c3a0ee;
+  --rtm-lila-soft: #2e2438;
+
+  --rtm-sombra-flotante: 0 8px 28px #00000080, 0 1px 3px #00000066;
+
+  color-scheme: dark;
+}
+
+/* Acento. Por omision y con data-acento="neutro": la propia tinta. Con "lila": el lila del tema. */
+:root,
+[data-acento='neutro'] {
+  --rtm-accent: var(--rtm-ink);
+  --rtm-accent-soft: var(--rtm-fill-active);
+}
+
+[data-acento='lila'] {
+  --rtm-accent: var(--rtm-lila);
+  --rtm-accent-soft: var(--rtm-lila-soft);
+}
