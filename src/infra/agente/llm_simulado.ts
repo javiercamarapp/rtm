@@ -63,6 +63,22 @@ function lineasDe(texto: string): Array<{ modelo: string; piezas: number }> {
   return salida.filter((l) => l.piezas >= 1 && l.piezas <= 2000);
 }
 
+/** Un entero inicia una linea si le sigue una palabra ("28 jupiter 24 dm"); un entero seguido de otro numero es parte del modelo ("waka 50 24 dm"). */
+function lineasPedido(cuerpo: string): Array<{ modelo: string; piezas: number }> {
+  const porComas = lineasDe(cuerpo);
+  if (/[,;]/.test(cuerpo) && porComas.length > 0) return porComas;
+  const inicios = [...cuerpo.matchAll(/(?:^|\s)(\d{1,4})(?=\s+[A-Za-zÁÉÍÓÚáéíóúñ])/g)];
+  const salida: Array<{ modelo: string; piezas: number }> = [];
+  inicios.forEach((x, i) => {
+    const desde = x.index! + x[0].length;
+    const hasta = i + 1 < inicios.length ? inicios[i + 1]!.index! : cuerpo.length;
+    const modelo = cuerpo.slice(desde, hasta).trim();
+    const piezas = Number(x[1]);
+    if (modelo !== '' && piezas >= 1 && piezas <= 2000) salida.push({ modelo, piezas });
+  });
+  return salida.length > 0 ? salida : porComas;
+}
+
 const NINGUNA: Intencion = { tipo: 'ninguna' };
 
 /** Interpretacion determinista de frases tipicas. No es un modelo: solo sirve para ensayar conversaciones sin gastar. */
@@ -80,7 +96,16 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
     m = /^(?:tome|tomo|toma|me lleve)?\s*(.+)$/i.exec(t);
     const ls = lineasDe(m?.[1] ?? t);
     if (ls.length > 0 && !/saldo|cuanto|stock/.test(n)) {
-      return respuesta([{ tipo: 'toma_omar', lineas: ls.map((l) => ({ modelo_texto: l.modelo, sabor_texto: null, piezas: l.piezas })), fuente_cita: cita }]);
+      return respuesta([
+        {
+          tipo: 'toma_omar',
+          lineas: ls.map((l) => {
+            const [modelo = l.modelo, ...resto] = l.modelo.split(/\s+/);
+            return { modelo_texto: modelo, sabor_texto: resto.length > 0 ? resto.join(' ') : null, piezas: l.piezas };
+          }),
+          fuente_cita: cita,
+        },
+      ]);
     }
   }
 
@@ -132,10 +157,9 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
     if (monto !== null) return respuesta([{ tipo: 'pago', cliente_texto: m[1]!.trim(), monto_centavos: monto, cuenta_destino_texto: null, pedido_folio: null, fuente_cita: cita }]);
   }
 
-  // Pedido: "Cliente 28 jupiter 24 dm" o "Cliente: 28 jupiter, 24 dm"
+  // Pedido: "Cliente 28 jupiter 24 dm", "Cliente 28 waka 50" o "Cliente: jupiter 28, dm 24"
   if ((m = /^([^\d:]+?)[:,]?\s+(\d.*)$/.exec(t))) {
-    const cuerpo = m[2]!.replace(/(\d)\s+(?=\D)/g, '$1, ');
-    const ls = lineasDe(cuerpo.replace(/,\s*,/g, ','));
+    const ls = lineasPedido(m[2]!);
     if (ls.length > 0) {
       return respuesta([
         {

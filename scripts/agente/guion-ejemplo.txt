@@ -1,0 +1,16 @@
+# Guion de ejemplo (datos ilustrativos). Reproducir con: npx tsx scripts/agente/simulador.mts scripts/agente/guion-ejemplo.txt
+# 1) Pedido con alias ambiguo: pregunta, se elige una variante y se registra con eco, comprobacion y Deshacer.
+angelo> Cliente Norte 28 waka 50
+boton angelo 3
+# 2) Pago redirigido al proveedor y consulta de saldo.
+javier> Cliente Norte mando 5,000 a Karen
+javier> saldo con karen
+# 3) Omar toma piezas: queda pendiente hasta que un socio autoriza (Omar no puede pulsar).
+omar> 3 elux sandia
+boton omar 1
+boton javier 1
+# 4) Deshacer el pedido por contramovimiento.
+angelo> /deshacer P-0001
+# 5) Comandos sin IA.
+angelo> /sinia
+angelo> /stock jupiter

@@ -171,8 +171,11 @@ export class AgenteTelegram {
       return update.callback_query ? await this.boton(update.callback_query) : await this.mensaje(update);
     } catch {
       await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: null, detalle: 'error_inesperado' });
-      const chats = await this.d.almacen.chats();
-      await this.com.aGrupo(chats, P.textoSimple(MSG_ERROR));
+      try {
+        await this.com.aGrupo(await this.d.almacen.chats(), P.textoSimple(MSG_ERROR));
+      } catch {
+        // Telegram tambien esta caido: el fallo ya quedo registrado y el webhook responde 200.
+      }
       return { estado: 'error' };
     }
   }
