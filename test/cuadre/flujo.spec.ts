@@ -210,11 +210,14 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
   await page.getByTestId('pago-sociedad').click();
   await page.getByLabel(/Monto/).fill('1000');
   await page.getByTestId('confirmar').click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await cap(page, 'pago-isaac-sociedad');
   await page.getByTestId('pago-socio').click();
   await page.getByLabel('Socio que pagó').selectOption('Javier');
   await page.getByLabel(/Monto/).fill('500');
   await page.getByTestId('confirmar').click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect.poll(async () => (await consultar<{ s: string }>("select operacion.saldo_proveedor(catalogo.proveedor_id('Isaac'))::text as s"))[0]!.s).toBe('-650000');
   await page.reload();
   await cap(page, 'isaac-tras-pagos');
 });

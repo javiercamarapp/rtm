@@ -70,6 +70,14 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
     e.total += f.saldo_cent;
     porCliente.set(f.cliente_id, e);
   }
+  // Los saldos de la apertura tambien envejecen (desde la fecha del adeudo): entran al mismo cuadro.
+  for (const a of d.apertura.filter((x) => x.saldo_cent > 0n)) {
+    const cubeta = a.dias <= 7 ? '0_7' : a.dias <= 14 ? '8_14' : a.dias <= 30 ? '15_30' : 'mas_30';
+    const e = porCliente.get(a.cliente_id) ?? { cliente: a.cliente, v: { '0_7': 0n, '8_14': 0n, '15_30': 0n, mas_30: 0n }, total: 0n };
+    e.v[cubeta] += a.saldo_cent;
+    e.total += a.saldo_cent;
+    porCliente.set(a.cliente_id, e);
+  }
   const filasAnt = [...porCliente.entries()].sort((a, b) => (a[1].total > b[1].total ? -1 : 1)).slice(0, 8).map(([id, e]) => ({
     id: String(id), etiqueta: e.cliente, valores: CUBETAS.map((k) => Number(e.v[k])), textos: CUBETAS.map((k) => m(e.v[k])), total: m(e.total),
   }));
@@ -144,11 +152,11 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
       />
 
       <Rejilla dividir="6-6">
-        <Tarjeta titulo="Antigüedad de saldos por cliente" descripcion="Cuánto debe cada cliente y desde hace cuántos días (desde el envío)">
+        <Tarjeta titulo="Antigüedad de saldos por cliente" descripcion="Cuánto debe cada cliente y desde hace cuántos días (desde el envío o la fecha del adeudo inicial)">
           {filasAnt.length > 0 ? (
-            <AntiguedadSaldos titulo="Saldo por cliente y tramo de antigüedad" descripcion={`Saldo por cobrar de los ${filasAnt.length} clientes con mayor saldo, por tramo de antigüedad.`} procedencia="observado" pie={`Corte: ${etiquetaFecha(d.hoy)} · Fuente: pedidos enviados y pagos aplicados`} filas={filasAnt} />
+            <AntiguedadSaldos titulo="Saldo por cliente y tramo de antigüedad" descripcion={`Saldo por cobrar de los ${filasAnt.length} clientes con mayor saldo, por tramo de antigüedad.`} procedencia="observado" pie={`Corte: ${etiquetaFecha(d.hoy)} · Fuente: pedidos enviados, saldos de apertura y pagos aplicados`} filas={filasAnt} />
           ) : (
-            <p className="a3-grafica-vacia"><strong>Sin saldos que mostrar</strong>Cuando un pedido enviado quede sin saldar, aparecerá aquí por cliente y por tramo.</p>
+            <p className="a3-grafica-vacia"><strong>Sin saldos que mostrar</strong>Cuando un pedido enviado o un saldo de apertura quede sin saldar, aparecerá aquí por cliente y por tramo.</p>
           )}
         </Tarjeta>
         <Tarjeta titulo="Concentración por cliente" descripcion="Parte del saldo total y acumulado de los 8 mayores">
