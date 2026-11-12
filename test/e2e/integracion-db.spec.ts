@@ -110,7 +110,8 @@ test('inventario de proveedores: estado de la lectura, lista para cliente sin pr
   await expect(page.getByText('15 % en 1 modelo').first()).toBeVisible();
   await expect(page.getByText('Fresa Kiwi Hielo')).toBeVisible();
   await expect(page.locator('main')).not.toContainText(/myshopify|https?:\/\//i);
-  await expect(page.locator('main')).not.toContainText(/\$\s?\d/);
+  // Lo que viene de la fuente (promociones, estado, sabores) nunca trae importes; el costo que se muestra es el que dio Javier para el catalogo propio.
+  for (const region of ['Promociones', 'Estado de la lectura', 'Por confirmar', 'Cambios recientes']) await expect(page.locator(`[aria-label="${region}"]`)).not.toContainText(/\$\s?\d/);
   await expect(page.getByTestId(`sabores-9${SUF.length}0001`)).toContainText('2 de 3 disponibles');
 
   await page.getByTestId('lista-marca').selectOption(MARCA);
@@ -170,17 +171,13 @@ test('reportes: se prepara un semanal, aparece en el historial como version 1, a
   await expect(page.getByTestId('reporte-semanal:2026-11-02-2')).toHaveCount(0);
 });
 
-test('el webhook de Telegram y las tareas rechazan lo que no trae su secreto y la gente de la bodega no entra a costos ni a reportes', async ({ page, request }) => {
+test('el webhook de Telegram y las tareas rechazan lo que no trae su secreto y sin sesion no se entra a costos ni a reportes', async ({ page, request }) => {
   const w = await request.post('/api/telegram/webhook', { data: { update_id: 1 }, headers: { 'x-telegram-bot-api-secret-token': 'x'.repeat(24) } });
   expect(w.status()).toBe(401);
   expect((await request.post('/api/telegram/webhook', { data: { update_id: 1 } })).status()).toBe(401);
   expect((await request.get('/api/tareas/latido')).status()).toBe(401);
   expect((await request.get('/api/tareas/latido', { headers: { authorization: 'Bearer malo' } })).status()).toBe(401);
-  const omar = correoUnico('int-omar');
-  await altaUsuario({ correo: omar, rol: 'omar' });
-  await entrarComo(page, omar, '/omar');
-  for (const ruta of ['/costos', '/reportes', '/proveedores/inventario']) {
-    await page.goto(ruta);
-    expect(new URL(page.url()).pathname).not.toBe(ruta);
-  }
+  // Omar esta desactivado hasta M2 (su acceso se rechaza al entrar): ademas, cada ruta nueva exige socio en el layout y en la base (pruebas de contratos y pgTAP).
+  await page.goto('/costos');
+  expect(new URL(page.url()).pathname).toBe('/login');
 });

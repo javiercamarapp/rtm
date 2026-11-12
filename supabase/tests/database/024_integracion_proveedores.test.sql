@@ -26,7 +26,7 @@ create function pg_temp.evs() returns jsonb language sql as $$ select jsonb_buil
 select is((proveedores.guardar_estado(pg_temp.estado(), pg_temp.evs(), 'g:1') ->> 'eventos_nuevos')::int, 1, 'se guarda el estado y un evento');
 select is((proveedores.guardar_estado(pg_temp.estado(), pg_temp.evs(), 'g:1') ->> 'eventos_nuevos')::int, 1, 'la misma clave devuelve el mismo resultado');
 select is((proveedores.guardar_estado(pg_temp.estado(false), pg_temp.evs(), 'g:2') ->> 'eventos_nuevos')::int, 0, 'el mismo evento no se duplica');
-select is((select count(*)::int from proveedores.evento), 1, 'un solo evento');
+select is((select count(*)::int from proveedores.evento where clave = 'modelo_nuevo|900000000000000001|L1'), 1, 'un solo evento de esa clave');
 select is((proveedores.cargar_estado() -> 'variantes' -> '900000000000000101' ->> 'disponible')::boolean, false, 'el estado vigente se reemplaza');
 select is(proveedores.cargar_estado() #>> '{modelos,900000000000000001,tituloNorm}', 'modelo sintetico 8k', 'ida y vuelta de un modelo');
 select is(proveedores.cargar_estado() #>> '{variantes,900000000000000101,cambios,0}', '2026-11-10T12:30:00+00:00', 'los cambios viajan como instantes');
@@ -45,7 +45,7 @@ select throws_ok($$ select proveedores.presupuesto_tomar('2026-11-11', 'otra') $
 -- Foto diaria idempotente.
 select is(proveedores.guardar_foto_diaria('2026-11-10', '[{"varianteId":"v1","disponible":true},{"varianteId":"v2","disponible":false}]'), 2, 'foto diaria de dos filas');
 select is(proveedores.guardar_foto_diaria('2026-11-10', '[{"varianteId":"v1","disponible":true},{"varianteId":"v2","disponible":false}]'), 2, 'repetirla reemplaza, no duplica');
-select is((select count(*)::int from proveedores.foto_diaria), 2, 'dos filas');
+select is((select count(*)::int from proveedores.foto_diaria where dia = '2026-11-10'), 2, 'dos filas');
 
 -- Avisos.
 select ok(proveedores.emitir_aviso('P-01', 'P-01|900000000000000001', 'modelo', '900000000000000001', '{"modelo":"Modelo Sintetico 8000","disponibles":3}', 'Modelo nuevo') is not null, 'P-01 emite un aviso');

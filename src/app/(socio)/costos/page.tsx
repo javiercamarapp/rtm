@@ -124,7 +124,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
             { id: 'm', titulo: 'Monto', numerica: true, celda: (m) => formatearMoneda(m.monto_cent, { conSigno: true }) },
           ]}
         />
-        {cuenta.pendiente_cent > 0n ? <FormularioReembolso aSocio="javier" pendienteCent={cuenta.pendiente_cent} hoy={hoy} /> : <p className="rtm-nota">No hay nada pendiente de reembolsar.</p>}
+        {cuenta.pendiente_cent > 0n ? <FormularioReembolso aSocio="javier" pendienteCent={cuenta.pendiente_cent} hoy={hoy} /> : <p className="rtm-nota" data-testid="cuenta-sin-pendiente">{cuenta.pendiente_cent < 0n ? `Se reembolsó de más ${dinero(-cuenta.pendiente_cent)}: un cargo se anuló después de reembolsarse. Queda como saldo a favor de la sociedad con Javier.` : 'No hay nada pendiente de reembolsar.'}</p>}
       </section>
 
       <section className="rtm-seccion" aria-label="Registrar un cargo">
