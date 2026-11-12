@@ -5,12 +5,13 @@ import { sumarDias } from '@/dominio/calendario';
 import { etiquetaFecha, etiquetaFechaHora, formatearPiezas } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, Segmentado } from '@/ui/componentes/controles';
+import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { Cascada, ColumnasPeriodo } from '@/ui/graficas';
-import { Dos, Estado, Pie, fechaCorta, m, pct, suma } from '../_a3/util';
+import { Dos, Estado, Pie, fechaCorta, m, pct, suma, ejePesos } from '../_a3/util';
 import { CerrarSemana, ExportarCsv, FormularioToma, PagoOmar, ResolverToma } from './acciones-omar';
 
 export const metadata: Metadata = { title: 'Cuenta con Omar' };
@@ -42,6 +43,9 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
     ...(o.estado === 'abierta' ? [{ id: 'abierta', etiqueta: etiquetaSemana(o.semana_ini), valor: Number(o.tomas_cent), texto: m(o.tomas_cent), parcial: true }] : []),
   ];
   const piezasRenta = o.renta.reduce((a, r) => a + r.piezas, 0);
+  const modelos = new Map<string, { piezas: number; monto: bigint }>();
+  for (const r of o.renta) { const e = modelos.get(r.modelo) ?? { piezas: 0, monto: 0n }; e.piezas += r.piezas; e.monto += r.monto_cent; modelos.set(r.modelo, e); }
+  const porModelo = [...modelos.entries()].map(([modelo, e]) => ({ modelo, ...e })).sort((a, b) => (a.monto > b.monto ? -1 : 1));
   const piezasTomas = o.tomas.reduce((a, t) => a + t.piezas, 0);
   const pagosA = suma(o.pagos.filter((p) => p.sentido === 'a_omar').map((p) => p.monto_cent));
   const pagosDe = suma(o.pagos.filter((p) => p.sentido === 'de_omar').map((p) => p.monto_cent));
@@ -76,8 +80,8 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
       <KpiLinea
         etiquetaAria="Indicadores de la cuenta con Omar"
         celdas={[
-          { id: 'renta', etiqueta: 'Renta devengada', valor: m(o.renta_cent), categoria: 1, nota: `${formatearPiezas(piezasRenta)} piezas surtidas · ${m(o.renta_por_pieza_cent)} por pieza` },
-          { id: 'tomas', etiqueta: 'Tomas a su precio', valor: m(o.tomas_cent), categoria: 6, nota: `${formatearPiezas(piezasTomas)} piezas · compensado ${m(o.compensado_cent)}` },
+          { id: 'renta', etiqueta: 'Renta devengada', valor: m(o.renta_cent), categoria: 1, nota: `${formatearPiezas(piezasRenta)} surtidas · ${m(o.renta_por_pieza_cent)} por pieza` },
+          { id: 'tomas', etiqueta: 'Tomas a su precio', valor: m(o.tomas_cent), categoria: 6, nota: `${formatearPiezas(piezasTomas)} tomadas · compensado ${m(o.compensado_cent)}` },
           { id: 'neto', etiqueta: 'Neto de la semana', testid: 'neto-omar', valor: <CifraComprobada texto={m(neto, true)} cifra={`omar:neto:${o.semana_ini}`} comprobacion="cuadra" />, categoria: 2, nota: <span data-testid="palabra-omar"><Estado tono={neto === 0n ? 'ok' : 'atencion'}>{o.palabra}</Estado></span> },
           { id: 'saldo', etiqueta: 'Saldo acumulado de la cuenta', valor: m(o.saldo_cuenta_cent, true), categoria: 4, nota: `Pagos de la semana ${m(o.pagos_semana_cent)}` },
           { id: 'pend', etiqueta: 'Tomas pendientes de autorizar', valor: String(o.tomas_pendientes), categoria: 7, nota: o.tomas_pendientes > 0 ? 'Caducan solas si nadie las autoriza' : 'Nada por autorizar' },
@@ -98,15 +102,20 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
         <Tarjeta titulo="Renta menos tomas igual al neto" descripcion="De lo que se devenga a lo que se liquida">
           <Cascada titulo="Cascada de la semana con Omar" descripcion={`Renta ${m(o.renta_cent)}, tomas ${m(o.tomas_cent)}, neto ${m(neto, true)}.`} pasos={pasos} unidad="Pesos" />
         </Tarjeta>
-        <Tarjeta titulo="Renta devengada por semana" descripcion="La semana abierta va con trama">
-          {colRenta.length >= 2 ? (
-            <ColumnasPeriodo titulo="Renta por semana" descripcion={`Renta devengada de ${colRenta.length} semanas.`} unidad="Pesos" procedencia="observado" pie="Fuente: liquidaciones cerradas y semana en curso" datos={colRenta} />
-          ) : <p className="a3-grafica-vacia"><strong>Pocas semanas</strong>Con dos o más semanas se dibuja la renta por semana.</p>}
-        </Tarjeta>
+        <div className="a3-pila">
+          <Tarjeta titulo="Renta por modelo" descripcion="Piezas surtidas desde la bodega de Omar en la semana">
+            {porModelo.length > 0 ? <BarList etiquetaAria="Renta por modelo" items={porModelo.map((x) => ({ id: x.modelo, etiqueta: x.modelo, texto: m(x.monto), pct: pct(x.monto, o.renta_cent), nota: formatearPiezas(x.piezas) }))} /> : <p className="a3-grafica-vacia"><strong>Sin renta</strong>Aún no sale ninguna pieza de la bodega esta semana.</p>}
+          </Tarjeta>
+          <Tarjeta titulo="Renta devengada por semana" descripcion="La semana abierta va con trama">
+            {colRenta.length >= 2 ? (
+              <ColumnasPeriodo titulo="Renta por semana" descripcion={`Renta devengada de ${colRenta.length} semanas.`} unidad="Pesos" formatoEje={ejePesos} procedencia="observado" pie="Fuente: liquidaciones cerradas y semana en curso" datos={colRenta} alto={140} />
+            ) : <p className="a3-grafica-vacia"><strong>Pocas semanas</strong>Con dos o más semanas se dibuja la renta por semana.</p>}
+          </Tarjeta>
+        </div>
       </Rejilla>
       {colTomas.length >= 2 && (
         <Tarjeta titulo="Tomas por semana" descripcion="Lo que Omar tomó a su precio">
-          <ColumnasPeriodo titulo="Tomas por semana" descripcion={`Tomas a su precio de ${colTomas.length} semanas.`} unidad="Pesos" procedencia="observado" pie="Fuente: tomas autorizadas" datos={colTomas} alto={140} />
+          <ColumnasPeriodo titulo="Tomas por semana" descripcion={`Tomas a su precio de ${colTomas.length} semanas.`} unidad="Pesos" formatoEje={ejePesos} procedencia="observado" pie="Fuente: tomas autorizadas" datos={colTomas} alto={140} />
         </Tarjeta>
       )}
 

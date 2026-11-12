@@ -7,7 +7,7 @@ import type { EstadoResultados } from '@/dominio/contabilidad/tipos';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso } from '@/ui/componentes/controles';
-import { BarList } from '@/ui/componentes/datos';
+import { BarList, ListaClaveValor } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
@@ -119,14 +119,20 @@ export default async function PaginaEstadoResultados({ searchParams }: { searchP
             </Tarjeta>
             <Tarjeta titulo="En qué se van los gastos" descripcion="Gastos variables y fijos del periodo">
               {gastos.length > 0 ? <BarList etiquetaAria="Gastos por cuenta" items={gastos.map((g) => ({ id: g.codigo, etiqueta: `${g.codigo} ${g.nombre}`, texto: m(g.monto_cent), pct: pct(abs(g.monto_cent), totalGastos) }))} /> : <p className="a3-grafica-vacia"><strong>Sin gastos</strong>No hay gastos con importe en el periodo.</p>}
-              <Pie>Gastos totales {m(totalGastos)}.</Pie>
+              <ListaClaveValor items={[
+                { k: 'Gastos variables de venta', v: m(e.gastos_variables_cent) },
+                { k: 'Gastos fijos y de administración', v: m(e.gastos_fijos_cent) },
+                { k: 'Gastos sobre ingresos', v: pctSigno(totalGastos, e.ingresos_operativos_cent) },
+                { k: 'Costo de ventas sobre ingresos', v: pctSigno(e.costo_ventas_cent, e.ingresos_operativos_cent) },
+                { k: 'Gastos totales', v: <strong>{m(totalGastos)}</strong> },
+              ]} />
             </Tarjeta>
           </Rejilla>
           <Rejilla dividir="8-4">
             <Tarjeta plana titulo="Estado de resultados" descripcion={`Periodo del ${etiquetaFecha(ini)} al ${etiquetaFecha(fin)}${hayAnt ? ` contra ${etiquetaFecha(ant.ini)} al ${etiquetaFecha(ant.fin)}` : ''}`}>
               <DataTable
                 etiqueta="Estado de resultados"
-                densidad="libro" plana pegajosa primeraFija
+                densidad="libro" plana primeraFija
                 interactiva={{ exportar: `estado-resultados-${ini}-${fin}` }}
                 clave={(r) => r.clave}
                 filas={filas}

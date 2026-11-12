@@ -8,12 +8,12 @@ import type { FlujoInsumo } from '@/dominio/reportes/insumos';
 import { LEYENDA_ESCENARIO, LEYENDA_ESTIMADO, coberturaViernes, diasEntre, escenarioCosto, flujoCaja, promedioMovilExponencial, tendenciaLineal, type Proyeccion } from '@/dominio/reportes/proyecciones';
 import { PARAMETROS } from '@/dominio/reportes/parametros';
 import { Aviso } from '@/ui/componentes/controles';
-import { ListaClaveValor } from '@/ui/componentes/datos';
+import { BarList, ListaClaveValor } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { LineaProyeccion } from '@/ui/graficas';
-import { Estado, Pie, fechaCorta, m } from '../../_a3/util';
+import { Estado, Pie, fechaCorta, m, pct } from '../../_a3/util';
 import { SubnavContabilidad } from '../subnav';
 
 export const metadata: Metadata = { title: 'Proyecciones y estimaciones' };
@@ -74,9 +74,10 @@ export default async function PaginaProyecciones() {
   const cobertura = fondos === null ? null : coberturaViernes(fondos, hastaViernes, porPagarViernes);
 
   // Sensibilidad al costo: escenario sobre las cuatro semanas proyectadas.
-  const escenarios = pPiezas.emite && pUtil.emite && pVentas.emite
+  const escenariosTodos = pPiezas.emite && pUtil.emite && pVentas.emite
     ? PARAMETROS.escenarios.deltasCostoCent.map((d) => escenarioCosto({ piezasProyectadas: Math.max(0, Math.round(pPiezas.datos.central * 4)), utilidadProyectadaCent: aBig(pUtil.datos.central * 4), ventasProyectadasCent: aBig(pVentas.datos.central * 4), deltaCostoCent: d, lineas: [] }))
     : null;
+  const escenarios = escenariosTodos && escenariosTodos.every((e) => e.emite) ? escenariosTodos.map((e, i) => ({ i, e })) : null;
 
   // Grafica de caja: ultimos saldos observados y 4 semanas estimadas.
   const obsCaja = (serie?.semanas ?? []).filter((s) => !s.parcial && s.con_movimientos).slice(-6);
@@ -90,6 +91,7 @@ export default async function PaginaProyecciones() {
   ] : [];
 
   const MIN = PARAMETROS.minSemanasEma;
+  const mayorBarra = [fondos ?? 0n, hastaViernes, porPagarViernes].reduce((a, b) => (b > a ? b : a), 1n);
   const coberturaTexto = cobertura === null ? null : `${(Number(cobertura) / 1000).toFixed(2)} veces`;
   const coberturaOk = cobertura !== null && cobertura >= PARAMETROS.coberturaViernesVerde;
 
@@ -131,6 +133,15 @@ export default async function PaginaProyecciones() {
           )}
         </Tarjeta></div>
         <Tarjeta titulo="Cobertura del viernes" descripcion="(fondos + cobros esperados) ÷ por pagar al proveedor">
+          <BarList
+            etiquetaAria="Con qué se paga el viernes"
+            items={[
+              { id: 'fon', etiqueta: 'Fondos de la sociedad', texto: fondos === null ? 'Sin dato' : m(fondos), pct: fondos === null ? null : pct(fondos, mayorBarra) },
+              { id: 'cob', etiqueta: 'Cobros con fecha hasta el viernes', texto: cxc ? m(hastaViernes) : 'Sin dato', pct: cxc ? pct(hastaViernes, mayorBarra) : null },
+              { id: 'pag', etiqueta: 'Por pagar el viernes', texto: porPagarViernes > 0n ? m(porPagarViernes) : 'Sin dato', pct: porPagarViernes > 0n ? pct(porPagarViernes, mayorBarra) : null, tono: 'malo' },
+            ]}
+            mostrarPct={false}
+          />
           <ListaClaveValor items={[
             { k: 'Cobertura', v: coberturaTexto ?? <span className="rtm-sin-dato">Sin dato</span> },
             { k: 'Umbral verde', v: `${(Number(PARAMETROS.coberturaViernesVerde) / 1000).toFixed(2)} veces` },
@@ -173,17 +184,17 @@ export default async function PaginaProyecciones() {
             <DataTable
               etiqueta="Escenarios de costo"
               densidad="densa" plana
-              clave={(e) => (e.emite ? e.metodo : razon(e))}
+              clave={(x) => x.i}
               filas={escenarios}
               columnas={[
-                { id: 'd', titulo: 'Sube el costo', ancho: 'm', celda: (e) => (e.emite ? `+${m(e.datos.deltaCostoCent)} por pieza` : <span className="rtm-sin-dato">Sin dato</span>) },
-                { id: 'i', titulo: 'Efecto en utilidad', numerica: true, ancho: 'm', celda: (e) => (e.emite ? m(e.datos.impactoCent, true) : '') },
-                { id: 'u', titulo: 'Utilidad nueva', numerica: true, ancho: 'm', celda: (e) => (e.emite ? m(e.datos.utilidadNuevaCent, true) : '') },
-                { id: 'mg', titulo: 'Margen nuevo', numerica: true, ancho: 's', secundaria: true, celda: (e) => (e.emite ? `${(Number(e.datos.margenNuevoBp) / 100).toFixed(1)} %` : '') },
+                { id: 'd', titulo: 'Sube el costo', ancho: 'm', celda: ({ e }) => (e.emite ? `+${m(e.datos.deltaCostoCent)} por pieza` : <span className="rtm-sin-dato">Sin dato</span>) },
+                { id: 'i', titulo: 'Efecto en utilidad', numerica: true, ancho: 'm', celda: ({ e }) => (e.emite ? m(e.datos.impactoCent, true) : '') },
+                { id: 'u', titulo: 'Utilidad nueva', numerica: true, ancho: 'm', celda: ({ e }) => (e.emite ? m(e.datos.utilidadNuevaCent, true) : '') },
+                { id: 'mg', titulo: 'Margen nuevo', numerica: true, ancho: 's', secundaria: true, celda: ({ e }) => (e.emite ? `${(Number(e.datos.margenNuevoBp) / 100).toFixed(1)} %` : '') },
               ]}
             />
           ) : (
-            <p className="a3-grafica-vacia"><strong>No se estima</strong>Se calcula sobre las piezas y la utilidad proyectadas; faltan {faltan(MIN)} semanas de historia (mínimo {MIN}).</p>
+            <p className="a3-grafica-vacia"><strong>No se estima</strong>Se calcula sobre las piezas, las ventas y la utilidad proyectadas; hacen falta {MIN} semanas de historia con ventas y piezas vendidas (hay {nHist}).</p>
           )}
           <Pie>Escenario con supuesto explícito, sin probabilidad: el efecto es piezas proyectadas por el aumento de costo; no separa a Isaac de Karen porque la utilidad no se divide por proveedor.</Pie>
         </Tarjeta></div>

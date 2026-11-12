@@ -5,7 +5,7 @@ import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import type { EstadoCompra } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Segmentado } from '@/ui/componentes/controles';
-import { BarList } from '@/ui/componentes/datos';
+import { BarList, ListaClaveValor } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
@@ -13,7 +13,7 @@ import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pag
 import { AreaSerie, Cascada } from '@/ui/graficas';
 import { CONCEPTO_CUENTA, ESTADO_COMPRA, ORIGEN } from '../operacion/etiquetas';
 import { FormularioAccion } from '../operacion/formulario-accion';
-import { Dos, Estado, Pie, m, pct, suma } from '../_a3/util';
+import { Dos, Estado, Pie, m, pct, suma, ejePesos } from '../_a3/util';
 import { PagoSocioProveedor } from './pago-socio';
 
 export const metadata: Metadata = { title: 'Proveedores' };
@@ -108,7 +108,13 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
         <Tarjeta titulo={`Saldo de la cuenta con ${proveedor}`} descripcion="Positivo = a favor de la sociedad, negativo = se debe">
           <p className="a3-cifra"><CifraComprobada texto={m(cuenta.saldo_cent)} cifra={`proveedor:saldo:${cuenta.id}`} comprobacion="cuadra" /></p>
           <p className="a3-cifra-apoyo" data-testid="etiqueta-saldo"><Estado tono={cuenta.saldo_cent < 0n ? 'atencion' : 'ok'}>{palabra}</Estado><span>{cuenta.modalidad === 'prepago_total' ? 'Prepago total' : 'Liquidación los viernes'}</span></p>
-          <p className="a3-pie">Diferencias por asignar (cuenta puente): {cuenta.puente_cent === 0n ? 'ninguna' : m(cuenta.puente_cent)}. Isaac y Karen nunca se mezclan.</p>
+          <ListaClaveValor items={[
+            { k: 'Semana', v: `${etiquetaFecha(hoja.semana_ini)} al ${etiquetaFecha(hoja.semana_fin)}` },
+            { k: 'Liquidación', v: cierre ? <Estado tono="ok">Cerrada {cierre.folio}</Estado> : <Estado tono={hoja.viernes_cerrado ? 'atencion' : 'neutro'}>{hoja.viernes_cerrado ? 'Lista para cerrar' : 'Abierta'}</Estado> },
+            { k: 'Compras abiertas', v: String(compras.filter((c) => !['recibida', 'cerrada', 'anulada'].includes(c.estado)).length) },
+            { k: 'Cuenta puente', v: cuenta.puente_cent === 0n ? 'Sin diferencias por asignar' : m(cuenta.puente_cent) },
+          ]} />
+          <Pie>Isaac y Karen nunca se mezclan.</Pie>
           <div className="a3-acciones">
             <PagoSocioProveedor proveedor={proveedor} />
             <FormularioAccion boton="Pago de la sociedad" titulo={`Pago de la sociedad a ${proveedor}`} confirmar="Registrar pago" accion="registrar_pago_proveedor_sociedad" testid="pago-sociedad"
@@ -130,17 +136,20 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       <Rejilla dividir="6-6">
         <Tarjeta titulo="Saldo corrido de la cuenta" descripcion="Magnitud del saldo tras cada movimiento; el signo va en el dato">
           {puntosSaldo.length >= 2 ? (
-            <AreaSerie titulo="Saldo corrido con el proveedor" descripcion={`Saldo de la cuenta con ${proveedor} tras cada uno de ${puntosSaldo.length} movimientos.`} unidad="Pesos" procedencia="observado" pie={`Fuente: movimientos de la cuenta con ${proveedor}`} puntos={puntosSaldo} />
+            <AreaSerie titulo="Saldo corrido con el proveedor" descripcion={`Saldo de la cuenta con ${proveedor} tras cada uno de ${puntosSaldo.length} movimientos.`} unidad="Pesos" formatoEje={ejePesos} procedencia="observado" pie={`Fuente: movimientos de la cuenta con ${proveedor}`} puntos={puntosSaldo} />
           ) : (
             <p className="a3-grafica-vacia"><strong>Pocos movimientos</strong>Con dos o más movimientos de la cuenta se dibuja el saldo corrido.</p>
           )}
         </Tarjeta>
         <Tarjeta titulo="De dónde salen los pagos y en qué estado van las compras" descripcion="Pagos de la semana por concepto y compras por estado">
+          <p className="a3-sub">Pagos de la semana por concepto</p>
           {conceptos.length > 0 ? (
             <BarList etiquetaAria="Pagos de la semana por concepto" items={conceptos.map(([k, v]) => ({ id: k, etiqueta: CONCEPTO_CUENTA[k] ?? k.replaceAll('_', ' '), texto: m(v), pct: pct(v, totalPagos) }))} />
           ) : (
             <p className="a3-pie">Sin pagos en la semana.</p>
           )}
+          <p className="a3-sub">Órdenes de compra por estado</p>
+          {porEstado.length === 0 && <p className="a3-pie">Sin órdenes de compra.</p>}
           {porEstado.length > 0 && <BarList etiquetaAria="Compras por estado" items={porEstado.map((x) => ({ id: x.e, etiqueta: ESTADO_COMPRA[x.e].texto, texto: m(x.c), pct: pct(x.c, totalCompras), nota: `${x.n} ${x.n === 1 ? 'orden' : 'órdenes'}` }))} />}
         </Tarjeta>
       </Rejilla>

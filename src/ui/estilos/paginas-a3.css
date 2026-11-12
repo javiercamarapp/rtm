@@ -51,3 +51,12 @@
 .a3-grafica-vacia strong { display: block; color: var(--rtm-ink-2); margin-bottom: 4px; font-weight: var(--rtm-peso-medio); }
 
 .a3-pila { display: grid; gap: var(--rtm-ritmo); align-content: start; min-width: 0; }
+
+/* Barra de filtros dentro de una tarjeta plana: con el mismo relleno que el resto de la tarjeta. */
+.a3-barra { padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); overflow-x: auto; }
+.a3-barra .rtm-barra-filtros-v2 { min-width: max-content; }
+
+/* Subtitulo de bloque dentro de una tarjeta. */
+.a3-sub { margin: 8px 0 0; font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-fuerte); letter-spacing: var(--rtm-trk-eyebrow); text-transform: uppercase; color: var(--rtm-ink-3); }
+.a3-filtros-form input[type='date'].rtm-campo { width: 128px; }
+.a3-filtros-form select.rtm-campo { max-width: 150px; }

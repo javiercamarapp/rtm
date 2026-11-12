@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import '@/ui/estilos/paginas-a3.css';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { ChipEstado } from '@/ui/componentes/controles';
+import { compactoEs } from '@/ui/graficas';
 
 export const m = (c: bigint, conSigno = false) => formatearMoneda(c, conSigno ? { conSigno: true } : {});
 export const suma = (xs: readonly bigint[]): bigint => xs.reduce((a, b) => a + b, 0n);
@@ -35,3 +36,6 @@ export function Dos({ a, b }: { a: ReactNode; b?: ReactNode }) {
 
 /** "2026-11-09" -> "9 nov" (para ejes de graficas). */
 export const fechaCorta = (f: string): string => etiquetaFecha(f).replace(/ \d{4}$/, '');
+
+/** Eje Y de las graficas de dinero: la grafica recibe centavos, el eje se lee en pesos abreviados. */
+export const ejePesos = (centavos: number): string => `$${compactoEs(centavos / 100)}`;

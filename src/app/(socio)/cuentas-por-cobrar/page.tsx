@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
+import { sumarDias } from '@/dominio/calendario';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import type { FilaCxc } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, BarraFiltros, CeldaPersona, Chip } from '@/ui/componentes/controles';
-import { BarList } from '@/ui/componentes/datos';
+import { BarList, ListaHallazgos } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
@@ -14,7 +15,7 @@ import { AntiguedadSaldos } from '@/ui/graficas';
 import { CUBETA, ESTADO_CXC } from '../operacion/etiquetas';
 import { CopiarTexto } from '../operacion/copiar-texto';
 import { FormularioAccion } from '../operacion/formulario-accion';
-import { Dos, Estado, Pie, m, pct, pctTexto, suma } from '../_a3/util';
+import { Dos, Estado, Pie, fechaCorta, m, pct, pctTexto, suma } from '../_a3/util';
 import { EntregaSocio, FormularioPago, IdentificarPago } from './formularios';
 
 export const metadata: Metadata = { title: 'Cuentas por cobrar' };
@@ -22,6 +23,7 @@ export const metadata: Metadata = { title: 'Cuentas por cobrar' };
 type Vista = 'pedido' | 'cliente' | 'favor' | 'sin-id' | 'socios';
 const VISTAS: Vista[] = ['pedido', 'cliente', 'favor', 'sin-id', 'socios'];
 const CUBETAS = ['0_7', '8_14', '15_30', 'mas_30'] as const;
+const CUBETA_CORTA: Record<string, string> = { '0_7': '0 a 7 d', '8_14': '8 a 14 d', '15_30': '15 a 30 d', mas_30: 'Más de 30 d' };
 
 export default async function PaginaCxc({ searchParams }: { searchParams: Promise<{ cliente?: string; vencido?: string; desde?: string; hasta?: string; vista?: string }> }) {
   const { cliente = '', vencido = '', desde = '', hasta = '', vista: vistaQ = '' } = await searchParams;
@@ -54,6 +56,8 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
   const favorTotal = suma(d.saldos_a_favor.map((s) => s.monto_cent));
   const sinIdTotal = suma(d.pagos_sin_identificar.map((p) => p.monto_cent));
   const principal = d.por_cliente[0];
+  const proximos = todas.filter((f) => f.saldo_cent > 0n && f.vence && f.vence >= d.hoy).sort((x, y) => (x.vence! < y.vence! ? -1 : 1)).slice(0, 5);
+  const vencidos = todas.filter((f) => f.estado === 'vencido');
 
   const partesAnt = CUBETAS.map((k) => ({ etiqueta: CUBETA[k]!, valor: Number(d.antiguedad_cent[k]), estado: 'real' as const }));
   const maxAnt = CUBETAS.reduce((a, k) => (d.antiguedad_cent[k] > 0n ? k : a), '0_7' as (typeof CUBETAS)[number]);
@@ -149,6 +153,13 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
         </Tarjeta>
         <Tarjeta titulo="Concentración por cliente" descripcion="Parte del saldo total y acumulado de los 8 mayores">
           {ranking.length > 0 ? <BarList etiquetaAria="Saldo por cliente" items={ranking} /> : <p className="a3-grafica-vacia"><strong>Sin saldos</strong>Ningún cliente debe nada por ahora.</p>}
+          <p className="a3-sub">Próximos vencimientos</p>
+          <ListaHallazgos
+            etiquetaAria="Próximos vencimientos"
+            vacio="Ningún pedido con saldo tiene vencimiento próximo."
+            items={proximos.map((f) => ({ id: String(f.pedido_id), tono: f.vence! <= sumarDias(d.hoy, 3) ? ('atencion' as const) : ('info' as const), palabra: f.vence! <= sumarDias(d.hoy, 3) ? 'Pronto' : 'Programado', titulo: `${f.cliente} · ${f.folio}`, detalle: `vence ${etiquetaFecha(f.vence!)}`, importe: m(f.saldo_cent), href: `/pedidos/${f.pedido_id}` }))}
+          />
+          <Pie>{vencidos.length > 0 ? `${vencidos.length} ${vencidos.length === 1 ? 'pedido ya vencido' : 'pedidos ya vencidos'} por ${m(d.vencido_cent)}.` : 'Nada vencido.'}</Pie>
         </Tarjeta>
       </Rejilla>
 
@@ -174,7 +185,7 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
       </Rejilla>
 
       <Tarjeta plana titulo="Detalle">
-        <BarraFiltros
+        <div className="a3-barra"><BarraFiltros
           etiquetaAria="Filtros"
           extras={
             <form action="/cuentas-por-cobrar" method="get" className="a3-filtros-form" aria-label="Filtrar por cliente y fechas">
@@ -192,7 +203,7 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
         >
           <Chip href={enlace({ cliente: '', vencido: '', desde: '', hasta: '' })} activo={!cliente && !vencido && !desde && !hasta}>Todos</Chip>
           <Chip href={enlace({ vencido: vencido ? '' : '1' })} activo={vencido === '1'} tono="malo">Solo vencido</Chip>
-        </BarraFiltros>
+        </BarraFiltros></div>
 
         {vista === 'pedido' && (
           <DataTable
@@ -209,17 +220,15 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
             vacio={{ titulo: 'Nada por cobrar', texto: 'Cuando se envíe un pedido y no esté saldado, aparecerá aquí con su plazo, vencimiento y antigüedad.', accion: <Link className="rtm-boton" href="/pedidos">Ver pedidos</Link> }}
             columnas={[
               { id: 'c', titulo: 'Cliente · pedido', ancho: 'xl', celda: (f) => <Dos a={<Link href={`/clientes/${f.cliente_id}`}>{f.cliente}</Link>} b={<Link className="rtm-mono" href={`/pedidos/${f.pedido_id}`}>{f.folio}</Link>} /> },
-              { id: 'e', titulo: 'Enviado', ancho: 's', celda: (f) => etiquetaFecha(f.fecha_envio) },
-              { id: 'p', titulo: 'Plazo', ancho: 's', secundaria: true, celda: (f) => (f.plazo_dias === null ? <SinDato /> : `${f.plazo_dias} días`) },
-              { id: 'v', titulo: 'Vence', ancho: 's', secundaria: true, celda: (f) => (f.vence ? etiquetaFecha(f.vence) : <SinDato />) },
+              { id: 'e', titulo: 'Enviado · vence', ancho: 'm', celda: (f) => <Dos a={fechaCorta(f.fecha_envio)} b={f.vence ? `vence ${fechaCorta(f.vence)}` : 'sin vencimiento'} /> },
+              { id: 'p', titulo: 'Plazo', ancho: 'xs', secundaria: true, celda: (f) => (f.plazo_dias === null ? <SinDato /> : `${f.plazo_dias} d`) },
               { id: 'o', titulo: 'Original', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.original_cent) },
               { id: 'rc', titulo: 'Recargo', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.recargo_cent > 0n ? <Dos a={m(f.recargo_cent)} b={`sug. ${m(f.recargo_sugerido_cent)}`} /> : f.saldo_cent > 0n && f.recargo_sugerido_cent > 0n ? <Dos a={<SinDato />} b={`sug. ${m(f.recargo_sugerido_cent)}`} /> : <SinDato />) },
               { id: 'a', titulo: 'Abonos', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.abonos_cent) },
               { id: 's', titulo: 'Saldo', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.saldo_cent)} cifra={`pedido:saldo:${f.pedido_id}`} comprobacion="cuadra" /> },
-              { id: 'd', titulo: 'Atraso', numerica: true, ancho: 'xs', secundaria: true, celda: (f) => (f.dias_atraso === null ? <SinDato /> : `${f.dias_atraso} d`) },
-              { id: 'b', titulo: 'Antigüedad', ancho: 's', secundaria: true, celda: (f) => <Dos a={CUBETA[f.cubeta]} b={`${f.dias} d desde el envío`} /> },
-              { id: 'x', titulo: 'Estado', ancho: 'm', celda: (f) => <Estado tono={ESTADO_CXC[f.estado].tono}>{ESTADO_CXC[f.estado].texto}</Estado> },
-              { id: 'z', titulo: 'Acciones', ancho: 'xl', celda: (f) => (
+              { id: 'b', titulo: 'Antigüedad', ancho: 's', secundaria: true, celda: (f) => <Dos a={CUBETA_CORTA[f.cubeta]} b={`${f.dias} d`} /> },
+              { id: 'x', titulo: 'Estado', ancho: 'm', celda: (f) => <Dos a={<Estado tono={ESTADO_CXC[f.estado].tono}>{ESTADO_CXC[f.estado].texto}</Estado>} b={f.dias_atraso === null ? undefined : `${f.dias_atraso} d de atraso`} /> },
+              { id: 'z', titulo: 'Acciones', ancho: 'l', celda: (f) => (
                 <span className="rtm-acciones-fila">
                   <FormularioAccion chico boton="Acordar plazo" titulo={`Plazo de ${f.folio}`} confirmar="Acordar plazo" accion="acordar_plazo" fijos={{ p_pedido: f.pedido_id }} testid={`plazo-${f.pedido_id}`}
                     campos={[{ nombre: 'p_dias', etiqueta: 'Días de plazo desde el envío', tipo: 'entero', requerido: true, defecto: f.plazo_dias === null ? '' : String(f.plazo_dias) }]} />
