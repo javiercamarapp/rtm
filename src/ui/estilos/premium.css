@@ -411,3 +411,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-tarjeta-v2 > :is(.a3-grafica-vacia, .rtm-g-aviso, .rtm-a1-estado-vacio) { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
 :is(.rtm-rejilla, .rtm-pila-llena, .a3-pila) > div[data-testid] > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos) { flex: 1 1 auto; }
 :is(.rtm-rejilla, .rtm-pila-llena, .a3-pila) > div[data-testid] > .rtm-tarjeta-v2 > .rtm-barlist:not([data-columnas='2']) > li { flex: 1 1 auto; max-height: 96px; display: flex; flex-direction: column; justify-content: center; }
+.rtm-tarjeta-v2 > .rtm-a1-cuerpo { flex: 1 1 auto; }
+.rtm-tarjeta-v2 > .rtm-a1-cuerpo > .rtm-barlist { flex: 1 1 auto; }
+.rtm-tarjeta-v2 > .rtm-a1-cuerpo > .rtm-barlist:not([data-columnas='2']) > li { flex: 1 1 auto; max-height: 72px; display: flex; flex-direction: column; justify-content: center; }
+.rtm-tarjeta-v2 > .a3-acciones:last-child { margin-top: auto; }
