@@ -126,7 +126,8 @@ select is((select sum(operacion.valor_socio(n, 5000001, 0))::bigint from (values
 select is((select sum(operacion.valor_socio(n, -7, 0))::bigint from (values ('Angelo'), ('Javier')) v(n)), -7::bigint, 'valor personal: tambien con capital contable negativo');
 select is(operacion.valor_socio('Angelo', operacion.capital_socio(pg_temp.sid('Angelo')) + operacion.capital_socio(pg_temp.sid('Javier')), 0), operacion.capital_socio(pg_temp.sid('Angelo')),
   'valor personal: sin utilidad sin acta es su cuenta de capital, no la mitad plana');
-select isnt(operacion.valor_socio('Angelo', 1000000, 0), operacion.valor_socio('Javier', 1000000, 0), 'valor personal: no es plano 50/50 cuando las cuentas de capital difieren');
+select is(operacion.valor_socio('Angelo', 1000001, 0), operacion.capital_socio(pg_temp.sid('Angelo')) + operacion.mitad_socio(1000001 - operacion.capital_socio(pg_temp.sid('Angelo')) - operacion.capital_socio(pg_temp.sid('Javier')), 'Angelo', 0),
+  'valor personal: su cuenta de capital mas su mitad de la utilidad sin acta (no la mitad plana del total)');
 select is((select (j->'cabecera'->>'cuenta_cent')::bigint from _h), operacion.reembolso_pendiente(pg_temp.sid('Angelo')) - operacion.saldo_socio(pg_temp.sid('Angelo')), 'cabecera: deuda o credito = reembolsos por cobrar menos fondos en su poder');
 select is((select (j->'cabecera'->>'neto_cent')::bigint from _h), (select (j->'cabecera'->>'capital_cuenta_cent')::bigint + (j->'cabecera'->>'cuenta_cent')::bigint from _h), 'cabecera: posicion neta = cuenta de capital + deuda o credito');
 select is((select (j->'cabecera'->'comprobaciones'->>'cuenta')::boolean from _h), true, 'cabecera: la comprobacion de la cuenta sale de las dos vias reales');
