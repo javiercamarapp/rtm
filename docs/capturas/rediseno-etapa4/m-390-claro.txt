@@ -1,0 +1,4 @@
+COLA 390-claro-apertura-paso-1: 196px vacios al final
+COLA 390-claro-apertura-paso-2: 158px vacios al final
+COLA 390-claro-contactos: 391px vacios al final
+COLA 390-claro-cliente-nuevo: 100px vacios al final

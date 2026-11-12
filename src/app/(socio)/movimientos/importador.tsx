@@ -66,7 +66,8 @@ export function Importador() {
           {error && <Aviso tono="error" titulo="No se pudo importar.">{error}</Aviso>}
           {conteo && (
             <div data-testid="conteo" role="status">
-              <Aviso tono="info" titulo={conteo.solo_contar ? 'Ensayo, no se escribió nada.' : `Importación ${conteo.importacion_id}.`}>
+              <Aviso tono="info">
+                {conteo.solo_contar ? 'Ensayo, no se escribió nada: ' : `Importación ${conteo.importacion_id}: `}
                 {conteo.filas_nuevas} nuevas, {conteo.filas_duplicadas} ya existían, {conteo.invalidas.length} inválidas de {conteo.filas_total}.
               </Aviso>
             </div>

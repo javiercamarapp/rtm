@@ -35,7 +35,7 @@ export default async function PaginaInventarioProveedores() {
         acciones={<Link className="rtm-boton" href="/proveedores/compras/nueva?p=Karen" data-testid="oc-karen">Crear orden de compra a Karen</Link>}
       />
 
-      <div data-testid="estado-fuente">
+      <div data-testid="estado-fuente" role="status" aria-label="Estado de la lectura">
       <Aviso tono={estadoFuente === 'Al día' ? 'info' : 'atencion'} titulo={`Inventario de Karen: ${estadoFuente}`}>
         <span>
           {sinLectura ? 'Todavía no hay una lectura. ' : `Última lectura ${etiquetaFechaHora(f.ultima_lectura_ok!)} (hace ${f.horas ?? 0} h). `}
@@ -86,7 +86,7 @@ export default async function PaginaInventarioProveedores() {
         />
       </Tarjeta>
 
-      <Tarjeta plana titulo="Nombres por confirmar" descripcion={`${p.cola.length} pendientes`}>
+      <div className="rtm-region" aria-label="Por confirmar"><Tarjeta plana titulo="Nombres por confirmar" descripcion={`${p.cola.length} pendientes`}>
         {p.cola.length === 0 ? <p className="rtm-nota">Nada por confirmar.</p> : (
           <DataTable plana densidad="densa" etiqueta="Cola de confirmación" clave={(c) => `${c.tipo}:${c.texto}`} filas={p.cola} columnas={[
             { id: 't', titulo: 'Tipo', celda: (c) => (c.tipo === 'modelo' ? 'Modelo' : 'Sabor') },
@@ -94,7 +94,7 @@ export default async function PaginaInventarioProveedores() {
             { id: 'c', titulo: 'Se parece a', secundaria: true, celda: (c) => (c.similitud === null ? 'Sin sugerencia' : `${Math.round(c.similitud * 100)} % de parecido`) },
           ]} />
         )}
-      </Tarjeta>
+      </Tarjeta></div>
 
       <Tarjeta plana titulo="Cambios recientes" descripcion="Solo se guardan los cambios, no una foto por hora">
         <DataTable plana densidad="densa" etiqueta="Cambios detectados" clave={(e) => e.clave} filas={p.eventos}
