@@ -17,7 +17,7 @@ import { CoberturaDias, MapaCalor } from '@/ui/graficas';
 import { etiquetaHoy } from '../contexto';
 import { Campo, FiltrosUrl } from '../_a2/filtros-url';
 import { acumularPorTramo, TRAMOS } from '../_a2/antiguedad';
-import { dec, diasEntre, enlace, m, partePct, periodo, pctTexto, pz, textoParam, tonoChip, uno, type Params } from '../_a2/util';
+import { dec, diasEntre, enlace, m, partePct, periodo, pctTexto, pz, pzs, fechaCorta, textoParam, tonoChip, uno, type Params } from '../_a2/util';
 import { ExportarInventario } from './exportar-inventario';
 
 export const metadata: Metadata = { title: 'Inventario' };
@@ -74,21 +74,21 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
   const semaforo = (e: EstadoCoberturaCodigo | null, id: string) => (e === null ? <SinDato /> : <span data-testid={`semaforo-${id}`}><ChipEstado tono={tonoChip(TONO_COBERTURA[e])}>{PALABRA_COBERTURA[e]}</ChipEstado></span>);
 
   const columnas: Columna<Fila>[] = [
-    { id: 'mo', titulo: 'Modelo › sabor', ancho: 'xl', celda: (f) => (f.s ? f.s.sabor : 'Sin sabores registrados') },
-    { id: 'ma', titulo: 'Marca', ancho: 'm', secundaria: true, celda: () => '' },
-    { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', resaltar: (f) => ((f.s ? f.s.piezas : f.mod.piezas ?? 0) === 0 ? 'cero' : (f.s ? f.s.piezas : f.mod.piezas ?? 0) < 0 ? 'negativo' : null), celda: (f) => (f.s ? pz(f.s.piezas) : pz(f.mod.piezas)) },
-    { id: 'a', titulo: 'Apartadas', numerica: true, ancho: 's', celda: (f) => (f.s ? pz(f.s.reservado) : pz(f.mod.reservado)) },
-    { id: 'd', titulo: 'Disponibles', numerica: true, ancho: 's', celda: (f) => (f.s ? pz(f.s.disponible) : pz(f.mod.disponible)) },
-    { id: 'cu', titulo: 'Costo unit.', numerica: true, ancho: 'm', celda: (f) => (f.mod.costo_prom_cent === null || (f.mod.piezas ?? 0) === 0 ? <SinDato /> : m(f.mod.costo_prom_cent)) },
-    { id: 'v', titulo: 'Valor total', numerica: true, ancho: 'l', celda: (f) => (f.s ? m(f.s.valor_cent) : (m(f.mod.valor_cent) ?? <SinDato />)) },
-    { id: 'pc', titulo: '% del inventario', numerica: true, ancho: 's', celda: (f) => pctTexto(partePct((f.s ? f.s.valor_cent : f.mod.valor_cent) ?? 0n, totalValor)) ?? <SinDato /> },
-    { id: 'en', titulo: 'Entradas', numerica: true, ancho: 's', secundaria: true, celda: (f) => pz((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.entradas ?? 0) },
-    { id: 'sa', titulo: 'Salidas', numerica: true, ancho: 's', secundaria: true, celda: (f) => pz((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.salidas ?? 0) },
-    { id: 'ro', titulo: 'Rotación', numerica: true, ancho: 's', secundaria: true, celda: (f) => { const d = f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id); return rot(d?.piezas_inicial, f.s ? f.s.piezas : f.mod.piezas ?? 0, d?.salidas ?? 0) ?? <SinDato />; } },
-    { id: 'c', titulo: 'Cobertura', numerica: true, ancho: 's', celda: (f) => (f.s ? (f.s.cobertura_dias === null ? <SinDato /> : textoDias(f.s.cobertura_dias)) : (f.mod.cobertura_dias === null ? <SinDato /> : <CifraComprobada texto={textoDias(f.mod.cobertura_dias)} cifra={`cobertura:modelo:${f.mod.modelo_id}`} comprobacion="cuadra" />)) },
-    { id: 's', titulo: 'Semáforo', ancho: 'l', celda: (f) => semaforo(f.s ? f.s.estado : f.mod.estado, f.s ? `${f.mod.modelo_id}-${f.s.sku_id}` : String(f.mod.modelo_id)) },
-    { id: 'an', titulo: 'Antigüedad', numerica: true, ancho: 's', secundaria: true, celda: (f) => { const a = ant((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.ultima_entrada); return a === null ? <SinDato /> : `${a} d`; } },
-    { id: 'u', titulo: 'Último movimiento', ancho: 'm', secundaria: true, celda: (f) => (f.mod.ultimo_movimiento ? etiquetaFechaHora(f.mod.ultimo_movimiento) : <SinDato />) },
+    { id: 'mo', titulo: 'Modelo › sabor', prioridadMovil: 'titulo', ancho: 'l', celda: (f) => (f.s ? f.s.sabor : 'Sin sabores registrados') },
+    { id: 'ma', titulo: 'Marca', prioridadMovil: 'oculta', ancho: 's', secundaria: true, celda: () => '' },
+    { id: 'p', titulo: 'Piezas', prioridadMovil: 'principal', numerica: true, ancho: 's', resaltar: (f) => ((f.s ? f.s.piezas : f.mod.piezas ?? 0) === 0 ? 'cero' : (f.s ? f.s.piezas : f.mod.piezas ?? 0) < 0 ? 'negativo' : null), celda: (f) => (f.s ? pzs(f.s.piezas) : pzs(f.mod.piezas)) },
+    { id: 'a', titulo: 'Apartadas', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (f) => (f.s ? pzs(f.s.reservado) : pzs(f.mod.reservado)) },
+    { id: 'd', titulo: 'Disponibles', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (f) => (f.s ? pzs(f.s.disponible) : pzs(f.mod.disponible)) },
+    { id: 'cu', titulo: 'Costo', prioridadMovil: 'oculta', numerica: true, ancho: 'm', celda: (f) => (f.mod.costo_prom_cent === null || (f.mod.piezas ?? 0) === 0 ? <SinDato /> : m(f.mod.costo_prom_cent)) },
+    { id: 'v', titulo: 'Valor total', prioridadMovil: 'normal', numerica: true, ancho: 'l', celda: (f) => (f.s ? m(f.s.valor_cent) : (m(f.mod.valor_cent) ?? <SinDato />)) },
+    { id: 'pc', titulo: '% del total', prioridadMovil: 'oculta', numerica: true, ancho: 's', celda: (f) => pctTexto(partePct((f.s ? f.s.valor_cent : f.mod.valor_cent) ?? 0n, totalValor)) ?? <SinDato /> },
+    { id: 'en', titulo: 'Entradas', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => pzs((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.entradas ?? 0) },
+    { id: 'sa', titulo: 'Salidas', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => pzs((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.salidas ?? 0) },
+    { id: 'ro', titulo: 'Rotación', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => { const d = f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id); return rot(d?.piezas_inicial, f.s ? f.s.piezas : f.mod.piezas ?? 0, d?.salidas ?? 0) ?? <SinDato />; } },
+    { id: 'c', titulo: 'Cobertura', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (f) => (f.s ? (f.s.cobertura_dias === null ? <SinDato /> : textoDias(f.s.cobertura_dias)) : (f.mod.cobertura_dias === null ? <SinDato /> : <CifraComprobada texto={textoDias(f.mod.cobertura_dias)} cifra={`cobertura:modelo:${f.mod.modelo_id}`} comprobacion="cuadra" />)) },
+    { id: 's', titulo: 'Semáforo', prioridadMovil: 'normal', ancho: 'm', celda: (f) => semaforo(f.s ? f.s.estado : f.mod.estado, f.s ? `${f.mod.modelo_id}-${f.s.sku_id}` : String(f.mod.modelo_id)) },
+    { id: 'an', titulo: 'Antigüedad', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => { const a = ant((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.ultima_entrada); return a === null ? <SinDato /> : `${a} d`; } },
+    { id: 'u', titulo: 'Último mov.', prioridadMovil: 'oculta', ancho: 'm', secundaria: true, celda: (f) => (f.mod.ultimo_movimiento ? (fechaCorta(f.mod.ultimo_movimiento.slice(0, 10)) ?? '') : <SinDato />) },
   ];
 
   const grafica = [...conDato].sort((a, b) => URGENCIA_COBERTURA[a.estado ?? 'sin_historia'] - URGENCIA_COBERTURA[b.estado ?? 'sin_historia'] || (a.cobertura_dias ?? 1e9) - (b.cobertura_dias ?? 1e9)).slice(0, 10);
@@ -191,10 +191,10 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
                     subtotales: {
                       ma: x.marca,
                       p: <CifraComprobada texto={x.piezas === null ? null : formatearPiezas(x.piezas)} cifra={`existencia:modelo:${x.modelo_id}`} comprobacion="cuadra" />,
-                      a: pz(x.reservado), d: pz(x.disponible), cu: x.costo_prom_cent === null || (x.piezas ?? 0) === 0 ? <SinDato /> : m(x.costo_prom_cent), v: m(x.valor_cent) ?? <SinDato />,
-                      pc: pctTexto(partePct(x.valor_cent ?? 0n, totalValor)) ?? <SinDato />, en: pz(d?.entradas ?? 0), sa: pz(d?.salidas ?? 0), ro: rot(d?.piezas_inicial, x.piezas ?? 0, d?.salidas ?? 0) ?? <SinDato />,
+                      a: pzs(x.reservado), d: pzs(x.disponible), cu: x.costo_prom_cent === null || (x.piezas ?? 0) === 0 ? <SinDato /> : m(x.costo_prom_cent), v: m(x.valor_cent) ?? <SinDato />,
+                      pc: pctTexto(partePct(x.valor_cent ?? 0n, totalValor)) ?? <SinDato />, en: pzs(d?.entradas ?? 0), sa: pzs(d?.salidas ?? 0), ro: rot(d?.piezas_inicial, x.piezas ?? 0, d?.salidas ?? 0) ?? <SinDato />,
                       c: x.cobertura_dias === null ? <SinDato /> : <CifraComprobada texto={textoDias(x.cobertura_dias)} cifra={`cobertura:modelo:${x.modelo_id}`} comprobacion="cuadra" />,
-                      s: semaforo(x.estado, String(x.modelo_id)), an: ant(d?.ultima_entrada) === null ? <SinDato /> : `${ant(d?.ultima_entrada)} d`, u: x.ultimo_movimiento ? etiquetaFechaHora(x.ultimo_movimiento) : <SinDato />,
+                      s: semaforo(x.estado, String(x.modelo_id)), an: ant(d?.ultima_entrada) === null ? <SinDato /> : `${ant(d?.ultima_entrada)} d`, u: x.ultimo_movimiento ? (fechaCorta(x.ultimo_movimiento.slice(0, 10)) ?? '') : <SinDato />,
                     },
                   };
                 },
@@ -224,13 +224,13 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
             etiqueta="Tres cantidades de las últimas compras recibidas" clave={(c) => c.compra_id} filas={inv.compras_recientes} densidad="densa" plana
             vacio={{ titulo: 'Sin compras recibidas', texto: 'Cuando se confirme la recepción de una compra verás aquí sus tres cantidades y el puente de diferencias.' }}
             columnas={[
-              { id: 'f', titulo: 'Compra', celda: (c) => <Link className="rtm-mono" href={`/proveedores/compras/${c.compra_id}`}>{c.folio}</Link> },
-              { id: 'p', titulo: 'Proveedor', secundaria: true, celda: (c) => c.proveedor },
-              { id: 'a', titulo: 'Pagadas', numerica: true, celda: (c) => formatearPiezas(c.pagadas) },
-              { id: 'b', titulo: 'Facturadas', numerica: true, celda: (c) => formatearPiezas(c.facturadas) },
-              { id: 'r', titulo: 'Recibidas', numerica: true, celda: (c) => (c.recibidas === null ? <SinDato /> : formatearPiezas(c.recibidas)) },
-              { id: 'pu', titulo: 'Puente', numerica: true, celda: (c) => (c.puente_piezas === 0 ? 'Sin diferencia' : `${formatearPiezas(c.puente_piezas)} · ${formatearMoneda(c.puente_valor_cent)}`) },
-              { id: 'fs', titulo: 'Pagado de más (fuera de la sociedad)', numerica: true, secundaria: true, celda: (c) => (c.fuera_sociedad_cent === 0n ? 'Ninguno' : formatearMoneda(c.fuera_sociedad_cent)) },
+              { id: 'f', titulo: 'Compra', prioridadMovil: 'titulo', celda: (c) => <Link className="rtm-mono" href={`/proveedores/compras/${c.compra_id}`}>{c.folio}</Link> },
+              { id: 'p', titulo: 'Proveedor', prioridadMovil: 'oculta', secundaria: true, celda: (c) => c.proveedor },
+              { id: 'a', titulo: 'Pagadas', prioridadMovil: 'normal', numerica: true, celda: (c) => formatearPiezas(c.pagadas) },
+              { id: 'b', titulo: 'Facturadas', prioridadMovil: 'normal', numerica: true, celda: (c) => formatearPiezas(c.facturadas) },
+              { id: 'r', titulo: 'Recibidas', prioridadMovil: 'principal', numerica: true, celda: (c) => (c.recibidas === null ? <SinDato /> : formatearPiezas(c.recibidas)) },
+              { id: 'pu', titulo: 'Puente', prioridadMovil: 'normal', numerica: true, celda: (c) => (c.puente_piezas === 0 ? 'Sin diferencia' : `${formatearPiezas(c.puente_piezas)} · ${formatearMoneda(c.puente_valor_cent)}`) },
+              { id: 'fs', titulo: 'Pagado de más (fuera de la sociedad)', prioridadMovil: 'oculta', numerica: true, secundaria: true, celda: (c) => (c.fuera_sociedad_cent === 0n ? 'Ninguno' : formatearMoneda(c.fuera_sociedad_cent)) },
             ]}
           />
         </Tarjeta>

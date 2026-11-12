@@ -69,7 +69,8 @@ test('capturas y metricas E3', async ({ browser }: { browser: Browser }) => {
             const cab = [...c.querySelectorAll<HTMLElement>('[role=columnheader]')];
             const cr = c.getBoundingClientRect();
             const cortadas = cab.filter((h) => h.getBoundingClientRect().right > cr.right + 1).map((h) => (h.textContent ?? '').trim());
-            return { etiqueta: t?.getAttribute('aria-label') ?? '?', ancho, desborda, cortadas, indicador: !!c.parentElement?.querySelector('[data-scroll-h]') || c.hasAttribute('data-scroll-h') };
+            const cols = cab.map((h) => `${(h.textContent ?? '').trim().slice(0, 14)}:${Math.round(h.getBoundingClientRect().width)}`).join(' ');
+            return { etiqueta: t?.getAttribute('aria-label') ?? '?', ancho, desborda, cortadas, cols, indicador: !!c.parentElement?.querySelector('[data-scroll-h]') || c.hasAttribute('data-scroll-h') };
           }).filter((x) => x.desborda > 1);
           const huecos: string[] = [];
           for (const g of document.querySelectorAll<HTMLElement>('.rtm-rejilla')) {
@@ -95,7 +96,7 @@ test('capturas y metricas E3', async ({ browser }: { browser: Browser }) => {
           return { tablas, huecos, colaVacia, scrollH: document.documentElement.scrollWidth - window.innerWidth, colCeros };
         });
         const tag = `${p.nombre}-${tema}-${nombre}`;
-        if (m.tablas.length) lineas.push(`TABLA ${tag}: ${m.tablas.map((t) => `${t.etiqueta} +${t.desborda}px cortadas[${t.cortadas.join(', ')}]`).join(' ; ')}`);
+        if (m.tablas.length) lineas.push(`TABLA ${tag}: ${m.tablas.map((t) => `${t.etiqueta} +${t.desborda}px cortadas[${t.cortadas.join(', ')}] cols(${t.cols}) caja=${t.ancho}`).join(' ; ')}`);
         if (m.huecos.length) lineas.push(`HUECO ${tag}: ${m.huecos.join(' ; ')}`);
         if (m.colaVacia > 24) lineas.push(`COLA ${tag}: ${m.colaVacia}px vacios al final`);
         if (m.scrollH > 1) lineas.push(`SCROLLH ${tag}: +${m.scrollH}px`);

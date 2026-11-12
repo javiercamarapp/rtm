@@ -113,14 +113,14 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
           totales={filas.length ? { etiqueta: 'Totales del filtro', celdas: { v: formatearMoneda(filas.reduce((a, c) => a + c.ventas, 0n)), s: cxc ? formatearMoneda(filas.reduce((a, c) => a + (c.saldo ?? 0n), 0n)) : 'Sin dato', z: String(filas.reduce((a, c) => a + c.pedidos, 0)) } } : undefined}
           vacio={{ titulo: 'Sin clientes', texto: 'Ningún cliente coincide con la vista elegida.', accion: <Link className="rtm-boton" href="/clientes">Ver todos</Link> }}
           columnas={[
-            { id: 'n', titulo: 'Cliente', ancho: 'xl', celda: (c) => <CeldaPersona nombre={c.nombre} href={`/clientes/${c.id}`} subtitulo={c.alias.length ? `También: ${c.alias.map((a) => (a.porConfirmar ? `${a.alias} (por confirmar)` : a.alias)).join(', ')}` : undefined} /> },
-            { id: 't', titulo: 'Tipo', ancho: 'm', secundaria: true, celda: (c) => <>{TIPOS[c.tipo] ?? c.tipo}{c.esBodega && <> · <ChipEstado tono="info">presta la bodega</ChipEstado></>}</> },
-            { id: 'p', titulo: 'Modelos con precio', numerica: true, ancho: 's', celda: (c) => c.precios },
-            { id: 'z', titulo: 'Pedidos', numerica: true, ancho: 's', celda: (c) => (pedidos ? c.pedidos : <SinDato />) },
-            { id: 'v', titulo: 'Ventas cobradas', numerica: true, ancho: 'm', celda: (c) => (pedidos ? (c.ventas > 0n ? formatearMoneda(c.ventas) : <SinDato />) : <SinDato />) },
-            { id: 'u', titulo: 'Última compra', ancho: 'm', secundaria: true, celda: (c) => (c.ultima ? etiquetaFecha(c.ultima) : <SinDato />) },
-            { id: 's', titulo: 'Saldo', numerica: true, ancho: 'm', celda: (c) => (c.saldo === null ? <SinDato /> : c.saldo > 0n ? formatearMoneda(c.saldo) : '—') },
-            { id: 'x', titulo: 'Estado de cobro', ancho: 'm', celda: (c) => ((c.vencido ?? 0n) > 0n ? <ChipEstado tono="malo">Vencido {c.diasMax} d</ChipEstado> : (c.saldo ?? 0n) > 0n ? <ChipEstado tono="atencion">Por cobrar</ChipEstado> : c.ritmo?.baja ? <ChipEstado tono="atencion">Baja de ritmo</ChipEstado> : <ChipEstado tono="ok">Al corriente</ChipEstado>) },
+            { id: 'n', titulo: 'Cliente', prioridadMovil: 'titulo', ancho: 'xl', celda: (c) => <CeldaPersona nombre={c.nombre} href={`/clientes/${c.id}`} subtitulo={c.alias.length ? `También: ${c.alias.map((a) => (a.porConfirmar ? `${a.alias} (por confirmar)` : a.alias)).join(', ')}` : undefined} /> },
+            { id: 't', titulo: 'Tipo', prioridadMovil: 'oculta', ancho: 'm', secundaria: true, celda: (c) => <>{TIPOS[c.tipo] ?? c.tipo}{c.esBodega && <> · <ChipEstado tono="info">presta la bodega</ChipEstado></>}</> },
+            { id: 'p', titulo: 'Modelos con precio', prioridadMovil: 'oculta', numerica: true, ancho: 's', celda: (c) => c.precios },
+            { id: 'z', titulo: 'Pedidos', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (c) => (pedidos ? c.pedidos : <SinDato />) },
+            { id: 'v', titulo: 'Ventas cobradas', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (c) => (pedidos ? (c.ventas > 0n ? formatearMoneda(c.ventas) : <SinDato />) : <SinDato />) },
+            { id: 'u', titulo: 'Última compra', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (c) => (c.ultima ? etiquetaFecha(c.ultima) : <SinDato />) },
+            { id: 's', titulo: 'Saldo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (c) => (c.saldo === null ? <SinDato /> : c.saldo > 0n ? formatearMoneda(c.saldo) : '—') },
+            { id: 'x', titulo: 'Estado de cobro', prioridadMovil: 'normal', ancho: 'm', celda: (c) => ((c.vencido ?? 0n) > 0n ? <ChipEstado tono="malo">Vencido {c.diasMax} d</ChipEstado> : (c.saldo ?? 0n) > 0n ? <ChipEstado tono="atencion">Por cobrar</ChipEstado> : c.ritmo?.baja ? <ChipEstado tono="atencion">Baja de ritmo</ChipEstado> : <ChipEstado tono="ok">Al corriente</ChipEstado>) },
           ]}
         />
       </Tarjeta>

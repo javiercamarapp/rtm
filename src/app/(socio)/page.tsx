@@ -122,7 +122,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
         <Aviso tono="atencion" titulo="Hay pagos sin identificar." acciones={<Link className="rtm-boton rtm-boton-chico" href="/cuentas-por-cobrar">Asignarlos</Link>}>{cxc.pagos_sin_identificar.length} {cxc.pagos_sin_identificar.length === 1 ? 'pago espera' : 'pagos esperan'} un cliente antes de aplicarse.</Aviso>
       )}
 
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="8-4">
         <Tarjeta titulo="Ventas por semana" descripcion={`Lo cobrado de los pedidos enviados, últimas ${n} semanas; la semana en curso va con trama`}>
           {hayPedidos ? (
             <ColumnasPeriodo
@@ -130,7 +130,25 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
               pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: pedidos enviados`} datos={columnasSemana(semanas, ventas, centTexto, 'ventas', 100)}
             />
           ) : <p className="rtm-a1-estado-vacio">Sin pedidos todavía: aquí aparecerán las ventas por semana.</p>}
+          {hayPedidos && (
+            <dl className="rtm-a1-sub">
+              <div><dt>Semana más alta</dt><dd>{centTexto(Math.max(0, ...ventas))}</dd></div>
+              <div><dt>Promedio por semana</dt><dd>{centTexto(ventas.reduce((a, v) => a + v, 0) / Math.max(1, ventas.length))}</dd></div>
+              <div><dt>Semanas con venta</dt><dd>{ventas.filter((v) => v > 0).length} de {ventas.length}</dd></div>
+            </dl>
+          )}
         </Tarjeta>
+        <Tarjeta titulo="Antigüedad de lo por cobrar" descripcion={cxc ? `Total ${formatearMoneda(cxc.total_cent)} · vencido ${formatearMoneda(cxc.vencido_cent)}` : undefined} acciones={<Link href="/cuentas-por-cobrar">Ver cuentas</Link>}>
+          {cxc && cxc.total_cent > 0n ? (
+            <BarList
+              etiquetaAria="Saldo por antigüedad"
+              items={(['0_7', '8_14', '15_30', 'mas_30'] as const).map((k) => ({ id: k, etiqueta: CUBETA[k]!, texto: formatearMoneda(cxc.antiguedad_cent[k]), pct: porcentaje(aNumero(cxc.antiguedad_cent[k]), aNumero(cxc.total_cent)), tono: k === 'mas_30' ? ('malo' as const) : k === '15_30' ? ('atencion' as const) : undefined }))}
+            />
+          ) : <p className="rtm-a1-estado-vacio">{cxc ? 'Nada por cobrar: no hay saldos abiertos.' : 'Sin dato de cobranza.'}</p>}
+        </Tarjeta>
+      </Rejilla>
+
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Por reponer primero" descripcion="Cobertura en días contra el tiempo de entrega" acciones={<Link href="/inventario">Inventario</Link>}>
           {reponer.length >= 1 && inv ? (
             <CoberturaDias
@@ -140,17 +158,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
             />
           ) : <p className="rtm-a1-estado-vacio">{inv ? 'Ningún modelo pide reposición ahora.' : 'Sin dato de inventario.'}</p>}
         </Tarjeta>
-      </Rejilla>
-
-      <Rejilla dividir="6-6">
-        <Tarjeta titulo="Antigüedad de lo por cobrar" descripcion={cxc ? `Total ${formatearMoneda(cxc.total_cent)} · vencido ${formatearMoneda(cxc.vencido_cent)}` : undefined} acciones={<Link href="/cuentas-por-cobrar">Ver cuentas</Link>}>
-          {cxc && cxc.total_cent > 0n ? (
-            <BarList
-              etiquetaAria="Saldo por antigüedad"
-              items={(['0_7', '8_14', '15_30', 'mas_30'] as const).map((k) => ({ id: k, etiqueta: CUBETA[k]!, texto: formatearMoneda(cxc.antiguedad_cent[k]), pct: porcentaje(aNumero(cxc.antiguedad_cent[k]), aNumero(cxc.total_cent)), tono: k === 'mas_30' ? ('malo' as const) : k === '15_30' ? ('atencion' as const) : undefined }))}
-            />
-          ) : <p className="rtm-a1-estado-vacio">{cxc ? 'Nada por cobrar: no hay saldos abiertos.' : 'Sin dato de cobranza.'}</p>}
-        </Tarjeta>
+        <div className="rtm-a1-pila rtm-pila-llena">
         <Tarjeta titulo="Mayores saldos" descripcion="Cliente, saldo y lo vencido" acciones={<Link href="/clientes">Clientes</Link>}>
           {cxc && cxc.por_cliente.length > 0 ? (
             <BarList
@@ -162,13 +170,18 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
             />
           ) : <p className="rtm-a1-estado-vacio">{cxc ? 'Ningún cliente con saldo.' : 'Sin dato de cobranza.'}</p>}
         </Tarjeta>
+        <Tarjeta titulo="Inventario por marca" descripcion={inv ? `${formatearPiezas(inv.totales.piezas)} · ${formatearMoneda(inv.totales.valor_cent)} a costo promedio` : undefined}>
+          {marcas.length > 0 ? (
+            <BarList etiquetaAria="Valor del inventario por marca" items={marcas.map(([m, v]) => ({ id: m, etiqueta: m, texto: formatearMoneda(v), pct: porcentaje(aNumero(v), aNumero(totalMarcas)) }))} />
+          ) : <p className="rtm-a1-estado-vacio">Sin existencia registrada.</p>}
+        </Tarjeta>
+        </div>
       </Rejilla>
 
-      <Rejilla dividir="8-4">
-        <Tarjeta titulo="Tu turno" descripcion="Lo abierto que pide una acción tuya" acciones={<Link href="/avisos">Ver todo</Link>}>
+      <Tarjeta titulo="Tu turno" descripcion="Lo abierto que pide una acción tuya" acciones={<Link href="/avisos">Ver todo</Link>}>
           <ListaHallazgos
             etiquetaAria="Tu turno" vacio="Nada que atender"
-            items={turno.items.slice(0, 6).map((i) => {
+            items={turno.items.slice(0, 8).map((i) => {
               const d = destinoAviso(i.entidad_tipo, i.entidad_id);
               return {
                 id: `${i.clase}-${i.id}`, tono: TONO_HALLAZGO[i.severidad], palabra: SEVERIDAD[i.severidad]!.texto, titulo: d ? <Link href={d}>{i.titulo}</Link> : i.titulo,
@@ -176,13 +189,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
               };
             })}
           />
-        </Tarjeta>
-        <Tarjeta titulo="Inventario por marca" descripcion={inv ? `${formatearPiezas(inv.totales.piezas)} · ${formatearMoneda(inv.totales.valor_cent)} a costo promedio` : undefined}>
-          {marcas.length > 0 ? (
-            <BarList etiquetaAria="Valor del inventario por marca" items={marcas.map(([m, v]) => ({ id: m, etiqueta: m, texto: formatearMoneda(v), pct: porcentaje(aNumero(v), aNumero(totalMarcas)) }))} />
-          ) : <p className="rtm-a1-estado-vacio">Sin existencia registrada.</p>}
-        </Tarjeta>
-      </Rejilla>
+      </Tarjeta>
 
       <Tarjeta plana titulo="Pedidos recientes" descripcion={pedidos ? `${pedidos.length} en el libro · ${contarPor(pedidos, (p) => p.estado).map((c) => `${c.n} ${ESTADO_PEDIDO[c.clave as keyof typeof ESTADO_PEDIDO].texto.toLowerCase()}`).join(' · ')}` : undefined} acciones={<Link href="/pedidos">Ver todos</Link>}>
         <DataTable

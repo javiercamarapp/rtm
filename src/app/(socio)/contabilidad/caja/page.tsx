@@ -8,7 +8,7 @@ import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pag
 import { AreaSerie, ColumnasPeriodo } from '@/ui/graficas';
 import { SubnavContabilidad } from '../subnav';
 import { Campo, FiltrosUrl } from '../../_a2/filtros-url';
-import { fecha, m, partePct, pctTexto, periodo, semanaEtiqueta, type Params } from '../../_a2/util';
+import { fecha, fechaCorta, m, partePct, pctTexto, periodo, semanaEtiqueta, type Params } from '../../_a2/util';
 
 export const metadata: Metadata = { title: 'Caja y liquidez' };
 
@@ -62,13 +62,13 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
             etiqueta="Saldo de caja por lugar o persona" clave={(x) => x.codigo} filas={cuentas} densidad="densa" plana
             vacio={{ titulo: 'Sin cuentas de fondos', texto: 'Aparecen con el primer cobro o pago.' }}
             columnas={[
-              { id: 'n', titulo: 'Lugar o persona', ancho: 'xl', celda: (x) => x.nombre },
+              { id: 'n', titulo: 'Lugar o persona', ancho: 'l', truncar: 'l', celda: (x) => x.nombre },
               { id: 't', titulo: 'Tipo', ancho: 'm', celda: (x) => TIPO[x.tipo] },
-              { id: 's', titulo: 'Saldo', numerica: true, ancho: 'l', celda: (x) => (sd ? <SinDato /> : m(x.saldo_cent)) },
+              { id: 's', titulo: 'Saldo', numerica: true, ancho: 'm', celda: (x) => (sd ? <SinDato /> : m(x.saldo_cent)) },
               { id: 'p', titulo: '% de la liquidez', numerica: true, ancho: 's', celda: (x) => (sd || c.l01_liquidez_cent === null ? <SinDato /> : pctTexto(partePct(x.saldo_cent, c.l01_liquidez_cent)) ?? <SinDato />) },
               { id: 'e', titulo: 'Entradas', numerica: true, ancho: 'm', secundaria: true, celda: (x) => (sd ? <SinDato /> : m(x.entradas_cent)) },
               { id: 'sa', titulo: 'Salidas', numerica: true, ancho: 'm', secundaria: true, celda: (x) => (sd ? <SinDato /> : m(x.salidas_cent)) },
-              { id: 'u', titulo: 'Último movimiento', ancho: 'm', secundaria: true, celda: (x) => fecha(x.ultimo) ?? <SinDato /> },
+              { id: 'u', titulo: 'Último mov.', ancho: 'm', secundaria: true, celda: (x) => fechaCorta(x.ultimo) ?? <SinDato /> },
             ]}
             totales={{ etiqueta: 'Liquidez total', celdas: { s: sd ? <SinDato /> : m(sumaSaldos), e: sd ? null : m(c.totales.entradas_cent), sa: sd ? null : m(c.totales.salidas_cent) } }}
           />

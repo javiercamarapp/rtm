@@ -10,7 +10,7 @@ import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { AreaSerie, ColumnasPeriodo } from '@/ui/graficas';
 import { Campo, FiltrosUrl } from '../../_a2/filtros-url';
-import { enlace, enteroParam, fecha, fechaParam, m, mesEtiqueta, textoParam, uno, type Params } from '../../_a2/util';
+import { enlace, enteroParam, fechaCorta, fechaParam, m, mesEtiqueta, textoParam, uno, type Params } from '../../_a2/util';
 
 export const metadata: Metadata = { title: 'Libro de ingresos y egresos' };
 const PASO = 200;
@@ -70,17 +70,17 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           etiqueta="Libro de ingresos y egresos con saldo corrido" clave={(x) => x.id} filas={l.movimientos} densidad="libro" pegajosa primeraFija plana
           vacio={{ titulo: sd ? 'Sin movimientos en el libro' : 'Ningún renglón cumple el filtro', texto: sd ? 'Pega o sube movimientos en «Pegar o subir».' : 'Quita algún filtro o amplía el rango de fechas.', accion: sd ? <Link className="rtm-boton" href="/movimientos/importar">Pegar o subir</Link> : undefined }}
           columnas={[
-            { id: 'f', titulo: 'Fecha', ancho: 's', celda: (x) => fecha(x.fecha_neg) },
-            { id: 'c', titulo: 'Concepto', ancho: 'xl', celda: (x) => (x.concepto ? <span className="rtm-a2-mono-mensaje" title={x.concepto}>{x.concepto}</span> : <SinDato />) },
-            { id: 'k', titulo: 'Categoría', ancho: 'm', secundaria: true, celda: (x) => (x.categoria ? CATEGORIA[x.categoria] ?? x.categoria : <SinDato />) },
-            { id: 'cu', titulo: 'Cuenta', ancho: 'l', secundaria: true, celda: (x) => x.cuenta ?? <SinDato /> },
-            { id: 'ct', titulo: 'Contraparte', ancho: 'm', secundaria: true, celda: (x) => x.contraparte ?? <SinDato /> },
-            { id: 'fo', titulo: 'Folio', ancho: 's', secundaria: true, celda: (x) => (x.folio ? <span className="rtm-mono">{x.folio}</span> : '') },
-            { id: 'ca', titulo: '(+) Cargos', numerica: true, ancho: 'm', celda: (x) => (x.cargo_cent === null ? '' : m(x.cargo_cent)) },
-            { id: 'ab', titulo: '(−) Abonos', numerica: true, ancho: 'm', celda: (x) => (x.abono_cent === null ? '' : m(x.abono_cent)) },
-            { id: 'sa', titulo: '(=) Saldo', numerica: true, ancho: 'l', celda: (x) => neg(x.saldo_cent) },
-            { id: 'e', titulo: 'Estado', ancho: 'm', celda: (x) => <ChipEstado tono={ESTADOS[x.estado].tono}>{ESTADOS[x.estado].palabra}</ChipEstado> },
-            { id: 'o', titulo: 'Origen', ancho: 'm', secundaria: true, celda: (x) => x.origen ?? '' },
+            { id: 'f', titulo: 'Fecha', prioridadMovil: 'normal', ancho: 's', celda: (x) => fechaCorta(x.fecha_neg) },
+            { id: 'c', titulo: 'Concepto', prioridadMovil: 'titulo', ancho: 'l', truncar: 'm', celda: (x) => (x.concepto ? <span className="rtm-a2-mono-mensaje" title={x.concepto}>{x.concepto}</span> : <SinDato />) },
+            { id: 'k', titulo: 'Categoría', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (x) => (x.categoria ? CATEGORIA[x.categoria] ?? x.categoria : <SinDato />) },
+            { id: 'cu', titulo: 'Cuenta', prioridadMovil: 'oculta', ancho: 'm', truncar: 's', secundaria: true, celda: (x) => x.cuenta ?? <SinDato /> },
+            { id: 'ct', titulo: 'Contraparte', prioridadMovil: 'normal', ancho: 'm', truncar: 's', secundaria: true, celda: (x) => x.contraparte ?? <SinDato /> },
+            { id: 'fo', titulo: 'Folio', prioridadMovil: 'oculta', ancho: 's', secundaria: true, celda: (x) => (x.folio ? <span className="rtm-mono">{x.folio}</span> : '') },
+            { id: 'ca', titulo: '(+) Cargos', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (x) => (x.cargo_cent === null ? '' : m(x.cargo_cent)) },
+            { id: 'ab', titulo: '(−) Abonos', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (x) => (x.abono_cent === null ? '' : m(x.abono_cent)) },
+            { id: 'sa', titulo: '(=) Saldo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (x) => neg(x.saldo_cent) },
+            { id: 'e', titulo: 'Estado', prioridadMovil: 'normal', ancho: 'm', celda: (x) => <ChipEstado tono={ESTADOS[x.estado].tono}>{ESTADOS[x.estado].palabra}</ChipEstado> },
+            { id: 'o', titulo: 'Origen', prioridadMovil: 'oculta', ancho: 'm', truncar: 's', secundaria: true, celda: (x) => x.origen ?? '' },
           ]}
           agrupar={{ clave: (x) => x.fecha_neg.slice(0, 7), cabecera: (k) => { const mes = mesDe.get(k); return { titulo: mesEtiqueta(`${k}-01`), subtotales: { c: `${mes?.n ?? 0} renglones`, ca: mes ? m(mes.cargos_cent) : null, ab: mes ? m(mes.abonos_cent) : null, sa: mes ? neg(mes.saldo_cent) : null } }; } }}
           totales={{ etiqueta: `Totales del filtro (${t.n})`, celdas: { ca: m(t.cargos_cent), ab: m(t.abonos_cent), sa: neg(t.saldo_final_cent) } }}

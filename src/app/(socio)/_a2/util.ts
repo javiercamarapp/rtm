@@ -39,6 +39,14 @@ export function enlace(base: string, sp: Params, cambios: Record<string, string 
 
 export const m = (c: bigint | null | undefined) => (c === null || c === undefined ? null : formatearMoneda(c));
 export const pz = (n: number | null | undefined) => (n === null || n === undefined ? null : formatearPiezas(n));
+/** Piezas sin el sufijo "pz" (la unidad va en el encabezado): ahorra ancho en tablas de libro. */
+export const pzs = (n: number | null | undefined) => (n === null || n === undefined ? null : formatearPiezas(n).replace(/\s?pz$/, ''));
+/** "12 nov" si es del ano en curso, "12 nov 2025" si no (el texto completo viaja en el title). */
+export const fechaCorta = (f: string | null | undefined) => {
+  if (!f) return null;
+  const t = etiquetaFecha(f);
+  return t.endsWith(` ${new Date().getFullYear()}`) ? t.slice(0, -5) : t;
+};
 export const dec = (n: number | null | undefined, d = 1) => (n === null || n === undefined ? null : formatearDecimal(n, d));
 /** Puntos base a texto con un decimal: 1234 -> "12.3 %". */
 export const bpTexto = (bp: number | null | undefined) => (bp === null || bp === undefined ? null : `${formatearDecimal(bp / 100, 1)} %`);

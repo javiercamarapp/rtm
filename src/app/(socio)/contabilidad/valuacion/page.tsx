@@ -57,9 +57,9 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
 
   const filaAcum = (rows: Renglon[]) => (g: string) => rows.filter((x) => x.grupo === g).reduce((a, x) => a + x.importe, 0n);
   const col = (total: bigint) => [
-    { id: 'c', titulo: 'Concepto', ancho: 'xl' as const, celda: (x: Renglon) => x.concepto },
-    { id: 'd', titulo: 'Detalle', ancho: 'l' as const, secundaria: true, celda: (x: Renglon) => x.detalle },
-    { id: 'i', titulo: 'Importe', numerica: true, ancho: 'l' as const, celda: (x: Renglon) => (sd ? <SinDato /> : m(x.importe)) },
+    { id: 'c', titulo: 'Concepto', ancho: 'l' as const, truncar: 'l' as const, celda: (x: Renglon) => x.concepto },
+    { id: 'd', titulo: 'Detalle', ancho: 'm' as const, truncar: 'm' as const, secundaria: true, celda: (x: Renglon) => x.detalle },
+    { id: 'i', titulo: 'Importe', numerica: true, ancho: 'm' as const, celda: (x: Renglon) => (sd ? <SinDato /> : m(x.importe)) },
     { id: 'p', titulo: '% del total', numerica: true, ancho: 's' as const, celda: (x: Renglon) => (sd ? <SinDato /> : pctTexto(partePct(x.importe, total)) ?? <SinDato />) },
   ];
 

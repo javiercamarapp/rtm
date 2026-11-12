@@ -8,7 +8,7 @@ import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { ColumnasPeriodo } from '@/ui/graficas';
 import { Campo, FiltrosUrl } from '../../_a2/filtros-url';
-import { dec, fecha, m, partePct, pctTexto, periodo, pz, semanaEtiqueta, type Params } from '../../_a2/util';
+import { dec, fecha, m, partePct, pctTexto, periodo, pz, pzs, fechaCorta, semanaEtiqueta, type Params } from '../../_a2/util';
 
 export const metadata: Metadata = { title: 'Inventario por marca' };
 
@@ -58,15 +58,15 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
             { id: 'p', titulo: 'Proveedor', ancho: 'm', celda: (x) => x.proveedor ?? <SinDato /> },
             { id: 'mo', titulo: 'Modelos', numerica: true, ancho: 's', celda: (x) => `${x.modelos} de ${x.modelos_catalogo}` },
             { id: 'sa', titulo: 'Sabores', numerica: true, ancho: 's', celda: (x) => String(x.sabores) },
-            { id: 'pz', titulo: 'Piezas', numerica: true, ancho: 's', celda: (x) => pz(x.piezas) },
+            { id: 'pz', titulo: 'Piezas', numerica: true, ancho: 's', celda: (x) => pzs(x.piezas) },
             { id: 'v', titulo: 'Valor a costo', numerica: true, ancho: 'l', celda: (x) => m(x.valor_cent) },
             { id: 'cp', titulo: 'Costo promedio', numerica: true, ancho: 'm', celda: (x) => m(x.costo_prom_cent) ?? <SinDato /> },
-            { id: 'pc', titulo: '% del inventario', numerica: true, ancho: 's', celda: (x) => pctTexto(partePct(x.valor_cent, total)) ?? <SinDato /> },
+            { id: 'pc', titulo: '% del total', numerica: true, ancho: 's', celda: (x) => pctTexto(partePct(x.valor_cent, total)) ?? <SinDato /> },
             { id: 'c', titulo: 'Cobertura media', numerica: true, ancho: 'm', celda: (x) => (x.cobertura_media_dias === null ? <SinDato /> : textoDias(x.cobertura_media_dias)) },
             { id: 'ro', titulo: 'Rotación', numerica: true, ancho: 's', celda: (x) => (x.rotacion === null ? <SinDato /> : `${dec(x.rotacion, 2)}`) },
-            { id: 'en', titulo: 'Entradas', numerica: true, ancho: 's', celda: (x) => pz(x.entradas) },
-            { id: 'sl', titulo: 'Salidas', numerica: true, ancho: 's', celda: (x) => pz(x.salidas) },
-            { id: 'ue', titulo: 'Última entrada', ancho: 'm', celda: (x) => fecha(x.ultima_entrada) ?? <SinDato /> },
+            { id: 'en', titulo: 'Entradas', numerica: true, ancho: 's', celda: (x) => pzs(x.entradas) },
+            { id: 'sl', titulo: 'Salidas', numerica: true, ancho: 's', celda: (x) => pzs(x.salidas) },
+            { id: 'ue', titulo: 'Última entrada', ancho: 'm', celda: (x) => fechaCorta(x.ultima_entrada) ?? <SinDato /> },
           ]}
           totales={{ etiqueta: 'Total', celdas: { pz: pz(piezas), v: m(total), en: pz(r.marcas.reduce((a, x) => a + x.entradas, 0)), sl: pz(r.marcas.reduce((a, x) => a + x.salidas, 0)), pc: sd ? null : '100 %' } }}
         />

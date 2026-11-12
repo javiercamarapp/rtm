@@ -125,16 +125,16 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
           totales={filas.length ? { etiqueta: 'Totales del filtro', celdas: { z: `${formatearPiezas(piezasTot)}`, b: formatearMoneda(cobrado), u: utilidad === null ? 'Sin dato' : formatearMoneda(utilidad) } } : undefined}
           vacio={{ titulo: 'Sin pedidos', texto: todos.length === 0 ? 'Crea el primer pedido: eliges el cliente, los modelos y sabores, y el sistema toma el precio del tabulador.' : 'Ningún pedido coincide con los filtros.', accion: <Link className="rtm-boton" href="/pedidos/nuevo">Nuevo pedido</Link> }}
           columnas={[
-            { id: 'f', titulo: 'Folio', ancho: 'm', celda: (p) => <Link className="rtm-mono" href={`/pedidos/${p.id}`}>{p.folio}</Link> },
-            { id: 'c', titulo: 'Cliente', ancho: 'xl', celda: (p) => <CeldaPersona nombre={p.cliente} href={`/clientes/${p.cliente_id}`} /> },
-            { id: 'd', titulo: 'Fecha', ancho: 'm', secundaria: true, celda: (p) => etiquetaFecha(p.fecha_neg) },
-            { id: 'r', titulo: 'Origen', ancho: 'l', secundaria: true, celda: (p) => ORIGEN[p.origen] },
-            { id: 'z', titulo: 'Piezas', numerica: true, ancho: 's', celda: (p) => (p.estado === 'enviado' || p.estado === 'anulado' ? `${formatearPiezas(p.piezas_surtidas)} de ${p.piezas_pedidas}` : formatearPiezas(p.piezas_pedidas)) },
-            { id: 'b', titulo: 'Cobrado', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? <CifraComprobada texto={formatearMoneda(p.cobrado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" /> : <SinDato />) },
-            { id: 'u', titulo: 'Utilidad', numerica: true, ancho: 'm', secundaria: true, celda: (p) => (p.utilidad_cent === null ? <SinDato /> : <>{formatearMoneda(p.utilidad_cent)}{p.utilidad_provisional ? <> <EstadoTexto tono="atencion">provisional</EstadoTexto></> : null}</>) },
-            { id: 'e', titulo: 'Estado', ancho: 'm', celda: (p) => <ChipEstado tono={TONO[p.estado]}>{ESTADO_PEDIDO[p.estado].texto}</ChipEstado> },
-            { id: 'p', titulo: 'Pago', ancho: 'm', secundaria: true, celda: (p) => (p.estado !== 'enviado' || p.saldo_cent === null ? '' : p.saldo_cent === 0n ? <EstadoTexto tono="ok">Saldado</EstadoTexto> : p.saldo_cent < 0n ? <EstadoTexto tono="neutro">A favor</EstadoTexto> : <EstadoTexto tono="atencion">Por cobrar</EstadoTexto>) },
-            { id: 'a', titulo: 'Avisos', ancho: 's', secundaria: true, celda: (p) => (p.avisos > 0 ? <EstadoTexto tono="atencion">{p.avisos} {p.avisos === 1 ? 'aviso' : 'avisos'}</EstadoTexto> : '') },
+            { id: 'f', titulo: 'Folio', prioridadMovil: 'normal', ancho: 'm', celda: (p) => <Link className="rtm-mono" href={`/pedidos/${p.id}`}>{p.folio}</Link> },
+            { id: 'c', titulo: 'Cliente', prioridadMovil: 'titulo', ancho: 'xl', celda: (p) => <CeldaPersona nombre={p.cliente} href={`/clientes/${p.cliente_id}`} /> },
+            { id: 'd', titulo: 'Fecha', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (p) => etiquetaFecha(p.fecha_neg) },
+            { id: 'r', titulo: 'Origen', prioridadMovil: 'oculta', ancho: 'l', secundaria: true, celda: (p) => ORIGEN[p.origen] },
+            { id: 'z', titulo: 'Piezas', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (p) => (p.estado === 'enviado' || p.estado === 'anulado' ? `${formatearPiezas(p.piezas_surtidas)} de ${p.piezas_pedidas}` : formatearPiezas(p.piezas_pedidas)) },
+            { id: 'b', titulo: 'Cobrado', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? <CifraComprobada texto={formatearMoneda(p.cobrado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" /> : <SinDato />) },
+            { id: 'u', titulo: 'Utilidad', prioridadMovil: 'normal', numerica: true, ancho: 'm', secundaria: true, celda: (p) => (p.utilidad_cent === null ? <SinDato /> : <>{formatearMoneda(p.utilidad_cent)}{p.utilidad_provisional ? <> <EstadoTexto tono="atencion">provisional</EstadoTexto></> : null}</>) },
+            { id: 'e', titulo: 'Estado', prioridadMovil: 'normal', ancho: 'm', celda: (p) => <ChipEstado tono={TONO[p.estado]}>{ESTADO_PEDIDO[p.estado].texto}</ChipEstado> },
+            { id: 'p', titulo: 'Pago', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (p) => (p.estado !== 'enviado' || p.saldo_cent === null ? '' : p.saldo_cent === 0n ? <EstadoTexto tono="ok">Saldado</EstadoTexto> : p.saldo_cent < 0n ? <EstadoTexto tono="neutro">A favor</EstadoTexto> : <EstadoTexto tono="atencion">Por cobrar</EstadoTexto>) },
+            { id: 'a', titulo: 'Avisos', prioridadMovil: 'oculta', ancho: 's', secundaria: true, celda: (p) => (p.avisos > 0 ? <EstadoTexto tono="atencion">{p.avisos} {p.avisos === 1 ? 'aviso' : 'avisos'}</EstadoTexto> : '') },
           ]}
         />
       </Tarjeta>

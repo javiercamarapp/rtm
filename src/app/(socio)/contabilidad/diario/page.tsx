@@ -83,10 +83,10 @@ export default async function PaginaDiario({ searchParams }: { searchParams: Pro
                     filas={a.lineas}
                     totales={{ etiqueta: 'Suma', celdas: { d: m(suma(a.lineas.map((l) => l.debe_cent))), h: m(suma(a.lineas.map((l) => l.haber_cent))) } }}
                     columnas={[
-                      { id: 'c', titulo: 'Cuenta', ancho: 'xl', celda: (l) => <><span className="rtm-mono">{l.cuenta}</span> {l.nombre}</> },
-                      { id: 't', titulo: 'Tercero', ancho: 'l', secundaria: true, celda: (l) => l.cliente ?? l.proveedor ?? l.socio ?? '' },
-                      { id: 'd', titulo: 'Debe', numerica: true, ancho: 'm', celda: (l) => (l.debe_cent > 0n ? m(l.debe_cent) : '') },
-                      { id: 'h', titulo: 'Haber', numerica: true, ancho: 'm', celda: (l) => (l.haber_cent > 0n ? m(l.haber_cent) : '') },
+                      { id: 'c', titulo: 'Cuenta', prioridadMovil: 'titulo', ancho: 'xl', celda: (l) => <><span className="rtm-mono">{l.cuenta}</span> {l.nombre}</> },
+                      { id: 't', titulo: 'Tercero', prioridadMovil: 'normal', ancho: 'l', secundaria: true, celda: (l) => l.cliente ?? l.proveedor ?? l.socio ?? '' },
+                      { id: 'd', titulo: 'Debe', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (l) => (l.debe_cent > 0n ? m(l.debe_cent) : '') },
+                      { id: 'h', titulo: 'Haber', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (l) => (l.haber_cent > 0n ? m(l.haber_cent) : '') },
                     ]}
                   />
                   <div className="a3-pie-tarjeta"><p className="a3-pie rtm-mono" aria-label="Huella del asiento">hash {a.hash.slice(0, 16)}…</p></div>

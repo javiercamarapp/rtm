@@ -219,16 +219,16 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
             totales={{ etiqueta: `Total (${filas.length})`, celdas: { o: m(suma(filas.map((f) => f.original_cent))), rc: m(suma(filas.map((f) => f.recargo_cent))), a: m(suma(filas.map((f) => f.abonos_cent))), s: m(suma(filas.map((f) => f.saldo_cent))) } }}
             vacio={{ titulo: 'Nada por cobrar', texto: 'Cuando se envíe un pedido y no esté saldado, aparecerá aquí con su plazo, vencimiento y antigüedad.', accion: <Link className="rtm-boton" href="/pedidos">Ver pedidos</Link> }}
             columnas={[
-              { id: 'c', titulo: 'Cliente · pedido', ancho: 'xl', celda: (f) => <Dos a={<Link href={`/clientes/${f.cliente_id}`}>{f.cliente}</Link>} b={<Link className="rtm-mono" href={`/pedidos/${f.pedido_id}`}>{f.folio}</Link>} /> },
-              { id: 'e', titulo: 'Enviado · vence', ancho: 'm', celda: (f) => <Dos a={fechaCorta(f.fecha_envio)} b={f.vence ? `vence ${fechaCorta(f.vence)}` : 'sin vencimiento'} /> },
-              { id: 'p', titulo: 'Plazo', ancho: 'xs', secundaria: true, celda: (f) => (f.plazo_dias === null ? <SinDato /> : `${f.plazo_dias} d`) },
-              { id: 'o', titulo: 'Original', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.original_cent) },
-              { id: 'rc', titulo: 'Recargo', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.recargo_cent > 0n ? <Dos a={m(f.recargo_cent)} b={`sug. ${m(f.recargo_sugerido_cent)}`} /> : f.saldo_cent > 0n && f.recargo_sugerido_cent > 0n ? <Dos a={<SinDato />} b={`sug. ${m(f.recargo_sugerido_cent)}`} /> : <SinDato />) },
-              { id: 'a', titulo: 'Abonos', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.abonos_cent) },
-              { id: 's', titulo: 'Saldo', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.saldo_cent)} cifra={`pedido:saldo:${f.pedido_id}`} comprobacion="cuadra" /> },
-              { id: 'b', titulo: 'Antigüedad', ancho: 's', secundaria: true, celda: (f) => <Dos a={CUBETA_CORTA[f.cubeta]} b={`${f.dias} d`} /> },
-              { id: 'x', titulo: 'Estado', ancho: 'm', celda: (f) => <Dos a={<Estado tono={ESTADO_CXC[f.estado].tono}>{ESTADO_CXC[f.estado].texto}</Estado>} b={f.dias_atraso === null ? undefined : `${f.dias_atraso} d de atraso`} /> },
-              { id: 'z', titulo: 'Acciones', ancho: 'l', celda: (f) => (
+              { id: 'c', titulo: 'Cliente · pedido', prioridadMovil: 'titulo', ancho: 'xl', celda: (f) => <Dos a={<Link href={`/clientes/${f.cliente_id}`}>{f.cliente}</Link>} b={<Link className="rtm-mono" href={`/pedidos/${f.pedido_id}`}>{f.folio}</Link>} /> },
+              { id: 'e', titulo: 'Enviado · vence', prioridadMovil: 'normal', ancho: 'm', celda: (f) => <Dos a={fechaCorta(f.fecha_envio)} b={f.vence ? `vence ${fechaCorta(f.vence)}` : 'sin vencimiento'} /> },
+              { id: 'p', titulo: 'Plazo', prioridadMovil: 'oculta', ancho: 'xs', secundaria: true, celda: (f) => (f.plazo_dias === null ? <SinDato /> : `${f.plazo_dias} d`) },
+              { id: 'o', titulo: 'Original', prioridadMovil: 'normal', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.original_cent) },
+              { id: 'rc', titulo: 'Recargo', prioridadMovil: 'oculta', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.recargo_cent > 0n ? <Dos a={m(f.recargo_cent)} b={`sug. ${m(f.recargo_sugerido_cent)}`} /> : f.saldo_cent > 0n && f.recargo_sugerido_cent > 0n ? <Dos a={<SinDato />} b={`sug. ${m(f.recargo_sugerido_cent)}`} /> : <SinDato />) },
+              { id: 'a', titulo: 'Abonos', prioridadMovil: 'oculta', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.abonos_cent) },
+              { id: 's', titulo: 'Saldo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.saldo_cent)} cifra={`pedido:saldo:${f.pedido_id}`} comprobacion="cuadra" /> },
+              { id: 'b', titulo: 'Antigüedad', prioridadMovil: 'normal', ancho: 's', secundaria: true, celda: (f) => <Dos a={CUBETA_CORTA[f.cubeta]} b={`${f.dias} d`} /> },
+              { id: 'x', titulo: 'Estado', prioridadMovil: 'normal', ancho: 'm', celda: (f) => <Dos a={<Estado tono={ESTADO_CXC[f.estado].tono}>{ESTADO_CXC[f.estado].texto}</Estado>} b={f.dias_atraso === null ? undefined : `${f.dias_atraso} d de atraso`} /> },
+              { id: 'z', titulo: 'Acciones', prioridadMovil: 'normal', ancho: 'l', celda: (f) => (
                 <span className="rtm-acciones-fila">
                   <FormularioAccion chico boton="Acordar plazo" titulo={`Plazo de ${f.folio}`} confirmar="Acordar plazo" accion="acordar_plazo" fijos={{ p_pedido: f.pedido_id }} testid={`plazo-${f.pedido_id}`}
                     campos={[{ nombre: 'p_dias', etiqueta: 'Días de plazo desde el envío', tipo: 'entero', requerido: true, defecto: f.plazo_dias === null ? '' : String(f.plazo_dias) }]} />
@@ -257,13 +257,13 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
             totales={{ etiqueta: `Total (${d.por_cliente.length})`, celdas: { p: String(suma(d.por_cliente.map((c) => BigInt(c.pedidos)))), v: m(d.vencido_cent), s: m(d.total_cent) } }}
             vacio={{ titulo: 'Sin saldos', texto: 'Ningún cliente debe nada por ahora.' }}
             columnas={[
-              { id: 'c', titulo: 'Cliente', ancho: 'xl', celda: (c) => <CeldaPersona nombre={c.cliente} href={`/clientes/${c.cliente_id}`} subtitulo={c.proximo_vence ? `vence ${etiquetaFecha(c.proximo_vence)}` : 'sin vencimiento próximo'} /> },
-              { id: 'p', titulo: 'Pedidos', numerica: true, ancho: 'xs', celda: (c) => c.pedidos },
-              { id: 'dm', titulo: 'Más antiguo', numerica: true, ancho: 's', secundaria: true, celda: (c) => `${c.dias_max} d` },
-              { id: 'v', titulo: 'Vencido', numerica: true, ancho: 'm', celda: (c) => (c.vencido_cent > 0n ? m(c.vencido_cent) : '—') },
-              { id: 'pc', titulo: '% del total', numerica: true, ancho: 's', secundaria: true, celda: (c) => pctTexto(pct(c.saldo_cent, d.total_cent)) },
-              { id: 's', titulo: 'Saldo', numerica: true, ancho: 'm', celda: (c) => m(c.saldo_cent) },
-              { id: 't', titulo: 'Recordatorio', ancho: 'l', celda: (c) => <CopiarTexto chico etiqueta="Texto de cobro" fuente={{ tipo: 'cobro', clienteId: c.cliente_id }} /> },
+              { id: 'c', titulo: 'Cliente', prioridadMovil: 'titulo', ancho: 'xl', celda: (c) => <CeldaPersona nombre={c.cliente} href={`/clientes/${c.cliente_id}`} subtitulo={c.proximo_vence ? `vence ${etiquetaFecha(c.proximo_vence)}` : 'sin vencimiento próximo'} /> },
+              { id: 'p', titulo: 'Pedidos', prioridadMovil: 'normal', numerica: true, ancho: 'xs', celda: (c) => c.pedidos },
+              { id: 'dm', titulo: 'Más antiguo', prioridadMovil: 'normal', numerica: true, ancho: 's', secundaria: true, celda: (c) => `${c.dias_max} d` },
+              { id: 'v', titulo: 'Vencido', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (c) => (c.vencido_cent > 0n ? m(c.vencido_cent) : '—') },
+              { id: 'pc', titulo: '% del total', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (c) => pctTexto(pct(c.saldo_cent, d.total_cent)) },
+              { id: 's', titulo: 'Saldo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (c) => m(c.saldo_cent) },
+              { id: 't', titulo: 'Recordatorio', prioridadMovil: 'normal', ancho: 'l', celda: (c) => <CopiarTexto chico etiqueta="Texto de cobro" fuente={{ tipo: 'cobro', clienteId: c.cliente_id }} /> },
             ]}
           />
         )}

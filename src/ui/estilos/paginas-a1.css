@@ -26,3 +26,11 @@
 /* La pagina es una rejilla de una columna: sin minmax(0, 1fr) un hijo ancho (formulario, texto copiable) ensancha toda la pagina en movil. */
 .rtm-pagina-v2 { grid-template-columns: minmax(0, 1fr); }
 .rtm-texto-copiable { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Etapa 3: pilas de tarjetas que comparten fila con una tarjeta alta (sin vacios) y listados que crecen para llenar la altura */
+.rtm-pila-llena { display: flex; flex-direction: column; gap: var(--rtm-ritmo); min-width: 0; }
+.rtm-pila-llena > .rtm-tarjeta-v2 { flex: 1 1 auto; }
+.rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos), .rtm-pila-llena > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos) { flex: 1 1 auto; }
+.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-barlist > li, .rtm-pila-llena > .rtm-tarjeta-v2 > .rtm-barlist > li { flex: 1 1 auto; max-height: 64px; display: flex; flex-direction: column; justify-content: center; }
+.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-hallazgos > li { flex: 1 1 auto; max-height: 76px; }
+.rtm-hallazgos { display: flex; flex-direction: column; }

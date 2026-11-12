@@ -11,7 +11,7 @@ import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { Campo, FiltrosUrl } from '../../_a2/filtros-url';
 import { TRAMOS, acumularPorTramo, tramoDe } from '../../_a2/antiguedad';
-import { dec, diasEntre, fecha, m, partePct, pctTexto, periodo, pz, textoParam, tonoChip, type Params } from '../../_a2/util';
+import { dec, diasEntre, fecha, m, partePct, pctTexto, periodo, pz, pzs, fechaCorta, textoParam, tonoChip, type Params } from '../../_a2/util';
 
 export const metadata: Metadata = { title: 'Antigüedad y rotación' };
 
@@ -60,15 +60,15 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           etiqueta="Antigüedad y rotación por sabor" clave={(f) => f.id} filas={filas} densidad="densa" pegajosa primeraFija plana
           vacio={{ titulo: 'Sin existencias', texto: 'Aparece con la primera compra recibida y contada.' }}
           columnas={[
-            { id: 's', titulo: 'Modelo › sabor', ancho: 'xl', celda: (f) => <><Link href={`/inventario/kardex/sabor?modelo=${f.mid}&sku=${f.sku_id}`}>{f.sabor}</Link><span className="rtm-a2-nota"> · {f.modelo}</span></> },
-            { id: 'p', titulo: 'Existencia', numerica: true, ancho: 's', celda: (f) => pz(f.piezas) },
-            { id: 'ue', titulo: 'Última entrada', ancho: 'm', celda: (f) => fecha(dS.get(f.sku_id)?.ultima_entrada) ?? <SinDato /> },
+            { id: 's', titulo: 'Modelo › sabor', ancho: 'l', celda: (f) => <><Link href={`/inventario/kardex/sabor?modelo=${f.mid}&sku=${f.sku_id}`}>{f.sabor}</Link><span className="rtm-a2-nota"> · {f.modelo}</span></> },
+            { id: 'p', titulo: 'Existencia', numerica: true, ancho: 's', celda: (f) => pzs(f.piezas) },
+            { id: 'ue', titulo: 'Última entrada', ancho: 'm', celda: (f) => fechaCorta(dS.get(f.sku_id)?.ultima_entrada) ?? <SinDato /> },
             { id: 'd', titulo: 'Días', numerica: true, ancho: 's', celda: (f) => (f.dias === null ? <SinDato /> : String(f.dias)) },
             { id: 't', titulo: 'Tramo', ancho: 'm', celda: (f) => (f.dias === null ? <SinDato /> : tramoDe(f.dias).etiqueta) },
             { id: 'us', titulo: 'Días sin salida', numerica: true, ancho: 'm', celda: (f) => (f.diasSal === null ? <SinDato /> : String(f.diasSal)) },
             { id: 'v', titulo: 'Valor a costo', numerica: true, ancho: 'm', celda: (f) => m(f.valor_cent) },
-            { id: 'en', titulo: 'Entradas', numerica: true, ancho: 's', celda: (f) => pz(f.entradas) },
-            { id: 'sa', titulo: 'Salidas', numerica: true, ancho: 's', celda: (f) => pz(f.salidas) },
+            { id: 'en', titulo: 'Entradas', numerica: true, ancho: 's', celda: (f) => pzs(f.entradas) },
+            { id: 'sa', titulo: 'Salidas', numerica: true, ancho: 's', celda: (f) => pzs(f.salidas) },
             { id: 'ro', titulo: 'Rotación', numerica: true, ancho: 's', celda: (f) => (f.rot === null ? <SinDato /> : dec(f.rot, 2)) },
             { id: 'c', titulo: 'Cobertura', numerica: true, ancho: 's', celda: (f) => (f.cobertura_dias === null ? <SinDato /> : textoDias(f.cobertura_dias)) },
             { id: 'e', titulo: 'Semáforo', ancho: 'l', celda: (f) => (f.estado ? <ChipEstado tono={tonoChip(TONO_COBERTURA[f.estado])}>{PALABRA_COBERTURA[f.estado]}</ChipEstado> : <SinDato />) },

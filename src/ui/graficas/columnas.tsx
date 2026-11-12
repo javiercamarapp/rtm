@@ -38,7 +38,11 @@ const MB = 24;
 
 /** Columnas por periodo a ancho real: eje cero, 3 marcas, el maximo y el ultimo periodo completo en tinta plena, el resto al 58 %, parcial con trama,
  *  tooltip en cuatro niveles (cursor y teclado) y cinta fija en pantallas tactiles. */
-export function ColumnasPeriodo({ datos, unidad, formatoEje = compactoEs, alto = 168, tablaAbierta, ...base }: Props) {
+export function ColumnasPeriodo({ datos, unidad, formatoEje = compactoEs, alto: altoPedido = 168, tablaAbierta, ...base }: Props) {
+  // Altura segun los datos: con casi todo en cero la grafica se achata, y con una sola semana con datos se reemplaza por un resumen compacto.
+  const conDato = datos.filter((d) => d.valor > 0);
+  const alto = conDato.length / Math.max(1, datos.length) < 0.4 ? Math.min(altoPedido, 104) : altoPedido;
+  const soloUna = datos.length > 1 && conDato.length <= 1;
   const uid = useUidSvg();
   const { ref, ancho } = useAnchoReal();
   const anima = useAnimacionActiva();
@@ -66,7 +70,13 @@ export function ColumnasPeriodo({ datos, unidad, formatoEje = compactoEs, alto =
   const cx = (i: number) => (c ? MI + c.paso * i + c.paso / 2 : 0);
   return (
     <MarcoGrafica {...base} forma="barras" tabla={tabla} tablaAbierta={tablaAbierta} estado={estadoDe(base.estado, calculo.ok)} mensajeError={calculo.ok ? undefined : calculo.error.message}>
-      {c && (
+      {c && soloUna && (
+        <p className="rtm-g-resumen">
+          {conDato[0] ? <><b>{conDato[0].etiqueta}</b>: {conDato[0].texto}{conDato[0].parcial ? ' (parcial)' : ''}. </> : 'Sin movimiento en el periodo. '}
+          Las otras {datos.length - conDato.length} semanas no tienen movimiento.
+        </p>
+      )}
+      {c && !soloUna && (
         <>
           <CintaLectura>{sel ? <>{sel.etiqueta}: <b>{sel.texto}</b>{sel.parcial ? ' (parcial)' : ''}</> : null}</CintaLectura>
           <div className="rtm-g-rel" ref={ref}>

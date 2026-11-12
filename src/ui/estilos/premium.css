@@ -237,8 +237,8 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-dt-fila[hidden] { display: none; }
 .rtm-dt-grupo:last-child .rtm-dt-fila:hover { background: transparent; }
 .rtm-dt-cuerpo .rtm-dt-fila:hover .rtm-dt-celda { background: var(--rtm-tint); }
-.rtm-dt-celda[data-ancho='xs'] { min-width: 56px; } .rtm-dt-celda[data-ancho='s'] { min-width: 72px; } .rtm-dt-celda[data-ancho='m'] { min-width: 96px; }
-.rtm-dt-celda[data-ancho='l'] { min-width: 120px; } .rtm-dt-celda[data-ancho='xl'] { min-width: 200px; }
+.rtm-dt-celda[data-ancho='xs'] { min-width: 44px; } .rtm-dt-celda[data-ancho='s'] { min-width: 56px; } .rtm-dt-celda[data-ancho='m'] { min-width: 72px; }
+.rtm-dt-celda[data-ancho='l'] { min-width: 92px; } .rtm-dt-celda[data-ancho='xl'] { min-width: 140px; }
 .rtm-dt-celda[data-num] { text-align: right; }
 
 /* Bloques de columnas (ENTRADAS / SALIDAS / EXISTENCIAS) */

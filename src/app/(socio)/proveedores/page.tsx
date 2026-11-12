@@ -169,14 +169,14 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             totales={{ etiqueta: `Total (${compras.length})`, celdas: { pg: formatearPiezas(piezasPagadas), fa: formatearPiezas(compras.reduce((a, c) => a + c.facturadas, 0)), re: formatearPiezas(piezasRecibidas), t: m(totalCompras) } }}
             vacio={{ titulo: 'Sin órdenes', texto: `Todavía no hay órdenes de compra a ${proveedor}.`, accion: <Link className="rtm-boton" href={`/proveedores/compras/nueva?p=${proveedor}`}>Nueva orden de compra</Link> }}
             columnas={[
-              { id: 'f', titulo: 'Orden', ancho: 'm', celda: (c) => <Link className="rtm-mono" href={`/proveedores/compras/${c.id}`}>{c.folio}</Link> },
-              { id: 'd', titulo: 'Fecha', ancho: 's', celda: (c) => etiquetaFecha(c.fecha_neg) },
-              { id: 'pg', titulo: 'Pagadas', numerica: true, ancho: 's', secundaria: true, celda: (c) => formatearPiezas(c.pagadas) },
-              { id: 'fa', titulo: 'Facturadas', numerica: true, ancho: 's', secundaria: true, celda: (c) => formatearPiezas(c.facturadas) },
-              { id: 're', titulo: 'Recibidas', numerica: true, ancho: 's', celda: (c) => (c.recibidas === null ? <SinDato /> : formatearPiezas(c.recibidas)) },
-              { id: 't', titulo: 'Total', numerica: true, ancho: 'm', celda: (c) => m(c.total_cent) },
-              { id: 'e', titulo: 'Estado', ancho: 'm', celda: (c) => <Estado tono={ESTADO_COMPRA[c.estado].tono}>{ESTADO_COMPRA[c.estado].texto}</Estado> },
-              { id: 'x', titulo: 'Diferencias', ancho: 'm', secundaria: true, celda: (c) => (c.diferencias_abiertas > 0 ? <Estado tono="atencion">{c.diferencias_abiertas} sin responsable</Estado> : '—') },
+              { id: 'f', titulo: 'Orden', prioridadMovil: 'titulo', ancho: 'm', celda: (c) => <Link className="rtm-mono" href={`/proveedores/compras/${c.id}`}>{c.folio}</Link> },
+              { id: 'd', titulo: 'Fecha', prioridadMovil: 'normal', ancho: 's', celda: (c) => etiquetaFecha(c.fecha_neg) },
+              { id: 'pg', titulo: 'Pagadas', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (c) => formatearPiezas(c.pagadas) },
+              { id: 'fa', titulo: 'Facturadas', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (c) => formatearPiezas(c.facturadas) },
+              { id: 're', titulo: 'Recibidas', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (c) => (c.recibidas === null ? <SinDato /> : formatearPiezas(c.recibidas)) },
+              { id: 't', titulo: 'Total', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (c) => m(c.total_cent) },
+              { id: 'e', titulo: 'Estado', prioridadMovil: 'normal', ancho: 'm', celda: (c) => <Estado tono={ESTADO_COMPRA[c.estado].tono}>{ESTADO_COMPRA[c.estado].texto}</Estado> },
+              { id: 'x', titulo: 'Diferencias', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (c) => (c.diferencias_abiertas > 0 ? <Estado tono="atencion">{c.diferencias_abiertas} sin responsable</Estado> : '—') },
             ]}
           />
         )}
@@ -191,11 +191,11 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             totales={{ etiqueta: `Neto (${cuenta.movimientos.length})`, celdas: { m: m(suma(cuenta.movimientos.map((x) => x.monto_cent)), true), s: m(cuenta.saldo_cent, true) } }}
             vacio={{ titulo: 'Sin movimientos', texto: 'La cuenta se mueve con pagos de clientes redirigidos al proveedor, pagos de un socio y órdenes de compra aplicadas.' }}
             columnas={[
-              { id: 'd', titulo: 'Fecha', ancho: 's', celda: (x) => etiquetaFecha(x.fecha_neg) },
-              { id: 'c', titulo: 'Concepto', ancho: 'xl', celda: (x) => <Dos a={<>{CONCEPTO_CUENTA[x.concepto] ?? x.concepto}{x.compra ? ` · ${x.compra}` : ''}{x.pago ? ` · ${x.pago}` : ''}</>} b={x.cliente ? `Cliente: ${x.cliente}` : x.nota} /> },
-              { id: 'm', titulo: 'Monto', numerica: true, ancho: 'm', celda: (x) => m(x.monto_cent, true) },
-              { id: 's', titulo: 'Saldo', numerica: true, ancho: 'm', celda: (x) => m(x.saldo_corrido_cent, true) },
-              { id: 'q', titulo: 'Quién', ancho: 'l', secundaria: true, celda: (x) => <Dos a={x.autor ?? x.canal} b={<span className="rtm-mono">{x.evento}</span>} /> },
+              { id: 'd', titulo: 'Fecha', prioridadMovil: 'normal', ancho: 's', celda: (x) => etiquetaFecha(x.fecha_neg) },
+              { id: 'c', titulo: 'Concepto', prioridadMovil: 'titulo', ancho: 'xl', celda: (x) => <Dos a={<>{CONCEPTO_CUENTA[x.concepto] ?? x.concepto}{x.compra ? ` · ${x.compra}` : ''}{x.pago ? ` · ${x.pago}` : ''}</>} b={x.cliente ? `Cliente: ${x.cliente}` : x.nota} /> },
+              { id: 'm', titulo: 'Monto', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (x) => m(x.monto_cent, true) },
+              { id: 's', titulo: 'Saldo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (x) => m(x.saldo_corrido_cent, true) },
+              { id: 'q', titulo: 'Quién', prioridadMovil: 'oculta', ancho: 'l', secundaria: true, celda: (x) => <Dos a={x.autor ?? x.canal} b={<span className="rtm-mono">{x.evento}</span>} /> },
             ]}
           />
         )}
@@ -210,16 +210,16 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             totales={{ etiqueta: `Total (${hoja.renglones.length})`, celdas: { p: formatearPiezas(hoja.renglones.reduce((a, r) => a + r.piezas, 0)), me: m(t.mercancia_cent), se: m(t.seguros_cent), gu: m(t.guias_cent), c: m(t.costo_total_cent) } }}
             vacio={{ titulo: 'Sin renglones', texto: 'No hay pedidos directos ni órdenes de compra de este proveedor en la semana.' }}
             columnas={[
-              { id: 'f', titulo: 'Folio', ancho: 'l', celda: (r) => <Dos a={<Link className="rtm-mono" href={r.tipo === 'oc' ? `/proveedores/compras/${r.id}` : `/pedidos/${r.id}`}>{r.folio}</Link>} b={r.tipo === 'oc' ? 'Orden de compra' : (ORIGEN[r.origen as keyof typeof ORIGEN] ?? r.origen)} /> },
-              { id: 'd', titulo: 'Fecha', ancho: 's', celda: (r) => etiquetaFecha(r.fecha) },
-              { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', celda: (r) => formatearPiezas(r.piezas) },
-              { id: 'me', titulo: 'Mercancía', numerica: true, ancho: 'm', celda: (r) => m(r.mercancia_cent) },
-              { id: 'se', titulo: 'Seguro', numerica: true, ancho: 'm', secundaria: true, celda: (r) => m(r.seguro_cent) },
-              { id: 'gu', titulo: 'Guía', numerica: true, ancho: 'm', secundaria: true, celda: (r) => (r.guia_pendiente ? <Estado tono="atencion">Sin costo real</Estado> : m(r.guia_cent)) },
-              { id: 'c', titulo: 'Costo', numerica: true, ancho: 'm', celda: (r) => m(r.costo_cent) },
-              { id: 'm', titulo: 'Detalle a costo', ancho: 'xl', secundaria: true, celda: (r) => r.detalle.map((x) => `${x.modelo}: ${x.piezas} × ${m(x.costo_unit_cent)}`).join(' · ') },
-              { id: 'a', titulo: 'Alcance', ancho: 's', secundaria: true, celda: (r) => (r.es_de_sociedad ? 'Sociedad' : 'Propio') },
-              { id: 'k', titulo: 'Cuadra', ancho: 's', celda: (r) => <Estado tono={r.cuadra ? 'ok' : 'malo'}>{r.cuadra ? 'Sí' : 'No'}</Estado> },
+              { id: 'f', titulo: 'Folio', prioridadMovil: 'titulo', ancho: 'l', celda: (r) => <Dos a={<Link className="rtm-mono" href={r.tipo === 'oc' ? `/proveedores/compras/${r.id}` : `/pedidos/${r.id}`}>{r.folio}</Link>} b={r.tipo === 'oc' ? 'Orden de compra' : (ORIGEN[r.origen as keyof typeof ORIGEN] ?? r.origen)} /> },
+              { id: 'd', titulo: 'Fecha', prioridadMovil: 'normal', ancho: 's', celda: (r) => etiquetaFecha(r.fecha) },
+              { id: 'p', titulo: 'Piezas', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (r) => formatearPiezas(r.piezas) },
+              { id: 'me', titulo: 'Mercancía', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (r) => m(r.mercancia_cent) },
+              { id: 'se', titulo: 'Seguro', prioridadMovil: 'oculta', numerica: true, ancho: 'm', secundaria: true, celda: (r) => m(r.seguro_cent) },
+              { id: 'gu', titulo: 'Guía', prioridadMovil: 'oculta', numerica: true, ancho: 'm', secundaria: true, celda: (r) => (r.guia_pendiente ? <Estado tono="atencion">Sin costo real</Estado> : m(r.guia_cent)) },
+              { id: 'c', titulo: 'Costo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (r) => m(r.costo_cent) },
+              { id: 'm', titulo: 'Detalle a costo', prioridadMovil: 'oculta', ancho: 'xl', secundaria: true, celda: (r) => r.detalle.map((x) => `${x.modelo}: ${x.piezas} × ${m(x.costo_unit_cent)}`).join(' · ') },
+              { id: 'a', titulo: 'Alcance', prioridadMovil: 'oculta', ancho: 's', secundaria: true, celda: (r) => (r.es_de_sociedad ? 'Sociedad' : 'Propio') },
+              { id: 'k', titulo: 'Cuadra', prioridadMovil: 'normal', ancho: 's', celda: (r) => <Estado tono={r.cuadra ? 'ok' : 'malo'}>{r.cuadra ? 'Sí' : 'No'}</Estado> },
             ]}
           />
         )}
@@ -233,13 +233,13 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             filas={cierres}
             vacio={{ titulo: 'Sin liquidaciones', texto: 'Todavía no se cierra ninguna semana con este proveedor.' }}
             columnas={[
-              { id: 'f', titulo: 'Folio', ancho: 'm', celda: (l) => <span className="rtm-mono">{l.folio}</span> },
-              { id: 's', titulo: 'Semana', ancho: 'l', celda: (l) => `${etiquetaFecha(l.semana_ini)} al ${etiquetaFecha(l.semana_fin)}` },
-              { id: 'c', titulo: 'Costo con guías', numerica: true, ancho: 'm', secundaria: true, celda: (l) => m(l.mercancia_cent + l.seguros_cent + l.guias_cent) },
-              { id: 'p', titulo: 'Pagos', numerica: true, ancho: 'm', secundaria: true, celda: (l) => m(l.pagos_cent) },
-              { id: 'v', titulo: 'Falta por saldar', numerica: true, ancho: 'm', celda: (l) => m(l.falta_por_saldar_cent) },
-              { id: 'd', titulo: 'Dijo el proveedor', numerica: true, ancho: 'm', secundaria: true, celda: (l) => (l.dicho_cent === null ? <SinDato /> : m(l.dicho_cent)) },
-              { id: 'df', titulo: 'Diferencia', numerica: true, ancho: 'm', secundaria: true, celda: (l) => (l.diferencia_cent === null ? <SinDato /> : m(l.diferencia_cent, true)) },
+              { id: 'f', titulo: 'Folio', prioridadMovil: 'titulo', ancho: 'm', celda: (l) => <span className="rtm-mono">{l.folio}</span> },
+              { id: 's', titulo: 'Semana', prioridadMovil: 'normal', ancho: 'l', celda: (l) => `${etiquetaFecha(l.semana_ini)} al ${etiquetaFecha(l.semana_fin)}` },
+              { id: 'c', titulo: 'Costo con guías', prioridadMovil: 'normal', numerica: true, ancho: 'm', secundaria: true, celda: (l) => m(l.mercancia_cent + l.seguros_cent + l.guias_cent) },
+              { id: 'p', titulo: 'Pagos', prioridadMovil: 'normal', numerica: true, ancho: 'm', secundaria: true, celda: (l) => m(l.pagos_cent) },
+              { id: 'v', titulo: 'Falta por saldar', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (l) => m(l.falta_por_saldar_cent) },
+              { id: 'd', titulo: 'Dijo el proveedor', prioridadMovil: 'oculta', numerica: true, ancho: 'm', secundaria: true, celda: (l) => (l.dicho_cent === null ? <SinDato /> : m(l.dicho_cent)) },
+              { id: 'df', titulo: 'Diferencia', prioridadMovil: 'normal', numerica: true, ancho: 'm', secundaria: true, celda: (l) => (l.diferencia_cent === null ? <SinDato /> : m(l.diferencia_cent, true)) },
             ]}
           />
         )}
