@@ -1,12 +1,20 @@
 // Historial personal y acta de corte de punta a punta (Chromium 1440, base local con scripts/capturas/datos-demo-historial.mjs sembrada: actas de agosto y septiembre firmadas).
+// PRECONDICION: la prueba 2 consume el periodo de octubre (un acta firmada no se borra), asi que SOLO pasa completa en una base recien sembrada
+// (supabase db reset + node scripts/capturas/datos-demo-historial.mjs). En una segunda corrida sin re-sembrar, las pruebas 2 y 3 se SALTAN con ese aviso (no fallan) y 4 y 5 usan el acta ya cerrada.
 // Flujo: Angelo propone el acta de octubre con retiro y reinversion, la firma; Javier la firma y se cierra con sello; los dos ven su historial y exportan los PDF.
 import { expect, test, type Page } from '@playwright/test';
-import { altaUsuario, correoUnico, entrarComo, ipFalsa } from './ayudas';
+import { altaUsuario, consultar, correoUnico, entrarComo, ipFalsa } from './ayudas';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
 
 let actaId = '';
+let octubreConsumido = false;
+const AVISO_RESEMBRAR = 'El periodo de octubre ya tiene acta: re-sembrar con supabase db reset y scripts/capturas/datos-demo-historial.mjs para correr el flujo completo';
+
+test.beforeAll(async () => {
+  octubreConsumido = (await consultar<{ n: number }>("select count(*)::int as n from operacion.cierre_reparto where tipo = 'periodo' and periodo_fin = '2026-10-31'"))[0]!.n > 0;
+});
 
 async function sesion(page: Page, socio: 'Angelo' | 'Javier', ruta: string) {
   const correo = correoUnico('hist');
@@ -22,6 +30,7 @@ test('sin sesion no hay historial ni PDF del acta', async ({ page, request }) =>
 });
 
 test('Angelo propone el acta de octubre con retiro y reinversion y la firma', async ({ page }) => {
+  test.skip(octubreConsumido, AVISO_RESEMBRAR);
   await sesion(page, 'Angelo', '/socios/cascada?ini=2026-10-01&fin=2026-10-31');
   await expect(page.getByTestId('proponer-cierre')).toBeVisible();
   await page.getByTestId('proponer-cierre').click();
@@ -46,6 +55,7 @@ test('Angelo propone el acta de octubre con retiro y reinversion y la firma', as
 });
 
 test('Javier firma, el acta se cierra con sello y se descarga el PDF', async ({ page }) => {
+  test.skip(octubreConsumido, AVISO_RESEMBRAR);
   await sesion(page, 'Javier', `/socios/actas/${actaId}`);
   await expect(page.getByText('Firmada por uno: falta el otro socio')).toBeVisible();
   await page.getByTestId('firmar-acta').click();
@@ -71,6 +81,11 @@ test('Historial personal: cabecera, ratios, linea de tiempo con el acta nueva, e
   const tl = page.getByRole('table', { name: 'Actas de Angelo' });
   await expect(tl.getByRole('row').filter({ hasText: 'Firmada por los dos' })).toHaveCount(3);
   await expect(tl).toContainText('$500.00');
+  // La fila Total alinea cada suma bajo su columna: Periodo (2.a) sin cifra, Utilidad (3.a) y Su parte (4.a) con cifra.
+  const celdasTotal = tl.getByRole('row').filter({ hasText: 'Total (' }).getByRole('cell');
+  await expect(celdasTotal.nth(1)).toHaveText('');
+  await expect(celdasTotal.nth(2)).toContainText('$');
+  await expect(celdasTotal.nth(3)).toContainText('$');
   // Cada cifra de dinero se explica y cuadra.
   await page.getByTestId('h-invertido').getByRole('button').click();
   await expect(page.getByTestId('explicar-cajon')).toContainText('Cuadra');
