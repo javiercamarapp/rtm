@@ -16,7 +16,7 @@ interface Props extends BaseGrafica {
   tablaAbierta?: boolean;
 }
 
-const ANCHO_ETIQUETA = 120;
+const ANCHO_ETIQUETA = 176;
 const CELDA_W = 64;
 const CELDA_H = 34;
 const CABEZA = 34;

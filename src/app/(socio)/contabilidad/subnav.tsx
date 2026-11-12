@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation';
 
 const PAGINAS = [
   { href: '/contabilidad', etiqueta: 'Valuación' },
+  { href: '/contabilidad/valuacion', etiqueta: 'Valuación al detalle' },
+  { href: '/contabilidad/valuacion/historial', etiqueta: 'Historial de valuación' },
+  { href: '/contabilidad/caja', etiqueta: 'Caja y liquidez' },
   { href: '/contabilidad/diario', etiqueta: 'Diario' },
   { href: '/contabilidad/mayor', etiqueta: 'Mayor' },
   { href: '/contabilidad/estado-de-resultados', etiqueta: 'Estado de resultados' },

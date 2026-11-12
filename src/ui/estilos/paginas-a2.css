@@ -1,0 +1,42 @@
+/* Paginas de datos enterprise (A2): inventario, kardex, valuacion, caja y libro. Solo tokens var(--rtm-*); sin degradados. */
+.rtm-a2-filtros { display: flex; flex-wrap: wrap; align-items: end; gap: var(--rtm-e-2); }
+.rtm-a2-campo { display: grid; gap: 2px; font-size: var(--rtm-t-micro); color: var(--rtm-ink-3); text-transform: uppercase; letter-spacing: 0.04em; min-width: 0; }
+.rtm-a2-campo > span { line-height: 14px; }
+.rtm-a2-campo > :is(input, select) { height: var(--rtm-h-ctl); border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-ctl); background: var(--rtm-surface); color: var(--rtm-ink); font: inherit; font-size: var(--rtm-t-cuerpo); text-transform: none; letter-spacing: 0; padding: 0 var(--rtm-e-2); min-width: 0; max-width: 100%; }
+.rtm-a2-campo > input[type='search'] { min-width: 200px; }
+.rtm-a2-campo > input[type='number'] { width: 110px; }
+.rtm-a2-aplicar { display: none; }
+@media (max-width: 767px) { .rtm-a2-filtros { align-items: stretch; } .rtm-a2-campo { flex: 1 1 140px; } .rtm-a2-campo > :is(input, select) { height: 44px; font-size: 16px; width: 100%; } .rtm-a2-aplicar { display: inline-flex; } }
+.rtm-a2-sin-js .rtm-a2-aplicar { display: inline-flex; }
+
+.rtm-a2-dos { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: var(--rtm-ritmo); align-items: start; }
+@media (max-width: 1199px) { .rtm-a2-dos { grid-template-columns: minmax(0, 1fr); } }
+.rtm-a2-apilado { display: grid; gap: var(--rtm-ritmo); min-width: 0; }
+.rtm-a2-nota { margin: 0; color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); line-height: 1.45; }
+.rtm-a2-nota strong { color: var(--rtm-ink-2); font-weight: var(--rtm-peso-fuerte); }
+.rtm-a2-comprobacion { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); }
+.rtm-a2-tira { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rtm-a2-pie-tabla { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; padding: 8px 12px; border-top: 1px solid var(--rtm-line); font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
+.rtm-a2-vacio-tabla { padding: 16px; color: var(--rtm-ink-3); font-size: var(--rtm-t-cuerpo); }
+.rtm-a2-mono-mensaje { display: inline-block; max-width: 36ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; color: var(--rtm-ink-3); }
+.rtm-a2-num-neg { color: var(--rtm-bad); }
+.rtm-a2-etiqueta-tipo { white-space: nowrap; }
+.rtm-a2-reversa { text-decoration: line-through; text-decoration-style: dashed; text-decoration-color: var(--rtm-ink-3); }
+.rtm-a2-grafica-corta { min-width: 0; }
+.rtm-a2-campo > select { max-width: 240px; }
+.rtm-a2-campo > input[type='date'] { width: 140px; }
+.rtm-a2-nowrap { white-space: nowrap; }
+.rtm-a2-pie-tabla { border-top: 0; }
+.rtm-dt-celda .rtm-num, .rtm-dt-celda .rtm-mono { white-space: nowrap; }
+.rtm-a2-tabla .rtm-dt-celda { white-space: nowrap; }
+.rtm-a2-tabla .rtm-dt-celda > a, .rtm-a2-tabla .rtm-dt-celda > span { white-space: nowrap; }
+.rtm-a2-pie-tabla .rtm-paginador { border: 0; padding: 0; margin: 0; }
+@media (max-width: 767px) {
+  .rtm-a2-tabla .rtm-dt-fila > .rtm-dt-celda:first-child { min-width: 0 !important; max-width: 42vw; overflow: hidden; text-overflow: ellipsis; }
+  .rtm-a2-tabla .rtm-dt-celda:first-child .rtm-a2-nowrap, .rtm-a2-tabla .rtm-dt-celda:first-child .rtm-dt-grupo-boton { overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block; vertical-align: bottom; }
+}
+@media (max-width: 767px) {
+  .rtm-a2-campo > input[type='search'] { min-width: 0; width: 100%; }
+  .rtm-a2-campo:has(> input[type='search']) { flex: 1 1 100%; }
+  .rtm-a2-filtros > .rtm-boton { min-height: 44px; }
+}
