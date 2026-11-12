@@ -14,10 +14,13 @@ import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { ColumnasPesos } from '../../../_a3/graficas-pesos';
 import { Dos, Estado, Pie, abs, pct, suma } from '../../../_a3/util';
-import { mesEtiqueta, semanaEtiqueta } from '../../../_a2/util';
+import { fechaCorta, mesEtiqueta, semanaEtiqueta } from '../../../_a2/util';
 import { anosDe, bpAPct, conSigno, m, mesesTexto, razon } from '../../../_historial/util';
 
 export const metadata: Metadata = { title: 'Historial personal' };
+
+/** El dia es el ultimo del mes: el periodo es un mes calendario completo. */
+const mesAlFinal = (f: string): boolean => { const d = new Date(`${f}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.getUTCDate() === 1; };
 
 type Vista = 'mes' | 'semana' | 'dia';
 const VISTAS: { v: Vista; t: string }[] = [{ v: 'mes', t: 'Por mes' }, { v: 'semana', t: 'Por semana' }, { v: 'dia', t: 'Por día' }];
@@ -115,7 +118,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
         ]}
       />
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="9-3">
         <Tarjeta
           plana
           titulo="Línea de tiempo de actas"
@@ -127,11 +130,11 @@ export default async function PaginaHistorial({ params, searchParams }: { params
             densidad="densa" plana primeraFija
             clave={(a) => a.id}
             filas={actas}
-            totales={cerradas.length === 0 ? undefined : { etiqueta: `Actas cerradas (${cerradas.length})`, celdas: { u: m(suma(cerradas.map((a) => a.utilidad_cent))), p: m(suma(cerradas.map((a) => a.parte_cent))), r: m(suma(cerradas.map((a) => a.retira_cent))), i: m(suma(cerradas.map((a) => a.reinvierte_cent))) } }}
+            totales={cerradas.length === 0 ? undefined : { etiqueta: `Total (${cerradas.length})`, celdas: { u: m(suma(cerradas.map((a) => a.utilidad_cent))), p: m(suma(cerradas.map((a) => a.parte_cent))), r: m(suma(cerradas.map((a) => a.retira_cent))), i: m(suma(cerradas.map((a) => a.reinvierte_cent))) } }}
             vacio={{ titulo: 'Sin actas', texto: 'El primer corte mensual firmado por los dos aparece aquí con su PDF.' }}
             columnas={[
               { id: 'f', titulo: 'Acta', ancho: 'm', celda: (a) => <Link href={`/socios/actas/${a.id}`} className="rtm-mono">{a.folio}</Link> },
-              { id: 'p', titulo: 'Periodo', ancho: 'l', celda: (a) => `${etiquetaFecha(a.periodo_ini)} al ${etiquetaFecha(a.periodo_fin)}` },
+              { id: 'p', titulo: 'Periodo', ancho: 'l', celda: (a) => (a.periodo_ini.slice(8) === '01' && a.periodo_ini.slice(0, 7) === a.periodo_fin.slice(0, 7) && mesAlFinal(a.periodo_fin) ? mesEtiqueta(a.periodo_ini) : `${fechaCorta(a.periodo_ini)} al ${fechaCorta(a.periodo_fin)}`) },
               { id: 'u', titulo: 'Utilidad del mes', numerica: true, ancho: 'm', celda: (a) => (a.tipo === 'contra' ? '—' : m(a.utilidad_cent, a.utilidad_cent < 0n)) },
               { id: 'p2', titulo: 'Su parte', numerica: true, ancho: 'm', celda: (a) => (a.tipo === 'contra' ? '—' : m(a.parte_cent)) },
               { id: 'r', titulo: 'Retira', numerica: true, ancho: 'm', celda: (a) => m(a.retira_cent) },

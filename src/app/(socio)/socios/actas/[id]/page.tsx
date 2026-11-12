@@ -67,7 +67,7 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
               { id: 'ef', etiqueta: 'Efectivo de la sociedad', valor: m(s.efectivo.total_cent), categoria: 1, nota: s.limitado_por_efectivo ? 'Reparto limitado por el efectivo' : `Comprometido ${m(s.efectivo.comprometido_cent)}` },
               { id: 'rp', etiqueta: 'Utilidad repartida 50/50', testid: 'acta-repartible', valor: m(s.repartible_cent), categoria: 7, nota: `Pasa al siguiente periodo ${m(c.arrastre_fin_cent, c.arrastre_fin_cent < 0n)}` },
               { id: 'cc', etiqueta: 'Capital contable resultante', valor: k?.capital_contable_cent == null ? null : m(k.capital_contable_cent), categoria: 4, nota: k ? 'Al cierre del periodo, sellado' : 'Se sella al cerrarse el acta' },
-              { id: 'va', etiqueta: 'Valor de cada participación', valor: k?.valor_participacion_cent == null ? null : `${m(k.valor_participacion_cent.Angelo!)} · ${m(k.valor_participacion_cent.Javier!)}`, categoria: 5, nota: 'Angelo · Javier (estimado en libros)' },
+              { id: 'va', etiqueta: 'Valor de cada participación', valor: k?.valor_participacion_cent == null ? null : m(k.valor_participacion_cent.Angelo!), categoria: 5, nota: k?.valor_participacion_cent == null ? 'Estimado en libros' : `Angelo · Javier ${m(k.valor_participacion_cent.Javier!)} (estimado en libros)` },
             ]}
           />
           <Tarjeta plana titulo="Por socio" descripcion="Su parte 50/50, lo que retira y lo que reinvierte; la reinversión queda como inversión suya">
