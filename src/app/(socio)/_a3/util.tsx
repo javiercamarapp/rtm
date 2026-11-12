@@ -2,7 +2,7 @@
 // solo proporciones para barras, sumas de columnas ya entregadas por la base y la traduccion de tonos a chips.
 import type { ReactNode } from 'react';
 import '@/ui/estilos/paginas-a3.css';
-import { formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { ChipEstado } from '@/ui/componentes/controles';
 
 export const m = (c: bigint, conSigno = false) => formatearMoneda(c, conSigno ? { conSigno: true } : {});
@@ -17,7 +17,7 @@ export function pct(parte: bigint, total: bigint): number | null {
 }
 export const pctTexto = (p: number | null): string => (p === null ? 'Sin dato' : `${p.toFixed(1)} %`);
 
-export type TonoViejo = 'ok' | 'atencion' | 'malo' | 'neutro';
+export type TonoViejo = 'ok' | 'atencion' | 'malo' | 'neutro' | 'info' | 'apagado';
 /** Chip de estado en palabra (el tono "neutro" del sistema anterior es "apagado" en el catalogo nuevo). */
 export function Estado({ tono, children }: { tono: TonoViejo; children: ReactNode }) {
   return <ChipEstado tono={tono === 'neutro' ? 'apagado' : tono}>{children}</ChipEstado>;
@@ -32,3 +32,6 @@ export function Pie({ children }: { children: ReactNode }) {
 export function Dos({ a, b }: { a: ReactNode; b?: ReactNode }) {
   return <span className="a3-celda-2">{a}{b ? <small>{b}</small> : null}</span>;
 }
+
+/** "2026-11-09" -> "9 nov" (para ejes de graficas). */
+export const fechaCorta = (f: string): string => etiquetaFecha(f).replace(/ \d{4}$/, '');

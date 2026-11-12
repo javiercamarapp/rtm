@@ -10,7 +10,7 @@ import { SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { Cascada, ColumnasPeriodo } from '@/ui/graficas';
-import { Dos, Estado, Pie, m, pct, suma } from '../_a3/util';
+import { Dos, Estado, Pie, fechaCorta, m, pct, suma } from '../_a3/util';
 import { CerrarSemana, ExportarCsv, FormularioToma, PagoOmar, ResolverToma } from './acciones-omar';
 
 export const metadata: Metadata = { title: 'Cuenta con Omar' };
@@ -32,7 +32,7 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
     { id: 'n', etiqueta: 'Neto de la semana', valor: Number(neto), tipo: 'total' as const, texto: m(neto, true) },
   ];
   const liq = [...o.liquidaciones].sort((a, b) => (a.semana_ini < b.semana_ini ? -1 : 1));
-  const etiquetaSemana = (ini: string) => etiquetaFecha(ini).replace(/ de \d{4}$/, '');
+  const etiquetaSemana = fechaCorta;
   const colRenta = [
     ...liq.map((l) => ({ id: l.folio, etiqueta: etiquetaSemana(l.semana_ini), valor: Number(l.renta_cent), texto: m(l.renta_cent), detalle: `Tomas ${m(l.tomas_cent)} · neto ${m(l.neto_cent, true)} · ${l.palabra}` })),
     ...(o.estado === 'abierta' ? [{ id: 'abierta', etiqueta: etiquetaSemana(o.semana_ini), valor: Number(o.renta_cent), texto: m(o.renta_cent), parcial: true, detalle: 'Semana abierta' }] : []),
