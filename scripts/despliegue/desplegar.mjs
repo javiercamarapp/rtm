@@ -6,6 +6,7 @@
 //   --completo            compuerta completa (`npm run verificar`: reinicia y usa la base LOCAL; no correr mientras otra sesion la use)
 //   --si-hay-cambios      no hace nada si el commit actual ya es el ultimo desplegado con exito (para el reloj de cada hora)
 //   --permitir-sucio      permite arbol de trabajo con cambios sin confirmar (por omision se rechaza)
+//   --incluir-todo        pasa --include-all a db push (migraciones locales con fecha anterior a la ultima de la nube)
 //   --permitir-destructivas   permite migraciones destructivas (solo con orden expresa del dueno)
 //   --con-correo-real     la prueba de humo pide un enlace al correo de Javier y confirma el envio en Resend
 // Registro: ~/.bodega-backups/despliegues.log (hora, commit, resultado, etc.). Nunca escribe secretos ni correos.
@@ -83,7 +84,7 @@ if (args.has('--probar')) { console.log('\n--probar: compuerta y analisis OK; no
 if (pendientes.length) {
   const r = sh('node', [join(raiz, 'scripts/despliegue/respaldo.mjs'), 'previo-a-despliegue'], { stdio: 'inherit' });
   if (r.status !== 0) abortar('no se pudo hacer el respaldo previo');
-  paso('Aplicar migraciones aditivas', 'supabase', ['db', 'push', '--linked', '--yes']);
+  paso('Aplicar migraciones aditivas', 'supabase', ['db', 'push', '--linked', '--yes', ...(args.has('--incluir-todo') ? ['--include-all'] : [])]);
 }
 
 // 4. Produccion actual (para el rollback).
