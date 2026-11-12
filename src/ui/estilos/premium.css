@@ -480,4 +480,5 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 
 @media (pointer: coarse), (max-width: 767px) { html .rtm-importador .rtm-pegado { font-size: 16px; } }
 
-.rtm-region { display: contents; }
+/* Solo las regiones DENTRO de una pagina son transparentes; la region del armazon (barra + panel) debe seguir siendo una columna flex. */
+.rtm-panel .rtm-region { display: contents; }
