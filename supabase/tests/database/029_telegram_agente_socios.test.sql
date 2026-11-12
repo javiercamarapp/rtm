@@ -14,8 +14,8 @@ select is((select count(*)::int from operacion.aportacion_socio where concepto =
 -- Gasto de Javier -> reembolso pendiente; reembolso parcial; exceso rechazado
 select is((agente.ejecutar('tt:g1', 'gasto', '{"pagado_por":"javier","monto_cent":90000,"categoria":"uber","autor":"javier","origen":"pague 900 de uber"}') ->> 'folio') like 'G-%', true, 'gasto de socio');
 select is((agente.ejecutar('tt:r1', 'pago_a_socio', '{"socio":"javier","monto_cent":50000,"tipo":"reembolso","via":"transferencia","autor":"angelo","origen":"reembolso a Javier 500"}') -> 'eco' ->> 'reembolso_pendiente_cent')::bigint,
-  (select operacion.reembolso_pendiente((select id from catalogo.socio where nombre = 'Javier'))), 'el eco sale de la base');
-select is((select operacion.reembolso_pendiente((select id from catalogo.socio where nombre = 'Javier'))), 290000::bigint, 'pendiente = 200,000 de deposito + 90,000 de gasto - 50,000 pagados');
+  240000::bigint, 'el eco sale de la base: 290,000 - 50,000');
+select is((select operacion.reembolso_pendiente((select id from catalogo.socio where nombre = 'Javier'))), 240000::bigint, 'pendiente = 200,000 de deposito + 90,000 de gasto - 50,000 pagados = 240,000');
 select throws_ok($$ select agente.ejecutar('tt:r2', 'pago_a_socio', '{"socio":"javier","monto_cent":99999999,"tipo":"reembolso","via":"efectivo","autor":"angelo","origen":"x"}') $$, '23514', null, 'un reembolso mayor a lo pendiente se rechaza');
 select throws_ok($$ select agente.ejecutar('tt:r3', 'pago_a_socio', '{"socio":"angelo","monto_cent":1000,"tipo":"retiro","via":"efectivo","autor":"angelo","origen":"x"}') $$, '23514', null, 'un retiro sin utilidad asignada se rechaza');
 select throws_ok($$ select agente.ejecutar('tt:r4', 'pago_a_socio', '{"socio":"javier","monto_cent":1000,"tipo":"otro","via":"efectivo","autor":"angelo","origen":"x"}') $$, 'P0460', null, 'tipo de pago a socio invalido');
@@ -23,7 +23,7 @@ select throws_ok($$ select agente.ejecutar('tt:r4', 'pago_a_socio', '{"socio":"j
 -- Deshacer por folio y por ultimo hecho del autor
 select is((agente.localizar(null, 'angelo') ->> 'tipo'), 'pago_a_socio', 'el ultimo hecho de Angelo es el pago');
 select is((agente.deshacer('tt:d1', (agente.localizar(null, 'angelo') ->> 'folio')) ->> 'deshecho')::boolean, true, 'deshacer el reembolso');
-select is((select operacion.reembolso_pendiente((select id from catalogo.socio where nombre = 'Javier'))), 340000::bigint, 'el pendiente vuelve a 340,000 (el original no se borra)');
+select is((select operacion.reembolso_pendiente((select id from catalogo.socio where nombre = 'Javier'))), 290000::bigint, 'el pendiente vuelve a 290,000 (el original no se borra)');
 select is((select count(*)::int from agente.hecho where deshecho_at is not null), 1, 'el hecho queda marcado como deshecho');
 select throws_ok($$ select agente.deshacer('tt:d2', (select folio from agente.hecho where deshecho_at is not null)) $$, 'P0428', null, 'no se deshace dos veces');
 
@@ -40,7 +40,7 @@ select is((agente.capacidades() ? 'devolucion') and (agente.capacidades() ? 'paq
 
 -- Consultas
 select is(jsonb_array_length(agente.consulta('estado_socio', null, 'javier') -> 'lineas'), 6, 'estado de cuenta de un socio');
-select is((agente.consulta('estado_socio', null, 'javier') -> 'lineas' -> 1 ->> 'centavos')::bigint, 340000::bigint, 'reembolso pendiente de Javier segun la base');
+select is((agente.consulta('estado_socio', null, 'javier') -> 'lineas' -> 1 ->> 'centavos')::bigint, 290000::bigint, 'reembolso pendiente de Javier segun la base');
 select throws_ok($$ select agente.consulta('estado_socio', null, 'omar') $$, '22023', null, 'solo hay estado de Angelo y Javier');
 select is(jsonb_array_length(agente.consulta('utilidad', null, 'mes') -> 'lineas'), 5, 'utilidad del mes');
 select is((agente.consulta('cartera') -> 'lineas' -> -1 ->> 'etiqueta'), 'Total por cobrar', 'cartera cierra con el total');

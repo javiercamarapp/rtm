@@ -16,7 +16,7 @@ create table agente.hecho (
   ref_tipo text check (ref_tipo in ('libro', 'aportacion', 'pago', 'movimiento_proveedor')),
   ref_id bigint,
   autor text not null check (autor in ('angelo', 'javier')),
-  creado_at timestamptz not null default now(),
+  creado_at timestamptz not null default clock_timestamp(),
   deshecho_at timestamptz,
   check ((ref_tipo is null) = (ref_id is null))
 );

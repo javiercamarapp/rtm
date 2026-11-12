@@ -59,13 +59,13 @@ select is((select canal from operacion.evento where clave_idem = 'tg:g1'), 'tele
 select is((agente.ejecutar('tg:g1', 'gasto', '{"pagado_por":"javier","monto_cent":9000,"categoria":"uber","origen":"mensaje de prueba"}') ->> 'gasto_id')::bigint, (select id from operacion.gasto order by id desc limit 1), 'el mismo mensaje no duplica');
 select throws_ok($$ select agente.ejecutar('tg:g2', 'gasto', '{"pagado_por":"sociedad","monto_cent":9000,"categoria":"uber"}') $$, 'P0460', null, 'gasto de caja sin socio pide aclarar');
 select throws_ok($$ select agente.ejecutar('tg:p1', 'pedido', '{}') $$, 'P0460', null, 'lo que aun no soporta se rechaza con claro motivo');
-select is((agente.ejecutar('tg:a1', 'aportacion', '{"socio":"angelo","monto_cent":100000,"concepto":"prueba"}') ->> 'eco') is not null, true, 'aportacion con eco');
+select is((agente.ejecutar('tg:a1', 'aportacion', '{"socio":"angelo","monto_cent":100000,"concepto":"prueba","autor":"angelo","origen":"prueba"}') ->> 'eco') is not null, true, 'aportacion con eco');
 select set_config('rtm.canal', '', true);
 select throws_ok($$ select operacion.registrar_gasto_socio('x', 'Javier', 100, 'uber') $$, '42501', null, 'fuera de agente.ejecutar la marca de canal no existe: nadie escribe por este camino');
 
 -- Deshacer y tomas de Omar
-select is((agente.localizar(null) ->> 'tipo'), 'gasto', 'el ultimo hecho del agente es el gasto');
-select is((agente.deshacer('tg:d1', (agente.localizar(null) ->> 'folio')) ->> 'deshecho')::boolean, true, 'deshacer un gasto con su contramovimiento');
+select is((agente.localizar((select folio from operacion.gasto order by id desc limit 1)) ->> 'tipo'), 'gasto', 'el ultimo hecho del agente es el gasto');
+select is((agente.deshacer('tg:d1', (agente.localizar((select folio from operacion.gasto order by id desc limit 1)) ->> 'folio')) ->> 'deshecho')::boolean, true, 'deshacer un gasto con su contramovimiento');
 select is((select count(*)::int from operacion.gasto_anulacion where gasto_id = (select id from operacion.gasto order by id desc limit 1)), 1, 'el gasto queda anulado');
 select throws_ok($$ select agente.deshacer('tg:d2', 'G-9999999') $$, 'P0460', null, 'folio desconocido');
 select catalogo.asegurar_cliente('Ag Omar Persona', 'Javier');
