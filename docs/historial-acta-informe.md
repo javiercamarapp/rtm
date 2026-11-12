@@ -15,9 +15,9 @@ SQL: cascada, `proponer/firmar/anular/contra_acta`, candado de periodo, reinvers
 
 ## Comandos y resultados reales
 - `npx tsc --noEmit`: sin errores. `npx eslint src scripts test`: sin errores. `npm run guardas`: 0 violaciones.
-- `npx vitest run`: 115 archivos, 1747 pruebas pasan (2 expected fail preexistentes). Nuevas: `test/unit/historial/{ratios,tipos,pdf}.test.ts` (32 pruebas).
-- `supabase test db` completo (47 archivos): todo pasa excepto `024_omar_cuenta_sin_folio` prueba 13 ("ajuste de -60.00", tiene -10000), que FALLA IGUAL en la base sin mis migraciones (preexistente, no es de este carril). Nueva `028_historial_acta.test.sql`: 77 pruebas pasan; incluye el cuadre contable al cerrar el acta con las restricciones diferidas inmediatas.
-- Playwright `playwright.historial.config.ts` (5 pruebas, Chromium, servidor `next start` en 3184, base propia): sin sesion redirige; propone el acta con retiro y reinversion; firman Angelo y Javier; sello y PDF; historial con ratios, linea de tiempo, vistas semana/dia, explicar cuadra, PDF, historial del otro socio; movil 390 sin scroll horizontal. 5/5.
+- `npx vitest run` (primera vuelta): 115 archivos, 1747 pruebas pasan (2 expected fail preexistentes). Nuevas: `test/unit/historial/{ratios,tipos,pdf}.test.ts` (32 pruebas).
+- `supabase test db` completo (primera vuelta; 45 migraciones y 47 archivos de prueba): todo pasa excepto `024_omar_cuenta_sin_folio` prueba 13 ("ajuste de -60.00", tiene -10000), que FALLA IGUAL en la base sin mis migraciones (preexistente, no es de este carril). Nueva `028_historial_acta.test.sql` (77 pruebas en esa vuelta); incluye el cuadre contable al cerrar el acta con las restricciones diferidas inmediatas.
+- Playwright `playwright.historial.config.ts` (5 pruebas, Chromium; ver la tercera vuelta: solo pasa 5/5 en base recien sembrada): sin sesion redirige; propone el acta con retiro y reinversion; firman Angelo y Javier; sello y PDF; historial con ratios, linea de tiempo, vistas semana/dia, explicar cuadra, PDF, historial del otro socio; movil 390 sin scroll horizontal. 5/5 solo con base recien sembrada.
 - Capturas: `docs/capturas/historial-acta/` (28: 1440 y 390, claro y oscuro; ninguna con scroll horizontal). Se revisaron a mano; defectos vistos y corregidos: armazon roto, KPI cortado, columnas truncadas, cifras partidas en tarjetas moviles.
 
 ## Reparaciones tras el verificador (segunda vuelta)
@@ -31,7 +31,7 @@ SQL: cascada, `proponer/firmar/anular/contra_acta`, candado de periodo, reinvers
 ### Comandos corridos en esta vuelta y resultado real
 - `npx tsc --noEmit`: exit 0. `npx eslint src scripts test`: exit 0. `npm run guardas`: 0 violaciones. `npm run secretos`: 0 hallazgos (3125 archivos).
 - `npx vitest run`: 115 archivos, 1748 pasan y 2 expected fail.
-- pgTAP en base nueva (proyecto aparte `rtm-hist-v`, puertos 653xx; `supabase start` y `supabase db reset` aplicaron las 47 migraciones sin error): `supabase test db`: 47 archivos, 2294 pruebas; 016 y 028 (88 pruebas) pasan; solo falla 024 prueba 13 ('ajuste de -60.00'), preexistente y ajena. En el camino, 028 detecto que la primera version de la envoltura de `lineas_de_evento` no corregia el acta con reinversion (debe 1,422,100 contra haber 2,222,100); se corrigio y quedo en verde.
+- pgTAP en base nueva (proyecto aparte `rtm-hist-v`, puertos 653xx; `supabase start` y `supabase db reset` aplicaron las migraciones sin error; son 45 archivos de migracion, 47 son archivos de prueba): `supabase test db`: 47 archivos, 2294 pruebas; 016 (51) y 028 (88) pasan por separado; solo falla 024 prueba 13 ('ajuste de -60.00'), preexistente y ajena. En el camino, 028 detecto que la primera version de la envoltura de `lineas_de_evento` no corregia el acta con reinversion (debe 1,422,100 contra haber 2,222,100); se corrigio y quedo en verde.
 - Playwright `playwright.historial.config.ts` contra `next dev -p 3184` y la base propia `rtm-lane-hist`: pasan 'sin sesion' (1), 'Historial personal' (4) y 'movil 390 sin scroll horizontal' (5). La prueba 2 (proponer octubre con retiro y reinversion) falla porque CR-0003 ya consumio octubre en esa base y las pruebas 2 y 3 (firma, sello, PDF) dependen de ella: NO REPRODUCIDO en e2e; la cobertura equivalente son pgTAP 016 y 028.
 - Capturas: `playwright.capturas-historial.config.ts` (390 y 1440, claro y oscuro): revisadas a ojo 390-oscuro-historial-angelo, 390-claro-acta y 1440-claro-historial-javier.
 
@@ -39,11 +39,39 @@ SQL: cascada, `proponer/firmar/anular/contra_acta`, candado de periodo, reinvers
 - Las actas ya selladas en la base de demostracion (CR-0001 a CR-0003) conservan el valor plano con que se sellaron (el sello es inmutable): la columna 'Valor de su participacion' de la linea de tiempo muestra esos valores, distintos del KPI actual. Un acta sellada con estas migraciones lleva la nueva valuacion. No hay actas reales.
 - `valor_socio` usa la cuenta de capital de hoy aunque el sello o `p_hasta` sea de una fecha pasada; la valuacion contable si es a la fecha pedida.
 
+## Tercera vuelta: reparaciones tras el verificador
+
+Todo en `lane/historial-acta`, sin push, 0 builds, 0 despliegues, solo la base local `rtm-lane-hist` (se uso un `--workdir` temporal con puertos 633xx para no tocar `supabase/config.toml`).
+
+| Hallazgo | Reparacion | Evidencia |
+|---|---|---|
+| Movil 390: chip 'Firmada' partido y fecha en 3 lineas | `premium.css`: el chip de estado en tarjeta movil ya no parte la palabra (`nowrap`), la tabla Firmas declara Socio como titulo y Estado como principal, la fecha no se parte. | `docs/capturas/historial-acta/390-claro-acta.png` regenerada y vista: 'Firmada' completa, fecha en una linea. |
+| Fila Total desalineada | La clave `p` de `totales.celdas` era la columna Periodo; ahora `p2` (Su parte). `DataTable` avisa en desarrollo de claves de totales sin columna (`clavesTotalesHuerfanas`). | `1440-claro-historial-javier.png`: Total (2) bajo Su parte $14,750.00 y Periodo vacio; prueba e2e que comprueba las celdas de la fila Total; vitest `totales-tabla`. |
+| Total incluia actas corregidas | `corregida` solo es verdadera con la contra-acta firmada por los dos; con la contra-acta propuesta sale `contra_propuesta` (el acta sigue vigente). El Total y el conteo excluyen las corregidas y el encabezado lo dice. | pgTAP 028: propuesta -> no corregida y `contra_propuesta`; firmada -> corregida, utilidad recibida 0. |
+| 'Retirado' omitia `liquidacion_recibida` | Cabecera, serie, flujos de TIR, sello y `explicar retirado` la cuentan igual que `api.socio_cuenta`. | pgTAP 028: tras `registrar_liquidacion_entre_socios('Angelo'->'Javier', 100000)`, retirado de Javier = 100000, coincide con el libro y su comprobacion cuadra; el flujo de TIR la trae. |
+| Dos vias tautologicas | 'parte': via 2 = lo repartible del acta menos la parte del otro socio menos lo ya recibido. 'invertido': via 2 = aportaciones declaradas mas la reinversion segun el libro de utilidad. 'retirado' y 'utilidad' suman la apertura firmada, igual que `libro_socio` (con apertura real habrian marcado 'no cuadra'; SIN prueba pgTAP propia con apertura: queda por probar con los datos de apertura). `api.acta_detalle` entrega `utilidad_cuadra` y `por_socio_acta.*.cuadra` y la pagina del acta ya no fija 'cuadra'. | pgTAP 028 comprueba `via2_valor` de 'parte' (600000) e 'invertido' (200000) y los `cuadra` del acta. |
+| e2e no reproducible | La suite documenta su precondicion (base recien sembrada) y SALTA con aviso las pruebas 2 y 3 si octubre ya tiene acta, en vez de fallar. | Primera corrida (base sembrada): 5 passed. Segunda corrida inmediata: 3 passed, 2 skipped (con aviso). |
+| Reinversion por fecha de firma; proyeccion repetida y `piso()` | La reinversion de la serie se ubica en el periodo del acta de origen. La proyeccion muestra el acumulado a 1, 2 y 3 meses (media x k, banda con varianza predictiva s2 k (1 + k/N)): tres filas distintas, y se conserva el signo (una perdida esperada ya no sale como $0). | pgTAP 028 (serie mes/dia); vitest `proyeccionPersonal` (acumulados 200/400/600, media negativa); captura: reinversion de $11,700 en sep 26 y $1,525 en ago 26. |
+| Inexactitudes del informe | Corregido arriba: 45 migraciones (47 son archivos de prueba); 016 = 51 y 028 = 88 por separado (ahora 108). | |
+
+### Comandos corridos y resultado real (tercera vuelta)
+- `npx tsc --noEmit`: exit 0. `npx eslint src scripts test`: exit 0. `npm run guardas`: 0 violaciones. `npm run secretos`: 0 hallazgos (3126 archivos).
+- `npx vitest run`: 116 archivos, 1751 pasan y 2 expected fail.
+- pgTAP: `supabase db reset` limpio (45 migraciones) y `supabase test db`: 47 archivos, 2314 pruebas; falla solo `024_omar_cuenta_sin_folio` prueba 13 (preexistente, fecha fija, ver `docs/union-produccion.md`) y 990 son los TODO esperados. 016: 51 pruebas, 028: 108 pruebas.
+- Playwright `playwright.historial.config.ts` contra `next dev -p 3184` y `rtm-lane-hist` sembrada con `datos-demo-historial.mjs`: corrida 1 = 5 passed; corrida 2 (sin re-sembrar) = 3 passed, 2 skipped.
+- Capturas 1440 y 390, claro y oscuro, regeneradas con `playwright.capturas-historial.config.ts`; vistas a ojo: 390-claro-acta, 1440-claro-historial-javier, 390-oscuro-historial-angelo.
+
+### Pendientes y limites
+- Integracion con `puente-efectivo`, `devolucion-parcial` y `cuadrar-cuentas` NO verificada; repetir pgTAP 016 y 028 al integrar.
+- Las sumas de apertura en `explicar retirado` y `explicar utilidad` no tienen prueba con una apertura firmada.
+- El valor mostrado en actas ya selladas sigue siendo el del momento del sello (inmutable).
+- `explicar_historial` de 'valor' y 'cuenta' no se tocaron.
+
 ## Aislamiento
 Proyecto Supabase `rtm-lane-hist`, puertos 633xx (solo local), servidor en 3184. Otras sesiones tumbaron una vez mi base y mi servidor (se reiniciaron). `supabase/config.toml` vuelve a los puertos del repo en el ultimo commit.
 
 ## Pendientes
 - Firma por boton de Telegram y envio del PDF del acta por correo a los socios: pertenecen a los carriles agente-telegram y reportes (aqui solo estan la web y el PDF).
 - Estimado del valor personal = valor en libros (rango: sin contar por cobrar a clientes); supuestos editables y flujo descontado quedan para la pagina Valuacion.
-- Integracion: prefijos 20261113200000 y 20261113200100, por encima de todas las ramas revisadas (la mas alta es 20261113100000 de telegram-agente); si otra rama agrega migraciones despues, renumerar la mia al final de la cadena. Otro aviso para quien integre: lane/devolucion-parcial y lane/cuadrar-cuentas comparten el prefijo 20261113000100 con nombres distintos. Tambien la linea de `.rtm-region`; si otro carril quita la misma linea de CSS el merge es identico.
+- Integracion: prefijos 20261113200000 y 20261113200100 (45 migraciones en total), por encima de todas las ramas revisadas (la mas alta es 20261113100000 de telegram-agente); si otra rama agrega migraciones despues, renumerar la mia al final de la cadena. Otro aviso para quien integre: lane/devolucion-parcial y lane/cuadrar-cuentas comparten el prefijo 20261113000100 con nombres distintos. Tambien la linea de `.rtm-region`; si otro carril quita la misma linea de CSS el merge es identico.
 - Sin datos reales cargados: el historial estara en "Sin dato" hasta los datos de apertura.
