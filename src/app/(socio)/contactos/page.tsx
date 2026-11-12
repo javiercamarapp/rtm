@@ -3,7 +3,10 @@ import Link from 'next/link';
 import { lectorContactosDeSocio } from '@/composicion/contactos';
 import { desplazamientoDePagina, etiquetaOrigen, type FiltroContactos, type ListaContactos, type ResumenContactos } from '@/dominio/contactos/vista';
 import { formatearEntero } from '@/dominio/formato';
-import { EncabezadoPagina } from '@/ui/componentes/pagina';
+import { Chip } from '@/ui/componentes/controles';
+import { BarList } from '@/ui/componentes/datos';
+import { KpiLinea } from '@/ui/componentes/kpi';
+import { EncabezadoPagina, EstadoError, EstadoVacio, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { etiquetaHoy } from '../contexto';
 import { TablaContactos } from './tabla-contactos';
 
@@ -23,7 +26,7 @@ function enlace(f: FiltroContactos, pag: number): string {
   return s ? `/contactos?${s}` : '/contactos';
 }
 
-export default async function Pagina({ searchParams }: { searchParams: Promise<Params> }) {
+export default async function PaginaContactos({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
   const filtro: FiltroContactos = { busqueda: (sp.q ?? '').trim().slice(0, 80), origen: (sp.origen ?? '').slice(0, 80), anuncio: (sp.anuncio ?? '').slice(0, 200), colonia: (sp.colonia ?? '').trim().slice(0, 120) };
   const desplazamiento = desplazamientoDePagina(sp.pag, LIMITE);
@@ -41,91 +44,105 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<P
   const cabecera = (
     <EncabezadoPagina
       eyebrow={`Contactos · ${etiquetaHoy()}`}
-      antes="Tus"
-      enfasis={resumen ? `${formatearEntero(resumen.total)} contactos` : 'contactos'}
-      despues="de menudeo"
-      contexto="Se segmentan por origen: Meta por anuncio, Toocloudy, Vapeunion y los lotes de Google. El teléfono sale oculto; al revelarlo o exportarlo queda registro. El agente de IA nunca ve teléfonos."
+      titulo={resumen ? `${formatearEntero(resumen.total)} contactos de menudeo` : 'Contactos de menudeo'}
+      descripcion="Segmentados por origen: Meta por anuncio, Toocloudy, Vapeunion y lotes de Google. El teléfono sale oculto; revelarlo o exportarlo deja registro. El agente de IA nunca ve teléfonos."
     />
   );
 
   if (fallo || !resumen || !lista) {
     return (
-      <>
+      <Pagina ancho="normal">
         {cabecera}
-        <div className="rtm-dt-aviso" role="alert">
-          <strong>No se pudo cargar</strong>
-          <p>No se pudieron leer los contactos. Intenta de nuevo en un momento.</p>
-          <Link className="rtm-boton" href="/contactos">Reintentar</Link>
-        </div>
-      </>
+        <EstadoError texto="No se pudieron leer los contactos. Intenta de nuevo en un momento." accion={<Link className="rtm-boton" href="/contactos">Reintentar</Link>} />
+      </Pagina>
     );
   }
 
   if (resumen.total === 0) {
     return (
-      <>
+      <Pagina ancho="normal">
         {cabecera}
-        <div className="rtm-dt-aviso">
-          <strong>Sin contactos cargados</strong>
-          <p>Todavía no se ha cargado ninguna base. La carga a producción la autoriza el dueño después de revisar los conteos.</p>
-        </div>
-      </>
+        <EstadoVacio titulo="Sin contactos cargados" texto="Todavía no se ha cargado ninguna base. La carga a producción la autoriza el dueño después de revisar los conteos." />
+      </Pagina>
     );
   }
 
   const pagina = desplazamiento / LIMITE + 1;
   const paginas = Math.max(1, Math.ceil(lista.total / LIMITE));
   const sinPagina = (o: string) => enlace({ busqueda: filtro.busqueda, origen: o, anuncio: '', colonia: filtro.colonia }, 1);
+  const pctDe = (n: number) => (resumen.total > 0 ? (n / resumen.total) * 100 : null);
+  const anuncios = resumen.porAnuncio.slice(0, 6);
+  const maxAnuncio = anuncios.reduce((a, x) => Math.max(a, x.contactos), 0);
 
   return (
-    <>
+    <Pagina ancho="tablero">
       {cabecera}
-      <form className="rtm-barra-filtros" method="get" action="/contactos" role="search" aria-label="Buscar contactos">
-        <label className="rtm-etiqueta-campo">
-          Nombre, correo o dígitos del teléfono
-          <input className="rtm-campo rtm-campo-ancho" type="search" name="q" defaultValue={filtro.busqueda} maxLength={80} />
-        </label>
-        <label className="rtm-etiqueta-campo">
-          Origen
-          <select className="rtm-campo" name="origen" defaultValue={filtro.origen}>
-            <option value="">Todos</option>
-            <option value="google-lote">Google (todos los lotes)</option>
-            {resumen.porOrigen.map((o) => <option key={o.origen} value={o.origen}>{etiquetaOrigen(o.origen)} ({formatearEntero(o.contactos)})</option>)}
-          </select>
-        </label>
-        {resumen.porAnuncio.length > 0 && (
+      <KpiLinea
+        etiquetaAria="Resumen de contactos"
+        celdas={[
+          { id: 'tot', etiqueta: 'Contactos', valor: formatearEntero(resumen.total), categoria: 1, nota: `${formatearEntero(lista.total)} con este filtro` },
+          { id: 'cor', etiqueta: 'Con correo', valor: formatearEntero(resumen.conCorreo), categoria: 3, progreso: { pct: pctDe(resumen.conCorreo) ?? 0 }, nota: `${formatearEntero(resumen.correoCompartido)} con correo compartido` },
+          { id: 'col', etiqueta: 'Con colonia', valor: formatearEntero(resumen.conColonia), categoria: 4, progreso: { pct: pctDe(resumen.conColonia) ?? 0 }, nota: `${formatearEntero(resumen.coloniaEnConflicto)} en conflicto` },
+          { id: 'lad', etiqueta: 'Teléfono sin lada', valor: formatearEntero(resumen.sinLada), categoria: 6, nota: 'Revisar antes de contactar' },
+        ]}
+      />
+      <Tarjeta titulo="Buscar" descripcion={`${formatearEntero(lista.total)} ${lista.total === 1 ? 'contacto coincide' : 'contactos coinciden'}`} acciones={<Chip href="/contactos">Limpiar</Chip>}>
+        <form className="rtm-filtros-linea" method="get" action="/contactos" role="search" aria-label="Buscar contactos">
           <label className="rtm-etiqueta-campo">
-            Anuncio de Meta
-            <select className="rtm-campo" name="anuncio" defaultValue={filtro.anuncio}>
+            Nombre, correo o dígitos del teléfono
+            <input className="rtm-campo rtm-campo-ancho" type="search" name="q" defaultValue={filtro.busqueda} maxLength={80} />
+          </label>
+          <label className="rtm-etiqueta-campo">
+            Origen
+            <select className="rtm-campo" name="origen" defaultValue={filtro.origen}>
               <option value="">Todos</option>
-              {[...new Set(resumen.porAnuncio.map((a) => a.anuncio))].map((a) => <option key={a} value={a}>{a || 'Sin anuncio'}</option>)}
+              <option value="google-lote">Google (todos los lotes)</option>
+              {resumen.porOrigen.map((o) => <option key={o.origen} value={o.origen}>{etiquetaOrigen(o.origen)} ({formatearEntero(o.contactos)})</option>)}
             </select>
           </label>
-        )}
-        <label className="rtm-etiqueta-campo">
-          Colonia
-          <input className="rtm-campo" type="search" name="colonia" list="colonias-contactos" defaultValue={filtro.colonia} maxLength={120} />
-          <datalist id="colonias-contactos">
-            {resumen.porColonia.map((c) => <option key={c.colonia} value={c.colonia}>{formatearEntero(c.contactos)}</option>)}
-          </datalist>
-        </label>
-        <button type="submit" className="rtm-boton rtm-boton-primario">Buscar</button>
-        <Link className="rtm-boton" href="/contactos">Limpiar</Link>
-      </form>
-      <nav className="rtm-barra-filtros" aria-label="Filtrar por origen">
-        <Link className="rtm-chip-filtro" href={sinPagina('')} aria-current={filtro.origen === ''}>Todos · {formatearEntero(resumen.total)}</Link>
-        {resumen.porOrigen.map((o) => (
-          <Link key={o.origen} className="rtm-chip-filtro" href={sinPagina(o.origen)} aria-current={filtro.origen === o.origen}>{etiquetaOrigen(o.origen)} · {formatearEntero(o.contactos)}</Link>
-        ))}
-      </nav>
-      <p className="rtm-nota">
-        {formatearEntero(lista.total)} {lista.total === 1 ? 'contacto coincide' : 'contactos coinciden'} · {formatearEntero(resumen.conCorreo)} con correo · {formatearEntero(resumen.conColonia)} con colonia · {formatearEntero(resumen.sinLada)} con número sin lada · {formatearEntero(resumen.correoCompartido)} con correo compartido por revisar · página {formatearEntero(pagina)} de {formatearEntero(paginas)}
-      </p>
-      <TablaContactos filas={lista.filas} total={lista.total} filtro={filtro} />
-      <nav className="rtm-barra-filtros" aria-label="Páginas">
-        {pagina > 1 && <Link className="rtm-boton" href={enlace(filtro, pagina - 1)}>Anterior</Link>}
-        {pagina < paginas && <Link className="rtm-boton" href={enlace(filtro, pagina + 1)}>Siguiente</Link>}
-      </nav>
-    </>
+          {resumen.porAnuncio.length > 0 && (
+            <label className="rtm-etiqueta-campo">
+              Anuncio de Meta
+              <select className="rtm-campo" name="anuncio" defaultValue={filtro.anuncio}>
+                <option value="">Todos</option>
+                {[...new Set(resumen.porAnuncio.map((a) => a.anuncio))].map((a) => <option key={a} value={a}>{a || 'Sin anuncio'}</option>)}
+              </select>
+            </label>
+          )}
+          <label className="rtm-etiqueta-campo">
+            Colonia
+            <input className="rtm-campo" type="search" name="colonia" list="colonias-contactos" defaultValue={filtro.colonia} maxLength={120} />
+            <datalist id="colonias-contactos">
+              {resumen.porColonia.map((c) => <option key={c.colonia} value={c.colonia}>{formatearEntero(c.contactos)}</option>)}
+            </datalist>
+          </label>
+          <button type="submit" className="rtm-boton rtm-boton-primario">Buscar</button>
+        </form>
+      </Tarjeta>
+      <Rejilla dividir="12">
+        <Tarjeta plana titulo="Contactos" descripcion={`Página ${pagina} de ${paginas}`}>
+          <TablaContactos filas={lista.filas} total={lista.total} filtro={filtro} />
+          <nav className="rtm-paginador" aria-label="Páginas">
+            <span>Mostrando {lista.filas.length} de {formatearEntero(lista.total)}</span>
+            <span className="rtm-paginador-botones">
+              {pagina > 1 ? <Link className="rtm-boton rtm-boton-chico" href={enlace(filtro, pagina - 1)}>Anterior</Link> : <span className="rtm-boton rtm-boton-chico" aria-disabled="true">Anterior</span>}
+              {pagina < paginas ? <Link className="rtm-boton rtm-boton-chico" href={enlace(filtro, pagina + 1)}>Siguiente</Link> : <span className="rtm-boton rtm-boton-chico" aria-disabled="true">Siguiente</span>}
+            </span>
+          </nav>
+        </Tarjeta>
+      </Rejilla>
+      <Rejilla dividir="6-6" alinear="inicio">
+        <>
+          <Tarjeta titulo="Por origen" descripcion="Un clic filtra la lista">
+            <BarList etiquetaAria="Contactos por origen" items={resumen.porOrigen.map((o) => ({ id: o.origen, etiqueta: etiquetaOrigen(o.origen), texto: formatearEntero(o.contactos), pct: pctDe(o.contactos), href: sinPagina(o.origen) }))} />
+          </Tarjeta>
+          {anuncios.length > 0 && (
+            <Tarjeta titulo="Por anuncio de Meta" descripcion="Los seis con más contactos">
+              <BarList etiquetaAria="Contactos por anuncio" items={anuncios.map((a) => ({ id: `${a.anuncio}-${a.formulario}`, etiqueta: a.anuncio || 'Sin anuncio', nota: a.formulario || undefined, texto: formatearEntero(a.contactos), pct: maxAnuncio > 0 ? (a.contactos / maxAnuncio) * 100 : null }))} />
+            </Tarjeta>
+          )}
+        </>
+      </Rejilla>
+    </Pagina>
   );
 }

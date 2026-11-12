@@ -121,6 +121,8 @@ test('cuentas por cobrar: vencido, plazo, recargo por credito y texto de cobro',
   await page.getByTestId('confirmar').click();
   await expect.poll(async () => (await consultar<{ n: number }>("select count(*)::int as n from operacion.nota where pedido_id = $1 and tipo = 'correccion'", [d.pedidoVencidoId]))[0]!.n).toBe(1);
   await page.reload();
+  // El recordatorio de cobro vive en la tabla por cliente (vista=cliente) del rediseno.
+  await page.goto('/cuentas-por-cobrar?vista=cliente');
   await page.getByTestId('copiar-texto').first().click();
   await expect(page.getByTestId('texto-copiable').first()).toContainText('Total por pagar');
 });

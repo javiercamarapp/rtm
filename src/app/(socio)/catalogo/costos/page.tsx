@@ -6,14 +6,15 @@ import { fechaNeg } from '@/dominio/calendario';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
-import { EncabezadoPagina } from '@/ui/componentes/pagina';
+import { Aviso } from '@/ui/componentes/controles';
+import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import { fijarCostoAccion } from '../../alta/acciones';
 import { etiquetaHoy } from '../../contexto';
 import { FormularioCosto } from './formulario-costo';
 
 export const metadata: Metadata = { title: 'Costos de Isaac y Karen' };
 
-export default async function Pagina({ searchParams }: { searchParams: Promise<{ modelo?: string; p?: string }> }) {
+export default async function PaginaCostosCatalogo({ searchParams }: { searchParams: Promise<{ modelo?: string; p?: string }> }) {
   const sp = await searchParams;
   const modelos = await (await lectorDeSocio()).modelos();
   const elegidoId = Number(sp.modelo);
@@ -38,46 +39,47 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
   const costo = (m: (typeof modelos)[number], p: 'Isaac' | 'Karen') => m.costos.find((c) => c.proveedor === p);
 
   return (
-    <>
-      <p className="rtm-migaja"><Link href="/catalogo">Catálogo y precios</Link> / Costos</p>
+    <Pagina ancho="tablero">
       <EncabezadoPagina
+        migaja={{ href: '/catalogo', texto: 'Catálogo y precios' }}
         eyebrow={`Costos · ${etiquetaHoy()}`}
-        antes="Costos de"
-        enfasis="Isaac y Karen"
-        contexto="Cada costo vale desde una fecha; el anterior se cierra ese día y queda en el historial. El costo de lista es el normal del proveedor; cualquier otro lleva su motivo."
+        titulo="Costos de Isaac y Karen"
+        descripcion="Cada costo vale desde una fecha; el anterior se cierra ese día y queda en el historial. El costo de lista es el normal del proveedor; cualquier otro lleva su motivo."
       />
 
-      <section className="rtm-seccion rtm-entra rtm-i-2" aria-label="Costos vigentes">
-        <h2>Costos vigentes por modelo</h2>
+      <Tarjeta plana titulo="Costos vigentes por modelo" descripcion={`${modelos.length} modelos`}>
         <DataTable
+          plana
+          densidad="densa"
+          pegajosa
           etiqueta="Costos vigentes por modelo"
           clave={(m) => m.id}
           filas={modelos}
           vacio={{ titulo: 'Sin modelos', texto: 'Primero se carga el catálogo.', accion: <Link className="rtm-boton" href="/catalogo">Ir al catálogo</Link> }}
           columnas={[
-            { id: 'm', titulo: 'Modelo', celda: (m) => `${m.marca} ${m.nombre}` },
-            { id: 'i', titulo: 'Isaac', numerica: true, celda: (m) => { const c = costo(m, 'Isaac'); return c ? <>{formatearMoneda(c.costoCent)}<span className="rtm-celda-sub">desde {etiquetaFecha(c.desde)}{c.supuesto ? ' · supuesto' : ''}</span></> : <SinDato />; } },
-            { id: 'k', titulo: 'Karen', numerica: true, celda: (m) => { const c = costo(m, 'Karen'); return c ? <>{formatearMoneda(c.costoCent)}<span className="rtm-celda-sub">desde {etiquetaFecha(c.desde)}{c.supuesto ? ' · supuesto' : ''}</span></> : <SinDato />; } },
+            { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (m) => `${m.marca} ${m.nombre}` },
+            { id: 'i', titulo: 'Isaac', numerica: true, prioridadMovil: 'normal', celda: (m) => { const c = costo(m, 'Isaac'); return c ? <>{formatearMoneda(c.costoCent)}<span className="rtm-celda-sub">desde {etiquetaFecha(c.desde)}{c.supuesto ? ' · supuesto' : ''}</span></> : <SinDato />; } },
+            { id: 'k', titulo: 'Karen', numerica: true, prioridadMovil: 'normal', celda: (m) => { const c = costo(m, 'Karen'); return c ? <>{formatearMoneda(c.costoCent)}<span className="rtm-celda-sub">desde {etiquetaFecha(c.desde)}{c.supuesto ? ' · supuesto' : ''}</span></> : <SinDato />; } },
             { id: 'a', titulo: 'Acción', celda: (m) => <Link href={`/catalogo/costos?modelo=${m.id}&p=${proveedor}#cambiar`}>Cambiar o ver historial</Link> },
           ]}
         />
-      </section>
+      </Tarjeta>
 
-      <section id="cambiar" className="rtm-seccion rtm-entra rtm-i-3" aria-label="Fijar o cambiar un costo">
-        <h2>Fijar o cambiar un costo</h2>
+      <Tarjeta titulo="Fijar o cambiar un costo" descripcion="El anterior se cierra el día anterior" className="rtm-ancla">
+        <span id="cambiar" className="rtm-ancla-punto" />
         <FormularioCosto key={`${sp.modelo ?? ''}-${proveedor}`} modelos={paraForm} hoy={fechaNeg(new Date())} proveedorInicial={proveedor} {...(elegido ? { modeloInicial: elegido.id } : {})} accion={fijarCostoAccion} />
-      </section>
+      </Tarjeta>
 
       {elegido && (
-        <section className="rtm-seccion rtm-entra rtm-i-4" aria-label="Historial de costos">
-          <h2>Historial de costos: {elegido.marca} {elegido.nombre}</h2>
+        <Tarjeta plana titulo={`Historial de costos: ${elegido.marca} ${elegido.nombre}`}>
           {historial === null ? (
-            <div className="rtm-dt-aviso" role="status" data-testid="historial-pendiente">
-              <strong>Historial no disponible todavía</strong>
-              <p>La base aún no tiene la función que lista el historial de costos (ver docs/pendiente-sql-alta.md). Los costos vigentes de arriba sí son correctos.</p>
+            <div data-testid="historial-pendiente">
+              <Aviso tono="atencion" titulo="Historial no disponible todavía">La base aún no tiene la función que lista el historial de costos (ver docs/pendiente-sql-alta.md). Los costos vigentes de arriba sí son correctos.</Aviso>
             </div>
           ) : (
             <DataTable
+              plana
+              densidad="densa"
               etiqueta={`Historial de costos de ${elegido.nombre}`}
               clave={(h) => `${h.proveedor}-${h.desde}-${h.costoCent}`}
               filas={historial}
@@ -92,8 +94,8 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
               ]}
             />
           )}
-        </section>
+        </Tarjeta>
       )}
-    </>
+    </Pagina>
   );
 }

@@ -1,10 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Pestanas } from '@/ui/componentes/controles';
 
 const PAGINAS = [
   { href: '/movimientos', etiqueta: 'Bandeja', id: 'bandeja' },
+  { href: '/movimientos/libro', etiqueta: 'Libro', id: 'libro' },
   { href: '/movimientos/importar', etiqueta: 'Pegar o subir', id: 'importar' },
   { href: '/movimientos/resumen', etiqueta: 'Agrupar y utilidad', id: 'resumen' },
 ] as const;
@@ -13,14 +14,9 @@ const PAGINAS = [
 export function SubnavMovimientos() {
   const ruta = usePathname();
   return (
-    <nav className="rtm-subnav" aria-label="Movimientos">
-      <ul>
-        {PAGINAS.map((p) => (
-          <li key={p.href}>
-            <Link href={p.href} aria-current={ruta === p.href ? 'page' : undefined} data-testid={`movimientos-${p.id}`}>{p.etiqueta}</Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <Pestanas
+      etiquetaAria="Movimientos"
+      items={PAGINAS.map((p) => ({ id: p.id, etiqueta: p.etiqueta, href: p.href, activa: ruta === p.href, testid: `movimientos-${p.id}` }))}
+    />
   );
 }

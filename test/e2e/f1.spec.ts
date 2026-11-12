@@ -21,7 +21,7 @@ test('catalogo: filtra, muestra costos con "supuesto" y precios por cliente; el 
   await altaUsuario({ correo, socio: 'Javier' });
   await entrarComo(page, correo, '/catalogo');
 
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Catálogo de');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('en el catálogo');
   await page.getByLabel('Buscar en el catálogo').fill('e2e prueba modelo');
   await page.getByRole('button', { name: 'Buscar' }).click();
   const fila = page.getByRole('row', { name: /E2E Prueba Modelo 50K/ });
@@ -32,7 +32,7 @@ test('catalogo: filtra, muestra costos con "supuesto" y precios por cliente; el 
   await expect(fila).toContainText('Disponible');
 
   // Precios por cliente del modelo.
-  await page.getByRole('link', { name: 'E2E Prueba Modelo 50K' }).click();
+  await page.getByRole('region', { name: 'Modelos' }).getByRole('link', { name: 'E2E Prueba Modelo 50K' }).click();
   await expect(page.getByRole('heading', { name: /Precios por cliente: E2E Prueba Modelo 50K/ })).toBeVisible();
   await expect(page.getByRole('row', { name: /E2E Prueba Cliente/ })).toContainText('$260.00');
 
@@ -54,13 +54,13 @@ test('catalogo: filtra, muestra costos con "supuesto" y precios por cliente; el 
   expect(dialogosNativos).toEqual([]);
 });
 
-test('clientes: lista sin division por dueno y ficha con tabulador, historial, grafica y "Explicar este numero"', async ({ page }) => {
+test('clientes: lista sin dueno y ficha con tabulador, historial, grafica y "Explicar este numero"', async ({ page }) => {
   const correo = correoUnico('f1-clientes');
   await altaUsuario({ correo, socio: 'Angelo' });
   await entrarComo(page, correo, '/clientes');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('clientes');
-  await expect(page.getByRole('link', { name: /^De (Angelo|Javier)$/ })).toHaveCount(0);
-  await expect(page.getByRole('columnheader', { name: 'Dueño' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(/\d+ clientes?/);
+  await expect(page.getByRole('link', { name: /De (Angelo|Javier)/ })).toHaveCount(0);
+  await expect(page.getByText(/Dueño/)).toHaveCount(0);
   await expect(page.getByRole('row', { name: /E2E Prueba Cliente/ })).toBeVisible();
   await page.getByRole('link', { name: 'E2E Prueba Cliente' }).click();
 
@@ -91,6 +91,8 @@ test('inventario: sin movimientos muestra "Sin dato", nunca un cero', async ({ p
   const correo = correoUnico('f1-inv');
   await altaUsuario({ correo, socio: 'Javier' });
   await entrarComo(page, correo, '/inventario');
+  // Los modelos sin movimientos viven en su pestana del rediseno.
+  await page.goto('/inventario?vista=sin-movimientos');
   const fila = page.getByRole('row', { name: /E2E Prueba Modelo 50K/ });
   await expect(fila).toContainText('Sin dato');
   await expect(fila).not.toContainText('0 pz');

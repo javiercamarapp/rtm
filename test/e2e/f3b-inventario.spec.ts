@@ -3,6 +3,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { altaUsuario, consultar, correoUnico, entrarComo, ipFalsa, sembrarInventarioE2E, sembrarOperacionE2E } from './ayudas';
 
+// Puerto del servidor de las pruebas (E2E_PUERTO permite correr en un puerto propio si el 3100 esta ocupado por otra sesion).
+const BASE = process.env.APP_URL_E2E ?? `http://127.0.0.1:${process.env.E2E_PUERTO ?? '3100'}`;
+
 test.describe.configure({ mode: 'serial' });
 test.use({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
 
@@ -59,7 +62,7 @@ test('exportar PDF: version clientes e interna con folio, huella y reapertura id
   expect(guardado.map((g) => g.version)).toEqual(['clientes', 'interna']);
   // el PDF de clientes no se puede pedir sin sesion
   const anonimo = await page.context().browser()!.newContext();
-  const r = await anonimo.request.get(`http://127.0.0.1:3100${href}`, { maxRedirects: 0 });
+  const r = await anonimo.request.get(`${BASE}${href}`, { maxRedirects: 0 });
   expect([307, 308, 401, 403, 404]).toContain(r.status());
   await anonimo.close();
 });

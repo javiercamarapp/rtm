@@ -1,10 +1,13 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Pestanas } from '@/ui/componentes/controles';
 
 const PAGINAS = [
   { href: '/contabilidad', etiqueta: 'Valuación' },
+  { href: '/contabilidad/valuacion', etiqueta: 'Valuación al detalle' },
+  { href: '/contabilidad/valuacion/historial', etiqueta: 'Historial de valuación' },
+  { href: '/contabilidad/caja', etiqueta: 'Caja y liquidez' },
   { href: '/contabilidad/diario', etiqueta: 'Diario' },
   { href: '/contabilidad/mayor', etiqueta: 'Mayor' },
   { href: '/contabilidad/estado-de-resultados', etiqueta: 'Estado de resultados' },
@@ -18,14 +21,12 @@ const PAGINAS = [
 export function SubnavContabilidad() {
   const ruta = usePathname();
   return (
-    <nav className="rtm-subnav" aria-label="Contabilidad">
-      <ul>
-        {PAGINAS.map((p) => (
-          <li key={p.href}>
-            <Link href={p.href} aria-current={ruta === p.href ? 'page' : undefined} data-testid={`conta-${p.href.split('/').pop() === 'contabilidad' ? 'valuacion' : p.href.split('/').pop()}`}>{p.etiqueta}</Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <Pestanas
+      etiquetaAria="Contabilidad"
+      items={PAGINAS.map((p) => {
+        const id = p.href.split('/').pop() === 'contabilidad' ? 'valuacion' : (p.href.split('/').pop() as string);
+        return { id: p.href, etiqueta: p.etiqueta, href: p.href, activa: ruta === p.href, testid: `conta-${id}` };
+      })}
+    />
   );
 }

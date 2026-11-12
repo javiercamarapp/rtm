@@ -18,7 +18,7 @@ async function sinScrollHorizontal(page: Page) {
 async function objetivosTactiles(page: Page) {
   const chicos = await page.evaluate(() => {
     const mal: string[] = [];
-    for (const el of document.querySelectorAll<HTMLElement>('main .rtm-boton, main .rtm-cifra, main .rtm-dt-celda a, main .rtm-subnav a, main .rtm-rango a')) {
+    for (const el of document.querySelectorAll<HTMLElement>('main .rtm-boton, main .rtm-cifra, main .rtm-dt-celda a, main .rtm-pestanas a, main .rtm-rango a')) {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) continue;
       if (r.height < 43.5) mal.push(`${el.textContent?.trim().slice(0, 30)} ${Math.round(r.width)}x${Math.round(r.height)}`);

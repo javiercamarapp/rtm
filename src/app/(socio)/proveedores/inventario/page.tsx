@@ -4,8 +4,9 @@ import { lectorDeSocio } from '@/composicion/catalogo';
 import { proveedoresDeSocio } from '@/composicion/proveedores';
 import { etiquetaFechaHora, formatearMoneda } from '@/dominio/formato';
 import { DataTable } from '@/ui/componentes/data-table';
+import { Aviso } from '@/ui/componentes/controles';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
-import { EncabezadoPagina } from '@/ui/componentes/pagina';
+import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import { CopiarLista } from './copiar-lista';
 
 export const metadata: Metadata = { title: 'Inventario actual de proveedores' };
@@ -16,7 +17,7 @@ const EVENTOS: Record<string, string> = {
   variedad_recuperada: 'Variedad recuperada', promocion_nueva: 'Promoción nueva', promocion_anunciada: 'Promoción anunciada', promocion_por_terminar: 'Promoción por terminar', promocion_terminada: 'Promoción terminada', lectura_retenida: 'Lectura retenida',
 };
 
-export default async function Pagina() {
+export default async function PaginaInventarioProveedores() {
   const [p, catalogo] = await Promise.all([proveedoresDeSocio(), lectorDeSocio()]);
   const clientes = (await catalogo.clientes()).filter((c) => c.activo && !c.esBodega).map((c) => ({ id: c.id, nombre: c.nombre }));
   const f = p.frescura;
@@ -25,52 +26,50 @@ export default async function Pagina() {
   const estadoFuente = f.bloqueada ? 'Bloqueada' : sinLectura ? 'Sin lecturas' : f.desactualizado ? 'Dato desactualizado' : 'Al día';
 
   return (
-    <>
-      <p className="rtm-migaja"><Link href="/proveedores">Proveedores</Link> / Inventario actual de proveedores</p>
+    <Pagina ancho="tablero">
       <EncabezadoPagina
+        migaja={{ href: '/proveedores', texto: 'Proveedores' }}
         eyebrow="Inventario actual de proveedores"
-        antes="Lo que hay en"
-        enfasis="Karen"
-        contexto="Modelos, sabores y disponibilidad, leídos cada hora. Aquí nunca hay precios del proveedor: los costos los da Javier."
+        titulo="Lo que hay en Karen"
+        descripcion="Modelos, sabores y disponibilidad, leídos cada hora. Aquí nunca hay precios del proveedor: los costos los da Javier."
         acciones={<Link className="rtm-boton" href="/proveedores/compras/nueva?p=Karen" data-testid="oc-karen">Crear orden de compra a Karen</Link>}
       />
 
-      <section className="rtm-aviso" role="status" data-testid="estado-fuente" aria-label="Estado de la lectura">
-        <strong>Inventario de Karen: <EstadoTexto tono={estadoFuente === 'Al día' ? 'ok' : 'atencion'}>{estadoFuente}</EstadoTexto></strong>
-        <p>
+      <div data-testid="estado-fuente" role="status" aria-label="Estado de la lectura">
+      <Aviso tono={estadoFuente === 'Al día' ? 'info' : 'atencion'} titulo={`Inventario de Karen: ${estadoFuente}`}>
+        <span>
           {sinLectura ? 'Todavía no hay una lectura. ' : `Última lectura ${etiquetaFechaHora(f.ultima_lectura_ok!)} (hace ${f.horas ?? 0} h). `}
           {!f.lectura_activa ? 'La lectura automática está apagada hasta que se active el interruptor. ' : ''}
           {f.desactualizado && !sinLectura ? 'Con más de 3 horas sin lectura la lista para clientes queda bloqueada. ' : ''}
           Peticiones de hoy: {f.peticiones_hoy} de {f.tope_dia}.
-        </p>
-      </section>
+        </span>
+      </Aviso>
+      </div>
 
-      <section className="rtm-seccion" aria-label="Lista para clientes">
-        <h2>Lista para clientes</h2>
+      <Tarjeta titulo="Lista para clientes" descripcion="Texto listo para copiar y enviar">
         <CopiarLista marcas={marcas} clientes={clientes} bloqueada={f.desactualizado} />
-      </section>
+      </Tarjeta>
 
       {p.promociones.length > 0 && (
-        <section className="rtm-seccion" aria-label="Promociones">
-          <h2>Promociones</h2>
-          <p className="rtm-contexto">Solo la bandera, el tipo, el porcentaje, los modelos y las fechas. Es informativo: una promoción puede no aplicar a mayoreo.</p>
+        <Tarjeta titulo="Promociones" descripcion="Informativo: una promoción puede no aplicar a mayoreo">
           <ul className="rtm-avisos">
             {p.promociones.map((x) => (
               <li key={x.clave} className="rtm-aviso"><strong>{x.etiqueta}{x.fin ? ` · hasta ${etiquetaFechaHora(x.fin)}` : ''}</strong><p>{x.modelos.join(', ') || 'Todos los modelos de la campaña'}</p></li>
             ))}
           </ul>
-        </section>
+        </Tarjeta>
       )}
 
-      <section className="rtm-seccion" aria-label="Modelos">
-        <h2>Inventario de Karen</h2>
+      <Tarjeta plana titulo="Inventario de Karen" descripcion={`${p.modelos.length} modelos`}>
         <DataTable
+          plana
+          densidad="densa"
           etiqueta="Modelos y sabores del proveedor"
           clave={(m) => m.producto_id}
           filas={p.modelos}
           vacio={{ titulo: 'Sin lecturas todavía', texto: 'Cuando se active la lectura horaria, aquí aparecerán los modelos y sabores. Mientras tanto la lista para clientes no está disponible.' }}
           columnas={[
-            { id: 'm', titulo: 'Modelo', celda: (m) => <><strong>{m.titulo}</strong><br /><span className="rtm-nota">{m.marca}</span></> },
+            { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (m) => <><strong>{m.titulo}</strong><br /><span className="rtm-nota">{m.marca}</span></> },
             { id: 's', titulo: 'Sabores', celda: (m) => {
               const disp = m.sabores.filter((s) => s.disponible).length;
               return (
@@ -85,30 +84,28 @@ export default async function Pagina() {
             { id: 'a', titulo: '', celda: (m) => (m.nuevo_sin_costo || !m.canonico_nombre ? <span className="rtm-nota">Da el costo y confirma el modelo antes de ordenar</span> : <Link href={`/proveedores/compras/nueva?p=Karen&modelo=${encodeURIComponent(m.canonico_nombre)}&d=${encodeURIComponent(m.sabores.filter((s) => s.disponible).map((s) => s.sabor).join(','))}`} data-testid={`orden-${m.producto_id}`}>Ordenar a Karen</Link>) },
           ]}
         />
-      </section>
+      </Tarjeta>
 
-      <section className="rtm-seccion" aria-label="Por confirmar">
-        <h2>Nombres por confirmar</h2>
+      <div className="rtm-region-pag" aria-label="Por confirmar"><Tarjeta plana titulo="Nombres por confirmar" descripcion={`${p.cola.length} pendientes`}>
         {p.cola.length === 0 ? <p className="rtm-nota">Nada por confirmar.</p> : (
-          <DataTable etiqueta="Cola de confirmación" clave={(c) => `${c.tipo}:${c.texto}`} filas={p.cola} columnas={[
+          <DataTable plana densidad="densa" etiqueta="Cola de confirmación" clave={(c) => `${c.tipo}:${c.texto}`} filas={p.cola} columnas={[
             { id: 't', titulo: 'Tipo', celda: (c) => (c.tipo === 'modelo' ? 'Modelo' : 'Sabor') },
             { id: 'x', titulo: 'Nombre del proveedor', celda: (c) => c.texto },
             { id: 'c', titulo: 'Se parece a', secundaria: true, celda: (c) => (c.similitud === null ? 'Sin sugerencia' : `${Math.round(c.similitud * 100)} % de parecido`) },
           ]} />
         )}
-      </section>
+      </Tarjeta></div>
 
-      <section className="rtm-seccion" aria-label="Cambios recientes">
-        <h2>Cambios recientes</h2>
-        <DataTable etiqueta="Cambios detectados" clave={(e) => e.clave} filas={p.eventos}
+      <Tarjeta plana titulo="Cambios recientes" descripcion="Solo se guardan los cambios, no una foto por hora">
+        <DataTable plana densidad="densa" etiqueta="Cambios detectados" clave={(e) => e.clave} filas={p.eventos}
           vacio={{ titulo: 'Sin cambios', texto: 'Solo se guardan los cambios, no una foto por hora.' }}
           columnas={[
-            { id: 'w', titulo: 'Cuándo', celda: (e) => etiquetaFechaHora(e.en) },
+            { id: 'w', titulo: 'Cuándo', ancho: 'm', prioridadMovil: 'titulo', celda: (e) => etiquetaFechaHora(e.en) },
             { id: 't', titulo: 'Cambio', celda: (e) => EVENTOS[e.tipo] ?? e.tipo },
             { id: 'm', titulo: 'Modelo', secundaria: true, celda: (e) => e.modelo ?? '' },
             { id: 'd', titulo: 'Detalle', secundaria: true, celda: (e) => [e.antes, e.despues].filter(Boolean).join(' → ') },
           ]} />
-      </section>
-    </>
+      </Tarjeta>
+    </Pagina>
   );
 }

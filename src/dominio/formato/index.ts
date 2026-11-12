@@ -29,6 +29,15 @@ export function formatearPiezas(n: number): string {
   return `${n < 0 ? MENOS : ''}${agrupar(String(abs))} pz`;
 }
 
+/** Numero con decimales fijos y miles con coma: formatearDecimal(1234.5, 1) -> "1,234.5"; negativos con signo real U+2212. */
+export function formatearDecimal(n: number, decimales: number): string {
+  if (!Number.isFinite(n)) throw new RangeError('numero no finito');
+  const fijo = Math.abs(n).toFixed(decimales);
+  const [e, d] = fijo.split('.');
+  const cuerpo = `${agrupar(e!)}${d ? `.${d}` : ''}`;
+  return Number(fijo) === 0 || n >= 0 ? cuerpo : `${MENOS}${cuerpo}`;
+}
+
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'] as const;
 

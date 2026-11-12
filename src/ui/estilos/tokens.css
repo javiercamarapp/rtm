@@ -76,9 +76,63 @@
   --rtm-inset: 10px;
   --rtm-cuerpo: 14px;
 
-  --rtm-fuente-ui: var(--font-figtree), 'Figtree', system-ui, sans-serif;
-  --rtm-fuente-serif: var(--font-garamond), 'EB Garamond', Georgia, serif;
-  --rtm-fuente-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, monospace;
+  /* Una sola familia: Geist. Mono solo para folios, claves y huellas. */
+  --rtm-fuente-ui: var(--font-geist), 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --rtm-fuente-mono: var(--font-geist-mono), 'Geist Mono', ui-monospace, monospace;
+
+  /* ---- Tokens del rediseno (especificacion de diseno, seccion 3). No cambian sidebar, fondo ni paleta. ---- */
+  /* Escala tipografica. --rtm-cuerpo (14px) se conserva. */
+  --rtm-t-micro: 11px; --rtm-t-pequeno: 12px; --rtm-t-cuerpo: 13px;
+  --rtm-t-seccion: 14px; --rtm-t-pagina: 24px; --rtm-t-kpi: 26px; --rtm-t-cifra-grande: 32px;
+  --rtm-peso-normal: 400; --rtm-peso-medio: 500; --rtm-peso-fuerte: 600;
+  --rtm-trk-pagina: -0.025em; --rtm-trk-seccion: -0.015em; --rtm-trk-cifra: -0.03em; --rtm-trk-eyebrow: 0.06em;
+
+  /* Ritmo y densidad */
+  --rtm-e-12: 48px;
+  --rtm-ritmo: 12px;
+  --rtm-pad-tarjeta: 14px;
+  --rtm-ancho-tablero: 1280px; --rtm-ancho-normal: 1120px; --rtm-ancho-formulario: 880px; --rtm-ancho-nota: 720px;
+
+  /* Controles: 8px de radio; pildora solo en chips y segmentados */
+  --rtm-r-ctl: 8px;
+  --rtm-h-ctl: 32px; --rtm-h-ctl-chico: 28px;
+  --rtm-h-chip: 24px; --rtm-h-chip-estado: 22px; --rtm-h-segmento: 24px;
+  --rtm-zona-tactil: 44px;
+
+  /* Tablas */
+  --rtm-h-fila: 40px; --rtm-h-fila-densa: 32px; --rtm-h-fila-libro: 28px; --rtm-h-cab-tabla: 36px;
+
+  /* Tarjetas y filetes */
+  --rtm-borde-tarjeta: var(--rtm-line-2);
+  /* Borde de controles (campos, botones, chips y segmentados): WCAG 1.4.11, 3:1 contra panel y tarjeta. line-strong da 3.31 a 3.40 en claro y 3.63 a 4.12 en oscuro. */
+  --rtm-borde-control: var(--rtm-campo-borde);
+  --rtm-borde: 1px solid var(--rtm-line);
+  --rtm-filete: 3px;
+
+  /* Graficas */
+  --rtm-g-alto: 168px; --rtm-g-alto-chico: 140px;
+  --rtm-g-barra-ratio: 0.6; --rtm-g-barra-max: 22px; --rtm-g-barra-min: 3px;
+  --rtm-g-grosor-linea: 1.75px; --rtm-g-pista: 6px;
+  --rtm-g-rejilla: color-mix(in srgb, var(--rtm-ink) 8%, transparent);
+  --rtm-g-eje: color-mix(in srgb, var(--rtm-ink) 20%, transparent);
+  --rtm-g-hover: color-mix(in srgb, var(--rtm-ink) 5%, transparent);
+  --rtm-tip-min: 160px; --rtm-tip-max: 280px;
+
+  /* Overlays y capas */
+  --rtm-cajon-sm: 420px; --rtm-cajon-md: 480px; --rtm-cajon-lg: 640px;
+  --rtm-dialogo-sm: 440px; --rtm-dialogo-md: 560px;
+  --rtm-z-tabla: 1; --rtm-z-barra-movil: 5; --rtm-z-nav-movil: 6; --rtm-z-ayuda: 20;
+  --rtm-z-popover: 40; --rtm-z-cajon: 41; --rtm-z-tooltip: 60; --rtm-z-carga: 2000;
+
+  /* Movimiento (topes: barras 420 ms, trazo 380 ms) */
+  --rtm-mov-rapido: 120ms; --rtm-mov-normal: 180ms; --rtm-mov-lento: 250ms;
+  --rtm-mov-barra: 420ms; --rtm-mov-trazo: 380ms; --rtm-mov-pagina: 280ms;
+
+  /* Tintes de estado derivados de la paleta existente (sin colores literales) */
+  --rtm-tinte-ok: color-mix(in srgb, var(--rtm-ok) 12%, var(--rtm-surface));
+  --rtm-tinte-warn: color-mix(in srgb, var(--rtm-warn) 14%, var(--rtm-surface));
+  --rtm-tinte-bad: color-mix(in srgb, var(--rtm-bad) 11%, var(--rtm-surface));
+  --rtm-tinte-info: color-mix(in srgb, var(--rtm-d-azul-marino) 11%, var(--rtm-surface));
 
   color-scheme: light;
 }

@@ -1,0 +1,1 @@
+TABLA 1280-claro-movimientos: Movimientos +121px cortadas[Clasificación, Acciones] cols(Fecha:56 Monto:91 Mensaje:216 Estado:122 Clasificación:185 Acciones:108) caja=658 ; Importaciones recientes +18px cortadas[Repetidas] cols(Origen:136 Filas:44 Nuevas:58 Repetidas:74) caja=294

@@ -2,58 +2,53 @@ import type { Metadata } from 'next';
 import { cuentaDeOmar } from '@/composicion/omar';
 import { fechaNeg, semanaOmar } from '@/dominio/calendario';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
-import { EncabezadoPagina } from '@/ui/componentes/pagina';
+import { Aviso } from '@/ui/componentes/controles';
+import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { BloqueProyeccion, CifrasCuenta, TablaLiquidaciones, TablaPagos, TablaRentaDia, TablaTransacciones } from '@/ui/omar/cuenta';
 import { ExportarCuenta } from '@/ui/omar/exportar';
 
 export const metadata: Metadata = { title: 'Mi cuenta' };
 
-export default async function Pagina() {
+export default async function PaginaMiCuenta() {
   const hoy = fechaNeg(new Date());
   const semana = semanaOmar(hoy);
   const c = await cuentaDeOmar(hoy);
   const movs = c.movimientos.estado === 'ok' ? c.movimientos.datos : null;
   return (
-    <>
-      <EncabezadoPagina eyebrow={`Tu cuenta · semana ${etiquetaFecha(semana.inicio)} al ${etiquetaFecha(semana.fin)}`} antes="Lo que te" enfasis="corresponde" contexto={`Renta por pieza enviada desde tu bodega, tus tomas y tus pagos. La semana en curso se liquida el ${etiquetaFecha(semana.corte)}.`} />
-      <section className="rtm-seccion rtm-entra rtm-i-1" aria-label="Cifras de la semana">
-        <CifrasCuenta movs={c.movimientos} liqs={c.liquidaciones} semanaIni={semana.inicio} />
-      </section>
-      <div className="omar-rejilla">
-        <section className="rtm-seccion rtm-entra rtm-i-2" aria-label="Proyección de tu pago">
-          <h2>Proyección de tu pago</h2>
+    <Pagina ancho="tablero">
+      <EncabezadoPagina eyebrow={`Tu cuenta · semana ${etiquetaFecha(semana.inicio)} al ${etiquetaFecha(semana.fin)}`} titulo="Lo que te corresponde" descripcion={`Renta por pieza enviada, tus tomas y tus pagos. La semana en curso se liquida el ${etiquetaFecha(semana.corte)}.`} />
+      <CifrasCuenta movs={c.movimientos} liqs={c.liquidaciones} semanaIni={semana.inicio} />
+      <Rejilla dividir="6-6" alinear="inicio">
+        <Tarjeta titulo="Proyección de tu pago" descripcion="Estimación, no un saldo">
           <BloqueProyeccion proyeccion={c.proyeccion} />
-        </section>
-        <section className="rtm-seccion rtm-entra rtm-i-2" aria-label="Renta por día">
-          <h2>Renta de esta semana, por día</h2>
-          {movs ? <TablaRentaDia movs={movs} semanaIni={semana.inicio} /> : <p className="rtm-error" role="alert">No se pudo cargar tu cuenta.</p>}
-        </section>
-      </div>
+        </Tarjeta>
+        <Tarjeta plana titulo="Renta de esta semana, por día">
+          {movs ? <TablaRentaDia movs={movs} semanaIni={semana.inicio} /> : <Aviso tono="error">No se pudo cargar tu cuenta.</Aviso>}
+        </Tarjeta>
+      </Rejilla>
       {movs && (
-        <div className="omar-rejilla">
-          <section className="rtm-seccion rtm-entra rtm-i-3" aria-label="Tus transacciones">
-            <h2>Tus transacciones</h2>
+        <Rejilla dividir="6-6" alinear="inicio">
+          <Tarjeta plana titulo="Tus transacciones" descripcion="Tus tomas autorizadas">
             <TablaTransacciones movs={movs} />
-          </section>
-          <section className="rtm-seccion rtm-entra rtm-i-3" aria-label="Pagos">
-            <h2>Pagos</h2>
+          </Tarjeta>
+          <Tarjeta plana titulo="Pagos">
             <TablaPagos movs={movs} />
-          </section>
-        </div>
+          </Tarjeta>
+        </Rejilla>
       )}
-      <section className="rtm-seccion rtm-entra rtm-i-4" aria-label="Liquidaciones">
-        <h2>Liquidación semanal</h2>
+      <Tarjeta
+        plana
+        titulo="Liquidación semanal"
+        descripcion="Neto = renta − tus tomas. Positivo: los socios te pagan. Negativo: tú pagas a los socios."
+        acciones={movs ? (
+          <ExportarCuenta nombre={`mi-cuenta-${semana.inicio}.csv`} filas={[
+            ['Tipo', 'Fecha', 'Referencia', 'Pieza', 'Piezas', 'Importe'],
+            ...movs.map((m) => [m.concepto, m.fecha, m.referencia, m.modelo ?? '', m.piezas === null ? '' : String(m.piezas), formatearMoneda(m.importe)]),
+          ]} />
+        ) : undefined}
+      >
         <TablaLiquidaciones lectura={c.liquidaciones} />
-        <p className="rtm-nota">Neto = renta − tus tomas. Positivo: los socios te pagan. Negativo: tú pagas a los socios.</p>
-        {movs && (
-          <div className="rtm-acciones-fila">
-            <ExportarCuenta nombre={`mi-cuenta-${semana.inicio}.csv`} filas={[
-              ['Tipo', 'Fecha', 'Referencia', 'Pieza', 'Piezas', 'Importe'],
-              ...movs.map((m) => [m.concepto, m.fecha, m.referencia, m.modelo ?? '', m.piezas === null ? '' : String(m.piezas), formatearMoneda(m.importe)]),
-            ]} />
-          </div>
-        )}
-      </section>
-    </>
+      </Tarjeta>
+    </Pagina>
   );
 }

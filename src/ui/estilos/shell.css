@@ -45,6 +45,10 @@
 .rtm-nav-indicador[data-indice='10'] { transform: translateY(340px); }
 .rtm-nav-indicador[data-indice='11'] { transform: translateY(374px); }
 .rtm-nav-indicador[data-indice='12'] { transform: translateY(408px); }
+.rtm-nav-indicador[data-indice='13'] { transform: translateY(442px); }
+.rtm-nav-indicador[data-indice='14'] { transform: translateY(476px); }
+.rtm-nav-indicador[data-indice='15'] { transform: translateY(510px); }
+.rtm-nav-indicador[data-indice='16'] { transform: translateY(544px); }
 .rtm-lateral-pie { margin-top: auto; display: flex; flex-direction: column; gap: var(--rtm-e-2); padding: var(--rtm-e-2); }
 .rtm-lateral-usuario { font-size: 12px; color: var(--rtm-ink-3); overflow-wrap: anywhere; }
 .rtm-lateral-salir { align-self: flex-start; height: 28px; font-size: 12px; padding: 0 var(--rtm-e-3); }
@@ -78,19 +82,20 @@
   background: var(--rtm-panel); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-panel);
   overflow: hidden;
 }
-.rtm-panel-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: var(--rtm-e-8) clamp(var(--rtm-e-5), 4vw, var(--rtm-e-10)) var(--rtm-e-8); }
-.rtm-pagina { max-width: 1120px; margin-inline: auto; display: flex; flex-direction: column; gap: var(--rtm-e-8); }
+.rtm-panel-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: var(--rtm-e-6) clamp(var(--rtm-e-4), 2.2vw, 28px) 28px; }
+/* Tope del armazon = ancho de tablero (1280); cada Pagina fija el suyo. */
+.rtm-pagina { max-width: var(--rtm-ancho-tablero); margin-inline: auto; display: flex; flex-direction: column; gap: var(--rtm-e-8); }
 
 /* ---- Anatomia de pagina ---- */
 .rtm-eyebrow {
-  margin: 0; font-family: var(--rtm-fuente-mono); font-size: 11px; letter-spacing: 0.12em;
+  margin: 0; font-size: var(--rtm-t-pequeno); font-weight: 600; letter-spacing: var(--rtm-trk-eyebrow);
   text-transform: uppercase; color: var(--rtm-ink-3);
 }
 .rtm-titular {
-  margin: var(--rtm-e-2) 0 0; font-family: var(--rtm-fuente-serif); font-weight: 400;
-  font-size: 36px; line-height: 42px; letter-spacing: -0.01em; text-wrap: balance;
+  margin: var(--rtm-e-2) 0 0; font-family: var(--rtm-fuente-ui); font-weight: 600;
+  font-size: var(--rtm-t-pagina); line-height: 1.2; letter-spacing: var(--rtm-trk-pagina); text-wrap: balance;
 }
-.rtm-titular em { font-style: italic; }
+.rtm-titular em { font-style: normal; font-weight: inherit; }
 .rtm-contexto { margin: var(--rtm-e-2) 0 0; color: var(--rtm-ink-2); max-width: 62ch; }
 .rtm-acciones { display: flex; gap: var(--rtm-e-2); margin-top: var(--rtm-e-5); flex-wrap: wrap; }
 
@@ -110,7 +115,7 @@
 .rtm-paso-n {
   flex: none; width: 24px; height: 24px; display: grid; place-items: center;
   border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora);
-  font-family: var(--rtm-fuente-mono); font-size: 11px; color: var(--rtm-ink-2);
+  font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--rtm-ink-2);
 }
 .rtm-paso p { margin: 0; color: var(--rtm-ink-2); }
 .rtm-paso strong { color: var(--rtm-ink); font-weight: 600; }
@@ -145,7 +150,7 @@
 }
 .rtm-grupo { display: flex; flex-direction: column; gap: var(--rtm-e-2); border: 0; padding: 0; margin: 0; }
 .rtm-grupo legend { padding: 0; font-size: 12px; color: var(--rtm-ink-3); margin-bottom: var(--rtm-e-2); }
-.rtm-segmentos { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); }
+.rtm-segmentos { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); }
 .rtm-segmento {
   flex: 1; height: 28px; border: 0; border-radius: var(--rtm-r-pildora); background: transparent; cursor: pointer; font-size: 12px;
   color: var(--rtm-ink-2);
@@ -171,7 +176,7 @@
   .rtm-migas { display: none; }
   .rtm-pulso { display: none; }
   .rtm-barra-acciones { margin-left: auto; }
-  .rtm-titular { font-size: 30px; line-height: 36px; }
+  .rtm-titular { font-size: 22px; }
   .rtm-acentos { grid-template-columns: minmax(0, 1fr); }
   .rtm-pie { flex-wrap: wrap; padding-inline: var(--rtm-e-4); }
   .rtm-boton, .rtm-icono-boton { min-height: 44px; }

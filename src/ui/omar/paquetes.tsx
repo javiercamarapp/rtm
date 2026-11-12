@@ -1,6 +1,7 @@
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import type { Lectura, PaqueteOmar } from '@/dominio/omar/tipos';
 import { EstadoTexto } from '../componentes/estado-texto';
+import { Tarjeta as TarjetaBase } from '../componentes/pagina';
 import { TextoLectura } from './bodega';
 
 const ESTADO: Record<PaqueteOmar['estado'], { texto: string; tono: 'ok' | 'atencion' | 'neutro' }> = {
@@ -37,14 +38,12 @@ export function ListaPaquetes({ lectura }: { lectura: Lectura<PaqueteOmar[]> }) 
   const entradas = lectura.datos.filter((p) => p.tipo === 'entrada');
   return (
     <div className="omar-rejilla">
-      <section className="rtm-seccion" aria-label="Paquetes por preparar">
-        <h2>Por preparar</h2>
+      <TarjetaBase titulo="Por preparar" descripcion={`${salidas.length} ${salidas.length === 1 ? 'paquete' : 'paquetes'}`}>
         {salidas.length === 0 ? <p className="rtm-nota">No hay paquetes pendientes de preparar.</p> : <ul className="omar-lista">{salidas.map((p) => <Tarjeta key={`s${p.consecutivo}`} p={p} />)}</ul>}
-      </section>
-      <section className="rtm-seccion" aria-label="Paquetes por recibir">
-        <h2>Por recibir</h2>
+      </TarjetaBase>
+      <TarjetaBase titulo="Por recibir" descripcion={`${entradas.length} ${entradas.length === 1 ? 'paquete' : 'paquetes'}`}>
         {entradas.length === 0 ? <p className="rtm-nota">No hay paquetes en camino a tu bodega.</p> : <ul className="omar-lista">{entradas.map((p) => <Tarjeta key={`e${p.consecutivo}`} p={p} />)}</ul>}
-      </section>
+      </TarjetaBase>
     </div>
   );
 }

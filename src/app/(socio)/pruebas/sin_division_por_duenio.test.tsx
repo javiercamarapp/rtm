@@ -12,7 +12,7 @@ const pedido = (id: number, cliente: string, duenio: 'Angelo' | 'Javier') => ({
 });
 const fila = (id: number, cliente: string, duenio: 'Angelo' | 'Javier') => ({
   pedido_id: id, folio: `P-${id}`, cliente_id: id, cliente, duenio, fecha_envio: '2026-11-01', plazo_dias: 7, vence: '2026-11-08',
-  original_cent: 100n, abonos_cent: 0n, saldo_cent: 100n, dias_atraso: 2, estado: 'vencido', recargo_sugerido_cent: 0n,
+  original_cent: 100n, abonos_cent: 0n, saldo_cent: 100n, dias_atraso: 2, estado: 'vencido', recargo_sugerido_cent: 0n, recargo_cent: 0n, dias: 9, cubeta: '0_7',
 });
 
 vi.mock('@/composicion/catalogo', () => ({ lectorDeSocio: async () => ({ clientes: async () => clientes }) }));

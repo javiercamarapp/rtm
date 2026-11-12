@@ -71,7 +71,7 @@ test('balance general cuadra y el flujo de efectivo concilia directo con indirec
   await expect(page.getByTestId('balance-comprobacion')).toContainText('Cuadra');
   await expect(page.getByTestId('balance-activo')).toBeVisible();
   await page.goto('/contabilidad/flujo');
-  await expect(page.getByRole('heading', { name: 'Actividades de operación' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Actividades de operación/ })).toBeVisible();
   await expect(page.getByText('Cuadra por las dos vías')).toBeVisible();
 });
 

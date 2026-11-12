@@ -2,21 +2,25 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { sumarDias } from '@/dominio/calendario';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import type { AmbitoHoja } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
+import { Aviso, Segmentado } from '@/ui/componentes/controles';
+import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
-import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
-import { EncabezadoPagina } from '@/ui/componentes/pagina';
-import { etiquetaHoy } from '../../contexto';
+import { SinDato } from '@/ui/componentes/estado-texto';
+import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
+import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
+import { Cascada } from '@/ui/graficas';
 import { BotonAccion } from '../../operacion/formulario-accion';
 import { CopiarTexto } from '../../operacion/copiar-texto';
 import { CONCEPTO_CUENTA, ORIGEN } from '../../operacion/etiquetas';
+import { Dos, Estado, Pie, m, pct, suma } from '../../_a3/util';
 import { FormularioDicho } from './formulario-dicho';
 
 export const metadata: Metadata = { title: 'Liquidación con el proveedor' };
 
-export default async function Pagina({ searchParams }: { searchParams: Promise<{ p?: string; semana?: string; ambito?: string }> }) {
+export default async function PaginaLiquidacion({ searchParams }: { searchParams: Promise<{ p?: string; semana?: string; ambito?: string }> }) {
   const q = await searchParams;
   const proveedor = q.p === 'Karen' ? 'Karen' : 'Isaac';
   const ambito: AmbitoHoja = q.ambito === 'todo' ? 'todo' : 'sociedad';
@@ -28,155 +32,191 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
   const enlace = (extra: Record<string, string>) => `/proveedores/liquidacion?${new URLSearchParams({ p: proveedor, semana: h.semana_ini, ambito, ...extra }).toString()}`;
   const guias = h.renglones.filter((r) => r.guia_cent > 0n || r.guia_pendiente);
   const cerrada = h.cierre !== null;
+  const depositos = h.pagos_por_concepto_cent['pago_cliente_redirigido'] ?? 0n;
+  const pagosSocios = (h.pagos_por_concepto_cent['pago_socio'] ?? 0n) + (h.pagos_por_concepto_cent['pago_sociedad'] ?? 0n);
+  const pasos = [
+    { id: 'ant', etiqueta: 'Saldo anterior', valor: Number(t.saldo_anterior_cent), tipo: 'inicio' as const, texto: m(t.saldo_anterior_cent) },
+    { id: 'mer', etiqueta: 'Mercancía', valor: Number(t.mercancia_cent), tipo: 'delta' as const, texto: m(t.mercancia_cent, true) },
+    { id: 'seg', etiqueta: 'Seguros', valor: Number(t.seguros_cent), tipo: 'delta' as const, texto: m(t.seguros_cent, true) },
+    { id: 'gui', etiqueta: 'Guías', valor: Number(t.guias_cent), tipo: 'delta' as const, texto: m(t.guias_cent, true) },
+    { id: 'pag', etiqueta: 'Pagos', valor: -Number(t.pagos_cent), tipo: 'delta' as const, texto: m(-t.pagos_cent, true) },
+    { id: 'aju', etiqueta: 'Ajustes', valor: -Number(t.ajustes_cent), tipo: 'delta' as const, texto: m(-t.ajustes_cent, true) },
+    { id: 'fal', etiqueta: 'Falta por saldar', valor: Number(t.falta_por_saldar_cent), tipo: 'total' as const, texto: m(t.falta_por_saldar_cent, true) },
+  ];
+  const pruebas: [string, boolean][] = [
+    ['Cada renglón = piezas × costo vigente', c.renglon_igual_detalle],
+    [`Suma de renglones = total de mercancía (${m(c.mercancia_independiente_cent)})`, c.renglones_igual_mercancia],
+    [`Suma de seguros = seguros declarados (${m(c.seguros_independiente_cent)})`, c.renglones_igual_seguros],
+    [`Suma de guías = envíos (${m(c.guias_independiente_cent)})`, c.guias_igual_envios],
+    [`Cada abono = un depósito (${m(c.depositos_independiente_cent)})`, c.abonos_igual_depositos],
+  ];
+  const totalCosto = t.costo_total_cent;
+  const abonosYAjustes = [...h.abonos, ...h.ajustes.map((x) => ({ ...x, cliente: null, pedido: null, cuenta_origen: null }))];
 
   return (
-    <>
-      <p className="rtm-migaja"><Link href={`/proveedores?p=${proveedor}`}>Proveedores</Link> / Liquidación</p>
+    <Pagina ancho="tablero">
       <EncabezadoPagina
-        eyebrow={`Liquidación con ${proveedor} · ${etiquetaHoy()}`}
-        antes="Lo que falta por saldar con"
-        enfasis={proveedor}
-        contexto={`Semana del ${etiquetaFecha(h.semana_ini)} al ${etiquetaFecha(h.semana_fin)} (lo enviado el fin de semana entra a la siguiente). Isaac y Karen nunca se mezclan. Se liquida a partir del viernes.`}
+        migaja={{ href: `/proveedores?p=${proveedor}`, texto: 'Proveedores' }}
+        eyebrow={`Liquidación con ${proveedor}`}
+        titulo={`Lo que falta por saldar con ${proveedor}`}
+        descripcion={`Semana del ${etiquetaFecha(h.semana_ini)} al ${etiquetaFecha(h.semana_fin)} · ${cerrada ? `liquidada (${h.cierre!.folio})` : h.viernes_cerrado ? 'lista para liquidar' : `se liquida a partir del viernes ${etiquetaFecha(h.semana_fin)}`}`}
+        acciones={
+          <>
+            <Segmentado etiquetaAria="Proveedor" opciones={[{ valor: 'Isaac', etiqueta: 'Isaac', href: enlace({ p: 'Isaac' }), activa: proveedor === 'Isaac' }, { valor: 'Karen', etiqueta: 'Karen', href: enlace({ p: 'Karen' }), activa: proveedor === 'Karen' }]} />
+            <Segmentado etiquetaAria="Ámbito de la hoja" opciones={[{ valor: 's', etiqueta: 'Solo de la sociedad', href: enlace({ ambito: 'sociedad' }), activa: ambito === 'sociedad', testid: 'ambito-sociedad' }, { valor: 't', etiqueta: 'Todo', href: enlace({ ambito: 'todo' }), activa: ambito === 'todo', testid: 'ambito-todo' }]} />
+            <Segmentado etiquetaAria="Semana" opciones={[{ valor: 'a', etiqueta: 'Semana anterior', href: enlace({ semana: sumarDias(h.semana_ini, -7) }), activa: false }, { valor: 's', etiqueta: 'Semana siguiente', href: enlace({ semana: sumarDias(h.semana_ini, 7) }), activa: false }]} />
+          </>
+        }
       />
-      <div className="rtm-acciones-fila">
-        <div className="rtm-segmentado" role="group" aria-label="Proveedor">
-          <Link href={enlace({ p: 'Isaac' })} aria-current={proveedor === 'Isaac'}>Isaac</Link>
-          <Link href={enlace({ p: 'Karen' })} aria-current={proveedor === 'Karen'}>Karen</Link>
-        </div>
-        <div className="rtm-segmentado" role="group" aria-label="Ámbito de la hoja">
-          <Link href={enlace({ ambito: 'sociedad' })} aria-current={ambito === 'sociedad'} data-testid="ambito-sociedad">Solo de la sociedad</Link>
-          <Link href={enlace({ ambito: 'todo' })} aria-current={ambito === 'todo'} data-testid="ambito-todo">Todo</Link>
-        </div>
-        <div className="rtm-segmentado" role="group" aria-label="Semana">
-          <Link href={enlace({ semana: sumarDias(h.semana_ini, -7) })}>Semana anterior</Link>
-          <Link href={enlace({ semana: sumarDias(h.semana_ini, 7) })}>Semana siguiente</Link>
-        </div>
-      </div>
+      {h.guias_pendientes > 0 && <Aviso tono="atencion" titulo="Cifra provisional.">{h.guias_pendientes} guías sin costo real: la hoja es provisional hasta costearlas.</Aviso>}
 
-      <section className="rtm-bloque rtm-entra rtm-i-1" aria-label="Falta por saldar">
-        <p className="rtm-nota">Falta por saldar = saldo anterior + costo total con guías − pagos − ajustes</p>
-        <p className="rtm-hero-cifra" data-testid="falta-por-saldar"><CifraComprobada texto={formatearMoneda(t.falta_por_saldar_cent)} cifra={`proveedor:falta:${proveedor}:${h.semana_ini}:${ambito}`} comprobacion={c.cuadra ? 'cuadra' : 'no_cuadra'} /></p>
-        <p data-testid="comprobacion"><EstadoTexto tono={c.cuadra ? 'ok' : 'malo'}>{c.cuadra ? 'Cuadra' : 'No cuadra'}</EstadoTexto></p>
-        <ul className="rtm-cascada" aria-label="Comprobaciones">
-          <li><span>Cada renglón = piezas × costo vigente</span><EstadoTexto tono={c.renglon_igual_detalle ? 'ok' : 'malo'}>{c.renglon_igual_detalle ? 'Cuadra' : 'No cuadra'}</EstadoTexto></li>
-          <li><span>Suma de renglones = total de mercancía ({formatearMoneda(c.mercancia_independiente_cent)})</span><EstadoTexto tono={c.renglones_igual_mercancia ? 'ok' : 'malo'}>{c.renglones_igual_mercancia ? 'Cuadra' : 'No cuadra'}</EstadoTexto></li>
-          <li><span>Suma de guías = envíos ({formatearMoneda(c.guias_independiente_cent)})</span><EstadoTexto tono={c.guias_igual_envios ? 'ok' : 'malo'}>{c.guias_igual_envios ? 'Cuadra' : 'No cuadra'}</EstadoTexto></li>
-          <li><span>Cada abono = un depósito ({formatearMoneda(c.depositos_independiente_cent)})</span><EstadoTexto tono={c.abonos_igual_depositos ? 'ok' : 'malo'}>{c.abonos_igual_depositos ? 'Cuadra' : 'No cuadra'}</EstadoTexto></li>
-        </ul>
-        {h.guias_pendientes > 0 && <p className="rtm-nota">{h.guias_pendientes} guías sin costo real: la cifra es provisional hasta costearlas.</p>}
-      </section>
+      <KpiLinea
+        etiquetaAria="Indicadores de la liquidación"
+        celdas={[
+          { id: 'falta', etiqueta: 'Falta por saldar', testid: 'falta-por-saldar', valor: <CifraComprobada texto={m(t.falta_por_saldar_cent)} cifra={`proveedor:falta:${proveedor}:${h.semana_ini}:${ambito}`} comprobacion={c.cuadra ? 'cuadra' : 'no_cuadra'} />, categoria: 4, nota: <span data-testid="comprobacion"><Estado tono={c.cuadra ? 'ok' : 'malo'}>{c.cuadra ? 'Cuadra' : 'No cuadra'}</Estado></span> },
+          { id: 'costo', etiqueta: 'Costo de pedidos y órdenes', valor: m(t.mercancia_cent), categoria: 1, nota: `${h.renglones.length} renglones · con seguros ${m(t.mercancia_cent + t.seguros_cent)}` },
+          { id: 'guias', etiqueta: 'Guías y seguros', valor: m(t.guias_cent + t.seguros_cent), categoria: 6, nota: `${guias.length} guías` },
+          { id: 'dep', etiqueta: 'Depósitos de clientes', valor: m(depositos), categoria: 2, nota: 'Clientes que pagaron al proveedor' },
+          { id: 'pagos', etiqueta: 'Pagos de socios y de la sociedad', valor: m(pagosSocios), categoria: 7, nota: `Total pagos ${m(t.pagos_cent)}` },
+        ]}
+      />
+      <FilaRatios
+        etiqueta="Conciliación"
+        items={[
+          { etiqueta: `Lo que dice ${proveedor}`, valor: h.conciliacion ? <span data-testid="dicho">{m(h.conciliacion.dicho_cent)}</span> : null },
+          { etiqueta: 'Nuestra cuenta', valor: h.conciliacion ? m(h.conciliacion.nuestro_cent) : null },
+          { etiqueta: 'Diferencia', valor: h.conciliacion ? <span data-testid="diferencia">{m(h.conciliacion.diferencia_cent, true)}</span> : null },
+          { etiqueta: 'Saldo anterior', valor: m(t.saldo_anterior_cent, true) },
+          { etiqueta: 'Ajustes a favor', valor: m(t.ajustes_cent) },
+        ]}
+      />
 
-      <div className="rtm-kpis rtm-entra rtm-i-2">
-        <div className="rtm-kpi"><span>Costo de pedidos y órdenes</span><strong>{formatearMoneda(t.mercancia_cent)}</strong></div>
-        <div className="rtm-kpi"><span>Guías y seguros</span><strong>{formatearMoneda(t.guias_cent + t.seguros_cent)}</strong></div>
-        <div className="rtm-kpi"><span>Depósitos de clientes</span><strong>{formatearMoneda(h.pagos_por_concepto_cent['pago_cliente_redirigido'] ?? 0n)}</strong></div>
-        <div className="rtm-kpi"><span>Pagos de socios y de la sociedad</span><strong>{formatearMoneda((h.pagos_por_concepto_cent['pago_socio'] ?? 0n) + (h.pagos_por_concepto_cent['pago_sociedad'] ?? 0n))}</strong></div>
-        <div className="rtm-kpi"><span>Lo que dice {proveedor}</span><strong data-testid="dicho">{h.conciliacion ? formatearMoneda(h.conciliacion.dicho_cent) : <SinDato />}</strong></div>
-        <div className="rtm-kpi"><span>Diferencia</span><strong data-testid="diferencia">{h.conciliacion ? formatearMoneda(h.conciliacion.diferencia_cent, { conSigno: true }) : <SinDato />}</strong></div>
-      </div>
+      <Rejilla dividir="6-6">
+        <Tarjeta titulo="De dónde sale lo que falta" descripcion="Saldo anterior + costo total con guías − pagos − ajustes">
+          <Cascada titulo="Cascada de la liquidación" descripcion={`Falta por saldar ${m(t.falta_por_saldar_cent)} desde un saldo anterior de ${m(t.saldo_anterior_cent)}.`} pasos={pasos} unidad="Pesos" />
+        </Tarjeta>
+        <Tarjeta titulo="Comprobaciones por dos vías" descripcion="Cada cifra se calcula de dos maneras independientes">
+          <ul className="a3-pruebas" aria-label="Comprobaciones">
+            {pruebas.map(([n, ok]) => <li key={n}><span>{n}</span><Estado tono={ok ? 'ok' : 'malo'}>{ok ? 'Cuadra' : 'No cuadra'}</Estado></li>)}
+          </ul>
+          <BarList etiquetaAria="Composición del costo" items={[
+            { id: 'mer', etiqueta: 'Mercancía', texto: m(t.mercancia_cent), pct: pct(t.mercancia_cent, totalCosto) },
+            { id: 'seg', etiqueta: 'Seguros', texto: m(t.seguros_cent), pct: pct(t.seguros_cent, totalCosto) },
+            { id: 'gui', etiqueta: 'Guías', texto: h.guias_pendientes > 0 ? `${m(t.guias_cent)} (provisional)` : m(t.guias_cent), pct: pct(t.guias_cent, totalCosto) },
+          ]} />
+        </Tarjeta>
+      </Rejilla>
 
-      <section className="rtm-seccion rtm-entra rtm-i-3" aria-label="Nota por pedido a costo">
-        <h2>1. Nota por pedido a costo</h2>
+      <Tarjeta plana titulo="1. Nota por pedido a costo" descripcion="Cada pedido directo y orden de compra de la semana, con su detalle a costo">
         <DataTable
           etiqueta="Renglones de la hoja"
+          densidad="densa" plana pegajosa primeraFija
+          interactiva={{ busqueda: 'Buscar folio', porPagina: 50, exportar: `hoja-${proveedor}-${h.semana_ini}` }}
           clave={(r) => `${r.tipo}-${r.id}`}
           filas={h.renglones}
+          totales={{ etiqueta: `Total (${h.renglones.length})`, celdas: { p: formatearPiezas(h.renglones.reduce((a, r) => a + r.piezas, 0)), c: m(suma(h.renglones.map((r) => r.mercancia_cent + r.seguro_cent))), g: m(suma(h.renglones.map((r) => r.guia_cent))) } }}
           vacio={{ titulo: 'Sin renglones', texto: 'No hay pedidos directos ni órdenes de compra de este proveedor en la semana.' }}
           columnas={[
-            { id: 'f', titulo: 'Folio', celda: (r) => <>{r.tipo === 'oc' ? <Link className="rtm-mono" href={`/proveedores/compras/${r.id}`}>{r.folio}</Link> : <Link className="rtm-mono" href={`/pedidos/${r.id}`}>{r.folio}</Link>}<br /><span className="rtm-nota">{r.tipo === 'oc' ? 'Orden de compra' : ORIGEN[r.origen as keyof typeof ORIGEN] ?? r.origen}</span></> },
-            { id: 'd', titulo: 'Fecha', secundaria: true, celda: (r) => etiquetaFecha(r.fecha) },
-            { id: 'p', titulo: 'Piezas', numerica: true, secundaria: true, celda: (r) => formatearPiezas(r.piezas) },
-            { id: 'm', titulo: 'Detalle a costo', secundaria: true, celda: (r) => r.detalle.map((x) => `${x.modelo}: ${x.piezas} × ${formatearMoneda(x.costo_unit_cent)}`).join(' · ') },
-            { id: 'c', titulo: 'Costo', numerica: true, celda: (r) => formatearMoneda(r.mercancia_cent + r.seguro_cent) },
-            { id: 'a', titulo: 'Alcance', secundaria: true, celda: (r) => (r.es_de_sociedad ? 'Sociedad' : 'Propio') },
-            { id: 'k', titulo: 'Cuadra', secundaria: true, celda: (r) => <EstadoTexto tono={r.cuadra ? 'ok' : 'malo'}>{r.cuadra ? 'Sí' : 'No'}</EstadoTexto> },
+            { id: 'f', titulo: 'Folio', ancho: 'l', celda: (r) => <Dos a={<Link className="rtm-mono" href={r.tipo === 'oc' ? `/proveedores/compras/${r.id}` : `/pedidos/${r.id}`}>{r.folio}</Link>} b={r.tipo === 'oc' ? 'Orden de compra' : (ORIGEN[r.origen as keyof typeof ORIGEN] ?? r.origen)} /> },
+            { id: 'd', titulo: 'Fecha', ancho: 's', celda: (r) => etiquetaFecha(r.fecha) },
+            { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', celda: (r) => formatearPiezas(r.piezas) },
+            { id: 'm', titulo: 'Detalle a costo', ancho: 'xl', secundaria: true, celda: (r) => r.detalle.map((x) => `${x.modelo}: ${x.piezas} × ${m(x.costo_unit_cent)}`).join(' · ') },
+            { id: 'c', titulo: 'Costo', numerica: true, ancho: 'm', celda: (r) => m(r.mercancia_cent + r.seguro_cent) },
+            { id: 'g', titulo: 'Guía', numerica: true, ancho: 'm', celda: (r) => (r.guia_pendiente ? <Estado tono="atencion">Sin costo real</Estado> : m(r.guia_cent)) },
+            { id: 'a', titulo: 'Alcance', ancho: 's', secundaria: true, celda: (r) => (r.es_de_sociedad ? 'Sociedad' : 'Propio') },
+            { id: 'k', titulo: 'Cuadra', ancho: 's', secundaria: true, celda: (r) => <Estado tono={r.cuadra ? 'ok' : 'malo'}>{r.cuadra ? 'Sí' : 'No'}</Estado> },
           ]}
         />
-      </section>
+      </Tarjeta>
 
-      <section className="rtm-seccion rtm-entra rtm-i-4" aria-label="Cuenta de la semana">
-        <h2>2. Cuenta: abonos y ajustes</h2>
-        <DataTable
-          etiqueta="Abonos de la semana"
-          clave={(a) => a.id}
-          filas={[...h.abonos, ...h.ajustes.map((x) => ({ ...x, cliente: null, pedido: null, cuenta_origen: null }))]}
-          vacio={{ titulo: 'Sin abonos', texto: 'Los depósitos de clientes al proveedor, los pagos de socios y los ajustes de la semana aparecen aquí.' }}
-          columnas={[
-            { id: 'd', titulo: 'Fecha', celda: (a) => etiquetaFecha(a.fecha_neg) },
-            { id: 'c', titulo: 'Concepto', celda: (a) => <>{CONCEPTO_CUENTA[a.concepto] ?? a.concepto}{a.deshecho ? ' (deshecho)' : ''}{a.cliente ? <><br /><span className="rtm-nota">Cliente: {a.cliente}{a.pedido ? ` · ${a.pedido}` : ''}</span></> : null}{a.nota ? <><br /><span className="rtm-nota">{a.nota}</span></> : null}</> },
-            { id: 'm', titulo: 'Monto', numerica: true, celda: (a) => formatearMoneda(a.monto_cent, { conSigno: true }) },
-            { id: 'q', titulo: 'Quién', secundaria: true, celda: (a) => <>{a.autor ?? a.canal}<br /><span className="rtm-nota rtm-mono">{a.evento}</span></> },
-            { id: 'x', titulo: '', celda: (a) => ((a.concepto === 'ajuste' || a.concepto === 'pago_sociedad') && !a.deshecho ? <BotonAccion chico texto="Deshacer" accion="anular_movimiento_proveedor" args={{ p_movimiento: a.id }} motivo="Motivo" titulo="Deshacer movimiento" /> : null) },
-          ]}
-        />
-        <p className="rtm-nota">Saldo anterior {formatearMoneda(t.saldo_anterior_cent)} · pagos {formatearMoneda(t.pagos_cent)} · ajustes a favor {formatearMoneda(t.ajustes_cent)}.</p>
-      </section>
-
-      <section className="rtm-seccion rtm-entra rtm-i-5" aria-label="Costo de guías por pedido">
-        <h2>3. Costo de guías por pedido</h2>
-        <DataTable
-          etiqueta="Guías por pedido"
-          clave={(r) => `${r.tipo}-${r.id}`}
-          filas={guias}
-          vacio={{ titulo: 'Sin guías', texto: 'Ningún renglón de la semana tiene guía a cargo de este proveedor.' }}
-          columnas={[
-            { id: 'f', titulo: 'Folio', celda: (r) => <span className="rtm-mono">{r.folio}</span> },
-            { id: 'g', titulo: 'Guía', numerica: true, celda: (r) => (r.guia_pendiente ? <EstadoTexto tono="atencion">Sin costo real</EstadoTexto> : formatearMoneda(r.guia_cent)) },
-          ]}
-        />
-      </section>
-
-      <section className="rtm-seccion" aria-label="Conciliación">
-        <h2>Conciliación contra lo que dice {proveedor}</h2>
-        <p className="rtm-nota">No se toma por verdad ni la cifra del proveedor ni la nuestra: se explica renglón por renglón.</p>
-        {h.conciliacion && h.conciliacion.renglones.length > 0 && (
+      <Rejilla dividir="8-4">
+        <Tarjeta plana titulo="2. Cuenta: abonos y ajustes" descripcion="Depósitos de clientes, pagos de socios y ajustes de la semana">
           <DataTable
-            etiqueta="Conciliación por renglón"
-            clave={(r) => r.folio}
-            filas={h.conciliacion.renglones}
+            etiqueta="Abonos de la semana"
+            densidad="densa" plana pegajosa primeraFija
+            clave={(a) => a.id}
+            filas={abonosYAjustes}
+            totales={{ etiqueta: 'Neto', celdas: { m: m(suma(abonosYAjustes.map((a) => a.monto_cent)), true) } }}
+            vacio={{ titulo: 'Sin abonos', texto: 'Los depósitos de clientes al proveedor, los pagos de socios y los ajustes de la semana aparecen aquí.' }}
             columnas={[
-              { id: 'f', titulo: 'Folio', celda: (r) => <span className="rtm-mono">{r.folio}</span> },
-              { id: 'a', titulo: 'Dice el proveedor', numerica: true, celda: (r) => (r.dice_cent === null ? <SinDato /> : formatearMoneda(r.dice_cent)) },
-              { id: 'n', titulo: 'Nuestra cuenta', numerica: true, celda: (r) => (r.nuestro_cent === null ? <SinDato /> : formatearMoneda(r.nuestro_cent)) },
-              { id: 'd', titulo: 'Diferencia', numerica: true, celda: (r) => formatearMoneda(r.diferencia_cent, { conSigno: true }) },
+              { id: 'd', titulo: 'Fecha', ancho: 's', celda: (a) => etiquetaFecha(a.fecha_neg) },
+              { id: 'c', titulo: 'Concepto', ancho: 'xl', celda: (a) => <Dos a={<>{CONCEPTO_CUENTA[a.concepto] ?? a.concepto}{a.deshecho ? ' (deshecho)' : ''}</>} b={a.cliente ? `Cliente: ${a.cliente}${a.pedido ? ` · ${a.pedido}` : ''}` : a.nota} /> },
+              { id: 'm', titulo: 'Monto', numerica: true, ancho: 'm', celda: (a) => m(a.monto_cent, true) },
+              { id: 'q', titulo: 'Quién', ancho: 'l', secundaria: true, celda: (a) => <Dos a={a.autor ?? a.canal} b={<span className="rtm-mono">{a.evento}</span>} /> },
+              { id: 'x', titulo: '', ancho: 's', celda: (a) => ((a.concepto === 'ajuste' || a.concepto === 'pago_sociedad') && !a.deshecho ? <BotonAccion chico texto="Deshacer" accion="anular_movimiento_proveedor" args={{ p_movimiento: a.id }} motivo="Motivo" titulo="Deshacer movimiento" /> : null) },
             ]}
           />
-        )}
-        {!cerrada && <div className="rtm-acciones-fila"><FormularioDicho proveedor={proveedor} semana={h.semana_ini} ambito={ambito} /></div>}
-      </section>
+        </Tarjeta>
+        <Tarjeta plana titulo="3. Costo de guías por pedido">
+          <DataTable
+            etiqueta="Guías por pedido"
+            densidad="densa" plana
+            clave={(r) => `${r.tipo}-${r.id}`}
+            filas={guias}
+            totales={{ etiqueta: 'Total', celdas: { g: m(suma(guias.map((r) => r.guia_cent))) } }}
+            vacio={{ titulo: 'Sin guías', texto: 'Ningún renglón de la semana tiene guía a cargo de este proveedor.' }}
+            columnas={[
+              { id: 'f', titulo: 'Folio', ancho: 'l', celda: (r) => <span className="rtm-mono">{r.folio}</span> },
+              { id: 'g', titulo: 'Guía', numerica: true, ancho: 'm', celda: (r) => (r.guia_pendiente ? <Estado tono="atencion">Sin costo real</Estado> : m(r.guia_cent)) },
+            ]}
+          />
+        </Tarjeta>
+      </Rejilla>
 
-      <section className="rtm-seccion" aria-label="Acciones de la liquidación">
-        <h2>Cerrar la semana</h2>
-        {cerrada ? (
-          <p data-testid="cerrada"><EstadoTexto tono="ok">Liquidada</EstadoTexto> {h.cierre!.folio} el {etiquetaFecha(h.cierre!.fecha_cierre)}: falta por saldar {formatearMoneda(h.cierre!.falta_por_saldar_cent)}.</p>
+      <Tarjeta plana titulo={`Conciliación contra lo que dice ${proveedor}`} descripcion="No se toma por verdad ni la cifra del proveedor ni la nuestra: se explica renglón por renglón">
+        {h.conciliacion && h.conciliacion.renglones.length > 0 ? (
+          <DataTable
+            etiqueta="Conciliación por renglón"
+            densidad="densa" plana
+            clave={(r) => r.folio}
+            filas={h.conciliacion.renglones}
+            totales={{ etiqueta: 'Total', celdas: { a: m(h.conciliacion.dicho_cent), n: m(h.conciliacion.nuestro_cent), d: m(h.conciliacion.diferencia_cent, true) } }}
+            columnas={[
+              { id: 'f', titulo: 'Folio', ancho: 'l', celda: (r) => <span className="rtm-mono">{r.folio}</span> },
+              { id: 'a', titulo: 'Dice el proveedor', numerica: true, ancho: 'm', celda: (r) => (r.dice_cent === null ? <SinDato /> : m(r.dice_cent)) },
+              { id: 'n', titulo: 'Nuestra cuenta', numerica: true, ancho: 'm', celda: (r) => (r.nuestro_cent === null ? <SinDato /> : m(r.nuestro_cent)) },
+              { id: 'd', titulo: 'Diferencia', numerica: true, ancho: 'm', celda: (r) => m(r.diferencia_cent, true) },
+              { id: 'e', titulo: 'En nuestra hoja', ancho: 's', secundaria: true, celda: (r) => (r.en_nuestra_hoja ? 'Sí' : 'No') },
+            ]}
+          />
         ) : (
-          <p className="rtm-nota">{h.viernes_cerrado ? 'Ya se puede liquidar. Quedan congeladas la hoja, lo que dijo el proveedor y la diferencia.' : `Se podrá liquidar a partir del viernes ${etiquetaFecha(h.semana_fin)}.`}</p>
+          <div className="a3-pie-tarjeta"><Pie>Todavía no se registra lo que dice {proveedor}. Al capturarlo se compara renglón por renglón.</Pie></div>
         )}
-        <div className="rtm-acciones-fila">
-          {!cerrada && <BotonAccion primario texto="Cerrar liquidación" titulo={`Cerrar liquidación de ${proveedor}`} confirmarTexto="Cerrar liquidación" accion="cerrar_liquidacion_proveedor"
-            args={{ p_proveedor: proveedor, p_semana_ini: h.semana_ini, p_ambito: ambito }} desactivado={!h.viernes_cerrado || !c.cuadra} testid="cerrar-liquidacion" />}
-          <CopiarTexto etiqueta="Copiar nota para el proveedor" fuente={{ tipo: 'proveedor', proveedor, semana: h.semana_ini, ambito }} />
-        </div>
-      </section>
+        {!cerrada && <div className="a3-pie-tarjeta"><div className="rtm-acciones-fila"><FormularioDicho proveedor={proveedor} semana={h.semana_ini} ambito={ambito} /></div></div>}
+      </Tarjeta>
 
-      <section className="rtm-seccion" aria-label="Liquidaciones cerradas">
-        <h2>Liquidaciones cerradas</h2>
-        <DataTable
-          etiqueta="Historial de liquidaciones"
-          clave={(l) => l.id}
-          filas={cierres}
-          vacio={{ titulo: 'Sin liquidaciones', texto: 'Todavía no se cierra ninguna semana con este proveedor.' }}
-          columnas={[
-            { id: 'f', titulo: 'Folio', celda: (l) => <span className="rtm-mono">{l.folio}</span> },
-            { id: 's', titulo: 'Semana', celda: (l) => `${etiquetaFecha(l.semana_ini)} al ${etiquetaFecha(l.semana_fin)}` },
-            { id: 'a', titulo: 'Alcance', secundaria: true, celda: (l) => (l.ambito === 'todo' ? 'Todo' : 'Solo de la sociedad') },
-            { id: 'c', titulo: 'Costo con guías', numerica: true, secundaria: true, celda: (l) => formatearMoneda(l.mercancia_cent + l.seguros_cent + l.guias_cent) },
-            { id: 'p', titulo: 'Pagos', numerica: true, secundaria: true, celda: (l) => formatearMoneda(l.pagos_cent) },
-            { id: 'v', titulo: 'Falta por saldar', numerica: true, celda: (l) => formatearMoneda(l.falta_por_saldar_cent) },
-            { id: 'd', titulo: 'Dijo el proveedor', numerica: true, secundaria: true, celda: (l) => (l.dicho_cent === null ? <SinDato /> : formatearMoneda(l.dicho_cent)) },
-          ]}
-        />
-      </section>
-    </>
+      <Rejilla dividir="4-8">
+        <Tarjeta titulo="Cerrar la semana">
+          {cerrada ? (
+            <p data-testid="cerrada"><Estado tono="ok">Liquidada</Estado> {h.cierre!.folio} el {etiquetaFecha(h.cierre!.fecha_cierre)}: falta por saldar {m(h.cierre!.falta_por_saldar_cent)}.</p>
+          ) : (
+            <Pie>{h.viernes_cerrado ? 'Ya se puede liquidar. Quedan congeladas la hoja, lo que dijo el proveedor y la diferencia.' : `Se podrá liquidar a partir del viernes ${etiquetaFecha(h.semana_fin)}.`}</Pie>
+          )}
+          <div className="a3-acciones">
+            {!cerrada && <BotonAccion primario texto="Cerrar liquidación" titulo={`Cerrar liquidación de ${proveedor}`} confirmarTexto="Cerrar liquidación" accion="cerrar_liquidacion_proveedor"
+              args={{ p_proveedor: proveedor, p_semana_ini: h.semana_ini, p_ambito: ambito }} desactivado={!h.viernes_cerrado || !c.cuadra} testid="cerrar-liquidacion" />}
+            <CopiarTexto etiqueta="Copiar nota para el proveedor" fuente={{ tipo: 'proveedor', proveedor, semana: h.semana_ini, ambito }} />
+          </div>
+        </Tarjeta>
+        <Tarjeta plana titulo="Liquidaciones cerradas">
+          <DataTable
+            etiqueta="Historial de liquidaciones"
+            densidad="densa" plana
+            clave={(l) => l.id}
+            filas={cierres}
+            vacio={{ titulo: 'Sin liquidaciones', texto: 'Todavía no se cierra ninguna semana con este proveedor.' }}
+            columnas={[
+              { id: 'f', titulo: 'Folio', ancho: 'm', celda: (l) => <span className="rtm-mono">{l.folio}</span> },
+              { id: 's', titulo: 'Semana', ancho: 'l', celda: (l) => `${etiquetaFecha(l.semana_ini)} al ${etiquetaFecha(l.semana_fin)}` },
+              { id: 'a', titulo: 'Alcance', ancho: 's', secundaria: true, celda: (l) => (l.ambito === 'todo' ? 'Todo' : 'Sociedad') },
+              { id: 'c', titulo: 'Costo con guías', numerica: true, ancho: 'm', secundaria: true, celda: (l) => m(l.mercancia_cent + l.seguros_cent + l.guias_cent) },
+              { id: 'p', titulo: 'Pagos', numerica: true, ancho: 'm', secundaria: true, celda: (l) => m(l.pagos_cent) },
+              { id: 'v', titulo: 'Falta por saldar', numerica: true, ancho: 'm', celda: (l) => m(l.falta_por_saldar_cent) },
+              { id: 'd', titulo: 'Dijo el proveedor', numerica: true, ancho: 'm', secundaria: true, celda: (l) => (l.dicho_cent === null ? <SinDato /> : m(l.dicho_cent)) },
+            ]}
+          />
+        </Tarjeta>
+      </Rejilla>
+    </Pagina>
   );
 }

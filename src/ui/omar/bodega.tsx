@@ -25,16 +25,16 @@ export function ListaDisponible({ lectura }: { lectura: Lectura<PiezaDisponible[
   const t = q.trim().toLowerCase();
   const filas = lectura.datos.filter((p) => t === '' || `${p.modelo} ${p.sabor}`.toLowerCase().includes(t));
   return (
-    <div className="rtm-seccion">
-      <label className="rtm-etiqueta-campo" htmlFor={id}>Buscar modelo o sabor
+    <div className="omar-buscador-tabla">
+      <label className="rtm-etiqueta-campo omar-buscador" htmlFor={id}>Buscar modelo o sabor
         <input id={id} className="rtm-campo" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Elux, sandía…" />
       </label>
-      <DataTable etiqueta="Disponible en tu bodega" clave={(p) => `${p.modelo}|${p.sabor}`} filas={filas}
+      <DataTable plana densidad="densa" etiqueta="Disponible en tu bodega" clave={(p) => `${p.modelo}|${p.sabor}`} filas={filas}
         vacio={{ titulo: lectura.datos.length === 0 ? 'Bodega vacía' : 'Sin coincidencias', texto: lectura.datos.length === 0 ? 'No hay piezas en tu bodega ahora mismo.' : 'Ningún modelo o sabor coincide con la búsqueda.' }}
         columnas={[
-          { id: 'm', titulo: 'Modelo', celda: (p) => p.modelo },
+          { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (p) => p.modelo },
           { id: 's', titulo: 'Sabor', celda: (p) => p.sabor },
-          { id: 'p', titulo: 'Disponible', numerica: true, celda: (p) => formatearPiezas(p.piezas) },
+          { id: 'p', titulo: 'Disponible', numerica: true, prioridadMovil: 'principal', celda: (p) => formatearPiezas(p.piezas) },
         ]} />
     </div>
   );
@@ -45,12 +45,12 @@ export function ListaSolicitudes({ lectura, ahoraIso }: { lectura: Lectura<Solic
   if (lectura.estado !== 'ok') return <TextoLectura lectura={lectura} pendiente="Tus solicitudes aparecerán aquí cuando los socios habiliten el envío desde la web." />;
   const ahora = new Date(ahoraIso);
   return (
-    <DataTable etiqueta="Últimas solicitudes" clave={(s) => s.folio} filas={lectura.datos.slice(0, 10)}
+    <DataTable plana densidad="densa" etiqueta="Últimas solicitudes" clave={(s) => s.folio} filas={lectura.datos.slice(0, 10)}
       vacio={{ titulo: 'Sin solicitudes', texto: 'Todavía no has solicitado piezas desde aquí.' }}
       columnas={[
-        { id: 'f', titulo: 'Solicitud', celda: (s) => <span className="rtm-mono">{s.folio}</span> },
+        { id: 'f', titulo: 'Solicitud', prioridadMovil: 'titulo', celda: (s) => <span className="rtm-mono">{s.folio}</span> },
         { id: 'p', titulo: 'Pieza', celda: (s) => <>{s.modelo} · {s.sabor}<span className="rtm-celda-sub">{etiquetaFechaHora(s.solicitada_at)}</span></> },
-        { id: 'n', titulo: 'Piezas', numerica: true, celda: (s) => formatearPiezas(s.piezas) },
+        { id: 'n', titulo: 'Piezas', numerica: true, prioridadMovil: 'principal', celda: (s) => formatearPiezas(s.piezas) },
         {
           id: 'e', titulo: 'Estado',
           celda: (s) => {

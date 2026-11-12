@@ -82,7 +82,7 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   await expect(page.getByTestId('cascada')).toContainText('Utilidad');
   await expect(page.getByText('C1 · renglón por renglón')).toBeVisible();
   await expect(page.getByText('C2 · pedidas, salidas, en nota y cobradas')).toBeVisible();
-  await expect(page.getByText('Cuadra', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Cuadra', { exact: true }).locator('visible=true').first()).toBeVisible();
 
   // Pago de 5,000 a la cuenta de Angelo: baja lo por cobrar y Angelo debe a la sociedad.
   await page.getByRole('link', { name: 'Nota', exact: true }).click();
@@ -90,7 +90,7 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   await page.getByTestId('pago-cuenta').selectOption('Angelo');
   await page.getByTestId('pago-monto').fill('5000');
   await page.getByTestId('confirmar').click();
-  await expect(page.getByText('Abonado').locator('..')).toContainText('$5,000.00');
+  await expect(page.getByRole('region', { name: 'Cifras del pedido' }).getByText('Abonado').locator('..')).toContainText('$5,000.00');
   await expect(page.getByText('Por cobrar', { exact: true }).locator('..')).toContainText('$1,300.00');
 
   // Correccion enlazada.
@@ -106,6 +106,9 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   // Cuentas por cobrar: el saldo del pedido y la deuda de Angelo con la sociedad, con "Explicar este numero".
   await page.goto('/cuentas-por-cobrar');
   await expect(page.getByRole('table', { name: 'Cuentas por cobrar por pedido' })).toContainText(d.cliente);
+  // La deuda de los socios vive en su pestana (vista=socios) del rediseno.
+  await page.getByRole('link', { name: /En poder de un socio/ }).click();
+  await page.waitForURL('**vista=socios**');
   const deuda = page.getByRole('table', { name: 'Deuda de los socios con la sociedad' });
   await deuda.getByRole('row', { name: /Angelo/ }).getByRole('button', { name: /Explicar este número/ }).last().click();
   await expect(page.getByTestId('explicar-cajon')).toContainText('Lo que Angelo debe a la sociedad');

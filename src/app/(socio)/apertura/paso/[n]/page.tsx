@@ -5,9 +5,11 @@ import { aperturaDeSocio } from '@/composicion/apertura';
 import { pasoPorNumero } from '@/dominio/apertura/pasos';
 import type { EstadoApertura, PartidaApertura } from '@/dominio/apertura/tipos';
 import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { Aviso } from '@/ui/componentes/controles';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
-import { EncabezadoPagina } from '@/ui/componentes/pagina';
+import { KpiLinea } from '@/ui/componentes/kpi';
+import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import { BotonEnsayo, Descartar, FijarCorte, Firmar, QuitarPartida, Resolucion, Reversar } from '../../acciones-sesion';
 import { FormularioPartida } from '../../formulario-partida';
 
@@ -20,24 +22,27 @@ function detalle(p: PartidaApertura): string {
 
 function Partidas({ e, categorias, editable }: { e: EstadoApertura; categorias: string[]; editable: boolean }) {
   const filas = e.partidas.filter((p) => categorias.includes(p.categoria));
+  const total = filas.reduce((a, p) => a + p.monto_cent, 0n);
   return (
     <DataTable
       etiqueta="Partidas cargadas en este paso"
+      densidad="densa" plana pegajosa
       clave={(p) => p.id}
       filas={filas}
+      totales={filas.length ? { etiqueta: `Total (${filas.length})`, celdas: { m: formatearMoneda(total) } } : undefined}
       vacio={{ titulo: 'Sin partidas en este paso', texto: 'Agrega la primera con el formulario. Nada se publica hasta que los dos socios firmen.' }}
       columnas={[
-        { id: 'c', titulo: 'Concepto', celda: (p) => <>{p.nombre}<br /><span className="rtm-nota">{detalle(p)}</span></> },
-        { id: 'k', titulo: 'Cuenta', secundaria: true, celda: (p) => <span className="rtm-mono">{p.cuenta}</span> },
-        { id: 's', titulo: 'Sentido', secundaria: true, celda: (p) => (p.sentido === 'D' ? 'Debe' : 'Haber') },
-        { id: 'm', titulo: 'Monto', numerica: true, celda: (p) => formatearMoneda(p.monto_cent) },
-        { id: 'a', titulo: '', celda: (p) => (editable ? <QuitarPartida id={p.id} /> : null) },
+        { id: 'c', titulo: 'Concepto', ancho: 'xl', prioridadMovil: 'titulo', celda: (p) => <>{p.nombre}<span className="rtm-celda-sub">{detalle(p)}</span></> },
+        { id: 'k', titulo: 'Cuenta', ancho: 's', prioridadMovil: 'normal', celda: (p) => <span className="rtm-mono">{p.cuenta}</span> },
+        { id: 's', titulo: 'Sentido', ancho: 's', prioridadMovil: 'normal', celda: (p) => (p.sentido === 'D' ? 'Debe' : 'Haber') },
+        { id: 'm', titulo: 'Monto', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (p) => formatearMoneda(p.monto_cent) },
+        { id: 'a', titulo: 'Acción', ancho: 's', prioridadMovil: 'normal', celda: (p) => (editable ? <QuitarPartida id={p.id} /> : null) },
       ]}
     />
   );
 }
 
-export default async function Pagina({ params }: { params: Promise<{ n: string }> }) {
+export default async function PaginaPaso({ params }: { params: Promise<{ n: string }> }) {
   const { n } = await params;
   const paso = /^\d+$/.test(n) ? pasoPorNumero(Number(n)) : null;
   if (!paso) notFound();
@@ -47,145 +52,167 @@ export default async function Pagina({ params }: { params: Promise<{ n: string }
   const editable = s?.estado === 'borrador';
   const v = s ? e.validacion : null;
   const encabezado = (
-    <EncabezadoPagina eyebrow={`Apertura · paso ${paso.n} de 10`} antes="" enfasis={paso.titulo} contexto={paso.texto} />
+    <EncabezadoPagina eyebrow={`Apertura · paso ${paso.n} de 10`} titulo={`${paso.n}. ${paso.titulo}`} descripcion={paso.texto} migaja={{ href: '/apertura', texto: 'Resumen de la apertura' }} />
   );
   if (!s) {
     return (
-      <>
+      <Pagina ancho="normal">
         {encabezado}
-        <section className="rtm-seccion"><p className="rtm-nota" data-testid="sin-sesion">Primero abre una sesión de apertura en el <Link href="/apertura">resumen</Link>.</p></section>
-      </>
+        <Tarjeta><p className="rtm-nota" data-testid="sin-sesion">Primero abre una sesión de apertura en el <Link href="/apertura">resumen</Link>.</p></Tarjeta>
+      </Pagina>
     );
   }
   const catalogos = paso.categorias.length > 0 || paso.n === 2 ? await lector.catalogos() : null;
   const navegacion = (
-    <p className="rtm-acciones-fila">
+    <div className="rtm-acciones-fila">
       {paso.n > 1 && <Link className="rtm-boton" href={`/apertura/paso/${paso.n - 1}`}>Paso anterior</Link>}
       {paso.n < 10 && <Link className="rtm-boton rtm-boton-primario" href={`/apertura/paso/${paso.n + 1}`} data-testid="paso-siguiente">Siguiente paso</Link>}
-    </p>
+    </div>
   );
 
   if (paso.n === 1) {
     return (
-      <>
+      <Pagina ancho="formulario">
         {encabezado}
-        <section className="rtm-seccion" aria-label="Fecha de corte">
+        <Tarjeta titulo="Fecha de corte" descripcion="La apertura se publica con esta fecha">
           <p data-testid="corte">Fecha de corte: <strong>{etiquetaFecha(s.fecha_corte)}</strong></p>
           {s.nota && <p className="rtm-nota">{s.nota}</p>}
           {editable ? <FijarCorte sesion={s.id} actual={s.fecha_corte} /> : <p className="rtm-nota">La sesión está en firma o firmada: no se cambia la fecha.</p>}
-        </section>
+        </Tarjeta>
         {navegacion}
-      </>
+      </Pagina>
     );
   }
   if (paso.n === 2 && catalogos) {
     const skus = catalogos.modelos.reduce((a, m) => a + m.sabores.length, 0);
     return (
-      <>
+      <Pagina ancho="normal">
         {encabezado}
-        <section className="rtm-seccion" aria-label="Catálogo disponible">
-          <div className="rtm-kpis" data-testid="catalogo-conteo">
-            <div className="rtm-kpi"><span>Modelos</span><strong>{catalogos.modelos.length}</strong></div>
-            <div className="rtm-kpi"><span>Modelo y sabor</span><strong>{skus}</strong></div>
-            <div className="rtm-kpi"><span>Clientes</span><strong>{catalogos.clientes.length}</strong></div>
-            <div className="rtm-kpi"><span>Proveedores</span><strong>{catalogos.proveedores.length}</strong></div>
-          </div>
-          <p className="rtm-nota">Si falta un modelo, sabor o cliente, agrégalo primero en Catálogo y Clientes; la apertura solo usa lo que ya existe, una vez.</p>
-        </section>
+        <div data-testid="catalogo-conteo">
+          <KpiLinea
+            etiquetaAria="Catálogo disponible"
+            celdas={[
+              { id: 'm', etiqueta: 'Modelos', valor: String(catalogos.modelos.length), categoria: 1 },
+              { id: 's', etiqueta: 'Modelo y sabor', valor: String(skus), categoria: 2 },
+              { id: 'c', etiqueta: 'Clientes', valor: String(catalogos.clientes.length), categoria: 4 },
+              { id: 'p', etiqueta: 'Proveedores', valor: String(catalogos.proveedores.length), categoria: 3 },
+            ]}
+          />
+        </div>
+        <Aviso tono="info">Si falta un modelo, sabor o cliente, agrégalo primero en Catálogo y Clientes; la apertura solo usa lo que ya existe, una vez.</Aviso>
         {navegacion}
-      </>
+      </Pagina>
     );
   }
   if (paso.categorias.length > 0 && catalogos) {
     const categorias = e.categorias.filter((c) => paso.categorias.includes(c.codigo));
     const dato = v?.pasos.find((x) => x.paso === paso.n);
     return (
-      <>
+      <Pagina ancho="tablero">
         {encabezado}
-        {dato && <p className="rtm-nota" data-testid="total-paso">Total de este paso: <strong>{formatearMoneda(dato.monto_cent)}</strong> en {dato.partidas} partidas.</p>}
-        <Partidas e={e} categorias={paso.categorias} editable={editable} />
+        {dato && (
+          <KpiLinea
+            etiquetaAria="Total del paso"
+            celdas={[
+              { id: 't', etiqueta: 'Total de este paso', testid: 'total-paso', valor: formatearMoneda(dato.monto_cent), categoria: 1, nota: `${dato.partidas} partidas` },
+              { id: 'p', etiqueta: 'Partidas', valor: String(dato.partidas), categoria: 2 },
+              { id: 'e', etiqueta: 'Estado del paso', valor: dato.estado === 'con_datos' ? 'Con datos' : 'Sin partidas', categoria: dato.estado === 'con_datos' ? 3 : 6 },
+            ]}
+          />
+        )}
+        <Tarjeta plana titulo="Partidas cargadas" descripcion="Nada se publica hasta que los dos socios firmen">
+          <Partidas e={e} categorias={paso.categorias} editable={editable} />
+        </Tarjeta>
         {editable ? (
-          <div className="rtm-acciones-fila">
-            {categorias.map((c) => <FormularioPartida key={c.codigo} sesion={s.id} categoria={c} catalogos={catalogos} />)}
-          </div>
+          <Tarjeta titulo="Agregar una partida">
+            <div className="rtm-acciones-fila">
+              {categorias.map((c) => <FormularioPartida key={c.codigo} sesion={s.id} categoria={c} catalogos={catalogos} />)}
+            </div>
+          </Tarjeta>
         ) : (
-          <p className="rtm-nota">La sesión está en firma o firmada. Para editar, retira tu firma en el paso 10.</p>
+          <Aviso tono="atencion">La sesión está en firma o firmada. Para editar, retira tu firma en el paso 10.</Aviso>
         )}
         {navegacion}
-      </>
+      </Pagina>
     );
   }
   if (paso.n === 9 && v) {
     const previa = await lector.vistaPrevia(s.id);
     return (
-      <>
+      <Pagina ancho="tablero">
         {encabezado}
-        <section className="rtm-seccion" aria-label="Identidad contable">
-          <div className="rtm-identidad">
-            <div className="rtm-kpi"><span>Activo</span><strong>{formatearMoneda(v.activo_cent)}</strong></div>
-            <div className="rtm-kpi"><span>Pasivo</span><strong>{formatearMoneda(v.pasivo_cent)}</strong></div>
-            <div className="rtm-kpi"><span>Capital</span><strong>{formatearMoneda(v.capital_cent)}</strong></div>
-            <div className="rtm-kpi"><span>Diferencia (cuenta 3990)</span><strong data-testid="puente">{formatearMoneda(v.puente_cent)}</strong></div>
-          </div>
+        <KpiLinea
+          etiquetaAria="Identidad contable"
+          celdas={[
+            { id: 'a', etiqueta: 'Activo', valor: formatearMoneda(v.activo_cent), categoria: 1 },
+            { id: 'p', etiqueta: 'Pasivo', valor: formatearMoneda(v.pasivo_cent), categoria: 3 },
+            { id: 'c', etiqueta: 'Capital', valor: formatearMoneda(v.capital_cent), categoria: 2 },
+            { id: 'u', etiqueta: 'Diferencia (cuenta 3990)', testid: 'puente', valor: <span data-testid="puente">{formatearMoneda(v.puente_cent)}</span>, categoria: 6, nota: v.puente_cent === 0n ? 'Cuadra' : 'En la cuenta puente' },
+          ]}
+        />
+        <Tarjeta titulo="Identidad y resolución">
           <p className="rtm-nota" data-testid="identidad-texto">
             Activo menos pasivo menos capital es la diferencia: {formatearMoneda(v.puente_cent)}. {v.puente_cent === 0n ? 'La apertura cuadra sin diferencia.' : 'Queda en la cuenta puente 3990 hasta que los dos socios firmen una resolución.'}
           </p>
-          {v.alertas.length > 0 && <ul>{v.alertas.map((a) => <li key={a}>{a}</li>)}</ul>}
+          {v.alertas.map((a) => <Aviso key={a} tono="atencion">{a}</Aviso>)}
           <p className="rtm-nota">Resolución actual: <strong>{v.resolucion === 'mantener' ? 'mantener la diferencia en la cuenta 3990' : 'repartirla al capital 50/50'}</strong>{v.exige_justificacion ? ' · exige justificación escrita' : ''}.</p>
           {editable && <Resolucion sesion={s.id} resolucion={s.resolucion} justificacion={s.justificacion} />}
-        </section>
-        <section className="rtm-seccion" aria-label="Vista previa">
-          <h2>Vista previa del asiento (no escribe)</h2>
+        </Tarjeta>
+        <Tarjeta plana titulo="Vista previa del asiento (no escribe)">
           <DataTable
             etiqueta="Efecto de la apertura en cada cuenta"
+            densidad="densa" plana pegajosa primeraFija
             clave={(x) => x.cuenta}
             filas={previa.efecto}
+            totales={previa.efecto.length ? { etiqueta: 'Debe y haber', celdas: { p: `${formatearMoneda(previa.debe_cent)} / ${formatearMoneda(previa.haber_cent)}` } } : undefined}
             vacio={{ titulo: 'Sin efecto', texto: 'Agrega partidas para ver el asiento.' }}
             columnas={[
-              { id: 'c', titulo: 'Cuenta', celda: (x) => <><span className="rtm-mono">{x.cuenta}</span> {x.nombre}</> },
-              { id: 'a', titulo: 'Antes', numerica: true, secundaria: true, celda: (x) => formatearMoneda(x.antes_cent) },
-              { id: 'p', titulo: 'Apertura', numerica: true, celda: (x) => formatearMoneda(x.apertura_cent) },
-              { id: 'd', titulo: 'Después', numerica: true, celda: (x) => formatearMoneda(x.despues_cent) },
+              { id: 'c', titulo: 'Cuenta', ancho: 'xl', prioridadMovil: 'titulo', celda: (x) => <><span className="rtm-mono">{x.cuenta}</span> {x.nombre}</> },
+              { id: 'a', titulo: 'Antes', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (x) => formatearMoneda(x.antes_cent) },
+              { id: 'p', titulo: 'Apertura', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (x) => formatearMoneda(x.apertura_cent) },
+              { id: 'd', titulo: 'Después', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (x) => formatearMoneda(x.despues_cent) },
             ]}
           />
-          <p className="rtm-nota" data-testid="previa-cuadra">Debe {formatearMoneda(previa.debe_cent)} · haber {formatearMoneda(previa.haber_cent)} · {previa.cuadra ? 'el asiento cuadra' : 'EL ASIENTO NO CUADRA'}.</p>
-        </section>
-        <section className="rtm-seccion" aria-label="Ensayo">
-          <h2>Ensayo sobre una copia</h2>
+          <p className="rtm-nota rtm-nota-tarjeta" data-testid="previa-cuadra">Debe {formatearMoneda(previa.debe_cent)} · haber {formatearMoneda(previa.haber_cent)} · {previa.cuadra ? 'el asiento cuadra' : 'EL ASIENTO NO CUADRA'}.</p>
+        </Tarjeta>
+        <Tarjeta titulo="Ensayo sobre una copia" descripcion="Prueba la publicación sin escribir en el libro real">
           {v.listo_para_firma ? <BotonEnsayo sesion={s.id} /> : <p className="rtm-nota">El ensayo se habilita cuando la sesión está lista para firma.</p>}
-        </section>
+        </Tarjeta>
         {navegacion}
-      </>
+      </Pagina>
     );
   }
   // Paso 10: firma
   const firmas = e.firmas;
   const yaFirmo = firmas.some((f) => f.socio === e.yo);
   return (
-    <>
+    <Pagina ancho="formulario">
       {encabezado}
-      <section className="rtm-seccion" aria-label="Firmas">
-        <p className="rtm-nota" data-testid="huella">Huella del contenido: <span className="rtm-mono">{(s.hash_firmado ?? v?.huella ?? '').slice(0, 24)}…</span></p>
+      <Tarjeta plana titulo="Firmas de los socios" descripcion="Firman Angelo y Javier, cada uno desde su sesión; la segunda firma publica">
+        <div className="rtm-importador-nota"><p className="rtm-nota" data-testid="huella">Huella del contenido: <span className="rtm-mono">{(s.hash_firmado ?? v?.huella ?? '').slice(0, 24)}…</span></p></div>
         <DataTable
           etiqueta="Firmas de los socios"
+          densidad="densa" plana
           clave={(f) => f.socio}
           filas={firmas}
           vacio={{ titulo: 'Sin firmas', texto: 'Firman Angelo y Javier, cada uno desde su sesión. La segunda firma publica.' }}
           columnas={[
-            { id: 's', titulo: 'Socio', celda: (f) => f.socio },
-            { id: 'h', titulo: 'Firmó', celda: (f) => etiquetaFechaHora(f.firmada_at) },
-            { id: 'x', titulo: 'Huella', secundaria: true, celda: (f) => <span className="rtm-mono">{f.hash.slice(0, 16)}…</span> },
+            { id: 's', titulo: 'Socio', ancho: 'm', prioridadMovil: 'titulo', celda: (f) => f.socio },
+            { id: 'h', titulo: 'Firmó', ancho: 'l', prioridadMovil: 'normal', celda: (f) => etiquetaFechaHora(f.firmada_at) },
+            { id: 'x', titulo: 'Huella', ancho: 'm', prioridadMovil: 'normal', celda: (f) => <span className="rtm-mono">{f.hash.slice(0, 16)}…</span> },
           ]}
         />
-        <p data-testid="estado-firma"><EstadoTexto tono={s.estado === 'firmada' ? 'ok' : 'atencion'}>{s.estado === 'firmada' ? 'Publicada' : s.estado === 'en_firma' ? `Falta la firma de ${firmas.length === 1 ? (firmas[0]!.socio === 'Angelo' ? 'Javier' : 'Angelo') : 'ambos socios'}` : 'Sin firmas'}</EstadoTexto></p>
-        <p className="rtm-acciones-fila">
+      </Tarjeta>
+      <Tarjeta titulo="Estado de la firma">
+        <p className="rtm-nota" data-testid="estado-firma"><EstadoTexto tono={s.estado === 'firmada' ? 'ok' : 'atencion'}>{s.estado === 'firmada' ? 'Publicada' : s.estado === 'en_firma' ? `Falta la firma de ${firmas.length === 1 ? (firmas[0]!.socio === 'Angelo' ? 'Javier' : 'Angelo') : 'ambos socios'}` : 'Sin firmas'}</EstadoTexto></p>
+        <div className="rtm-acciones-fila">
           {s.estado !== 'firmada' && v?.listo_para_firma && <Firmar sesion={s.id} yo={e.yo} yaFirmo={yaFirmo} />}
           {s.estado !== 'firmada' && v && !v.listo_para_firma && <span className="rtm-nota" data-testid="no-lista">No se puede firmar todavía: {v.alertas.join(' ')}</span>}
           {s.estado === 'firmada' && <Reversar sesion={s.id} />}
           {s.estado !== 'firmada' && <Descartar sesion={s.id} />}
-        </p>
-      </section>
+        </div>
+      </Tarjeta>
       {navegacion}
-    </>
+    </Pagina>
   );
 }

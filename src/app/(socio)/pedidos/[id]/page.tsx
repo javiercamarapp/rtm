@@ -6,7 +6,13 @@ import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } fr
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
-import { EncabezadoPagina } from '@/ui/componentes/pagina';
+import { Chip, ChipEstado, Pestanas } from '@/ui/componentes/controles';
+import { LineaTiempo, ListaClaveValor, Pasos } from '@/ui/componentes/datos';
+import { KpiLinea } from '@/ui/componentes/kpi';
+import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
+import { Cascada } from '@/ui/graficas';
+import '@/ui/estilos/paginas-a1.css';
+import { aNumero } from '@/dominio/tablero/agregados';
 import { etiquetaHoy } from '../../contexto';
 import { AVISO_PEDIDO, ESTADO_PEDIDO, ORIGEN } from '../../operacion/etiquetas';
 import { AccionesPedido } from './acciones-pedido';
@@ -15,9 +21,10 @@ import { NotaCliente } from './nota-vista';
 
 export const metadata: Metadata = { title: 'Pedido' };
 
+const TONO_ESTADO = { borrador: 'apagado', confirmado: 'atencion', enviado: 'ok', cancelado: 'apagado', anulado: 'malo' } as const;
 const VISTAS = [{ clave: 'nota', texto: 'Nota' }, { clave: 'interna', texto: 'Hoja interna' }, { clave: 'versiones', texto: 'Versiones' }] as const;
 
-export default async function Pagina({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ vista?: string; nota?: string }> }) {
+export default async function PaginaPedido({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ vista?: string; nota?: string }> }) {
   const { id } = await params;
   const { vista = 'nota', nota: notaSel } = await searchParams;
   const n = Number(id);
@@ -34,22 +41,64 @@ export default async function Pagina({ params, searchParams }: { params: Promise
   const enviado = p.estado === 'enviado';
   const anulado = p.estado === 'anulado';
 
+  const hechos = [true, p.estado !== 'borrador', p.empacado_at !== null || enviado, p.enviado_at !== null || enviado, p.entregado_at !== null, enviado && p.saldo_cent === 0n];
+  const actualPaso = anulado ? -1 : hechos.findIndex((h) => !h) === -1 ? hechos.length : hechos.findIndex((h) => !h);
+  const piezasPedidas = p.lineas.reduce((a, l) => a + l.piezas_pedidas, 0);
+  const piezasSurtidas = p.lineas.reduce((a, l) => a + l.piezas_surtidas, 0);
+  const interno = (verNota ?? vigente)?.interno ?? null;
+  const cas = interno?.cascada ?? null;
+
   return (
-    <>
-      <p className="rtm-migaja"><Link href="/pedidos">Pedidos y notas</Link> / {p.folio}</p>
+    <Pagina ancho="tablero">
       <EncabezadoPagina
+        migaja={{ href: '/pedidos', texto: 'Volver a pedidos' }}
         eyebrow={`Pedido ${p.folio} · ${etiquetaHoy()}`}
-        antes={enviado ? 'Enviado a' : 'Pedido de'}
-        enfasis={p.cliente.nombre}
-        contexto={`${ORIGEN[p.origen]} · creado el ${etiquetaFecha(p.fecha_neg)}${p.fecha_envio ? ` · enviado el ${etiquetaFecha(p.fecha_envio)}` : ''}. Nada se descuenta ni devenga renta antes de marcarlo enviado.`}
+        titulo={`${p.cliente.nombre} · ${p.folio}`}
+        descripcion={`${ORIGEN[p.origen]} · creado el ${etiquetaFecha(p.fecha_neg)}${p.fecha_envio ? ` · enviado el ${etiquetaFecha(p.fecha_envio)}` : ''}. Nada se descuenta ni devenga renta antes de marcarlo enviado.`}
       />
-      <div className="rtm-etiquetas" aria-label="Estado del pedido">
-        <span className="rtm-etiqueta" data-testid="estado-pedido"><EstadoTexto tono={ESTADO_PEDIDO[p.estado].tono}>{ESTADO_PEDIDO[p.estado].texto}</EstadoTexto></span>
-        {p.empacado_at && <span className="rtm-etiqueta">Empacado</span>}
-        {p.entregado_at && <span className="rtm-etiqueta">Entregado</span>}
-        {p.plazo_dias !== null && <span className="rtm-etiqueta">Plazo: {p.plazo_dias} días</span>}
-        {p.guias.map((g) => <span key={g.id} className="rtm-etiqueta">Guía {g.paqueteria} {g.numero}{g.costo_cent !== null ? ` · ${formatearMoneda(g.costo_cent)}` : ' · sin costear'}</span>)}
+      <div className="rtm-a1-etiquetas" aria-label="Estado del pedido">
+        <span className="rtm-etiqueta" data-testid="estado-pedido"><ChipEstado tono={TONO_ESTADO[p.estado]}>{ESTADO_PEDIDO[p.estado].texto}</ChipEstado></span>
+        {p.plazo_dias !== null && <Chip>Plazo {p.plazo_dias} días</Chip>}
+        {p.paqueteria && <Chip>{p.paqueteria}</Chip>}
+        {p.guias.map((g) => <Chip key={g.id}>{`Guía ${g.paqueteria} ${g.numero}${g.costo_cent !== null ? ` · ${formatearMoneda(g.costo_cent)}` : ' · sin costear'}`}</Chip>)}
       </div>
+      <Tarjeta titulo="Avance del pedido">
+        <Pasos
+          etiquetaAria="Avance del pedido" actual={actualPaso === -1 ? 0 : actualPaso}
+          items={[
+            { id: 'a', etiqueta: 'Solicitado', detalle: etiquetaFecha(p.fecha_neg) }, { id: 'b', etiqueta: 'Confirmado' }, { id: 'c', etiqueta: 'Empacado', detalle: p.empacado_at ? etiquetaFechaHora(p.empacado_at) : undefined },
+            { id: 'd', etiqueta: 'Enviado', detalle: p.fecha_envio ? etiquetaFecha(p.fecha_envio) : undefined }, { id: 'e', etiqueta: 'Entregado', detalle: p.entregado_at ? etiquetaFechaHora(p.entregado_at) : undefined }, { id: 'f', etiqueta: 'Cobrado' },
+          ]}
+        />
+        {anulado && <p className="rtm-a1-nota">El pedido está anulado: el avance se detuvo.</p>}
+      </Tarjeta>
+      <KpiLinea
+        etiquetaAria="Cifras del pedido"
+        celdas={[
+          { id: 'venta', etiqueta: enviado || anulado ? 'Total a saldar' : 'Total estimado si sale todo', valor: <CifraComprobada texto={formatearMoneda(enviado || anulado ? p.cobrado_cent : p.estimado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" />, categoria: 1, nota: `${formatearPiezas(piezasPedidas)} pedidas · ${formatearPiezas(piezasSurtidas)} surtidas` },
+          { id: 'costo', etiqueta: 'Costo de las piezas', valor: cas ? formatearMoneda(cas.costo_cent) : null, categoria: 5, nota: cas ? undefined : 'Se calcula al enviar' },
+          { id: 'utilidad', etiqueta: cas?.utilidad_provisional ? 'Utilidad (provisional)' : 'Utilidad', valor: cas ? formatearMoneda(cas.utilidad_cent) : null, categoria: 3, nota: cas && cas.total_cent > 0n ? `Margen ${((aNumero(cas.utilidad_cent) / aNumero(cas.total_cent)) * 100).toFixed(1)} % del total` : cas?.guia_pendiente ? 'Guía por costear' : undefined },
+          { id: 'abonado', etiqueta: 'Abonado', valor: enviado || anulado ? formatearMoneda(p.aplicado_cent) : null, categoria: 2, progreso: enviado && p.cobrado_cent > 0n ? { pct: (aNumero(p.aplicado_cent) / aNumero(p.cobrado_cent)) * 100 } : undefined },
+          { id: 'cobro', etiqueta: 'Por cobrar', valor: enviado ? (p.saldo_cent === null ? null : <CifraComprobada texto={formatearMoneda(p.saldo_cent)} cifra={`pedido:saldo:${p.id}`} comprobacion="cuadra" />) : null, categoria: 4, nota: p.saldo_favor_cliente_cent > 0n ? `Saldo a favor del cliente ${formatearMoneda(p.saldo_favor_cliente_cent)}` : undefined },
+        ]}
+      />
+
+      <Rejilla dividir="6-6">
+        <Tarjeta titulo="Datos del pedido">
+          <ListaClaveValor columnas={2} items={[
+            { k: 'Cliente', v: <Link href={`/clientes/${p.cliente.id}`}>{p.cliente.nombre}</Link> }, { k: 'Origen', v: ORIGEN[p.origen] }, { k: 'Fecha', v: etiquetaFecha(p.fecha_neg) },
+            { k: 'Envío cobrado', v: formatearMoneda(p.envio_cent) }, { k: 'Descuento', v: formatearMoneda(p.descuento_cent) }, { k: 'Recargo', v: formatearMoneda(p.recargo_cent) },
+            { k: 'Plazo', v: p.plazo_dias === null ? 'Sin plazo acordado' : `${p.plazo_dias} días` }, { k: 'Paquetería', v: p.paqueteria ?? 'Sin asignar' },
+          ]} />
+        </Tarjeta>
+        <Tarjeta titulo="Cargos y pagos" descripcion={`${p.pagos.length} ${p.pagos.length === 1 ? 'pago aplicado' : 'pagos aplicados'}`}>
+          <ListaClaveValor columnas={2} items={[
+            ...p.cargos.map((c) => ({ k: c.concepto.replaceAll('_', ' '), v: formatearMoneda(c.monto_cent) })),
+            ...p.pagos.map((x) => ({ k: `${x.folio} · ${x.cuenta}`, v: formatearMoneda(x.monto_cent) })),
+            { k: 'Abonado', v: formatearMoneda(p.aplicado_cent) }, { k: 'Saldo', v: p.saldo_cent === null ? <SinDato /> : formatearMoneda(p.saldo_cent) },
+          ]} />
+        </Tarjeta>
+      </Rejilla>
 
       <AccionesPedido
         pedidoId={p.id} folio={p.folio} clienteId={p.cliente.id} estado={p.estado} empacado={p.empacado_at !== null} entregado={p.entregado_at !== null}
@@ -95,15 +144,7 @@ export default async function Pagina({ params, searchParams }: { params: Promise
 
       {enviado || anulado ? (
         <>
-          <div className="rtm-kpis">
-            <div className="rtm-kpi"><span>Total a saldar</span><strong><CifraComprobada texto={formatearMoneda(p.cobrado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" /></strong></div>
-            <div className="rtm-kpi"><span>Abonado</span><strong>{formatearMoneda(p.aplicado_cent)}</strong></div>
-            <div className="rtm-kpi"><span>Por cobrar</span><strong>{p.saldo_cent === null ? <SinDato /> : <CifraComprobada texto={formatearMoneda(p.saldo_cent)} cifra={`pedido:saldo:${p.id}`} comprobacion="cuadra" />}</strong></div>
-            {p.saldo_favor_cliente_cent > 0n && <div className="rtm-kpi"><span>Saldo a favor del cliente</span><strong>{formatearMoneda(p.saldo_favor_cliente_cent)}</strong></div>}
-          </div>
-          <div className="rtm-segmentado" role="group" aria-label="Documento">
-            {VISTAS.map((v) => <Link key={v.clave} href={`/pedidos/${p.id}?vista=${v.clave}`} aria-current={vista === v.clave}>{v.texto}</Link>)}
-          </div>
+          <Pestanas etiquetaAria="Documento" items={VISTAS.map((v) => ({ id: v.clave, etiqueta: v.texto, href: `/pedidos/${p.id}?vista=${v.clave}`, activa: vista === v.clave, contador: v.clave === 'versiones' ? notas.length : undefined }))} />
 
           {vista === 'nota' && verNota && (
             <section className="rtm-seccion" aria-label="Nota para el cliente">
@@ -134,6 +175,20 @@ export default async function Pagina({ params, searchParams }: { params: Promise
                   { id: 'u', titulo: 'Utilidad', numerica: true, celda: (m) => formatearMoneda(m.utilidad_cent) },
                 ]}
               />
+              {(() => {
+                const c = verNota.interno.cascada;
+                const pasos = [
+                  { id: 'venta', etiqueta: 'Venta', valor: aNumero(c.venta_cent), tipo: 'inicio' as const, texto: formatearMoneda(c.venta_cent) },
+                  { id: 'envio', etiqueta: 'Envío', valor: aNumero(c.envio_cent), tipo: 'delta' as const, texto: `+${formatearMoneda(c.envio_cent)}` },
+                  { id: 'recargo', etiqueta: 'Recargo', valor: aNumero(c.recargo_cent), tipo: 'delta' as const, texto: `+${formatearMoneda(c.recargo_cent)}` },
+                  { id: 'desc', etiqueta: 'Descuento', valor: -Math.abs(aNumero(c.descuento_cent)), tipo: 'delta' as const, texto: formatearMoneda(-(c.descuento_cent < 0n ? -c.descuento_cent : c.descuento_cent)) },
+                  { id: 'costo', etiqueta: 'Costo', valor: -aNumero(c.costo_cent), tipo: 'delta' as const, texto: formatearMoneda(-c.costo_cent) },
+                  { id: 'renta', etiqueta: 'Renta', valor: -aNumero(c.renta_cent), tipo: 'delta' as const, texto: formatearMoneda(-c.renta_cent) },
+                  ...(c.guia_cent === null ? [] : [{ id: 'guia', etiqueta: 'Guía', valor: -aNumero(c.guia_cent), tipo: 'delta' as const, texto: formatearMoneda(-c.guia_cent) }]),
+                  { id: 'util', etiqueta: c.utilidad_provisional ? 'Utilidad (prov.)' : 'Utilidad', valor: aNumero(c.utilidad_cent), tipo: 'total' as const, texto: formatearMoneda(c.utilidad_cent) },
+                ];
+                return <Cascada titulo="De la venta a la utilidad" descripcion="Venta, envío, recargo, descuento, costo, renta y guía hasta la utilidad del pedido." unidad="Importe" procedencia={c.utilidad_provisional ? 'estimado' : 'observado'} pie={c.guia_pendiente ? 'La guía aún no tiene costo: la utilidad es provisional.' : 'Fuente: hoja interna'} pasos={pasos} />;
+              })()}
               <h3>Cascada de la utilidad</h3>
               <ul className="rtm-cascada" data-testid="cascada">
                 <li><span>Venta</span><span>{formatearMoneda(verNota.interno.cascada.venta_cent)}</span></li>
@@ -176,7 +231,6 @@ export default async function Pagina({ params, searchParams }: { params: Promise
         </>
       ) : (
         <>
-          <div className="rtm-kpis"><div className="rtm-kpi"><span>Total estimado si sale todo</span><strong>{formatearMoneda(p.estimado_cent)}</strong></div></div>
           <p className="rtm-nota">La nota y la hoja interna se emiten al marcar el pedido como enviado, y se cobra solo lo que realmente salga.</p>
         </>
       )}
@@ -189,12 +243,9 @@ export default async function Pagina({ params, searchParams }: { params: Promise
         </section>
       )}
 
-      <section className="rtm-seccion" aria-label="Línea de tiempo">
-        <h2>Línea de tiempo</h2>
-        <ul className="rtm-linea-tiempo">
-          {p.linea_tiempo.map((e) => <li key={e.evento}><span className="rtm-mono">{e.evento}</span> · {etiquetaFechaHora(e.hora)} · {(e.tipo ?? '').replaceAll('_', ' ')} · {e.autor ?? e.canal}{e.mensaje_origen ? ` · “${e.mensaje_origen}”` : ''}</li>)}
-        </ul>
-      </section>
-    </>
+      <Tarjeta titulo="Línea de tiempo" descripcion={`${p.linea_tiempo.length} eventos registrados`}>
+        <LineaTiempo eventos={p.linea_tiempo.map((e) => ({ id: e.evento, fecha: etiquetaFechaHora(e.hora), titulo: (e.tipo ?? 'evento').replaceAll('_', ' '), detalle: `${e.evento} · ${e.autor ?? e.canal}${e.mensaje_origen ? ` · “${e.mensaje_origen}”` : ''}` }))} />
+      </Tarjeta>
+    </Pagina>
   );
 }

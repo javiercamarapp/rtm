@@ -20,3 +20,7 @@ export { MarcoGrafica, EsqueletoGrafica, TablaDeGrafica, type FormaEsqueleto } f
 export { Delta, MarcaProcedencia } from './piezas';
 export { textoCifra, type TipoCifra } from './formato';
 export type { Procedencia, EstadoGrafica, DeltaTexto, BaseGrafica, TablaAlterna } from './tipos';
+export { ColumnasPeriodo, type DatoColumna } from './columnas';
+export { AreaSerie, type PuntoArea } from './area';
+export { EscalaSalud } from './escala-salud';
+export { escalaBonita, compactoEs } from './escalas';
