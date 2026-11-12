@@ -34,7 +34,7 @@ select is(proveedores.cargar_estado() #>> '{promociones,p1,pct}', '15', 'promoci
 select is(jsonb_array_length(proveedores.cargar_estado() -> 'cola'), 1, 'la cola de confirmacion viaja');
 select throws_ok($$ select proveedores.guardar_estado(jsonb_set(pg_temp.estado(), '{modelos,900000000000000001,precio}', '1'), '[]', 'g:3') $$, 'P0461', null, 'una clave de importe se rechaza');
 select throws_ok($$ select proveedores.guardar_estado(pg_temp.estado(), '[{"clave":"x","tipo":"t","lectura":"L","en":"2026-11-10T12:00:00Z","datos":{"monto_cent":5}}]', 'g:4') $$, 'P0461', null, 'tambien en los eventos');
-select is((select count(*)::int from information_schema.columns where table_schema = 'proveedores' and (column_name ~* '(precio|price|compare|importe|monto|costo)' or column_name ~ '_cent$')), 0, 'ningun nombre de columna del esquema es un importe');
+select is((select count(*)::int from information_schema.columns where table_schema = 'proveedores' and column_name <> 'nuevo_sin_costo' and (column_name ~* '(precio|price|compare|importe|monto|costo)' or column_name ~ '_cent$')), 0, 'ningun nombre de columna es un importe (nuevo_sin_costo es una bandera)');
 
 -- Presupuesto: 40 al dia como maximo.
 select is((select count(*)::int from generate_series(1, 45) g where proveedores.presupuesto_tomar('2026-11-10', 'catalogo')), 40, 'solo 40 peticiones caben en un dia');
