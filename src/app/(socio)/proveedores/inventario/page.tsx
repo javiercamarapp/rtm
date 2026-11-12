@@ -86,7 +86,7 @@ export default async function PaginaInventarioProveedores() {
         />
       </Tarjeta>
 
-      <div className="rtm-region" aria-label="Por confirmar"><Tarjeta plana titulo="Nombres por confirmar" descripcion={`${p.cola.length} pendientes`}>
+      <div className="rtm-region-pag" aria-label="Por confirmar"><Tarjeta plana titulo="Nombres por confirmar" descripcion={`${p.cola.length} pendientes`}>
         {p.cola.length === 0 ? <p className="rtm-nota">Nada por confirmar.</p> : (
           <DataTable plana densidad="densa" etiqueta="Cola de confirmación" clave={(c) => `${c.tipo}:${c.texto}`} filas={p.cola} columnas={[
             { id: 't', titulo: 'Tipo', celda: (c) => (c.tipo === 'modelo' ? 'Modelo' : 'Sabor') },

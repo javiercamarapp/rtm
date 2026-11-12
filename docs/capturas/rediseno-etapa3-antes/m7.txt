@@ -1,8 +1,0 @@
-HUECO 1440-claro-avisos: De qué son (+102px)
-HUECO 1440-claro-conta-resultados: Utilidad neta por semana (+151px)
-COLA 1440-claro-conta-resultados: 28px vacios al final
-TABLA 1440-claro-conta-balance: Cascada del balance (tabla equivalente) +13px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=345
-HUECO 1440-claro-conta-balance: Mayores partidas del activo (+159px) ; Pasivo y capital (+159px)
-COLA 1440-claro-conta-balance: 28px vacios al final
-HUECO 1440-claro-conta-flujo: Por concepto (+130px)
-CEROS 1440-claro-conta-flujo: [{"alto":104,"barras":12,"cero":10}]

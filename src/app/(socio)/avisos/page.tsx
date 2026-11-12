@@ -34,7 +34,7 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
   };
   const por = (s: string) => todas.filter((a) => a.severidad === s).length;
   const accion = todas.filter((a) => a.requiere_accion && a.estado === 'abierta');
-  const porTipo = contarPor(todas, (a) => a.entidad_tipo ?? 'otros');
+  const porTipo = contarPor(todas, (a) => (a.entidad_tipo && TIPOS[a.entidad_tipo] ? a.entidad_tipo : 'otros'));
   const porEstado = contarPor(todas, (a) => a.estado);
   const sinTelegram = todas.filter((a) => a.telegram_no_salio).length;
 

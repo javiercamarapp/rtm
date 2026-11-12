@@ -322,7 +322,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 
 /* Tarjeta-fila movil: <= 767 px, solo en tablas que declaran prioridadMovil */
 @media (max-width: 767px) {
-  .rtm-dt-caja[data-tarjeta-movil] { overflow: visible; border: 0; background: transparent; }
+  .rtm-dt-caja[data-tarjeta-movil] { overflow: visible; max-height: none; border: 0; background: transparent; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt, .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-grupo { display: block; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-cabecera { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-cuerpo { display: flex; flex-direction: column; gap: 8px; }
@@ -480,4 +480,12 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 
 @media (pointer: coarse), (max-width: 767px) { html .rtm-importador .rtm-pegado { font-size: 16px; } }
 
-.rtm-region { display: contents; }
+.rtm-region-pag { display: contents; }
+@media (max-width: 767px) { .rtm-pestanas a { height: 44px; } }
+
+.rtm-dt-celda[data-ancho='s'] { white-space: nowrap; }
+.rtm-dt-celda .rtm-acciones-fila { flex-wrap: nowrap; }
+@media (max-width: 767px) { .rtm-dt-celda .rtm-acciones-fila { flex-wrap: wrap; } }
+@media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-trunc { max-width: none; white-space: normal; overflow: visible; text-overflow: clip; } }
+@media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:empty { display: none; } }
+@media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:has(> .rtm-dt-trunc:empty) { display: none; } }

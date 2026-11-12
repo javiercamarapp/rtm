@@ -1,5 +1,0 @@
-TABLA 390-claro-inventario: Piezas por modelo y sabor (tabla equivalente) +377px cortadas[Uva, Sandia, Fresa helada, Limon, Fresa, Cereza] cols(Fila:92 Mango:73 Menta:73 Uva:73 Sandia:73 Fresa helada:73 Limon:73 Fresa:73 Cereza:73) caja=296
-TABLA 390-claro-cxc: Saldo por cliente y tramo de antigüedad (tabla equivalente) +115px cortadas[Más de 30 d, Total] cols(Cliente:81 0 a 7 d:84 8 a 14 d:58 15 a 30 d:58 Más de 30 d:58 Total:84) caja=308
-TABLA 390-claro-proveedores: Cascada de la hoja semanal (tabla equivalente) +52px cortadas[Comprobación] cols(Paso:85 Pesos:107 Efecto:61 Comprobación:107) caja=308 ; Saldo corrido con el proveedor (tabla equivalente) +3px cortadas[Estado] cols(Periodo:68 Pesos:162 Estado:81) caja=308
-COLA 390-claro-proveedores: 28px vacios al final
-COLA 390-claro-conta-diario: 28px vacios al final
