@@ -64,6 +64,11 @@ export interface UtilidadMovimientos {
   costo_cent: Cent;
 }
 
-export interface Candidata { id: number; texto: string; monto_cent: Cent }
+export type TipoContraparte = 'pago' | 'gasto' | 'aportacion';
+/** El hecho con que se concilia cada clasificacion (la misma regla que operacion.mov_tipo_contraparte). Sin entrada: ese tipo no se concilia. */
+export const CONTRAPARTE_DE_TIPO: Partial<Record<TipoMovimiento, TipoContraparte>> = {
+  cobro_cliente: 'pago', fondos_en_poder_socio: 'pago', aportacion: 'aportacion', gasto: 'gasto',
+};
+export interface Candidata { tipo: TipoContraparte; id: number; texto: string; monto_cent: Cent }
 
 export interface ReferenciasMovimientos { clientes: { id: number; nombre: string }[]; proveedores: { id: number; nombre: string }[]; pedidos: { id: number; folio: string; cliente: string }[] }

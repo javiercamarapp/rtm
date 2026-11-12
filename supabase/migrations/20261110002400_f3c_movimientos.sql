@@ -48,7 +48,9 @@ create table operacion.clasificacion_movimiento (
   check ((estado in ('clasificado', 'conciliado')) = (tipo is not null)),
   check ((estado = 'conciliado') = (contraparte_id is not null and contraparte_tipo is not null))
 );
-create unique index clasificacion_una_contraparte on operacion.clasificacion_movimiento (contraparte_tipo, contraparte_id) where estado = 'conciliado';
+-- Una contraparte concilia un solo movimiento VIGENTE. No es un indice unico: la tabla guarda todas las versiones y una conciliacion reclasificada deja de contar.
+-- conciliar_movimiento lo garantiza con un candado por contraparte y la consulta sobre el estado vigente.
+create index clasificacion_contraparte_idx on operacion.clasificacion_movimiento (contraparte_tipo, contraparte_id) where estado = 'conciliado';
 
 do $$
 declare t text;
@@ -171,28 +173,71 @@ begin
   return v_res;
 end $$;
 
--- Conciliar: la contraparte es un hecho que ya existe (pago, gasto o aportacion) con la MISMA suma y el mismo sentido. Una contraparte concilia una sola vez.
+-- Que hecho corresponde a cada clasificacion: un cobro de cliente y los fondos de clientes en la cuenta de un socio son un pago; una aportacion, una aportacion;
+-- un gasto, un gasto. Los demas tipos (pago a proveedor, retiro, transferencia entre socios, otro) no tienen hecho con que conciliarse y quedan clasificados.
+create function operacion.mov_tipo_contraparte(p_tipo text) returns text
+language sql immutable set search_path = ''
+as $$ select case p_tipo when 'cobro_cliente' then 'pago' when 'fondos_en_poder_socio' then 'pago' when 'aportacion' then 'aportacion' when 'gasto' then 'gasto' end $$;
+
+-- Por que un hecho NO sirve de contraparte de un movimiento (null = si sirve). Una sola regla para la lista de candidatas y para conciliar:
+-- el hecho existe y no esta anulado ni deshecho, corresponde al tipo de la clasificacion (y al socio o al cliente si la clasificacion los nombra),
+-- tiene la misma suma y el mismo sentido, y no concilia ya otro movimiento VIGENTE (una conciliacion reclasificada lo libera).
+create function operacion.mov_contraparte_rechazo(p_mov bigint, p_contraparte_tipo text, p_contraparte_id bigint) returns text
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v record; v_esp text; v_suma bigint; v_sentido int; v_anulado boolean; v_socio bigint; v_cliente bigint; v_titular text;
+begin
+  select * into v from operacion.movimiento_vigente where id = p_mov;
+  if not found then return 'movimiento desconocido'; end if;
+  v_esp := operacion.mov_tipo_contraparte(v.tipo);
+  if v_esp is null then return format('un movimiento clasificado como %s no tiene hecho con que conciliarse', coalesce(v.tipo, v.estado)); end if;
+  if p_contraparte_tipo is distinct from v_esp then return format('un movimiento clasificado como %s se concilia con un %s, no con %s', v.tipo, v_esp, coalesce(p_contraparte_tipo, 'nada')); end if;
+  if v_esp = 'pago' then
+    select p.monto_cent, 1, exists (select 1 from operacion.pago_anulacion an where an.pago_id = p.id), cd.socio_id, operacion.pago_cliente(p.id), cd.titular_tipo
+      into v_suma, v_sentido, v_anulado, v_socio, v_cliente, v_titular
+      from operacion.pago p join operacion.cuenta_dinero cd on cd.id = p.cuenta_destino_id where p.id = p_contraparte_id;
+  elsif v_esp = 'gasto' then
+    select g.monto_cent, -1, exists (select 1 from operacion.gasto_anulacion an where an.gasto_id = g.id) into v_suma, v_sentido, v_anulado from operacion.gasto g where g.id = p_contraparte_id;
+  else
+    select a.monto_cent, 1, (a.reversa_de is not null or exists (select 1 from operacion.aportacion_socio r where r.reversa_de = a.id)), a.socio_id
+      into v_suma, v_sentido, v_anulado, v_socio from operacion.aportacion_socio a where a.id = p_contraparte_id;
+  end if;
+  if v_suma is null then return 'la contraparte no existe'; end if;
+  if v_anulado then return 'la contraparte está anulada o deshecha'; end if;
+  if v.tipo = 'fondos_en_poder_socio' and (v_titular is distinct from 'socio' or v_socio is distinct from v.socio_id) then return 'los fondos en poder de un socio se concilian con un pago que cayó en la cuenta de ese socio'; end if;
+  if v.tipo = 'aportacion' and v_socio is distinct from v.socio_id then return 'la aportación es de otro socio'; end if;
+  if v.tipo = 'cobro_cliente' and v.cliente_id is not null and v_cliente is not null and v_cliente <> v.cliente_id then return 'el pago es de otro cliente'; end if;
+  if v_suma <> abs(v.monto_cent) or sign(v.monto_cent) <> v_sentido then return format('la contraparte no tiene la misma suma: movimiento %s contra %s', v.monto_cent, v_suma * v_sentido); end if;
+  if exists (select 1 from operacion.movimiento_vigente w where w.estado = 'conciliado' and w.contraparte_tipo = p_contraparte_tipo and w.contraparte_id = p_contraparte_id and w.id <> p_mov) then
+    return 'esa contraparte ya concilia otro movimiento';
+  end if;
+  return null;
+end $$;
+
+-- Conciliar: la contraparte es un hecho vigente que ya existe, del tipo que corresponde a la clasificacion, con la MISMA suma y el mismo sentido. Una contraparte
+-- concilia un solo movimiento vigente.
 create function operacion.conciliar_movimiento(p_clave text, p_mov bigint, p_contraparte_tipo text, p_contraparte_id bigint) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
-declare v_prev jsonb; v_vig record; v_suma bigint; v_sentido int; v_ver int; v_res jsonb;
+declare v_prev jsonb; v_vig record; v_ver int; v_res jsonb; v_rechazo text;
 begin
   perform seguridad.exigir_rol(array['socio']);
   v_prev := seguridad.iniciar_operacion(p_clave, jsonb_build_object('fn', 'conciliar_movimiento', 'm', p_mov, 't', p_contraparte_tipo, 'c', p_contraparte_id));
   if v_prev is not null then return v_prev; end if;
+  if p_contraparte_tipo is null or p_contraparte_tipo not in ('pago', 'gasto', 'aportacion') then raise exception 'contraparte desconocida' using errcode = '22023'; end if;
+  -- Candados: el movimiento y la contraparte, para que dos conciliaciones simultaneas no usen el mismo hecho.
+  perform pg_advisory_xact_lock(hashtextextended('movimientos:mov:' || p_mov, 0));
+  perform pg_advisory_xact_lock(hashtextextended('movimientos:contraparte:' || p_contraparte_tipo || ':' || p_contraparte_id, 0));
   select * into v_vig from operacion.movimiento_vigente where id = p_mov;
   if not found then raise exception 'movimiento desconocido' using errcode = '22023'; end if;
   if v_vig.estado <> 'clasificado' then raise exception 'solo se concilia un movimiento clasificado (estado actual: %)', v_vig.estado using errcode = 'P0443'; end if;
-  if p_contraparte_tipo = 'pago' then select monto_cent, 1 into v_suma, v_sentido from operacion.pago where id = p_contraparte_id;
-  elsif p_contraparte_tipo = 'gasto' then select monto_cent, -1 into v_suma, v_sentido from operacion.gasto where id = p_contraparte_id;
-  elsif p_contraparte_tipo = 'aportacion' then select monto_cent, 1 into v_suma, v_sentido from operacion.aportacion_socio where id = p_contraparte_id and reversa_de is null;
-  else raise exception 'contraparte desconocida' using errcode = '22023'; end if;
-  if v_suma is null then raise exception 'la contraparte no existe' using errcode = '22023'; end if;
-  if v_suma <> abs(v_vig.monto_cent) or sign(v_vig.monto_cent) <> v_sentido then
-    raise exception 'la contraparte no tiene la misma suma: movimiento % contra %', v_vig.monto_cent, v_suma * v_sentido using errcode = 'P0433';
-  end if;
-  if exists (select 1 from operacion.clasificacion_movimiento where estado = 'conciliado' and contraparte_tipo = p_contraparte_tipo and contraparte_id = p_contraparte_id) then
-    raise exception 'esa contraparte ya concilia otro movimiento' using errcode = '23505';
+  v_rechazo := operacion.mov_contraparte_rechazo(p_mov, p_contraparte_tipo, p_contraparte_id);
+  if v_rechazo is not null then
+    raise exception '%', v_rechazo using errcode = case
+      when v_rechazo like 'la contraparte no tiene la misma suma%' then 'P0433'
+      when v_rechazo = 'esa contraparte ya concilia otro movimiento' then '23505'
+      when v_rechazo = 'la contraparte no existe' then '22023'
+      else 'P0434' end;
   end if;
   v_ver := operacion.siguiente_version_mov(p_mov);
   insert into operacion.clasificacion_movimiento (movimiento_crudo_id, version, estado, tipo, pedido_id, cliente_id, socio_id, proveedor_id, contraparte_tipo, contraparte_id)
@@ -357,19 +402,20 @@ create function api.mov_desglose(p_dim text, p_id bigint) returns jsonb language
 as $$ begin perform seguridad.exigir_rol(array['socio']); return operacion.movimientos_desglose(p_dim, p_id); end $$;
 create function api.mov_utilidad() returns jsonb language plpgsql stable security definer set search_path = ''
 as $$ begin perform seguridad.exigir_rol(array['socio']); return operacion.movimientos_utilidad(); end $$;
-create function api.mov_candidatas(p_tipo text, p_monto_cent bigint) returns jsonb language plpgsql stable security definer set search_path = ''
+create function api.mov_candidatas(p_mov bigint) returns jsonb language plpgsql stable security definer set search_path = ''
 as $$
+declare v_tipo text; v_monto bigint;
 begin
   perform seguridad.exigir_rol(array['socio']);
-  -- Hechos existentes con la misma suma que aun no concilian ningun movimiento (para elegir la contraparte).
-  return coalesce(case p_tipo
-    when 'pago' then (select jsonb_agg(jsonb_build_object('id', p.id, 'texto', p.folio || ' · ' || p.fecha_neg, 'monto_cent', p.monto_cent) order by p.id) from operacion.pago p
-                       where p.monto_cent = abs(p_monto_cent) and p_monto_cent > 0 and not exists (select 1 from operacion.clasificacion_movimiento k where k.estado = 'conciliado' and k.contraparte_tipo = 'pago' and k.contraparte_id = p.id))
-    when 'gasto' then (select jsonb_agg(jsonb_build_object('id', g.id, 'texto', g.folio || ' · ' || g.categoria, 'monto_cent', g.monto_cent) order by g.id) from operacion.gasto g
-                        where g.monto_cent = abs(p_monto_cent) and p_monto_cent < 0 and not exists (select 1 from operacion.clasificacion_movimiento k where k.estado = 'conciliado' and k.contraparte_tipo = 'gasto' and k.contraparte_id = g.id))
-    when 'aportacion' then (select jsonb_agg(jsonb_build_object('id', a.id, 'texto', 'Aportación ' || a.fecha_neg, 'monto_cent', a.monto_cent) order by a.id) from operacion.aportacion_socio a
-                             where a.monto_cent = abs(p_monto_cent) and p_monto_cent > 0 and a.reversa_de is null and not exists (select 1 from operacion.clasificacion_movimiento k where k.estado = 'conciliado' and k.contraparte_tipo = 'aportacion' and k.contraparte_id = a.id))
-    end, '[]'::jsonb);
+  -- Hechos que sirven de contraparte de ESTE movimiento: la misma regla que conciliar (tipo, vigencia, suma, sentido y uso), aplicada a los de la misma suma.
+  select operacion.mov_tipo_contraparte(v.tipo), abs(v.monto_cent) into v_tipo, v_monto from operacion.movimiento_vigente v where v.id = p_mov and v.estado = 'clasificado';
+  if v_tipo is null then return '[]'::jsonb; end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('tipo', v_tipo, 'id', c.id, 'texto', c.texto, 'monto_cent', c.monto) order by c.id)
+      from (select p.id, p.folio || ' · ' || p.fecha_neg as texto, p.monto_cent as monto from operacion.pago p where v_tipo = 'pago' and p.monto_cent = v_monto
+            union all select g.id, g.folio || ' · ' || g.categoria, g.monto_cent from operacion.gasto g where v_tipo = 'gasto' and g.monto_cent = v_monto
+            union all select a.id, 'Aportación ' || a.fecha_neg, a.monto_cent from operacion.aportacion_socio a where v_tipo = 'aportacion' and a.monto_cent = v_monto) c
+     where operacion.mov_contraparte_rechazo(p_mov, v_tipo, c.id) is null), '[]'::jsonb);
 end $$;
 
 create function api.mov_referencias() returns jsonb language plpgsql stable security definer set search_path = ''
@@ -387,4 +433,4 @@ end $$;
 revoke execute on all functions in schema operacion, catalogo, contabilidad, apertura from public, anon, authenticated;
 revoke execute on all functions in schema api from public, anon;
 grant execute on function api.mov_importar(text, text, text, text, jsonb, boolean), api.mov_clasificar(text, bigint, text, jsonb, text), api.mov_conciliar(text, bigint, text, bigint),
-  api.mov_marcar(text, bigint, text, text), api.mov_resumen(), api.mov_lista(text, int, int), api.mov_agrupado(text), api.mov_desglose(text, bigint), api.mov_utilidad(), api.mov_candidatas(text, bigint), api.mov_referencias() to authenticated;
+  api.mov_marcar(text, bigint, text, text), api.mov_resumen(), api.mov_lista(text, int, int), api.mov_agrupado(text), api.mov_desglose(text, bigint), api.mov_utilidad(), api.mov_candidatas(bigint), api.mov_referencias() to authenticated;

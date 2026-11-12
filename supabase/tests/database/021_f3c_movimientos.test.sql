@@ -61,11 +61,15 @@ select throws_ok($$ select api.mov_agrupado('dueno') $$, '22023', 'agrupación d
 
 -- Conciliar: la contraparte debe tener la misma suma ------------------------------------------------------------------------------------------------
 create function pg_temp.ap(p_monto bigint) returns bigint language sql as $$ select id from operacion.aportacion_socio where monto_cent = $1 and concepto like '%ilustrativa%' $$;
+select throws_ok(format($$ select api.mov_conciliar('k:00', %s, 'aportacion', %s) $$, pg_temp.mid('Deposito sin nombre'), pg_temp.ap(500000)), 'P0434', null, 'fondos en poder de un socio no concilian con una aportacion de la misma suma');
+select is(jsonb_array_length(api.mov_candidatas(pg_temp.mid('Deposito sin nombre'))), 0, 'y la aportacion no aparece como candidata de esos fondos');
+select api.mov_clasificar('c:8', pg_temp.mid('Deposito sin nombre'), 'aportacion', '{"socio": "Angelo"}');
 select throws_ok(format($$ select api.mov_conciliar('k:0', %s, 'aportacion', %s) $$, pg_temp.mid('Deposito sin nombre'), pg_temp.ap(123456)), 'P0433', null, 'una contraparte con otra suma no concilia');
-select throws_ok(format($$ select api.mov_conciliar('k:0b', %s, 'aportacion', %s) $$, pg_temp.mid('Cobro ilustrativo uno'), pg_temp.ap(500000)), 'P0433', null, 'ni con otra suma ni con otro sentido');
-select is(jsonb_array_length(api.mov_candidatas('aportacion', 500000)), 1, 'la lista de candidatas ofrece la aportacion de la misma suma');
+select throws_ok(format($$ select api.mov_conciliar('k:0b', %s, 'aportacion', %s) $$, pg_temp.mid('Cobro ilustrativo uno'), pg_temp.ap(500000)), 'P0434', null, 'un cobro de cliente no concilia con una aportacion');
+select is(jsonb_array_length(api.mov_candidatas(pg_temp.mid('Deposito sin nombre'))), 1, 'la lista de candidatas ofrece la aportacion de la misma suma');
+select is((api.mov_candidatas(pg_temp.mid('Deposito sin nombre')) -> 0 ->> 'tipo'), 'aportacion', 'con su tipo');
 select is((api.mov_conciliar('k:1', pg_temp.mid('Deposito sin nombre'), 'aportacion', pg_temp.ap(500000)) ->> 'estado'), 'conciliado', 'concilia con la misma suma');
-select is(jsonb_array_length(api.mov_candidatas('aportacion', 500000)), 0, 'una contraparte concilia una sola vez');
+select is(jsonb_array_length(api.mov_candidatas(pg_temp.mid('Deposito sin nombre'))), 0, 'una contraparte concilia una sola vez');
 select throws_ok(format($$ select api.mov_clasificar('k:2', %s, 'otro', '{}') $$, pg_temp.mid('Deposito sin nombre')), '23502', null, 'reclasificar un conciliado exige motivo');
 select throws_ok(format($$ select api.mov_marcar('k:3', %s, 'descartado', 'x') $$, pg_temp.mid('Deposito sin nombre')), 'P0443', null, 'un conciliado no se descarta directamente');
 
@@ -104,6 +108,35 @@ select is((operacion.posicion_socios() ->> 'javier_debe_a_angelo_cent')::bigint,
 select operacion.registrar_pago('q:pg', 'Angelo', 1000000, (select id from catalogo.cliente where nombre_canonico = 'F3C Mov Cliente'));
 select is((operacion.posicion_socios() ->> 'javier_debe_a_angelo_cent')::bigint, 930750::bigint, '(b) un cobro de 10,000.00 en la cuenta de Angelo deja la posicion en 9,307.50');
 select is((operacion.posicion_socios() ->> 'javier_debe_a_angelo_cent')::bigint, (operacion.cuenta_socios() ->> 'via2_cent')::bigint, '(f) y sigue coincidiendo con cuenta_socios()');
+
+-- Conciliar contra el estado vigente: anulados, tipos y reclasificacion ------------------------------------------------------------------------------
+select api.mov_importar('m:9', 'pegado', null, null, jsonb_build_array(
+  pg_temp.fila((negocio.hoy() - 2)::text, 777700, 'Cobro contra pago anulado'),
+  pg_temp.fila((negocio.hoy() - 2)::text, 500000, 'Deposito correcto'),
+  pg_temp.fila((negocio.hoy() - 2)::text, 1000000, 'Fondos de cliente en cuenta de Angelo')));
+create function pg_temp.cli() returns jsonb language sql as $$ select jsonb_build_object('cliente_id', (select id from catalogo.cliente where nombre_canonico = 'F3C Mov Cliente')) $$;
+select operacion.registrar_pago('q:pa', 'Efectivo', 777700, (select id from catalogo.cliente where nombre_canonico = 'F3C Mov Cliente'));
+create temp table _pa as select max(id) as id from operacion.pago where monto_cent = 777700;
+select operacion.anular_pago('q:pan', (select id from _pa), 'pago de prueba anulado');
+select api.mov_clasificar('q:c1', pg_temp.mid('Cobro contra pago anulado'), 'cobro_cliente', pg_temp.cli());
+select is(jsonb_array_length(api.mov_candidatas(pg_temp.mid('Cobro contra pago anulado'))), 0, 'un pago anulado no es candidato');
+select throws_ok(format($$ select api.mov_conciliar('q:k1', %s, 'pago', %s) $$, pg_temp.mid('Cobro contra pago anulado'), (select id from _pa)), 'P0434', 'la contraparte está anulada o deshecha', 'ni concilia');
+select operacion.registrar_pago('q:pb', 'Efectivo', 777700, (select id from catalogo.cliente where nombre_canonico = 'F3C Mov Cliente'));
+select is(jsonb_array_length(api.mov_candidatas(pg_temp.mid('Cobro contra pago anulado'))), 1, 'el pago vigente de la misma suma si es candidato');
+select is((api.mov_conciliar('q:k2', pg_temp.mid('Cobro contra pago anulado'), 'pago', (select max(id) from operacion.pago where monto_cent = 777700)) ->> 'estado'), 'conciliado', 'y concilia');
+select api.mov_clasificar('q:c2', pg_temp.mid('Fondos de cliente en cuenta de Angelo'), 'fondos_en_poder_socio', '{"socio": "Javier"}');
+select is(jsonb_array_length(api.mov_candidatas(pg_temp.mid('Fondos de cliente en cuenta de Angelo'))), 0, 'fondos de Javier no concilian con un pago que cayo en la cuenta de Angelo');
+select api.mov_clasificar('q:c3', pg_temp.mid('Fondos de cliente en cuenta de Angelo'), 'fondos_en_poder_socio', '{"socio": "Angelo"}');
+select is((api.mov_conciliar('q:k3', pg_temp.mid('Fondos de cliente en cuenta de Angelo'), 'pago', (select max(id) from operacion.pago where monto_cent = 1000000)) ->> 'estado'), 'conciliado', 'fondos de Angelo concilian con el pago en su cuenta');
+select is((operacion.posicion_socios() ->> 'javier_debe_a_angelo_cent')::bigint, 930750::bigint, 'conciliar no mueve la posicion entre socios');
+select api.mov_clasificar('q:c4', pg_temp.mid('Deposito correcto'), 'aportacion', '{"socio": "Angelo"}');
+select is(jsonb_array_length(api.mov_candidatas(pg_temp.mid('Deposito correcto'))), 0, 'la aportacion ya conciliada con otro movimiento no es candidata');
+select throws_ok(format($$ select api.mov_conciliar('q:k4', %s, 'aportacion', %s) $$, pg_temp.mid('Deposito correcto'), pg_temp.ap(500000)), '23505', 'esa contraparte ya concilia otro movimiento', 'ni concilia');
+select api.mov_clasificar('q:c5', pg_temp.mid('Deposito sin nombre'), 'otro', '{}', 'se concilio con la aportacion equivocada');
+select is((select estado from operacion.movimiento_vigente where id = pg_temp.mid('Deposito sin nombre')), 'clasificado', 'reclasificar el conciliado equivocado lo deja clasificado');
+select is(jsonb_array_length(api.mov_candidatas(pg_temp.mid('Deposito correcto'))), 1, 'y libera su contraparte');
+select is((api.mov_conciliar('q:k5', pg_temp.mid('Deposito correcto'), 'aportacion', pg_temp.ap(500000)) ->> 'estado'), 'conciliado', 'el movimiento correcto concilia');
+select is((select count(*)::int from operacion.clasificacion_movimiento where estado = 'conciliado' and contraparte_tipo = 'aportacion' and contraparte_id = pg_temp.ap(500000)), 2, 'la historia conserva las dos conciliaciones');
 
 select * from finish();
 rollback;

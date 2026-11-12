@@ -3,8 +3,8 @@
 import { movimientosDeSocio } from '@/composicion/apertura';
 import type { Candidata } from '@/dominio/movimientos/tipos';
 
-/** Hechos existentes con la misma suma y sentido que un movimiento, para elegir la contraparte de la conciliacion. */
-export async function candidatasAccion(tipo: string, montoCent: number): Promise<Candidata[]> {
-  if ((tipo !== 'pago' && tipo !== 'gasto' && tipo !== 'aportacion') || !Number.isSafeInteger(montoCent) || montoCent === 0) return [];
-  return (await movimientosDeSocio()).candidatas(tipo, BigInt(montoCent));
+/** Hechos vigentes que sirven de contraparte de un movimiento clasificado (la base decide tipo, suma, sentido y uso), para elegir con cual conciliar. */
+export async function candidatasAccion(movimientoId: number): Promise<Candidata[]> {
+  if (!Number.isSafeInteger(movimientoId) || movimientoId <= 0) return [];
+  return (await movimientosDeSocio()).candidatas(movimientoId);
 }

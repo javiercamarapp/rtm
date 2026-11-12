@@ -1,6 +1,6 @@
 // Implementa el puerto de movimientos con las funciones api.mov_* (sesion del usuario, llave publica; nunca la de servicio).
 import type { LectorMovimientos } from '@/aplicacion/movimientos/puertos';
-import { bigintACentavos, centavosABigint } from '@/dominio/operacion/json';
+import { centavosABigint } from '@/dominio/operacion/json';
 import { crearClienteServidor } from './cliente-servidor';
 
 async function leer<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -18,6 +18,6 @@ export function lectorMovimientosSupabase(): LectorMovimientos {
     desglose: (dim, id) => leer('mov_desglose', { p_dim: dim, p_id: id }),
     utilidad: () => leer('mov_utilidad'),
     referencias: () => leer('mov_referencias'),
-    candidatas: (tipo, montoCent) => leer('mov_candidatas', { p_tipo: tipo, p_monto_cent: bigintACentavos(montoCent) }),
+    candidatas: (movimientoId) => leer('mov_candidatas', { p_mov: movimientoId }),
   };
 }

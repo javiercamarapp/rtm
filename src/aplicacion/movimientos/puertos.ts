@@ -8,5 +8,6 @@ export interface LectorMovimientos {
   desglose(dim: DimensionMovimientos, id: number): Promise<DesgloseFila[]>;
   utilidad(): Promise<UtilidadMovimientos>;
   referencias(): Promise<ReferenciasMovimientos>;
-  candidatas(tipo: 'pago' | 'gasto' | 'aportacion', montoCent: bigint): Promise<Candidata[]>;
+  /** Hechos vigentes que sirven de contraparte de ese movimiento clasificado (tipo, suma, sentido y sin usar). */
+  candidatas(movimientoId: number): Promise<Candidata[]>;
 }

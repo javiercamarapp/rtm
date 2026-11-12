@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
-import { ETIQUETA_TIPO, TIPOS_MOVIMIENTO, type Candidata, type FilaMovimiento, type ReferenciasMovimientos, type TipoMovimiento } from '@/dominio/movimientos/tipos';
+import { CONTRAPARTE_DE_TIPO, ETIQUETA_TIPO, TIPOS_MOVIMIENTO, type Candidata, type FilaMovimiento, type ReferenciasMovimientos, type TipoMovimiento } from '@/dominio/movimientos/tipos';
 import { formatearMoneda } from '@/dominio/formato';
-import { bigintACentavos } from '@/dominio/operacion/json';
 import { useAccion } from '../operacion/usar-accion';
 import { candidatasAccion } from './acciones';
 
@@ -26,12 +25,12 @@ export function AccionesMovimiento({ fila, refs }: { fila: FilaMovimiento; refs:
   const [candidatas, setCandidatas] = useState<Candidata[] | null>(null);
   const [contraparte, setContraparte] = useState('');
   const [local, setLocal] = useState<string | null>(null);
-  const tipoContraparte = fila.tipo === 'cobro_cliente' ? 'pago' : fila.tipo === 'aportacion' || fila.tipo === 'fondos_en_poder_socio' ? 'aportacion' : 'gasto';
+  const tipoContraparte = fila.tipo ? CONTRAPARTE_DE_TIPO[fila.tipo] : undefined;
   const cerrar = () => { setDialogo(null); setLocal(null); limpiarError(); };
   const abrirConciliar = async () => {
     setCandidatas(null);
     setDialogo('conciliar');
-    const c = await candidatasAccion(tipoContraparte, bigintACentavos(fila.monto_cent));
+    const c = await candidatasAccion(fila.id);
     setCandidatas(c);
     setContraparte(String(c[0]?.id ?? ''));
   };
@@ -49,7 +48,7 @@ export function AccionesMovimiento({ fila, refs }: { fila: FilaMovimiento; refs:
   return (
     <span className="rtm-acciones-fila">
       {!cerrado && <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => { limpiarError(); setDialogo('clasificar'); }} data-testid={`clasificar-${fila.id}`}>{fila.estado === 'sin_clasificar' ? 'Clasificar' : 'Reclasificar'}</button>}
-      {fila.estado === 'clasificado' && <button type="button" className="rtm-boton rtm-boton-chico" onClick={abrirConciliar} data-testid={`conciliar-${fila.id}`}>Conciliar</button>}
+      {fila.estado === 'clasificado' && tipoContraparte && <button type="button" className="rtm-boton rtm-boton-chico" onClick={abrirConciliar} data-testid={`conciliar-${fila.id}`}>Conciliar</button>}
       {(fila.estado === 'sin_clasificar' || fila.estado === 'clasificado') && <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => { limpiarError(); setDialogo('marcar'); }} data-testid={`marcar-${fila.id}`}>Descartar</button>}
       {dialogo === 'clasificar' && (
         <ConfirmDialog abierto titulo="Clasificar el movimiento" confirmar="Guardar clasificación" ocupado={ocupado} onConfirmar={clasificar} onCancelar={cerrar}>
@@ -84,9 +83,9 @@ export function AccionesMovimiento({ fila, refs }: { fila: FilaMovimiento; refs:
           {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
         </ConfirmDialog>
       )}
-      {dialogo === 'conciliar' && (
+      {dialogo === 'conciliar' && tipoContraparte && (
         <ConfirmDialog abierto titulo="Conciliar con un hecho existente" confirmar="Conciliar" ocupado={ocupado} onConfirmar={() => (contraparte ? correr('mov_conciliar', { p_mov: fila.id, p_contraparte_tipo: tipoContraparte, p_contraparte_id: Number(contraparte) }, cerrar) : setLocal('No hay contraparte con la misma suma.'))} onCancelar={cerrar}>
-          <p className="rtm-nota">Solo concilia con {HECHO[tipoContraparte]} que tenga exactamente la misma suma ({formatearMoneda(fila.monto_cent < 0n ? -fila.monto_cent : fila.monto_cent)}) y que no concilie otro movimiento.</p>
+          <p className="rtm-nota">Solo concilia con {HECHO[tipoContraparte]} vigente (no anulado) que corresponda a la clasificación, que tenga exactamente la misma suma ({formatearMoneda(fila.monto_cent < 0n ? -fila.monto_cent : fila.monto_cent)}) y que no concilie otro movimiento.</p>
           {candidatas === null ? <p>Buscando…</p> : candidatas.length === 0 ? <p data-testid="sin-candidatas">No hay ninguna contraparte con la misma suma.</p> : (
             <label className="rtm-etiqueta-campo">Contraparte
               <select className="rtm-campo" value={contraparte} onChange={(e) => setContraparte(e.target.value)} data-testid="campo-contraparte">{candidatas.map((c) => <option key={c.id} value={c.id}>{c.texto} · {formatearMoneda(c.monto_cent)}</option>)}</select>
