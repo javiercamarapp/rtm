@@ -35,7 +35,7 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
     for (const x of [b, p]) for (const r of x?.[s] ?? []) set.set(r.codigo, r.nombre);
     return [...set.entries()].sort((x, y) => (x[0] < y[0] ? -1 : 1)).map(([codigo, nombre]) => ({ codigo, nombre, monto_cent: monto(b, s, codigo) }));
   };
-  const tabla = (s: Seccion, titulo: string, total: bigint, totalPrev: bigint | null, base: bigint, prueba: string) => (
+  const tabla = (s: Seccion, titulo: string, total: bigint, totalPrev: bigint | null, base: bigint, prueba: string, conPct = true) => (
     <Tarjeta plana titulo={titulo} descripcion={`Al ${etiquetaFecha(hasta)}${hayPrev ? ` contra ${etiquetaFecha(previo)}` : ''}`}>
       <div data-testid={prueba}>
         <DataTable
@@ -43,14 +43,14 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
           densidad="libro" plana primeraFija
           clave={(f) => f.codigo}
           filas={filasDe(s)}
-          totales={{ etiqueta: `Total ${titulo.toLowerCase()}`, celdas: { m: m(total), a: hayPrev && totalPrev !== null ? m(totalPrev) : 'Sin dato', v: hayPrev && totalPrev !== null ? m(total - totalPrev, true) : 'Sin dato', p: base > 0n ? `${(Number((total * 10000n) / base) / 100).toFixed(1)} %` : 'Sin dato' } }}
+          totales={{ etiqueta: `Total ${titulo.toLowerCase()}`, celdas: { m: m(total), a: hayPrev && totalPrev !== null ? m(totalPrev) : 'Sin dato', v: hayPrev && totalPrev !== null ? m(total - totalPrev, true) : 'Sin dato', ...(conPct ? { p: base > 0n ? `${(Number((total * 10000n) / base) / 100).toFixed(1)} %` : 'Sin dato' } : {}) } }}
           vacio={{ titulo: 'Sin saldos', texto: 'Ninguna cuenta de esta sección tiene saldo todavía.' }}
           columnas={[
             { id: 'n', titulo: 'Cuenta', ancho: 'xl', celda: (f) => <><span className="rtm-mono">{f.codigo}</span> {f.nombre}</> },
             { id: 'm', titulo: 'Al corte', bloque: 'Importe', numerica: true, ancho: 'm', celda: (f) => (/^\d{4}$/.test(f.codigo) ? <CifraComprobada texto={m(f.monto_cent)} cifra={`conta:saldo:${f.codigo}:${hasta}`} comprobacion="cuadra" /> : m(f.monto_cent)) },
             { id: 'a', titulo: '7 días antes', bloque: 'Importe', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (hayPrev ? m(monto(p, s, f.codigo)) : <span className="rtm-sin-dato">Sin dato</span>) },
             { id: 'v', titulo: 'Variación', bloque: 'Importe', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (hayPrev ? m(f.monto_cent - monto(p, s, f.codigo), true) : <span className="rtm-sin-dato">Sin dato</span>) },
-            { id: 'p', titulo: '% del activo', numerica: true, ancho: 's', secundaria: true, celda: (f) => (b.total_activo_cent > 0n ? `${(Number((f.monto_cent * 10000n) / b.total_activo_cent) / 100).toFixed(1)} %` : 'Sin dato') },
+            ...(conPct ? [{ id: 'p', titulo: '% del activo', numerica: true, ancho: 's' as const, secundaria: true, celda: (f: RenglonBalance) => (b.total_activo_cent > 0n ? `${(Number((f.monto_cent * 10000n) / b.total_activo_cent) / 100).toFixed(1)} %` : 'Sin dato') }] : []),
           ]}
         />
       </div>
@@ -104,12 +104,10 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
               { etiqueta: 'Fuera de libros', valor: m(suma(b.fuera_de_libros.map((x) => x.monto_cent))) },
             ]}
           />
+          {tabla('activo', 'Activo', b.total_activo_cent, hayPrev ? p!.total_activo_cent : null, b.total_activo_cent, 'balance-activo')}
           <Rejilla dividir="6-6">
-            <div className="a3-pila">{tabla('activo', 'Activo', b.total_activo_cent, hayPrev ? p!.total_activo_cent : null, b.total_activo_cent, 'balance-activo')}</div>
-            <div className="a3-pila">
-              {tabla('pasivo', 'Pasivo', b.total_pasivo_cent, hayPrev ? p!.total_pasivo_cent : null, b.total_activo_cent, 'balance-pasivo')}
-              {tabla('capital', 'Capital', b.total_capital_cent, hayPrev ? p!.total_capital_cent : null, b.total_activo_cent, 'balance-capital')}
-            </div>
+            {tabla('pasivo', 'Pasivo', b.total_pasivo_cent, hayPrev ? p!.total_pasivo_cent : null, b.total_activo_cent, 'balance-pasivo', false)}
+            {tabla('capital', 'Capital', b.total_capital_cent, hayPrev ? p!.total_capital_cent : null, b.total_activo_cent, 'balance-capital', false)}
           </Rejilla>
           <Rejilla dividir="4-4-4">
             <Tarjeta titulo="Mayores partidas del activo"><BarList etiquetaAria="Partidas del activo" items={top('activo').map((r) => ({ id: r.codigo, etiqueta: r.nombre, texto: m(r.monto_cent), pct: pct(r.monto_cent, b.total_activo_cent) }))} /></Tarjeta>

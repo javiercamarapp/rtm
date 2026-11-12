@@ -5,7 +5,7 @@
 import type { ComponentProps } from 'react';
 import { AreaSerie, ColumnasPeriodo, compactoEs } from '@/ui/graficas';
 
-const ejePesos = (centavos: number): string => `$${compactoEs(centavos / 100)}`;
+const ejePesos = (centavos: number): string => compactoEs(centavos / 100);
 
 export function ColumnasPesos(props: Omit<ComponentProps<typeof ColumnasPeriodo>, 'formatoEje' | 'unidad'>) {
   return <ColumnasPeriodo {...props} unidad="Pesos" formatoEje={ejePesos} />;

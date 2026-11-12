@@ -6,7 +6,7 @@ import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import type { EstadoCompra } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Segmentado } from '@/ui/componentes/controles';
-import { BarList, ListaClaveValor } from '@/ui/componentes/datos';
+import { BarList, LineaTiempo, ListaClaveValor } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
@@ -152,6 +152,9 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
           <p className="a3-sub">Órdenes de compra por estado</p>
           {porEstado.length === 0 && <p className="a3-pie">Sin órdenes de compra.</p>}
           {porEstado.length > 0 && <BarList etiquetaAria="Compras por estado" items={porEstado.map((x) => ({ id: x.e, etiqueta: ESTADO_COMPRA[x.e].texto, texto: m(x.c), pct: pct(x.c, totalCompras), nota: `${x.n} ${x.n === 1 ? 'orden' : 'órdenes'}` }))} />}
+          <p className="a3-sub">Últimos movimientos de la cuenta</p>
+          <LineaTiempo eventos={[...cuenta.movimientos].sort((a, b) => (a.fecha_neg === b.fecha_neg ? b.id - a.id : a.fecha_neg < b.fecha_neg ? 1 : -1)).slice(0, 4).map((x) => ({ id: String(x.id), fecha: etiquetaFecha(x.fecha_neg), titulo: `${CONCEPTO_CUENTA[x.concepto] ?? x.concepto} · ${m(x.monto_cent, true)}`, detalle: `Saldo ${m(x.saldo_corrido_cent, true)}`, tono: x.monto_cent < 0n ? ('atencion' as const) : ('ok' as const) }))} />
+          {cuenta.movimientos.length === 0 && <p className="a3-pie">Sin movimientos en la cuenta.</p>}
         </Tarjeta>
       </Rejilla>
 

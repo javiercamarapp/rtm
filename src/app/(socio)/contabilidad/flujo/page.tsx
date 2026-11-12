@@ -50,8 +50,8 @@ export default async function PaginaFlujo({ searchParams }: { searchParams: Prom
             etiquetaAria="Indicadores del flujo"
             celdas={[
               { id: 'i', etiqueta: 'Saldo inicial de fondos', valor: m(f.saldo_inicial_cent), categoria: 1, nota: `Al inicio del ${etiquetaFecha(ini)}` },
-              { id: 'o', etiqueta: 'Flujo de operación', valor: m(f.flujo_operacion_cent, true), categoria: 2, nota: `${op.length} conceptos` },
-              { id: 'f', etiqueta: 'Flujo de financiamiento', valor: m(f.flujo_financiamiento_cent, true), categoria: 6, nota: `${fi.length} conceptos` },
+              { id: 'o', etiqueta: 'Flujo de operación', valor: m(f.flujo_operacion_cent, true), categoria: 2, nota: `${op.length} ${op.length === 1 ? 'concepto' : 'conceptos'}` },
+              { id: 'f', etiqueta: 'Flujo de financiamiento', valor: m(f.flujo_financiamiento_cent, true), categoria: 6, nota: `${fi.length} ${fi.length === 1 ? 'concepto' : 'conceptos'}` },
               { id: 'v', etiqueta: 'Variación neta', valor: m(f.variacion_cent, true), categoria: 7, nota: <Estado tono={f.comprobacion.cuadra ? 'ok' : 'malo'}>{f.comprobacion.cuadra ? 'Cuadra por las dos vías' : 'No cuadra'}</Estado> },
               { id: 's', etiqueta: 'Saldo final de fondos', valor: m(f.saldo_final_cent), categoria: 4, nota: `Al ${etiquetaFecha(fin)}` },
             ]}
@@ -70,7 +70,12 @@ export default async function PaginaFlujo({ searchParams }: { searchParams: Prom
               <Cascada titulo="Cascada del flujo de efectivo" descripcion={`Saldo inicial ${m(f.saldo_inicial_cent)}; operación ${m(f.flujo_operacion_cent, true)}; financiamiento ${m(f.flujo_financiamiento_cent, true)}; saldo final ${m(f.saldo_final_cent)}.`} pasos={pasos} unidad="Pesos" />
             </Tarjeta>
             <Tarjeta titulo="Por concepto" descripcion="Magnitud de cada concepto de fondos">
-              <BarList etiquetaAria="Conceptos de fondos" items={f.directo.map((x) => ({ id: x.categoria, etiqueta: x.categoria, texto: m(x.monto_cent, true), pct: maxMov > 0n ? pct(abs(x.monto_cent), maxMov) : null, nota: x.seccion === 'operacion' ? 'operación' : 'financiamiento', tono: x.monto_cent < 0n ? ('malo' as const) : undefined }))} />
+              <BarList etiquetaAria="Conceptos de fondos" items={f.directo.map((x) => ({ id: x.categoria, etiqueta: x.categoria, texto: m(x.monto_cent, true), pct: maxMov > 0n ? pct(abs(x.monto_cent), maxMov) : null, tono: x.monto_cent < 0n ? ('malo' as const) : undefined }))} />
+              <p className="a3-sub">Por actividad</p>
+              <BarList etiquetaAria="Flujo por actividad" items={[
+                { id: 'op', etiqueta: 'Actividades de operación', texto: m(f.flujo_operacion_cent, true), pct: maxMov > 0n ? pct(abs(f.flujo_operacion_cent), abs(f.flujo_operacion_cent) > abs(f.flujo_financiamiento_cent) ? abs(f.flujo_operacion_cent) : abs(f.flujo_financiamiento_cent)) : null, tono: f.flujo_operacion_cent < 0n ? 'malo' : undefined },
+                { id: 'fi', etiqueta: 'Actividades de financiamiento', texto: m(f.flujo_financiamiento_cent, true), pct: maxMov > 0n ? pct(abs(f.flujo_financiamiento_cent), abs(f.flujo_operacion_cent) > abs(f.flujo_financiamiento_cent) ? abs(f.flujo_operacion_cent) : abs(f.flujo_financiamiento_cent)) : null, tono: f.flujo_financiamiento_cent < 0n ? 'malo' : undefined },
+              ]} />
             </Tarjeta>
           </Rejilla>
           <Rejilla dividir="6-6">

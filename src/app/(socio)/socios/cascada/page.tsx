@@ -101,12 +101,18 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
             { k: 'c. Utilidad repartible 50/50', v: m(c.repartible_cent) },
             { k: 'Efectivo que queda', v: <strong>{m(c.remanente_cent)}</strong> },
           ]} />
+          <p className="a3-sub">Con qué se paga el efectivo</p>
+          <BarList etiquetaAria="Uso del efectivo" items={[
+            { id: 'r', etiqueta: 'Reembolsos', texto: m(c.reembolsos.pagado_cent), pct: pct(c.reembolsos.pagado_cent, c.efectivo.total_cent) },
+            { id: 'a', etiqueta: 'Aportaciones devueltas', texto: m(c.aportaciones.pagado_cent), pct: pct(c.aportaciones.pagado_cent, c.efectivo.total_cent) },
+            { id: 'u', etiqueta: 'Utilidad repartida', texto: m(c.repartible_cent), pct: pct(c.repartible_cent, c.efectivo.total_cent) },
+            { id: 'q', etiqueta: 'Queda en la sociedad', texto: m(c.remanente_cent), pct: pct(c.remanente_cent, c.efectivo.total_cent) },
+          ]} />
           <Pie>El centavo suelto de un reparto va a favor de quien paga o aporta más.</Pie>
         </Tarjeta>
       </Rejilla>
 
-      <Rejilla dividir="8-4">
-        <Tarjeta plana titulo="4. Resultado por socio" descripcion="Lo que corresponde a cada uno y lo que tiene o debe">
+      <Tarjeta plana titulo="4. Resultado por socio" descripcion="Lo que corresponde a cada uno y lo que tiene o debe">
           <DataTable
             etiqueta="Resultado por socio"
             densidad="densa" plana primeraFija
@@ -123,14 +129,14 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
               { id: 'x', titulo: 'Resultado', numerica: true, ancho: 'l', celda: (s) => <Dos a={<CifraComprobada texto={m(ps[s].resultado_cent, true)} cifra={`cascada:resultado:${s}:${ini}:${fin}:${caja}`} comprobacion="cuadra" />} b={ps[s].resultado_cent > 0n ? 'Recibe' : ps[s].resultado_cent < 0n ? 'Entrega' : 'En paz'} /> },
             ]}
           />
-        </Tarjeta>
+      </Tarjeta>
+
+      <Rejilla dividir="4-8">
+        <div className="a3-pila">
         <Tarjeta titulo="Resultado de cada socio" descripcion="Recibe o entrega, en magnitud">
           <BarList etiquetaAria="Resultado por socio" items={(['Angelo', 'Javier'] as const).map((s) => ({ id: s, etiqueta: s, texto: m(ps[s].resultado_cent, true), pct: maxRes > 0n ? pct(abs(ps[s].resultado_cent), maxRes) : null, nota: ps[s].resultado_cent > 0n ? 'Recibe' : ps[s].resultado_cent < 0n ? 'Entrega' : 'En paz', tono: ps[s].resultado_cent < 0n ? 'malo' : undefined }))} />
           <Pie>Identidad: lo que se asigna a los dos ({m(c.suma_asignada_cent)}) es exactamente el efectivo repartido.</Pie>
         </Tarjeta>
-      </Rejilla>
-
-      <Rejilla dividir="4-8">
         <Tarjeta titulo="5. Saldo entre socios">
           <p data-testid="saldo-entre-socios">{liq ? <>{liq.de} entrega {m(liq.monto_cent)} a {liq.a} y quedan en paz.</> : 'Los dos resultados están en cero: no hay nada que liquidar entre socios.'}</p>
           {liq && (
@@ -148,6 +154,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
             </div>
           ) : <Pie>El periodo aún no termina: se puede proponer el cierre a partir del {etiquetaFecha(sumarDias(fin, 1))}. Mientras tanto esta vista es una proyección.</Pie>}
         </Tarjeta>
+        </div>
         <Tarjeta plana titulo="Cierre firmado por los dos" descripcion="Cada cierre congela las cifras y requiere las dos firmas">
           <DataTable
             etiqueta="Cierres de reparto"

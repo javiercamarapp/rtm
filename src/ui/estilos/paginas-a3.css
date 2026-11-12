@@ -60,3 +60,5 @@
 .a3-sub { margin: 8px 0 0; font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-fuerte); letter-spacing: var(--rtm-trk-eyebrow); text-transform: uppercase; color: var(--rtm-ink-3); }
 .a3-filtros-form input[type='date'].rtm-campo { width: 128px; }
 .a3-filtros-form select.rtm-campo { max-width: 150px; }
+
+.a3-filtros-form .rtm-campo-num { width: 172px; }
