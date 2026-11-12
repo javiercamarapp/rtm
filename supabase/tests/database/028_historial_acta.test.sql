@@ -151,6 +151,40 @@ select is((api.acta_periodo_sugerido()->>'ini')::date, '2021-03-09'::date, 'el s
 select is((api.acta_periodo_sugerido()->>'fin')::date, '2021-03-31'::date, 'y termina al fin de mes');
 select is((api.acta_periodo_sugerido()->>'listo')::boolean, true, 'el mes ya termino: se puede proponer');
 
+-- ---- Correcciones de la verificacion ---------------------------------------------------------------------------------------------------------------------
+-- La reinversion pertenece al periodo del acta (marzo de 2021), no al dia de la firma (hoy): la serie mensual la ubica donde se decidio.
+select is((select sum((x->>'reinversion_cent')::bigint)::text from _h, jsonb_array_elements(j->'meses') x), '200000', 'serie por mes: la reinversion cae en el periodo del acta, no en el dia de la firma');
+select is((select x->>'reinversion_cent' from _h, jsonb_array_elements(j->'dias') x where x->>'ini' = '2021-03-08'), '200000', 'serie por dia: la reinversion cae el ultimo dia del periodo del acta (8 de marzo)');
+-- Dos vias de verdad: no son la misma suma escrita dos veces.
+select is((api.explicar_historial('historial:parte:' || (select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1) || ':Angelo')->'comprobacion'->>'via2_valor')::bigint, 600000::bigint, 'explicar parte: la segunda via es lo repartible menos la parte del otro socio');
+select is((api.explicar_historial('historial:invertido:Angelo')->'comprobacion'->>'via2_valor')::bigint, 200000::bigint, 'explicar invertido: la segunda via toma la reinversion del libro de utilidad');
+-- El acta trae el resultado de sus comprobaciones: la pantalla no fija "cuadra" a mano.
+select is((api.acta_detalle((select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1))->>'utilidad_cuadra')::boolean, true, 'acta_detalle: la utilidad neta del periodo cuadra por sus dos vias');
+select is((api.acta_detalle((select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1))->'por_socio_acta'->'Angelo'->>'cuadra')::boolean, true, 'acta_detalle: el disponible de Angelo cuadra por sus dos vias');
+
+-- Liquidacion entre socios: lo que recibe el otro socio es un retiro de su cuenta (igual que en su estado de cuenta).
+select pg_temp.como('Angelo');
+select lives_ok($$select operacion.registrar_liquidacion_entre_socios('h28l1', 'Angelo', 'Javier', 100000)$$, 'Angelo liquida 1,000.00 a Javier');
+create temp table _hj as select api.historial_socio('Javier', '2021-03-31') as j;
+select is((select j->'cabecera'->>'retirado_cent' from _hj), '100000', 'historial de Javier: la liquidacion recibida cuenta como retirado');
+select is((select j->'cabecera'->>'retirado_cent' from _hj)::bigint, -(operacion.libro_socio(pg_temp.sid('Javier'), 'retiro') + operacion.libro_socio(pg_temp.sid('Javier'), 'pago_utilidad') + operacion.libro_socio(pg_temp.sid('Javier'), 'liquidacion_recibida')), 'y coincide con el libro que usa su estado de cuenta');
+select is((api.explicar_historial('historial:retirado:Javier')->'comprobacion'->>'cuadra')::boolean, true, 'explicar retirado de Javier: cuadra con la liquidacion');
+select is((select (x->>'monto_cent')::bigint from _hj, jsonb_array_elements(j->'flujos') x where x->>'tipo' = 'retiro' limit 1), 100000::bigint, 'el flujo de su TIR trae la liquidacion como retiro');
+select is((select sum((x->>'retiros_cent')::bigint)::text from _hj, jsonb_array_elements(j->'meses') x) is not null, true, 'la serie mensual de Javier suma retiros');
+
+-- Contra-acta: el acta original solo se marca corregida cuando la contra-acta esta FIRMADA por los dos.
+select lives_ok($$select operacion.contra_acta_reparto('h28c1', (select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1), 'Se capturo mal una venta')$$, 'se propone la contra-acta');
+create temp table _hc1 as select api.historial_socio('Angelo', '2021-03-31') as j;
+select is((select (x->>'corregida')::boolean from _hc1, jsonb_array_elements(j->'actas') x where x->>'tipo' = 'periodo'), false, 'con la contra-acta solo propuesta el acta original sigue vigente (no corregida)');
+select is((select (x->>'contra_propuesta')::boolean from _hc1, jsonb_array_elements(j->'actas') x where x->>'tipo' = 'periodo'), true, 'y se avisa que tiene una contra-acta propuesta');
+select is((select operacion.firmar_cierre_reparto('h28c2', pg_temp.ult())->>'cerrado')::boolean, false, 'Angelo firma la contra-acta: una firma no la cierra');
+select pg_temp.como('Javier');
+select is((operacion.firmar_cierre_reparto('h28c3', pg_temp.ult())->>'cerrado')::boolean, true, 'Javier firma: la contra-acta surte efecto');
+create temp table _hc2 as select api.historial_socio('Angelo', '2021-03-31') as j;
+select is((select (x->>'corregida')::boolean from _hc2, jsonb_array_elements(j->'actas') x where x->>'tipo' = 'periodo'), true, 'con la contra-acta firmada el acta original queda corregida (su efecto se deshizo)');
+select is((select (x->>'contra_propuesta')::boolean from _hc2, jsonb_array_elements(j->'actas') x where x->>'tipo' = 'periodo'), false, 'y ya no hay contra-acta pendiente');
+select is((select j->'cabecera'->>'utilidad_asignada_cent' from _hc2), '0', 'la utilidad recibida en actas vuelve a cero tras la contra-acta');
+
 -- Rechazos y permisos.
 select throws_ok($$select api.historial_socio('Omar')$$, '22023', null, 'solo hay historial de socios');
 select is(has_function_privilege('anon', 'api.historial_socio(text, date)', 'execute'), false, 'anon no ejecuta el historial');

@@ -82,8 +82,10 @@ begin
   v_v := operacion.volumen_periodo(p_ini, p_fin);
   select coalesce(-sum(l.monto_cent), 0)::bigint into v_ret
     from operacion.socio_libro l left join operacion.socio_libro o on o.id = l.reversa_de
-   where l.socio_id = p_id and l.fecha_neg between p_ini and p_fin and coalesce(o.concepto, l.concepto) in ('retiro', 'pago_utilidad');
-  select coalesce(sum(a.monto_cent), 0)::bigint into v_rei from operacion.aportacion_socio a where a.socio_id = p_id and a.ref_tipo = 'reinversion' and a.fecha_neg between p_ini and p_fin;
+   where l.socio_id = p_id and l.fecha_neg between p_ini and p_fin and coalesce(o.concepto, l.concepto) in ('retiro', 'pago_utilidad', 'liquidacion_recibida');
+  -- La reinversion pertenece al periodo del acta que la decidio (no al dia en que se firmo): se ubica por periodo_fin del acta de origen.
+  select coalesce(sum(a.monto_cent), 0)::bigint into v_rei from operacion.aportacion_socio a left join operacion.cierre_reparto k on k.id = a.ref_id
+   where a.socio_id = p_id and a.ref_tipo = 'reinversion' and coalesce(k.periodo_fin, a.fecha_neg) between p_ini and p_fin;
   select coalesce(sum(a.monto_cent), 0)::bigint into v_apo from operacion.aportacion_socio a
    where a.socio_id = p_id and a.clasificacion = 'capital' and coalesce(a.ref_tipo, '') <> 'reinversion' and a.fecha_neg between p_ini and p_fin;
   return jsonb_build_object('ini', p_ini, 'fin', p_fin, 'parcial', p_parcial, 'utilidad_cent', (v_u ->> 'utilidad_cent')::bigint, 'parte_cent', operacion.mitad_socio((v_u ->> 'utilidad_cent')::bigint, p_socio, p_rotor),
@@ -132,7 +134,7 @@ begin
     select coalesce(-sum(m.monto_cent), 0)::bigint into v_comp from operacion.cuenta_socio_mov m where m.socio_id = s.id and m.evento_id = new.evento_id and m.concepto = 'compensacion_reparto';
     v_soc := v_soc || jsonb_build_object(s.nombre, jsonb_build_object(
       'invertido_cent', operacion.aportado_socio(s.id, 'capital'),
-      'retirado_cent', -(operacion.libro_socio(s.id, 'retiro') + operacion.libro_socio(s.id, 'pago_utilidad')),
+      'retirado_cent', -(operacion.libro_socio(s.id, 'retiro') + operacion.libro_socio(s.id, 'pago_utilidad') + operacion.libro_socio(s.id, 'liquidacion_recibida')),
       'por_distribuir_cent', operacion.utilidad_por_distribuir(s.id),
       'fondos_en_poder_cent', operacion.saldo_socio(s.id),
       'compensaciones_cent', v_comp,
@@ -175,7 +177,7 @@ end $$;
 create function api.acta_detalle(p_cierre bigint) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
-declare v_c jsonb; v_s jsonb; v_corrige text; v_contra text; v_disp jsonb;
+declare v_c jsonb; v_s jsonb; v_corrige text; v_contra text; v_disp jsonb; v_ucuadra boolean; k text; v_cu boolean;
 begin
   perform seguridad.exigir_rol(array['socio']);
   select x into v_c from jsonb_array_elements(api.cierres_reparto()) x where (x ->> 'id')::bigint = p_cierre;
@@ -189,7 +191,15 @@ begin
            'queda_cent', greatest((e.value ->> 'utilidad_cent')::bigint - (e.value ->> 'anticipo_cent')::bigint, 0)
                          - coalesce((v_c -> 'decisiones' -> e.key ->> 'retira')::bigint, 0) - coalesce((v_c -> 'decisiones' -> e.key ->> 'reinvierte')::bigint, 0))), '{}'::jsonb)
     into v_disp from jsonb_each(coalesce(v_c -> 'snapshot' -> 'por_socio', '{}'::jsonb)) e where (v_c ->> 'tipo') <> 'contra';
-  return jsonb_build_object('cierre', v_c, 'sello', v_s, 'corrige_folio', v_corrige, 'contra_acta_folio', v_contra, 'por_socio_acta', v_disp);
+  -- Resultado de la comprobacion por dos vias de lo que la pantalla muestra con "Explicar este numero" (null = sin comprobar): la pantalla no lo decide, solo lo muestra.
+  if (v_c ->> 'tipo') <> 'contra' then
+    begin v_ucuadra := (api.explicar_cifra('cascada:utilidad:' || (v_c ->> 'periodo_ini') || ':' || (v_c ->> 'periodo_fin')) -> 'comprobacion' ->> 'cuadra')::boolean; exception when others then v_ucuadra := null; end;
+    for k in select jsonb_object_keys(v_disp) loop
+      begin v_cu := (api.explicar_historial('historial:parte:' || p_cierre || ':' || k) -> 'comprobacion' ->> 'cuadra')::boolean; exception when others then v_cu := null; end;
+      v_disp := jsonb_set(v_disp, array[k, 'cuadra'], coalesce(to_jsonb(v_cu), 'null'::jsonb));
+    end loop;
+  end if;
+  return jsonb_build_object('cierre', v_c, 'sello', v_s, 'corrige_folio', v_corrige, 'contra_acta_folio', v_contra, 'por_socio_acta', v_disp, 'utilidad_cuadra', v_ucuadra);
 end $$;
 
 -- Disponible por socio de un periodo para el formulario de la propuesta (utilidad menos lo ya recibido, sin bajar de cero). Misma resta que el tope que valida la base.
@@ -226,7 +236,8 @@ begin
   -- Cabecera (estado a hoy; p_hasta solo acota las series y la valuacion): invertido (aportaciones declaradas + reinversiones), retirado, utilidad recibida y valor de su participacion.
   select coalesce(sum(a.monto_cent) filter (where coalesce(a.ref_tipo, '') <> 'reinversion'), 0)::bigint, coalesce(sum(a.monto_cent) filter (where a.ref_tipo = 'reinversion'), 0)::bigint
     into v_apo, v_rei from operacion.aportacion_socio a where a.socio_id = v_id and a.clasificacion = 'capital';
-  v_ret_u := -(operacion.libro_socio(v_id, 'retiro') + operacion.libro_socio(v_id, 'pago_utilidad'));
+  -- Mismo criterio que el estado de cuenta (api.socio_cuenta): lo que recibe de otro socio en una liquidacion tambien es un retiro de su cuenta.
+  v_ret_u := -(operacion.libro_socio(v_id, 'retiro') + operacion.libro_socio(v_id, 'pago_utilidad') + operacion.libro_socio(v_id, 'liquidacion_recibida'));
   v_ret_c := -operacion.libro_socio(v_id, 'pago_devolucion_aportacion');
   begin v_val := contabilidad.valuacion(v_hasta); exception when others then v_val := null; end;
   if v_val is not null and (v_val ->> 'con_movimientos')::boolean then v_dif := (v_val ->> 'v03_diferencia_cent')::bigint; v_cli := (v_val ->> 'clientes_cent')::bigint; end if;
@@ -269,7 +280,7 @@ begin
     union all
     select jsonb_build_object('fecha', l.fecha_neg, 'monto_cent', -l.monto_cent, 'tipo', case when coalesce(o.concepto, l.concepto) = 'pago_devolucion_aportacion' then 'retiro_capital' else 'retiro' end)
       from operacion.socio_libro l left join operacion.socio_libro o on o.id = l.reversa_de
-     where l.socio_id = v_id and coalesce(o.concepto, l.concepto) in ('retiro', 'pago_utilidad', 'pago_devolucion_aportacion')) q;
+     where l.socio_id = v_id and coalesce(o.concepto, l.concepto) in ('retiro', 'pago_utilidad', 'liquidacion_recibida', 'pago_devolucion_aportacion')) q;
 
   -- Linea de tiempo de actas (la contra-acta se ve como un renglon propio).
   select coalesce(jsonb_agg(jsonb_build_object(
@@ -279,7 +290,11 @@ begin
       'estado', case when exists (select 1 from operacion.cierre_reparto_anulacion a where a.cierre_id = c.id) then 'anulado'
                      when (select count(*) from operacion.cierre_reparto_firma f where f.cierre_id = c.id) >= 2 then 'cerrado'
                      when exists (select 1 from operacion.cierre_reparto_firma f where f.cierre_id = c.id) then 'firmado_por_uno' else 'propuesto' end,
-      'corregida', exists (select 1 from operacion.cierre_reparto k where k.corrige_a = c.id),
+      -- Corregida = hay una contra-acta FIRMADA por los dos (su efecto ya se deshizo); con la contra-acta solo propuesta el acta sigue vigente.
+      'corregida', exists (select 1 from operacion.cierre_reparto k where k.corrige_a = c.id and not exists (select 1 from operacion.cierre_reparto_anulacion a where a.cierre_id = k.id)
+                           and (select count(*) from operacion.cierre_reparto_firma f where f.cierre_id = k.id) >= 2),
+      'contra_propuesta', exists (select 1 from operacion.cierre_reparto k where k.corrige_a = c.id and not exists (select 1 from operacion.cierre_reparto_anulacion a where a.cierre_id = k.id)
+                                  and (select count(*) from operacion.cierre_reparto_firma f where f.cierre_id = k.id) < 2),
       'firmas', coalesce((select jsonb_agg(jsonb_build_object('socio', s.nombre, 'firmado_at', f.firmado_at) order by f.id) from operacion.cierre_reparto_firma f join catalogo.socio s on s.id = f.socio_id where f.cierre_id = c.id), '[]'::jsonb),
       'capital_contable_cent', (select (s.contenido ->> 'capital_contable_cent')::bigint from operacion.acta_sello s where s.cierre_id = c.id),
       'valor_cent', (select (s.contenido -> 'valor_participacion_cent' ->> p_socio)::bigint from operacion.acta_sello s where s.cierre_id = c.id),
@@ -342,7 +357,7 @@ create function api.explicar_historial(p_cifra text) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare
-  partes text[] := string_to_array(p_cifra, ':'); v_id bigint; v_rengs jsonb; v_via1 bigint; v_via2 bigint; v_val jsonb; v_dif bigint; c operacion.cierre_reparto; v_x jsonb; v_d jsonb; v_disp bigint; v_titulo text; v_otro_n text;
+  partes text[] := string_to_array(p_cifra, ':'); v_id bigint; v_rengs jsonb; v_via1 bigint; v_via2 bigint; v_val jsonb; v_dif bigint; c operacion.cierre_reparto; v_x jsonb; v_d jsonb; v_disp bigint; v_titulo text; v_otro_n text; v_ap bigint;
 begin
   perform seguridad.exigir_rol(array['socio']);
   if partes[1] <> 'historial' or partes[2] is null then raise exception 'cifra no explicable' using errcode = '22023'; end if;
@@ -353,7 +368,10 @@ begin
     if v_x is null then raise exception 'socio desconocido' using errcode = '22023'; end if;
     v_disp := greatest((v_x ->> 'utilidad_cent')::bigint - (v_x ->> 'anticipo_cent')::bigint, 0);
     v_via1 := v_disp;
-    v_via2 := coalesce((v_d ->> 'retira')::bigint, 0) + coalesce((v_d ->> 'reinvierte')::bigint, 0) + (v_disp - coalesce((v_d ->> 'retira')::bigint, 0) - coalesce((v_d ->> 'reinvierte')::bigint, 0));
+    -- Segunda via independiente: las dos partes 50/50 suman lo repartible del acta, asi que su parte es lo repartible menos la parte del otro socio (menos lo ya recibido).
+    v_via2 := case when c.snapshot ? 'repartible_cent' and jsonb_typeof(c.snapshot -> 'por_socio') = 'object' and (select count(*) from jsonb_object_keys(c.snapshot -> 'por_socio')) = 2
+                   then greatest((c.snapshot ->> 'repartible_cent')::bigint - (select sum((e.value ->> 'utilidad_cent')::bigint) from jsonb_each(c.snapshot -> 'por_socio') e where e.key <> partes[4])
+                                 - (v_x ->> 'anticipo_cent')::bigint, 0) end;
     v_rengs := jsonb_build_array(
       jsonb_build_object('concepto', 'Utilidad neta del periodo del acta ' || c.folio, 'monto_cent', c.utilidad_cent),
       jsonb_build_object('concepto', 'Su parte de la utilidad repartible (50/50 fijo)', 'monto_cent', (v_x ->> 'utilidad_cent')::bigint),
@@ -362,7 +380,7 @@ begin
       jsonb_build_object('concepto', 'Reinvierte en el acta', 'monto_cent', coalesce((v_d ->> 'reinvierte')::bigint, 0)),
       jsonb_build_object('concepto', 'Queda por distribuir', 'monto_cent', v_disp - coalesce((v_d ->> 'retira')::bigint, 0) - coalesce((v_d ->> 'reinvierte')::bigint, 0)));
     return jsonb_build_object('cifra', p_cifra, 'titulo', 'Parte de ' || partes[4] || ' en el acta ' || c.folio || ' (disponible para retirar, reinvertir o dejar por distribuir)', 'valor', v_via1, 'unidad', 'mxn',
-      'comprobacion', jsonb_build_object('via1', 'Su parte menos lo ya recibido', 'via1_valor', v_via1, 'via2', 'Retira + reinvierte + queda por distribuir', 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
+      'comprobacion', jsonb_build_object('via1', 'Su parte del acta menos lo ya recibido', 'via1_valor', v_via1, 'via2', 'Lo repartible del acta menos la parte del otro socio, menos lo ya recibido', 'via2_valor', v_via2, 'cuadra', case when v_via2 is null then null else v_via1 = v_via2 end),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   end if;
   select id into v_id from catalogo.socio where nombre = partes[3] and nombre in ('Angelo', 'Javier');
@@ -370,16 +388,25 @@ begin
   if partes[2] = 'invertido' then
     select coalesce(jsonb_agg(jsonb_build_object('concepto', a.concepto || case when a.ref_tipo = 'reinversion' then ' (reinversion)' else ' (aportacion)' end, 'monto_cent', a.monto_cent, 'fecha_neg', a.fecha_neg) order by a.fecha_neg, a.id), '[]'::jsonb),
            coalesce(sum(a.monto_cent), 0)::bigint into v_rengs, v_via2 from operacion.aportacion_socio a where a.socio_id = v_id and a.clasificacion = 'capital';
-    v_via1 := (select coalesce(sum(a.monto_cent) filter (where coalesce(a.ref_tipo, '') <> 'reinversion'), 0) + coalesce(sum(a.monto_cent) filter (where a.ref_tipo = 'reinversion'), 0) from operacion.aportacion_socio a where a.socio_id = v_id and a.clasificacion = 'capital');
+    -- Via 1: todo el libro de aportaciones de capital. Via 2: las aportaciones declaradas mas la reinversion segun el OTRO libro (la baja de utilidad por distribuir que asienta el acta).
+    v_via1 := v_via2;
+    v_via2 := (select coalesce(sum(a.monto_cent), 0) from operacion.aportacion_socio a where a.socio_id = v_id and a.clasificacion = 'capital' and coalesce(a.ref_tipo, '') <> 'reinversion')
+              - operacion.libro_socio(v_id, 'reinversion');
     return jsonb_build_object('cifra', p_cifra, 'titulo', 'Invertido por ' || partes[3] || ' (aportaciones declaradas mas reinversiones de utilidad)', 'valor', v_via1, 'unidad', 'mxn',
-      'comprobacion', jsonb_build_object('via1', 'Aportaciones mas reinversiones', 'via1_valor', v_via1, 'via2', 'Suma del libro de aportaciones de capital', 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
+      'comprobacion', jsonb_build_object('via1', 'Suma del libro de aportaciones de capital (declaradas mas reinversiones)', 'via1_valor', v_via1, 'via2', 'Aportaciones declaradas mas la reinversion segun el libro de utilidad del socio', 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   elsif partes[2] = 'retirado' then
     select coalesce(jsonb_agg(jsonb_build_object('concepto', coalesce(l.nota, 'Retiro') || case when o.id is not null then ' (reversa)' else '' end, 'monto_cent', -l.monto_cent, 'fecha_neg', l.fecha_neg) order by l.fecha_neg, l.id), '[]'::jsonb),
            coalesce(-sum(l.monto_cent), 0)::bigint into v_rengs, v_via2
-      from operacion.socio_libro l left join operacion.socio_libro o on o.id = l.reversa_de where l.socio_id = v_id and coalesce(o.concepto, l.concepto) in ('retiro', 'pago_utilidad', 'pago_devolucion_aportacion');
-    v_via1 := -(operacion.libro_socio(v_id, 'retiro') + operacion.libro_socio(v_id, 'pago_utilidad') + operacion.libro_socio(v_id, 'pago_devolucion_aportacion'));
-    return jsonb_build_object('cifra', p_cifra, 'titulo', 'Retirado por ' || partes[3] || ' (retiros de utilidad y de capital)', 'valor', v_via1, 'unidad', 'mxn',
+      from operacion.socio_libro l left join operacion.socio_libro o on o.id = l.reversa_de where l.socio_id = v_id and coalesce(o.concepto, l.concepto) in ('retiro', 'pago_utilidad', 'liquidacion_recibida', 'pago_devolucion_aportacion');
+    v_via1 := -(operacion.libro_socio(v_id, 'retiro') + operacion.libro_socio(v_id, 'pago_utilidad') + operacion.libro_socio(v_id, 'liquidacion_recibida') + operacion.libro_socio(v_id, 'pago_devolucion_aportacion'));
+    -- La apertura firmada trae retiros anteriores al sistema (cuenta 3210); libro_socio los suma, asi que el renglon por renglon tambien.
+    v_ap := contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 3210));
+    if v_ap <> 0 then
+      v_rengs := v_rengs || jsonb_build_array(jsonb_build_object('concepto', 'Retiros anteriores al sistema (apertura firmada)', 'monto_cent', v_ap));
+      v_via2 := v_via2 + v_ap;
+    end if;
+    return jsonb_build_object('cifra', p_cifra, 'titulo', 'Retirado por ' || partes[3] || ' (retiros de utilidad, liquidaciones recibidas y devoluciones de capital)', 'valor', v_via1, 'unidad', 'mxn',
       'comprobacion', jsonb_build_object('via1', 'Suma por concepto del libro', 'via1_valor', v_via1, 'via2', 'Renglon por renglon', 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   elsif partes[2] = 'utilidad' then
@@ -387,6 +414,12 @@ begin
            coalesce(sum(l.monto_cent), 0)::bigint into v_rengs, v_via2
       from operacion.socio_libro l left join operacion.socio_libro o on o.id = l.reversa_de where l.socio_id = v_id and coalesce(o.concepto, l.concepto) = 'utilidad_asignada';
     v_via1 := operacion.libro_socio(v_id, 'utilidad_asignada');
+    -- Igual que arriba: la apertura firmada trae utilidad asignada anterior al sistema (cuenta 3310).
+    v_ap := contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 3310));
+    if v_ap <> 0 then
+      v_rengs := v_rengs || jsonb_build_array(jsonb_build_object('concepto', 'Utilidad asignada anterior al sistema (apertura firmada)', 'monto_cent', v_ap));
+      v_via2 := v_via2 + v_ap;
+    end if;
     return jsonb_build_object('cifra', p_cifra, 'titulo', 'Utilidad recibida por ' || partes[3] || ' en actas firmadas', 'valor', v_via1, 'unidad', 'mxn',
       'comprobacion', jsonb_build_object('via1', 'Suma por concepto del libro', 'via1_valor', v_via1, 'via2', 'Renglon por renglon', 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
