@@ -90,7 +90,7 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   await page.getByTestId('pago-cuenta').selectOption('Angelo');
   await page.getByTestId('pago-monto').fill('5000');
   await page.getByTestId('confirmar').click();
-  await expect(page.getByText('Abonado').locator('..')).toContainText('$5,000.00');
+  await expect(page.getByRole('region', { name: 'Cifras del pedido' }).getByText('Abonado').locator('..')).toContainText('$5,000.00');
   await expect(page.getByText('Por cobrar', { exact: true }).locator('..')).toContainText('$1,300.00');
 
   // Correccion enlazada.

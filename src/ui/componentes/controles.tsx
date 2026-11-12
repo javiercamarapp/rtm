@@ -82,12 +82,12 @@ export function Monograma({ nombre, tam = 28 }: { nombre: string; tam?: 28 | 36 
 }
 
 /** Celda de persona o entidad: monograma, nombre (enlace opcional) y subtitulo gris. */
-export function CeldaPersona({ nombre, subtitulo, href }: { nombre: string; subtitulo?: ReactNode; href?: string }) {
+export function CeldaPersona({ nombre, subtitulo, href, testid }: { nombre: string; subtitulo?: ReactNode; href?: string; testid?: string }) {
   return (
     <span className="rtm-persona">
       <Monograma nombre={nombre} />
       <span className="rtm-persona-texto">
-        {href ? <Link href={href}>{nombre}</Link> : <strong>{nombre}</strong>}
+        {href ? <Link href={href} data-testid={testid}>{nombre}</Link> : <strong data-testid={testid}>{nombre}</strong>}
         {subtitulo && <small>{subtitulo}</small>}
       </span>
     </span>

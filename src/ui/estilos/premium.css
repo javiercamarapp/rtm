@@ -415,3 +415,8 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-tarjeta-v2 > .rtm-a1-cuerpo > .rtm-barlist { flex: 1 1 auto; }
 .rtm-tarjeta-v2 > .rtm-a1-cuerpo > .rtm-barlist:not([data-columnas='2']) > li { flex: 1 1 auto; max-height: 72px; display: flex; flex-direction: column; justify-content: center; }
 .rtm-tarjeta-v2 > .a3-acciones:last-child { margin-top: auto; }
+
+/* Campos en pantallas tactiles o angostas: 16 px (sin zoom de iOS) y 44 px de alto, tambien en los filtros de A2 y A3 */
+@media (pointer: coarse), (max-width: 767px) {
+  html .a3-filtros-form .rtm-campo, html .rtm-a2-campo > :is(input, select), html .rtm-dt-busqueda, html .rtm-campo-chico { font-size: 16px; min-height: 44px; }
+}

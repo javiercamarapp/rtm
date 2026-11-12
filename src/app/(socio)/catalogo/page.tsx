@@ -58,7 +58,7 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
         descripcion={`${sinDisp > 0 ? `${sinDisp} sin disponibilidad ahora · ` : ''}${sinPrecio} sin precio de cliente · ${supuestos} ${supuestos === 1 ? 'costo supuesto' : 'costos supuestos'}. Costos y márgenes solo los ven los socios.`}
       />
       <BarraFiltros etiquetaAria="Filtrar el catálogo" extras={filtro || marca || sp.q ? <Chip href="/catalogo">Quitar filtros</Chip> : undefined}>
-        <form className="rtm-a1-buscar" method="get" role="search" aria-label="Buscar en el catálogo">
+        <form className="rtm-a1-buscar" method="get" role="search" aria-label="Búsqueda del catálogo">
           <input className="rtm-campo" type="search" name="q" defaultValue={sp.q ?? ''} placeholder="Buscar marca, modelo o alias" aria-label="Buscar en el catálogo" />
           {filtro && <input type="hidden" name="estado" value={filtro} />}
           {marca && <input type="hidden" name="marca" value={marca} />}
