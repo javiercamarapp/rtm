@@ -216,6 +216,8 @@ export interface DevolucionesLista { clientes: DevolucionClienteResumen[]; prove
 /** Lo que se puede devolver de un pedido, por renglon y sabor, y las devoluciones ya hechas. */
 export interface PedidoDevoluciones {
   pedido_id: number; folio: string; puede: boolean; motivo_no: string | null; devuelto_cent: Cent;
+  /** Cifras del pedido netas de devoluciones vigentes (calculadas en la base); null si el pedido no tiene hoja interna. */
+  cascada_neta: { total_cent: Cent; costo_cent: Cent; costo_regresado_cent: Cent; merma_cent: Cent; utilidad_cent: Cent } | null;
   renglones: { linea_id: number; sku_id: number; modelo: string; sabor: string; surtidas: number; devueltas: number; disponibles_devolver: number; precio_cent: Cent }[];
   devoluciones: { id: number; folio: string; fecha_neg: string; piezas: number; monto_cent: Cent; liberado_cent: Cent; motivo: string; anulada: boolean; pdf: boolean }[];
 }
