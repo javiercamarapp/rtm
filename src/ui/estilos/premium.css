@@ -382,6 +382,8 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='detalle'] { grid-column: 1 / -1; color: var(--rtm-ink-2); }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal']::before { content: attr(data-label); display: block; font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal'] { grid-row: 1 / span 2; }
+  /* La insignia de estado ocupa el ancho de su texto (antes su fondo quedaba mas angosto que el texto) */
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-chip-estado { align-self: flex-start; width: max-content; }
 }
 @media (max-width: 767px) {
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:first-child { border-right: 0; }
