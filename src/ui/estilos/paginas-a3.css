@@ -1,0 +1,64 @@
+/* Rediseno etapa 2 (lote A3): cuentas por cobrar, proveedores, socios, Omar y contabilidad. Solo tokens; sin colores literales ni degradados. */
+
+/* Barra de filtros en una linea: chips y formulario compacto. */
+.a3-filtros-form { display: inline-flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+.a3-filtros-form .rtm-campo { height: var(--rtm-h-ctl); padding-block: 0; min-width: 0; font-size: var(--rtm-t-cuerpo); }
+.a3-filtros-form select.rtm-campo { max-width: 180px; }
+.a3-filtros-form input[type='date'].rtm-campo { width: 138px; }
+.a3-filtros-form .rtm-boton { height: var(--rtm-h-ctl); }
+
+/* Pie de tarjeta: procedencia y notas breves, siempre una linea gris. */
+.a3-pie { margin: 0; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); line-height: 1.4; }
+.a3-pie strong { color: var(--rtm-ink-2); font-weight: var(--rtm-peso-medio); }
+.a3-pie-tarjeta { padding: 8px var(--rtm-pad-tarjeta); border-top: var(--rtm-borde); }
+
+/* Fila de comprobaciones: palabra de estado a la derecha de cada prueba. */
+.a3-pruebas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.a3-pruebas > li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; padding: 4px 0; border-top: var(--rtm-borde); font-size: var(--rtm-t-cuerpo); }
+.a3-pruebas > li:first-child { border-top: 0; }
+.a3-pruebas > li > span:first-child { min-width: 0; color: var(--rtm-ink-2); }
+
+/* Texto de dos lineas dentro de una celda: principal y apoyo gris. */
+.a3-celda-2 { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.a3-celda-2 small { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); font-weight: var(--rtm-peso-normal); }
+
+/* Cifra grande dentro de una tarjeta (32/600, una por tarjeta). */
+.a3-cifra { margin: 0; font-size: var(--rtm-t-cifra-grande); font-weight: var(--rtm-peso-fuerte); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1.15; }
+.a3-cifra-apoyo { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); }
+
+/* Tarjetas de dos columnas clave-valor muy densas (estados financieros resumidos). */
+.a3-resumen { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 24px; }
+.a3-resumen > div { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 6px 0; border-top: var(--rtm-borde); font-size: var(--rtm-t-cuerpo); }
+.a3-resumen dt { color: var(--rtm-ink-3); }
+.a3-resumen dd { margin: 0; font-weight: var(--rtm-peso-medio); font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Estados financieros: renglones de subtotal y total en negrita con filete. */
+.a3-ef-subtotal .rtm-dt-celda { font-weight: var(--rtm-peso-fuerte); }
+.a3-sangria-1 { padding-left: 14px; display: inline-block; }
+.a3-sangria-2 { padding-left: 28px; display: inline-block; }
+
+/* Dos tarjetas de acciones apiladas en el encabezado. */
+.a3-acciones { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+
+/* Movil: los formularios de filtro se desplazan dentro de la barra, sin romper la pagina. */
+@media (max-width: 767px) {
+  .a3-filtros-form { flex-wrap: nowrap; }
+  .a3-acciones { justify-content: flex-start; }
+}
+
+/* Gráficas de columnas: etiqueta del periodo en una linea. */
+.a3-grafica-vacia { margin: 0; padding: 24px 12px; border: 1px dashed var(--rtm-line-strong); border-radius: var(--rtm-r-2); text-align: center; color: var(--rtm-ink-3); font-size: var(--rtm-t-cuerpo); }
+.a3-grafica-vacia strong { display: block; color: var(--rtm-ink-2); margin-bottom: 4px; font-weight: var(--rtm-peso-medio); }
+
+.a3-pila { display: grid; gap: var(--rtm-ritmo); align-content: start; min-width: 0; }
+
+/* Barra de filtros dentro de una tarjeta plana: con el mismo relleno que el resto de la tarjeta. */
+.a3-barra { padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); overflow-x: auto; }
+.a3-barra .rtm-barra-filtros-v2 { min-width: max-content; }
+
+/* Subtitulo de bloque dentro de una tarjeta. */
+.a3-sub { margin: 8px 0 0; font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-fuerte); letter-spacing: var(--rtm-trk-eyebrow); text-transform: uppercase; color: var(--rtm-ink-3); }
+.a3-filtros-form input[type='date'].rtm-campo { width: 128px; }
+.a3-filtros-form select.rtm-campo { max-width: 150px; }
+
+.a3-filtros-form .rtm-campo-num { width: 172px; }
