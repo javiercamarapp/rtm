@@ -113,8 +113,26 @@ export function leerMovimientos(texto: string): LecturaImportacion {
     return { filas: [], errores, columnas, delimitador, conEncabezado };
   }
   const filas: FilaImportada[] = [];
+  const esperadas = conEncabezado ? primeraCeldas.length : columnas.length;
+  const columnasDeMonto = new Set(['monto', 'entrada', 'salida']);
   for (const { l, n } of cuerpo) {
     const celdas = partir(l, delimitador);
+    // Mas celdas que columnas: casi siempre un monto con comas de miles sin comillas en un CSV con comas ("1,500.00" se parte en "1" y "500.00").
+    // Se rechaza la fila en vez de leer un monto equivocado; celdas vacias al final (una coma de mas) no cuentan.
+    let usadas = celdas.length;
+    while (usadas > esperadas && celdas[usadas - 1] === '') usadas--;
+    if (usadas > esperadas) {
+      errores.push({ linea: n, motivo: `La fila tiene ${usadas} columnas y se esperaban ${esperadas}. Si un monto lleva comas de miles, ponlo entre comillas ("1,500.00") o separa con tabulador o punto y coma.` });
+      continue;
+    }
+    // Aun con las columnas justas: en un CSV con comas, un monto de 1 a 3 cifras seguido de una celda de exactamente 3 cifras (con o sin decimales) es un monto partido.
+    if (delimitador === ',') {
+      const partido = columnas.findIndex((k, i) => columnasDeMonto.has(k) && /^[-+(]?\$?\d{1,3}$/.test(celdas[i] ?? '') && /^\d{3}(\.\d{1,2})?\)?$/.test(celdas[i + 1] ?? ''));
+      if (partido >= 0) {
+        errores.push({ linea: n, motivo: `El monto "${celdas[partido]},${celdas[partido + 1]}" parece partido por la coma de miles. Ponlo entre comillas ("1,500.00") o separa con tabulador o punto y coma.` });
+        continue;
+      }
+    }
     const dato = (k: string): string => {
       const i = columnas.indexOf(k);
       return i >= 0 ? (celdas[i] ?? '') : '';

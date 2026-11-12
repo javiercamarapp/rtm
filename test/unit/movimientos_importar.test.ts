@@ -57,6 +57,33 @@ describe('leerMovimientos', () => {
     expect(leerMovimientos('﻿2026-11-01\t5').filas).toHaveLength(1);
   });
 
+  it('rechaza una fila de CSV con comas cuyo monto lleva comas de miles sin comillas, sin encabezado', () => {
+    const r = leerMovimientos('2026-11-01,1,500.00,Caja,Cliente,Cobro\n2026-11-02,"1,500.00",Caja,Cliente,Cobro');
+    expect(r.errores).toHaveLength(1);
+    expect(r.errores[0]).toMatchObject({ linea: 1 });
+    expect(r.errores[0]!.motivo).toMatch(/6 columnas y se esperaban 5/);
+    expect(r.filas.map((f) => f.monto_cent)).toEqual([150000n]);
+  });
+
+  it('con encabezado tambien: mas celdas que columnas se rechaza', () => {
+    const r = leerMovimientos('fecha,monto,cuenta,origen,mensaje\n2026-11-01,1,500.00,Caja,Cliente,Cobro');
+    expect(r.filas).toEqual([]);
+    expect(r.errores[0]).toMatchObject({ linea: 2 });
+  });
+
+  it('detecta el monto partido aunque falten columnas al final', () => {
+    const r = leerMovimientos('2026-11-01,1,500.00,Caja,Cliente');
+    expect(r.filas).toEqual([]);
+    expect(r.errores[0]!.motivo).toMatch(/parece partido/);
+    expect(leerMovimientos('fecha,entrada,salida\n2026-11-01,,"2,000"').filas.map((f) => f.monto_cent)).toEqual([-200000n]);
+  });
+
+  it('una coma de mas al final no cuenta como columna', () => {
+    const r = leerMovimientos('2026-11-01,1500.00,Caja,Cliente,Cobro,');
+    expect(r.errores).toEqual([]);
+    expect(r.filas[0]).toMatchObject({ monto_cent: 150000n, mensaje: 'Cobro' });
+  });
+
   it('rechaza mas de 5,000 filas en una importacion', () => {
     const r = leerMovimientos(Array.from({ length: 5001 }, () => '2026-11-01\t1').join('\n'));
     expect(r.filas).toEqual([]);
