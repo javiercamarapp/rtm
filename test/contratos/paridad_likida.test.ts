@@ -32,10 +32,11 @@ describe('paridad con Likida Bitacoras (copia fiel)', () => {
     const quitadas = original.filter((l) => !conjuntoMio.has(l));
     const agregadas = mio.filter((l) => !conjuntoOriginal.has(l));
     // Toda linea quitada o agregada habla de Google / «o» (o es la misma regla sin `.login-google`).
+    // Cambio adicional aprobado: el campo del correo pasa de 15 px a 16 px (iOS no amplia la pagina al enfocarlo).
     for (const l of quitadas) expect(l).toMatch(/\.login-google|\.login-o\b|\.login-o-letra|\.login-o >/);
-    for (const l of agregadas) expect(l).toMatch(/^\s*\.login-divider, \.login-email-solo \{ margin-top: (20|24)px; \}$/);
-    expect(quitadas.length).toBe(8);
-    expect(agregadas.length).toBe(2);
+    for (const l of agregadas) expect(l).toMatch(/^\s*\.login-divider, \.login-email-solo \{ margin-top: (20|24)px; \}$|^\s*font-size: 16px; \/\* >= 16 px: iOS no amplia la pagina al enfocar el campo \*\/$/);
+    expect(quitadas.length).toBe(8); // la linea de 15 px sigue existiendo en otras reglas: el conjunto de quitadas no cambia
+    expect(agregadas.length).toBe(3);
     // Ningun selector nuevo, ninguna propiedad cambiada: el resto del archivo es linea por linea el original.
     expect(mio.length).toBe(original.length - 6);
   });
