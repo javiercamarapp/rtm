@@ -25,7 +25,7 @@ test('el GET no consume el enlace; el boton entra y respeta next', async ({ page
 
   await boton.click();
   await page.waitForURL('**/catalogo');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Catálogo');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('en el catálogo');
 
   // Usado una vez: el mismo enlace en otra sesion ya no sirve y avisa que caduco.
   const otra = await context.browser()!.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });

@@ -21,7 +21,7 @@ test('catalogo: filtra, muestra costos con "supuesto" y precios por cliente; el 
   await altaUsuario({ correo, socio: 'Javier' });
   await entrarComo(page, correo, '/catalogo');
 
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Catálogo de');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('en el catálogo');
   await page.getByLabel('Buscar en el catálogo').fill('e2e prueba modelo');
   await page.getByRole('button', { name: 'Buscar' }).click();
   const fila = page.getByRole('row', { name: /E2E Prueba Modelo 50K/ });

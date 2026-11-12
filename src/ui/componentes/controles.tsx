@@ -26,11 +26,11 @@ export function ChipEstado({ tono, children }: { tono: Exclude<Tono, 'neutro'>; 
 }
 
 /** Filtro de periodo o vista en pildora segmentada. Enlaces reales con aria-current. */
-export function Segmentado({ etiquetaAria, opciones, tamano = 'normal' }: { etiquetaAria: string; opciones: { valor: string; etiqueta: string; href: string; activa: boolean; contador?: number }[]; tamano?: 'normal' | 'chico' }) {
+export function Segmentado({ etiquetaAria, opciones, tamano = 'normal' }: { etiquetaAria: string; opciones: { valor: string; etiqueta: string; href: string; activa: boolean; contador?: number; testid?: string }[]; tamano?: 'normal' | 'chico' }) {
   return (
     <nav className="rtm-seg" data-tamano={tamano} aria-label={etiquetaAria}>
       {opciones.map((o) => (
-        <Link key={o.valor} href={o.href} aria-current={o.activa ? 'true' : undefined}>
+        <Link key={o.valor} href={o.href} aria-current={o.activa ? 'true' : undefined} data-testid={o.testid}>
           {o.etiqueta}
           {o.contador !== undefined && <small>{o.contador}</small>}
         </Link>

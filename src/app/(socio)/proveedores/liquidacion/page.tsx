@@ -63,7 +63,7 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
         acciones={
           <>
             <Segmentado etiquetaAria="Proveedor" opciones={[{ valor: 'Isaac', etiqueta: 'Isaac', href: enlace({ p: 'Isaac' }), activa: proveedor === 'Isaac' }, { valor: 'Karen', etiqueta: 'Karen', href: enlace({ p: 'Karen' }), activa: proveedor === 'Karen' }]} />
-            <Segmentado etiquetaAria="Ámbito de la hoja" opciones={[{ valor: 's', etiqueta: 'Solo de la sociedad', href: enlace({ ambito: 'sociedad' }), activa: ambito === 'sociedad' }, { valor: 't', etiqueta: 'Todo', href: enlace({ ambito: 'todo' }), activa: ambito === 'todo' }]} />
+            <Segmentado etiquetaAria="Ámbito de la hoja" opciones={[{ valor: 's', etiqueta: 'Solo de la sociedad', href: enlace({ ambito: 'sociedad' }), activa: ambito === 'sociedad', testid: 'ambito-sociedad' }, { valor: 't', etiqueta: 'Todo', href: enlace({ ambito: 'todo' }), activa: ambito === 'todo', testid: 'ambito-todo' }]} />
             <Segmentado etiquetaAria="Semana" opciones={[{ valor: 'a', etiqueta: 'Semana anterior', href: enlace({ semana: sumarDias(h.semana_ini, -7) }), activa: false }, { valor: 's', etiqueta: 'Semana siguiente', href: enlace({ semana: sumarDias(h.semana_ini, 7) }), activa: false }]} />
           </>
         }

@@ -82,7 +82,7 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   await expect(page.getByTestId('cascada')).toContainText('Utilidad');
   await expect(page.getByText('C1 · renglón por renglón')).toBeVisible();
   await expect(page.getByText('C2 · pedidas, salidas, en nota y cobradas')).toBeVisible();
-  await expect(page.getByText('Cuadra', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Cuadra', { exact: true }).locator('visible=true').first()).toBeVisible();
 
   // Pago de 5,000 a la cuenta de Angelo: baja lo por cobrar y Angelo debe a la sociedad.
   await page.getByRole('link', { name: 'Nota', exact: true }).click();
