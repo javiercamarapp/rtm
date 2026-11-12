@@ -29,6 +29,7 @@ create table operacion.devolucion_cliente (
   motivo text not null check (nullif(btrim(motivo), '') is not null),
   piezas int not null check (piezas > 0),
   monto_cent bigint not null check (monto_cent > 0),
+  descuento_prorrateado_cent bigint not null default 0 check (descuento_prorrateado_cent >= 0), -- parte del descuento del pedido que le toca a estas piezas (monto_cent ya va neto de ella)
   costo_cent bigint not null check (costo_cent >= 0),
   liberado_cent bigint not null default 0 check (liberado_cent >= 0),
   saldo_antes_cent bigint not null,
@@ -194,7 +195,7 @@ language plpgsql security definer set search_path = ''
 as $$
 declare
   v_prev jsonb; ped operacion.pedido; ult operacion.nota; v_ev bigint; v_id bigint; v_folio text; r record; v_surtido int; v_costo_tot bigint; v_prev_n int; v_prev_val bigint;
-  v_valor bigint; v_precio bigint; v_monto bigint; v_mov bigint; v_total_monto bigint := 0; v_total_costo bigint := 0; v_total_pz int := 0; v_saldo_antes bigint; v_saldo_despues bigint;
+  v_valor bigint; v_precio bigint; v_subtotal bigint; v_desc_pedido bigint; v_bruto_prev bigint; v_desc bigint := 0; v_bruto bigint; v_monto bigint; v_mov bigint; v_total_monto bigint := 0; v_total_costo bigint := 0; v_total_pz int := 0; v_saldo_antes bigint; v_saldo_despues bigint;
   v_cobrado bigint; v_exceso bigint; v_liberado bigint := 0; ap record; v_cli text; v_snap_lineas jsonb; v_texto text; v_snap jsonb; v_res jsonb; v_modelo text; v_sabor text;
 begin
   perform seguridad.exigir_rol(array['socio', 'importacion']);
@@ -232,6 +233,19 @@ begin
   v_cobrado := operacion.pedido_cobrado(ped.id);
   select coalesce(sum(t.piezas * coalesce((ult.ajustes->'precios'->>(t.linea_id::text))::bigint, l.precio_cent)), 0)::bigint, coalesce(sum(t.piezas), 0)::int
     into v_total_monto, v_total_pz from _dev_cli_tmp t join operacion.pedido_linea l on l.id = t.linea_id;
+  -- El descuento del pedido se devuelve en proporcion a las piezas que regresan (acumulado, para que devolver todo devuelva exactamente todo el descuento);
+  -- el envio y el recargo no se devuelven (parametro pendiente del dueno). Asi un pedido con descuento SI se puede devolver completo.
+  v_bruto := v_total_monto;
+  v_desc_pedido := coalesce((ult.ajustes->>'descuento_cent')::bigint, ped.descuento_cent);
+  select coalesce(sum(su.piezas * coalesce((ult.ajustes->'precios'->>(l.id::text))::bigint, l.precio_cent)), 0)::bigint into v_subtotal from operacion.pedido_surtido su join operacion.pedido_linea l on l.id = su.pedido_linea_id where l.pedido_id = ped.id;
+  if v_desc_pedido > 0 and v_subtotal > 0 then
+    select coalesce(sum(d.monto_cent + d.descuento_prorrateado_cent), 0)::bigint into v_bruto_prev from operacion.devolucion_cliente d
+      where d.pedido_id = ped.id and not exists (select 1 from operacion.devolucion_cliente_anulacion a where a.devolucion_id = d.id);
+    v_desc := negocio.redondear_medio_arriba(v_desc_pedido * least(v_bruto_prev + v_bruto, v_subtotal), v_subtotal)
+              - coalesce((select sum(d.descuento_prorrateado_cent) from operacion.devolucion_cliente d where d.pedido_id = ped.id and not exists (select 1 from operacion.devolucion_cliente_anulacion a where a.devolucion_id = d.id)), 0);
+    v_desc := least(greatest(v_desc, 0), v_bruto - 1);
+    v_total_monto := v_bruto - v_desc;
+  end if;
   if v_total_monto > v_cobrado then raise exception 'el credito (%) pasa de lo que el pedido vale hoy (%)', v_total_monto, v_cobrado using errcode = '23514'; end if;
   v_saldo_antes := operacion.pedido_saldo(ped.id);
 
@@ -246,8 +260,8 @@ begin
     v_total_costo := v_total_costo + negocio.redondear_medio_arriba(v_costo_tot * (v_prev_n + r.piezas), v_surtido) - negocio.redondear_medio_arriba(v_costo_tot * v_prev_n, v_surtido);
   end loop;
   v_saldo_despues := v_saldo_antes - v_total_monto; -- se ajusta abajo si hay pagos que liberar
-  insert into operacion.devolucion_cliente (folio, pedido_id, cliente_id, fecha_neg, motivo, piezas, monto_cent, costo_cent, saldo_antes_cent, saldo_despues_cent, snapshot_cliente, texto_whatsapp, emitida_por, evento_id)
-    values (v_folio, ped.id, ped.cliente_id, negocio.hoy(), btrim(p_motivo), v_total_pz, v_total_monto, v_total_costo, v_saldo_antes, v_saldo_despues, '{}'::jsonb, '', auth.uid(), v_ev) returning id into v_id;
+  insert into operacion.devolucion_cliente (folio, pedido_id, cliente_id, fecha_neg, motivo, piezas, monto_cent, descuento_prorrateado_cent, costo_cent, saldo_antes_cent, saldo_despues_cent, snapshot_cliente, texto_whatsapp, emitida_por, evento_id)
+    values (v_folio, ped.id, ped.cliente_id, negocio.hoy(), btrim(p_motivo), v_total_pz, v_total_monto, v_desc, v_total_costo, v_saldo_antes, v_saldo_despues, '{}'::jsonb, '', auth.uid(), v_ev) returning id into v_id;
 
   -- Renglones, movimientos del kardex (entrada al valor de salida; si viene danado, sale enseguida como merma).
   for r in select t.linea_id, t.sku_id, t.destino, sum(t.piezas)::int as piezas from _dev_cli_tmp t group by t.linea_id, t.sku_id, t.destino order by t.linea_id, t.sku_id, t.destino loop
@@ -262,8 +276,9 @@ begin
     insert into operacion.devolucion_cliente_linea (devolucion_id, pedido_linea_id, sku_id, modelo_id, piezas, precio_cent, monto_cent, costo_valor_cent, destino, movimiento_id)
       values (v_id, r.linea_id, r.sku_id, v_monto, r.piezas, v_precio, r.piezas * v_precio, v_valor, r.destino, v_mov);
     if r.destino = 'merma' then
-      insert into operacion.movimiento_inventario (fecha_neg, sku_id, modelo_id, ubicacion, tipo, cantidad, evento_id, nota)
-        values (negocio.hoy(), r.sku_id, v_monto, 'bodega_omar', 'merma', -r.piezas, v_ev, 'Devolucion danada ' || v_folio);
+      -- La merma de una devolucion danada sale al MISMO valor con el que entro (no al promedio vigente): el inventario de las demas piezas no se mueve.
+      insert into operacion.movimiento_inventario (fecha_neg, sku_id, modelo_id, ubicacion, tipo, cantidad, valor_cent, evento_id, nota)
+        values (negocio.hoy(), r.sku_id, v_monto, 'bodega_omar', 'merma', -r.piezas, -v_valor, v_ev, 'Devolucion danada ' || v_folio);
     end if;
   end loop;
 
@@ -287,9 +302,10 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object('modelo', m.nombre_canonico, 'sabor', sa.nombre_canonico, 'piezas', l.piezas, 'precio_cent', l.precio_cent, 'total_cent', l.monto_cent, 'destino', l.destino) order by m.nombre_canonico, sa.nombre_canonico), '[]'::jsonb)
     into v_snap_lineas from operacion.devolucion_cliente_linea l join catalogo.sku k on k.id = l.sku_id join catalogo.modelo m on m.id = k.modelo_id join catalogo.sabor sa on sa.id = k.sabor_id where l.devolucion_id = v_id;
   v_snap := jsonb_build_object('folio', v_folio, 'fecha', negocio.hoy(), 'cliente', v_cli, 'pedido', ped.folio, 'nota', ult.folio_documento, 'lineas', v_snap_lineas, 'piezas_total', v_total_pz,
-                               'total_cent', v_total_monto, 'total_nota_cent', ult.total_cent, 'saldo_antes_cent', v_saldo_antes, 'saldo_despues_cent', v_saldo_despues, 'liberado_cent', v_liberado, 'motivo', btrim(p_motivo));
+                               'bruto_cent', v_bruto, 'descuento_prorrateado_cent', v_desc, 'total_cent', v_total_monto, 'total_nota_cent', ult.total_cent, 'saldo_antes_cent', v_saldo_antes, 'saldo_despues_cent', v_saldo_despues, 'liberado_cent', v_liberado, 'motivo', btrim(p_motivo));
   v_texto := 'NOTA DE CREDITO ' || v_folio || E'\n' || v_cli || E'\nPedido ' || ped.folio || E'\n'
     || (select string_agg(x->>'modelo' || ' ' || (x->>'sabor') || ': ' || (x->>'piezas') || ' pz x ' || operacion.fmt_pesos((x->>'precio_cent')::bigint) || ' = ' || operacion.fmt_pesos((x->>'total_cent')::bigint), E'\n') from jsonb_array_elements(v_snap_lineas) x)
+    || case when v_desc > 0 then E'\nDescuento del pedido, en proporcion: -' || operacion.fmt_pesos(v_desc) else '' end
     || E'\nCredito total: ' || operacion.fmt_pesos(v_total_monto)
     || case when v_liberado > 0 then E'\nSaldo a favor liberado: ' || operacion.fmt_pesos(v_liberado) else '' end
     || E'\nSaldo del pedido: ' || operacion.fmt_pesos(v_saldo_despues);

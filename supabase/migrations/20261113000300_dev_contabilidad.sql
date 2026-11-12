@@ -388,10 +388,13 @@ begin
     select * into v_d from operacion.devolucion_cliente where id = partes[3]::bigint;
     if not found then raise exception 'devolucion desconocida' using errcode = '22023'; end if;
     select coalesce(jsonb_agg(jsonb_build_object('concepto', m.nombre_canonico || ' ' || sa.nombre_canonico || ': ' || l.piezas || ' pz x precio de la nota', 'monto_cent', l.monto_cent, 'hora', v_d.creado_at, 'fecha_neg', v_d.fecha_neg) || operacion.evento_info(v_d.evento_id) order by l.id), '[]'::jsonb),
-           coalesce(sum(l.monto_cent), 0)::bigint
+           coalesce(sum(l.monto_cent), 0)::bigint - v_d.descuento_prorrateado_cent
       into v_rengs, v_via2 from operacion.devolucion_cliente_linea l join catalogo.sku k on k.id = l.sku_id join catalogo.modelo m on m.id = k.modelo_id join catalogo.sabor sa on sa.id = k.sabor_id where l.devolucion_id = v_d.id;
+    if v_d.descuento_prorrateado_cent > 0 then
+      v_rengs := v_rengs || (jsonb_build_object('concepto', 'Descuento del pedido, en proporcion a las piezas devueltas', 'monto_cent', -v_d.descuento_prorrateado_cent, 'hora', v_d.creado_at, 'fecha_neg', v_d.fecha_neg) || operacion.evento_info(v_d.evento_id));
+    end if;
     return jsonb_build_object('cifra', p_cifra, 'titulo', 'Crédito de la devolución ' || v_d.folio, 'valor', v_d.monto_cent, 'unidad', 'mxn',
-      'comprobacion', jsonb_build_object('via1', 'Crédito guardado en la devolución', 'via1_valor', v_d.monto_cent, 'via2', 'Suma de piezas por precio de la nota', 'via2_valor', v_via2, 'cuadra', v_d.monto_cent = v_via2),
+      'comprobacion', jsonb_build_object('via1', 'Crédito guardado en la devolución', 'via1_valor', v_d.monto_cent, 'via2', 'Suma de piezas por precio de la nota, menos el descuento en proporcion', 'via2_valor', v_via2, 'cuadra', v_d.monto_cent = v_via2),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   elsif partes[1] = 'devolucion' and partes[2] = 'proveedor' then
     select * into v_p from operacion.devolucion_proveedor where id = partes[3]::bigint;
