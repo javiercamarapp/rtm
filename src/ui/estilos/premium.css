@@ -491,3 +491,16 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 @media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-trunc { max-width: none; white-space: normal; overflow: visible; text-overflow: clip; } }
 @media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:empty { display: none; } }
 @media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:has(> .rtm-dt-trunc:empty) { display: none; } }
+
+/* Filtros: los campos ocupan el ancho disponible en partes iguales (antes cada uno tenia su ancho natural) */
+.rtm-filtros-linea > .rtm-etiqueta-campo { flex: 1 1 200px; }
+.rtm-filtros-linea > .rtm-etiqueta-campo > .rtm-campo, .rtm-filtros-linea > .rtm-etiqueta-campo > select { width: 100%; box-sizing: border-box; }
+
+/* Contactos a 390 px: nombre y elegir arriba; telefono (con Revelar) y correo a todo el ancho, sin partir palabras */
+@media (max-width: 767px) {
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-label='Elegir'] { grid-column: 3; grid-row: 1; align-items: flex-end; }
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-label='Elegir']::before { display: none; }
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal'] { grid-column: 1 / -1; grid-row: auto; text-align: left; font-size: var(--rtm-t-cuerpo); font-weight: 400; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal']::before { flex-basis: 100%; }
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-label='Correo'] { grid-column: 1 / -1; overflow-wrap: anywhere; }
+}
