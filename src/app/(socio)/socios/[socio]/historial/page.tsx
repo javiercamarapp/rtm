@@ -118,13 +118,12 @@ export default async function PaginaHistorial({ params, searchParams }: { params
         ]}
       />
 
-      <Rejilla dividir="9-3">
-        <Tarjeta
+      <Tarjeta
           plana
           titulo="Línea de tiempo de actas"
           descripcion={`${cerradas.length} ${cerradas.length === 1 ? 'acta cerrada' : 'actas cerradas'} · cada acta fija 50/50, retiro y reinversión`}
-          acciones={anios.length > 1 ? <nav className="rtm-seg" aria-label="Año de las actas"><Link href={href({ anio: null })} aria-current={!anio ? 'true' : undefined}>Todos</Link>{anios.map((a) => <Link key={a} href={href({ anio: a })} aria-current={anio === a ? 'true' : undefined}>{a}</Link>)}</nav> : undefined}
         >
+          {anios.length > 1 && <nav className="rtm-seg" aria-label="Año de las actas"><Link href={href({ anio: null })} aria-current={!anio ? 'true' : undefined}>Todos</Link>{anios.map((a) => <Link key={a} href={href({ anio: a })} aria-current={anio === a ? 'true' : undefined}>{a}</Link>)}</nav>}
           <DataTable
             etiqueta={`Actas de ${socio}`}
             densidad="densa" plana primeraFija
@@ -133,41 +132,19 @@ export default async function PaginaHistorial({ params, searchParams }: { params
             totales={cerradas.length === 0 ? undefined : { etiqueta: `Total (${cerradas.length})`, celdas: { u: m(suma(cerradas.map((a) => a.utilidad_cent))), p: m(suma(cerradas.map((a) => a.parte_cent))), r: m(suma(cerradas.map((a) => a.retira_cent))), i: m(suma(cerradas.map((a) => a.reinvierte_cent))) } }}
             vacio={{ titulo: 'Sin actas', texto: 'El primer corte mensual firmado por los dos aparece aquí con su PDF.' }}
             columnas={[
-              { id: 'f', titulo: 'Acta', ancho: 'm', celda: (a) => <Link href={`/socios/actas/${a.id}`} className="rtm-mono">{a.folio}</Link> },
+              { id: 'f', titulo: 'Acta', ancho: 'm', prioridadMovil: 'titulo' as const, celda: (a) => <Link href={`/socios/actas/${a.id}`} className="rtm-mono">{a.folio}</Link> },
               { id: 'p', titulo: 'Periodo', ancho: 'l', celda: (a) => (a.periodo_ini.slice(8) === '01' && a.periodo_ini.slice(0, 7) === a.periodo_fin.slice(0, 7) && mesAlFinal(a.periodo_fin) ? mesEtiqueta(a.periodo_ini) : `${fechaCorta(a.periodo_ini)} al ${fechaCorta(a.periodo_fin)}`) },
               { id: 'u', titulo: 'Utilidad del mes', numerica: true, ancho: 'm', celda: (a) => (a.tipo === 'contra' ? '—' : m(a.utilidad_cent, a.utilidad_cent < 0n)) },
-              { id: 'p2', titulo: 'Su parte', numerica: true, ancho: 'm', celda: (a) => (a.tipo === 'contra' ? '—' : m(a.parte_cent)) },
+              { id: 'p2', titulo: 'Su parte', numerica: true, ancho: 'm', prioridadMovil: 'principal' as const, celda: (a) => (a.tipo === 'contra' ? '—' : m(a.parte_cent)) },
               { id: 'r', titulo: 'Retira', numerica: true, ancho: 'm', celda: (a) => m(a.retira_cent) },
               { id: 'i', titulo: 'Reinvierte', numerica: true, ancho: 'm', celda: (a) => m(a.reinvierte_cent) },
-              { id: 'v', titulo: 'Valor de su participación', numerica: true, ancho: 'l', secundaria: true, celda: (a) => (a.valor_cent === null ? <span className="rtm-sin-dato">Sin dato</span> : m(a.valor_cent)) },
+              { id: 'v', titulo: 'Valor de su participación', numerica: true, ancho: 'l', secundaria: true, prioridadMovil: 'normal' as const, celda: (a) => (a.valor_cent === null ? <span className="rtm-sin-dato">Sin dato</span> : m(a.valor_cent)) },
               { id: 'e', titulo: 'Firmas', ancho: 'l', celda: (a) => <Dos a={<Estado tono={a.estado === 'cerrado' ? 'ok' : 'atencion'}>{a.estado === 'cerrado' ? 'Firmada por los dos' : a.estado === 'firmado_por_uno' ? 'Falta una firma' : 'Sin firmas'}</Estado>} b={a.tipo === 'contra' ? 'Contra-acta' : a.corregida ? 'Corregida por contra-acta' : a.firmas.map((f) => f.socio).join(' y ') || 'Pendiente'} /> },
-              { id: 'd', titulo: 'PDF', ancho: 's', celda: (a) => <a href={`/socios/actas/${a.id}/pdf`} className="rtm-enlace">PDF</a> },
+              { id: 'd', titulo: 'PDF', ancho: 's', prioridadMovil: 'detalle' as const, celda: (a) => <a href={`/socios/actas/${a.id}/pdf`} className="rtm-enlace">PDF</a> },
             ]}
           />
         </Tarjeta>
-        <Tarjeta titulo="Proyección personal" descripcion="Próximos 3 meses · Estimado">
-          {proy.suficiente ? (
-            <>
-              <DataTable
-                etiqueta="Proyección de los próximos 3 meses"
-                densidad="densa" plana clave={(x) => x.n}
-                filas={proy.meses.map((x, i) => ({ n: i + 1, ...x }))}
-                columnas={[
-                  { id: 'n', titulo: 'Mes', ancho: 's', celda: (x) => `Mes +${x.n}` },
-                  { id: 'e', titulo: proy.base === 'retiro' ? 'Retiro esperado' : 'Su parte esperada', numerica: true, ancho: 'm', celda: (x) => m(x.esperado_cent) },
-                  { id: 'b', titulo: 'Desde', numerica: true, ancho: 'm', celda: (x) => m(x.bajo_cent) },
-                  { id: 'a', titulo: 'Hasta', numerica: true, ancho: 'm', celda: (x) => m(x.alto_cent) },
-                ]}
-              />
-              <Pie>Estimado con {proy.n} meses completos; la banda es ± una desviación predictiva ({m(proy.banda_cent)}) y se estrecha con más meses. {proy.base === 'retiro' ? `Retiro = su parte esperada por el payout observado (${bpAPct(r.payout_bp)}).` : 'Aún no hay retiros contra actas: se proyecta su parte de la utilidad.'}</Pie>
-            </>
-          ) : (
-            <p className="a3-grafica-vacia" data-testid="proyeccion-insuficiente"><strong>Estimado, historial insuficiente</strong>Se necesitan al menos 3 meses completos; hoy hay {proy.n}. No se emite proyección con menos.</p>
-          )}
-        </Tarjeta>
-      </Rejilla>
-
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="4-4-4">
         <Tarjeta titulo="Su parte por mes" descripcion="50 % de la utilidad de la empresa atribuido a su cuenta; el último mes puede ser parcial">
           {puntosMes.length >= 2 ? <ColumnasPesos titulo={`Parte mensual de ${socio}`} descripcion={`Su 50 % de la utilidad en ${puntosMes.length} meses.`} procedencia="observado" pie="Fuente: libro de pedidos, tomas y gastos" alto={150} datos={puntosMes} /> : <p className="a3-grafica-vacia"><strong>Pocos meses</strong>Con dos o más meses se dibuja la serie; la tabla de abajo trae todos los números.</p>}
         </Tarjeta>
@@ -179,7 +156,27 @@ export default async function PaginaHistorial({ params, searchParams }: { params
             <div><dt>Mejor racha</dt><dd>{est.completos.length ? `${est.mejor_racha}` : <span className="rtm-sin-dato">Sin dato</span>}</dd></div>
           </dl>
           <p className="a3-sub">Promedio por día de la semana (su 50 %, últimos 60 días)</p>
-          {maxEst > 0n ? <BarList columnas={2} etiquetaAria="Estacionalidad por día de la semana" items={estac.map((x) => ({ id: x.dia, etiqueta: x.dia, texto: x.promedio_cent === null ? 'Sin dato' : m(x.promedio_cent, true), pct: x.promedio_cent === null ? null : pct(abs(x.promedio_cent), maxEst), nota: `${x.dias} días`, tono: x.promedio_cent !== null && x.promedio_cent < 0n ? 'malo' : undefined }))} /> : <p className="a3-grafica-vacia"><strong>Sin dato</strong>Aún no hay días con utilidad para comparar.</p>}
+          {maxEst > 0n ? <BarList etiquetaAria="Estacionalidad por día de la semana" items={estac.map((x) => ({ id: x.dia, etiqueta: x.dia, texto: x.promedio_cent === null ? 'Sin dato' : m(x.promedio_cent, true), pct: x.promedio_cent === null ? null : pct(abs(x.promedio_cent), maxEst), nota: `${x.dias} días`, tono: x.promedio_cent !== null && x.promedio_cent < 0n ? 'malo' : undefined }))} /> : <p className="a3-grafica-vacia"><strong>Sin dato</strong>Aún no hay días con utilidad para comparar.</p>}
+        </Tarjeta>
+        <Tarjeta titulo="Proyección personal" descripcion="Próximos 3 meses · Estimado">
+          {proy.suficiente ? (
+            <>
+              <DataTable
+                etiqueta="Proyección de los próximos 3 meses"
+                densidad="densa" plana clave={(x) => x.n}
+                filas={proy.meses.map((x, i) => ({ n: i + 1, ...x }))}
+                columnas={[
+                  { id: 'n', titulo: 'Mes', ancho: 's', prioridadMovil: 'titulo' as const, celda: (x) => `Mes +${x.n}` },
+                  { id: 'e', prioridadMovil: 'principal' as const, titulo: proy.base === 'retiro' ? 'Retiro esperado' : 'Su parte esperada', numerica: true, ancho: 'm', celda: (x) => m(x.esperado_cent) },
+                  { id: 'b', titulo: 'Desde', numerica: true, ancho: 'm', celda: (x) => m(x.bajo_cent) },
+                  { id: 'a', titulo: 'Hasta', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (x) => m(x.alto_cent) },
+                ]}
+              />
+              <Pie>Estimado con {proy.n} meses completos; la banda es ± una desviación predictiva ({m(proy.banda_cent)}) y se estrecha con más meses. {proy.base === 'retiro' ? `Retiro = su parte esperada por el payout observado (${bpAPct(r.payout_bp)}).` : 'Aún no hay retiros contra actas: se proyecta su parte de la utilidad.'}</Pie>
+            </>
+          ) : (
+            <p className="a3-grafica-vacia" data-testid="proyeccion-insuficiente"><strong>Estimado, historial insuficiente</strong>Se necesitan al menos 3 meses completos; hoy hay {proy.n}. No se emite proyección con menos.</p>
+          )}
         </Tarjeta>
       </Rejilla>
 
@@ -187,8 +184,8 @@ export default async function PaginaHistorial({ params, searchParams }: { params
         plana
         titulo="Utilidad, retiros y reinversión por periodo"
         descripcion="Su 50 % de la utilidad de la empresa; retiros y reinversión son de su cuenta"
-        acciones={<nav className="rtm-seg" aria-label="Periodo de la tabla">{VISTAS.map((x) => <Link key={x.v} href={href({ vista: x.v === 'mes' ? null : x.v })} aria-current={vista === x.v ? 'true' : undefined} data-testid={`vista-${x.v}`}>{x.t}</Link>)}</nav>}
       >
+        <nav className="rtm-seg" aria-label="Periodo de la tabla">{VISTAS.map((x) => <Link key={x.v} href={href({ vista: x.v === 'mes' ? null : x.v })} aria-current={vista === x.v ? 'true' : undefined} data-testid={`vista-${x.v}`}>{x.t}</Link>)}</nav>
         <DataTable
           etiqueta={`Historial ${vista === 'mes' ? 'mensual' : vista === 'semana' ? 'semanal' : 'diario'} de ${socio}`}
           densidad="libro" plana pegajosa primeraFija
@@ -198,9 +195,9 @@ export default async function PaginaHistorial({ params, searchParams }: { params
           totales={filas.length === 0 ? undefined : { etiqueta: `Total (${filas.length})`, celdas: { u: m(sumaF('utilidad_cent'), sumaF('utilidad_cent') < 0n), p: m(sumaF('parte_cent'), sumaF('parte_cent') < 0n), re: m(sumaF('retiros_cent')), ri: m(sumaF('reinversion_cent')) } }}
           vacio={{ titulo: 'Sin periodos', texto: 'Aparecen con el primer pedido enviado.' }}
           columnas={[
-            { id: 'e', titulo: 'Periodo', ancho: 'l', celda: (f) => <>{etiqueta(f)}{f.parcial ? <span className="rtm-celda-sub">En curso</span> : null}</> },
+            { id: 'e', titulo: 'Periodo', ancho: 'l', prioridadMovil: 'titulo' as const, celda: (f) => <>{etiqueta(f)}{f.parcial ? <span className="rtm-celda-sub">En curso</span> : null}</> },
             { id: 'u', titulo: 'Utilidad de la empresa', numerica: true, ancho: 'l', celda: (f) => m(f.utilidad_cent, f.utilidad_cent < 0n) },
-            { id: 'p', titulo: 'Su parte (50 %)', numerica: true, ancho: 'l', celda: (f) => m(f.parte_cent, f.parte_cent < 0n) },
+            { id: 'p', titulo: 'Su parte (50 %)', numerica: true, ancho: 'l', prioridadMovil: 'principal' as const, celda: (f) => m(f.parte_cent, f.parte_cent < 0n) },
             { id: 'v', titulo: 'Ventas', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.ventas_cent) },
             { id: 'pe', titulo: 'Pedidos', numerica: true, ancho: 's', secundaria: true, celda: (f) => f.pedidos },
             { id: 'pz', titulo: 'Piezas', numerica: true, ancho: 's', secundaria: true, celda: (f) => formatearDecimal(Number(f.piezas), 0) },

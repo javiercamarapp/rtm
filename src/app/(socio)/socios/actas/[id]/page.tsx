@@ -75,18 +75,18 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
               etiqueta="Acta por socio" densidad="densa" plana primeraFija clave={(f) => f.nombre} filas={filas}
               totales={{ etiqueta: 'Suma', celdas: { p: m(filas.reduce((a, f) => a + (f.x?.utilidad_cent ?? 0n), 0n)), r: m(filas.reduce((a, f) => a + f.dec.retira, 0n)), i: m(filas.reduce((a, f) => a + f.dec.reinvierte, 0n)), q: m(filas.reduce((a, f) => a + f.resto, 0n)) } }}
               columnas={[
-                { id: 's', titulo: 'Socio', ancho: 'm', celda: (f) => <Link href={`/socios/${f.nombre}/historial`} data-testid={`acta-historial-${f.nombre}`}>{f.nombre}</Link> },
+                { id: 's', titulo: 'Socio', ancho: 'm', prioridadMovil: 'titulo' as const, celda: (f) => <Link href={`/socios/${f.nombre}/historial`} data-testid={`acta-historial-${f.nombre}`}>{f.nombre}</Link> },
                 { id: 'rb', titulo: 'Reembolso recibido', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.x?.paga_reembolso_cent ?? 0n) },
-                { id: 'p', titulo: 'Su parte (50/50)', numerica: true, ancho: 'm', celda: (f) => m(f.x?.utilidad_cent ?? 0n) },
+                { id: 'p', titulo: 'Su parte (50/50)', numerica: true, ancho: 'm', prioridadMovil: 'principal' as const, celda: (f) => m(f.x?.utilidad_cent ?? 0n) },
                 { id: 'a', titulo: 'Retiros previos', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.x?.anticipo_cent ?? 0n) },
-                { id: 'd', titulo: 'Disponible', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.disp)} cifra={`historial:parte:${c.id}:${f.nombre}`} comprobacion="cuadra" /> },
+                { id: 'd', titulo: 'Disponible', numerica: true, ancho: 'm', celda: (f) => <span style={{ whiteSpace: 'nowrap' }}><CifraComprobada texto={m(f.disp)} cifra={`historial:parte:${c.id}:${f.nombre}`} comprobacion="cuadra" /></span> },
                 { id: 'r', titulo: 'Retira', numerica: true, ancho: 'm', celda: (f) => m(f.dec.retira) },
                 { id: 'i', titulo: 'Reinvierte', numerica: true, ancho: 'm', celda: (f) => m(f.dec.reinvierte) },
                 { id: 'q', titulo: 'Queda por distribuir', numerica: true, ancho: 'm', celda: (f) => m(f.resto) },
                 { id: 'fp', titulo: 'Fondos en su poder', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.fondos_en_poder_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
                 { id: 'co', titulo: 'Compensaciones', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.compensaciones_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
                 { id: 'iv', titulo: 'Invertido acumulado', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.invertido_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
-                { id: 'v', titulo: 'Valor de su participación', numerica: true, ancho: 'l', celda: (f) => (f.valor === null ? <span className="rtm-sin-dato">Sin dato</span> : m(f.valor)) },
+                { id: 'v', titulo: 'Valor de su participación', numerica: true, ancho: 'l', prioridadMovil: 'normal' as const, celda: (f) => (f.valor === null ? <span className="rtm-sin-dato">Sin dato</span> : m(f.valor)) },
               ]}
             />
           </Tarjeta>
