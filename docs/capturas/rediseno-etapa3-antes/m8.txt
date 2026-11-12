@@ -1,0 +1,12 @@
+HUECO 1440-claro-avisos: De qué son (+102px)
+COLA 1440-claro-cxc: 28px vacios al final
+HUECO 1440-claro-proveedores: Saldo de la cuenta con Isaac (+93px)
+COLA 1440-claro-proveedores: 28px vacios al final
+COLA 1440-claro-liquidacion: 28px vacios al final
+COLA 1440-claro-socios: 28px vacios al final
+COLA 1440-claro-omar: 28px vacios al final
+COLA 1440-claro-conta-resultados: 28px vacios al final
+TABLA 1440-claro-conta-balance: Cascada del balance (tabla equivalente) +13px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=345
+COLA 1440-claro-conta-balance: 28px vacios al final
+CEROS 1440-claro-conta-flujo: [{"alto":104,"barras":12,"cero":10}]
+TABLA 1440-claro-conta-proyecciones: Utilidad neta semanal proyectada (tabla equivalente) +33px cortadas[Rango] cols(Periodo:68 Pesos:98 Procedencia:95 Rango:312) caja=540

@@ -1,0 +1,57 @@
+COLA 1440-claro-inicio: 28px vacios al final
+COLA 1440-claro-pedidos: 28px vacios al final
+COLA 1440-claro-pedido-detalle: 28px vacios al final
+COLA 1440-claro-pedido-nuevo: 28px vacios al final
+COLA 1440-claro-clientes: 28px vacios al final
+COLA 1440-claro-cliente-ficha: 28px vacios al final
+COLA 1440-claro-catalogo: 28px vacios al final
+COLA 1440-claro-paquetes-por-hacer: 28px vacios al final
+COLA 1440-claro-paquetes-en-trayecto: 146px vacios al final
+HUECO 1440-claro-avisos: De qué son (+102px)
+TABLA 1440-claro-inventario: Existencia y semáforo de reposición por modelo y sabor +129px cortadas[Antig., Último mov.] cols(Modelo › sabor:291 Piezas:70 Apart.:58 Disp.:69 Costo:72 Valor total:95 % del total:65 Cobertura:74 Semáforo:157 Entr.:69 Sal.:69 Rot.:56 Antig.:56 Último mov.:82) caja=1154
+TABLA 1440-claro-inventario-por-reponer: Existencia y semáforo de reposición por modelo y sabor +98px cortadas[Antig., Último mov.] cols(Modelo › sabor:291 Piezas:90 Apart.:56 Disp.:56 Costo:72 Valor total:92 % del total:56 Cobertura:74 Semáforo:157 Entr.:56 Sal.:58 Rot.:56 Antig.:56 Último mov.:82) caja=1154
+TABLA 1440-claro-kardex: Kárdex por modelo y sabor +261px cortadas[Referencia, Autor, Mensaje original] cols(Fecha:66 Concepto:128 Modelo › sabor:216 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:68 Total:95 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=1154
+TABLA 1440-claro-kardex-modelo: Kárdex por modelo y sabor +113px cortadas[Mensaje original] cols(Fecha:66 Concepto:128 Sabor:92 Piezas:57 V. unit.:66 Total:87 Piezas:57 V. unit.:66 Total:87 Piezas:57 V. unit.:68 Total:87 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=1154
+COLA 1440-claro-kardex-modelo: 28px vacios al final
+COLA 1440-claro-kardex-sabor: 28px vacios al final
+COLA 1440-claro-marcas: 28px vacios al final
+TABLA 1440-claro-antiguedad: Antigüedad y rotación por sabor +36px cortadas[Cobertura] cols(Modelo › sabor:284 Existencia:75 Última entrada:100 Días:56 Tramo:72 Días sin salid:72 Valor a costo:95 Semáforo:157 Entradas:69 Salidas:69 Rotación:67 Cobertura:74) caja=1154
+COLA 1440-claro-mermas: 28px vacios al final
+COLA 1440-claro-valuacion: 28px vacios al final
+COLA 1440-claro-valuacion-historial: 28px vacios al final
+TABLA 1440-claro-caja: Saldo de caja por lugar o persona +51px cortadas[Último mov.] cols(Lugar o person:266 Tipo:140 Saldo:95 % de la liquid:61 Entradas:95 Salidas:79 Último mov.:82) caja=765
+COLA 1440-claro-conteo: 28px vacios al final
+HUECO 1440-claro-cxc: Dinero de la sociedad en poder de un soc (+65px)
+COLA 1440-claro-cxc: 28px vacios al final
+HUECO 1440-claro-cxc-clientes: Dinero de la sociedad en poder de un soc (+65px)
+COLA 1440-claro-cxc-clientes: 28px vacios al final
+HUECO 1440-claro-cxc-socios: Dinero de la sociedad en poder de un soc (+65px)
+COLA 1440-claro-cxc-socios: 28px vacios al final
+HUECO 1440-claro-proveedores: Saldo de la cuenta con Isaac (+93px)
+COLA 1440-claro-proveedores: 28px vacios al final
+HUECO 1440-claro-proveedores-hoja: Saldo de la cuenta con Isaac (+93px)
+COLA 1440-claro-proveedores-hoja: 28px vacios al final
+HUECO 1440-claro-proveedores-karen: Saldo de la cuenta con Karen (+93px)
+COLA 1440-claro-proveedores-karen: 28px vacios al final
+HUECO 1440-claro-liquidacion: Comprobaciones por dos vías (+67px)
+COLA 1440-claro-liquidacion: 28px vacios al final
+COLA 1440-claro-compra: 28px vacios al final
+HUECO 1440-claro-socios: Posición neta de cada socio (+66px)
+COLA 1440-claro-socios: 28px vacios al final
+COLA 1440-claro-socio-angelo: 28px vacios al final
+COLA 1440-claro-cascada: 28px vacios al final
+HUECO 1440-claro-omar: Renta por modelo (+78px)
+COLA 1440-claro-omar: 28px vacios al final
+HUECO 1440-claro-conta-valuacion: De qué se compone el activo (+173px) ; Liquidez (+251px)
+HUECO 1440-claro-conta-diario: Qué origina los asientos (+8890px)
+COLA 1440-claro-conta-diario: 28px vacios al final
+HUECO 1440-claro-conta-resultados: Utilidad neta por semana (+151px)
+COLA 1440-claro-conta-resultados: 28px vacios al final
+TABLA 1440-claro-conta-balance: Cascada del balance (tabla equivalente) +13px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=345
+HUECO 1440-claro-conta-balance: Mayores partidas del activo (+159px) ; Pasivo y capital (+159px)
+COLA 1440-claro-conta-balance: 28px vacios al final
+HUECO 1440-claro-conta-flujo: Por concepto (+130px)
+CEROS 1440-claro-conta-flujo: [{"alto":104,"barras":12,"cero":10}]
+COLA 1440-claro-conta-comprobaciones: 28px vacios al final
+TABLA 1440-claro-conta-proyecciones: Utilidad neta semanal proyectada (tabla equivalente) +33px cortadas[Rango] cols(Periodo:68 Pesos:98 Procedencia:95 Rango:312) caja=540
+HUECO 1440-claro-conta-proyecciones: Cobertura del viernes (+147px) ; Sensibilidad al costo de Isaac y Karen (+182px)
