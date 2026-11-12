@@ -7,7 +7,7 @@ COLA 1440-claro-cliente-ficha: 28px vacios al final
 COLA 1440-claro-catalogo: 28px vacios al final
 COLA 1440-claro-paquetes-por-hacer: 28px vacios al final
 COLA 1440-claro-paquetes-en-trayecto: 146px vacios al final
-HUECO 1440-claro-avisos: De qué son (+102px)
+COLA 1440-claro-avisos: 28px vacios al final
 TABLA 1440-claro-inventario: Existencia y semáforo de reposición por modelo y sabor +129px cortadas[Antig., Último mov.] cols(Modelo › sabor:291 Piezas:70 Apart.:58 Disp.:69 Costo:72 Valor total:95 % del total:65 Cobertura:74 Semáforo:157 Entr.:69 Sal.:69 Rot.:56 Antig.:56 Último mov.:82) caja=1154
 TABLA 1440-claro-inventario-por-reponer: Existencia y semáforo de reposición por modelo y sabor +98px cortadas[Antig., Último mov.] cols(Modelo › sabor:291 Piezas:90 Apart.:56 Disp.:56 Costo:72 Valor total:92 % del total:56 Cobertura:74 Semáforo:157 Entr.:56 Sal.:58 Rot.:56 Antig.:56 Último mov.:82) caja=1154
 TABLA 1440-claro-kardex: Kárdex por modelo y sabor +261px cortadas[Referencia, Autor, Mensaje original] cols(Fecha:66 Concepto:128 Modelo › sabor:216 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:68 Total:95 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=1154
@@ -16,44 +16,31 @@ COLA 1440-claro-kardex-modelo: 28px vacios al final
 COLA 1440-claro-kardex-sabor: 28px vacios al final
 COLA 1440-claro-marcas: 28px vacios al final
 TABLA 1440-claro-antiguedad: Antigüedad y rotación por sabor +36px cortadas[Cobertura] cols(Modelo › sabor:284 Existencia:75 Última entrada:100 Días:56 Tramo:72 Días sin salid:72 Valor a costo:95 Semáforo:157 Entradas:69 Salidas:69 Rotación:67 Cobertura:74) caja=1154
+HUECO 1440-claro-mermas: rtm-tarjeta-v2 (+135px)
 COLA 1440-claro-mermas: 28px vacios al final
 COLA 1440-claro-valuacion: 28px vacios al final
 COLA 1440-claro-valuacion-historial: 28px vacios al final
 TABLA 1440-claro-caja: Saldo de caja por lugar o persona +51px cortadas[Último mov.] cols(Lugar o person:266 Tipo:140 Saldo:95 % de la liquid:61 Entradas:95 Salidas:79 Último mov.:82) caja=765
 COLA 1440-claro-conteo: 28px vacios al final
-HUECO 1440-claro-cxc: Dinero de la sociedad en poder de un soc (+65px)
 COLA 1440-claro-cxc: 28px vacios al final
-HUECO 1440-claro-cxc-clientes: Dinero de la sociedad en poder de un soc (+65px)
 COLA 1440-claro-cxc-clientes: 28px vacios al final
-HUECO 1440-claro-cxc-socios: Dinero de la sociedad en poder de un soc (+65px)
 COLA 1440-claro-cxc-socios: 28px vacios al final
-HUECO 1440-claro-proveedores: Saldo de la cuenta con Isaac (+93px)
 COLA 1440-claro-proveedores: 28px vacios al final
-HUECO 1440-claro-proveedores-hoja: Saldo de la cuenta con Isaac (+93px)
 COLA 1440-claro-proveedores-hoja: 28px vacios al final
-HUECO 1440-claro-proveedores-karen: Saldo de la cuenta con Karen (+93px)
 COLA 1440-claro-proveedores-karen: 28px vacios al final
-HUECO 1440-claro-liquidacion: Comprobaciones por dos vías (+67px)
 COLA 1440-claro-liquidacion: 28px vacios al final
 COLA 1440-claro-compra: 28px vacios al final
-HUECO 1440-claro-socios: Posición neta de cada socio (+66px)
 COLA 1440-claro-socios: 28px vacios al final
 COLA 1440-claro-socio-angelo: 28px vacios al final
 COLA 1440-claro-cascada: 28px vacios al final
-HUECO 1440-claro-omar: Renta por modelo (+78px)
 COLA 1440-claro-omar: 28px vacios al final
-HUECO 1440-claro-conta-diario: Qué origina los asientos (+8890px)
 COLA 1440-claro-conta-diario: 28px vacios al final
-HUECO 1440-claro-conta-resultados: Utilidad neta por semana (+151px)
 COLA 1440-claro-conta-resultados: 28px vacios al final
 TABLA 1440-claro-conta-balance: Cascada del balance (tabla equivalente) +13px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=345
-HUECO 1440-claro-conta-balance: Mayores partidas del activo (+159px) ; Pasivo y capital (+159px)
 COLA 1440-claro-conta-balance: 28px vacios al final
-HUECO 1440-claro-conta-flujo: Por concepto (+130px)
 CEROS 1440-claro-conta-flujo: [{"alto":104,"barras":12,"cero":10}]
 COLA 1440-claro-conta-comprobaciones: 28px vacios al final
 TABLA 1440-claro-conta-proyecciones: Utilidad neta semanal proyectada (tabla equivalente) +33px cortadas[Rango] cols(Periodo:68 Pesos:98 Procedencia:95 Rango:312) caja=540
-HUECO 1440-claro-conta-proyecciones: Cobertura del viernes (+147px) ; Sensibilidad al costo de Isaac y Karen (+182px)
 COLA 1440-oscuro-inicio: 28px vacios al final
 COLA 1440-oscuro-pedidos: 28px vacios al final
 COLA 1440-oscuro-pedido-detalle: 28px vacios al final
@@ -63,7 +50,7 @@ COLA 1440-oscuro-cliente-ficha: 28px vacios al final
 COLA 1440-oscuro-catalogo: 28px vacios al final
 COLA 1440-oscuro-paquetes-por-hacer: 28px vacios al final
 COLA 1440-oscuro-paquetes-en-trayecto: 146px vacios al final
-HUECO 1440-oscuro-avisos: De qué son (+102px)
+COLA 1440-oscuro-avisos: 28px vacios al final
 TABLA 1440-oscuro-inventario: Existencia y semáforo de reposición por modelo y sabor +129px cortadas[Antig., Último mov.] cols(Modelo › sabor:291 Piezas:70 Apart.:58 Disp.:69 Costo:72 Valor total:95 % del total:65 Cobertura:74 Semáforo:157 Entr.:69 Sal.:69 Rot.:56 Antig.:56 Último mov.:82) caja=1154
 TABLA 1440-oscuro-inventario-por-reponer: Existencia y semáforo de reposición por modelo y sabor +98px cortadas[Antig., Último mov.] cols(Modelo › sabor:291 Piezas:90 Apart.:56 Disp.:56 Costo:72 Valor total:92 % del total:56 Cobertura:74 Semáforo:157 Entr.:56 Sal.:58 Rot.:56 Antig.:56 Último mov.:82) caja=1154
 TABLA 1440-oscuro-kardex: Kárdex por modelo y sabor +261px cortadas[Referencia, Autor, Mensaje original] cols(Fecha:66 Concepto:128 Modelo › sabor:216 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:68 Total:95 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=1154
@@ -72,44 +59,31 @@ COLA 1440-oscuro-kardex-modelo: 28px vacios al final
 COLA 1440-oscuro-kardex-sabor: 28px vacios al final
 COLA 1440-oscuro-marcas: 28px vacios al final
 TABLA 1440-oscuro-antiguedad: Antigüedad y rotación por sabor +36px cortadas[Cobertura] cols(Modelo › sabor:284 Existencia:75 Última entrada:100 Días:56 Tramo:72 Días sin salid:72 Valor a costo:95 Semáforo:157 Entradas:69 Salidas:69 Rotación:67 Cobertura:74) caja=1154
+HUECO 1440-oscuro-mermas: rtm-tarjeta-v2 (+135px)
 COLA 1440-oscuro-mermas: 28px vacios al final
 COLA 1440-oscuro-valuacion: 28px vacios al final
 COLA 1440-oscuro-valuacion-historial: 28px vacios al final
 TABLA 1440-oscuro-caja: Saldo de caja por lugar o persona +51px cortadas[Último mov.] cols(Lugar o person:266 Tipo:140 Saldo:95 % de la liquid:61 Entradas:95 Salidas:79 Último mov.:82) caja=765
 COLA 1440-oscuro-conteo: 28px vacios al final
-HUECO 1440-oscuro-cxc: Dinero de la sociedad en poder de un soc (+65px)
 COLA 1440-oscuro-cxc: 28px vacios al final
-HUECO 1440-oscuro-cxc-clientes: Dinero de la sociedad en poder de un soc (+65px)
 COLA 1440-oscuro-cxc-clientes: 28px vacios al final
-HUECO 1440-oscuro-cxc-socios: Dinero de la sociedad en poder de un soc (+65px)
 COLA 1440-oscuro-cxc-socios: 28px vacios al final
-HUECO 1440-oscuro-proveedores: Saldo de la cuenta con Isaac (+93px)
 COLA 1440-oscuro-proveedores: 28px vacios al final
-HUECO 1440-oscuro-proveedores-hoja: Saldo de la cuenta con Isaac (+93px)
 COLA 1440-oscuro-proveedores-hoja: 28px vacios al final
-HUECO 1440-oscuro-proveedores-karen: Saldo de la cuenta con Karen (+93px)
 COLA 1440-oscuro-proveedores-karen: 28px vacios al final
-HUECO 1440-oscuro-liquidacion: Comprobaciones por dos vías (+67px)
 COLA 1440-oscuro-liquidacion: 28px vacios al final
 COLA 1440-oscuro-compra: 28px vacios al final
-HUECO 1440-oscuro-socios: Posición neta de cada socio (+66px)
 COLA 1440-oscuro-socios: 28px vacios al final
 COLA 1440-oscuro-socio-angelo: 28px vacios al final
 COLA 1440-oscuro-cascada: 28px vacios al final
-HUECO 1440-oscuro-omar: Renta por modelo (+78px)
 COLA 1440-oscuro-omar: 28px vacios al final
-HUECO 1440-oscuro-conta-diario: Qué origina los asientos (+8890px)
 COLA 1440-oscuro-conta-diario: 28px vacios al final
-HUECO 1440-oscuro-conta-resultados: Utilidad neta por semana (+151px)
 COLA 1440-oscuro-conta-resultados: 28px vacios al final
 TABLA 1440-oscuro-conta-balance: Cascada del balance (tabla equivalente) +13px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=345
-HUECO 1440-oscuro-conta-balance: Mayores partidas del activo (+159px) ; Pasivo y capital (+159px)
 COLA 1440-oscuro-conta-balance: 28px vacios al final
-HUECO 1440-oscuro-conta-flujo: Por concepto (+130px)
 CEROS 1440-oscuro-conta-flujo: [{"alto":104,"barras":12,"cero":10}]
 COLA 1440-oscuro-conta-comprobaciones: 28px vacios al final
 TABLA 1440-oscuro-conta-proyecciones: Utilidad neta semanal proyectada (tabla equivalente) +33px cortadas[Rango] cols(Periodo:68 Pesos:98 Procedencia:95 Rango:312) caja=540
-HUECO 1440-oscuro-conta-proyecciones: Cobertura del viernes (+147px) ; Sensibilidad al costo de Isaac y Karen (+182px)
 COLA 1280-claro-inicio: 28px vacios al final
 COLA 1280-claro-pedidos: 28px vacios al final
 COLA 1280-claro-pedido-detalle: 28px vacios al final
@@ -119,17 +93,17 @@ COLA 1280-claro-cliente-ficha: 28px vacios al final
 COLA 1280-claro-catalogo: 28px vacios al final
 COLA 1280-claro-paquetes-por-hacer: 28px vacios al final
 COLA 1280-claro-paquetes-en-trayecto: 28px vacios al final
-HUECO 1280-claro-avisos: De qué son (+102px)
+COLA 1280-claro-avisos: 28px vacios al final
 TABLA 1280-claro-inventario: Existencia y semáforo de reposición por modelo y sabor +289px cortadas[Entr., Sal., Rot., Antig., Último mov.] cols(Modelo › sabor:291 Piezas:70 Apart.:58 Disp.:69 Costo:72 Valor total:95 % del total:65 Cobertura:74 Semáforo:157 Entr.:69 Sal.:69 Rot.:56 Antig.:56 Último mov.:82) caja=994
 TABLA 1280-claro-inventario-por-reponer: Existencia y semáforo de reposición por modelo y sabor +258px cortadas[Entr., Sal., Rot., Antig., Último mov.] cols(Modelo › sabor:291 Piezas:90 Apart.:56 Disp.:56 Costo:72 Valor total:92 % del total:56 Cobertura:74 Semáforo:157 Entr.:56 Sal.:58 Rot.:56 Antig.:56 Último mov.:82) caja=994
-TABLA 1280-claro-kardex: Kárdex por modelo y sabor +421px cortadas[Total, Del sabor, Referencia, Autor, Mensaje original] cols(Fecha:66 Concepto:128 Modelo › sabor:216 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:68 Total:95 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=994
-TABLA 1280-claro-kardex-modelo: Kárdex por modelo y sabor +273px cortadas[Referencia, Autor, Mensaje original] cols(Fecha:66 Concepto:128 Sabor:92 Piezas:57 V. unit.:66 Total:87 Piezas:57 V. unit.:66 Total:87 Piezas:57 V. unit.:68 Total:87 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=994
+TABLA 1280-claro-kardex: Kárdex por modelo y sabor +290px cortadas[Referencia, Autor, Mensaje original] cols(Fecha:66 Concepto:128 Modelo › sabor:216 Piezas:57 V. unit.:0 Total:95 Piezas:57 V. unit.:0 Total:95 Piezas:57 V. unit.:68 Total:95 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=994
+TABLA 1280-claro-kardex-modelo: Kárdex por modelo y sabor +142px cortadas[Autor, Mensaje original] cols(Fecha:66 Concepto:128 Sabor:92 Piezas:57 V. unit.:0 Total:87 Piezas:57 V. unit.:0 Total:87 Piezas:57 V. unit.:68 Total:87 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=994
 COLA 1280-claro-kardex-modelo: 28px vacios al final
-TABLA 1280-claro-kardex-sabor: Kárdex por sabor +100px cortadas[Mensaje original] cols(Fecha:66 Concepto:128 Piezas:57 V. unit.:58 Total:87 Piezas:57 V. unit.:58 Total:87 Piezas:57 Costo mod.:58 Valor a costo:87 Referencia:83 Autor:72 Mensaje origin:140) caja=994
 COLA 1280-claro-kardex-sabor: 28px vacios al final
 TABLA 1280-claro-marcas: Inventario por marca y proveedor +35px cortadas[Última entrada] cols(Marca:154 Proveedor:75 Modelos:65 Sabores:63 Piezas:69 Valor a costo:95 Costo promedio:72 % del total:56 Cobertura medi:74 Rotación:67 Entradas:69 Salidas:69 Última entrada:100) caja=994
 COLA 1280-claro-marcas: 28px vacios al final
 TABLA 1280-claro-antiguedad: Antigüedad y rotación por sabor +196px cortadas[Salidas, Rotación, Cobertura] cols(Modelo › sabor:284 Existencia:75 Última entrada:100 Días:56 Tramo:72 Días sin salid:72 Valor a costo:95 Semáforo:157 Entradas:69 Salidas:69 Rotación:67 Cobertura:74) caja=994
+HUECO 1280-claro-mermas: rtm-tarjeta-v2 (+88px)
 COLA 1280-claro-mermas: 28px vacios al final
 TABLA 1280-claro-valuacion: Deudas por renglón +39px cortadas[% del total] cols(Concepto:285 Detalle:93 Importe:95 % del total:57) caja=490
 COLA 1280-claro-valuacion: 28px vacios al final
@@ -146,23 +120,17 @@ COLA 1280-claro-proveedores-karen: 28px vacios al final
 HUECO 1280-claro-liquidacion: 3. Costo de guías por pedido (+83px)
 COLA 1280-claro-liquidacion: 28px vacios al final
 COLA 1280-claro-compra: 28px vacios al final
-HUECO 1280-claro-socios: Posición neta de cada socio (+66px)
 COLA 1280-claro-socios: 28px vacios al final
 COLA 1280-claro-socio-angelo: 28px vacios al final
 COLA 1280-claro-cascada: 28px vacios al final
 COLA 1280-claro-omar: 28px vacios al final
-HUECO 1280-claro-conta-diario: Qué origina los asientos (+8941px)
 COLA 1280-claro-conta-diario: 28px vacios al final
-HUECO 1280-claro-conta-resultados: Utilidad neta por semana (+187px)
 COLA 1280-claro-conta-resultados: 28px vacios al final
 TABLA 1280-claro-conta-balance: Cascada del balance (tabla equivalente) +66px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=292
-HUECO 1280-claro-conta-balance: Mayores partidas del activo (+159px) ; Pasivo y capital (+159px)
 COLA 1280-claro-conta-balance: 28px vacios al final
-HUECO 1280-claro-conta-flujo: Por concepto (+101px)
 CEROS 1280-claro-conta-flujo: [{"alto":104,"barras":12,"cero":10}]
 COLA 1280-claro-conta-comprobaciones: 28px vacios al final
 TABLA 1280-claro-conta-proyecciones: Utilidad neta semanal proyectada (tabla equivalente) +113px cortadas[Rango] cols(Periodo:68 Pesos:98 Procedencia:95 Rango:312) caja=460
-HUECO 1280-claro-conta-proyecciones: Cobertura del viernes (+120px) ; Sensibilidad al costo de Isaac y Karen (+122px)
 COLA 1280-oscuro-inicio: 28px vacios al final
 COLA 1280-oscuro-pedidos: 28px vacios al final
 COLA 1280-oscuro-pedido-detalle: 28px vacios al final
@@ -172,17 +140,17 @@ COLA 1280-oscuro-cliente-ficha: 28px vacios al final
 COLA 1280-oscuro-catalogo: 28px vacios al final
 COLA 1280-oscuro-paquetes-por-hacer: 28px vacios al final
 COLA 1280-oscuro-paquetes-en-trayecto: 28px vacios al final
-HUECO 1280-oscuro-avisos: De qué son (+102px)
+COLA 1280-oscuro-avisos: 28px vacios al final
 TABLA 1280-oscuro-inventario: Existencia y semáforo de reposición por modelo y sabor +289px cortadas[Entr., Sal., Rot., Antig., Último mov.] cols(Modelo › sabor:291 Piezas:70 Apart.:58 Disp.:69 Costo:72 Valor total:95 % del total:65 Cobertura:74 Semáforo:157 Entr.:69 Sal.:69 Rot.:56 Antig.:56 Último mov.:82) caja=994
 TABLA 1280-oscuro-inventario-por-reponer: Existencia y semáforo de reposición por modelo y sabor +258px cortadas[Entr., Sal., Rot., Antig., Último mov.] cols(Modelo › sabor:291 Piezas:90 Apart.:56 Disp.:56 Costo:72 Valor total:92 % del total:56 Cobertura:74 Semáforo:157 Entr.:56 Sal.:58 Rot.:56 Antig.:56 Último mov.:82) caja=994
-TABLA 1280-oscuro-kardex: Kárdex por modelo y sabor +421px cortadas[Total, Del sabor, Referencia, Autor, Mensaje original] cols(Fecha:66 Concepto:128 Modelo › sabor:216 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:66 Total:95 Piezas:57 V. unit.:68 Total:95 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=994
-TABLA 1280-oscuro-kardex-modelo: Kárdex por modelo y sabor +273px cortadas[Referencia, Autor, Mensaje original] cols(Fecha:66 Concepto:128 Sabor:92 Piezas:57 V. unit.:66 Total:87 Piezas:57 V. unit.:66 Total:87 Piezas:57 V. unit.:68 Total:87 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=994
+TABLA 1280-oscuro-kardex: Kárdex por modelo y sabor +290px cortadas[Referencia, Autor, Mensaje original] cols(Fecha:66 Concepto:128 Modelo › sabor:216 Piezas:57 V. unit.:0 Total:95 Piezas:57 V. unit.:0 Total:95 Piezas:57 V. unit.:68 Total:95 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=994
+TABLA 1280-oscuro-kardex-modelo: Kárdex por modelo y sabor +142px cortadas[Autor, Mensaje original] cols(Fecha:66 Concepto:128 Sabor:92 Piezas:57 V. unit.:0 Total:87 Piezas:57 V. unit.:0 Total:87 Piezas:57 V. unit.:68 Total:87 Del sabor:56 Referencia:83 Autor:72 Mensaje origin:140) caja=994
 COLA 1280-oscuro-kardex-modelo: 28px vacios al final
-TABLA 1280-oscuro-kardex-sabor: Kárdex por sabor +100px cortadas[Mensaje original] cols(Fecha:66 Concepto:128 Piezas:57 V. unit.:58 Total:87 Piezas:57 V. unit.:58 Total:87 Piezas:57 Costo mod.:58 Valor a costo:87 Referencia:83 Autor:72 Mensaje origin:140) caja=994
 COLA 1280-oscuro-kardex-sabor: 28px vacios al final
 TABLA 1280-oscuro-marcas: Inventario por marca y proveedor +35px cortadas[Última entrada] cols(Marca:154 Proveedor:75 Modelos:65 Sabores:63 Piezas:69 Valor a costo:95 Costo promedio:72 % del total:56 Cobertura medi:74 Rotación:67 Entradas:69 Salidas:69 Última entrada:100) caja=994
 COLA 1280-oscuro-marcas: 28px vacios al final
 TABLA 1280-oscuro-antiguedad: Antigüedad y rotación por sabor +196px cortadas[Salidas, Rotación, Cobertura] cols(Modelo › sabor:284 Existencia:75 Última entrada:100 Días:56 Tramo:72 Días sin salid:72 Valor a costo:95 Semáforo:157 Entradas:69 Salidas:69 Rotación:67 Cobertura:74) caja=994
+HUECO 1280-oscuro-mermas: rtm-tarjeta-v2 (+88px)
 COLA 1280-oscuro-mermas: 28px vacios al final
 TABLA 1280-oscuro-valuacion: Deudas por renglón +39px cortadas[% del total] cols(Concepto:285 Detalle:93 Importe:95 % del total:57) caja=490
 COLA 1280-oscuro-valuacion: 28px vacios al final
@@ -199,148 +167,50 @@ COLA 1280-oscuro-proveedores-karen: 28px vacios al final
 HUECO 1280-oscuro-liquidacion: 3. Costo de guías por pedido (+83px)
 COLA 1280-oscuro-liquidacion: 28px vacios al final
 COLA 1280-oscuro-compra: 28px vacios al final
-HUECO 1280-oscuro-socios: Posición neta de cada socio (+66px)
 COLA 1280-oscuro-socios: 28px vacios al final
 COLA 1280-oscuro-socio-angelo: 28px vacios al final
 COLA 1280-oscuro-cascada: 28px vacios al final
 COLA 1280-oscuro-omar: 28px vacios al final
-HUECO 1280-oscuro-conta-diario: Qué origina los asientos (+8941px)
 COLA 1280-oscuro-conta-diario: 28px vacios al final
-HUECO 1280-oscuro-conta-resultados: Utilidad neta por semana (+187px)
 COLA 1280-oscuro-conta-resultados: 28px vacios al final
 TABLA 1280-oscuro-conta-balance: Cascada del balance (tabla equivalente) +66px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=292
-HUECO 1280-oscuro-conta-balance: Mayores partidas del activo (+159px) ; Pasivo y capital (+159px)
 COLA 1280-oscuro-conta-balance: 28px vacios al final
-HUECO 1280-oscuro-conta-flujo: Por concepto (+101px)
 CEROS 1280-oscuro-conta-flujo: [{"alto":104,"barras":12,"cero":10}]
 COLA 1280-oscuro-conta-comprobaciones: 28px vacios al final
 TABLA 1280-oscuro-conta-proyecciones: Utilidad neta semanal proyectada (tabla equivalente) +113px cortadas[Rango] cols(Periodo:68 Pesos:98 Procedencia:95 Rango:312) caja=460
-HUECO 1280-oscuro-conta-proyecciones: Cobertura del viernes (+120px) ; Sensibilidad al costo de Isaac y Karen (+122px)
-TABLA 390-claro-inicio: Pedidos recientes +91px cortadas[Estado] cols(Folio:80 Cliente:92 Fecha:0 Piezas:58 Cobrado:84 Estado:115) caja=338
 COLA 390-claro-inicio: 28px vacios al final
-TABLA 390-claro-pedido-detalle: Renglones de P-0007 +84px cortadas[Precio, Cobradas] cols(Modelo:67 Sabor:61 Pedidas:70 Surtidas:72 Disponible:0 Precio:74 Tabulador:0 Cobradas:79) caja=338 ; Utilidad por modelo +26px cortadas[Utilidad] cols(Modelo:67 Piezas:62 Venta:84 Costo:84 Utilidad:68) caja=338 ; De la venta a la utilidad (tabla equivalente) +50px cortadas[Comprobación] cols(Paso:87 Importe:91 Efecto:61 Comprobación:107) caja=296
-COLA 390-claro-pedido-detalle: 28px vacios al final
 COLA 390-claro-pedido-nuevo: 28px vacios al final
-TABLA 390-claro-cliente-ficha: Tabulador de Cliente Alfa Completo +28px cortadas[Margen vs Karen] cols(Modelo:150 Precio:72 Margen vs Isaa:72 Margen vs Kare:72 Desde:0 Origen:0) caja=338 ; Pedidos de Cliente Alfa Completo +66px cortadas[Estado] cols(Folio:72 Fecha:72 Piezas:58 Cobrado:87 Estado:115) caja=338
 COLA 390-claro-cliente-ficha: 28px vacios al final
-TABLA 390-claro-catalogo: Modelos del catálogo +429px cortadas[Costo Isaac, Costo Karen, Precios de clientes, Acción] cols(Marca:0 Modelo:150 Disponibilidad:149 Costo Isaac:72 Costo Karen:114 Precios de cli:162 Acción:120) caja=338 ; Precios de Alfa Uno 50K por cliente +135px cortadas[Margen vs Karen, Más alto] cols(Cliente:150 Precio:72 Margen vs Isaa:86 Margen vs Kare:72 Más alto:93) caja=338
-COLA 390-claro-catalogo: 28px vacios al final
-TABLA 390-claro-paquetes-por-hacer: Paquetes por hacer +163px cortadas[Estado, Acciones] cols(Pedido:66 Cliente:74 Piezas:58 Por modelo y s:0 Envío cobrado:0 Guía:0 Antigüedad:82 Estado:121 Acciones:101) caja=338
 COLA 390-claro-paquetes-por-hacer: 28px vacios al final
-TABLA 390-claro-paquetes-en-trayecto: Paquetes en trayecto +229px cortadas[Días en camino, Estado, Acciones] cols(Orden:66 Proveedor:75 Modelos y sabo:0 Piezas:58 Total pagado:0 Guías:97 Envío:0 Llegada estima:0 Días en camino:58 Estado:114 Acciones:99) caja=338
-COLA 390-claro-paquetes-en-trayecto: 28px vacios al final
-TABLA 390-claro-avisos: Avisos +6px cortadas[Acción] cols(Severidad:112 Aviso:150 Cuándo:0 Estado:0 Acción:82) caja=338
-TABLA 390-claro-inventario: Piezas por modelo y sabor (tabla equivalente) +377px cortadas[Uva, Sandia, Fresa helada, Limon, Fresa, Cereza] cols(Fila:92 Mango:73 Menta:73 Uva:73 Sandia:73 Fresa helada:73 Limon:73 Fresa:73 Cereza:73) caja=296
-TABLA 390-claro-inventario-por-reponer: Existencia y semáforo de reposición por modelo y sabor +39px cortadas[] cols(Modelo › sabor:16 Piezas:16 Apart.:16 Disp.:16 Costo:0 Valor total:16 % del total:0 Cobertura:16 Semáforo:16 Entr.:0 Sal.:0 Rot.:0 Antig.:0 Último mov.:0) caja=338 ; Piezas por modelo y sabor (tabla equivalente) +377px cortadas[Uva, Sandia, Fresa helada, Limon, Fresa, Cereza] cols(Fila:92 Mango:73 Menta:73 Uva:73 Sandia:73 Fresa helada:73 Limon:73 Fresa:73 Cereza:73) caja=296
-TABLA 390-claro-marcas: Inventario por marca y proveedor +691px cortadas[Sabores, Piezas, Valor a costo, Costo promedio, % del total, Cobertura media, Rotación, Entradas, Salidas, Última entrada] cols(Marca:154 Proveedor:75 Modelos:65 Sabores:63 Piezas:69 Valor a costo:95 Costo promedio:72 % del total:56 Cobertura medi:74 Rotación:67 Entradas:69 Salidas:69 Última entrada:100) caja=338
-COLA 390-claro-marcas: 28px vacios al final
-TABLA 390-claro-antiguedad: Antigüedad y rotación por sabor +732px cortadas[Última entrada, Días, Tramo, Días sin salida, Valor a costo, Semáforo, Entradas, Salidas, Rotación, Cobertura] cols(Modelo › sabor:164 Existencia:75 Última entrada:100 Días:56 Tramo:72 Días sin salid:72 Valor a costo:95 Semáforo:157 Entradas:69 Salidas:69 Rotación:67 Cobertura:74) caja=338
-TABLA 390-claro-mermas: Mermas y diferencias de conteo +313px cortadas[Modelo, Sabor, Piezas, Valor] cols(Fecha:91 Tipo:116 Modelo:210 Sabor:92 Piezas:57 Valor:86 Motivo:0 Quién:0 Evento:0) caja=338
-COLA 390-claro-mermas: 28px vacios al final
-TABLA 390-claro-valuacion: De la valuación a la utilidad (tabla equivalente) +50px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=308
+TABLA 390-claro-inventario-por-reponer: Existencia y semáforo de reposición por modelo y sabor +39px cortadas[] cols(Modelo › sabor:16 Piezas:16 Apart.:16 Disp.:16 Costo:0 Valor total:16 % del total:0 Cobertura:16 Semáforo:16 Entr.:0 Sal.:0 Rot.:0 Antig.:0 Último mov.:0) caja=338
 COLA 390-claro-valuacion: 28px vacios al final
-TABLA 390-claro-valuacion-historial: Historial de valuación +249px cortadas[Cambio, % de crecimiento, Utilidad de la empresa] cols(Corte:136 Valuación inic:92 Valuación fina:92 Cambio:91 % de crecimien:84 Utilidad de la:92 Deudas:0 Diferencia:0) caja=338
-COLA 390-claro-valuacion-historial: 28px vacios al final
-TABLA 390-claro-caja: Saldo de caja por lugar o persona +121px cortadas[Saldo, % de la liquidez] cols(Lugar o person:164 Tipo:140 Saldo:95 % de la liquid:61 Entradas:0 Salidas:0 Último mov.:0) caja=338
 COLA 390-claro-caja: 28px vacios al final
-TABLA 390-claro-conteo: Conteos anteriores +87px cortadas[Exactitud, Estado] cols(Contado:94 Ubicación:0 Sabores:63 Con diferencia:73 Sin explicar:62 Exactitud:70 Estado:63) caja=338
-COLA 390-claro-conteo: 28px vacios al final
-TABLA 390-claro-cxc: Saldo por cliente y tramo de antigüedad (tabla equivalente) +115px cortadas[Más de 30 d, Total] cols(Cliente:81 0 a 7 d:84 8 a 14 d:58 15 a 30 d:58 Más de 30 d:58 Total:84) caja=308
-TABLA 390-claro-cxc-clientes: Saldo por cliente y tramo de antigüedad (tabla equivalente) +115px cortadas[Más de 30 d, Total] cols(Cliente:81 0 a 7 d:84 8 a 14 d:58 15 a 30 d:58 Más de 30 d:58 Total:84) caja=308
 COLA 390-claro-cxc-clientes: 28px vacios al final
-TABLA 390-claro-cxc-socios: Saldo por cliente y tramo de antigüedad (tabla equivalente) +115px cortadas[Más de 30 d, Total] cols(Cliente:81 0 a 7 d:84 8 a 14 d:58 15 a 30 d:58 Más de 30 d:58 Total:84) caja=308 ; Deuda de los socios con la sociedad +53px cortadas[Acción] cols(Socio:98 Fondos en su p:100 Faltantes asig:0 Debe a la soci:100 Sin entregar:0 Acción:94) caja=338
 COLA 390-claro-cxc-socios: 28px vacios al final
-TABLA 390-claro-proveedores: Cascada de la hoja semanal (tabla equivalente) +52px cortadas[Comprobación] cols(Paso:85 Pesos:107 Efecto:61 Comprobación:107) caja=308 ; Saldo corrido con el proveedor (tabla equivalente) +3px cortadas[Estado] cols(Periodo:68 Pesos:162 Estado:81) caja=308
 COLA 390-claro-proveedores: 28px vacios al final
-TABLA 390-claro-proveedores-hoja: Cascada de la hoja semanal (tabla equivalente) +52px cortadas[Comprobación] cols(Paso:85 Pesos:107 Efecto:61 Comprobación:107) caja=308 ; Saldo corrido con el proveedor (tabla equivalente) +3px cortadas[Estado] cols(Periodo:68 Pesos:162 Estado:81) caja=308
-TABLA 390-claro-proveedores-karen: Cascada de la hoja semanal (tabla equivalente) +44px cortadas[Comprobación] cols(Paso:85 Pesos:99 Efecto:61 Comprobación:107) caja=308
 COLA 390-claro-proveedores-karen: 28px vacios al final
-TABLA 390-claro-liquidacion: Cascada de la liquidación (tabla equivalente) +52px cortadas[Comprobación] cols(Paso:85 Pesos:107 Efecto:61 Comprobación:107) caja=308 ; Renglones de la hoja +46px cortadas[Guía] cols(Folio:92 Fecha:56 Piezas:69 Detalle a cost:0 Costo:95 Guía:72 Alcance:0 Cuadra:0) caja=338 ; Abonos de la semana +58px cortadas[] cols(Fecha:56 Concepto:150 Monto:94 Quién:0 :95) caja=338
 COLA 390-claro-liquidacion: 28px vacios al final
-TABLA 390-claro-compra: Renglones de C-0001 +52px cortadas[Costo] cols(Modelo:92 Pagadas:66 Facturadas:80 Recibidas:72 Costo:80 Costo puesto:0 Valor de entra:0) caja=338
 COLA 390-claro-compra: 28px vacios al final
-TABLA 390-claro-socios: Lo que puso cada socio (tabla equivalente) +137px cortadas[Fuera de la sociedad, Total] cols(Cliente:65 Capital:92 Reembolsable:106 Fuera de la so:84 Total:98) caja=308 ; Posición de cada socio +61px cortadas[Fondos de la sociedad en su poder] cols(Socio:104 Aportado:0 Posición neta:109 Reembolsos pen:0 Capital por de:0 Fondos de la s:187) caja=338 ; Movimientos de la cuenta de socios +115px cortadas[Monto, ] cols(Fecha:56 Socio:58 Concepto:150 Clase:0 Monto:94 Quién:0 :95) caja=338
-COLA 390-claro-socios: 28px vacios al final
-TABLA 390-claro-socio-angelo: Posición neta de Angelo (tabla equivalente) +58px cortadas[Estado] cols(Periodo:68 Pesos:217 Estado:81) caja=308 ; Movimientos de Angelo +155px cortadas[Posición, ] cols(Fecha:60 Concepto:150 Efecto:94 Posición:94 Quién:0 :95) caja=338
-COLA 390-claro-socio-angelo: 28px vacios al final
-TABLA 390-claro-cascada: Cascada de reparto (tabla equivalente) +61px cortadas[Comprobación] cols(Paso:102 Pesos:98 Efecto:61 Comprobación:107) caja=308 ; Cierres de reparto +148px cortadas[Estado, ] cols(Folio:72 Periodo:92 Utilidad:0 Estado:230 :92) caja=338
+TABLA 390-claro-socios: Posición de cada socio +68px cortadas[] cols(Socio:16 Aportado:16 Posición neta:16 Reembolsos pen:16 Capital por de:16 Fondos de la s:16) caja=338
 COLA 390-claro-cascada: 28px vacios al final
-TABLA 390-claro-omar: Cascada de la semana con Omar (tabla equivalente) +19px cortadas[Comprobación] cols(Paso:89 Pesos:80 Efecto:61 Comprobación:107) caja=319 ; Tomas pendientes +24px cortadas[] cols(Toma:72 Pieza:150 Piezas:56 Precio:0 Caduca:0 :95) caja=349 ; Renta devengada +59px cortadas[Subtotal] cols(Pedido:72 Fecha:56 Modelo y sabor:150 Piezas:58 Tarifa:0 Subtotal:72) caja=349
-COLA 390-claro-omar: 28px vacios al final
-TABLA 390-claro-conta-valuacion: Cascada de la valuación (tabla equivalente) +50px cortadas[Comprobación] cols(Paso:83 Pesos:107 Efecto:61 Comprobación:107) caja=308
 COLA 390-claro-conta-diario: 28px vacios al final
-TABLA 390-claro-conta-mayor-cuenta: Movimientos de la cuenta 1310 +152px cortadas[Haber, Saldo] cols(Fecha:56 Asiento:150 Debe:95 Haber:95 Saldo:95 Quién:0) caja=338
-TABLA 390-claro-conta-resultados: Cascada del estado de resultados (tabla equivalente) +43px cortadas[Comprobación] cols(Paso:77 Pesos:106 Efecto:61 Comprobación:107) caja=308
 COLA 390-claro-conta-resultados: 28px vacios al final
-TABLA 390-claro-conta-balance: Cascada del balance (tabla equivalente) +50px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=308
-COLA 390-claro-conta-balance: 28px vacios al final
-TABLA 390-claro-conta-flujo: Cascada del flujo de efectivo (tabla equivalente) +74px cortadas[Comprobación] cols(Paso:114 Pesos:99 Efecto:61 Comprobación:107) caja=308
 CEROS 390-claro-conta-flujo: [{"alto":104,"barras":12,"cero":10}]
-TABLA 390-claro-conta-comprobaciones: Comprobaciones por dos vías +233px cortadas[Vía A, Estado] cols(Código:57 Comprobación:150 Vía A:258 Vía B:0 Estado:106) caja=338 ; Auxiliares operativos contra cuentas de control +101px cortadas[Estado] cols(Auxiliar:150 Libro:91 Auxiliar:91 Estado:106) caja=338 ; Periodos contables +6px cortadas[] cols(Periodo:150 Estado:102 Asientos:0 Hash de cabece:0 :92) caja=338
-COLA 390-claro-conta-comprobaciones: 28px vacios al final
-TABLA 390-claro-conta-proyecciones: Saldo de fondos proyectado (tabla equivalente) +111px cortadas[Rango] cols(Periodo:68 Pesos:99 Procedencia:95 Rango:157) caja=308 ; Utilidad neta semanal proyectada (tabla equivalente) +265px cortadas[Rango] cols(Periodo:68 Pesos:98 Procedencia:95 Rango:312) caja=308
-COLA 390-claro-conta-proyecciones: 28px vacios al final
-TABLA 390-oscuro-inicio: Pedidos recientes +91px cortadas[Estado] cols(Folio:80 Cliente:92 Fecha:0 Piezas:58 Cobrado:84 Estado:115) caja=338
 COLA 390-oscuro-inicio: 28px vacios al final
-TABLA 390-oscuro-pedido-detalle: Renglones de P-0007 +84px cortadas[Precio, Cobradas] cols(Modelo:67 Sabor:61 Pedidas:70 Surtidas:72 Disponible:0 Precio:74 Tabulador:0 Cobradas:79) caja=338 ; Utilidad por modelo +26px cortadas[Utilidad] cols(Modelo:67 Piezas:62 Venta:84 Costo:84 Utilidad:68) caja=338 ; De la venta a la utilidad (tabla equivalente) +50px cortadas[Comprobación] cols(Paso:87 Importe:91 Efecto:61 Comprobación:107) caja=296
-COLA 390-oscuro-pedido-detalle: 28px vacios al final
 COLA 390-oscuro-pedido-nuevo: 28px vacios al final
-TABLA 390-oscuro-cliente-ficha: Tabulador de Cliente Alfa Completo +28px cortadas[Margen vs Karen] cols(Modelo:150 Precio:72 Margen vs Isaa:72 Margen vs Kare:72 Desde:0 Origen:0) caja=338 ; Pedidos de Cliente Alfa Completo +66px cortadas[Estado] cols(Folio:72 Fecha:72 Piezas:58 Cobrado:87 Estado:115) caja=338
 COLA 390-oscuro-cliente-ficha: 28px vacios al final
-TABLA 390-oscuro-catalogo: Modelos del catálogo +429px cortadas[Costo Isaac, Costo Karen, Precios de clientes, Acción] cols(Marca:0 Modelo:150 Disponibilidad:149 Costo Isaac:72 Costo Karen:114 Precios de cli:162 Acción:120) caja=338 ; Precios de Alfa Uno 50K por cliente +135px cortadas[Margen vs Karen, Más alto] cols(Cliente:150 Precio:72 Margen vs Isaa:86 Margen vs Kare:72 Más alto:93) caja=338
-COLA 390-oscuro-catalogo: 28px vacios al final
-TABLA 390-oscuro-paquetes-por-hacer: Paquetes por hacer +163px cortadas[Estado, Acciones] cols(Pedido:66 Cliente:74 Piezas:58 Por modelo y s:0 Envío cobrado:0 Guía:0 Antigüedad:82 Estado:121 Acciones:101) caja=338
 COLA 390-oscuro-paquetes-por-hacer: 28px vacios al final
-TABLA 390-oscuro-paquetes-en-trayecto: Paquetes en trayecto +229px cortadas[Días en camino, Estado, Acciones] cols(Orden:66 Proveedor:75 Modelos y sabo:0 Piezas:58 Total pagado:0 Guías:97 Envío:0 Llegada estima:0 Días en camino:58 Estado:114 Acciones:99) caja=338
-COLA 390-oscuro-paquetes-en-trayecto: 28px vacios al final
-TABLA 390-oscuro-avisos: Avisos +6px cortadas[Acción] cols(Severidad:112 Aviso:150 Cuándo:0 Estado:0 Acción:82) caja=338
-TABLA 390-oscuro-inventario: Piezas por modelo y sabor (tabla equivalente) +377px cortadas[Uva, Sandia, Fresa helada, Limon, Fresa, Cereza] cols(Fila:92 Mango:73 Menta:73 Uva:73 Sandia:73 Fresa helada:73 Limon:73 Fresa:73 Cereza:73) caja=296
-TABLA 390-oscuro-inventario-por-reponer: Existencia y semáforo de reposición por modelo y sabor +39px cortadas[] cols(Modelo › sabor:16 Piezas:16 Apart.:16 Disp.:16 Costo:0 Valor total:16 % del total:0 Cobertura:16 Semáforo:16 Entr.:0 Sal.:0 Rot.:0 Antig.:0 Último mov.:0) caja=338 ; Piezas por modelo y sabor (tabla equivalente) +377px cortadas[Uva, Sandia, Fresa helada, Limon, Fresa, Cereza] cols(Fila:92 Mango:73 Menta:73 Uva:73 Sandia:73 Fresa helada:73 Limon:73 Fresa:73 Cereza:73) caja=296
-TABLA 390-oscuro-marcas: Inventario por marca y proveedor +691px cortadas[Sabores, Piezas, Valor a costo, Costo promedio, % del total, Cobertura media, Rotación, Entradas, Salidas, Última entrada] cols(Marca:154 Proveedor:75 Modelos:65 Sabores:63 Piezas:69 Valor a costo:95 Costo promedio:72 % del total:56 Cobertura medi:74 Rotación:67 Entradas:69 Salidas:69 Última entrada:100) caja=338
-COLA 390-oscuro-marcas: 28px vacios al final
-TABLA 390-oscuro-antiguedad: Antigüedad y rotación por sabor +732px cortadas[Última entrada, Días, Tramo, Días sin salida, Valor a costo, Semáforo, Entradas, Salidas, Rotación, Cobertura] cols(Modelo › sabor:164 Existencia:75 Última entrada:100 Días:56 Tramo:72 Días sin salid:72 Valor a costo:95 Semáforo:157 Entradas:69 Salidas:69 Rotación:67 Cobertura:74) caja=338
-TABLA 390-oscuro-mermas: Mermas y diferencias de conteo +313px cortadas[Modelo, Sabor, Piezas, Valor] cols(Fecha:91 Tipo:116 Modelo:210 Sabor:92 Piezas:57 Valor:86 Motivo:0 Quién:0 Evento:0) caja=338
-COLA 390-oscuro-mermas: 28px vacios al final
-TABLA 390-oscuro-valuacion: De la valuación a la utilidad (tabla equivalente) +50px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=308
+TABLA 390-oscuro-inventario-por-reponer: Existencia y semáforo de reposición por modelo y sabor +39px cortadas[] cols(Modelo › sabor:16 Piezas:16 Apart.:16 Disp.:16 Costo:0 Valor total:16 % del total:0 Cobertura:16 Semáforo:16 Entr.:0 Sal.:0 Rot.:0 Antig.:0 Último mov.:0) caja=338
 COLA 390-oscuro-valuacion: 28px vacios al final
-TABLA 390-oscuro-valuacion-historial: Historial de valuación +249px cortadas[Cambio, % de crecimiento, Utilidad de la empresa] cols(Corte:136 Valuación inic:92 Valuación fina:92 Cambio:91 % de crecimien:84 Utilidad de la:92 Deudas:0 Diferencia:0) caja=338
-COLA 390-oscuro-valuacion-historial: 28px vacios al final
-TABLA 390-oscuro-caja: Saldo de caja por lugar o persona +121px cortadas[Saldo, % de la liquidez] cols(Lugar o person:164 Tipo:140 Saldo:95 % de la liquid:61 Entradas:0 Salidas:0 Último mov.:0) caja=338
 COLA 390-oscuro-caja: 28px vacios al final
-TABLA 390-oscuro-conteo: Conteos anteriores +87px cortadas[Exactitud, Estado] cols(Contado:94 Ubicación:0 Sabores:63 Con diferencia:73 Sin explicar:62 Exactitud:70 Estado:63) caja=338
-COLA 390-oscuro-conteo: 28px vacios al final
-TABLA 390-oscuro-cxc: Saldo por cliente y tramo de antigüedad (tabla equivalente) +115px cortadas[Más de 30 d, Total] cols(Cliente:81 0 a 7 d:84 8 a 14 d:58 15 a 30 d:58 Más de 30 d:58 Total:84) caja=308
-TABLA 390-oscuro-cxc-clientes: Saldo por cliente y tramo de antigüedad (tabla equivalente) +115px cortadas[Más de 30 d, Total] cols(Cliente:81 0 a 7 d:84 8 a 14 d:58 15 a 30 d:58 Más de 30 d:58 Total:84) caja=308
 COLA 390-oscuro-cxc-clientes: 28px vacios al final
-TABLA 390-oscuro-cxc-socios: Saldo por cliente y tramo de antigüedad (tabla equivalente) +115px cortadas[Más de 30 d, Total] cols(Cliente:81 0 a 7 d:84 8 a 14 d:58 15 a 30 d:58 Más de 30 d:58 Total:84) caja=308 ; Deuda de los socios con la sociedad +53px cortadas[Acción] cols(Socio:98 Fondos en su p:100 Faltantes asig:0 Debe a la soci:100 Sin entregar:0 Acción:94) caja=338
 COLA 390-oscuro-cxc-socios: 28px vacios al final
-TABLA 390-oscuro-proveedores: Cascada de la hoja semanal (tabla equivalente) +52px cortadas[Comprobación] cols(Paso:85 Pesos:107 Efecto:61 Comprobación:107) caja=308 ; Saldo corrido con el proveedor (tabla equivalente) +3px cortadas[Estado] cols(Periodo:68 Pesos:162 Estado:81) caja=308
 COLA 390-oscuro-proveedores: 28px vacios al final
-TABLA 390-oscuro-proveedores-hoja: Cascada de la hoja semanal (tabla equivalente) +52px cortadas[Comprobación] cols(Paso:85 Pesos:107 Efecto:61 Comprobación:107) caja=308 ; Saldo corrido con el proveedor (tabla equivalente) +3px cortadas[Estado] cols(Periodo:68 Pesos:162 Estado:81) caja=308
-TABLA 390-oscuro-proveedores-karen: Cascada de la hoja semanal (tabla equivalente) +44px cortadas[Comprobación] cols(Paso:85 Pesos:99 Efecto:61 Comprobación:107) caja=308
 COLA 390-oscuro-proveedores-karen: 28px vacios al final
-TABLA 390-oscuro-liquidacion: Cascada de la liquidación (tabla equivalente) +52px cortadas[Comprobación] cols(Paso:85 Pesos:107 Efecto:61 Comprobación:107) caja=308 ; Renglones de la hoja +46px cortadas[Guía] cols(Folio:92 Fecha:56 Piezas:69 Detalle a cost:0 Costo:95 Guía:72 Alcance:0 Cuadra:0) caja=338 ; Abonos de la semana +58px cortadas[] cols(Fecha:56 Concepto:150 Monto:94 Quién:0 :95) caja=338
 COLA 390-oscuro-liquidacion: 28px vacios al final
-TABLA 390-oscuro-compra: Renglones de C-0001 +52px cortadas[Costo] cols(Modelo:92 Pagadas:66 Facturadas:80 Recibidas:72 Costo:80 Costo puesto:0 Valor de entra:0) caja=338
 COLA 390-oscuro-compra: 28px vacios al final
-TABLA 390-oscuro-socios: Lo que puso cada socio (tabla equivalente) +137px cortadas[Fuera de la sociedad, Total] cols(Cliente:65 Capital:92 Reembolsable:106 Fuera de la so:84 Total:98) caja=308 ; Posición de cada socio +61px cortadas[Fondos de la sociedad en su poder] cols(Socio:104 Aportado:0 Posición neta:109 Reembolsos pen:0 Capital por de:0 Fondos de la s:187) caja=338 ; Movimientos de la cuenta de socios +115px cortadas[Monto, ] cols(Fecha:56 Socio:58 Concepto:150 Clase:0 Monto:94 Quién:0 :95) caja=338
-COLA 390-oscuro-socios: 28px vacios al final
-TABLA 390-oscuro-socio-angelo: Posición neta de Angelo (tabla equivalente) +58px cortadas[Estado] cols(Periodo:68 Pesos:217 Estado:81) caja=308 ; Movimientos de Angelo +155px cortadas[Posición, ] cols(Fecha:60 Concepto:150 Efecto:94 Posición:94 Quién:0 :95) caja=338
-COLA 390-oscuro-socio-angelo: 28px vacios al final
-TABLA 390-oscuro-cascada: Cascada de reparto (tabla equivalente) +61px cortadas[Comprobación] cols(Paso:102 Pesos:98 Efecto:61 Comprobación:107) caja=308 ; Cierres de reparto +148px cortadas[Estado, ] cols(Folio:72 Periodo:92 Utilidad:0 Estado:230 :92) caja=338
+TABLA 390-oscuro-socios: Posición de cada socio +68px cortadas[] cols(Socio:16 Aportado:16 Posición neta:16 Reembolsos pen:16 Capital por de:16 Fondos de la s:16) caja=338
 COLA 390-oscuro-cascada: 28px vacios al final
-TABLA 390-oscuro-omar: Cascada de la semana con Omar (tabla equivalente) +19px cortadas[Comprobación] cols(Paso:89 Pesos:80 Efecto:61 Comprobación:107) caja=319 ; Tomas pendientes +24px cortadas[] cols(Toma:72 Pieza:150 Piezas:56 Precio:0 Caduca:0 :95) caja=349 ; Renta devengada +59px cortadas[Subtotal] cols(Pedido:72 Fecha:56 Modelo y sabor:150 Piezas:58 Tarifa:0 Subtotal:72) caja=349
-COLA 390-oscuro-omar: 28px vacios al final
-TABLA 390-oscuro-conta-valuacion: Cascada de la valuación (tabla equivalente) +50px cortadas[Comprobación] cols(Paso:83 Pesos:107 Efecto:61 Comprobación:107) caja=308
 COLA 390-oscuro-conta-diario: 28px vacios al final
-TABLA 390-oscuro-conta-mayor-cuenta: Movimientos de la cuenta 1310 +152px cortadas[Haber, Saldo] cols(Fecha:56 Asiento:150 Debe:95 Haber:95 Saldo:95 Quién:0) caja=338
-TABLA 390-oscuro-conta-resultados: Cascada del estado de resultados (tabla equivalente) +43px cortadas[Comprobación] cols(Paso:77 Pesos:106 Efecto:61 Comprobación:107) caja=308
 COLA 390-oscuro-conta-resultados: 28px vacios al final
-TABLA 390-oscuro-conta-balance: Cascada del balance (tabla equivalente) +50px cortadas[Comprobación] cols(Paso:83 Pesos:106 Efecto:61 Comprobación:107) caja=308
-COLA 390-oscuro-conta-balance: 28px vacios al final
-TABLA 390-oscuro-conta-flujo: Cascada del flujo de efectivo (tabla equivalente) +74px cortadas[Comprobación] cols(Paso:114 Pesos:99 Efecto:61 Comprobación:107) caja=308
 CEROS 390-oscuro-conta-flujo: [{"alto":104,"barras":12,"cero":10}]
-TABLA 390-oscuro-conta-comprobaciones: Comprobaciones por dos vías +233px cortadas[Vía A, Estado] cols(Código:57 Comprobación:150 Vía A:258 Vía B:0 Estado:106) caja=338 ; Auxiliares operativos contra cuentas de control +101px cortadas[Estado] cols(Auxiliar:150 Libro:91 Auxiliar:91 Estado:106) caja=338 ; Periodos contables +6px cortadas[] cols(Periodo:150 Estado:102 Asientos:0 Hash de cabece:0 :92) caja=338
-COLA 390-oscuro-conta-comprobaciones: 28px vacios al final
-TABLA 390-oscuro-conta-proyecciones: Saldo de fondos proyectado (tabla equivalente) +111px cortadas[Rango] cols(Periodo:68 Pesos:99 Procedencia:95 Rango:157) caja=308 ; Utilidad neta semanal proyectada (tabla equivalente) +265px cortadas[Rango] cols(Periodo:68 Pesos:98 Procedencia:95 Rango:312) caja=308
-COLA 390-oscuro-conta-proyecciones: 28px vacios al final

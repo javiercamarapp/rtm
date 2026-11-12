@@ -21,13 +21,24 @@ Otros arreglos: `premium.css` es global (las reglas de rejilla estaban solo en `
 
 ## Pruebas
 
-- `tsc`, `eslint`, guardas y `vitest` completos en verde (ver el resumen final del lote). Pruebas nuevas: contraste de tokens, tarjeta-fila móvil, `truncar`, indicador de scroll, listas en dos columnas.
+- `tsc` 0 errores, `eslint` 0, guardas 0 violaciones, escáner de secretos 0, `vitest` 78 archivos y 1317 pruebas en verde. Pruebas nuevas: contraste de tokens (WCAG), tarjeta-fila móvil, `truncar`, indicador de scroll, listas en dos columnas.
+- Playwright completo (laptop 1440, iPhone 16 Pro, plegable cerrado y abierto): **106 pasan, 2 omitidas por diseño, 0 fallan**, con base limpia (`db reset` solo de `rtm-e3`) y servidor en el puerto 3105. Hallazgo de entorno: otra sesión usa el puerto 3100 (su propio servidor y su base), lo que mataba el servidor o mezclaba tokens y producía fallos falsos en acceso y primeras pruebas de cada archivo; `playwright.config.ts` y los specs aceptan ahora `E2E_PUERTO` (por omisión 3100).
 - Playwright (Chromium laptop 1440, iPhone 16 Pro, plegable cerrado y abierto) contra Supabase propio con base limpia. Ajustes a las pruebas por cambios de estructura (sin debilitarlas): H1 del catálogo («N modelos en el catálogo»), «Cuadra» visible (la primera coincidencia estaba dentro de una tabla equivalente plegada), `Abonado` dentro de la región «Cifras del pedido», grupo «Actividades de operación» como botón del grupo colapsable, `data-testid` de ámbito y de estado de socio. Dos correcciones de producto que las pruebas destaparon: etiqueta de búsqueda del catálogo duplicada y campos de filtros de A2 y A3 a 13 px y 32 px en táctil (ahora 16 px y 44 px).
+
+## Métricas finales (`docs/capturas/rediseno-etapa3/metricas-despues.txt`; antes en `metricas-antes-1440.txt`)
+
+| Perfil | Tablas con cola fuera de la caja | Tarjetas con vacío >56 px | Scroll horizontal de página |
+|---|---|---|---|
+| 1440 (claro y oscuro) | 6 (solo columnas secundarias, con indicador) + 2 tablas equivalentes de gráficas | 1 (mermas, 135 px) | 0 |
+| 1280 | 9 + 2 | 2 | 0 |
+| 390 | 2 | 0 | 0 |
+
+Antes (1440 claro, primera medición): 13 tablas cortadas (hasta +603 px, incluidas columnas clave) y 21 tarjetas con vacío (hasta 399 px). Capturas: `docs/capturas/rediseno-etapa3/` (46 rutas x 1440/1280/390 x claro/oscuro).
 
 ## Qué queda
 
 - A 1280 el kárdex oculta los valores unitarios de entradas y salidas (columnas derivables; el CSV los conserva) y el resto desplaza con indicador; inventario, libro, antigüedad y caja desplazan su cola secundaria con indicador.
-- Tarjetas con vacío residual de 93 px (saldo de la cuenta del proveedor, con botones anclados abajo) y 102 px (avisos: dos listas con subtítulo).
+- Vacío residual en mermas con un solo mes de datos (135 px a 1440) y dos casos a 1280.
 - La gráfica de flujo (12 semanas, 10 en cero) queda achatada a 104 px, no sustituida.
 - `data-testid` perdidos en otras pantallas: se corrigieron los que las pruebas encontraron; no hay garantía fuera de lo que cubre Playwright.
 - La etapa 4 (páginas que solo existen en main) no se tocó.
