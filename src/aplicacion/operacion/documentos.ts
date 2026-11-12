@@ -20,3 +20,18 @@ export async function obtenerDocumentoNota(deps: { lector: LectorOperacion; escr
   const final = await deps.lector.documento(notaId, clave);
   return final ? { bytes: new Uint8Array(Buffer.from(final.base64, 'base64')), sha256: final.sha256, folio: fuente.folio_documento } : { bytes, sha256, folio: fuente.folio_documento };
 }
+
+export interface DocumentoDevolucion { bytes: Uint8Array; sha256: string; folio: string }
+
+/** PDF de una nota de credito (cliente) o de una devolucion a proveedor: se genera una vez y se guarda; reabrir entrega los mismos bytes. */
+export async function obtenerDocumentoDevolucion(deps: { lector: LectorOperacion; escritor: EscritorOperacion; pdf: GeneradorPdf }, tipo: 'cliente' | 'proveedor', id: number): Promise<DocumentoDevolucion | null> {
+  const fuente = await deps.lector.devolucionFuente(tipo, id);
+  if (!fuente) return null;
+  const guardado = await deps.lector.devolucionDocumento(tipo, id);
+  if (guardado) return { bytes: new Uint8Array(Buffer.from(guardado.base64, 'base64')), sha256: guardado.sha256, folio: fuente.folio };
+  const bytes = await deps.pdf.devolucion(fuente);
+  const sha256 = deps.pdf.huella(bytes);
+  await deps.escritor.guardarDocumentoDevolucion(tipo, id, sha256, bytes);
+  const final = await deps.lector.devolucionDocumento(tipo, id);
+  return final ? { bytes: new Uint8Array(Buffer.from(final.base64, 'base64')), sha256: final.sha256, folio: fuente.folio } : { bytes, sha256, folio: fuente.folio };
+}
