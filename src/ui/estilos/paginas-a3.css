@@ -49,3 +49,5 @@
 /* Gráficas de columnas: etiqueta del periodo en una linea. */
 .a3-grafica-vacia { margin: 0; padding: 24px 12px; border: 1px dashed var(--rtm-line-strong); border-radius: var(--rtm-r-2); text-align: center; color: var(--rtm-ink-3); font-size: var(--rtm-t-cuerpo); }
 .a3-grafica-vacia strong { display: block; color: var(--rtm-ink-2); margin-bottom: 4px; font-weight: var(--rtm-peso-medio); }
+
+.a3-pila { display: grid; gap: var(--rtm-ritmo); align-content: start; min-width: 0; }
