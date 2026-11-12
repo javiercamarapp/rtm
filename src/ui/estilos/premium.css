@@ -420,3 +420,19 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 @media (pointer: coarse), (max-width: 767px) {
   html .a3-filtros-form .rtm-campo, html .rtm-a2-campo > :is(input, select), html .rtm-dt-busqueda, html .rtm-campo-chico { font-size: 16px; min-height: 44px; }
 }
+
+/* Etapa 4: importador, listas de formato y celdas con subtitulo */
+.rtm-lista-formato { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); }
+.rtm-importador .rtm-pegado { min-height: 180px; font-size: var(--rtm-t-cuerpo); border-radius: var(--rtm-r-ctl); }
+.rtm-importador .rtm-tarjeta-v2 > .rtm-aviso-v2, .rtm-importador .rtm-tarjeta-v2 > div[role='status'] { margin-top: 4px; }
+
+/* Lista de pasos de la apertura */
+.rtm-pasos-lista { list-style: none; margin: 0; padding: 0; }
+.rtm-pasos-lista > li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: var(--rtm-borde); }
+.rtm-pasos-lista > li:first-child { border-top: 0; }
+.rtm-pasos-lista-n { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--rtm-r-2); background: var(--rtm-tint); font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-fuerte); color: var(--rtm-ink-2); }
+.rtm-pasos-lista-texto { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.rtm-pasos-lista-texto a { font-weight: var(--rtm-peso-medio); text-decoration: none; }
+.rtm-pasos-lista-texto a:hover { text-decoration: underline; }
+.rtm-pasos-lista-texto small { color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); }
+@media (max-width: 767px) { .rtm-pasos-lista > li { grid-template-columns: 28px minmax(0, 1fr); } .rtm-pasos-lista-estado { grid-column: 2; } }

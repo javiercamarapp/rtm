@@ -18,7 +18,7 @@ try {
   const beta = await cli('Cliente Beta');
 
   // Socios: capital, gastos pagados, fondos de la sociedad en poder de cada uno (cifras inventadas parecidas en forma al ejemplo de la adenda 21).
-  await q("select operacion.registrar_aportacion('demo3:ap1','Javier',100000,'Capital adicional ilustrativo')");
+  await q("select operacion.registrar_aportacion('demo3:ap1','Javier',100000,'Capital adicional ilustrativo','capital')");
   await q("select operacion.registrar_gasto_socio('demo3:g1','Angelo',50000,'envio','variable',negocio.hoy(),null,'Guia ilustrativa')");
   await q("select operacion.registrar_gasto_socio('demo3:g2','Javier',122100,'costos del sistema','fijo',negocio.hoy(),null,'Suscripciones ilustrativas')");
   await q("select operacion.registrar_pago('demo3:pg1','Angelo',800000,$1,null,true,'abono',negocio.hoy() - 9,null,'Cobro ilustrativo en cuenta de Angelo')", [alfa]);
@@ -45,7 +45,7 @@ try {
 
   // Un cierre de reparto propuesto para la semana anterior (firmado por nadie todavia).
   const ini = (await q("select (operacion.semana_omar_ini(negocio.hoy()) - 7)::text a, (operacion.semana_omar_ini(negocio.hoy()) - 1)::text b")).rows[0];
-  await q("select operacion.proponer_cierre_reparto('demo3:cr1',$1::date,$2::date,0)", [ini.a, ini.b]);
+  await q("select operacion.proponer_cierre_reparto('demo3:cr1',$1::date,$2::date)", [ini.a, ini.b]);
 
   await q('commit');
   console.log('Datos ilustrativos de F3a cargados.');

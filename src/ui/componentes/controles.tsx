@@ -4,14 +4,14 @@ import type { ReactNode } from 'react';
 export type Tono = 'neutro' | 'ok' | 'atencion' | 'malo' | 'info' | 'apagado';
 
 /** Chip de filtro o etiqueta: alto 24, radio pildora. Con href es enlace; `activo` marca la seleccion. `categoria` (1 a 8) pone un punto de la paleta de datos. */
-export function Chip({ tono = 'neutro', categoria, activo, href, children }: { tono?: Tono; categoria?: number; activo?: boolean; href?: string; children: ReactNode }) {
+export function Chip({ tono = 'neutro', categoria, activo, href, testid, children }: { tono?: Tono; categoria?: number; activo?: boolean; href?: string; testid?: string; children: ReactNode }) {
   const contenido = (
     <>
       {categoria && <i className="rtm-chip-punto" data-categoria={categoria} aria-hidden="true" />}
       {children}
     </>
   );
-  const props = { className: 'rtm-chip-v2', 'data-tono': tono, 'aria-current': activo ? ('true' as const) : undefined };
+  const props = { className: 'rtm-chip-v2', 'data-tono': tono, 'aria-current': activo ? ('true' as const) : undefined, 'data-testid': testid };
   return href ? <Link href={href} {...props}>{contenido}</Link> : <span {...props}>{contenido}</span>;
 }
 
@@ -40,13 +40,13 @@ export function Segmentado({ etiquetaAria, opciones, tamano = 'normal' }: { etiq
 }
 
 /** Pestanas de seccion (maximo 6) con subrayado de 2 px y contador. Sustituye al subnav. */
-export function Pestanas({ etiquetaAria, items }: { etiquetaAria: string; items: { id: string; etiqueta: string; href: string; activa: boolean; contador?: number }[] }) {
+export function Pestanas({ etiquetaAria, items }: { etiquetaAria: string; items: { id: string; etiqueta: string; href: string; activa: boolean; contador?: number; testid?: string }[] }) {
   return (
     <nav className="rtm-pestanas" aria-label={etiquetaAria}>
       <ul>
         {items.map((i) => (
           <li key={i.id}>
-            <Link href={i.href} aria-current={i.activa ? 'page' : undefined}>
+            <Link href={i.href} aria-current={i.activa ? 'page' : undefined} data-testid={i.testid}>
               {i.etiqueta}
               {i.contador !== undefined && <small>{i.contador}</small>}
             </Link>
