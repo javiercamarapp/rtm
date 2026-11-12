@@ -49,7 +49,7 @@ export function Importador() {
 
   return (
     <div data-testid="importador" className="rtm-importador">
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="8-4" alinear="inicio">
         <Tarjeta titulo="Movimientos crudos" descripcion="Pega una fila por línea o sube un archivo CSV; se cuenta antes de escribir">
           <label className="rtm-etiqueta-campo">Filas a importar
             <textarea className="rtm-campo rtm-pegado" value={texto} onChange={(e) => alCambiar(e.target.value, null)} placeholder={'Fecha\tMonto\tCuenta\tOrigen\tMensaje'} data-testid="pegado" />

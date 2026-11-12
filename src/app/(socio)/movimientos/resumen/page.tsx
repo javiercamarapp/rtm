@@ -40,7 +40,7 @@ export default async function PaginaResumen({ searchParams }: { searchParams: Pr
         ]}
       />
       <Segmentado etiquetaAria="Agrupar por" opciones={DIMENSIONES.map((d) => ({ valor: d.id, etiqueta: d.etiqueta, href: `/movimientos/resumen?dim=${d.id}`, activa: dim === d.id, testid: `dim-${d.id}` }))} />
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="8-4" alinear="inicio">
         <Tarjeta plana titulo={`Movimientos agrupados ${DIMENSIONES.find((d) => d.id === dim)!.etiqueta.toLowerCase()}`}>
           <DataTable
             etiqueta="Movimientos agrupados"
@@ -89,7 +89,7 @@ export default async function PaginaResumen({ searchParams }: { searchParams: Pr
           </div>
         </Tarjeta>
       )}
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="6-6" alinear="inicio">
         <Tarjeta plana titulo="Utilidad por pedido" descripcion="La utilidad de cada pedido sale de su nota al enviarse">
           <DataTable
             etiqueta="Utilidad por pedido enviado"

@@ -65,7 +65,7 @@ export default async function PaginaApertura() {
           )}
         </>
       )}
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="8-4" alinear="inicio">
         <Tarjeta titulo="Los diez pasos" descripcion={v ? `${conDatos} de 10 con partidas` : 'Cada paso carga un grupo de saldos'}>
           <ol className="rtm-pasos-lista" data-testid="lista-pasos">
             {PASOS.map((p) => {

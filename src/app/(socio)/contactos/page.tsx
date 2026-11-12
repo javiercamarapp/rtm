@@ -119,7 +119,7 @@ export default async function PaginaContactos({ searchParams }: { searchParams: 
           <button type="submit" className="rtm-boton rtm-boton-primario">Buscar</button>
         </form>
       </Tarjeta>
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="12">
         <Tarjeta plana titulo="Contactos" descripcion={`Página ${pagina} de ${paginas}`}>
           <TablaContactos filas={lista.filas} total={lista.total} filtro={filtro} />
           <nav className="rtm-paginador" aria-label="Páginas">
@@ -130,7 +130,9 @@ export default async function PaginaContactos({ searchParams }: { searchParams: 
             </span>
           </nav>
         </Tarjeta>
-        <div className="rtm-pila-llena">
+      </Rejilla>
+      <Rejilla dividir="6-6" alinear="inicio">
+        <>
           <Tarjeta titulo="Por origen" descripcion="Un clic filtra la lista">
             <BarList etiquetaAria="Contactos por origen" items={resumen.porOrigen.map((o) => ({ id: o.origen, etiqueta: etiquetaOrigen(o.origen), texto: formatearEntero(o.contactos), pct: pctDe(o.contactos), href: sinPagina(o.origen) }))} />
           </Tarjeta>
@@ -139,7 +141,7 @@ export default async function PaginaContactos({ searchParams }: { searchParams: 
               <BarList etiquetaAria="Contactos por anuncio" items={anuncios.map((a) => ({ id: `${a.anuncio}-${a.formulario}`, etiqueta: a.anuncio || 'Sin anuncio', nota: a.formulario || undefined, texto: formatearEntero(a.contactos), pct: maxAnuncio > 0 ? (a.contactos / maxAnuncio) * 100 : null }))} />
             </Tarjeta>
           )}
-        </div>
+        </>
       </Rejilla>
     </Pagina>
   );

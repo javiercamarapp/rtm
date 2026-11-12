@@ -475,3 +475,5 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-campana-sev[data-sev='C'] { color: var(--rtm-bad); }
 .rtm-campana-sev[data-sev='I'] { color: var(--rtm-warn); }
 .rtm-campana-sev[data-sev='F'] { color: var(--rtm-ink-3); }
+
+[data-testid^='monto-'] { white-space: nowrap; }

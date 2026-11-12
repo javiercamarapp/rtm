@@ -51,7 +51,7 @@ export default async function PaginaBandeja({ searchParams }: { searchParams: Pr
         etiquetaAria="Filtrar por estado"
         items={[{ id: 'todos', etiqueta: 'Todos', href: href(null), activa: estado === null, contador: resumen.total, testid: 'filtro-todos' }, ...ESTADOS.map((e) => ({ id: e, etiqueta: ETIQUETA_ESTADO[e], href: href(e), activa: estado === e, contador: n(e), testid: `filtro-${e}` }))]}
       />
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="12">
         <Tarjeta plana titulo={estado ? ETIQUETA_ESTADO[estado] : 'Todos los movimientos'} descripcion={lista.total === 0 ? undefined : `${desde} a ${hasta} de ${lista.total}`}>
           <DataTable
             etiqueta="Movimientos"
@@ -62,17 +62,19 @@ export default async function PaginaBandeja({ searchParams }: { searchParams: Pr
             columnas={[
               { id: 'f', titulo: 'Fecha', ancho: 's', prioridadMovil: 'titulo', celda: (f) => etiquetaFecha(f.fecha_neg) },
               { id: 'm', titulo: 'Monto', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (f) => <span data-testid={`monto-${f.id}`}>{formatearMoneda(f.monto_cent, { conSigno: true })}</span> },
-              { id: 'x', titulo: 'Mensaje', ancho: 'l', truncar: 'l', prioridadMovil: 'detalle', celda: (f) => <>{f.mensaje}<span className="rtm-celda-sub">{[f.cuenta, f.origen].filter(Boolean).join(' · ')}</span></> },
+              { id: 'x', titulo: 'Mensaje', ancho: 'm', truncar: 'm', prioridadMovil: 'detalle', celda: (f) => <>{f.mensaje}<span className="rtm-celda-sub">{[f.cuenta, f.origen].filter(Boolean).join(' · ')}</span></> },
               { id: 'e', titulo: 'Estado', ancho: 'm', prioridadMovil: 'normal', celda: (f) => <ChipEstado tono={TONO[f.estado]}>{ETIQUETA_ESTADO[f.estado]}</ChipEstado> },
-              { id: 't', titulo: 'Clasificación', ancho: 'l', prioridadMovil: 'normal', celda: (f) => (f.tipo ? <>{ETIQUETA_TIPO[f.tipo]}<span className="rtm-celda-sub">{[f.cliente, f.pedido, f.socio, f.proveedor].filter(Boolean).join(' · ')}</span></> : '') },
-              { id: 'a', titulo: 'Acciones', ancho: 'l', prioridadMovil: 'detalle', celda: (f) => <AccionesMovimiento fila={f} refs={refs} /> },
+              { id: 't', titulo: 'Clasificación', etiquetaMovil: 'Tipo', ancho: 'm', truncar: 'm', prioridadMovil: 'normal', celda: (f) => (f.tipo ? <>{ETIQUETA_TIPO[f.tipo]}<span className="rtm-celda-sub">{[f.cliente, f.pedido, f.socio, f.proveedor].filter(Boolean).join(' · ')}</span></> : '') },
+              { id: 'a', titulo: 'Acciones', ancho: 'm', prioridadMovil: 'detalle', celda: (f) => <AccionesMovimiento fila={f} refs={refs} /> },
             ]}
           />
           <div data-testid="paginacion">
             <Paginador mostrados={lista.filas.length} total={lista.total} anterior={pag > 0 ? href(estado, pag - 1) : undefined} siguiente={(pag + 1) * PAGINA < lista.total ? href(estado, pag + 1) : undefined} />
           </div>
         </Tarjeta>
-        <div className="rtm-pila-llena">
+      </Rejilla>
+      <Rejilla dividir="6-6" alinear="inicio">
+        <>
           <Tarjeta titulo="Por estado" descripcion="Cantidad de movimientos">
             <BarList etiquetaAria="Movimientos por estado" items={ESTADOS.map((e) => ({ id: e, etiqueta: ETIQUETA_ESTADO[e], texto: String(n(e)), pct: pct(n(e)), tono: e === 'sin_clasificar' && n(e) > 0 ? ('atencion' as const) : undefined, href: href(e) }))} />
           </Tarjeta>
@@ -86,15 +88,15 @@ export default async function PaginaBandeja({ searchParams }: { searchParams: Pr
                 clave={(i) => i.id}
                 filas={resumen.importaciones}
                 columnas={[
-                  { id: 'n', titulo: 'Origen', truncar: 'm', celda: (i) => (i.fuente === 'archivo' ? i.nombre_archivo ?? 'Archivo' : 'Texto pegado') },
-                  { id: 't', titulo: 'Filas', numerica: true, ancho: 's', celda: (i) => i.filas_total },
-                  { id: 'w', titulo: 'Nuevas', numerica: true, ancho: 's', celda: (i) => i.filas_nuevas },
-                  { id: 'd', titulo: 'Repetidas', numerica: true, ancho: 's', celda: (i) => i.filas_duplicadas },
+                  { id: 'n', titulo: 'Origen', truncar: 's', celda: (i) => (i.fuente === 'archivo' ? i.nombre_archivo ?? 'Archivo' : 'Texto pegado') },
+                  { id: 't', titulo: 'Filas', numerica: true, ancho: 'xs', celda: (i) => i.filas_total },
+                  { id: 'w', titulo: 'Nuevas', numerica: true, ancho: 'xs', celda: (i) => i.filas_nuevas },
+                  { id: 'd', titulo: 'Repetidas', numerica: true, ancho: 'xs', celda: (i) => i.filas_duplicadas },
                 ]}
               />
             )}
           </Tarjeta>
-        </div>
+        </>
       </Rejilla>
     </Pagina>
   );
