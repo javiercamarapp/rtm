@@ -16,12 +16,15 @@ import { etiquetaHoy } from '../../contexto';
 import { BotonAccion } from '../../operacion/dialogo-simple';
 import { ESTADO_COMPRA } from '../../operacion/etiquetas';
 import { FormularioGuia } from './formulario-guia';
+import { DialogoReportarEntrada } from '../dialogos-incidente';
+import { TablaIncidentes } from '../tabla-incidentes';
 
 export const metadata: Metadata = { title: 'Paquetes en trayecto' };
 
 export default async function PaginaEnTrayecto() {
   const lector = await operacionDeSocio();
-  const [lista, umbral] = await Promise.all([lector.enTransito(), lector.umbralesPaquetes()]);
+  const [lista, umbral, inc] = await Promise.all([lector.enTransito(), lector.umbralesPaquetes(), lector.incidentesPaquetes()]);
+  const incAbiertos = inc.incidentes.filter((i) => i.sentido === 'entrada' && i.estado === 'abierto').length;
   const demorado = (c: (typeof lista)[number]) => c.dias_en_camino !== null && c.dias_en_camino > (umbral.plazo_dias[c.proveedor] ?? Infinity) + umbral.trayecto_dias_extra;
   const piezas = lista.reduce((a, c) => a + c.piezas_pedidas, 0);
   const porConfirmar = lista.filter((c) => c.estado === 'llego_merida').length;
@@ -48,7 +51,7 @@ export default async function PaginaEnTrayecto() {
           { id: 'demorados', testid: 'pt-demorados', etiqueta: 'Demorados', valor: String(demorados), categoria: 4, progreso: lista.length ? { pct: (demorados / lista.length) * 100 } : undefined, nota: demorados ? 'Pasan el plazo más los días de gracia' : 'Todos dentro de plazo' },
         ]}
       />
-      <FilaRatios etiqueta="Razones del trayecto" items={[{ etiqueta: 'Sin guía registrada', valor: String(sinGuia) }, { etiqueta: 'Piezas por orden', valor: lista.length ? String(Math.round(piezas / lista.length)) : null }, { etiqueta: 'Costo por pieza', valor: piezas > 0 ? formatearMoneda(valor / BigInt(piezas)) : null }, { etiqueta: 'Días de gracia', valor: `${umbral.trayecto_dias_extra} d` }]} />
+      <FilaRatios etiqueta="Razones del trayecto" items={[{ etiqueta: 'Sin guía registrada', valor: String(sinGuia) }, { etiqueta: 'Piezas por orden', valor: lista.length ? String(Math.round(piezas / lista.length)) : null }, { etiqueta: 'Costo por pieza', valor: piezas > 0 ? formatearMoneda(valor / BigInt(piezas)) : null }, { etiqueta: 'Días de gracia', valor: `${umbral.trayecto_dias_extra} d` }, { etiqueta: 'Perdidos o dañados por resolver', valor: String(incAbiertos) }]} />
 
       <Rejilla dividir="8-4">
         <Tarjeta titulo="Días en camino contra el plazo" descripcion="La marca es el plazo del proveedor más los días de gracia">
@@ -88,11 +91,13 @@ export default async function PaginaEnTrayecto() {
                 <FormularioGuia compraId={c.id} folio={c.folio} />
                 {c.estado !== 'llego_merida' && <BotonAccion boton="Llegó a Mérida" accion="marcar_llego_merida" args={{ p_compra: c.id }} chico testid={`llego-${c.id}`} />}
                 <Link className="rtm-boton rtm-boton-chico rtm-boton-primario" href={`/proveedores/compras/${c.id}#recepcion`}>Confirmar recepción</Link>
+                <DialogoReportarEntrada compraId={c.id} folio={c.folio} renglones={c.renglones.map((r) => ({ linea_id: r.linea_id, modelo: r.modelo, sabor: r.sabor, facturadas: r.facturadas }))} />
               </span>
             ) },
           ]}
         />
       </Tarjeta>
+      <TablaIncidentes incidentes={inc.incidentes} sentido="entrada" testid="inc-entrada" />
     </Contenedor>
   );
 }
