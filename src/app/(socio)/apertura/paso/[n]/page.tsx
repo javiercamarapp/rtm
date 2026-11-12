@@ -5,7 +5,7 @@ import { aperturaDeSocio } from '@/composicion/apertura';
 import { pasoPorNumero } from '@/dominio/apertura/pasos';
 import type { EstadoApertura, PartidaApertura } from '@/dominio/apertura/tipos';
 import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
-import { Aviso, ChipEstado } from '@/ui/componentes/controles';
+import { Aviso } from '@/ui/componentes/controles';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { KpiLinea } from '@/ui/componentes/kpi';

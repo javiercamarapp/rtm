@@ -436,3 +436,12 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-pasos-lista-texto a:hover { text-decoration: underline; }
 .rtm-pasos-lista-texto small { color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); }
 @media (max-width: 767px) { .rtm-pasos-lista > li { grid-template-columns: 28px minmax(0, 1fr); } .rtm-pasos-lista-estado { grid-column: 2; } }
+
+/* Filtros en linea de las paginas de lista (contactos) y barra de acciones de seleccion */
+.rtm-filtros-linea { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.rtm-filtros-linea .rtm-etiqueta-campo { display: flex; flex-direction: column; gap: 4px; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); min-width: 0; }
+.rtm-filtros-linea .rtm-campo { height: var(--rtm-h-ctl); border-radius: var(--rtm-r-ctl); font-size: var(--rtm-t-cuerpo); }
+.rtm-filtros-linea .rtm-campo-ancho { min-width: min(260px, 100%); flex-grow: 1; }
+.rtm-acciones-contactos { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); }
+.rtm-tarjeta-v2[data-plana] > .rtm-paginador { border-top: var(--rtm-borde); }
+@media (pointer: coarse), (max-width: 767px) { html .rtm-filtros-linea .rtm-campo { font-size: 16px; min-height: 44px; } }

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { etiquetaOrigen, telefonoLegible, type ContactoFila, type FiltroContactos } from '@/dominio/contactos/vista';
 import { formatearEntero } from '@/dominio/formato';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
+import { Aviso } from '@/ui/componentes/controles';
 import { DataTable } from '@/ui/componentes/data-table';
 import { exportarContactos, revelarTelefono } from './acciones';
 
@@ -67,7 +68,7 @@ export function TablaContactos({ filas, total, filtro }: Props) {
 
   return (
     <>
-      <div className="rtm-barra-filtros" role="group" aria-label="Acciones sobre la selección">
+      <div className="rtm-acciones-contactos" role="group" aria-label="Acciones sobre la selección">
         <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setSeleccion(todosEnPagina ? new Set() : new Set(filas.map((f) => f.id)))}>
           {todosEnPagina ? 'Quitar selección de la página' : 'Seleccionar la página'}
         </button>
@@ -78,20 +79,21 @@ export function TablaContactos({ filas, total, filtro }: Props) {
           Exportar todo el filtro ({formatearEntero(total)})
         </button>
       </div>
-      {error && <p className="rtm-error" role="alert">{error}</p>}
-      {aviso && <p className="rtm-nota" role="status">{aviso}</p>}
+      {error && <Aviso tono="error">{error}</Aviso>}
+      {aviso && <Aviso tono="info">{aviso}</Aviso>}
       <DataTable
         etiqueta="Contactos de menudeo"
+        densidad="densa" plana pegajosa
         clave={(f) => f.id}
         filas={filas}
         estado={ocupado && filas.length === 0 ? 'cargando' : 'listo'}
         vacio={{ titulo: 'Sin contactos', texto: 'No hay contactos con este filtro. Quita la búsqueda o elige otro origen.' }}
         columnas={[
-          { id: 's', titulo: 'Elegir', celda: (f) => <input type="checkbox" aria-label={`Elegir a ${f.nombre || 'contacto sin nombre'}`} checked={seleccion.has(f.id)} onChange={() => alternar(f.id)} /> },
-          { id: 'n', titulo: 'Nombre', celda: (f) => f.nombre || 'Sin nombre' },
+          { id: 's', titulo: 'Elegir', ancho: 'xs', prioridadMovil: 'oculta', celda: (f) => <input type="checkbox" aria-label={`Elegir a ${f.nombre || 'contacto sin nombre'}`} checked={seleccion.has(f.id)} onChange={() => alternar(f.id)} /> },
+          { id: 'n', titulo: 'Nombre', ancho: 'l', truncar: 'm', prioridadMovil: 'titulo', celda: (f) => f.nombre || 'Sin nombre' },
           {
             id: 't',
-            titulo: 'Teléfono',
+            titulo: 'Teléfono', ancho: 'l', prioridadMovil: 'principal',
             celda: (f) => {
               const r = reveladas.get(f.id);
               return (
@@ -102,10 +104,10 @@ export function TablaContactos({ filas, total, filtro }: Props) {
               );
             },
           },
-          { id: 'c', titulo: 'Correo', secundaria: true, celda: (f) => <>{f.correo ?? '—'}{f.correoCompartido && <> · <EstadoTexto tono="atencion">correo compartido</EstadoTexto></>}</> },
-          { id: 'l', titulo: 'Colonia', secundaria: true, celda: (f) => <>{f.colonia || '—'}{f.coloniaConflicto && <> · <EstadoTexto tono="atencion">colonia en conflicto</EstadoTexto></>}</> },
-          { id: 'o', titulo: 'Origen', secundaria: true, celda: (f) => f.origenes.map(etiquetaOrigen).join(', ') },
-          { id: 'a', titulo: 'Anuncio', secundaria: true, celda: (f) => (f.anuncios.length ? f.anuncios.join(', ') : '—') },
+          { id: 'c', titulo: 'Correo', ancho: 'l', truncar: 'm', prioridadMovil: 'normal', celda: (f) => <>{f.correo ?? '—'}{f.correoCompartido && <> · <EstadoTexto tono="atencion">correo compartido</EstadoTexto></>}</> },
+          { id: 'l', titulo: 'Colonia', ancho: 'm', truncar: 's', prioridadMovil: 'normal', celda: (f) => <>{f.colonia || '—'}{f.coloniaConflicto && <> · <EstadoTexto tono="atencion">colonia en conflicto</EstadoTexto></>}</> },
+          { id: 'o', titulo: 'Origen', ancho: 'm', truncar: 's', prioridadMovil: 'normal', celda: (f) => f.origenes.map(etiquetaOrigen).join(', ') },
+          { id: 'a', titulo: 'Anuncio', ancho: 'm', truncar: 's', prioridadMovil: 'detalle', celda: (f) => (f.anuncios.length ? f.anuncios.join(', ') : '—') },
         ]}
       />
     </>
