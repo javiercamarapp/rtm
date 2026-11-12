@@ -35,7 +35,7 @@ button { font: inherit; color: inherit; }
 .rtm-boton {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--rtm-e-2);
   height: var(--rtm-fila); padding: 0 var(--rtm-e-4);
-  border-radius: var(--rtm-r-pildora); border: 1px solid var(--rtm-line-2);
+  border-radius: var(--rtm-r-pildora); border: 1px solid var(--rtm-borde-control);
   background: var(--rtm-surface); color: var(--rtm-ink);
   font-size: var(--rtm-cuerpo); font-weight: 500; text-decoration: none; cursor: pointer;
 }
@@ -46,7 +46,7 @@ button { font: inherit; color: inherit; }
 .rtm-icono-boton {
   display: inline-flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; padding: 0;
-  border-radius: var(--rtm-r-pildora); border: 1px solid var(--rtm-line-2);
+  border-radius: var(--rtm-r-pildora); border: 1px solid var(--rtm-borde-control);
   background: var(--rtm-surface); cursor: pointer;
 }
 .rtm-icono-boton:hover { opacity: 0.8; }

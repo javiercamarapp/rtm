@@ -97,7 +97,7 @@
 .rtm-g-delta[data-valor='malo'] { background: var(--rtm-tinte-bad); color: var(--rtm-bad); }
 
 /* ---- Chips, segmentado, pestanas, barra de filtros ---- */
-.rtm-chip-v2 { display: inline-flex; align-items: center; gap: 6px; height: var(--rtm-h-chip); padding: 2px 10px; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-2); background: var(--rtm-surface); text-decoration: none; white-space: nowrap; }
+.rtm-chip-v2 { display: inline-flex; align-items: center; gap: 6px; height: var(--rtm-h-chip); padding: 2px 10px; border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-2); background: var(--rtm-surface); text-decoration: none; white-space: nowrap; }
 a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-chip-v2[aria-current='true'] { background: var(--rtm-fill-active); color: var(--rtm-ink); font-weight: var(--rtm-peso-fuerte); }
 .rtm-chip-v2[data-tono='ok'] { background: var(--rtm-tinte-ok); color: var(--rtm-ok); border-color: color-mix(in srgb, var(--rtm-ok) 30%, transparent); }
@@ -118,7 +118,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-chip-estado[data-tono='info'] { background: var(--rtm-tinte-info); color: var(--rtm-d-azul-marino); }
 .rtm-chip-estado[data-tono='apagado'] { background: var(--rtm-tint); color: var(--rtm-ink-3); }
 
-.rtm-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); }
+.rtm-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); }
 .rtm-seg > a { display: inline-flex; align-items: center; gap: 6px; height: var(--rtm-h-ctl-chico); padding: 0 12px; border-radius: var(--rtm-r-pildora); font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-fuerte); color: var(--rtm-ink-2); text-decoration: none; white-space: nowrap; position: relative; }
 .rtm-seg[data-tamano='chico'] > a { height: var(--rtm-h-segmento); padding: 0 10px; }
 .rtm-seg > a:hover { color: var(--rtm-ink); }

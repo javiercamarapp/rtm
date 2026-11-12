@@ -145,7 +145,7 @@
 }
 .rtm-grupo { display: flex; flex-direction: column; gap: var(--rtm-e-2); border: 0; padding: 0; margin: 0; }
 .rtm-grupo legend { padding: 0; font-size: 12px; color: var(--rtm-ink-3); margin-bottom: var(--rtm-e-2); }
-.rtm-segmentos { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); }
+.rtm-segmentos { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); }
 .rtm-segmento {
   flex: 1; height: 28px; border: 0; border-radius: var(--rtm-r-pildora); background: transparent; cursor: pointer; font-size: 12px;
   color: var(--rtm-ink-2);

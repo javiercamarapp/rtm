@@ -98,6 +98,8 @@
 
   /* Tarjetas y filetes */
   --rtm-borde-tarjeta: var(--rtm-line-2);
+  /* Borde de controles (campos, botones, chips y segmentados): WCAG 1.4.11, 3:1 contra panel y tarjeta. line-strong da 3.31 a 3.40 en claro y 3.63 a 4.12 en oscuro. */
+  --rtm-borde-control: var(--rtm-line-strong);
   --rtm-borde: 1px solid var(--rtm-line);
   --rtm-filete: 3px;
 
