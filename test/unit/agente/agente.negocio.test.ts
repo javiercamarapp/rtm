@@ -64,7 +64,7 @@ describe('adenda 21: gastos y aportaciones de socios', () => {
   it('gasto pagado por un socio genera reembolso; la aportacion se devuelve; ambos con eco y saldo', async () => {
     const e = escenario([
       unaAccion({ tipo: 'gasto', gasto: 'envio', monto_centavos: 50_000, pagado_por: 'angelo', descripcion: null, fuente_cita: 'cita' }),
-      unaAccion({ tipo: 'aportacion', socio: 'javier', monto_centavos: 100_000, motivo: null, fuente_cita: 'cita' }),
+      unaAccion({ tipo: 'aportacion', socio: 'javier', monto_centavos: 100_000, motivo: null, intencion: null, fuente_cita: 'cita' }),
     ]);
     await e.socio('angelo', 'pague 500 de envio');
     expect(e.ultimoGrupo().texto).toContain('Reembolso pendiente a angelo: $500.00');

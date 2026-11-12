@@ -1,3 +1,4 @@
+import { VERSION_PROMPT } from '@/aplicacion/agente/prompt';
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { escenario, pedido, pago, unaAccion, todosLosNumeros, IDS } from './ayudas';
@@ -191,7 +192,7 @@ describe('validacion estricta del modelo', () => {
 
   it('la corrida guardada se reutiliza: nunca se paga dos veces por el mismo mensaje', async () => {
     const e = escenario([unaAccion(pedido('Cliente Norte', [['jupiter', 28]]))]);
-    await e.almacen.guardarCorrida(`r1:${IDS.grupoSocios}:77:r1-2026-11-10.1`, unaAccion(pedido('Cliente Norte', [['jupiter', 28]])));
+    await e.almacen.guardarCorrida(`r1:${IDS.grupoSocios}:77:${VERSION_PROMPT}`, unaAccion(pedido('Cliente Norte', [['jupiter', 28]])));
     await e.socio('angelo', 'Cliente Norte 28 jupiter', { messageId: 77 });
     expect(e.llmGuionado.llamadas).toBe(0);
     expect(e.negocio.numeroDeHechos()).toBe(1);

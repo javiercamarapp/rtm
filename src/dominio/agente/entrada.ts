@@ -44,6 +44,7 @@ const PALABRAS_DE_NEGOCIO = new Set([
   'dame', 'dime', 'cuanto', 'cuantos', 'cuantas', 'saldo', 'stock', 'inventario', 'deshacer', 'deshaz', 'resumen', 'pendientes',
   'aporte', 'aportacion', 'puse', 'toma', 'tome', 'tomo', 'ayuda', 'pideme', 'pidele', 'pide', 'orden', 'anticipo', 'abono',
   'deposito', 'transferencia', 'guia', 'uber', 'envio',
+  'utilidad', 'cartera', 'estado', 'reembolso', 'reembolsa', 'retiro', 'retire', 'saque', 'capital', 'devolucion', 'devolvio', 'paquete', 'perdio', 'extravio', 'danado', 'cobro',
 ]);
 
 /**

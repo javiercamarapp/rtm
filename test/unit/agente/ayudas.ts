@@ -25,7 +25,8 @@ export interface Escenario extends AgenteEnMemoria {
 
 export function escenario(salidas: SalidaGuionada[] = [respuesta([{ tipo: 'ninguna' }])], op: Omit<OpcionesAgenteEnMemoria, 'llm'> & { costoMicroUsd?: bigint } = {}): Escenario {
   const llmGuionado = new LlmGuionado(salidas, op.costoMicroUsd ?? 120n);
-  const h = crearAgenteEnMemoria({ ...op, llm: llmGuionado });
+  // Las pruebas anteriores al modo de los socios esperan el registro directo con eco y Deshacer; el modo estricto se prueba con `confirmarMovimientos: true`.
+  const h = crearAgenteEnMemoria({ ...op, config: { confirmarMovimientos: false, ...op.config }, llm: llmGuionado });
   const e: Escenario = {
     ...h,
     llmGuionado,

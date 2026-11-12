@@ -1,3 +1,4 @@
+import { LISTA_COMANDOS } from '@/dominio/agente/comandos';
 import { describe, it, expect } from 'vitest';
 import { escenario, pedido, pago, unaAccion, IDS } from './ayudas';
 import { TOPE_MES_MICRO, estadoInicial } from '@/dominio/agente/presupuesto';
@@ -94,7 +95,7 @@ describe('modo sin IA', () => {
     await e.socio('angelo', '/sinia');
     await e.socio('angelo', '/sinia');
     const avisos = e.textosGrupo().filter((t) => t.startsWith('Modo sin IA activo'));
-    expect(avisos).toEqual(['Modo sin IA activo. Uso: /pedido, /pago, /gasto, /compra, /stock, /saldo, /deshacer, /resumen, /pendientes']);
+    expect(avisos).toEqual([`Modo sin IA activo. Uso: ${LISTA_COMANDOS}`]);
   });
 
   it('/conia lo desactiva y el texto libre vuelve a usar el modelo', async () => {

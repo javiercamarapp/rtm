@@ -2,8 +2,11 @@
 # 1) Pedido con alias ambiguo: pregunta, se elige una variante y se registra con eco, comprobacion y Deshacer.
 angelo> Cliente Norte 28 waka 50
 boton angelo 3
+# El agente muestra el resumen y espera Confirmar; solo entonces registra.
+boton angelo 1
 # 2) Pago redirigido al proveedor y consulta de saldo.
 javier> Cliente Norte mando 5,000 a Karen
+boton javier 1
 javier> saldo con karen
 # 3) Omar toma piezas: queda pendiente hasta que un socio autoriza (Omar no puede pulsar).
 omar> 3 elux sandia
