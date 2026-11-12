@@ -189,7 +189,7 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
               { id: 'k', titulo: 'Cierre', ancho: 's', secundaria: true, celda: (l) => etiquetaFecha(l.fecha_cierre) },
             ]} />
         )}
-        <div className="a3-pie-tarjeta"><Pie>Omar (bodega) no es Omar Aguilar (cliente). Omar presta el lugar, no despacha y su acceso sigue desactivado. La renta se devenga por pieza surtida desde su bodega.</Pie></div>
+        <div className="a3-pie-tarjeta"><Pie>Omar (bodega) ≠ Omar Aguilar (cliente). Omar presta el lugar, no despacha y su acceso sigue desactivado. La renta se devenga por pieza surtida desde su bodega.</Pie></div>
       </Tarjeta>
     </Pagina>
   );

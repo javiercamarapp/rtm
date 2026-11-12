@@ -32,7 +32,7 @@ test('catalogo: filtra, muestra costos con "supuesto" y precios por cliente; el 
   await expect(fila).toContainText('Disponible');
 
   // Precios por cliente del modelo.
-  await page.getByRole('link', { name: 'E2E Prueba Modelo 50K' }).click();
+  await page.getByRole('region', { name: 'Modelos' }).getByRole('link', { name: 'E2E Prueba Modelo 50K' }).click();
   await expect(page.getByRole('heading', { name: /Precios por cliente: E2E Prueba Modelo 50K/ })).toBeVisible();
   await expect(page.getByRole('row', { name: /E2E Prueba Cliente/ })).toContainText('$260.00');
 

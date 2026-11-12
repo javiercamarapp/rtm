@@ -106,6 +106,9 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   // Cuentas por cobrar: el saldo del pedido y la deuda de Angelo con la sociedad, con "Explicar este numero".
   await page.goto('/cuentas-por-cobrar');
   await expect(page.getByRole('table', { name: 'Cuentas por cobrar por pedido' })).toContainText(d.cliente);
+  // La deuda de los socios vive en su pestana (vista=socios) del rediseno.
+  await page.getByRole('link', { name: /En poder de un socio/ }).click();
+  await page.waitForURL('**vista=socios**');
   const deuda = page.getByRole('table', { name: 'Deuda de los socios con la sociedad' });
   await deuda.getByRole('row', { name: /Angelo/ }).getByRole('button', { name: /Explicar este número/ }).last().click();
   await expect(page.getByTestId('explicar-cajon')).toContainText('Lo que Angelo debe a la sociedad');

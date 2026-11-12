@@ -91,7 +91,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
         <Tarjeta titulo={modeloLinea ? `Historial de precio: ${modeloLinea}` : 'Historial de precio'} descripcion="Precio del tabulador a lo largo del tiempo (escalonado)">
           {puntos.length >= 2 ? (
             <AreaSerie
-              titulo={`Precio de ${modeloLinea}`} descripcion={`Precio de ${modeloLinea} en ${puntos.length} cambios.`} unidad="Precio (pesos)" procedencia="observado"
+              titulo={`Precio de ${modeloLinea}`} descripcion={`Precio de ${modeloLinea} a lo largo del tiempo, en ${puntos.length} cambios.`} unidad="Precio (pesos)" procedencia="observado"
               puntos={puntos.map((p) => ({ id: p.desde, etiqueta: etiquetaFecha(p.desde).slice(0, -5), valor: aNumero(p.precioCent) / 100, texto: formatearMoneda(p.precioCent) }))}
             />
           ) : <p className="rtm-a1-estado-vacio">Un solo precio registrado: la gráfica necesita al menos dos cambios.</p>}
