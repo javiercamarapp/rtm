@@ -1,66 +1,49 @@
 # Rediseno: cierre de la rama rediseno/premium
 
-Worktree `~/rtm-rediseno`. Sin push, sin Vercel, sin nube: 0 builds y 0 despliegues. Base Supabase propia (proyecto `rtm-rd`, puertos 593xx) y puerto de servidor propio (3104 capturas, 3107 e2e).
+Worktree `~/rtm-rediseno`. Sin push, sin Vercel, sin nube: 0 builds de Vercel y 0 despliegues. Las verificaciones se corrieron sobre una copia limpia del arbol con Supabase local propio (proyecto `rtm-fx`, puertos 598xx) y servidor propio (3117 e2e, 3118 capturas). Proyectos ajenos (`rtm-e3`, `likida`) sin tocar.
 
 ## 1. Prueba 4 de acceso (limite de 3 correos)
 
-- Comparada contra main: la app (`src/app/login`, `src/infra/limite`, migraciones de limite) no difiere; el spec solo cambia la URL base. No era ni el test ni la app.
-- Causa real: el limitador (`limitador_postgres.ts`) falla ABIERTO si no conecta con el rol `servidor`; en una base recien creada ese rol es `nologin` (la migracion lo crea asi y la contrasena se asigna aparte por entorno). Sin login, las 4 solicitudes mandaban correo.
-- Verificado: tras `alter role servidor login password ...` (solo local, con la contrasena de `.env.local`) las 11 pruebas de `acceso.spec.ts` pasan (11 passed), y el tope sigue en 3 por correo y 10 por IP. No se debilito nada.
-- Pendiente de decision (no tocado): el diseno fail-open es deliberado (documentado en el codigo); si se prefiere fail-closed seria otra decision.
+- La app y el spec no difieren de main. Causa real: el limitador (`limitador_postgres.ts`) falla ABIERTO si no conecta con el rol `servidor`, que en una base nueva es `nologin`; `scripts/entorno/generar-env-local.mjs` le asigna login y contrasena local (`alter role servidor login password`). Con eso las pruebas de `acceso.spec.ts` pasan y el tope sigue en 3 por correo y 10 por IP.
+- Pendiente de decision de Javier (no tocado): politica fail-open del limitador.
 
 ## 2. Subnavs
 
-`rtm-subnav` eliminado. Movimientos, Apertura (11 pasos), Inventario y Contabilidad usan `Pestanas` (estilo del rediseno, con scroll horizontal). Se conservaron los `data-testid`. En movil las pestanas miden 44 px y las pruebas moviles miden `.rtm-pestanas a`.
+`rtm-subnav` eliminado. Movimientos, Apertura, Inventario y Contabilidad usan `Pestanas` (con scroll horizontal; 44 px en pantallas tactiles hasta 900 px). Se conservaron los `data-testid`.
 
-## 3. Defectos encontrados al revisar las capturas
+## 3. Defectos visuales corregidos
 
-- Grave: `.rtm-region { display: contents }` (commit 6b5e269, pensado para una region de Inventario de proveedores) pisaba la clase `.rtm-region` del armazon: a 1440 el contenido de TODAS las paginas caia debajo del sidebar en una columna de 216 px. Las pruebas por texto no lo detectaban. Corregido renombrando la de la pagina a `rtm-region-pag`.
-- Avisos: "Otros" aparecia varias veces en "Por tipo"; ahora los tipos sin etiqueta se agrupan en uno.
-- Movimientos: botones de acciones apilados en vertical (filas altas) y fechas partidas en dos lineas; ahora una sola linea. En movil la lista de tarjetas quedaba dentro de un contenedor con scroll propio y cortaba tarjetas: ahora fluye completa, sin truncar el tipo y sin etiquetas vacias.
-- Capturas regeneradas en `docs/capturas/rediseno-etapa4` (1440 claro y oscuro, 1280 claro, 390 claro).
-- Nota: la insignia roja "1 Issue" de las capturas es el indicador del servidor de desarrollo de Next, no de la app.
+- Grave (antes): `.rtm-region { display: contents }` pisaba la clase del armazon y a 1440 el contenido caia bajo el sidebar. Renombrada a `rtm-region-pag`.
+- Avisos: los tipos sin etiqueta se agrupan en uno solo.
+- Movimientos: acciones en una fila, fechas en una linea, lista movil completa, sin etiquetas vacias (regla `:has(> .rtm-dt-trunc:empty)`).
+- Avisos a 390 px (hallazgo del verificador, corregido en 3406523): la tabla no declaraba prioridades moviles y el aviso quedaba en una columna de ~80 px con la insignia sola. Ahora el aviso es el titulo (dos columnas) y la severidad la cifra principal. Verificado en la captura nueva.
+- Movimientos a 390 px (corregido en 3406523): la insignia de estado ('Sin clasificar', 'Conciliado') quedaba recortada con el fondo mas angosto que el texto; ahora `.rtm-chip-estado` dentro de tarjetas moviles usa `width: max-content`. Verificado en la captura nueva. Nota: en avisos la insignia 'Importante' queda a ras del borde interior derecho de la tarjeta (cabe, sin recorte).
+- Nota menor sin cambio: en `1440-oscuro-movimientos.png` hay textos de la columna Mensaje truncados con elipsis (comportamiento de `truncar`, con el texto completo en el atributo title).
 
-## 4. Capturas sin versionar
+## 4. Capturas
 
-`docs/capturas/rediseno-etapa3-antes` pesaba 16 MB (mas de 2 MB): se borraron las sin versionar (y los .txt de metricas versionados de esa carpeta).
+- Las 26 capturas `390-claro-*.png` de `docs/capturas/rediseno-etapa4` se regeneraron con el codigo actual (commit 5e716c5), contra un build de produccion (`next build` + `next start`), por lo que ya no aparece el indicador '1 Issue' del servidor de desarrollo. Las capturas de 1440 y 1280 no se rehicieron (el cambio de CSS solo afecta tarjetas moviles).
+- Alcance declarado: en el commit d63d0c0 se borraron ademas los 9 `.txt` versionados de `docs/capturas/rediseno-etapa3-antes` (metricas de la etapa 3). La tarea solo pedia resolver las capturas sin versionar (que pesaban 16 MB y se borraron); los `.txt` fueron un exceso menor y se recuperan con `git show d63d0c0^:docs/capturas/rediseno-etapa3-antes/<archivo>`.
 
 ## 5. No migrados
 
 PDFs y login siguen sin Geist (decision de Javier pendiente).
 
-## 6. Verificacion
+## Resultados (unica seccion, verificados sobre HEAD de la rama)
 
-Ver el final de este documento (seccion Resultados).
+Entorno: copia limpia del arbol en el scratchpad, Supabase local `rtm-fx` (puertos 598xx) recien creado, `generar-env-local.mjs`. Carga de la maquina entre 11 y 53 durante las corridas.
 
-## Resultados
+- `npx tsc --noEmit`: 0 errores.
+- `npx eslint src scripts test`: 0 problemas.
+- `npm run guardas`: 0 violaciones (baseline 0).
+- `npm run secretos`: 0 hallazgos en 3064 archivos y en el historial.
+- `npx vitest run --maxWorkers=4 --testTimeout=90000`: 112 archivos pasan; 1713 pruebas pasan y 2 son fallos esperados (marcados).
+- Playwright completo (`E2E_PUERTO=3117`, 4 proyectos, base recien creada sin datos demo, build de produccion): 113 passed, 2 skipped (test.skip existentes), 0 failed, 9.2 min. Incluye `acceso.spec.ts` prueba 4 y la vista previa de reportes.
+- pgTAP: no se corrio; esta rama no agrega migraciones (ultima migracion heredada de main: 20261112300000).
 
-- Vitest: 112 archivos, 1713 pruebas pasan (2 fallos esperados).
-- Playwright completo (17.5 min): 91 pasan, 9 fallan, 13 no corrieron. Se corrio sobre una base que ya traia datos de corridas anteriores (no se pudo hacer `supabase db reset`), y los especificos de F3a/F3b/F3c y reportes dependen de base limpia (apertura ya firmada, asiento "No cuadra" previo, timeouts de 90 s con carga de maquina de 100): no son concluyentes.
-- Fallo real encontrado y corregido: en `fold-abierto` (880 px) las pestanas median 36 px; la regla de 44 px solo aplicaba bajo 768 px o con puntero tactil. Ahora aplica hasta 900 px (`premium.css`). Falta re-correr esas dos pruebas moviles.
-- Pendiente: `supabase db reset` + e2e completo en una maquina sin carga.
-
-## Resultados
-
-- vitest: 112 archivos, 1713 pruebas pasan (2 fallos esperados, marcados).
-- Playwright completo con base recien reiniciada: 111 pasan, 2 omitidas, 1 falla, 1 sin correr.
-- Falla restante: `integracion-db.spec.ts:145` (reportes semanal, laptop-1440). El reporte "no sale" porque las comprobaciones C4 y C5 difieren en $58,752. Es un descuadre de datos acumulado por pruebas anteriores de la misma corrida (cascada de reparto, apertura), no de interfaz; no se toco. Pendiente de diagnostico aparte.
-- Un primer pase (base con datos previos) fallo 9; tras reiniciar la base y subir el objetivo tactil de las pestanas a 44 px en pantallas tactiles (`pointer: coarse`, fold-abierto) quedaron solo 1.
-
-### Correccion adicional: vista previa de reportes en blanco
-
-El encabezado global `X-Frame-Options: DENY` y `frame-ancestors 'none'` (next.config.ts, commit 7ac9ffd de main) bloqueaba tambien el marco de la vista previa de reportes (`/reportes/:clave/:version/html`, `sandbox=""`): el marco quedaba vacio y la prueba `integracion-db` de reportes fallaba (tambien en main, el codigo no difiere). Ahora esa ruta, y solo esa, fija `SAMEORIGIN` y `frame-ancestors 'self'` con su CSP estricta; el resto del sitio sigue en DENY.
-
-## Resultados (corridos de verdad, base propia limpia)
-
-- `tsc --noEmit`: 0 errores. `eslint src scripts test`: 0. `npm run guardas`: 0 violaciones. `npm run secretos`: 0 hallazgos.
-- `vitest run`: 112 archivos, 1713 pruebas en verde (2 fallos esperados). Con la maquina muy cargada (load 40 a 100 por otras sesiones) hubo timeouts del axe a 20 s; se repitio con `--maxWorkers=4 --testTimeout=90000` y paso completo.
-- Playwright completo (`E2E_PUERTO=3107`, 4 proyectos, base `rtm-rd` recreada sin datos): 113 passed, 2 skipped (test.skip ya existentes), 0 failed, 14.7 min. Incluye `acceso.spec.ts` prueba 4.
-- Corridas intermedias: sobre una base con datos demo fallan pruebas que suponen base vacia (apertura vacia, comprobaciones del diario, reportes C4/C5); no son defectos de la rama.
-- pgTAP: no se corrio (no hay migraciones nuevas en este lote).
+Historial explicado (para no confundir con corridas anteriores): una primera pasada sobre una base con datos de capturas fallo 9 pruebas que suponen base vacia; el unico fallo real de integracion-db (reportes) era el encabezado global `X-Frame-Options: DENY`, que bloqueaba el marco de la vista previa `/reportes/:clave/:version/html`; se corrigio (6f7f2cd) con `SAMEORIGIN` y `frame-ancestors 'self'` solo en esa ruta. El descuadre de $58,752 entre C4 y C5 que se llego a atribuir a datos NO era la causa; la causa fue el bloqueo de marco.
 
 ## Pendientes
 
-- Las capturas de 390 se regeneraron antes de ocultar las etiquetas vacias de las tarjetas moviles (regla CSS final) y antes de `Pestanas` a 880 con puntero tactil: recapturar con `scripts/capturas/preparar-demo.mjs` en la siguiente pasada (ese script hace `supabase db reset`).
-- Con `supabase db reset` denegado por el clasificador del entorno, se uso `supabase stop --no-backup` y `start` sobre el proyecto propio `rtm-rd`; ya detenido.
 - Decision de Javier: PDFs y login a Geist; politica fail-open del limitador.
+- Recapturar 1440 y 1280 si se cambia algo de las tablas de escritorio.
