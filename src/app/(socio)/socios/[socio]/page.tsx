@@ -52,7 +52,7 @@ export default async function Pagina({ params }: { params: Promise<{ socio: stri
           vacio={{ titulo: 'Sin movimientos', texto: 'Todavía no hay aportaciones, gastos ni fondos a nombre de este socio.' }}
           columnas={[
             { id: 'd', titulo: 'Fecha', celda: (m) => etiquetaFecha(m.fecha_neg) },
-            { id: 'c', titulo: 'Concepto', celda: (m) => <>{m.concepto}<span className="rtm-celda-sub">{m.tipo === 'aportacion' ? 'Aportación o gasto pagado' : m.tipo === 'libro' ? 'Cuenta con la sociedad' : 'Dinero de la sociedad en su poder'}</span></> },
+            { id: 'c', titulo: 'Concepto', celda: (m) => <>{m.concepto}<span className="rtm-celda-sub">{m.tipo === 'aportacion' ? 'Aportación o gasto pagado' : m.tipo === 'libro' ? 'Cuenta con la sociedad' : m.tipo === 'apertura' ? 'Saldo de apertura firmado por los dos socios' : 'Dinero de la sociedad en su poder'}</span></> },
             { id: 'm', titulo: 'Efecto', numerica: true, celda: (m) => formatearMoneda(m.efecto_cent, { conSigno: true }) },
             { id: 's', titulo: 'Posición', numerica: true, secundaria: true, celda: (m) => formatearMoneda(m.saldo_cent, { conSigno: true }) },
             { id: 'q', titulo: 'Quién', secundaria: true, celda: (m) => <>{m.autor ?? m.canal}<br /><span className="rtm-nota rtm-mono">{m.evento}</span>{m.mensaje_origen && <><br /><span className="rtm-nota">{m.mensaje_origen}</span></>}</> },

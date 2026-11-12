@@ -38,7 +38,7 @@ export const CUBETA: Record<string, string> = { '0_7': '0 a 7 días', '8_14': '8
 export const SEVERIDAD: Record<string, { texto: string; tono: Tono }> = { C: { texto: 'Crítica', tono: 'malo' }, I: { texto: 'Importante', tono: 'atencion' }, F: { texto: 'Informativa', tono: 'neutro' } };
 export const CONCEPTO_CUENTA: Record<string, string> = {
   pago_cliente_redirigido: 'Pago de cliente redirigido', pago_socio: 'Pago de un socio', pago_sociedad: 'Pago de la sociedad', oc_aplicada: 'Orden de compra aplicada', ajuste: 'Ajuste',
-  reclamo_diferencia: 'Reclamo por diferencia de recepción', reversa: 'Reversa',
+  reclamo_diferencia: 'Reclamo por diferencia de recepción', reversa: 'Reversa', apertura: 'Saldo de apertura',
 };
 export const AVISO_PEDIDO: Record<string, string> = {
   precio_distinto_tabulador: 'Precio distinto del tabulador', venta_bajo_costo: 'Venta a costo o bajo costo', sin_precio_catalogo: 'Sin precio de catálogo',

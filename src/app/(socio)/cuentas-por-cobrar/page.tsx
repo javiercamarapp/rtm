@@ -96,6 +96,26 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
         />
       </section>
 
+      {d.apertura.length > 0 && (
+        <section className="rtm-seccion" aria-label="Saldos de apertura por cobrar">
+          <h2>Saldos de apertura por cobrar</h2>
+          <DataTable
+            etiqueta="Cuentas por cobrar cargadas en la apertura"
+            clave={(a) => a.partida_id}
+            filas={d.apertura.filter((a) => !cliente || String(a.cliente_id) === cliente)}
+            columnas={[
+              { id: 'c', titulo: 'Cliente', celda: (a) => <Link href={`/clientes/${a.cliente_id}`}>{a.cliente}</Link> },
+              { id: 'f', titulo: 'Adeudo del', secundaria: true, celda: (a) => etiquetaFecha(a.fecha_ref) },
+              { id: 'o', titulo: 'Original', numerica: true, secundaria: true, celda: (a) => formatearMoneda(a.original_cent) },
+              { id: 'a', titulo: 'Abonos', numerica: true, secundaria: true, celda: (a) => formatearMoneda(a.abonos_cent) },
+              { id: 's', titulo: 'Saldo', numerica: true, celda: (a) => formatearMoneda(a.saldo_cent) },
+              { id: 'd', titulo: 'Antigüedad', numerica: true, secundaria: true, celda: (a) => `${a.dias} d` },
+            ]}
+          />
+          <p className="rtm-nota">Vienen de la apertura firmada por los dos socios. Un pago del cliente se aplica primero a esta deuda, la más antigua.</p>
+        </section>
+      )}
+
       {hayAntiguedad && (
         <GraficaBarras titulo="Antigüedad de saldos" unidad="Pesos" descripcion="Saldo por cobrar según los días desde el envío; el tramo más viejo con saldo es el que pide atención." datos={barras.map((b, i, a) => ({ ...b, destacado: b.valor > 0 && a.slice(i + 1).every((x) => x.valor === 0) }))} />
       )}
