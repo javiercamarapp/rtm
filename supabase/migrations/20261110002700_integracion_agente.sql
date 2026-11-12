@@ -15,6 +15,7 @@ grant usage on schema agente to servidor;
 create or replace function seguridad.canal_actual() returns text
 language sql stable set search_path = ''
 as $$ select case when session_user = 'postgres' and current_setting('rtm.canal', true) = 'importacion' then 'importacion'
+                  when session_user = 'postgres' and current_setting('rtm.canal', true) = 'sistema' then 'sistema'
                   when session_user in ('servidor', 'postgres') and current_setting('rtm.canal', true) = 'telegram' then 'telegram'
                   else 'web' end $$;
 
