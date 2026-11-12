@@ -445,3 +445,14 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-acciones-contactos { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); }
 .rtm-tarjeta-v2[data-plana] > .rtm-paginador { border-top: var(--rtm-borde); }
 @media (pointer: coarse), (max-width: 767px) { html .rtm-filtros-linea .rtm-campo { font-size: 16px; min-height: 44px; } }
+
+/* Ancla de formulario dentro de tarjeta (enlace #cambiar): compensa el encabezado fijo */
+.rtm-ancla { position: relative; }
+.rtm-ancla-punto { position: absolute; top: -72px; left: 0; width: 1px; height: 1px; pointer-events: none; }
+
+/* Costos del sistema: tarjetas por servicio en rejilla compacta (reemplaza .rtm-tarjetas de operacion) */
+.rtm-pagina-v2 .rtm-tarjetas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.rtm-pagina-v2 .rtm-tarjeta-costo { border: var(--rtm-borde); border-radius: var(--rtm-r-ctl); padding: 10px 12px; gap: 4px; background: var(--rtm-surface); }
+.rtm-pagina-v2 .rtm-tarjeta-costo header { min-height: 28px; }
+
+.rtm-linea-estado { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }

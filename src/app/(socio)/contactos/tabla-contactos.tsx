@@ -89,7 +89,7 @@ export function TablaContactos({ filas, total, filtro }: Props) {
         estado={ocupado && filas.length === 0 ? 'cargando' : 'listo'}
         vacio={{ titulo: 'Sin contactos', texto: 'No hay contactos con este filtro. Quita la búsqueda o elige otro origen.' }}
         columnas={[
-          { id: 's', titulo: 'Elegir', ancho: 'xs', prioridadMovil: 'oculta', celda: (f) => <input type="checkbox" aria-label={`Elegir a ${f.nombre || 'contacto sin nombre'}`} checked={seleccion.has(f.id)} onChange={() => alternar(f.id)} /> },
+          { id: 's', titulo: 'Elegir', ancho: 'xs', prioridadMovil: 'normal', celda: (f) => <input type="checkbox" aria-label={`Elegir a ${f.nombre || 'contacto sin nombre'}`} checked={seleccion.has(f.id)} onChange={() => alternar(f.id)} /> },
           { id: 'n', titulo: 'Nombre', ancho: 'l', truncar: 'm', prioridadMovil: 'titulo', celda: (f) => f.nombre || 'Sin nombre' },
           {
             id: 't',
