@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { EXPLICACIONES_CONTEO, type ExplicacionConteo, type HojaConteoSku, type PrevisualizacionConteo } from '@/dominio/inventario/tipos';
 import { formatearPiezas } from '@/dominio/formato';
+import { Aviso } from '@/ui/componentes/controles';
+import { Tarjeta } from '@/ui/componentes/pagina';
 import { cerrarConteoAccion, previsualizarConteoAccion } from '../acciones';
 
 const ETIQUETA: Record<ExplicacionConteo, string> = {
@@ -47,10 +49,10 @@ export function HojaConteo({ ubicacion, hoja }: { ubicacion: string; hoja: HojaC
 
   if (cerrado) {
     return (
-      <div className="rtm-tarjeta" role="status" data-testid="conteo-cerrado">
-        <h2>Conteo cerrado</h2>
-        <p>Se registraron {cerrado.ajustes} {cerrado.ajustes === 1 ? 'ajuste' : 'ajustes'} al costo promedio. Las diferencias sin explicar quedan marcadas “Sin explicar”.</p>
-        <a className="rtm-boton" href="/inventario/conteo">Ver conteos</a>
+      <div role="status" data-testid="conteo-cerrado">
+        <Tarjeta titulo="Conteo cerrado" acciones={<a className="rtm-boton" href="/inventario/conteo">Ver conteos</a>}>
+          <p className="rtm-nota">Se registraron {cerrado.ajustes} {cerrado.ajustes === 1 ? 'ajuste' : 'ajustes'} al costo promedio. Las diferencias sin explicar quedan marcadas “Sin explicar”.</p>
+        </Tarjeta>
       </div>
     );
   }
@@ -58,12 +60,12 @@ export function HojaConteo({ ubicacion, hoja }: { ubicacion: string; hoja: HojaC
   if (previa) {
     const sinExplicar = previa.lineas.filter((l) => l.diferencia !== 0 && !explica[l.sku_id]).length;
     return (
-      <div className="rtm-seccion" data-testid="conteo-revision">
-        <h2>Diferencias contra el sistema</h2>
-        <p className="rtm-nota">
-          {previa.con_diferencia === 0 ? 'No hay diferencias.' : `${previa.con_diferencia} ${previa.con_diferencia === 1 ? 'sabor con diferencia' : 'sabores con diferencia'}`}
-          {previa.exactitud_bp !== null ? ` · exactitud ${(previa.exactitud_bp / 100).toFixed(2)} %` : ''}. “En la bodega” = disponible según el sistema + vendidas por recoger.
-        </p>
+      <div data-testid="conteo-revision">
+      <Tarjeta
+        plana
+        titulo="Diferencias contra el sistema"
+        descripcion={`${previa.con_diferencia === 0 ? 'No hay diferencias' : `${previa.con_diferencia} ${previa.con_diferencia === 1 ? 'sabor con diferencia' : 'sabores con diferencia'}`}${previa.exactitud_bp !== null ? ` · exactitud ${(previa.exactitud_bp / 100).toFixed(2)} %` : ''}. “En la bodega” = disponible según el sistema + vendidas por recoger.`}
+      >
         <div className="rtm-dt-caja">
           <div className="rtm-dt" role="table" aria-label="Diferencias del conteo">
             <div className="rtm-dt-grupo" role="rowgroup">
@@ -91,22 +93,27 @@ export function HojaConteo({ ubicacion, hoja }: { ubicacion: string; hoja: HojaC
             </div>
           </div>
         </div>
-        {sinExplicar > 0 && <p className="rtm-nota">{sinExplicar} {sinExplicar === 1 ? 'diferencia queda' : 'diferencias quedan'} sin explicar; puedes cerrar y explicarlas después con el reclamo o la corrección que corresponda.</p>}
-        {error && <p className="rtm-error" role="alert">{error}</p>}
-        <div className="rtm-acciones-fila">
-          <button type="button" className="rtm-boton" onClick={() => setPrevia(null)} disabled={ocupado}>Volver a contar</button>
-          <button type="button" className="rtm-boton rtm-boton-primario" onClick={cerrar} disabled={ocupado} data-testid="conteo-cerrar">{ocupado ? 'Cerrando' : 'Cerrar conteo y ajustar'}</button>
+        <div className="rtm-conteo-pie">
+          {sinExplicar > 0 && <Aviso tono="atencion">{sinExplicar} {sinExplicar === 1 ? 'diferencia queda' : 'diferencias quedan'} sin explicar; puedes cerrar y explicarlas después con el reclamo o la corrección que corresponda.</Aviso>}
+          {error && <Aviso tono="error">{error}</Aviso>}
+          <div className="rtm-acciones-fila">
+            <button type="button" className="rtm-boton" onClick={() => setPrevia(null)} disabled={ocupado}>Volver a contar</button>
+            <button type="button" className="rtm-boton rtm-boton-primario" onClick={cerrar} disabled={ocupado} data-testid="conteo-cerrar">{ocupado ? 'Cerrando' : 'Cerrar conteo y ajustar'}</button>
+          </div>
         </div>
+      </Tarjeta>
       </div>
     );
   }
 
   const modelos = [...new Set(hoja.map((h) => `${h.marca} · ${h.modelo}`))];
   return (
-    <div className="rtm-seccion" data-testid="conteo-hoja">
-      <label className="rtm-etiqueta-campo">Fecha y hora del conteo
+    <div data-testid="conteo-hoja">
+    <Tarjeta titulo="Hoja de conteo" descripcion="Cuenta primero; la diferencia con el sistema aparece después. Deja en blanco lo que no contaste.">
+      <label className="rtm-etiqueta-campo rtm-conteo-cuando">Fecha y hora del conteo
         <input className="rtm-campo" type="datetime-local" value={cuando} onChange={(e) => setCuando(e.target.value)} data-testid="conteo-cuando" />
       </label>
+      <div className="rtm-conteo-rejilla">
       {modelos.map((m) => (
         <fieldset key={m} className="rtm-conteo-grupo">
           <legend>{m}</legend>
@@ -118,11 +125,12 @@ export function HojaConteo({ ubicacion, hoja }: { ubicacion: string; hoja: HojaC
           ))}
         </fieldset>
       ))}
-      <p className="rtm-nota">Cuenta primero; la diferencia con el sistema aparece después. Deja en blanco lo que no contaste.</p>
-      {error && <p className="rtm-error" role="alert">{error}</p>}
+      </div>
+      {error && <Aviso tono="error">{error}</Aviso>}
       <div className="rtm-acciones-fila">
         <button type="button" className="rtm-boton rtm-boton-primario" onClick={ver} disabled={ocupado || lineas.length === 0 || invalidas || cuando === ''} data-testid="conteo-ver">{ocupado ? 'Calculando' : 'Ver diferencias'}</button>
       </div>
+    </Tarjeta>
     </div>
   );
 }

@@ -456,3 +456,22 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-pagina-v2 .rtm-tarjeta-costo header { min-height: 28px; }
 
 .rtm-linea-estado { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }
+
+/* Desglose de cuenta de socio y hoja de conteo fisico dentro de tarjetas v2 */
+.rtm-desglose { gap: var(--rtm-ritmo); }
+.rtm-desglose-lista li { padding: 6px 0; border-top: var(--rtm-borde); font-size: var(--rtm-t-cuerpo); }
+.rtm-conteo-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; align-items: start; }
+.rtm-conteo-grupo { border: var(--rtm-borde); border-radius: var(--rtm-r-ctl); padding: 8px 12px; gap: 4px; min-width: 0; }
+.rtm-conteo-grupo legend { font-size: var(--rtm-t-cuerpo); }
+.rtm-conteo-cuando { display: flex; flex-direction: column; gap: 4px; max-width: 280px; margin-bottom: 8px; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
+.rtm-conteo-fila .rtm-campo-num { width: 96px; flex: 0 0 auto; }
+.rtm-conteo-pie { display: flex; flex-direction: column; gap: 8px; padding: 12px var(--rtm-pad-tarjeta); border-top: var(--rtm-borde); }
+
+/* Campana de avisos: panel con el lenguaje de la tarjeta v2 y severidad en palabra con color de estado */
+.rtm-campana-panel { border: var(--rtm-borde); border-radius: var(--rtm-r-3); box-shadow: var(--rtm-sombra-flotante); padding: 8px 12px; gap: 4px; font-size: var(--rtm-t-cuerpo); }
+.rtm-campana-pestana { font-size: var(--rtm-t-cuerpo); min-height: 36px; }
+.rtm-campana-item { gap: 2px; padding: 8px 0; font-size: var(--rtm-t-cuerpo); }
+.rtm-campana-sev { font-size: var(--rtm-t-pequeno); font-weight: 600; letter-spacing: 0.02em; }
+.rtm-campana-sev[data-sev='C'] { color: var(--rtm-bad); }
+.rtm-campana-sev[data-sev='I'] { color: var(--rtm-warn); }
+.rtm-campana-sev[data-sev='F'] { color: var(--rtm-ink-3); }

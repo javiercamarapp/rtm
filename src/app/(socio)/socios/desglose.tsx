@@ -2,6 +2,7 @@ import { formatearMoneda } from '@/dominio/formato';
 import type { Desglose, LineaDesglose } from '@/dominio/operacion/desglose_socio';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
+import { Tarjeta } from '@/ui/componentes/pagina';
 
 function Importe({ l }: { l: LineaDesglose }) {
   if (l.cent === null) return <SinDato />;
@@ -15,8 +16,7 @@ export function DesgloseSocio({ d }: { d: Desglose }) {
   return (
     <div className="rtm-desglose" data-testid={`desglose-${d.socio}`}>
       {d.grupos.map((g) => (
-        <section key={g.id} className="rtm-seccion rtm-desglose-grupo" aria-label={g.titulo}>
-          <h2>{g.titulo}</h2>
+        <Tarjeta key={g.id} titulo={g.titulo} className="rtm-desglose-grupo">
           <ul className="rtm-desglose-lista">
             {g.lineas.map((l) => (
               <li key={l.id} data-linea={l.id}>
@@ -30,7 +30,7 @@ export function DesgloseSocio({ d }: { d: Desglose }) {
               </li>
             ))}
           </ul>
-        </section>
+        </Tarjeta>
       ))}
     </div>
   );
