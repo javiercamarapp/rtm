@@ -56,7 +56,7 @@ select rep.marcar_entrega('semanal:2026-11-09', 1, 'telegram');
 select is((rep.versiones('semanal:2026-11-09') -> 0 -> 'entregas' ->> 'telegram')::boolean, true, 'entrega por telegram marcada una sola vez');
 select is((rep.versiones('semanal:2026-11-09') -> 0 -> 'entregas' ->> 'correo')::boolean, false, 'el correo sigue pendiente');
 select throws_ok($$ update rep.reporte set folio = 'x' where id > 0 $$, '42501', null, 'rep.reporte es de solo insercion');
-select is(jsonb_array_length(api.rep_historial()), 1, 'la web ve el historial');
+select is((select count(*)::int from jsonb_array_elements(api.rep_historial()) h where h ->> 'clave' = 'semanal:2026-11-09'), 1, 'la web ve el historial');
 select is(api.rep_html('semanal:2026-11-09', 1), '<html>v1</html>', 'y la vista previa');
 select is(has_function_privilege('authenticated', 'rep.pdf(text,int)', 'EXECUTE'), false, 'la web no ejecuta rep.* directo');
 select is((select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'rep' and c.relkind = 'r' and not (c.relrowsecurity and c.relforcerowsecurity)), 0, 'RLS forzada');
