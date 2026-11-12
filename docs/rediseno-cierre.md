@@ -39,3 +39,10 @@ Ver el final de este documento (seccion Resultados).
 - Playwright completo (17.5 min): 91 pasan, 9 fallan, 13 no corrieron. Se corrio sobre una base que ya traia datos de corridas anteriores (no se pudo hacer `supabase db reset`), y los especificos de F3a/F3b/F3c y reportes dependen de base limpia (apertura ya firmada, asiento "No cuadra" previo, timeouts de 90 s con carga de maquina de 100): no son concluyentes.
 - Fallo real encontrado y corregido: en `fold-abierto` (880 px) las pestanas median 36 px; la regla de 44 px solo aplicaba bajo 768 px o con puntero tactil. Ahora aplica hasta 900 px (`premium.css`). Falta re-correr esas dos pruebas moviles.
 - Pendiente: `supabase db reset` + e2e completo en una maquina sin carga.
+
+## Resultados
+
+- vitest: 112 archivos, 1713 pruebas pasan (2 fallos esperados, marcados).
+- Playwright completo con base recien reiniciada: 111 pasan, 2 omitidas, 1 falla, 1 sin correr.
+- Falla restante: `integracion-db.spec.ts:145` (reportes semanal, laptop-1440). El reporte "no sale" porque las comprobaciones C4 y C5 difieren en $58,752. Es un descuadre de datos acumulado por pruebas anteriores de la misma corrida (cascada de reparto, apertura), no de interfaz; no se toco. Pendiente de diagnostico aparte.
+- Un primer pase (base con datos previos) fallo 9; tras reiniciar la base y subir el objetivo tactil de las pestanas a 44 px en pantallas tactiles (`pointer: coarse`, fold-abierto) quedaron solo 1.
