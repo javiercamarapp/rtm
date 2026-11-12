@@ -480,4 +480,4 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 
 @media (pointer: coarse), (max-width: 767px) { html .rtm-importador .rtm-pegado { font-size: 16px; } }
 
-.rtm-region { display: contents; }
+.rtm-panel-scroll .rtm-region { display: contents; }
