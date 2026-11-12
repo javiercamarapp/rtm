@@ -20,6 +20,8 @@ export interface Columna<T> {
   /** Tarjeta-fila en movil (<= 767 px): titulo = linea principal (izquierda), principal = cifra clave a la derecha, normal = dato con etiqueta en rejilla de 3 columnas,
    *  detalle = fila a todo el ancho, oculta = no se muestra. Si alguna columna lo declara, la tabla pasa a tarjetas en movil. */
   prioridadMovil?: 'titulo' | 'principal' | 'detalle' | 'normal' | 'oculta';
+  /** Oculta la columna en pantallas de hasta ese ancho (px). Solo para valores derivables de otros visibles (el CSV los conserva). */
+  ocultarBajo?: 1360;
   /** Etiqueta del dato en la tarjeta movil (por omision, el titulo de la columna). */
   etiquetaMovil?: string;
   /** Resalta existencia en cero (ambar, "Agotado") o negativa (rojo, "Negativa"): palabra y color, nunca solo color. */
@@ -87,8 +89,12 @@ export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo
     );
   }
   const cargando = estado === 'cargando';
-  const atributosCelda = (c: Columna<T>) => ({ 'data-num': c.numerica || undefined, 'data-secundaria': c.secundaria || undefined, 'data-ancho': c.ancho, 'data-mov': c.prioridadMovil, 'data-label': c.etiquetaMovil ?? c.titulo });
-  const tarjetaMovil = columnas.some((c) => c.prioridadMovil !== undefined);
+  // Tarjeta-fila movil: si la tabla no declara prioridades se deducen (primera columna = titulo, ultima cifra = principal, el resto con etiqueta).
+  const declarada = columnas.some((c) => c.prioridadMovil !== undefined);
+  const ultimaCifra = declarada ? -1 : columnas.map((c) => c.numerica).lastIndexOf(true);
+  const prioridadDe = (c: Columna<T>, i: number) => c.prioridadMovil ?? (declarada ? undefined : i === 0 ? 'titulo' : i === ultimaCifra && ultimaCifra > 0 ? 'principal' : 'normal');
+  const atributosCelda = (c: Columna<T>, i = columnas.indexOf(c)) => ({ 'data-num': c.numerica || undefined, 'data-secundaria': c.secundaria || undefined, 'data-ancho': c.ancho, 'data-mov': prioridadDe(c, i), 'data-label': c.etiquetaMovil ?? c.titulo, 'data-oculta-bajo': c.ocultarBajo });
+  const tarjetaMovil = columnas.length > 1;
   const celdaContenido = (c: Columna<T>, f: T) => {
     const v = c.celda(f);
     return c.truncar ? <span className="rtm-dt-trunc" data-trunc={c.truncar} title={typeof v === 'string' ? v : undefined}>{v}</span> : v;

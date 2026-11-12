@@ -387,3 +387,6 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:first-child { border-right: 0; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='titulo'] { order: -1; }
 }
+
+/* Columnas derivables que se ocultan hasta 1360 px de ancho (el CSV las conserva) */
+@media (max-width: 1360px) and (min-width: 768px) { .rtm-dt-celda[data-oculta-bajo] { display: none; } }
