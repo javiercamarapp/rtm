@@ -1,5 +1,5 @@
--- El encabezado (pulso) decia "Por cobrar: Sin dato" y "Entre socios: Sin dato" con una apertura firmada, aunque la pantalla de Cuentas por cobrar mostraba el saldo inicial.
--- Cambio ADITIVO (solo redefine la lectura): por cobrar suma tambien las cuentas por cobrar de la apertura firmada, y "entre socios" existe desde que hay apertura firmada.
+-- El pulso decia "Por cobrar: Sin dato" con una apertura firmada, aunque la pantalla de Cuentas por cobrar mostraba el saldo inicial.
+-- Cambio ADITIVO (solo redefine la lectura): por cobrar suma tambien las cuentas por cobrar de la apertura firmada.
 create or replace function api.pulso() returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
@@ -13,8 +13,7 @@ begin
   select id into v_ia from catalogo.socio where nombre = 'Angelo';
   select id into v_ij from catalogo.socio where nombre = 'Javier';
   v_neto_a := operacion.neto_socio(v_ia); v_neto_j := operacion.neto_socio(v_ij);
-  v_socios_hay := exists (select 1 from operacion.aportacion_socio) or exists (select 1 from operacion.cuenta_socio_mov) or exists (select 1 from operacion.compra where estado not in ('borrador', 'anulada'))
-                  or exists (select 1 from apertura.sesion where estado = 'firmada');
+  v_socios_hay := exists (select 1 from operacion.aportacion_socio) or exists (select 1 from operacion.cuenta_socio_mov) or exists (select 1 from operacion.compra where estado not in ('borrador', 'anulada'));
   select coalesce(sum(piezas), 0), coalesce(sum(valor_cent), 0), count(*) into v_pz, v_val, v_mov from operacion.existencia_modelo;
   return jsonb_build_object(
     'por_pagar_isaac_cent', case when exists (select 1 from operacion.cuenta_proveedor_mov where proveedor_id = v_isaac) or exists (select 1 from operacion.compra where proveedor_id = v_isaac and estado not in ('borrador', 'anulada'))

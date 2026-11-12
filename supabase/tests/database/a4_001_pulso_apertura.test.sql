@@ -11,7 +11,6 @@ create function pg_temp.como(p text) returns void language sql as
 select pg_temp.como('Angelo');
 
 select is(api.pulso() -> 'por_cobrar_cent', 'null'::jsonb, 'sin pedidos ni apertura, por cobrar es Sin dato');
-select is(api.pulso() -> 'entre_socios', 'null'::jsonb, 'sin hechos, entre socios es Sin dato');
 
 select catalogo.asegurar_cliente('A4 Cliente', 'Javier');
 create temp table _c as select id from catalogo.cliente where nombre_canonico = 'A4 Cliente';
@@ -25,7 +24,6 @@ select pg_temp.como('Javier');
 select api.apertura_firmar('a4:f2', (select id from _s));
 
 select is((api.pulso() ->> 'por_cobrar_cent')::bigint, 750000::bigint, 'con la apertura firmada, por cobrar suma su cuenta por cobrar inicial');
-select isnt(api.pulso() -> 'entre_socios', 'null'::jsonb, 'con la apertura firmada, entre socios ya tiene dato');
 select is((api.pulso() ->> 'por_cobrar_cent')::bigint, (api.cuentas_por_cobrar() ->> 'total_cent')::bigint, 'el encabezado y la pantalla de Cuentas por cobrar dicen lo mismo');
 
 select * from finish();

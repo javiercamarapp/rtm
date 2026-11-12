@@ -24,6 +24,12 @@ describe('armarPulso', () => {
     const p = armarPulso({ isaac: isaac(0n, []), cxc: cxc(0n, 0), socios: socios(0n, false), existencia: bodega([null, null]) });
     expect(p.chips.every((c) => c.texto === null)).toBe(true);
   });
+  it('por cobrar con solo la apertura firmada (sin pedidos) ya tiene dato', () => {
+    const soloApertura = { hoy: '2026-11-11', filas: [], apertura: [{}], total_cent: 750000n, saldos_a_favor: [], pagos_sin_identificar: [] } as unknown as CuentasPorCobrar;
+    const c = armarPulso({ ...vacio, cxc: soloApertura }).chips[1]!;
+    expect(c.texto).toBe('$7,500.00');
+    expect(c.cifra).toBe('cxc:total');
+  });
   it('Isaac: saldo negativo se muestra como lo que se debe, con su cifra explicable', () => {
     const c = armarPulso({ ...vacio, isaac: isaac(-123450n) }).chips[0]!;
     expect(c.texto).toBe('$1,234.50');
