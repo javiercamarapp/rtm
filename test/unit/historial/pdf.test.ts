@@ -1,6 +1,6 @@
 // PDF del acta con sello y estado de cuenta personal: bytes validos y estables (mismos datos, misma huella).
 import { describe, expect, it } from 'vitest';
-import type { CierreReparto } from '@/dominio/operacion/tipos';
+import type { Cascada, CierreReparto } from '@/dominio/operacion/tipos';
 import type { HistorialSocio, SelloActa } from '@/dominio/historial/tipos';
 import { pdfActaCorte } from '@/infra/pdf/acta';
 import { pdfHistorialSocio } from '@/infra/pdf/historial';
