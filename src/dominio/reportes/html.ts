@@ -42,7 +42,7 @@ td.n,th.n{text-align:right}
 .folio{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:8pt;display:flex;justify-content:space-between}
 .marca{position:absolute;left:0;right:0;top:330pt;text-align:center;font-family:"EB Garamond",Georgia,serif;font-size:96pt;font-weight:400;letter-spacing:0.1em;color:var(--rep-g1);transform:rotate(-24deg);pointer-events:none;z-index:0;opacity:0.55}
 .pagina>*:not(.marca){position:relative;z-index:1}
-.anexo .cols{column-count:2;column-gap:14pt}.anexo h2{margin-top:6pt;break-after:avoid}.anexo p{margin:0 0 2pt 0;font-size:8pt;break-inside:avoid}
+.anexo .cols{column-count:2;column-gap:14pt}.anexo h2{margin-top:6pt;break-after:avoid}.anexo p{margin:0 0 1pt 0;font-size:7pt;line-height:1.2;break-inside:avoid}
 `;
 
 function tablaHtml(t: Tabla): string {
