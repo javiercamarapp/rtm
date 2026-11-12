@@ -26,8 +26,8 @@ test('capturas del historial y el acta', async ({ browser }) => {
     ['historial-angelo', '/socios/Angelo/historial'], ['historial-javier', '/socios/Javier/historial'], ['historial-semanas', '/socios/Angelo/historial?vista=semana'],
     ['historial-dias', '/socios/Angelo/historial?vista=dia'], ['acta', `/socios/actas/${idActa}`], ['cascada', '/socios/cascada?ini=2026-10-01&fin=2026-10-31'], ['socios', '/socios'],
   ];
-  for (const p of PERFILES) {
-    for (const tema of TEMAS) {
+  for (const p of PERFILES.filter((x) => !process.env.HIST_PERFIL || x.nombre === process.env.HIST_PERFIL)) {
+    for (const tema of TEMAS.filter((x) => !process.env.HIST_TEMA || x === process.env.HIST_TEMA)) {
       const op: BrowserContextOptions = { viewport: { width: p.ancho, height: p.alto }, deviceScaleFactor: 1, isMobile: p.movil, hasTouch: p.movil, colorScheme: tema === 'oscuro' ? 'dark' : 'light', reducedMotion: 'reduce', extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() }, storageState: estado };
       const ctx = await browser.newContext(op);
       await ctx.addInitScript((t) => { try { localStorage.setItem('rtm-tema', t); localStorage.setItem('rtm-acento', 'neutro'); localStorage.setItem('rtm-movimiento', 'off'); } catch { /* sin almacenamiento */ } }, tema);
