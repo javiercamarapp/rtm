@@ -20,3 +20,5 @@ next-env.d.ts
 # capturas: solo las de docs/capturas/f0 (ligeras); las temporales de prueba no se versionan
 /tmp-capturas/
 coverage/
+.vercel
+.env*
