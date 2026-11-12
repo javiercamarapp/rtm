@@ -21,6 +21,15 @@ import { llamadaProveedoresServidor } from '@/infra/postgres/proveedores';
 import { sqlServidor, type Sql } from '@/infra/postgres/servidor';
 import { secretoValido } from '@/infra/agente/telegram_webhook';
 import { appUrl } from '@/config/env';
+
+/** La URL de la app es opcional para los avisos: sin ella los textos no llevan enlace. */
+function urlAppOpcional(): string | null {
+  try {
+    return appUrl();
+  } catch {
+    return null;
+  }
+}
 import { AvisosDb, ContextoNegocioDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
 import { lectorDesdeEntorno } from '@/infra/proveedores/lector_http';
 import { cargarCssFuentes } from '@/infra/reportes/fuentes_css';
@@ -161,7 +170,7 @@ export async function ejecutarLatidoProduccion(d: DepsProduccion): Promise<Resum
 // ---------------------------------------------------------------- entradas de las rutas HTTP (las rutas de app no importan infra)
 
 export function webhookTelegram(cabeceraSecreto: string | null, cuerpo: string): Promise<RespuestaWebhook> {
-  return procesarWebhook({ sql: sqlServidor, urlApp: appUrl() }, cabeceraSecreto, cuerpo);
+  return procesarWebhook({ sql: sqlServidor, urlApp: urlAppOpcional() }, cabeceraSecreto, cuerpo);
 }
 
 export type RespuestaTarea = { status: number; cuerpo: unknown };
@@ -170,7 +179,7 @@ export type RespuestaTarea = { status: number; cuerpo: unknown };
 export async function tareaProgramada(tarea: string, autorizacion: string | null, d: Partial<DepsProduccion> = {}): Promise<RespuestaTarea> {
   const esperado = configPrivada(d.entorno).TAREAS_SECRETO ?? '';
   if (!secretoValido(autorizacion?.startsWith('Bearer ') ? autorizacion.slice(7) : null, esperado)) return { status: 401, cuerpo: null };
-  const deps: DepsProduccion = { sql: sqlServidor, urlApp: appUrl(), ...d };
+  const deps: DepsProduccion = { sql: sqlServidor, urlApp: urlAppOpcional(), ...d };
   if (tarea === 'latido') return { status: 200, cuerpo: await ejecutarLatidoProduccion(deps) };
   const def = TAREAS.find((t) => t.tarea === tarea);
   const manejador = manejadoresDeTareas(deps)[tarea];

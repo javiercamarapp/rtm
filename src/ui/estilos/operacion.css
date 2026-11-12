@@ -176,6 +176,9 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 
 /* Costos del sistema: marcas oficiales sin alterar (un <img> por tema; la clase decide cual se ve). */
 .rtm-marca { display: inline-flex; align-items: center; gap: var(--rtm-e-2); min-width: 0; }
+.rtm-marca-h18 { height: 18px; width: auto; }
+.rtm-marca-h20 { height: 20px; width: auto; }
+.rtm-marca-h22 { height: 22px; width: auto; }
 .rtm-marca img { display: block; max-width: 100%; object-fit: contain; }
 .rtm-marca .rtm-marca-oscuro { display: none; }
 :root[data-tema='oscuro'] .rtm-marca .rtm-marca-claro { display: none; }
