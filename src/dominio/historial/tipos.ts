@@ -11,7 +11,7 @@ export interface FilaSerie {
 }
 export interface ActaLinea {
   id: number; folio: string; tipo: 'periodo' | 'contra'; periodo_ini: string; periodo_fin: string; utilidad_cent: Cent;
-  parte_cent: Cent; retira_cent: Cent; reinvierte_cent: Cent; estado: 'propuesto' | 'firmado_por_uno' | 'cerrado'; corregida: boolean;
+  parte_cent: Cent; retira_cent: Cent; reinvierte_cent: Cent; estado: 'propuesto' | 'firmado_por_uno' | 'cerrado'; corregida: boolean; /** Hay una contra-acta propuesta que aun no firman los dos: el acta sigue vigente. */ contra_propuesta: boolean;
   firmas: { socio: string; firmado_at: string }[]; capital_contable_cent: Cent | null; valor_cent: Cent | null; huella: string | null;
 }
 export interface Flujo { fecha: string; monto_cent: Cent; tipo: 'aportacion' | 'retiro' | 'retiro_capital' }
@@ -47,7 +47,7 @@ export interface SelloActa {
   };
   huella: string; sellado_at: string;
 }
-export interface ActaDetalle { cierre: CierreReparto; sello: SelloActa | null; /** Disponible y lo que queda por distribuir por socio, calculados por la base (ausente en una contra-acta). */ por_socio_acta: Record<string, { disponible_cent: Cent; queda_cent: Cent }>; corrige_folio: string | null; contra_acta_folio: string | null }
+export interface ActaDetalle { cierre: CierreReparto; sello: SelloActa | null; /** Disponible y lo que queda por distribuir por socio, calculados por la base (ausente en una contra-acta). */ por_socio_acta: Record<string, { disponible_cent: Cent; queda_cent: Cent; /** Resultado de la comprobacion por dos vias del disponible (null = sin comprobar). */ cuadra: boolean | null }>; /** Idem, de la utilidad neta del periodo. */ utilidad_cuadra: boolean | null; corrige_folio: string | null; contra_acta_folio: string | null }
 export interface PeriodoSugerido { ini: string; fin: string; hoy: string; ultimo_corte: string | null; listo: boolean; disponible_desde: string; acta_pendiente_id: number | null; hay_actividad: boolean }
 
 /** Las decisiones de un acta viajan como {retira, reinvierte} (sin sufijo _cent), asi que la conversion general de centavos no las toca: se convierten aqui. */

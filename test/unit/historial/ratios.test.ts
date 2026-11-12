@@ -159,10 +159,18 @@ describe('proyeccionPersonal', () => {
     const p = proyeccionPersonal([fila('2026-08-01', 100n), fila('2026-09-01', 200n), fila('2026-10-01', 300n)], 5000n);
     expect(p.suficiente).toBe(true);
     expect(p.base).toBe('retiro');
-    // varianza muestral = 10,000; (10,000 x 4) / 3 = 13,333 -> raiz 115; x 0.5 = 58
+    // varianza muestral = 10,000; (10,000 x 1 x 4) / 3 = 13,333 -> raiz 115; x 0.5 = 58
     expect(p.banda_cent).toBe(58n);
     expect(p.meses[0]).toEqual({ esperado_cent: 100n, bajo_cent: 42n, alto_cent: 158n });
     expect(p.meses).toHaveLength(3);
+  });
+  it('las tres filas son acumulados distintos: la media se suma y la banda crece con el horizonte', () => {
+    const p = proyeccionPersonal([fila('a', 100n), fila('b', 200n), fila('c', 300n)], null);
+    // k=1: 10,000 x 1 x 4 / 3 = 13,333 -> 115; k=2: 10,000 x 2 x 5 / 3 = 33,333 -> 182; k=3: 10,000 x 3 x 6 / 3 = 60,000 -> 244
+    expect(p.meses[0]).toEqual({ esperado_cent: 200n, bajo_cent: 85n, alto_cent: 315n });
+    expect(p.meses[1]).toEqual({ esperado_cent: 400n, bajo_cent: 218n, alto_cent: 582n });
+    expect(p.meses[2]).toEqual({ esperado_cent: 600n, bajo_cent: 356n, alto_cent: 844n });
+    expect(new Set(p.meses.map((x) => x.esperado_cent)).size).toBe(3);
   });
   it('la banda se estrecha con mas meses de la misma dispersion', () => {
     const tres = proyeccionPersonal([fila('a', 100n), fila('b', 200n), fila('c', 300n)], null);
@@ -174,9 +182,11 @@ describe('proyeccionPersonal', () => {
     expect(p.base).toBe('parte');
     expect(p.meses[0]!.esperado_cent).toBe(200n);
   });
-  it('sin payout observado se proyecta su parte, no el retiro; nunca negativo', () => {
-    const p = proyeccionPersonal([fila('a', -300n), fila('b', 10n), fila('c', 20n)], null);
+  it('una media negativa se conserva con su signo: no se oculta una perdida esperada como cero', () => {
+    const p = proyeccionPersonal([fila('a', -300n), fila('b', -100n), fila('c', -200n)], null);
     expect(p.base).toBe('parte');
-    expect(p.meses[0]!.bajo_cent).toBeGreaterThanOrEqual(0n);
+    expect(p.meses[0]!.esperado_cent).toBe(-200n);
+    expect(p.meses[0]!.bajo_cent).toBeLessThan(0n);
+    expect(p.meses[2]!.esperado_cent).toBe(-600n);
   });
 });

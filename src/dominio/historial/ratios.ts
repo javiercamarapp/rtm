@@ -185,7 +185,9 @@ export interface ProyeccionPersonal {
   n: number;
   /** Con payout observado: retiro esperado = su parte esperada x payout. Sin payout: se proyecta solo su parte de la utilidad. */
   base: 'retiro' | 'parte';
+  /** Fila k (desde 1) es el ACUMULADO de los proximos k meses: la media se suma k veces y la banda crece con el horizonte. Los negativos se conservan (una perdida esperada no se muestra como cero). */
   meses: { esperado_cent: bigint; bajo_cent: bigint; alto_cent: bigint }[];
+  /** Banda de un solo mes (la de la primera fila). */
   banda_cent: bigint;
 }
 
@@ -198,14 +200,16 @@ export function proyeccionPersonal(meses: readonly FilaSerie[], payoutBp: bigint
   const media = divRedondeada(suma, N);
   const ss = completos.reduce((a, m) => a + (m.parte_cent - media) * (m.parte_cent - media), 0n);
   const varianza = ss / (N - 1n);
-  const banda = raizEntera((varianza * (N + 1n)) / N);
   // Un payout de 0 % (nadie ha retirado en efectivo) no es una tasa observable: multiplicar por cero emitiria un retiro esperado de $0 inventado. Se proyecta su parte.
   const conPayout = payoutBp !== null && payoutBp > 0n;
   const base: 'retiro' | 'parte' = conPayout ? 'retiro' : 'parte';
   const f = (x: bigint) => (conPayout ? divRedondeada(x * payoutBp, 10000n) : x);
-  const esperado = f(media);
-  const b = f(banda);
-  const piso = (x: bigint) => (x < 0n ? 0n : x);
-  const fila = { esperado_cent: piso(esperado), bajo_cent: piso(esperado - b), alto_cent: piso(esperado + b) };
-  return { suficiente: true, n, base, meses: [fila, fila, fila], banda_cent: b };
+  // Varianza predictiva de la suma de k meses con la media estimada de N: s2 x k x (1 + k/N). Para k = 1 es la de un mes: s2 x (N + 1) / N.
+  const fila = (k: bigint) => {
+    const esperado = f(media * k);
+    const b = f(raizEntera((varianza * k * (N + k)) / N));
+    return { esperado_cent: esperado, bajo_cent: esperado - b, alto_cent: esperado + b };
+  };
+  const unMes = fila(1n);
+  return { suficiente: true, n, base, meses: [unMes, fila(2n), fila(3n)], banda_cent: unMes.alto_cent - unMes.esperado_cent };
 }
