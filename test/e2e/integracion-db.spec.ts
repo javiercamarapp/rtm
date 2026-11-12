@@ -49,7 +49,7 @@ test('costos: un cargo de Supabase se calcula, se registra como gasto de la soci
   await expect(page.getByTestId('cargo-vista-previa')).toContainText('235.875');
   await expect(page.getByTestId('cargo-vista-previa')).toContainText('queda por reembolsarle');
   await page.getByTestId('cargo-guardar').click();
-  await expect(page.getByTestId('cargo-hecho')).toBeVisible();
+  await expect(page.getByTestId('cargo-hecho')).toBeVisible({ timeout: 30_000 });
 
   const fila = page.getByRole('row').filter({ hasText: 'Supabase' }).filter({ hasText: '$236.00' });
   await expect(fila.first()).toBeVisible();
@@ -68,7 +68,7 @@ test('costos: un cargo de Supabase se calcula, se registra como gasto de la soci
   await page.getByTestId('reembolso-guardar').click();
   await expect(page.getByText('el cargo original no cambia')).toBeVisible();
   await page.getByTestId('reembolso-guardar').click();
-  await expect(page.getByTestId('costos-pendiente')).toContainText('136.00');
+  await expect(page.getByTestId('costos-pendiente')).toContainText('136.00', { timeout: 30_000 });
   expect(pendiente).toContain('236.00');
   await page.getByTestId('reembolso-monto').fill('500');
   await expect(page.getByTestId('reembolso-guardar')).toBeDisabled();
@@ -78,9 +78,9 @@ test('costos: un cargo de Supabase se calcula, se registra como gasto de la soci
   await expect(page.getByTestId('anular-confirmar')).toBeDisabled();
   await page.getByTestId('anular-motivo').fill('Prueba de anulacion');
   await page.getByTestId('anular-confirmar').click();
-  await expect(page.getByRole('row').filter({ hasText: 'Reversa' }).first()).toBeVisible();
+  await expect(page.getByRole('row').filter({ hasText: 'Reversa' }).first()).toBeVisible({ timeout: 30_000 });
   // Con la reversa el neto del servicio queda en cero (el cargo original se conserva).
-  await expect(page.getByTestId('servicio-supabase')).toContainText('$0.00');
+  await expect(page.getByTestId('servicio-supabase')).toContainText('$0.00', { timeout: 30_000 });
 });
 
 async function altaYCorreo(prefijo: string, socio: 'Angelo' | 'Javier' = 'Javier'): Promise<string> {

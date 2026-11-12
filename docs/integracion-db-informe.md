@@ -16,7 +16,7 @@ Cuatro migraciones nuevas (0025 a 0028), todas con RLS forzada, sin privilegios 
 
 | Prueba | Resultado |
 |---|---|
-| pgTAP nuevos (023 costos, 024 proveedores, 025 agente, 026 reportes) | 24 + 31 + 68 + 33 afirmaciones |
+| pgTAP nuevos (023 costos, 024 proveedores, 025 agente, 026 reportes) | 24 + 31 + 64 + 33 = 152 afirmaciones, con cifras escritas a mano (Supabase US$75, 10 de 60 horas, 17 %, TC 18.50 = 235.875 exacto y 236.00 redondeado) |
 | vitest | ver cierre del informe |
 | Integracion contra la base (transaccion revertida) | 14: paridad del techo SQL y TypeScript en 600 casos, paridad del presupuesto de IA en 100 secuencias, webhook con secreto, idempotencia por `update_id`, indicacion de Javier con canal telegram y reserva de IA liquidada, toma de Omar pendiente y autorizada una sola vez, latido con proveedores, semanal con Chromium real y despacho por Telegram simulado |
 | Playwright | ver cierre del informe |
