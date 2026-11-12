@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
-import { IconoApertura, IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoInicio, IconoInventario, IconoMenu, IconoMovimientos, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoReportes, IconoCostos, IconoSocios, IconoTrayecto } from '../iconos';
+import { IconoApertura, IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoContactos, IconoInicio, IconoInventario, IconoMenu, IconoMovimientos, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoReportes, IconoCostos, IconoSocios, IconoTrayecto } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
-import type { ListaCampana, Pulso as DatosPulso } from '@/dominio/notificaciones/tipos';
+import type { ListaCampana } from '@/dominio/notificaciones/tipos';
+import type { Pulso as DatosPulso } from '@/dominio/operacion/pulso';
 import { Campana } from './campana';
 import { Pulso } from './pulso';
 
@@ -20,6 +21,7 @@ const SECCIONES = [
   { href: '/cuentas-por-cobrar', etiqueta: 'Cuentas por cobrar', icono: <IconoCobrar /> },
   { href: '/catalogo', etiqueta: 'Catálogo y precios', icono: <IconoCatalogo /> },
   { href: '/clientes', etiqueta: 'Clientes', icono: <IconoClientes /> },
+  { href: '/contactos', etiqueta: 'Contactos', icono: <IconoContactos /> },
   { href: '/inventario', etiqueta: 'Inventario', icono: <IconoInventario /> },
   { href: '/proveedores', etiqueta: 'Proveedores', icono: <IconoProveedores /> },
   { href: '/socios', etiqueta: 'Cuenta de socios', icono: <IconoSocios /> },
@@ -41,14 +43,14 @@ interface Props {
   children: ReactNode;
   nombreSocio: string;
   accionSalir: () => Promise<void>;
-  pulso?: DatosPulso | null;
+  pulso: DatosPulso;
   noLeidas?: number;
   cargarCampana?: (filtro: 'todas' | 'sin_leer') => Promise<ListaCampana>;
   marcarLeida?: (id: number) => Promise<void>;
   marcarTodasLeidas?: () => Promise<void>;
 }
 
-export function Armazon({ children, nombreSocio, accionSalir, pulso = null, noLeidas = 0, cargarCampana, marcarLeida, marcarTodasLeidas }: Props) {
+export function Armazon({ children, nombreSocio, accionSalir, pulso, noLeidas = 0, cargarCampana, marcarLeida, marcarTodasLeidas }: Props) {
   const ruta = usePathname();
   const [abierto, setAbierto] = useState(false);
   const activo = indiceActivo(ruta);
@@ -61,7 +63,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso = null, noLe
     <div className="rtm-app">
       <aside className="rtm-lateral" data-abierto={abierto} aria-label="Navegación principal">
         <div className="rtm-lateral-marca">
-          <Link href="/" aria-label={`${MARCA.nombre}, inicio`}>
+          <Link href="/" aria-label={`${MARCA.nombre}, inicio`} onClick={() => setAbierto(false)}>
             <Logo alto={22} />
           </Link>
         </div>
@@ -70,7 +72,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso = null, noLe
           <ul className="rtm-nav">
             {SECCIONES.map((s, i) => (
               <li key={s.href}>
-                <Link href={s.href} prefetch={'prefetch' in s ? s.prefetch : undefined} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined}>
+                <Link href={s.href} prefetch={'prefetch' in s ? s.prefetch : undefined} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined} onClick={() => setAbierto(false)}>
                   {s.icono}
                   <span>{s.etiqueta}</span>
                 </Link>
@@ -96,7 +98,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso = null, noLe
             {MARCA.nombre} / <strong>{activo >= 0 ? SECCIONES[activo]!.etiqueta : 'Diseño'}</strong>
           </span>
           <div className="rtm-pulso">
-            <Pulso datos={pulso} />
+            <Pulso chips={pulso.chips} />
           </div>
           <div className="rtm-barra-acciones">
             {cargarCampana && marcarLeida && marcarTodasLeidas && <Campana noLeidas={noLeidas} cargar={cargarCampana} marcar={marcarLeida} marcarTodas={marcarTodasLeidas} />}
@@ -108,13 +110,13 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso = null, noLe
           <div className="rtm-panel-scroll">
             <div className="rtm-pagina">
               <div className="rtm-pulso-movil" aria-label="Pulso">
-                <Pulso datos={pulso} />
+                <Pulso chips={pulso.chips} />
               </div>
               {children}
             </div>
           </div>
           <footer className="rtm-pie">
-            <span>Corte: al cargar la página</span>
+            <span data-testid="pie-corte">{pulso.corte ? `Corte: al ${pulso.corte}` : 'Corte: sin datos todavía'}</span>
             <span aria-hidden="true">·</span>
             <span>Fuente: libro de eventos</span>
           </footer>

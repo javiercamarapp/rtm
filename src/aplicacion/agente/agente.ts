@@ -24,6 +24,8 @@ import type { MensajeListo } from './plantillas';
 import { MAX_TOKENS_SALIDA_R1, SISTEMA_R1, VERSION_PROMPT, construirUsuarioR1, estimarTokens } from './prompt';
 import type {
   AccionBoton,
+  AccionResuelta,
+  ResultadoNegocio,
   AlmacenAgente,
   AlmacenPresupuesto,
   AlmacenTokens,
@@ -178,6 +180,25 @@ export class AgenteTelegram {
       }
       return { estado: 'error' };
     }
+  }
+
+  /**
+   * Cola de solicitudes de la vista web de Omar: pasa por el MISMO negocio y publica la MISMA tarjeta de autorizacion en el grupo de socios
+   * que una toma escrita por Telegram. La idempotencia por `claveIdem` la garantiza el negocio; el llamador no reenvia la tarjeta si ya existia.
+   */
+  async solicitarTomaDesdeWeb(a: AccionResuelta, autor: Miembro, claveIdem: string): Promise<ResultadoNegocio> {
+    const r = await this.d.negocio.ejecutar(a, { autor, claveIdem, origen: { updateId: 0, chatId: 0, messageId: 0 }, ahora: this.d.reloj(), confirmado: false });
+    if (r.tipo === 'toma_pendiente') await this.publicarTomaPendiente(r, await this.d.almacen.chats(), autor);
+    return r;
+  }
+
+  private async publicarTomaPendiente(r: Extract<ResultadoNegocio, { tipo: 'toma_pendiente' }>, chats: ChatsRegistrados, autor: Miembro): Promise<void> {
+    const exclusivo = `toma:${r.folio}`;
+    const caduca = this.mas(this.cfg.caducaTomaHoras * 3_600_000);
+    const aut = await this.boton1('Autorizar', 'autorizar_toma', ['socio'], chats.grupoSocios, caduca, exclusivo, { folio: r.folio });
+    const rec = await this.boton1('Rechazar', 'rechazar_toma', ['socio'], chats.grupoSocios, caduca, exclusivo, { folio: r.folio });
+    await this.com.aGrupo(chats, P.tarjetaToma(r.folio, r.titulo, r.lineas, r.resumen, autor), { botones: [[aut, rec]] });
+    await this.com.aOmar(chats, P.omarRecibido(r.folio, r.lineas));
   }
 
   /** Cron: las tomas sin decision pasan a caducadas, se libera su reserva y se avisa al grupo y a Omar. */
@@ -481,15 +502,9 @@ export class AgenteTelegram {
         await this.com.aGrupo(chats, P.preguntaNegocio(r.texto, r.cifras), { botones: [[si, no]] });
         return;
       }
-      case 'toma_pendiente': {
-        const exclusivo = `toma:${r.folio}`;
-        const caduca = this.mas(this.cfg.caducaTomaHoras * 3_600_000);
-        const aut = await this.boton1('Autorizar', 'autorizar_toma', ['socio'], chats.grupoSocios, caduca, exclusivo, { folio: r.folio });
-        const rec = await this.boton1('Rechazar', 'rechazar_toma', ['socio'], chats.grupoSocios, caduca, exclusivo, { folio: r.folio });
-        await this.com.aGrupo(chats, P.tarjetaToma(r.folio, r.titulo, r.lineas, r.resumen, estado.autor), { botones: [[aut, rec]] });
-        await this.com.aOmar(chats, P.omarRecibido(r.folio, r.lineas));
+      case 'toma_pendiente':
+        await this.publicarTomaPendiente(r, chats, estado.autor);
         return;
-      }
       case 'rechazado':
         await this.responder(estado.autor, chats, P.rechazo(r.texto));
         return;

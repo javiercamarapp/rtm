@@ -43,3 +43,18 @@ export const CAPACIDADES: Record<Accion, readonly Rol[]> = {
 export function puede(rol: Rol | null | undefined, accion: Accion): boolean {
   return !!rol && CAPACIDADES[accion].includes(rol);
 }
+
+// Acciones propias de la vista de Omar. Solo el rol `omar` (y solo si su cuenta esta activa) las tiene; un socio no las usa desde aqui.
+export const ACCIONES_OMAR = ['omar_ver_bodega', 'omar_solicitar_piezas', 'omar_ver_cuenta', 'omar_ver_paquetes'] as const;
+export type AccionOmar = (typeof ACCIONES_OMAR)[number];
+export const CAPACIDADES_OMAR: Record<AccionOmar, readonly Rol[]> = {
+  omar_ver_bodega: ['omar'],
+  omar_solicitar_piezas: ['omar'],
+  omar_ver_cuenta: ['omar'],
+  omar_ver_paquetes: ['omar'],
+};
+
+/** `activo` es el interruptor de la cuenta (seguridad.usuario.activo): desactivada, Omar no puede nada. */
+export function puedeOmar(rol: Rol | null | undefined, activo: boolean | null | undefined, accion: AccionOmar): boolean {
+  return activo === true && !!rol && CAPACIDADES_OMAR[accion].includes(rol);
+}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { exigirSocio } from '@/composicion/acceso';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
@@ -13,7 +14,9 @@ import { AccionesSocios } from './formularios';
 export const metadata: Metadata = { title: 'Cuenta de socios' };
 
 export default async function Pagina() {
+  const { perfil } = await exigirSocio();
   const c = await (await operacionDeSocio()).cuentaSocios();
+  const mio = perfil.socio_nombre === 'Angelo' || perfil.socio_nombre === 'Javier' ? perfil.socio_nombre : null;
   const d = c.javier_debe_a_angelo_cent;
   const parejo = d === 0n;
   const quien = d > 0n ? 'Javier debe a Angelo' : 'Angelo debe a Javier';
@@ -35,7 +38,14 @@ export default async function Pagina() {
         <p className="rtm-nota">Diferencia por la compra (+ Javier debe a Angelo, − Angelo debe a Javier)</p>
         <p className="rtm-hero-cifra" data-testid="diferencia-socios"><CifraComprobada texto={formatearMoneda(d, { conSigno: true })} cifra="socios:diferencia" comprobacion={c.cuadra ? 'cuadra' : 'no_cuadra'} /></p>
         <div className="rtm-divergente" role="img" aria-label={parejo ? 'Cuenta pareja, cero al centro' : `${quien}: ${formatearMoneda(abs)}`}>
-          {!parejo && <i data-lado={d > 0n ? 'der' : 'izq'} data-ancho={ancho} />}
+          {!parejo && (
+            <svg className="rtm-divergente-svg" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <pattern id="rtm-rayas" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" className="rtm-rayas-fondo" /><rect width="2" height="4" className="rtm-rayas-trazo" /></pattern>
+              </defs>
+              <rect x={d > 0n ? 50 : 50 - ancho} y="0" width={ancho} height="10" className={d > 0n ? 'rtm-divergente-der' : 'rtm-divergente-izq'} />
+            </svg>
+          )}
         </div>
         <div className="rtm-divergente-pie"><span>Angelo debe a Javier</span><span>0</span><span>Javier debe a Angelo</span></div>
         <p><EstadoTexto tono={c.cuadra ? 'ok' : 'atencion'}>{c.cuadra ? 'Cuadra por las dos vías' : 'No cuadra: parte del costo no lo pusieron los socios'}</EstadoTexto></p>
@@ -76,7 +86,7 @@ export default async function Pagina() {
             { id: 'f', titulo: 'Fondos de la sociedad en su poder', numerica: true, celda: (s) => <><CifraComprobada texto={formatearMoneda(s.fondos_cent)} cifra={`socio:fondos:${s.socio}`} comprobacion="cuadra" />{s.alerta_fondos && <span className="rtm-celda-sub"><EstadoTexto tono="atencion">Lleva {s.dias_fondos} días sin entregar</EstadoTexto></span>}</> },
           ]}
         />
-        <div className="rtm-acciones-fila"><Link className="rtm-boton" href="/socios/cascada" data-testid="ir-cascada">Cascada de reparto</Link></div>
+        <div className="rtm-acciones-fila">{mio && <Link className="rtm-boton" href={`/socios/${mio}`} data-testid="ir-mi-desglose">Mi desglose ({mio})</Link>}<Link className="rtm-boton" href="/socios/cascada" data-testid="ir-cascada">Cascada de reparto</Link></div>
       </section>
 
       <section className="rtm-seccion rtm-entra rtm-i-4" aria-label="Libro de movimientos entre socios">
