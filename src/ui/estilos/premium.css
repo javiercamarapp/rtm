@@ -386,7 +386,9 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 /* Las etiquetas de la tarjeta no se parten a mitad de palabra y las pastillas de estado envuelven en vez de cortarse en el borde */
 @media (max-width: 767px) {
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda::before { overflow-wrap: normal; word-break: normal; hyphens: manual; }
-  .rtm-dt-caja[data-tarjeta-movil] .rtm-chip-estado { max-width: 100%; white-space: normal; height: auto; min-height: 22px; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-chip-estado { max-width: 100%; white-space: nowrap; height: auto; min-height: 22px; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal'] .rtm-chip-estado { margin-left: auto; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-nowrap { white-space: nowrap; }
 }
 @media (max-width: 767px) {
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:first-child { border-right: 0; }
