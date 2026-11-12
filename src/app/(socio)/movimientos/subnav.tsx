@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const PAGINAS = [
   { href: '/movimientos', etiqueta: 'Bandeja', id: 'bandeja' },
+  { href: '/movimientos/libro', etiqueta: 'Libro', id: 'libro' },
   { href: '/movimientos/importar', etiqueta: 'Pegar o subir', id: 'importar' },
   { href: '/movimientos/resumen', etiqueta: 'Agrupar y utilidad', id: 'resumen' },
 ] as const;

@@ -1,7 +1,7 @@
 // Ayudas de las paginas de datos enterprise (A2). Solo formato y enlaces: ninguna cifra se calcula aqui, la base ya las entrega.
 import '@/ui/estilos/paginas-a2.css';
 import { fechaNeg, sumarDias } from '@/dominio/calendario';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearDecimal, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 
 export const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -39,14 +39,14 @@ export function enlace(base: string, sp: Params, cambios: Record<string, string 
 
 export const m = (c: bigint | null | undefined) => (c === null || c === undefined ? null : formatearMoneda(c));
 export const pz = (n: number | null | undefined) => (n === null || n === undefined ? null : formatearPiezas(n));
-export const dec = (n: number | null | undefined, d = 1) => (n === null || n === undefined ? null : n.toLocaleString('es-MX', { minimumFractionDigits: d, maximumFractionDigits: d }));
+export const dec = (n: number | null | undefined, d = 1) => (n === null || n === undefined ? null : formatearDecimal(n, d));
 /** Puntos base a texto con un decimal: 1234 -> "12.3 %". */
-export const bpTexto = (bp: number | null | undefined) => (bp === null || bp === undefined ? null : `${(bp / 100).toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
+export const bpTexto = (bp: number | null | undefined) => (bp === null || bp === undefined ? null : `${formatearDecimal(bp / 100, 1)} %`);
 export const partePct = (parte: bigint | number, total: bigint | number): number | null => {
   const t = Number(total);
   return t > 0 ? Math.round((Number(parte) / t) * 1000) / 10 : null;
 };
-export const pctTexto = (p: number | null) => (p === null ? null : `${p.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
+export const pctTexto = (p: number | null) => (p === null ? null : `${formatearDecimal(p, 1)} %`);
 export const fecha = (f: string | null | undefined) => (f ? etiquetaFecha(f) : null);
 
 export const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
