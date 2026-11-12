@@ -99,6 +99,7 @@ select is((select count(*)::int from operacion.movimiento_inventario where event
 select is((select count(*)::int from operacion.nota where pedido_id = pg_temp.res('dvp1', 'pedido_id')), 1, 'sigue habiendo una sola nota: la devolucion es un documento aparte');
 select ok((select texto_whatsapp from operacion.devolucion_cliente where folio = (select resultado->>'folio' from seguridad.operacion where clave = 'dvd1')) like 'NOTA DE CREDITO DV-%', 'la nota de credito lleva su texto');
 select throws_ok($$select operacion.anular_pedido('dvx1', pg_temp.res('dvp1', 'pedido_id'), 'prueba')$$, 'P0428', null, 'un pedido con devoluciones vigentes no se anula: primero la devolucion');
+select ok(not (select snapshot_cliente::text ~* 'costo|utilidad|margen' from operacion.devolucion_cliente where folio = (select resultado->>'folio' from seguridad.operacion where clave = 'dvd1')), 'la nota de credito del cliente no lleva costos ni utilidad');
 select throws_ok($$update operacion.devolucion_cliente set monto_cent = 1$$, '42501', null, 'la devolucion no se edita');
 select pg_temp.flush();
 select is(pg_temp.debe('dvd1', '4220'), 180000::bigint, 'asiento: devoluciones sobre ventas 1,800.00');
