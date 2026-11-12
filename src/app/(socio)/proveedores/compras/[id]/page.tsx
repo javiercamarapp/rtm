@@ -54,7 +54,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
         celdas={[
           { id: 'mer', etiqueta: 'Mercancía', valor: m(c.mercancia_cent), categoria: 1, nota: `${formatearPiezas(piezasPag)} piezas pagadas` },
           { id: 'gs', etiqueta: 'Guía y seguro', valor: m(c.guia_cent + c.seguro_cent), categoria: 6, nota: `Guía ${m(c.guia_cent)} · seguro ${m(c.seguro_cent)}` },
-          { id: 'tot', etiqueta: 'Total de la orden', valor: m(c.total_cent), categoria: 2, nota: costoPuesto === null ? 'Costo puesto: sin dato hasta recibir' : `Costo puesto ${m(costoPuesto)}` },
+          { id: 'tot', etiqueta: 'Total de la orden', valor: m(c.total_cent), categoria: 2, nota: costoPuesto === null ? 'Costo puesto: sin dato hasta recibir' : `${enRecepcion ? 'Ya entró al inventario' : 'Costo puesto'} ${m(costoPuesto)}` },
           { id: 'rec', etiqueta: 'Piezas recibidas', valor: piezasRec === null ? null : formatearPiezas(piezasRec), categoria: 4, nota: `Pagadas ${formatearPiezas(piezasPag)} · facturadas ${formatearPiezas(piezasFac)}` },
           { id: 'sal', etiqueta: `Cuenta con ${c.proveedor.nombre} (${palabra})`, valor: <CifraComprobada texto={m(c.saldo_proveedor_cent)} cifra={`proveedor:saldo:${c.proveedor.id}`} comprobacion="cuadra" />, categoria: 7 },
         ]}

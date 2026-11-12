@@ -1,13 +1,11 @@
 // Devoluciones y recepcion parcial de punta a punta (Chromium): llegada parcial de una orden, cierre con faltante, devolucion de un cliente con nota de credito (PDF de huella
-// estable), devolucion a un proveedor y la identidad contable al final. Datos ILUSTRATIVOS de ayudas.ts. Capturas en docs/capturas/devoluciones (solo en laptop, claro y oscuro).
-import { mkdirSync } from 'node:fs';
+// estable), devolucion a un proveedor y la identidad contable al final. Datos ILUSTRATIVOS de ayudas.ts.  Las capturas las toma test/capturas/devoluciones.spec.ts.
 import { expect, test, type Page } from '@playwright/test';
 import { altaUsuario, conDb, consultar, correoUnico, entrarComo, ipFalsa, sembrarCuentasE2E, type DatosF3a } from './ayudas';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
 
-const CAPTURAS = 'docs/capturas/devoluciones';
 let d: DatosF3a;
 let compraA = 0;
 let compraB = 0;
@@ -29,7 +27,6 @@ test.beforeAll(async () => {
   d = await sembrarCuentasE2E();
   compraA = await compra(d.sufijo, 'A', [{ modelo: d.modeloA, sabor: 'Fresa', pagadas: 40 }, { modelo: d.modeloA, sabor: 'Mango', pagadas: 20 }]);
   compraB = await compra(d.sufijo, 'B', [{ modelo: d.modeloA, sabor: 'Fresa', pagadas: 30 }]);
-  mkdirSync(CAPTURAS, { recursive: true });
 });
 
 async function sesion(page: Page, ruta: string) {
@@ -38,17 +35,12 @@ async function sesion(page: Page, ruta: string) {
   await entrarComo(page, correo, ruta);
 }
 
-async function captura(page: Page, nombre: string, info: { project: { name: string } }) {
-  if (info.project.name !== 'laptop-1440') return;
-  await page.screenshot({ path: `${CAPTURAS}/${nombre}.png`, fullPage: true });
-}
-
 async function existencia(sabor: string): Promise<number> {
   const r = await consultar<{ n: number }>("select coalesce(u.piezas, 0)::int as n from catalogo.sku k join catalogo.sabor s on s.id = k.sabor_id join catalogo.modelo m on m.id = k.modelo_id left join operacion.existencia_sku_ubicacion u on u.sku_id = k.id and u.ubicacion = 'bodega_omar' where m.nombre_canonico = $1 and s.nombre_canonico = $2", [d.modeloA, sabor]);
   return r[0]!.n;
 }
 
-test('recepcion parcial: llegan 25 de 40, luego lo que falta y la orden se cierra sola', async ({ page }, info) => {
+test('recepcion parcial: llegan 25 de 40, luego lo que falta y la orden se cierra sola', async ({ page }) => {
   const nativos: string[] = [];
   page.on('dialog', (x) => { nativos.push(x.message()); void x.dismiss(); });
   await sesion(page, `/proveedores/compras/${compraA}`);
@@ -59,7 +51,6 @@ test('recepcion parcial: llegan 25 de 40, luego lo que falta y la orden se cierr
   await expect(page.getByTestId('estado-oc')).toContainText('Recibida en parte');
   await expect(page.getByText('Llegadas de la orden')).toBeVisible();
   expect(await existencia('Fresa')).toBe(f0 + 25);
-  await captura(page, 'compra-recibida-en-parte', info);
 
   await page.getByLabel(/Piezas que llegaron de .* 1$/).fill('15');
   await page.getByLabel(/Piezas que llegaron de .* 2$/).fill('20');
@@ -73,7 +64,7 @@ test('recepcion parcial: llegan 25 de 40, luego lo que falta y la orden se cierr
   expect(nativos).toEqual([]);
 });
 
-test('recepcion parcial: se cierra con faltante, exige motivo y deja la diferencia asignable', async ({ page }, info) => {
+test('recepcion parcial: se cierra con faltante, exige motivo y deja la diferencia asignable', async ({ page }) => {
   await sesion(page, `/proveedores/compras/${compraB}`);
   await page.getByLabel(/Piezas que llegaron de .* 1$/).fill('10');
   await page.getByTestId('registrar-llegada').click();
@@ -86,10 +77,9 @@ test('recepcion parcial: se cierra con faltante, exige motivo y deja la diferenc
   await expect(page.getByTestId('estado-oc')).toContainText('Recibida');
   await expect(page.getByText('Diferencias de recepción')).toBeVisible();
   await expect(page.getByText('Faltante', { exact: true })).toBeVisible();
-  await captura(page, 'compra-cerrada-con-faltante', info);
 });
 
-test('devolucion de un cliente: tope de piezas, nota de credito con PDF estable, saldo del pedido y anulacion', async ({ page }, info) => {
+test('devolucion de un cliente: tope de piezas, nota de credito con PDF estable, saldo del pedido y anulacion', async ({ page }) => {
   await sesion(page, `/pedidos/${d.pedidoBodegaId}`);
   await expect(page.getByTestId('seccion-devoluciones')).toBeVisible();
   await page.getByTestId('devolver-mercancia').click();
@@ -105,7 +95,6 @@ test('devolucion de un cliente: tope de piezas, nota de credito con PDF estable,
   await expect(seccion).toContainText('$1,500.00');
   await expect(page.getByText('Devuelto (crédito)')).toBeVisible();
   await expect(page.getByText('$3,000.00').first()).toBeVisible(); // 30 pz a 150.00 = 4,500.00 menos 1,500.00
-  await captura(page, 'pedido-con-devolucion', info);
 
   const href = await seccion.getByRole('link', { name: /DV-/ }).getAttribute('href');
   const a = await page.context().request.get(href!);
@@ -134,7 +123,7 @@ test('devolucion de un cliente: tope de piezas, nota de credito con PDF estable,
   await expect(seccion).toContainText('$600.00', { timeout: 30_000 });
 });
 
-test('devolucion a un proveedor: sale del inventario, sube la cuenta del proveedor y se puede anular', async ({ page }, info) => {
+test('devolucion a un proveedor: sale del inventario, sube la cuenta del proveedor y se puede anular', async ({ page }) => {
   await sesion(page, '/devoluciones');
   await expect(page.getByRole('heading', { name: 'Devoluciones', level: 1 })).toBeVisible();
   await expect(page.getByText('Devoluciones de clientes')).toBeVisible();
@@ -153,7 +142,6 @@ test('devolucion a un proveedor: sale del inventario, sube la cuenta del proveed
   await page.reload();
   const fila = page.getByRole('row', { name: new RegExp(nueva.folio) });
   await expect(fila).toBeVisible();
-  await captura(page, 'pagina-devoluciones', info);
 
   const href = await fila.getByRole('link', { name: nueva.folio }).getAttribute('href');
   const pdf = await page.context().request.get(href!);

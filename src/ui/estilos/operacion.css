@@ -6,6 +6,7 @@
 
 .rtm-form { display: flex; flex-direction: column; gap: var(--rtm-e-5); max-width: 880px; }
 .rtm-form-fila { display: flex; gap: var(--rtm-e-3); flex-wrap: wrap; align-items: flex-end; }
+.rtm-lista-form { display: grid; gap: var(--rtm-e-3); max-height: 46vh; overflow-y: auto; padding: var(--rtm-e-1) 0; }
 .rtm-etiqueta-campo { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--rtm-ink-3); min-width: 0; }
 .rtm-etiqueta-campo > .rtm-campo, .rtm-etiqueta-campo > select { color: var(--rtm-ink); font-size: var(--rtm-cuerpo); }
 .rtm-campo-ancho { min-width: min(220px, 100%); flex-grow: 1; }
