@@ -3,6 +3,7 @@
 import { LISTA_COMANDOS } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN } from '@/dominio/agente/deshacer';
 import { RegistroCifras } from '@/dominio/agente/cifras';
+import type { Intencion } from '@/dominio/agente/intenciones';
 import type { CifraServidor, Miembro, Persona } from '@/dominio/agente/tipos';
 import type { RespuestaConsulta, ResultadoEjecutado } from './puertos';
 
@@ -21,9 +22,10 @@ function listar(r: RegistroCifras, cifras: readonly CifraServidor[]): string[] {
   return cifras.map((c) => `- ${r.servidor(c.etiqueta)}: ${r.cifra(c)}`);
 }
 
-export function ecoEjecutado(res: ResultadoEjecutado, autor: Miembro): MensajeListo {
+export function ecoEjecutado(res: ResultadoEjecutado, autor: Miembro, confirmadoPor: Persona | null = null): MensajeListo {
   const r = new RegistroCifras();
-  const partes: string[] = [`Registrado ${r.folio(res.folio)} por ${nombrePersona(autor.persona)}`, r.servidor(res.titulo), ...listar(r, res.lineas)];
+  const quien = confirmadoPor !== null && confirmadoPor !== autor.persona ? `${nombrePersona(autor.persona)}, confirmado por ${nombrePersona(confirmadoPor)}` : nombrePersona(autor.persona);
+  const partes: string[] = [`Registrado ${r.folio(res.folio)} por ${quien}`, r.servidor(res.titulo), ...listar(r, res.lineas)];
   if (res.comprobacion.length > 0) partes.push('Comprobacion:', ...listar(r, res.comprobacion));
   if (res.saldos.length > 0) partes.push('Saldo resultante:', ...listar(r, res.saldos));
   for (const a of res.advertencias) partes.push(`Aviso: ${r.servidor(a)}`);
@@ -150,4 +152,90 @@ export function cifraSinProcedencia(cita: string, campos: readonly string[]): Me
 export function tomaCaducadaGrupo(folio: string): MensajeListo {
   const r = new RegistroCifras();
   return { texto: `La toma ${r.folio(folio)} caduco sin autorizacion y se libero la reserva.`, registro: r };
+}
+
+/** Pregunta por un dato que falta. Solo texto del servidor: sin cifras ni nombres del modelo. */
+export function faltaDato(dato: string): MensajeListo {
+  return { texto: `Falta un dato antes de registrar: ${dato}. No registre nada; mandalo de nuevo con ese dato.`, registro: new RegistroCifras() };
+}
+
+const TITULO_RESUMEN: Readonly<Partial<Record<Intencion['tipo'], string>>> = {
+  pedido: 'Pedido de cliente',
+  pago: 'Cobro a cliente',
+  pago_proveedor: 'Pago a proveedor',
+  gasto: 'Gasto',
+  aportacion: 'Aportacion de un socio',
+  reembolso_socio: 'Reembolso a un socio',
+  retiro_utilidad: 'Retiro de utilidad',
+  devolucion: 'Devolucion de un cliente',
+  paquete_perdido: 'Paquete perdido o danado',
+  compra: 'Compra a proveedor',
+  orden_compra: 'Orden de compra',
+};
+
+export interface DatosResumen {
+  autor: Miembro;
+  cliente: string | null;
+  proveedor: string | null;
+  /** Nombre de catalogo de cada linea, en el orden de la intencion. */
+  lineas: readonly string[];
+  horas: number;
+}
+
+const NOMBRE_SOCIO: Readonly<Record<'angelo' | 'javier', string>> = { angelo: 'Angelo', javier: 'Javier' };
+const nombreProveedor = (p: string | null): string => (p === 'karen' ? 'Karen' : p === 'isaac' ? 'Isaac' : 'el proveedor');
+const nombreQuien = (q: 'angelo' | 'javier' | 'sociedad'): string => (q === 'sociedad' ? 'la sociedad' : NOMBRE_SOCIO[q]);
+
+/**
+ * Resumen previo a registrar un movimiento. NO calcula nada: cada importe y cada cantidad es la que el socio escribio (el codigo ya
+ * verifico que aparece en su mensaje) y el resto son nombres del catalogo. El total y los saldos los entrega el servidor DESPUES de registrar.
+ */
+export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo {
+  const r = new RegistroCifras();
+  const l: string[] = [`Resumen para confirmar. Todavia no se registro nada. Lo pidio ${nombrePersona(d.autor.persona)}.`, `Movimiento: ${TITULO_RESUMEN[i.tipo] ?? i.tipo}`];
+  const monto = (c: number) => `Monto: ${r.pesos(BigInt(c))}`;
+  const lineasDe = (ls: readonly { piezas: number }[]) => ls.map((x, n) => `- ${r.servidor(d.lineas[n] ?? 'modelo')}: ${r.piezas(x.piezas)} piezas`);
+  switch (i.tipo) {
+    case 'pago':
+      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, monto(i.monto_centavos), `Cuenta donde entro: ${r.citaUsuario(i.cuenta_destino_texto ?? '')}`);
+      if (i.pedido_folio !== null) l.push(`Pedido: ${r.citaUsuario(i.pedido_folio)}`);
+      break;
+    case 'pago_proveedor':
+      l.push(`Proveedor: ${nombreProveedor(d.proveedor)}`, monto(i.monto_centavos), `Lo pago: ${nombreQuien(i.pagado_por)}`);
+      if (d.cliente !== null) l.push(`Por cuenta del cliente: ${r.servidor(d.cliente)}`);
+      break;
+    case 'gasto':
+      l.push(`Concepto: ${i.gasto}`, monto(i.monto_centavos), `Lo pago: ${nombreQuien(i.pagado_por)} (queda como reembolso pendiente a ese socio)`);
+      if (i.descripcion !== null) l.push(`Nota: ${r.citaUsuario(i.descripcion)}`);
+      break;
+    case 'aportacion':
+      l.push(`Socio: ${NOMBRE_SOCIO[i.socio]}`, monto(i.monto_centavos), i.intencion === 'capital' ? 'Tipo: capital que declaro el socio (inversion)' : 'Tipo: reembolso, cuenta por pagar al socio (no es capital porque no se declaro como capital)');
+      if (i.motivo !== null) l.push(`Motivo: ${r.citaUsuario(i.motivo)}`);
+      break;
+    case 'reembolso_socio':
+      l.push(`Socio que recibe: ${NOMBRE_SOCIO[i.socio]}`, monto(i.monto_centavos), `Via: ${i.via ?? ''}`);
+      break;
+    case 'retiro_utilidad':
+      l.push(`Socio que retira: ${NOMBRE_SOCIO[i.socio]}`, monto(i.monto_centavos), `Via: ${i.via ?? ''}`, 'La base rechaza el retiro si excede la utilidad ya asignada.');
+      break;
+    case 'devolucion':
+      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, `Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, ...lineasDe(i.lineas), `Destino de las piezas: ${i.destino ?? 'el que defina el servidor'}`);
+      if (i.motivo !== null) l.push(`Motivo: ${r.citaUsuario(i.motivo)}`);
+      break;
+    case 'paquete_perdido':
+      l.push(`Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, `Incidente: ${i.incidente === 'perdido' ? 'perdido' : 'danado'}`);
+      if (i.detalle !== null) l.push(`Detalle: ${r.citaUsuario(i.detalle)}`);
+      break;
+    case 'compra':
+    case 'orden_compra':
+      l.push(`Proveedor: ${nombreProveedor(d.proveedor)}`, ...lineasDe(i.lineas));
+      break;
+    case 'pedido':
+      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, ...lineasDe(i.lineas));
+      break;
+    default:
+      break;
+  }
+  l.push(`Confirma con el boton o cancela. La tarjeta caduca en ${r.config(d.horas)} horas.`);
+  return { texto: l.join('\n'), registro: r };
 }

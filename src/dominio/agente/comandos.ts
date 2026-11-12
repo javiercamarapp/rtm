@@ -10,13 +10,21 @@ import {
   type QuienPaga,
   type SocioNombre,
   type TipoGasto,
+  type ViaPago,
 } from './intenciones';
 
 export const USO_COMANDOS: Readonly<Record<string, string>> = {
   pedido: '/pedido Cliente | modelo 28 | 24 modelo | envio 150',
   pago: '/pago Cliente | 7000',
   gasto: '/gasto guia 500 angelo',
-  aporte: '/aporte javier 1000',
+  aporte: '/aporte javier 1000 [capital|reembolso] [motivo]',
+  reembolso: '/reembolso javier 1000 [transferencia|efectivo]',
+  retiro: '/retiro javier 5000 [transferencia|efectivo]',
+  devolucion: '/devolucion Cliente | P-0001 | modelo 5 | inventario|merma | motivo',
+  paquete: '/paquete perdido|danado P-0001',
+  estado: '/estado angelo|javier',
+  utilidad: '/utilidad [hoy|semana|mes]',
+  cartera: '/cartera',
   compra: '/compra karen | modelo 100 | modelo 50',
   oc: '/oc karen | modelo 100 | saldo',
   pagoprov: '/pagoprov karen | 30500 | angelo',
@@ -32,7 +40,8 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
   ayuda: '/ayuda',
 };
 
-export const LISTA_COMANDOS = '/pedido, /pago, /gasto, /compra, /stock, /saldo, /deshacer, /resumen, /pendientes';
+export const LISTA_COMANDOS =
+  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes';
 
 export type ResultadoComando =
   | { ok: true; tipo: 'intencion'; intencion: Intencion }
@@ -83,6 +92,11 @@ function quienPaga(texto: string): QuienPaga | null {
   return null;
 }
 
+function viaDe(texto: string): ViaPago | null {
+  const n = normalizar(texto);
+  return n === 'transferencia' || n === 'efectivo' ? n : null;
+}
+
 function socio(texto: string): SocioNombre | null {
   const n = normalizar(texto);
   return n === 'angelo' || n === 'javier' ? n : null;
@@ -124,6 +138,17 @@ export function parsearComando(texto: string): ResultadoComando | null {
       const esProveedor = n === 'isaac' || n === 'karen' || n === 'vapemate';
       return consulta(esProveedor ? 'saldo_proveedor' : 'saldo', { sujeto_texto: resto });
     }
+    case 'estado': {
+      const s = socio(resto);
+      return s === null ? fallo('estado') : consulta('estado_cuenta_socio', { sujeto_texto: s });
+    }
+    case 'utilidad': {
+      const p = normalizar(resto);
+      if (p === '') return consulta('utilidad', { periodo: 'mes' });
+      return p === 'hoy' || p === 'semana' || p === 'mes' ? consulta('utilidad', { periodo: p }) : fallo('utilidad');
+    }
+    case 'cartera':
+      return consulta('cartera');
     case 'resumen': {
       const p = normalizar(resto);
       if (p === '') return consulta('resumen', { periodo: 'hoy' });
@@ -169,11 +194,54 @@ export function parsearComando(texto: string): ResultadoComando | null {
       return { ok: true, tipo: 'intencion', intencion: { tipo: 'gasto', gasto: tipo, monto_centavos: c, pagado_por: q, descripcion: null, fuente_cita: cita } };
     }
     case 'aporte': {
-      const [quien, importe, ...motivo] = resto.split(/\s+/);
+      const [quien, importe, ...resta] = resto.split(/\s+/);
       const s = quien === undefined ? null : socio(quien);
       const c = importe === undefined ? null : monto(importe);
       if (s === null || c === null) return fallo('aporte');
-      return { ok: true, tipo: 'intencion', intencion: { tipo: 'aportacion', socio: s, monto_centavos: c, motivo: motivo.length ? motivo.join(' ') : null, fuente_cita: cita } };
+      const declarada = resta.length > 0 ? normalizar(resta[0]!) : '';
+      const intencion = declarada === 'capital' || declarada === 'reembolso' ? declarada : null;
+      const motivo = intencion === null ? resta : resta.slice(1);
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'aportacion', socio: s, monto_centavos: c, motivo: motivo.length ? motivo.join(' ') : null, intencion, fuente_cita: cita } };
+    }
+    case 'reembolso':
+    case 'retiro': {
+      const [quien, importe, via] = resto.split(/\s+/);
+      const s = quien === undefined ? null : socio(quien);
+      const c = importe === undefined ? null : monto(importe);
+      const v = via === undefined ? null : viaDe(via);
+      if (s === null || c === null || (via !== undefined && v === null)) return fallo(nombre);
+      return {
+        ok: true,
+        tipo: 'intencion',
+        intencion: nombre === 'reembolso'
+          ? { tipo: 'reembolso_socio', socio: s, monto_centavos: c, via: v, fuente_cita: cita }
+          : { tipo: 'retiro_utilidad', socio: s, monto_centavos: c, via: v, fuente_cita: cita },
+      };
+    }
+    case 'devolucion': {
+      const [cliente, ...segmentos] = partes;
+      if (!cliente || segmentos.length === 0) return fallo('devolucion');
+      const lineas: ILineaCompraTexto[] = [];
+      let folio: string | null = null;
+      let destino: 'inventario' | 'merma' | null = null;
+      let motivo: string | null = null;
+      for (const seg of segmentos) {
+        const n = normalizar(seg);
+        if (/^[a-z]{1,3} ?-? ?\d{1,6}$/.test(n) && lineas.length === 0 && folio === null) { folio = seg.toUpperCase().replace(/\s+/g, ''); continue; }
+        if (n === 'inventario' || n === 'merma') { destino = n; continue; }
+        const l = parsearLinea(seg);
+        if (l) { lineas.push({ modelo_texto: l.modelo, sabor_texto: null, piezas: l.piezas }); continue; }
+        motivo = seg.slice(0, 100);
+      }
+      if (lineas.length === 0 || lineas.length > 30) return fallo('devolucion');
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'devolucion', cliente_texto: cliente, pedido_folio: folio, lineas, destino, motivo, fuente_cita: cita } };
+    }
+    case 'paquete': {
+      const [tipoTexto, folio] = resto.split(/\s+/);
+      const t = tipoTexto === undefined ? '' : normalizar(tipoTexto);
+      const incidente = t === 'perdido' ? 'perdido' : t === 'danado' ? 'danado' : null;
+      if (incidente === null || folio === undefined) return fallo('paquete');
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'paquete_perdido', pedido_folio: folio.toUpperCase(), cliente_texto: null, incidente, detalle: null, fuente_cita: cita } };
     }
     case 'compra':
     case 'oc': {

@@ -146,6 +146,7 @@ export type AccionBoton =
   | 'rechazar_toma'
   | 'aclarar'
   | 'confirmar_accion'
+  | 'confirmar_resumen'
   | 'cancelar'
   | 'otro';
 
@@ -265,7 +266,7 @@ export interface TomaCaducada {
 
 export interface NegocioAgente {
   ejecutar(a: AccionResuelta, ctx: ContextoEjecucion): Promise<ResultadoNegocio>;
-  consultar(c: IConsulta, r: Resoluciones, autor: Miembro): Promise<RespuestaConsulta>;
+  consultar(c: IConsulta, r: Resoluciones, autor: Miembro, ahora: Date): Promise<RespuestaConsulta>;
   /** Ultimo hecho aplicado por el autor, o el folio dado. */
   localizarParaDeshacer(autor: Miembro, folio: string | null): Promise<{ folio: string; ejecutadoEn: Date } | null>;
   dependenciasDe(folio: string): Promise<DependenciasDeFolio>;

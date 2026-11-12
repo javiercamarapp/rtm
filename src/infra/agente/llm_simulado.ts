@@ -134,6 +134,51 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
     if (monto !== null) return respuesta([{ tipo: 'pago_proveedor', proveedor_texto: m[2]!, monto_centavos: monto, pagado_por: autor, cliente_texto: null, fuente_cita: cita }]);
   }
 
+  const socioDe = (x: string): 'angelo' | 'javier' | null => (/angelo/.test(x) ? 'angelo' : /javier/.test(x) ? 'javier' : null);
+  const viaDe = (x: string): 'transferencia' | 'efectivo' | null => (/transferencia|spei/.test(x) ? 'transferencia' : /efectivo/.test(x) ? 'efectivo' : null);
+
+  // Reembolso a un socio: "le pague a Javier 1,000 de reembolso por transferencia" / "reembolso a Angelo 2000 en efectivo"
+  if (autor !== 'omar' && /reembolso/.test(s) && (m = new RegExp(`(angelo|javier)\\D*?${NUM}`, 'i').exec(s))) {
+    const monto = aCentavos(m[2]!);
+    if (monto !== null) return respuesta([{ tipo: 'reembolso_socio', socio: socioDe(m[1]!)!, monto_centavos: monto, via: viaDe(s), fuente_cita: cita }]);
+  }
+
+  // Retiro de utilidad: "retiro 5,000 de utilidad en efectivo" (el socio es quien escribe) / "retiro de utilidad de Angelo 5000"
+  if (autor !== 'omar' && /^(?:retiro|retire|saque|se retiro)\b/.test(s) && /utilidad/.test(s) && (m = new RegExp(NUM, 'i').exec(s.replace(/[a-z]+/g, ' ')))) {
+    const monto = aCentavos(m[1]!);
+    const quien = socioDe(s) ?? autor;
+    if (monto !== null) return respuesta([{ tipo: 'retiro_utilidad', socio: quien, monto_centavos: monto, via: viaDe(s), fuente_cita: cita }]);
+  }
+
+  // Devolucion de un cliente: "Cliente Norte devolvio 5 jupiter del pedido P-0001 a inventario"
+  if ((m = /^(.+?)\s+devolvio\s+(.+)$/.exec(s)) && autor !== 'omar') {
+    const folio = /\bp-?\d{1,6}\b/i.exec(m[2]!);
+    const destino = /merma/.test(m[2]!) ? 'merma' : /inventario/.test(m[2]!) ? 'inventario' : null;
+    const cuerpo = m[2]!.replace(/del pedido\s+p-?\d+/i, '').replace(/\b(a|en)\s+(inventario|merma)\b/i, '').replace(/\bmerma\b/i, '').trim();
+    const ls = lineasDe(cuerpo);
+    if (ls.length > 0) {
+      return respuesta([{ tipo: 'devolucion', cliente_texto: m[1]!.trim(), pedido_folio: folio ? folio[0].toUpperCase().replace(/^P(\d)/, 'P-$1') : null, lineas: ls.map((l) => ({ modelo_texto: l.modelo, sabor_texto: null, piezas: l.piezas })), destino, motivo: null, fuente_cita: cita }]);
+    }
+  }
+
+  // Paquete perdido o danado: "el paquete del pedido P-0003 se perdio" / "llego danado el paquete P-0003"
+  if (autor !== 'omar' && /paquete/.test(s) && /(perdio|extravio|danado)/.test(s)) {
+    const folio = /\bp-?\d{1,6}\b/i.exec(s);
+    return respuesta([{ tipo: 'paquete_perdido', pedido_folio: folio ? folio[0].toUpperCase().replace(/^P(\d)/, 'P-$1') : null, cliente_texto: null, incidente: /danado/.test(s) ? 'danado' : 'perdido', detalle: null, fuente_cita: cita }]);
+  }
+
+  // Consultas de los socios
+  if (/estado de cuenta/.test(n) && (m = /(angelo|javier)/.exec(s))) {
+    return respuesta([{ tipo: 'consulta', consulta: 'estado_cuenta_socio', modelo_texto: null, sabor_texto: null, sujeto_texto: m[1]!, folio: null, periodo: null }]);
+  }
+  if (/utilidad/.test(n) && /(mes|semana|hoy)/.test(n) && !/retir|puse/.test(n)) {
+    const periodo = /semana/.test(n) ? 'semana' : /hoy/.test(n) ? 'hoy' : 'mes';
+    return respuesta([{ tipo: 'consulta', consulta: 'utilidad', modelo_texto: null, sabor_texto: null, sujeto_texto: null, folio: null, periodo }]);
+  }
+  if (/(cuanto debe cada cliente|quien me debe|cartera|cuentas por cobrar)/.test(n)) {
+    return respuesta([{ tipo: 'consulta', consulta: 'cartera', modelo_texto: null, sabor_texto: null, sujeto_texto: null, folio: null, periodo: null }]);
+  }
+
   // Orden de compra: "pidele a Karen 100 nexa 50k y 50 waka icon"
   if ((m = /^(?:pidele|pide)\s+a\s+(karen|vapemate|isaac)\s+(.+)$/i.exec(s))) {
     const ls = lineasDe(m[2]!);
@@ -142,10 +187,11 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
     }
   }
 
-  // Aportacion: "puse 1,000 mas de capital"
+  // Aportacion: "puse 1,000 mas de capital" (capital solo si lo dice) / "puse 1,000 para cubrir gastos" (sin declarar: reembolso por omision)
   if ((m = new RegExp(`^(?:puse|aporte|meti)\\s+${NUM}`, 'i').exec(s)) && autor !== 'omar') {
     const monto = aCentavos(m[1]!);
-    if (monto !== null) return respuesta([{ tipo: 'aportacion', socio: autor, monto_centavos: monto, motivo: null, fuente_cita: cita }]);
+    const intencion = /\bcapital\b|invertir|inversion/.test(n) ? 'capital' : null;
+    if (monto !== null) return respuesta([{ tipo: 'aportacion', socio: autor, monto_centavos: monto, motivo: null, intencion, fuente_cita: cita }]);
   }
 
   // Gasto: "pague 500 de guia"
@@ -155,9 +201,10 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
   }
 
   // Pago de cliente: "pago Villa 7,000" / "Villa pago 7,000"
-  if ((m = new RegExp(`^pago\\s+(.+?)\\s+${NUM}$`, 'i').exec(s)) || (m = new RegExp(`^(.+?)\\s+pago\\s+${NUM}$`, 'i').exec(s))) {
+  const CUENTA = '(?:\\s+(?:a|en|con)\\s+(?:la cuenta de\\s+)?(angelo|javier|isaac|karen|efectivo))?';
+  if ((m = new RegExp(`^pago\\s+(.+?)\\s+${NUM}${CUENTA}$`, 'i').exec(s)) || (m = new RegExp(`^(.+?)\\s+pago\\s+${NUM}${CUENTA}$`, 'i').exec(s))) {
     const monto = aCentavos(m[2]!);
-    if (monto !== null) return respuesta([{ tipo: 'pago', cliente_texto: m[1]!.trim(), monto_centavos: monto, cuenta_destino_texto: null, pedido_folio: null, fuente_cita: cita }]);
+    if (monto !== null) return respuesta([{ tipo: 'pago', cliente_texto: m[1]!.trim(), monto_centavos: monto, cuenta_destino_texto: m[3] ?? null, pedido_folio: null, fuente_cita: cita }]);
   }
 
   // Pedido: "Cliente 28 jupiter 24 dm", "Cliente 28 waka 50" o "Cliente: jupiter 28, dm 24"

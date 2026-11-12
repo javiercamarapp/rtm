@@ -23,7 +23,7 @@ export type PreguntaAbierta =
 
 export type SalidaResolucion = { ok: true; resuelta: AccionResuelta } | { ok: false; pregunta: PreguntaAbierta };
 
-const KEYWORDS_SUJETO = new Set(['omar', 'isaac', 'karen', 'vapemate', 'socios', 'socio']);
+const KEYWORDS_SUJETO = new Set(['omar', 'isaac', 'karen', 'vapemate', 'socios', 'socio', 'angelo', 'javier']);
 
 type ResultadoCampo = { ok: true; id: string } | { ok: false; pregunta: PreguntaAbierta };
 
@@ -183,6 +183,22 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
       if (!ls.ok) return ls;
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, proveedorId: p.id, lineas: ls.lineas } } };
     }
+    case 'devolucion': {
+      const k = await cliente(intencion.cliente_texto, autor, catalogo, overrides);
+      if (!k.ok) return k;
+      if (k.id === ID_TOMA_OMAR_BODEGA) {
+        return { ok: false, pregunta: { tipo: 'no_encontrado', clave: 'cliente', campo: 'cliente', textoUsuario: intencion.cliente_texto, sugerencias: [] } };
+      }
+      const ls = await lineas(intencion.lineas, catalogo, overrides);
+      if (!ls.ok) return ls;
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, clienteId: k.id, lineas: ls.lineas } } };
+    }
+    case 'paquete_perdido': {
+      if (intencion.cliente_texto === null) return { ok: true, resuelta: { intencion, resoluciones: res } };
+      const k = await cliente(intencion.cliente_texto, autor, catalogo, overrides);
+      if (!k.ok) return k;
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, clienteId: k.id === ID_TOMA_OMAR_BODEGA ? null : k.id } } };
+    }
     case 'toma_omar': {
       const ls = await lineas(intencion.lineas, catalogo, overrides);
       if (!ls.ok) return ls;
@@ -192,6 +208,8 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
       return consulta(intencion, autor, catalogo, overrides);
     case 'gasto':
     case 'aportacion':
+    case 'reembolso_socio':
+    case 'retiro_utilidad':
     case 'deshacer':
     case 'aclarar':
     case 'ninguna':

@@ -6,7 +6,7 @@ import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type { FuenteMensaje, Persona } from '@/dominio/agente/tipos';
 
 /** Cambia con cualquier edicion del prompt o del esquema: forma parte de la clave de la corrida guardada. */
-export const VERSION_PROMPT = 'r1-2026-11-10.1';
+export const VERSION_PROMPT = 'r2-2026-11-13.1';
 
 export const MAX_TOKENS_SALIDA_R1 = 700;
 
@@ -26,6 +26,13 @@ export const SISTEMA_R1 = [
   ' 8. Un audio puede traer errores en cantidades y nombres: pon baja_certeza=true si dudas.',
   ' 9. Karen y Vapemate son el mismo proveedor. Nunca mezcles dos proveedores en una accion.',
   '10. Dinero siempre en centavos enteros (monto_centavos); piezas enteras.',
+  '11. Intenciones de los socios: pago (un cliente pago; cuenta_destino_texto = Angelo, Javier, Isaac, Karen o efectivo, null si no lo dicen), pago_proveedor, gasto',
+  '    (pagado_por obligatorio), aportacion (intencion="capital" SOLO si el socio dice capital o invertir; si no lo dice, null), reembolso_socio (el negocio le paga',
+  '    a un socio lo que le debe; via transferencia o efectivo, null si no lo dicen), retiro_utilidad, devolucion (cliente, folio del pedido y piezas devueltas),',
+  '    paquete_perdido (perdido o danado, folio del pedido) y consultas: estado_cuenta_socio (sujeto angelo o javier), utilidad (periodo hoy, semana o mes),',
+  '    cartera (cuanto debe cada cliente), inventario, saldo, saldo_proveedor.',
+  '12. Nunca sumes, restes ni deduzcas un monto: si el socio no dijo la cifra exacta, intencion "aclarar". "Lo que le debo" o "todo" no es una cifra.',
+  '13. Apertura, saldos historicos, fechas pasadas y reinversion de utilidades no se registran por aqui: intencion "aclarar" diciendo que se hace en el software.',
 ].join('\n');
 
 function puntuar(texto: string, e: EntradaCatalogo): number {

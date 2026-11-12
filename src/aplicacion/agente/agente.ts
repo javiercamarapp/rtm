@@ -10,12 +10,12 @@ import { cifrasDeMonto, cifrasDePiezas, cifrasSinProcedencia, valoresDeTexto, ty
 import { parsearComando } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN, evaluarDeshacer } from '@/dominio/agente/deshacer';
 import { debeProcesarConIa, detectarInyeccion, sanitizar } from '@/dominio/agente/entrada';
-import { esEscritura, type Intencion, type RespuestaExtractor } from '@/dominio/agente/intenciones';
+import { esEscritura, exigeConfirmacion, type Intencion, type RespuestaExtractor } from '@/dominio/agente/intenciones';
 import { cadenaParaRol, peorCasoTokens } from '@/dominio/agente/modelos';
 import { permisoParaIntencion } from '@/dominio/agente/permisos';
 import { ALERTA_PORCENTAJE, type AvisoPresupuesto } from '@/dominio/agente/presupuesto';
 import type { Candidato } from '@/dominio/agente/resolutor';
-import type { ChatsRegistrados, FuenteMensaje, Miembro } from '@/dominio/agente/tipos';
+import type { ChatsRegistrados, FuenteMensaje, Miembro, Persona } from '@/dominio/agente/tipos';
 import { fechaNeg } from '@/dominio/calendario';
 import { Comunicador, verificarMensajeOmar } from './comunicador';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
@@ -45,6 +45,11 @@ export interface ConfigAgente {
   caducaTomaHoras: number;
   ventanaDeshacerMin: number;
   maxOpciones: number;
+  /**
+   * Modo de los socios (produccion): todo movimiento de dinero se muestra en un resumen y NO se registra hasta que un socio pulsa Confirmar;
+   * si falta un dato (cuenta, quien pago, via, pedido) se pregunta en vez de suponerlo. En false conserva el comportamiento anterior (eco + Deshacer).
+   */
+  confirmarMovimientos: boolean;
 }
 
 export const CONFIG_POR_OMISION: ConfigAgente = {
@@ -53,6 +58,7 @@ export const CONFIG_POR_OMISION: ConfigAgente = {
   caducaTomaHoras: 72,
   ventanaDeshacerMin: VENTANA_DESHACER_MIN,
   maxOpciones: 4,
+  confirmarMovimientos: true,
 };
 
 export interface DependenciasAgente {
@@ -84,6 +90,9 @@ interface EstadoAccion {
   origen: { updateId: number; chatId: number; messageId: number };
   autor: Miembro;
   confirmado: boolean;
+  /** Un socio ya pulso Confirmar en el resumen del movimiento (distinto de `confirmado`, que contesta preguntas del negocio). */
+  vistoBueno: boolean;
+  confirmadoPor: Persona | null;
   cita: string;
 }
 
@@ -126,7 +135,12 @@ function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
     case 'pago_proveedor':
     case 'gasto':
     case 'aportacion':
+    case 'reembolso_socio':
+    case 'retiro_utilidad':
       salida.push(cifrasDeMonto('monto', a.monto_centavos));
+      break;
+    case 'devolucion':
+      a.lineas.forEach((l, i) => salida.push(cifrasDePiezas(`lineas.${i}.piezas`, l.piezas)));
       break;
     case 'compra':
     case 'orden_compra':
@@ -150,6 +164,25 @@ function cifrasDePrecios(a: Intencion, fuente: string): string[] {
     if (valores.size === 0 || [...valores].every((v) => !enFuente.has(v))) faltan.push(`lineas.${i}.precio`);
   });
   return faltan;
+}
+
+/** Dato que la base necesita y el mensaje no trajo. Se pregunta; jamas se supone un valor por omision. */
+export function datoFaltante(a: Intencion): string | null {
+  switch (a.tipo) {
+    case 'pago':
+      return a.cuenta_destino_texto === null ? 'a que cuenta entro el pago (Angelo, Javier, Isaac, Karen o efectivo)' : null;
+    case 'gasto':
+      return a.pagado_por === 'sociedad' ? 'quien pago el gasto, Angelo o Javier' : null;
+    case 'reembolso_socio':
+    case 'retiro_utilidad':
+      return a.via === null ? 'si fue por transferencia o en efectivo' : null;
+    case 'devolucion':
+      return a.pedido_folio === null ? 'de que pedido es la devolucion (folio)' : null;
+    case 'paquete_perdido':
+      return a.pedido_folio === null ? 'de que pedido es el paquete (folio)' : null;
+    default:
+      return null;
+  }
 }
 
 export class AgenteTelegram {
@@ -440,6 +473,8 @@ export class AgenteTelegram {
         origen: { updateId: ctx.updateId, chatId: ctx.chatId, messageId: ctx.messageId },
         autor: ctx.autor,
         confirmado: false,
+        vistoBueno: false,
+        confirmadoPor: null,
         cita: ctx.texto.slice(0, 120),
       };
       await this.resolverYEjecutar(estado, ctx.chats);
@@ -462,7 +497,7 @@ export class AgenteTelegram {
         await this.responder(estado.autor, chats, P.ayuda());
         return;
       }
-      const resp = await this.d.negocio.consultar(intencion, a.resoluciones, estado.autor);
+      const resp = await this.d.negocio.consultar(intencion, a.resoluciones, estado.autor, this.d.reloj());
       await this.responder(estado.autor, chats, P.consulta(resp));
       return;
     }
@@ -474,6 +509,11 @@ export class AgenteTelegram {
         return;
       }
       await this.iniciarDeshacer(estado.autor, chats, objetivo.folio, objetivo.ejecutadoEn, estado.claveIdem);
+      return;
+    }
+
+    if (this.cfg.confirmarMovimientos && exigeConfirmacion(intencion.tipo) && !estado.vistoBueno) {
+      await this.pedirConfirmacion(estado, a, chats);
       return;
     }
 
@@ -493,7 +533,7 @@ export class AgenteTelegram {
           ejecutadoEn: r.ejecutadoEn.toISOString(),
           claveIdem: `${estado.claveIdem}:deshacer`,
         } satisfies PayloadDeshacer);
-        await this.com.aGrupo(chats, P.ecoEjecutado(r, estado.autor), { botones: [[boton]] });
+        await this.com.aGrupo(chats, P.ecoEjecutado(r, estado.autor, estado.confirmadoPor), { botones: [[boton]] });
         return;
       }
       case 'pregunta': {
@@ -509,6 +549,26 @@ export class AgenteTelegram {
         await this.responder(estado.autor, chats, P.rechazo(r.texto));
         return;
     }
+  }
+
+  // ------------------------------------------------------------------ resumen y confirmacion explicita
+
+  /** Muestra el resumen del movimiento y espera el Confirmar de un socio. Nada se registra antes. Si falta un dato, pregunta. */
+  private async pedirConfirmacion(estado: EstadoAccion, a: AccionResuelta, chats: ChatsRegistrados): Promise<void> {
+    const falta = datoFaltante(a.intencion);
+    if (falta !== null) {
+      await this.responder(estado.autor, chats, P.faltaDato(falta));
+      return;
+    }
+    const [clientes, modelos] = await Promise.all([this.d.catalogo.clientes(), this.d.catalogo.modelos()]);
+    const nombreDe = (lista: readonly { id: string; nombre: string }[], id: string | null): string | null => (id === null ? null : (lista.find((x) => x.id === id)?.nombre ?? null));
+    const lineas = a.resoluciones.lineas.map((l) => nombreDe(modelos, l.modeloId) ?? 'modelo');
+    const horas = this.cfg.caducaPreguntaHoras;
+    const caduca = this.mas(horas * 3_600_000);
+    const exclusivo = `res:${estado.claveIdem}`;
+    const si = await this.boton1('Confirmar', 'confirmar_resumen', ['socio'], chats.grupoSocios, caduca, exclusivo, { ...estado, vistoBueno: true } satisfies EstadoAccion);
+    const no = await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null);
+    await this.com.aGrupo(chats, P.resumenConfirmacion(a.intencion, { autor: estado.autor, cliente: nombreDe(clientes, a.resoluciones.clienteId), proveedor: a.resoluciones.proveedorId, lineas, horas }), { botones: [[si, no]] });
   }
 
   // ------------------------------------------------------------------ preguntas de aclaracion
@@ -610,6 +670,12 @@ export class AgenteTelegram {
         const p = payload as PayloadAclarar;
         await this.com.editar(chats, ctx.chatId, ctx.messageId, P.rechazo(`Elegido: ${p.opcionNombre}`));
         await this.resolverYEjecutar({ ...p.estado, overrides: { ...p.estado.overrides, [p.clave]: p.opcionId } }, chats);
+        return;
+      }
+      case 'confirmar_resumen': {
+        const e = payload as EstadoAccion;
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple(`Confirmado por ${P.nombrePersona(miembro.persona)}. Registrando.`));
+        await this.resolverYEjecutar({ ...e, vistoBueno: true, confirmadoPor: miembro.persona }, chats);
         return;
       }
       case 'confirmar_accion': {

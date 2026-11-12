@@ -59,6 +59,55 @@ export interface IAportacion {
   socio: SocioNombre;
   monto_centavos: number;
   motivo: string | null;
+  /**
+   * Adenda 32: es capital SOLO si el socio lo declara con sus palabras ("de capital", "para invertir"); cualquier otro deposito es reembolso.
+   * null = no lo dijo: el servidor lo registra como reembolso y el resumen de confirmacion lo dice con todas sus letras.
+   */
+  intencion: 'capital' | 'reembolso' | null;
+  fuente_cita: string;
+}
+
+export type ViaPago = 'transferencia' | 'efectivo';
+
+/** El negocio le paga a un socio lo que le debe por gastos o aportaciones reembolsables (operacion.registrar_pago_a_socio, tipo reembolso). */
+export interface IReembolsoSocio {
+  tipo: 'reembolso_socio';
+  socio: SocioNombre;
+  monto_centavos: number;
+  via: ViaPago | null;
+  fuente_cita: string;
+}
+
+/** Retiro de utilidad ya asignada (operacion.registrar_pago_a_socio, tipo retiro). La base rechaza lo que exceda lo que se le debe. */
+export interface IRetiroUtilidad {
+  tipo: 'retiro_utilidad';
+  socio: SocioNombre;
+  monto_centavos: number;
+  via: ViaPago | null;
+  fuente_cita: string;
+}
+
+/**
+ * CONTRATO (depende de lane/devolucion-parcial: operacion.registrar_devolucion_cliente). Mientras esa migracion no este en la base,
+ * el servidor responde "dependencia pendiente" y no registra nada.
+ */
+export interface IDevolucion {
+  tipo: 'devolucion';
+  cliente_texto: string;
+  pedido_folio: string | null;
+  lineas: ILineaCompraTexto[];
+  destino: 'inventario' | 'merma' | null;
+  motivo: string | null;
+  fuente_cita: string;
+}
+
+/** CONTRATO (depende de lane/paquete-perdido: operacion.reportar_paquete_salida). Igual que la devolucion: sin la migracion no se registra. */
+export interface IPaquetePerdido {
+  tipo: 'paquete_perdido';
+  pedido_folio: string | null;
+  cliente_texto: string | null;
+  incidente: 'perdido' | 'danado';
+  detalle: string | null;
   fuente_cita: string;
 }
 
@@ -103,6 +152,12 @@ export const TIPOS_CONSULTA = [
   'liquidacion_proveedor',
   'pendientes',
   'ayuda',
+  /** Estado de cuenta de un socio (sujeto: angelo o javier). */
+  'estado_cuenta_socio',
+  /** Utilidad operativa del periodo (hoy, semana o mes). */
+  'utilidad',
+  /** Cuanto debe cada cliente. */
+  'cartera',
 ] as const;
 export type TipoConsulta = (typeof TIPOS_CONSULTA)[number];
 
@@ -114,7 +169,7 @@ export interface IConsulta {
   /** omar | isaac | karen | socios | texto de cliente */
   sujeto_texto: string | null;
   folio: string | null;
-  periodo: 'hoy' | 'ayer' | 'semana' | null;
+  periodo: 'hoy' | 'ayer' | 'semana' | 'mes' | null;
 }
 
 export interface IDeshacer {
@@ -137,6 +192,10 @@ export type Intencion =
   | IPagoProveedor
   | IGasto
   | IAportacion
+  | IReembolsoSocio
+  | IRetiroUtilidad
+  | IDevolucion
+  | IPaquetePerdido
   | ICompra
   | IOrdenCompra
   | ITomaOmar
@@ -164,11 +223,20 @@ export const INTENCIONES_ESCRITURA: readonly TipoIntencion[] = [
   'pago_proveedor',
   'gasto',
   'aportacion',
+  'reembolso_socio',
+  'retiro_utilidad',
+  'devolucion',
+  'paquete_perdido',
   'compra',
   'orden_compra',
   'toma_omar',
   'deshacer',
 ];
+
+/** Escrituras que mueven dinero o cuentas: se muestran en un resumen y exigen confirmacion explicita ANTES de registrarse. La toma de Omar ya exige la autorizacion de un socio; deshacer tiene su propio flujo. */
+export function exigeConfirmacion(t: TipoIntencion): boolean {
+  return esEscritura(t) && t !== 'toma_omar' && t !== 'deshacer';
+}
 
 export function esEscritura(t: TipoIntencion): boolean {
   return INTENCIONES_ESCRITURA.includes(t);
