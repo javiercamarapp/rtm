@@ -114,14 +114,31 @@ export class NegocioAgenteDb implements NegocioAgente {
     const i = a.intencion;
     try {
       if (i.tipo === 'gasto') {
-        const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'gasto', JSON.stringify({ pagado_por: i.pagado_por, monto_cent: i.monto_centavos, categoria: CATEGORIA_GASTO[i.gasto] ?? 'otro', nota: i.descripcion, origen: i.fuente_cita })], ['text', 'text', 'jsonb'])) as { folio: string; eco?: Parameters<typeof eco>[0]; repetido?: boolean };
+        const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'gasto', JSON.stringify({ pagado_por: i.pagado_por, monto_cent: i.monto_centavos, categoria: CATEGORIA_GASTO[i.gasto] ?? 'otro', nota: i.descripcion, origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; eco?: Parameters<typeof eco>[0]; repetido?: boolean };
         const e = eco(j.eco);
         return { tipo: 'ejecutado', folio: j.folio, titulo: `Gasto registrado (${i.gasto})`, lineas: [{ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(i.monto_centavos) }], ...e, advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
       }
       if (i.tipo === 'aportacion') {
-        const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'aportacion', JSON.stringify({ socio: i.socio, monto_cent: i.monto_centavos, concepto: i.motivo ?? 'Aportación por Telegram' })], ['text', 'text', 'jsonb'])) as { eco?: Parameters<typeof eco>[0]; repetido?: boolean };
+        const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'aportacion', JSON.stringify({ socio: i.socio, monto_cent: i.monto_centavos, concepto: i.motivo ?? 'Aportación por Telegram', intencion: i.intencion, origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; eco?: Parameters<typeof eco>[0]; repetido?: boolean };
         const e = eco(j.eco);
-        return { tipo: 'ejecutado', folio: 'Aportación', titulo: `Aportación de ${i.socio === 'angelo' ? 'Angelo' : 'Javier'} registrada`, lineas: [{ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(i.monto_centavos) }], ...e, advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
+        return { tipo: 'ejecutado', folio: j.folio, titulo: i.intencion === 'capital' ? `Aportación de capital de ${i.socio === 'angelo' ? 'Angelo' : 'Javier'} registrada` : `Depósito de ${i.socio === 'angelo' ? 'Angelo' : 'Javier'} registrado como reembolso`, lineas: [{ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(i.monto_centavos) }], ...e, advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
+      }
+      if (i.tipo === 'reembolso_socio' || i.tipo === 'retiro_utilidad') {
+        const reembolso = i.tipo === 'reembolso_socio';
+        const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'pago_a_socio', JSON.stringify({ socio: i.socio, monto_cent: i.monto_centavos, tipo: reembolso ? 'reembolso' : 'retiro', via: i.via, origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; eco?: Parameters<typeof eco>[0]; repetido?: boolean };
+        const e = eco(j.eco);
+        return { tipo: 'ejecutado', folio: j.folio, titulo: `${reembolso ? 'Reembolso a' : 'Retiro de utilidad de'} ${i.socio === 'angelo' ? 'Angelo' : 'Javier'} registrado`, lineas: [{ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(i.monto_centavos) }], ...e, advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
+      }
+      if (i.tipo === 'pago') {
+        const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'pago_cliente', JSON.stringify({ cuenta: i.cuenta_destino_texto, monto_cent: i.monto_centavos, cliente_id: Number(a.resoluciones.clienteId), origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; repetido?: boolean };
+        return { tipo: 'ejecutado', folio: j.folio, titulo: 'Cobro de cliente registrado', lineas: [{ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(i.monto_centavos) }], comprobacion: [], saldos: [], advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
+      }
+      if (i.tipo === 'pago_proveedor') {
+        const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'pago_proveedor', JSON.stringify({ proveedor: a.resoluciones.proveedorId, monto_cent: i.monto_centavos, pagado_por: i.pagado_por, cliente_id: a.resoluciones.clienteId === null ? null : Number(a.resoluciones.clienteId), origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; repetido?: boolean };
+        return { tipo: 'ejecutado', folio: j.folio, titulo: 'Pago a proveedor registrado', lineas: [{ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(i.monto_centavos) }], comprobacion: [], saldos: [], advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
+      }
+      if (i.tipo === 'devolucion' || i.tipo === 'paquete_perdido') {
+        return { tipo: 'rechazado', codigo: 'dependencia_pendiente', texto: 'Eso todavía no lo registro desde Telegram: depende de la rama de devoluciones y paquetes. Hazlo en el software.' };
       }
       if (i.tipo === 'toma_omar') {
         const folios: string[] = [];
@@ -153,12 +170,15 @@ export class NegocioAgenteDb implements NegocioAgente {
     else if (c.consulta === 'saldo' && (c.sujeto_texto === 'socios' || !r.clienteId)) j = await q('socios', null, null);
     else if (c.consulta === 'saldo' && r.clienteId) j = await q('cuenta_cliente', Number(r.clienteId), null);
     else if (c.consulta === 'saldo_proveedor' && r.proveedorId) j = await q('proveedor', null, r.proveedorId);
+    else if (c.consulta === 'estado_cuenta_socio') j = await q('estado_socio', null, c.sujeto_texto);
+    else if (c.consulta === 'utilidad') j = await q('utilidad', null, c.periodo ?? 'mes');
+    else if (c.consulta === 'cartera') j = await q('cartera', null, null);
     if (!j) return { titulo: 'Eso todavía no lo consulto desde Telegram', lineas: [{ tipo: 'texto', etiqueta: 'Dónde verlo', texto: 'En el software, en la sección correspondiente.' }] };
     return { titulo: j.titulo, lineas: aCifras(j.lineas) };
   }
 
-  async localizarParaDeshacer(_autor: Miembro, folio: string | null) {
-    const j = (await F(this.sql, 'localizar', [folio], ['text'])) as { folio: string; ejecutado_en: string } | null;
+  async localizarParaDeshacer(autor: Miembro, folio: string | null) {
+    const j = (await F(this.sql, 'localizar', [folio, folio === null ? autor.persona : null], ['text', 'text'])) as { folio: string; ejecutado_en: string } | null;
     return j ? { folio: j.folio, ejecutadoEn: new Date(j.ejecutado_en) } : null;
   }
 
