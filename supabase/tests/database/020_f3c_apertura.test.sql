@@ -158,6 +158,27 @@ select is((select count(*)::int from apertura.partida where sesion_id = (select 
 select throws_ok($$ select api.apertura_descartar('f3c:d5', (select id from _sd), 'otra vez') $$, 'P0441', null, 'no se descarta dos veces');
 select is((select count(*)::int from contabilidad.asiento a where a.es_apertura and a.evento_id in (select evento_id from apertura.sesion where id = (select id from _sd))), 0, 'descartar no deja asientos');
 
+-- Apertura solo de inventario: 10 piezas a 90.00 = 900.00 contra el puente; no hay asiento manual y aun asi se revierte -------------------------------
+create temp table _si as select (api.apertura_crear('f3c:i1', negocio.hoy()) ->> 'sesion_id')::bigint as id;
+select api.apertura_agregar('f3c:i2', (select id from _si), 'inventario', format('{"sku_id": %s, "piezas": 10, "costo_unit_cent": 9000}', pg_temp.sku('F3C Nexa 50K', 'Uno'))::jsonb);
+select is(jsonb_array_length(apertura.lineas((select id from _si), false)), 0, 'solo inventario: el asiento manual no lleva lineas (el inventario va por el kardex)');
+select api.apertura_firmar('f3c:i3', (select id from _si));
+select pg_temp.como('Angelo');
+select is((api.apertura_firmar('f3c:i4', (select id from _si)) ->> 'publicada')::boolean, true, 'las dos firmas publican la apertura solo de inventario');
+select pg_temp.flush();
+select is(contabilidad.saldo('1310'), 90000::bigint, '1310 en 900.00');
+select is(contabilidad.saldo('3990'), 90000::bigint, '3990 en 900.00');
+select is((select count(*)::int from contabilidad.asiento a where a.evento_id = (select evento_id from apertura.sesion where id = (select id from _si))), 0, 'sin asiento manual de apertura');
+select is((api.apertura_reversar('f3c:i5', (select id from _si), 'prueba de reversa solo de inventario') ->> 'reversada')::boolean, true, 'una apertura solo de inventario se revierte');
+select pg_temp.flush();
+select is((select estado from apertura.sesion where id = (select id from _si)), 'reversada', 'queda reversada');
+select is(contabilidad.saldo('1310'), 0::bigint, '1310 vuelve a cero');
+select is(contabilidad.saldo('3990'), 0::bigint, '3990 vuelve a cero');
+select is((select coalesce(sum(valor_cent), 0)::bigint from operacion.existencia_modelo), 0::bigint, 'el kardex vuelve a cero');
+select is(pg_temp.bloq(), 0::bigint, 'sin bloqueantes tras revertir');
+select is(contabilidad.verificar_cadena(), null::bigint, 'cadena sana');
+select pg_temp.como('Javier');
+
 -- Segunda sesion: la diferencia pasa al capital 50/50 con justificacion --------------------------------------------------------------------------
 create temp table _s2 as select (api.apertura_crear('f3c:t1', negocio.hoy()) ->> 'sesion_id')::bigint as id;
 select api.apertura_agregar('f3c:t2', (select id from _s2), 'caja', '{"socio": "Angelo", "monto_cent": 100001}');

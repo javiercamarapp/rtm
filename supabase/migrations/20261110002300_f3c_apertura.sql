@@ -728,7 +728,13 @@ begin
   end if;
   select id into v_asiento from contabilidad.asiento where evento_id = s.evento_id;
   if v_asiento is null then perform contabilidad.asentar_evento(s.evento_id); select id into v_asiento from contabilidad.asiento where evento_id = s.evento_id; end if;
-  perform contabilidad.reversar_asiento(p_clave || ':asiento', v_asiento, p_motivo);
+  -- Una apertura solo de inventario no produce asiento manual (el inventario y su contrapartida 3990 salen del movimiento 'apertura', que se deshace arriba con
+  -- su contramovimiento): no hay asiento que reversar. Si el asiento manual traia lineas y no existe, es un error real y se detiene.
+  if v_asiento is not null then
+    perform contabilidad.reversar_asiento(p_clave || ':asiento', v_asiento, p_motivo);
+  elsif jsonb_array_length(coalesce((select e.payload->'lineas' from operacion.evento e where e.id = s.evento_id), '[]'::jsonb)) > 0 then
+    raise exception 'la apertura tiene líneas de asiento pero no se encontró su asiento' using errcode = 'P0441';
+  end if;
   update apertura.sesion set estado = 'reversada', motivo_reversa = p_motivo, reversada_at = clock_timestamp(), evento_reversa_id = v_ev_rev where id = p_sesion;
   v_res := jsonb_build_object('sesion_id', p_sesion, 'reversada', true);
   perform seguridad.terminar_operacion(p_clave, v_res);
