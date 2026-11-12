@@ -63,10 +63,20 @@ interface Props<T> {
   interactiva?: OpcionesInteractiva;
 }
 
+/** Claves de `totales.celdas` que no corresponden a ningun id de columna (el total caeria en otra columna o se perderia sin avisar). */
+export function clavesTotalesHuerfanas(columnas: readonly { id: string }[], celdas: Record<string, unknown>): string[] {
+  const ids = new Set(columnas.map((c) => c.id));
+  return Object.keys(celdas).filter((k) => !ids.has(k));
+}
+
 /** Tabla de datos con roles ARIA (nunca la etiqueta de tabla cruda): cifras a la derecha, estados de carga (esqueleto con la forma final), vacio y error con accion.
  *  v2 enterprise (todo opcional): densidad, encabezado y primera columna fijos, bloques de columnas, grupos colapsables, pie de totales, resaltado de cero y negativos,
  *  pestanas con contador, busqueda, paginacion y exportacion. */
 export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo', vacio, error, densidad = 'normal', plana, pegajosa, primeraFija, totales, agrupar, pestanas, interactiva }: Props<T>) {
+  if (totales && process.env.NODE_ENV !== 'production') {
+    const huerfanas = clavesTotalesHuerfanas(columnas, totales.celdas);
+    if (huerfanas.length) console.error(`DataTable "${etiqueta}": totales sin columna (${huerfanas.join(', ')})`);
+  }
   if (estado === 'error') {
     return (
       <div className="rtm-dt-aviso" role="alert">

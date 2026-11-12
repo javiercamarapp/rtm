@@ -130,7 +130,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
             densidad="densa" plana primeraFija
             clave={(a) => a.id}
             filas={actas}
-            totales={cerradas.length === 0 ? undefined : { etiqueta: `Total (${cerradas.length})`, celdas: { u: m(suma(cerradas.map((a) => a.utilidad_cent))), p: m(suma(cerradas.map((a) => a.parte_cent))), r: m(suma(cerradas.map((a) => a.retira_cent))), i: m(suma(cerradas.map((a) => a.reinvierte_cent))) } }}
+            totales={cerradas.length === 0 ? undefined : { etiqueta: `Total (${cerradas.length})`, celdas: { u: m(suma(cerradas.map((a) => a.utilidad_cent))), p2: m(suma(cerradas.map((a) => a.parte_cent))), r: m(suma(cerradas.map((a) => a.retira_cent))), i: m(suma(cerradas.map((a) => a.reinvierte_cent))) } }}
             vacio={{ titulo: 'Sin actas', texto: 'El primer corte mensual firmado por los dos aparece aquí con su PDF.' }}
             columnas={[
               { id: 'f', titulo: 'Acta', ancho: 'm', prioridadMovil: 'titulo' as const, celda: (a) => <Link href={`/socios/actas/${a.id}`} className="rtm-mono">{a.folio}</Link> },
