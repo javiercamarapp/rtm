@@ -70,9 +70,9 @@
   --rtm-inset: 10px;
   --rtm-cuerpo: 14px;
 
-  --rtm-fuente-ui: var(--font-figtree), 'Figtree', system-ui, sans-serif;
-  --rtm-fuente-serif: var(--font-garamond), 'EB Garamond', Georgia, serif;
-  --rtm-fuente-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, monospace;
+  /* Una sola familia: Geist. Mono solo para folios, claves y huellas. */
+  --rtm-fuente-ui: var(--font-geist), 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --rtm-fuente-mono: var(--font-geist-mono), 'Geist Mono', ui-monospace, monospace;
 
   color-scheme: light;
 }

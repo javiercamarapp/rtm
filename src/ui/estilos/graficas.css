@@ -127,7 +127,7 @@
 .rtm-g-insight-etiqueta { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rtm-ink-3); }
 .rtm-g-severidad { font-size: 12px; font-weight: 600; color: var(--rtm-ink-2); }
 .rtm-g-insight[data-severidad='Acción'] .rtm-g-severidad { color: var(--rtm-bad); }
-.rtm-g-insight-cifra { margin: 0; display: flex; align-items: baseline; gap: var(--rtm-e-2); flex-wrap: wrap; font-family: var(--rtm-fuente-serif); font-size: 44px; line-height: 48px; }
+.rtm-g-insight-cifra { margin: 0; display: flex; align-items: baseline; gap: var(--rtm-e-2); flex-wrap: wrap; font-family: var(--rtm-fuente-ui); font-weight: 300; letter-spacing: -0.03em; font-size: 44px; line-height: 48px; }
 .rtm-g-insight-unidad { font-family: var(--rtm-fuente-ui); font-size: 13px; color: var(--rtm-ink-3); }
 .rtm-g-insight-frase { margin: 0; color: var(--rtm-ink-2); }
 .rtm-g-insight-mini { min-height: 32px; }

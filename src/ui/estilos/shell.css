@@ -78,14 +78,14 @@
 
 /* ---- Anatomia de pagina ---- */
 .rtm-eyebrow {
-  margin: 0; font-family: var(--rtm-fuente-mono); font-size: 11px; letter-spacing: 0.12em;
+  margin: 0; font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--rtm-ink-3);
 }
 .rtm-titular {
-  margin: var(--rtm-e-2) 0 0; font-family: var(--rtm-fuente-serif); font-weight: 400;
-  font-size: 36px; line-height: 42px; letter-spacing: -0.01em; text-wrap: balance;
+  margin: var(--rtm-e-2) 0 0; font-family: var(--rtm-fuente-ui); font-weight: 300;
+  font-size: 32px; line-height: 38px; letter-spacing: -0.025em; text-wrap: balance;
 }
-.rtm-titular em { font-style: italic; }
+.rtm-titular em { font-style: normal; font-weight: 500; }
 .rtm-contexto { margin: var(--rtm-e-2) 0 0; color: var(--rtm-ink-2); max-width: 62ch; }
 .rtm-acciones { display: flex; gap: var(--rtm-e-2); margin-top: var(--rtm-e-5); flex-wrap: wrap; }
 
@@ -105,7 +105,7 @@
 .rtm-paso-n {
   flex: none; width: 24px; height: 24px; display: grid; place-items: center;
   border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora);
-  font-family: var(--rtm-fuente-mono); font-size: 11px; color: var(--rtm-ink-2);
+  font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--rtm-ink-2);
 }
 .rtm-paso p { margin: 0; color: var(--rtm-ink-2); }
 .rtm-paso strong { color: var(--rtm-ink); font-weight: 600; }
