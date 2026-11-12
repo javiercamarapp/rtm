@@ -259,7 +259,28 @@ test('9 todo cuadra: comprobaciones, Contabilidad, Cuentas por cobrar, Socios y 
   await cap(page, 'final-reporte-preparado');
   await page.goto('/contabilidad/comprobaciones');
   await expect(page.getByText('comprobación bloqueante falla')).toHaveCount(0);
-  const rojas = await consultar<{ n: string }>("select count(*)::text as n from contabilidad.comprobaciones() c where c.bloqueante and not c.ok").catch(() => [{ n: 'n/d' }]);
-  console.log('comprobaciones bloqueantes en rojo:', rojas[0]!.n);
+  // Sin .catch: si la consulta falla, la prueba falla. Ninguna comprobacion (C1..C22, CU1..CU3 ni CA1) puede estar en rojo en este recorrido.
+  const rojas = await consultar<{ codigo: string }>('select c.codigo from contabilidad.comprobaciones() c where not c.ok order by 1');
+  expect(rojas.map((r) => r.codigo)).toEqual([]);
+  const total = await consultar<{ n: string }>('select count(*)::text as n from contabilidad.comprobaciones()');
+  expect(total[0]!.n).toBe('26');
+
+  // Efectivo: las cajas de la apertura (8,000) mas la aportacion capturada (2,000) llegan a Socios y a la Cascada.
+  const ef = (await consultar<{ e: string; t: string; l: string }>(
+    "select operacion.saldo_efectivo()::text as e, (operacion.efectivo_sociedad()->>'total_cent') as t, contabilidad.apertura_saldo('1101')::text as l"))[0]!;
+  expect(ef.e).toBe('1000000');
+  expect(ef.l).toBe('800000');
+  const dinero = (c: string) => `$${(Number(c) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  await page.goto('/socios/cascada');
+  await expect(page.getByTestId('efectivo-calculado')).toContainText(dinero(ef.t));
+  await expect(page.getByTestId('efectivo-calculado')).toContainText(dinero('1000000'));
+  await expect(page.getByText('Identidad por dos vías').locator('..')).toContainText('Cuadra');
+
+  // Socios: la compra a Isaac fue a credito y la pagaron la sociedad y un socio. Eso es "salio dinero de la sociedad que no pusieron los socios":
+  // el aviso debe aparecer y la identidad por dos vias de la Cuenta de socios dice "No cuadra" (regla de dinero pendiente del dueno, no un defecto de calculo).
+  await page.goto('/socios');
+  await expect(page.locator('main:not(.rtm-documento)')).toContainText('Parte del costo no la pusieron los socios');
+  const cs = (await consultar<{ c: string }>("select (operacion.cuenta_socios()->>'cuadra') as c"))[0]!;
+  expect(cs.c).toBe('false');
   expect((await consultar<{ n: string }>('select seguridad.verificar_cadena_auditoria()::text as n'))[0]!.n).toBe('true');
 });

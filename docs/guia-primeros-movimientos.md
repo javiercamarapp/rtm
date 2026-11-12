@@ -111,7 +111,10 @@ Revisa, en este orden:
 2. **Contabilidad > Balance general**: "Activo igual a pasivo más capital: cuadra" y diferencia de cero.
 3. **Cuentas por cobrar**: el total coincide con el chip "Por cobrar" del encabezado.
 4. **Proveedores**: el saldo con Isaac y Karen coincide con su estado de cuenta.
-5. **Cuenta de socios y Cascada de reparto**: "Identidad por dos vías: cuadra". Si la Cuenta de socios dice "No cuadra", significa que salió dinero de la sociedad que los socios no pusieron y falta registrarlo (por ejemplo un pago de la sociedad a un proveedor o un reembolso). Se corrige el registro, no la cifra.
+5. **Cuenta de socios y Cascada de reparto**. Son dos identidades distintas y no tienen por qué coincidir:
+   - **Cascada, "Identidad por dos vías"**: debe decir "Cuadra". El efectivo que muestra ("calculado de las cajas") incluye el efectivo de la apertura por persona; debe ser igual a lo que dice Contabilidad > Caja y liquidez en efectivo, salvo los pagos de la sociedad a proveedores (ver abajo).
+   - **Cuenta de socios, "Diferencia por la compra"**: compara lo que pusieron los socios con la mitad del costo de la compra inicial. Si una compra se financia a crédito con Isaac y la pagan la sociedad o un socio con cobros de clientes, esta cuenta dice "No cuadra" y muestra el aviso "Parte del costo no la pusieron los socios". Es esperable en ese caso y NO es un registro faltante: la regla de cómo leer "puso cada socio" cuando hay crédito con proveedor es una decisión pendiente del dueño. No se corrige tecleando nada; solo cuadra cuando los socios ponen entre los dos el costo de la compra.
+   - **Pago de la sociedad a un proveedor**: hoy el libro contable lo descuenta del efectivo (cuenta 1101), pero las cajas de efectivo de Socios no se mueven. Si lo registras, "Efectivo" de la Cascada queda por encima de Caja y liquidez por ese monto. Pendiente de decisión del dueño (de qué caja sale).
 6. **Reportes**: "Preparar reporte". El reporte sale como definitivo solo cuando el periodo está aprobado y las comprobaciones pasan; en caso contrario sale "Preliminar" o "Parcial" y lo dice.
 
 ## Errores frecuentes

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Recorrido de "cuadrar cuentas" con una base local de demostracion y un servidor ya levantado en el puerto 3190 (npx next dev -p 3190).
+// Recorrido de "cuadrar cuentas" con una base local de demostracion y un servidor ya levantado en el puerto 3190 (npx next build y npx next start -p 3190; con next dev el CSP bloquea eval y la pagina no hidrata).
 const URL_BASE = process.env.APP_URL_E2E ?? 'http://127.0.0.1:3190';
 export default defineConfig({
   testDir: 'test/cuadre',
