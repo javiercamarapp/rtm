@@ -60,26 +60,26 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
   const cel = <T,>(f: Fila, fn: (x: FilaKardex) => T) => (f.inicial ? null : fn(f.k));
   const columnas: Columna<Fila>[] = [
     { id: 'f', titulo: 'Fecha', ancho: 's', prioridadMovil: 'titulo', celda: (f) => (f.inicial ? <strong>Saldo inicial</strong> : <span className="rtm-num" title={etiquetaFechaHora(f.k.hora)}>{fechaCorta(f.k.fecha_neg)}</span>) },
-    { id: 't', titulo: 'Concepto', ancho: 'm', prioridadMovil: 'normal', celda: (f) => (f.inicial ? 'Antes del periodo' : (
+    { id: 't', titulo: 'Concepto', ancho: 'm', prioridadMovil: 'titulo', celda: (f) => (f.inicial ? 'Antes del periodo' : (
       <span className={f.k.es_reversa ? 'rtm-a2-reversa' : 'rtm-a2-etiqueta-tipo'} data-testid={f.k.es_reversa ? 'kardex-reversa' : undefined}>{TIPO_MOV[f.k.tipo] ?? f.k.tipo}</span>
     )) },
     ...(vS ? [] : unico
-      ? [{ id: 's', titulo: 'Sabor', ancho: 'm' as const, prioridadMovil: 'normal' as const, celda: (f: Fila) => cel(f, (x) => x.sabor) }]
-      : [{ id: 'mo', titulo: 'Modelo › sabor', ancho: 'l' as const, truncar: 'm' as const, prioridadMovil: 'normal' as const, celda: (f: Fila) => cel(f, (x) => <span className="rtm-a2-nowrap">{x.modelo}<span className="rtm-a2-nota"> › {x.sabor}</span></span>) }]),
-    { id: 'ec', prioridadMovil: 'normal' as const, titulo: 'Piezas', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_piezas === null ? '' : pzs(x.entra_piezas))) },
-    { id: 'eu', prioridadMovil: 'normal' as const, titulo: 'V. unit.', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_unit_cent === null ? '' : m(x.entra_unit_cent))) },
-    { id: 'et', prioridadMovil: 'normal' as const, titulo: 'Total', bloque: 'Entradas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.entra_total_cent === null ? '' : m(x.entra_total_cent))) },
-    { id: 'sc', prioridadMovil: 'normal' as const, titulo: 'Piezas', bloque: 'Salidas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.sale_piezas === null ? '' : pzs(x.sale_piezas))) },
-    { id: 'su', prioridadMovil: 'normal' as const, titulo: 'V. unit.', bloque: 'Salidas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.sale_unit_cent === null ? '' : m(x.sale_unit_cent))) },
-    { id: 'st', prioridadMovil: 'normal' as const, titulo: 'Total', bloque: 'Salidas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.sale_total_cent === null ? '' : m(x.sale_total_cent))) },
+      ? [{ id: 's', titulo: 'Sabor', ancho: 'm' as const, prioridadMovil: 'detalle' as const, celda: (f: Fila) => cel(f, (x) => x.sabor) }]
+      : [{ id: 'mo', titulo: 'Modelo › sabor', ancho: 'l' as const, truncar: 'm' as const, prioridadMovil: 'detalle' as const, celda: (f: Fila) => cel(f, (x) => <span className="rtm-a2-nowrap">{x.modelo}<span className="rtm-a2-nota"> › {x.sabor}</span></span>) }]),
+    { id: 'ec', prioridadMovil: 'normal' as const, etiquetaMovil: 'Entra pzs', titulo: 'Piezas', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_piezas === null ? '' : pzs(x.entra_piezas))) },
+    { id: 'eu', prioridadMovil: 'oculta' as const, titulo: 'V. unit.', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_unit_cent === null ? '' : m(x.entra_unit_cent))) },
+    { id: 'et', prioridadMovil: 'normal' as const, etiquetaMovil: 'Entra total', titulo: 'Total', bloque: 'Entradas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.entra_total_cent === null ? '' : m(x.entra_total_cent))) },
+    { id: 'sc', prioridadMovil: 'normal' as const, etiquetaMovil: 'Sale pzs', titulo: 'Piezas', bloque: 'Salidas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.sale_piezas === null ? '' : pzs(x.sale_piezas))) },
+    { id: 'su', prioridadMovil: 'oculta' as const, titulo: 'V. unit.', bloque: 'Salidas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.sale_unit_cent === null ? '' : m(x.sale_unit_cent))) },
+    { id: 'st', prioridadMovil: 'normal' as const, etiquetaMovil: 'Sale total', titulo: 'Total', bloque: 'Salidas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.sale_total_cent === null ? '' : m(x.sale_total_cent))) },
     ...(vS ? [
-      { id: 'xc', titulo: 'Piezas', prioridadMovil: 'principal' as const, bloque: 'Existencias del sabor', numerica: true, ancho: 's' as const, resaltar: (f: Fila) => (f.inicial ? null : f.k.saldo_sabor_piezas === 0 ? ('cero' as const) : f.k.saldo_sabor_piezas < 0 ? ('negativo' as const) : null), celda: (f: Fila) => (f.inicial ? pzs(f.piezas) : pzs(f.k.saldo_sabor_piezas)) },
-      { id: 'xu', prioridadMovil: 'normal' as const, titulo: 'Costo mod.', bloque: 'Existencias del sabor', numerica: true, ancho: 's' as const, celda: (f: Fila) => (f.inicial ? m(f.costo) ?? <SinDato /> : (m(f.k.costo_prom_cent) ?? <SinDato />)) },
-      { id: 'xt', prioridadMovil: 'normal' as const, titulo: 'Valor a costo', bloque: 'Existencias del sabor', numerica: true, ancho: 'm' as const, celda: (f: Fila) => (f.inicial ? m(f.valor) : (m(f.k.saldo_sabor_valor_cent) ?? <SinDato />)) },
+      { id: 'xc', titulo: 'Piezas', prioridadMovil: 'principal' as const, etiquetaMovil: 'Existencia', bloque: 'Existencias del sabor', numerica: true, ancho: 's' as const, resaltar: (f: Fila) => (f.inicial ? null : f.k.saldo_sabor_piezas === 0 ? ('cero' as const) : f.k.saldo_sabor_piezas < 0 ? ('negativo' as const) : null), celda: (f: Fila) => (f.inicial ? pzs(f.piezas) : pzs(f.k.saldo_sabor_piezas)) },
+      { id: 'xu', prioridadMovil: 'oculta' as const, titulo: 'Costo mod.', bloque: 'Existencias del sabor', numerica: true, ancho: 's' as const, celda: (f: Fila) => (f.inicial ? m(f.costo) ?? <SinDato /> : (m(f.k.costo_prom_cent) ?? <SinDato />)) },
+      { id: 'xt', prioridadMovil: 'normal' as const, etiquetaMovil: 'Exist. valor', titulo: 'Valor a costo', bloque: 'Existencias del sabor', numerica: true, ancho: 'm' as const, celda: (f: Fila) => (f.inicial ? m(f.valor) : (m(f.k.saldo_sabor_valor_cent) ?? <SinDato />)) },
     ] : [
-      { id: 'xc', titulo: 'Piezas', prioridadMovil: 'principal' as const, bloque: 'Existencias', numerica: true, ancho: 's' as const, resaltar: (f: Fila) => (f.inicial ? null : f.k.saldo_piezas === 0 ? ('cero' as const) : f.k.saldo_piezas < 0 ? ('negativo' as const) : null), celda: (f: Fila) => (f.inicial ? pzs(f.piezas) : pzs(f.k.saldo_piezas)) },
-      { id: 'xu', prioridadMovil: 'normal' as const, titulo: 'V. unit.', bloque: 'Existencias', numerica: true, ancho: 's' as const, celda: (f: Fila) => (f.inicial ? m(f.costo) ?? <SinDato /> : (m(f.k.costo_prom_cent) ?? <SinDato />)) },
-      { id: 'xt', prioridadMovil: 'normal' as const, titulo: 'Total', bloque: 'Existencias', numerica: true, ancho: 'm' as const, celda: (f: Fila) => (f.inicial ? m(f.valor) : m(f.k.saldo_valor_cent)) },
+      { id: 'xc', titulo: 'Piezas', prioridadMovil: 'principal' as const, etiquetaMovil: 'Existencia', bloque: 'Existencias', numerica: true, ancho: 's' as const, resaltar: (f: Fila) => (f.inicial ? null : f.k.saldo_piezas === 0 ? ('cero' as const) : f.k.saldo_piezas < 0 ? ('negativo' as const) : null), celda: (f: Fila) => (f.inicial ? pzs(f.piezas) : pzs(f.k.saldo_piezas)) },
+      { id: 'xu', prioridadMovil: 'oculta' as const, titulo: 'V. unit.', bloque: 'Existencias', numerica: true, ancho: 's' as const, celda: (f: Fila) => (f.inicial ? m(f.costo) ?? <SinDato /> : (m(f.k.costo_prom_cent) ?? <SinDato />)) },
+      { id: 'xt', prioridadMovil: 'normal' as const, etiquetaMovil: 'Exist. valor', titulo: 'Total', bloque: 'Existencias', numerica: true, ancho: 'm' as const, celda: (f: Fila) => (f.inicial ? m(f.valor) : m(f.k.saldo_valor_cent)) },
       { id: 'xs', prioridadMovil: 'normal' as const, titulo: 'Del sabor', numerica: true, ancho: 's' as const, celda: (f: Fila) => cel(f, (x) => pzs(x.saldo_sabor_piezas)) },
     ]),
     { id: 'r', titulo: 'Referencia', ancho: 'm', truncar: 's', prioridadMovil: 'oculta', celda: (f) => cel(f, (x) => <span className="rtm-mono">{x.referencia}{x.reversa_de ? ` · corrige ${x.reversa_de}` : ''}</span>) },

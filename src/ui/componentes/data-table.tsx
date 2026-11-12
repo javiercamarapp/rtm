@@ -18,8 +18,8 @@ export interface Columna<T> {
   /** Recorta el texto largo con puntos suspensivos (el texto completo queda en el atributo title): s 120, m 200, l 280 px. */
   truncar?: 's' | 'm' | 'l';
   /** Tarjeta-fila en movil (<= 767 px): titulo = linea principal (izquierda), principal = cifra clave a la derecha, normal = dato con etiqueta en rejilla de 3 columnas,
-   *  oculta = no se muestra. Si alguna columna lo declara, la tabla pasa a tarjetas en movil. */
-  prioridadMovil?: 'titulo' | 'principal' | 'normal' | 'oculta';
+   *  detalle = fila a todo el ancho, oculta = no se muestra. Si alguna columna lo declara, la tabla pasa a tarjetas en movil. */
+  prioridadMovil?: 'titulo' | 'principal' | 'detalle' | 'normal' | 'oculta';
   /** Etiqueta del dato en la tarjeta movil (por omision, el titulo de la columna). */
   etiquetaMovil?: string;
   /** Resalta existencia en cero (ambar, "Agotado") o negativa (rojo, "Negativa"): palabra y color, nunca solo color. */

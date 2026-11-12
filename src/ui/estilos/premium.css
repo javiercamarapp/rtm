@@ -373,3 +373,17 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 
 .rtm-ltiempo[data-columnas='2'] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 40px; }
 @media (max-width: 767px) { .rtm-ltiempo[data-columnas='2'] { grid-template-columns: minmax(0, 1fr); } }
+
+/* Tarjeta-fila movil: textos largos dentro de su celda, titulos apilados, detalle a todo el ancho y etiqueta en la cifra principal */
+@media (max-width: 767px) {
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-trunc { display: block; max-width: 100%; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda { overflow-wrap: anywhere; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='titulo'] ~ .rtm-dt-celda[data-mov='titulo'] { font-size: var(--rtm-t-cuerpo); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-2); }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='detalle'] { grid-column: 1 / -1; color: var(--rtm-ink-2); }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal']::before { content: attr(data-label); display: block; font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal'] { grid-row: 1 / span 2; }
+}
+@media (max-width: 767px) {
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:first-child { border-right: 0; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='titulo'] { order: -1; }
+}
