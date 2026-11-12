@@ -169,5 +169,37 @@ select is((api.registrar_devolucion_cliente('dvw1', pg_temp.res('dvp1', 'pedido_
 select pg_temp.flush();
 select ok(pg_temp.ok('C4') and pg_temp.ok('C14') and pg_temp.ok('CU1'), 'la identidad sigue cuadrando tras la devolucion hecha por la API');
 
+-- Ramas de la devolucion de cliente que faltaban ---------------------------------------------------------------------------------------------------
+-- (a) El credito de dvw1 (1.50 de 150.00) es menor que el saldo (500.00): no libera pagos y el saldo baja a 350.00.
+select is(pg_temp.res('dvw1', 'liberado_cent'), 0::bigint, '(a) credito menor al saldo: no se libera ningun pago');
+select is(operacion.pedido_saldo(pg_temp.res('dvp1', 'pedido_id')), 35000::bigint, '(a) el saldo baja de 500.00 a 350.00 por el credito de 150.00');
+select is(operacion.saldo_favor_cliente(pg_temp.cid()), 0::bigint, '(a) sin saldo a favor');
+-- (b) y (c) Una nota con DOS destinos del mismo sabor (2 Mango buenos y 1 Mango danado) por 450.00 deja lo cobrado en 3,900.00, por debajo de los 4,000.00 pagados:
+-- el exceso es 100.00 y es MENOR que la aplicacion de 4,000.00, asi que se libera solo una parte de esa aplicacion (se reaplican 3,900.00).
+select is((operacion.registrar_devolucion_cliente('dvw2', pg_temp.res('dvp1', 'pedido_id'), jsonb_build_array(
+  jsonb_build_object('linea_id', (select id from operacion.pedido_linea where pedido_id = pg_temp.res('dvp1', 'pedido_id') and sku_id = pg_temp.sku('Mango')), 'sku_id', pg_temp.sku('Mango'), 'piezas', 2),
+  jsonb_build_object('linea_id', (select id from operacion.pedido_linea where pedido_id = pg_temp.res('dvp1', 'pedido_id') and sku_id = pg_temp.sku('Mango')), 'sku_id', pg_temp.sku('Mango'), 'piezas', 1, 'destino', 'merma')), 'dos destinos')->>'monto_cent')::bigint,
+  45000::bigint, '(c) credito de 3 Mango x 150.00 = 450.00');
+select is((select count(*)::int from operacion.devolucion_cliente_linea l where l.devolucion_id = (select id from operacion.devolucion_cliente where evento_id = pg_temp.ev('dvw2'))), 2, '(c) dos renglones del mismo sabor, uno por destino');
+select is((select string_agg(l.destino || ':' || l.piezas || ':' || l.costo_valor_cent, ',' order by l.destino) from operacion.devolucion_cliente_linea l where l.devolucion_id = (select id from operacion.devolucion_cliente where evento_id = pg_temp.ev('dvw2'))),
+  'inventario:2:18200,merma:1:9100', '(c) el costo se reparte sin residuo: 2 x 91.00 y 1 x 91.00 (valor acumulado menos lo ya devuelto)');
+select is(pg_temp.res('dvw2', 'costo_cent'), 27300::bigint, '(c) costo devuelto total 273.00');
+select is(pg_temp.res('dvw2', 'liberado_cent'), 10000::bigint, '(b) liberacion parcial de una aplicacion: se liberan 100.00');
+select is(operacion.pedido_saldo(pg_temp.res('dvp1', 'pedido_id')), 0::bigint, '(b) el pedido queda sin saldo');
+select is(operacion.saldo_favor_cliente(pg_temp.cid()), 10000::bigint, '(b) saldo a favor del cliente: 100.00');
+select is((select sum(a.monto_cent)::bigint from operacion.pago_aplicacion a where a.pedido_id = pg_temp.res('dvp1', 'pedido_id')), 390000::bigint, '(b) quedan aplicados 3,900.00 del pago de 4,000.00');
+select is((select valor_cent from operacion.movimiento_inventario where evento_id = pg_temp.ev('dvw2') and tipo = 'merma'), -9100::bigint, 'la merma de la devolucion se valua al costo promedio vigente (91.00, igual al de salida porque todas las entradas fueron a 91.00)');
+select pg_temp.flush();
+select ok(pg_temp.ok('C4') and pg_temp.ok('C5') and pg_temp.ok('C14') and pg_temp.ok('C16') and pg_temp.ok('C18') and pg_temp.ok('CU1') and pg_temp.ok('CU2') and pg_temp.ok('CU3'), 'la identidad cuadra tras las ramas de liberacion parcial y dos destinos');
+select ok((select ok from contabilidad.reproducir_saldos() where clave = 'clientes') and (select ok from contabilidad.reproducir_saldos() where clave = 'saldos_favor'), 'Clientes y saldos a favor reproducen tras la liberacion parcial');
+-- Cifras del pedido netas: total 4,500.00 - credito 600.00 = 3,900.00; costo 2,730.00 menos lo regresado a inventario (91.00 de dvw1 y 182.00 de dvw2); la merma de 91.00 sigue siendo costo
+select is((api.pedido_devoluciones(pg_temp.res('dvp1', 'pedido_id'))->'cascada_neta'->>'total_cent')::bigint, 390000::bigint, 'cascada neta: total cobrado 3,900.00');
+select is((api.pedido_devoluciones(pg_temp.res('dvp1', 'pedido_id'))->'cascada_neta'->>'costo_regresado_cent')::bigint, 27300::bigint, 'cascada neta: costo regresado a inventario 273.00 (dvw1 91.00 + dvw2 182.00)');
+select is((api.pedido_devoluciones(pg_temp.res('dvp1', 'pedido_id'))->'cascada_neta'->>'merma_cent')::bigint, 9100::bigint, 'cascada neta: merma 91.00');
+select is((api.pedido_devoluciones(pg_temp.res('dvp1', 'pedido_id'))->'cascada_neta'->>'costo_cent')::bigint, 273000::bigint - 27300::bigint, 'cascada neta: costo 2,730.00 - 273.00');
+select is((api.pedido_devoluciones(pg_temp.res('dvp1', 'pedido_id'))->'cascada_neta'->>'utilidad_cent')::bigint,
+  (select (n.snapshot_interno->'cascada'->>'utilidad_cent')::bigint from operacion.nota n where n.pedido_id = pg_temp.res('dvp1', 'pedido_id') order by n.id desc limit 1) - 60000::bigint + 27300::bigint,
+  'cascada neta: utilidad = utilidad de la nota - credito 600.00 + costo regresado 273.00');
+
 select * from finish();
 rollback;
