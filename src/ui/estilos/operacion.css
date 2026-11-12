@@ -23,7 +23,7 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 /* Nota: documento formal, minimalista y sin colores (se ve igual en claro y oscuro: papel). */
 .rtm-nota-doc { background: var(--rtm-surface); border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); padding: var(--rtm-e-8); max-width: 720px; display: flex; flex-direction: column; gap: var(--rtm-e-4); }
 .rtm-nota-doc header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--rtm-e-4); border-bottom: 0.5px solid var(--rtm-ink); padding-bottom: var(--rtm-e-3); }
-.rtm-nota-marca { font-family: var(--rtm-fuente-ui); font-size: 28px; line-height: 32px; margin: 0; }
+.rtm-nota-marca { font-family: var(--rtm-fuente-ui); font-size: 20px; line-height: 26px; font-weight: 600; margin: 0; }
 .rtm-nota-meta { text-align: right; font-size: 13px; }
 .rtm-nota-meta strong { display: block; letter-spacing: 0.06em; font-size: 12px; }
 .rtm-nota-fila { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) 72px 92px 104px; gap: var(--rtm-e-2); align-items: baseline; font-variant-numeric: tabular-nums; }
@@ -40,7 +40,7 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 .rtm-tira { display: flex; gap: var(--rtm-e-3); flex-wrap: wrap; }
 .rtm-linea-tiempo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--rtm-e-2); }
 .rtm-linea-tiempo li { font-size: 13px; color: var(--rtm-ink-2); }
-.rtm-hero-cifra { font-family: var(--rtm-fuente-ui); font-weight: 300; letter-spacing: -0.03em; font-size: 56px; line-height: 60px; font-variant-numeric: tabular-nums; margin: 0; }
+.rtm-hero-cifra { font-family: var(--rtm-fuente-ui); font-weight: 600; letter-spacing: var(--rtm-trk-cifra); font-size: var(--rtm-t-cifra-grande); line-height: 1.1; font-variant-numeric: tabular-nums; margin: 0; }
 .rtm-bloque { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-4) var(--rtm-e-5); display: flex; flex-direction: column; gap: var(--rtm-e-3); }
 .rtm-copia-ok { font-size: 12px; color: var(--rtm-ok); }
 
@@ -49,7 +49,7 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
   .rtm-nota-fila { grid-template-columns: minmax(0, 1fr) 54px 84px; }
   .rtm-nota-fila > :nth-child(2), .rtm-nota-fila > :nth-child(4) { display: none; }
   .rtm-nota-fila > :nth-child(3) { text-align: right; }
-  .rtm-hero-cifra { font-size: 40px; line-height: 44px; }
+  .rtm-hero-cifra { font-size: 28px; line-height: 32px; }
   .rtm-campo-num { width: 96px; }
   .rtm-form-fila > * { flex: 1 1 140px; }
 }
@@ -165,7 +165,7 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 .rtm-campana-item { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; padding: var(--rtm-e-2) 0; border-bottom: 1px solid var(--rtm-line); font-size: 13px; }
 .rtm-campana-item[data-leida] { opacity: 0.7; }
 .rtm-campana-sev { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--rtm-ink-3); }
-.rtm-campana-sev[data-sev='C'] { color: var(--rtm-ink); font-weight: 700; }
+.rtm-campana-sev[data-sev='C'] { color: var(--rtm-ink); font-weight: 600; }
 .rtm-campana-vacia { padding: var(--rtm-e-3) 0; }
 .rtm-campana-pie { display: flex; justify-content: space-between; align-items: center; gap: var(--rtm-e-2); font-size: 13px; }
 @media (max-width: 640px) {

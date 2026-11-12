@@ -13,7 +13,6 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-variant-numeric: tabular-nums;
-  font-feature-settings: 'cv11', 'ss01';
   letter-spacing: -0.003em;
 }
 
@@ -55,4 +54,4 @@ button { font: inherit; color: inherit; }
 
 /* Paginas de texto (terminos, privacidad) */
 .rtm-documento { max-width: 62ch; margin: 0 auto; padding: var(--rtm-e-10) var(--rtm-e-5); display: flex; flex-direction: column; gap: var(--rtm-e-3); }
-.rtm-documento h1 { font-family: var(--rtm-fuente-ui); font-weight: 300; font-size: 32px; line-height: 38px; letter-spacing: -0.025em; margin: 0; }
+.rtm-documento h1 { font-family: var(--rtm-fuente-ui); font-weight: 600; font-size: var(--rtm-t-pagina); line-height: 1.2; letter-spacing: var(--rtm-trk-pagina); margin: 0; }

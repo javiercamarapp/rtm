@@ -1,7 +1,7 @@
 /* Apertura y Movimientos: pasos del asistente, formularios en linea y bloques de cifras. Solo tokens; sin colores literales. */
 .rtm-pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--rtm-e-2); }
 .rtm-pasos li { display: grid; grid-template-columns: 32px 1fr auto; gap: var(--rtm-e-3); align-items: center; padding: var(--rtm-e-3) var(--rtm-e-4); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
-.rtm-pasos .rtm-paso-n { font-family: var(--rtm-fuente-ui); font-size: 20px; color: var(--rtm-ink-3); font-variant-numeric: tabular-nums; }
+.rtm-pasos .rtm-paso-n { font-size: 16px; font-weight: 600; color: var(--rtm-ink-3); font-variant-numeric: tabular-nums; }
 .rtm-pasos a { color: inherit; text-decoration: none; font-weight: 600; }
 .rtm-pasos a:hover { text-decoration: underline; }
 .rtm-pasos p { margin: 0; font-size: 12px; color: var(--rtm-ink-3); }
