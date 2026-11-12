@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { armarDevolucionProveedor } from '@/dominio/operacion/devoluciones';
 import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { CatalogoDevolucionProveedor } from '@/dominio/operacion/tipos';
-import { DataTable } from '@/ui/componentes/data-table';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
 import { DialogoSimple } from '../operacion/dialogo-simple';
 import { useAccion } from '../operacion/usar-accion';
@@ -45,15 +44,14 @@ export function DevolverAProveedor({ catalogo }: { catalogo: CatalogoDevolucionP
             </label>
             <label className="rtm-etiqueta-campo">Buscar<input className="rtm-campo" value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Buscar producto" /></label>
           </div>
-          <DataTable
-            etiqueta="Piezas a devolver al proveedor" densidad="densa" plana clave={(s) => s.sku_id} filas={visibles}
-            columnas={[
-              { id: 'p', titulo: 'Producto', ancho: 'l', celda: (s) => `${s.modelo} ${s.sabor}` },
-              { id: 'd', titulo: 'Disponible', numerica: true, ancho: 's', celda: (s) => formatearPiezas(s.disponible) },
-              { id: 'c', titulo: 'Costo promedio', numerica: true, ancho: 'm', celda: (s) => formatearMoneda(s.costo_prom_cent) },
-              { id: 'n', titulo: 'Devuelve', numerica: true, ancho: 's', celda: (s) => <input className="rtm-campo rtm-campo-num" inputMode="numeric" value={piezas[s.sku_id] ?? ''} onChange={(e) => setPiezas((p) => ({ ...p, [s.sku_id]: e.target.value }))} aria-label={`Piezas a devolver de ${s.modelo} ${s.sabor}`} /> },
-            ]}
-          />
+          <div className="rtm-lista-form" role="group" aria-label="Piezas a devolver al proveedor">
+            {visibles.map((s) => (
+              <div key={s.sku_id} className="rtm-form-fila">
+                <span className="rtm-campo-ancho"><strong>{s.modelo} {s.sabor}</strong><br />Disponible {formatearPiezas(s.disponible)} · costo promedio {formatearMoneda(s.costo_prom_cent)}</span>
+                <label className="rtm-etiqueta-campo">Devuelve<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={piezas[s.sku_id] ?? ''} onChange={(e) => setPiezas((p) => ({ ...p, [s.sku_id]: e.target.value }))} aria-label={`Piezas a devolver de ${s.modelo} ${s.sabor}`} /></label>
+              </div>
+            ))}
+          </div>
           <p className="rtm-nota">El crédito lo calcula la base al registrar y queda en la nota.</p>
           <label className="rtm-etiqueta-campo">Motivo<input className="rtm-campo" value={motivo} onChange={(e) => setMotivo(e.target.value)} aria-label="Motivo de la devolución" /></label>
           {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}

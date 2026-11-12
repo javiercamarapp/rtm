@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { armarDevolucionCliente, type DestinoDevolucion } from '@/dominio/operacion/devoluciones';
 import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { PedidoDevoluciones } from '@/dominio/operacion/tipos';
-import { DataTable } from '@/ui/componentes/data-table';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
 import { DialogoSimple } from '../../operacion/dialogo-simple';
 import { useAccion } from '../../operacion/usar-accion';
@@ -33,20 +32,19 @@ export function DevolverMercancia({ pedidoId, folio, renglones }: { pedidoId: nu
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo={`Devolver mercancía de ${folio}`} confirmar="Registrar devolución" ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           <p>Las piezas regresan a Bodega Omar al valor al que salieron; las dañadas se mandan a merma. El crédito baja lo que el cliente debe por el precio de la nota (no incluye envío). La nota original no cambia.</p>
-          <DataTable
-            etiqueta="Piezas a devolver" densidad="densa" plana clave={(r) => llave(r)} filas={posibles}
-            columnas={[
-              { id: 'p', titulo: 'Producto', ancho: 'l', celda: (r) => `${r.modelo} ${r.sabor}` },
-              { id: 's', titulo: 'Surtidas', numerica: true, ancho: 's', celda: (r) => formatearPiezas(r.surtidas) },
-              { id: 'd', titulo: 'Ya devueltas', numerica: true, ancho: 's', celda: (r) => formatearPiezas(r.devueltas) },
-              { id: 'pr', titulo: 'Precio', numerica: true, ancho: 'm', celda: (r) => formatearMoneda(r.precio_cent) },
-              { id: 'n', titulo: 'Devuelve', numerica: true, ancho: 's', celda: (r) => <input className="rtm-campo rtm-campo-num" inputMode="numeric" value={piezas[llave(r)] ?? ''} onChange={(e) => setPiezas((p) => ({ ...p, [llave(r)]: e.target.value }))} aria-label={`Piezas a devolver de ${r.modelo} ${r.sabor}`} /> },
-              { id: 'de', titulo: 'Destino', ancho: 'l', celda: (r) => (
-                <select className="rtm-campo" value={destinos[llave(r)] ?? 'inventario'} onChange={(e) => setDestinos((d) => ({ ...d, [llave(r)]: e.target.value as DestinoDevolucion }))} aria-label={`Destino de ${r.modelo} ${r.sabor}`}>
-                  <option value="inventario">Regresa al inventario</option><option value="merma">Dañado: merma</option>
-                </select>) },
-            ]}
-          />
+          <div className="rtm-lista-form" role="group" aria-label="Piezas a devolver">
+            {posibles.map((r) => (
+              <div key={llave(r)} className="rtm-form-fila">
+                <span className="rtm-campo-ancho"><strong>{r.modelo} {r.sabor}</strong><br />Surtidas {formatearPiezas(r.surtidas)} · ya devueltas {formatearPiezas(r.devueltas)} · precio de la nota {formatearMoneda(r.precio_cent)}</span>
+                <label className="rtm-etiqueta-campo">Devuelve<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={piezas[llave(r)] ?? ''} onChange={(e) => setPiezas((p) => ({ ...p, [llave(r)]: e.target.value }))} aria-label={`Piezas a devolver de ${r.modelo} ${r.sabor}`} /></label>
+                <label className="rtm-etiqueta-campo">Destino
+                  <select className="rtm-campo" value={destinos[llave(r)] ?? 'inventario'} onChange={(e) => setDestinos((d) => ({ ...d, [llave(r)]: e.target.value as DestinoDevolucion }))} aria-label={`Destino de ${r.modelo} ${r.sabor}`}>
+                    <option value="inventario">Regresa al inventario</option><option value="merma">Dañado: merma</option>
+                  </select>
+                </label>
+              </div>
+            ))}
+          </div>
           <p className="rtm-nota">El crédito lo calcula la base al registrar y queda en la nota.</p>
           <label className="rtm-etiqueta-campo">Motivo<input className="rtm-campo" value={motivo} onChange={(e) => setMotivo(e.target.value)} aria-label="Motivo de la devolución" /></label>
           {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}

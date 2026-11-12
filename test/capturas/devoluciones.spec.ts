@@ -7,7 +7,7 @@ import { altaUsuario, conDb, correoUnico, enlaceConfirmacion, ipFalsa } from '..
 
 const SALIDA = join(__dirname, '../../docs/capturas/devoluciones');
 const BASE = process.env.APP_URL_E2E ?? 'http://127.0.0.1:3109';
-const PERFILES = [{ nombre: '1440', ancho: 1440, alto: 900, movil: false }, { nombre: '390', ancho: 390, alto: 844, movil: true }];
+const PERFILES = [{ nombre: '1440', ancho: 1440, alto: 1300, movil: false }, { nombre: '390', ancho: 390, alto: 844, movil: true }];
 const TEMAS = ['claro', 'oscuro'] as const;
 
 test('capturas de devoluciones', async ({ browser }) => {
@@ -65,10 +65,26 @@ test('capturas de devoluciones', async ({ browser }) => {
         await page.waitForTimeout(500);
         const desborde = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         if (p.movil && desborde > 1) informe.push(`DESBORDE ${nombre} ${tema} ${p.nombre}: ${desborde}px`);
-        const alto = await page.evaluate(() => Math.max(0, ...[...document.querySelectorAll('*')].filter((e) => /(auto|scroll)/.test(getComputedStyle(e).overflowY) && e.scrollHeight > e.clientHeight).map((e) => e.scrollHeight)));
-        await page.setViewportSize({ width: p.ancho, height: Math.min(Math.max(alto + 120, p.alto), 7000) });
-        await page.waitForTimeout(250);
-        await page.screenshot({ path: join(SALIDA, `${p.nombre}-${tema}-${nombre}.png`) });
+        if (p.movil) {
+          // En vertical el armazon es el movil: se alarga la ventana hasta el alto del contenido para ver la pagina entera.
+          const alto = await page.evaluate(() => Math.max(0, ...[...document.querySelectorAll('*')].filter((e) => /(auto|scroll)/.test(getComputedStyle(e).overflowY) && e.scrollHeight > e.clientHeight).map((e) => e.scrollHeight)));
+          await page.setViewportSize({ width: p.ancho, height: Math.min(Math.max(alto + 120, p.alto), 7000) });
+          await page.waitForTimeout(250);
+          await page.screenshot({ path: join(SALIDA, `${p.nombre}-${tema}-${nombre}.png`) });
+        } else {
+          // Una ventana mas alta que ancha activa el armazon movil: en 1440 se captura por tramos desplazando el contenedor.
+          const paso = await page.evaluate(() => {
+            const el = [...document.querySelectorAll('*')].filter((e) => /(auto|scroll)/.test(getComputedStyle(e).overflowY) && e.scrollHeight > e.clientHeight).sort((x, y) => y.scrollHeight - x.scrollHeight)[0];
+            (window as unknown as { __sc: Element | undefined }).__sc = el;
+            return el ? { total: el.scrollHeight, vista: el.clientHeight } : { total: 0, vista: 900 };
+          });
+          const tramos = Math.min(4, Math.max(1, Math.ceil((paso.total - 80) / (paso.vista - 80))));
+          for (let i = 0; i < tramos; i++) {
+            await page.evaluate((y) => { (window as unknown as { __sc?: Element }).__sc?.scrollTo({ top: y }); }, i * (paso.vista - 80));
+            await page.waitForTimeout(250);
+            await page.screenshot({ path: join(SALIDA, `${p.nombre}-${tema}-${nombre}${tramos > 1 ? `-${i + 1}` : ''}.png`) });
+          }
+        }
         await page.setViewportSize({ width: p.ancho, height: p.alto });
       }
       await ctx.close();

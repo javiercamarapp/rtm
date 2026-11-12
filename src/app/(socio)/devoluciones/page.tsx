@@ -29,9 +29,9 @@ export default async function PaginaDevoluciones() {
       <KpiLinea
         etiquetaAria="Cifras de devoluciones"
         celdas={[
-          { id: 'cc', etiqueta: 'Crédito a clientes (vigente)', valor: m(d.credito_clientes_cent), categoria: 1, nota: `${vigC.length} notas de crédito · ${formatearPiezas(vigC.reduce((a, x) => a + x.piezas, 0))} pz` },
+          { id: 'cc', etiqueta: 'Crédito a clientes (vigente)', valor: m(d.credito_clientes_cent), categoria: 1, nota: `${vigC.length} notas de crédito · ${formatearPiezas(vigC.reduce((a, x) => a + x.piezas, 0))}` },
           { id: 'cl', etiqueta: 'Pagos liberados a saldo a favor', valor: m(vigC.reduce((a, x) => a + x.liberado_cent, 0n)), categoria: 2, nota: 'Dinero que el cliente ya había pagado' },
-          { id: 'cp', etiqueta: 'Crédito con proveedores (vigente)', valor: m(d.credito_proveedores_cent), categoria: 3, nota: `${vigP.length} devoluciones · ${formatearPiezas(vigP.reduce((a, x) => a + x.piezas, 0))} pz` },
+          { id: 'cp', etiqueta: 'Crédito con proveedores (vigente)', valor: m(d.credito_proveedores_cent), categoria: 3, nota: `${vigP.length} devoluciones · ${formatearPiezas(vigP.reduce((a, x) => a + x.piezas, 0))}` },
           { id: 'co', etiqueta: 'Costo de lo devuelto por clientes', valor: m(vigC.reduce((a, x) => a + x.costo_cent, 0n)), categoria: 5, nota: 'Vuelve al inventario o se va a merma' },
         ]}
       />
