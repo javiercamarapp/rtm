@@ -49,6 +49,11 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
   const piezasSurtidas = p.lineas.reduce((a, l) => a + l.piezas_surtidas, 0);
   const interno = (verNota ?? vigente)?.interno ?? null;
   const cas = interno?.cascada ?? null;
+  // Con devoluciones vigentes las cifras salen netas desde la base: la utilidad y el margen se leen sobre lo cobrado neto, no sobre la nota original.
+  const neta = dev && dev.devuelto_cent > 0n && cas ? dev.cascada_neta : null;
+  const costoVista = neta ? neta.costo_cent : cas?.costo_cent ?? null;
+  const utilidadVista = neta ? neta.utilidad_cent : cas?.utilidad_cent ?? null;
+  const totalVista = neta ? neta.total_cent : cas?.total_cent ?? null;
 
   return (
     <Pagina ancho="tablero">
@@ -79,8 +84,8 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
         etiquetaAria="Cifras del pedido"
         celdas={[
           { id: 'venta', etiqueta: enviado || anulado ? 'Total a saldar' : 'Total estimado si sale todo', valor: <CifraComprobada texto={formatearMoneda(enviado || anulado ? p.cobrado_cent : p.estimado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" />, categoria: 1, nota: `${formatearPiezas(piezasPedidas)} pedidas · ${formatearPiezas(piezasSurtidas)} surtidas` },
-          { id: 'costo', etiqueta: 'Costo de las piezas', valor: cas ? formatearMoneda(cas.costo_cent) : null, categoria: 5, nota: cas ? undefined : 'Se calcula al enviar' },
-          { id: 'utilidad', etiqueta: cas?.utilidad_provisional ? 'Utilidad (provisional)' : 'Utilidad', valor: cas ? formatearMoneda(cas.utilidad_cent) : null, categoria: 3, nota: cas && cas.total_cent > 0n ? `Margen ${((aNumero(cas.utilidad_cent) / aNumero(cas.total_cent)) * 100).toFixed(1)} % del total` : cas?.guia_pendiente ? 'Guía por costear' : undefined },
+          { id: 'costo', etiqueta: neta ? 'Costo de las piezas (neto)' : 'Costo de las piezas', valor: costoVista !== null ? formatearMoneda(costoVista) : null, categoria: 5, nota: neta ? `Regresaron ${formatearMoneda(neta.costo_regresado_cent)} a inventario${neta.merma_cent > 0n ? ` · merma ${formatearMoneda(neta.merma_cent)}` : ''}` : cas ? undefined : 'Se calcula al enviar' },
+          { id: 'utilidad', etiqueta: cas?.utilidad_provisional ? 'Utilidad (provisional)' : 'Utilidad', valor: utilidadVista !== null ? formatearMoneda(utilidadVista) : null, categoria: 3, nota: utilidadVista !== null && totalVista !== null && totalVista > 0n ? `Margen ${((aNumero(utilidadVista) / aNumero(totalVista)) * 100).toFixed(1)} % ${neta ? 'del total cobrado neto' : 'del total'}` : cas?.guia_pendiente ? 'Guía por costear' : undefined },
           ...(dev && dev.devuelto_cent > 0n ? [{ id: 'devuelto', etiqueta: 'Devuelto (crédito)', valor: formatearMoneda(-dev.devuelto_cent), categoria: 6 as const, nota: `${dev.devoluciones.filter((x) => !x.anulada).length} devolución(es) vigentes` }] : []),
           { id: 'abonado', etiqueta: 'Abonado', valor: enviado || anulado ? formatearMoneda(p.aplicado_cent) : null, categoria: 2, progreso: enviado && p.cobrado_cent > 0n ? { pct: (aNumero(p.aplicado_cent) / aNumero(p.cobrado_cent)) * 100 } : undefined },
           { id: 'cobro', etiqueta: 'Por cobrar', valor: enviado ? (p.saldo_cent === null ? null : <CifraComprobada texto={formatearMoneda(p.saldo_cent)} cifra={`pedido:saldo:${p.id}`} comprobacion="cuadra" />) : null, categoria: 4, nota: p.saldo_favor_cliente_cent > 0n ? `Saldo a favor del cliente ${formatearMoneda(p.saldo_favor_cliente_cent)}` : undefined },

@@ -98,6 +98,17 @@ begin
   return jsonb_build_object('pedido_id', pe.id, 'folio', pe.folio, 'puede', pe.estado = 'enviado' and operacion.origen_es_bodega(pe.origen),
     'motivo_no', case when pe.estado <> 'enviado' then 'El pedido no está enviado.' when not operacion.origen_es_bodega(pe.origen) then 'El pedido salió directo del proveedor.' end,
     'devuelto_cent', operacion.devuelto_pedido(pe.id),
+    -- Cifras del pedido ya netas de devoluciones vigentes (la web no calcula dinero): total cobrado = total de la nota - credito; el costo de lo que regreso a inventario sale del costo; lo que se fue a merma sigue siendo costo; la renta y la guia no cambian (regla pendiente del dueno).
+    'cascada_neta', case when ult.snapshot_interno->'cascada' is null then null else jsonb_build_object(
+      'total_cent', (ult.snapshot_interno->'cascada'->>'total_cent')::bigint - operacion.devuelto_pedido(pe.id),
+      'costo_cent', (ult.snapshot_interno->'cascada'->>'costo_cent')::bigint - coalesce((select sum(l.costo_valor_cent) from operacion.devolucion_cliente_linea l where l.destino = 'inventario'
+          and l.devolucion_id in (select d.id from operacion.devolucion_cliente d where d.pedido_id = pe.id and not exists (select 1 from operacion.devolucion_cliente_anulacion a where a.devolucion_id = d.id))), 0),
+      'costo_regresado_cent', coalesce((select sum(l.costo_valor_cent) from operacion.devolucion_cliente_linea l where l.destino = 'inventario'
+          and l.devolucion_id in (select d.id from operacion.devolucion_cliente d where d.pedido_id = pe.id and not exists (select 1 from operacion.devolucion_cliente_anulacion a where a.devolucion_id = d.id))), 0),
+      'merma_cent', coalesce((select sum(l.costo_valor_cent) from operacion.devolucion_cliente_linea l where l.destino = 'merma'
+          and l.devolucion_id in (select d.id from operacion.devolucion_cliente d where d.pedido_id = pe.id and not exists (select 1 from operacion.devolucion_cliente_anulacion a where a.devolucion_id = d.id))), 0),
+      'utilidad_cent', (ult.snapshot_interno->'cascada'->>'utilidad_cent')::bigint - operacion.devuelto_pedido(pe.id) + coalesce((select sum(l.costo_valor_cent) from operacion.devolucion_cliente_linea l where l.destino = 'inventario'
+          and l.devolucion_id in (select d.id from operacion.devolucion_cliente d where d.pedido_id = pe.id and not exists (select 1 from operacion.devolucion_cliente_anulacion a where a.devolucion_id = d.id))), 0)) end,
     'renglones', coalesce((select jsonb_agg(jsonb_build_object('linea_id', l.id, 'sku_id', s.sku_id, 'modelo', m.nombre_canonico, 'sabor', sa.nombre_canonico, 'surtidas', s.piezas, 'devueltas', operacion.devuelto_linea_sku(l.id, s.sku_id),
         'disponibles_devolver', s.piezas - operacion.devuelto_linea_sku(l.id, s.sku_id), 'precio_cent', coalesce((ult.ajustes->'precios'->>(l.id::text))::bigint, l.precio_cent)) order by l.id, sa.nombre_canonico)
       from operacion.pedido_linea l join (select pedido_linea_id, sku_id, sum(piezas)::int as piezas from operacion.pedido_surtido group by pedido_linea_id, sku_id) s on s.pedido_linea_id = l.id
