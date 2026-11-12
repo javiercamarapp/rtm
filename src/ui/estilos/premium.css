@@ -481,7 +481,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 @media (pointer: coarse), (max-width: 767px) { html .rtm-importador .rtm-pegado { font-size: 16px; } }
 
 .rtm-region-pag { display: contents; }
-@media (max-width: 767px) { .rtm-pestanas a { height: 44px; } }
+@media (max-width: 900px), (pointer: coarse) { .rtm-pestanas a { height: 44px; } }
 
 .rtm-dt-celda[data-ancho='s'] { white-space: nowrap; }
 .rtm-dt-celda .rtm-acciones-fila { flex-wrap: nowrap; }
