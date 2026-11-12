@@ -55,6 +55,7 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
       <EncabezadoPagina
         eyebrow={`Catálogo y precios · ${etiquetaHoy()}`}
         titulo={`${todos.length} modelos en el catálogo`}
+        acciones={<Link className="rtm-boton" href="/catalogo/costos" data-testid="ir-costos">Editar costos de Isaac y Karen</Link>}
         descripcion={`${sinDisp > 0 ? `${sinDisp} sin disponibilidad ahora · ` : ''}${sinPrecio} sin precio de cliente · ${supuestos} ${supuestos === 1 ? 'costo supuesto' : 'costos supuestos'}. Costos y márgenes solo los ven los socios.`}
       />
       <BarraFiltros etiquetaAria="Filtrar el catálogo" extras={filtro || marca || sp.q ? <Chip href="/catalogo">Quitar filtros</Chip> : undefined}>

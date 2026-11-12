@@ -6,6 +6,7 @@ import { completarAcceso, completarConfirmacion, type SalidaCallback } from '@/a
 import { correoExcedeTopes, ipExcedeTope } from '@/aplicacion/acceso/limites';
 import type { DepsAcceso, Perfil } from '@/aplicacion/acceso/puertos';
 import { reenviarEnlaceCaducado, urlCallback } from '@/aplicacion/acceso/reenvio';
+import { DESTINO_OMAR } from '@/dominio/acceso/ruta_segura';
 import { appUrl } from '@/config/env';
 import { autenticadorSupabase } from '@/infra/supabase/autenticador';
 import { limitadorPostgres } from '@/infra/limite/limitador_postgres';
@@ -73,7 +74,19 @@ export async function exigirSocio(): Promise<SesionActiva> {
   const estado = await deps().autenticador.sesion();
   if (!estado.autenticado) redirect('/login');
   const perfil = estado.perfil;
+  // Omar activo (interruptor de M2) tiene su propia vista: nunca se le sirve una pagina de socio.
+  if (perfil && perfil.activo && perfil.rol === 'omar') redirect(DESTINO_OMAR);
   if (!perfil || !perfil.activo || perfil.rol !== 'socio') redirect('/login?error=desactivada');
+  return { perfil };
+}
+
+/** Guarda de la vista de Omar: sin sesion, o sin cuenta ACTIVA con rol omar (hoy desactivada hasta M2), no se renderiza nada. Un socio vuelve a su inicio. */
+export async function exigirOmar(): Promise<SesionActiva> {
+  const estado = await deps().autenticador.sesion();
+  if (!estado.autenticado) redirect('/login');
+  const perfil = estado.perfil;
+  if (perfil && perfil.activo && perfil.rol === 'socio') redirect('/');
+  if (!perfil || !perfil.activo || perfil.rol !== 'omar') redirect('/login?error=desactivada');
   return { perfil };
 }
 

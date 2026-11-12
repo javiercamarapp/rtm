@@ -15,6 +15,12 @@
   --rtm-line: #ecebe6;
   --rtm-line-2: #d9d7d0;
   --rtm-line-strong: #8f8b82;
+  /* Encabezado de tablas: gris que contrasta con las filas, texto en tinta plena. */
+  --rtm-th-fondo: #e4e3de;
+  --rtm-th-texto: #1a1a1a;
+  --rtm-th-borde: #bdbab2;
+  /* Borde de campos y controles de entrada: minimo 3:1 contra todas las superficies (WCAG 1.4.11). */
+  --rtm-campo-borde: #8f8b82;
   --rtm-ink: #1a1a1a;
   --rtm-ink-2: #555555;
   --rtm-ink-3: #666666;
@@ -99,7 +105,7 @@
   /* Tarjetas y filetes */
   --rtm-borde-tarjeta: var(--rtm-line-2);
   /* Borde de controles (campos, botones, chips y segmentados): WCAG 1.4.11, 3:1 contra panel y tarjeta. line-strong da 3.31 a 3.40 en claro y 3.63 a 4.12 en oscuro. */
-  --rtm-borde-control: var(--rtm-line-strong);
+  --rtm-borde-control: var(--rtm-campo-borde);
   --rtm-borde: 1px solid var(--rtm-line);
   --rtm-filete: 3px;
 
@@ -143,6 +149,10 @@
   --rtm-line: #2e2d2a;
   --rtm-line-2: #3a3935;
   --rtm-line-strong: #7d786e;
+  --rtm-th-fondo: #3a3935;
+  --rtm-th-texto: #f3f2ee;
+  --rtm-th-borde: #5a5852;
+  --rtm-campo-borde: #7d786e;
   --rtm-ink: #f3f2ee;
   --rtm-ink-2: #b9b7b1;
   --rtm-ink-3: #9c9a94;

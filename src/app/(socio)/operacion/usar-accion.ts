@@ -19,7 +19,15 @@ export function useAccion() {
   const correr = useCallback(
     (accion: string, args: Record<string, unknown>, alTerminar?: (datos: Record<string, unknown>) => void) => {
       empezar(async () => {
-        const r = await ejecutar(accion, { ...args, p_clave_idem: clave.current });
+        let r: Awaited<ReturnType<typeof ejecutar>>;
+        try {
+          r = await ejecutar(accion, { ...args, p_clave_idem: clave.current });
+        } catch {
+          // Corte de red o respuesta perdida: sin esto la excepcion de la transicion tira toda la pantalla al error general y se pierde el dialogo.
+          // La clave NO se renueva: reintentar manda la misma y la base no duplica el hecho.
+          setError('No se pudo confirmar la respuesta (sin conexión). Es posible que ya se haya guardado: vuelve a pulsar el botón; la misma solicitud no se duplica.');
+          return;
+        }
         if (r.ok) {
           clave.current = `web:${crypto.randomUUID()}`;
           setError(null);

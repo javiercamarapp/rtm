@@ -8,7 +8,7 @@
 .rtm-form-fila { display: flex; gap: var(--rtm-e-3); flex-wrap: wrap; align-items: flex-end; }
 .rtm-etiqueta-campo { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--rtm-ink-3); min-width: 0; }
 .rtm-etiqueta-campo > .rtm-campo, .rtm-etiqueta-campo > select { color: var(--rtm-ink); font-size: var(--rtm-cuerpo); }
-.rtm-campo-ancho { min-width: 220px; flex: 1 1 220px; }
+.rtm-campo-ancho { min-width: min(220px, 100%); flex-grow: 1; }
 .rtm-campo-num { width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
 select.rtm-campo { appearance: none; padding-right: var(--rtm-e-6); }
 textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(--rtm-r-3); min-height: 72px; }
@@ -17,6 +17,14 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 .rtm-aviso p { margin: 0; color: var(--rtm-ink-2); font-size: 13px; }
 .rtm-avisos { display: flex; flex-direction: column; gap: var(--rtm-e-2); list-style: none; margin: 0; padding: 0; }
 .rtm-error { color: var(--rtm-bad); font-size: 13px; margin: 0; }
+.rtm-casilla { display: flex; align-items: center; gap: var(--rtm-e-2); flex-wrap: wrap; font-size: 13px; color: var(--rtm-ink); }
+.rtm-casilla input { width: 18px; height: 18px; margin: 0; accent-color: var(--rtm-ink); }
+.rtm-casilla .rtm-nota { width: 100%; }
+.rtm-eco { border: 1px solid var(--rtm-line-2); border-left: 3px solid var(--rtm-line-strong); border-radius: var(--rtm-r-2); background: var(--rtm-surface); padding: var(--rtm-e-3) var(--rtm-e-4); }
+.rtm-eco p { margin: 0; }
+.rtm-eco p + p { margin-top: var(--rtm-e-2); }
+.rtm-eco[data-tono='ok'] { border-left-color: var(--rtm-ok); }
+.rtm-eco[data-tono='error'] { border-left-color: var(--rtm-bad); color: var(--rtm-bad); }
 .rtm-acciones-fila { display: flex; gap: var(--rtm-e-2); flex-wrap: wrap; align-items: center; }
 .rtm-lineas-form { display: flex; flex-direction: column; gap: var(--rtm-e-2); }
 
@@ -51,7 +59,18 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
   .rtm-nota-fila > :nth-child(3) { text-align: right; }
   .rtm-hero-cifra { font-size: 28px; line-height: 32px; }
   .rtm-campo-num { width: 96px; }
-  .rtm-form-fila > * { flex: 1 1 140px; }
+  .rtm-form-fila > * { flex-grow: 1; min-width: min(140px, 100%); }
+  /* Un campo por renglon en pantallas angostas: sin huecos laterales ni controles de ancho fijo que se salgan (plegable cerrado 344). */
+  .rtm-form-fila .rtm-campo-num { width: 100%; }
+  .rtm-form { max-width: none; }
+  .rtm-dialogo { padding: var(--rtm-e-5); }
+  .rtm-dialogo-acciones { flex-wrap: wrap; }
+  .rtm-dialogo-acciones > .rtm-boton { flex-grow: 1; }
+}
+
+@media (max-width: 380px) {
+  .rtm-hero-cifra { font-size: 34px; line-height: 38px; }
+  .rtm-bloque, .rtm-nota-doc { padding-inline: var(--rtm-e-3); }
 }
 
 /* En pantallas tactiles o angostas los campos de formulario miden 16 px (en iOS evita el zoom) y ganan a la regla de color de la etiqueta. */
@@ -65,9 +84,11 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 /* F3a: barra divergente (cero al centro, el signo siempre escrito), pasos de la cascada y bloques de cuentas de socios. */
 .rtm-divergente { position: relative; height: 14px; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); max-width: 520px; }
 .rtm-divergente::after { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--rtm-ink); }
-.rtm-divergente > i { position: absolute; top: 0; bottom: 0; background: var(--rtm-ink); border-radius: var(--rtm-r-pildora); }
-.rtm-divergente > i[data-lado='der'] { left: 50%; }
-.rtm-divergente > i[data-lado='izq'] { right: 50%; background-image: repeating-linear-gradient(135deg, var(--rtm-ink) 0 3px, var(--rtm-surface) 3px 5px); }
+.rtm-divergente-svg { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: var(--rtm-r-pildora); }
+.rtm-divergente-der { fill: var(--rtm-ink); }
+.rtm-divergente-izq { fill: url(#rtm-rayas); }
+.rtm-rayas-fondo { fill: var(--rtm-surface); }
+.rtm-rayas-trazo { fill: var(--rtm-ink); }
 .rtm-divergente-pie { display: flex; justify-content: space-between; max-width: 520px; font-size: 12px; color: var(--rtm-ink-3); }
 .rtm-copiar { display: inline-flex; flex-direction: column; gap: var(--rtm-e-2); align-items: flex-start; max-width: 100%; }
 .rtm-copiar pre { max-width: 100%; }
@@ -75,6 +96,16 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
 
 /* Anchos de la barra divergente (0 a 50 % de la mitad del eje). Sin estilos en linea. */
 .rtm-divergente > i[data-ancho='0'] { width: 0%; }
+/* Desglose por socio: lista de cifras con su explicacion; sin bases flex, la etiqueta crece y el importe se ajusta a su contenido. */
+.rtm-desglose { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--rtm-e-4); align-items: start; }
+.rtm-desglose-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.rtm-desglose-lista li { display: grid; grid-template-columns: 1fr auto; column-gap: var(--rtm-e-3); align-items: baseline; padding: var(--rtm-e-2) 0; border-top: 1px solid var(--rtm-line); }
+.rtm-desglose-lista li:first-child { border-top: 0; }
+.rtm-desglose-importe { font-variant-numeric: tabular-nums; text-align: right; }
+.rtm-desglose-explica { grid-column: 1 / -1; font-size: 12px; color: var(--rtm-ink-3); }
+.rtm-desglose-explica summary { cursor: pointer; width: fit-content; }
+
+/* Ancho de la barra divergente en pasos de 1 % (0 a 50 %): sin estilos en linea. */
 .rtm-divergente > i[data-ancho='1'] { width: 1%; }
 .rtm-divergente > i[data-ancho='2'] { width: 2%; }
 .rtm-divergente > i[data-ancho='3'] { width: 3%; }
@@ -173,3 +204,29 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
   .rtm-campana { position: static; }
   .rtm-campana-panel { position: fixed; left: var(--rtm-e-4); right: var(--rtm-e-4); top: 56px; width: auto; max-height: calc(100dvh - 72px); }
 }
+
+/* Costos del sistema: marcas oficiales sin alterar (un <img> por tema; la clase decide cual se ve). */
+.rtm-marca { display: inline-flex; align-items: center; gap: var(--rtm-e-2); min-width: 0; }
+.rtm-marca-h18 { height: 18px; width: auto; }
+.rtm-marca-h20 { height: 20px; width: auto; }
+.rtm-marca-h22 { height: 22px; width: auto; }
+.rtm-marca img { display: block; max-width: 100%; object-fit: contain; }
+.rtm-marca .rtm-marca-oscuro { display: none; }
+:root[data-tema='oscuro'] .rtm-marca .rtm-marca-claro { display: none; }
+:root[data-tema='oscuro'] .rtm-marca .rtm-marca-oscuro { display: block; }
+.rtm-marca-texto { font-size: 13px; font-weight: 600; color: var(--rtm-ink); }
+.rtm-tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--rtm-e-3); list-style: none; margin: 0; padding: 0; }
+.rtm-tarjeta-costo { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-4); display: flex; flex-direction: column; gap: var(--rtm-e-2); min-width: 0; }
+.rtm-tarjeta-costo header { min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: var(--rtm-e-2); }
+.rtm-tarjeta-costo .rtm-cifra-grande { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rtm-resumen-costos { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); padding: var(--rtm-e-5); display: grid; gap: var(--rtm-e-3); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); background: var(--rtm-surface); }
+.rtm-resumen-costos dt { font-size: 12px; color: var(--rtm-ink-3); }
+.rtm-resumen-costos dd { margin: 0; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rtm-pie-marcas { font-size: 12px; color: var(--rtm-ink-3); max-width: 900px; }
+details.rtm-explicar-linea summary { cursor: pointer; font-size: 12px; color: var(--rtm-ink-2); }
+details.rtm-explicar-linea p { margin: var(--rtm-e-1) 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.rtm-copiable-bloque { display: flex; flex-direction: column; gap: var(--rtm-e-3); }
+.rtm-lista-sabores { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--rtm-e-2); }
+.rtm-lista-sabores li { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); padding: 2px var(--rtm-e-3); font-size: 13px; background: var(--rtm-surface); }
+.rtm-lista-sabores li[data-agotado='true'] { color: var(--rtm-ink-3); text-decoration: line-through; }
+.rtm-reportes-marco { width: 100%; min-height: 70vh; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }

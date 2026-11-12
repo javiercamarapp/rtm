@@ -1,16 +1,19 @@
 import type { Metadata } from 'next';
 import { AreaPesos } from '../../_a3/graficas-pesos';
 import { notFound } from 'next/navigation';
+import { exigirSocio } from '@/composicion/acceso';
 import { operacionDeSocio } from '@/composicion/operacion';
+import { desglosarSocio } from '@/dominio/operacion/desglose_socio';
 import { etiquetaFecha } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
-import { Aviso } from '@/ui/componentes/controles';
+import { Aviso, Segmentado } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 
 import { BotonAccion } from '../../operacion/formulario-accion';
+import { DesgloseSocio } from '../desglose';
 import { Dos, Estado, Pie, abs, m, pct, suma } from '../../_a3/util';
 
 export const metadata: Metadata = { title: 'Estado de cuenta del socio' };
@@ -18,7 +21,12 @@ export const metadata: Metadata = { title: 'Estado de cuenta del socio' };
 export default async function PaginaEstadoSocio({ params }: { params: Promise<{ socio: string }> }) {
   const { socio } = await params;
   if (socio !== 'Angelo' && socio !== 'Javier') notFound();
-  const e = await (await operacionDeSocio()).socioCuenta(socio);
+  const otro = socio === 'Angelo' ? 'Javier' : 'Angelo';
+  const { perfil } = await exigirSocio();
+  const lector = await operacionDeSocio();
+  const [e, eOtro] = await Promise.all([lector.socioCuenta(socio), lector.socioCuenta(otro)]);
+  const d = desglosarSocio(e);
+  const suma2 = e.neto_cent + eOtro.neto_cent;
   const palabra = e.neto_cent > 0n ? 'La sociedad le debe' : e.neto_cent < 0n ? 'Debe a la sociedad' : 'En paz';
   const mov = [...e.movimientos].sort((a, b) => (a.fecha_neg === b.fecha_neg ? a.id - b.id : a.fecha_neg < b.fecha_neg ? -1 : 1));
   const puntos = mov.map((x) => ({ id: `${x.tipo}-${x.id}`, etiqueta: etiquetaFecha(x.fecha_neg), valor: Math.abs(Number(x.saldo_cent)), texto: `${m(x.saldo_cent, true)} · ${x.saldo_cent > 0n ? 'la sociedad le debe' : x.saldo_cent < 0n ? 'debe a la sociedad' : 'en paz'}`, detalle: x.concepto }));
@@ -41,6 +49,7 @@ export default async function PaginaEstadoSocio({ params }: { params: Promise<{ 
         titulo={`Estado de cuenta de ${socio}`}
         descripcion={`${palabra} ${m(abs(e.neto_cent))}${e.dias_fondos !== null ? ` · fondos de la sociedad en su poder desde hace ${e.dias_fondos} días` : ''}`}
       />
+      <Segmentado etiquetaAria="Ver la cuenta de" opciones={(['Angelo', 'Javier'] as const).map((n) => ({ valor: n, etiqueta: n === perfil.socio_nombre ? `Mi cuenta (${n})` : `Cuenta de ${n}`, href: `/socios/${n}`, activa: n === socio, testid: `ver-${n}` }))} />
       {e.dias_fondos !== null && e.fondos_cent > 0n && <Aviso tono="atencion" titulo="Fondos sin entregar.">{socio} tiene {m(e.fondos_cent)} de la sociedad desde hace {e.dias_fondos} días.</Aviso>}
 
       <KpiLinea
@@ -62,6 +71,9 @@ export default async function PaginaEstadoSocio({ params }: { params: Promise<{ 
           { etiqueta: 'Utilidad asignada', valor: m(e.utilidad_asignada_cent) },
         ]}
       />
+
+      <Tarjeta titulo="Desglose de la cuenta" descripcion="Cada cifra con su explicación y su comprobación"><DesgloseSocio d={d} /></Tarjeta>
+      <p className="rtm-nota" data-testid="suma-cuentas">Suma de las posiciones de {socio} y {otro}: {m(suma2, true)}. Es lo que la sociedad les debe a los dos y debe igualar sus activos netos. El gasto pagado por un socio se descuenta una sola vez de la utilidad; el reembolso solo liquida la deuda de la sociedad con él.</p>
 
       <Rejilla dividir="8-4">
         <Tarjeta titulo="Posición después de cada movimiento" descripcion="Magnitud de la posición neta; el signo va en el dato">
@@ -86,7 +98,7 @@ export default async function PaginaEstadoSocio({ params }: { params: Promise<{ 
           vacio={{ titulo: 'Sin movimientos', texto: 'Todavía no hay aportaciones, gastos ni fondos a nombre de este socio.' }}
           columnas={[
             { id: 'd', titulo: 'Fecha', ancho: 's', celda: (x) => etiquetaFecha(x.fecha_neg) },
-            { id: 'c', titulo: 'Concepto', ancho: 'xl', celda: (x) => <Dos a={x.concepto} b={x.tipo === 'aportacion' ? 'Aportación o gasto pagado' : x.tipo === 'libro' ? 'Cuenta con la sociedad' : 'Dinero de la sociedad en su poder'} /> },
+            { id: 'c', titulo: 'Concepto', ancho: 'xl', celda: (x) => <Dos a={x.concepto} b={x.tipo === 'aportacion' ? 'Aportación o gasto pagado' : x.tipo === 'libro' ? 'Cuenta con la sociedad' : x.tipo === 'apertura' ? 'Saldo de apertura firmado por los dos socios' : 'Dinero de la sociedad en su poder'} /> },
             { id: 'm', titulo: 'Efecto', numerica: true, ancho: 'm', celda: (x) => m(x.efecto_cent, true) },
             { id: 's', titulo: 'Posición', numerica: true, ancho: 'm', celda: (x) => m(x.saldo_cent, true) },
             { id: 'q', titulo: 'Quién', ancho: 'l', secundaria: true, celda: (x) => <Dos a={x.autor ?? x.canal} b={x.mensaje_origen ?? <span className="rtm-mono">{x.evento}</span>} /> },

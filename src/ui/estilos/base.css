@@ -39,7 +39,7 @@ button { font: inherit; color: inherit; }
   background: var(--rtm-surface); color: var(--rtm-ink);
   font-size: var(--rtm-cuerpo); font-weight: 500; text-decoration: none; cursor: pointer;
 }
-.rtm-boton:hover { opacity: 0.8; }
+.rtm-boton:hover:not(:disabled) { opacity: 0.8; }
 /* El boton primario es de tinta, nunca del acento. */
 .rtm-boton-primario { background: var(--rtm-ink); color: var(--rtm-panel); border-color: var(--rtm-ink); }
 

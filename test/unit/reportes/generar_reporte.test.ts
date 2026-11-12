@@ -80,7 +80,8 @@ describe('emision: un PDF, un hash, dos canales', () => {
     const [tg, correo] = entrega.envios;
     expect(tg!.canal).toBe('telegram');
     expect(correo!.canal).toBe('correo');
-    expect(sha256BytesHex(tg!.adjunto!.bytes)).toBe(sha256BytesHex(correo!.adjunto!.bytes));
+    expect(correo!.adjunto).toBeNull();
+    expect(correo!.enlace).toBe(`/reportes/${encodeURIComponent(claveReporte(SEMANA))}/1`);
     const v = (await repo.versiones(claveReporte(SEMANA)))[0]!;
     expect(v.sha256Pdf).toBe(sha256BytesHex(tg!.adjunto!.bytes));
     expect(v.entregas).toEqual({ telegram: true, correo: true });

@@ -4,7 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { altaUsuario, consultar, correoUnico, entrarComo, ipFalsa, sembrarInventarioE2E, sembrarOperacionE2E } from './ayudas';
 
 // Puerto del servidor de las pruebas (E2E_PUERTO permite correr en un puerto propio si el 3100 esta ocupado por otra sesion).
-const BASE = `http://127.0.0.1:${process.env.E2E_PUERTO ?? '3100'}`;
+const BASE = process.env.APP_URL_E2E ?? `http://127.0.0.1:${process.env.E2E_PUERTO ?? '3100'}`;
 
 test.describe.configure({ mode: 'serial' });
 test.use({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });

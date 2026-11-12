@@ -61,6 +61,7 @@ test('clientes: lista sin dueno y ficha con tabulador, historial, grafica y "Exp
   await expect(page.getByRole('heading', { level: 1 })).toContainText(/\d+ clientes?/);
   await expect(page.getByRole('link', { name: /De (Angelo|Javier)/ })).toHaveCount(0);
   await expect(page.getByText(/Dueño/)).toHaveCount(0);
+  await expect(page.getByRole('row', { name: /E2E Prueba Cliente/ })).toBeVisible();
   await page.getByRole('link', { name: 'E2E Prueba Cliente' }).click();
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('E2E Prueba Cliente');

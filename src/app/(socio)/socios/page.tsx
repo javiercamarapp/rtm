@@ -1,3 +1,4 @@
+import { exigirSocio } from '@/composicion/acceso';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { etiquetaFecha } from '@/dominio/formato';
@@ -16,6 +17,8 @@ import { AccionesSocios } from './formularios';
 export const metadata: Metadata = { title: 'Cuenta de socios' };
 
 export default async function PaginaSocios() {
+  const { perfil } = await exigirSocio();
+  const mio = perfil.socio_nombre === 'Angelo' || perfil.socio_nombre === 'Javier' ? perfil.socio_nombre : null;
   const c = await (await operacionDeSocio()).cuentaSocios();
   const d = c.javier_debe_a_angelo_cent;
   const parejo = d === 0n;
@@ -89,7 +92,7 @@ export default async function PaginaSocios() {
         </Tarjeta>
       )}
 
-      <Tarjeta plana titulo="Cada socio con la sociedad" acciones={<Link className="rtm-boton" href="/socios/cascada" data-testid="ir-cascada">Cascada de reparto</Link>}>
+      <Tarjeta plana titulo="Cada socio con la sociedad" acciones={<>{mio && <Link className="rtm-boton" href={`/socios/${mio}`} data-testid="ir-mi-desglose">Mi desglose ({mio})</Link>}<Link className="rtm-boton" href="/socios/cascada" data-testid="ir-cascada">Cascada de reparto</Link></>}>
         <DataTable
           etiqueta="Posición de cada socio"
           densidad="densa" plana primeraFija

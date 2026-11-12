@@ -11,6 +11,7 @@ import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
+import { etiquetaOrigen } from './origen';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { AreaSerie } from '@/ui/graficas';
 import '@/ui/estilos/paginas-a1.css';
@@ -20,7 +21,6 @@ import { etiquetaHoy } from '../../contexto';
 export const metadata: Metadata = { title: 'Ficha de cliente' };
 
 // Etiqueta permitida por la regla del dueno: es un hecho de precio, no un filtro ni una agrupacion por dueno.
-const ORIGEN: Record<string, string> = { documento: 'Precio pactado por Angelo', chat: 'Indicación de un socio', lista_javier: 'Precio pactado por Javier' };
 const TIPOS: Record<string, string> = { mayoreo: 'Mayoreo', credito_interno: 'Crédito interno', ocasional: 'Ocasional' };
 
 export default async function PaginaCliente({ params }: { params: Promise<{ id: string }> }) {
@@ -57,7 +57,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
         eyebrow={`Ficha de cliente · ${etiquetaHoy()}`}
         titulo={f.nombre}
         descripcion={`${f.tabulador.length} modelos con precio vigente. Un precio de una nota no cambia el tabulador: solo cambia cuando un socio lo indica.`}
-        acciones={<Link className="rtm-boton rtm-boton-primario" href={`/pedidos/nuevo?cliente=${f.id}`}>Nuevo pedido</Link>}
+        acciones={<><Link className="rtm-boton rtm-boton-primario" href={`/clientes/${f.id}/precios`} data-testid="editar-precios">Editar precios</Link><Link className="rtm-boton" href={`/clientes/${f.id}/editar`}>Editar cliente</Link><Link className="rtm-boton" href={`/pedidos/nuevo?cliente=${f.id}`}>Nuevo pedido</Link></>}
       />
       <div className="rtm-a1-etiquetas" aria-label="Datos del cliente">
         <Chip>{TIPOS[f.tipo] ?? f.tipo}</Chip>
@@ -114,7 +114,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
             { id: 'mi', titulo: 'Margen vs Isaac', numerica: true, ancho: 'm', celda: (t) => { const m = t.margenes.find((x) => x.proveedor === 'Isaac'); return m ? <CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${f.id}:${t.modeloId}`} comprobacion="cuadra" /> : <SinDato />; } },
             { id: 'mk', titulo: 'Margen vs Karen', numerica: true, ancho: 'm', celda: (t) => { const m = t.margenes.find((x) => x.proveedor === 'Karen'); return m ? <><CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${f.id}:${t.modeloId}`} comprobacion="cuadra" /> {m.supuesto && <EstadoTexto tono="atencion">supuesto</EstadoTexto>}</> : <SinDato />; } },
             { id: 'd', titulo: 'Desde', ancho: 'm', secundaria: true, celda: (t) => etiquetaFecha(t.desde) },
-            { id: 'o', titulo: 'Origen', ancho: 'l', secundaria: true, celda: (t) => <>{ORIGEN[t.origen] ?? t.origen}{t.nota && <><br /><span className="rtm-nota">{t.nota}</span></>}</> },
+            { id: 'o', titulo: 'Origen', ancho: 'l', secundaria: true, celda: (t) => <>{etiquetaOrigen(t.origen)}{t.nota && <><br /><span className="rtm-nota">{t.nota}</span></>}</> },
           ]}
         />
       </Tarjeta>

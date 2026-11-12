@@ -7,6 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "vercel-build": "next build",
     "dev": "next dev -p 3100",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src scripts test",
@@ -28,10 +29,18 @@
     "importar:idempotencia": "tsx scripts/importacion/importar.mts --prueba-idempotencia",
     "capturas:f1": "node scripts/capturas/capturas-f1.mjs --restaurar-real",
     "capturas:f2": "node scripts/capturas/capturas-f2.mjs --restaurar-real",
+    "desplegar": "node scripts/despliegue/desplegar.mjs",
+    "desplegar:probar": "node scripts/despliegue/desplegar.mjs --probar",
+    "respaldo": "node scripts/despliegue/respaldo.mjs",
+    "humo": "node scripts/despliegue/humo.mjs",
+    "acceso:alta:nube": "node scripts/acceso/alta-usuarios-nube.mjs",
+    "importar:nube": "tsx scripts/importacion/importar.mts --sql-salida",
     "capturas:f3a": "node scripts/capturas/capturas-f3a.mjs --restaurar-real",
     "capturas:f3b": "node scripts/capturas/capturas-f3b.mjs --restaurar-real",
     "capturas:f3b-inventario": "node scripts/capturas/capturas-f3b-inventario.mjs --restaurar-real",
     "capturas:apertura": "node scripts/capturas/capturas-apertura.mjs --restaurar-real",
+    "capturas:integracion-db": "node scripts/capturas/capturas-integracion-db.mjs --restaurar-real",
+    "agente:registrar": "node scripts/agente/registrar-miembros.mjs",
     "latido": "node scripts/latido-local.mjs"
   },
   "dependencies": {

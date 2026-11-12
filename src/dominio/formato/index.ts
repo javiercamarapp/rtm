@@ -17,6 +17,12 @@ export function formatearMoneda(cent: bigint, opciones: { conSigno?: boolean } =
   return opciones.conSigno && cent > 0n ? `+${cuerpo}` : cuerpo;
 }
 
+/** Entero con separador de miles ("7,934"), para conteos que no son piezas ni dinero. */
+export function formatearEntero(n: number): string {
+  if (!Number.isInteger(n)) throw new RangeError('se esperaba un entero');
+  return `${n < 0 ? MENOS : ''}${agrupar(String(Math.abs(n)))}`;
+}
+
 export function formatearPiezas(n: number): string {
   if (!Number.isInteger(n)) throw new RangeError('piezas deben ser enteras');
   const abs = Math.abs(n);

@@ -184,6 +184,26 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
         </Tarjeta>
       </Rejilla>
 
+      {d.apertura.length > 0 && (
+        <Tarjeta plana titulo="Saldos de apertura por cobrar" descripcion="Vienen de la apertura firmada por los dos socios. Un pago del cliente se aplica primero a esta deuda, la más antigua.">
+          <DataTable
+            etiqueta="Cuentas por cobrar cargadas en la apertura"
+            densidad="densa" plana
+            clave={(a) => a.partida_id}
+            filas={d.apertura.filter((a) => !cliente || String(a.cliente_id) === cliente)}
+            totales={{ etiqueta: 'Total', celdas: { s: formatearMoneda(d.apertura.filter((a) => !cliente || String(a.cliente_id) === cliente).reduce((x, a) => x + a.saldo_cent, 0n)) } }}
+            columnas={[
+              { id: 'c', titulo: 'Cliente', ancho: 'l', celda: (a) => <Link href={`/clientes/${a.cliente_id}`}>{a.cliente}</Link> },
+              { id: 'f', titulo: 'Adeudo del', ancho: 'm', celda: (a) => etiquetaFecha(a.fecha_ref) },
+              { id: 'o', titulo: 'Original', numerica: true, ancho: 'm', celda: (a) => formatearMoneda(a.original_cent) },
+              { id: 'a', titulo: 'Abonos', numerica: true, ancho: 'm', celda: (a) => formatearMoneda(a.abonos_cent) },
+              { id: 's', titulo: 'Saldo', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (a) => formatearMoneda(a.saldo_cent) },
+              { id: 'd', titulo: 'Antigüedad', numerica: true, ancho: 's', celda: (a) => `${a.dias} d` },
+            ]}
+          />
+        </Tarjeta>
+      )}
+
       <Tarjeta plana titulo="Detalle">
         <div className="a3-barra"><BarraFiltros
           etiquetaAria="Filtros"

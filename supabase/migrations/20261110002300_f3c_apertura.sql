@@ -6,6 +6,30 @@
 --  * La reversa deshace los dos. Los controles de contabilidad.reproducir_saldos reconocen el saldo de apertura como auxiliar.
 
 -- ---------------------------------------------------------------------------
+-- Cobro de una cuenta por cobrar de apertura: un pago de un cliente se aplica a su saldo de apertura (que vive en el libro, no en un pedido).
+-- De solo insercion; se corrige con renglones contrarios enlazados. La anulacion del pago los reversa.
+-- ---------------------------------------------------------------------------
+create table operacion.pago_aplicacion_apertura (
+  id bigint generated always as identity primary key,
+  pago_id bigint not null references operacion.pago (id),
+  cliente_id bigint not null references catalogo.cliente (id),
+  monto_cent bigint not null check (monto_cent <> 0),
+  evento_id bigint not null references operacion.evento (id),
+  reversa_de bigint unique references operacion.pago_aplicacion_apertura (id),
+  creado_at timestamptz not null default now(),
+  check ((reversa_de is null) = (monto_cent > 0))
+);
+create index pago_aplicacion_apertura_pago_idx on operacion.pago_aplicacion_apertura (pago_id);
+create index pago_aplicacion_apertura_cliente_idx on operacion.pago_aplicacion_apertura (cliente_id);
+create trigger pago_aplicacion_apertura_t1 before update or delete on operacion.pago_aplicacion_apertura for each row execute function seguridad.t1_solo_insercion();
+create trigger pago_aplicacion_apertura_t1t before truncate on operacion.pago_aplicacion_apertura for each statement execute function seguridad.t1_solo_insercion();
+revoke delete, truncate on operacion.pago_aplicacion_apertura from postgres;
+alter table operacion.pago_aplicacion_apertura enable row level security;
+alter table operacion.pago_aplicacion_apertura force row level security;
+revoke all on operacion.pago_aplicacion_apertura from public, anon, authenticated;
+revoke all on all sequences in schema operacion from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------------
 -- El libro: el movimiento de inventario 'apertura' contra la cuenta puente 3990 (copia de lineas_de_evento con una sola rama nueva).
 -- ---------------------------------------------------------------------------
 create or replace function contabilidad.lineas_de_evento(p_evento bigint)
@@ -41,6 +65,7 @@ begin
     select p.id, p.monto_cent, p.cliente_id, cd.titular_tipo from operacion.pago p join operacion.cuenta_dinero cd on cd.id = p.cuenta_destino_id where p.evento_id = p_evento),
   pgi as (select i.pago_id, i.cliente_id, p.monto_cent from operacion.pago_identificacion i join operacion.pago p on p.id = i.pago_id where i.evento_id = p_evento),
   pga as (select x.pago_id, x.pedido_id, x.monto_cent, operacion.pago_cliente(x.pago_id) as cliente_id from operacion.pago_aplicacion x where x.evento_id = p_evento),
+  pgap as (select x.pago_id, x.monto_cent, x.cliente_id from operacion.pago_aplicacion_apertura x where x.evento_id = p_evento),
   pgn as (
     select p.id, p.monto_cent, operacion.pago_cliente(p.id) as cliente_id, cd.titular_tipo,
            (p.cliente_id is not null or exists (select 1 from operacion.pago_identificacion i where i.pago_id = p.id and i.evento_id < an.evento_id)) as identificado
@@ -130,6 +155,10 @@ begin
     select '2410', x.monto_cent, x.cliente_id, null, null, null, x.pedido_id, 'Pago aplicado al pedido' from pga x
     union all
     select '1210', -x.monto_cent, x.cliente_id, null, null, null, x.pedido_id, 'Pago aplicado al pedido' from pga x
+    union all
+    select '2410', x.monto_cent, x.cliente_id, null, null, null, null, 'Pago aplicado a la cuenta por cobrar de apertura' from pgap x
+    union all
+    select '1210', -x.monto_cent, x.cliente_id, null, null, null, null, 'Pago aplicado a la cuenta por cobrar de apertura' from pgap x
     union all
     select case when p.identificado then '2410' else '2420' end, p.monto_cent, p.cliente_id, null, null, null, null, 'Pago anulado' from pgn p
     union all
@@ -320,14 +349,403 @@ create function apertura.socio_actual() returns bigint
 language sql stable security definer set search_path = ''
 as $$ select s.id from catalogo.socio s join seguridad.usuario u on u.socio_nombre = s.nombre where u.id = auth.uid() and u.activo and u.rol = 'socio' $$;
 
--- Saldo de apertura de una cuenta en su naturaleza (lo que el libro aporta por la apertura vigente, sin las aperturas reversadas).
+-- Saldo de apertura de una cuenta en su naturaleza: solo cuenta el asiento ligado a una sesion de apertura FIRMADA por los dos socios (un asiento manual con la bandera
+-- de apertura que no salga de esa firma no cuenta como auxiliar) y no reversado.
 create function contabilidad.apertura_saldo(p_cuenta text) returns bigint
 language sql stable security definer set search_path = ''
 as $$
   select coalesce(sum(case c.naturaleza when 'D' then l.debe_cent - l.haber_cent else l.haber_cent - l.debe_cent end), 0)::bigint
-  from contabilidad.asiento a join contabilidad.asiento_linea l on l.asiento_id = a.id join contabilidad.cuenta c on c.codigo = l.cuenta
-  where a.es_apertura and l.cuenta = p_cuenta and not exists (select 1 from contabilidad.asiento r where r.reversa_de = a.id)
+  from apertura.sesion s join contabilidad.asiento a on a.evento_id = s.evento_id and a.es_apertura
+       join contabilidad.asiento_linea l on l.asiento_id = a.id join contabilidad.cuenta c on c.codigo = l.cuenta
+  where s.estado = 'firmada' and l.cuenta = p_cuenta and not exists (select 1 from contabilidad.asiento r where r.reversa_de = a.id)
 $$;
+
+-- Lo que la apertura firmada aporta a la cuenta por cobrar (1210) de un cliente.
+create function contabilidad.apertura_saldo_cliente(p_cliente bigint) returns bigint
+language sql stable security definer set search_path = ''
+as $$
+  select coalesce(sum(l.debe_cent - l.haber_cent), 0)::bigint
+  from apertura.sesion s join contabilidad.asiento a on a.evento_id = s.evento_id and a.es_apertura
+       join contabilidad.asiento_linea l on l.asiento_id = a.id
+  where s.estado = 'firmada' and l.cuenta = '1210' and l.cliente_id = p_cliente and not exists (select 1 from contabilidad.asiento r where r.reversa_de = a.id)
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Los saldos de apertura entran a las lecturas de saldo (una cifra, una funcion): cliente, proveedor y socio los ven y las operaciones normales los saldan.
+-- ---------------------------------------------------------------------------
+-- Lo que falta cobrar de la apertura de un cliente (su saldo de apertura menos lo aplicado con pagos).
+create function operacion.apertura_cxc_cliente(p_cliente bigint) returns bigint
+language sql stable security definer set search_path = ''
+as $$ select contabilidad.apertura_saldo_cliente(p_cliente) - coalesce((select sum(x.monto_cent) from operacion.pago_aplicacion_apertura x where x.cliente_id = p_cliente), 0)::bigint $$;
+
+-- Partidas de cuenta por cobrar de la apertura con su fecha y lo cobrado hasta hoy: los pagos se asignan a la partida mas antigua primero.
+create function operacion.cxc_apertura() returns table (cliente_id bigint, partida_id bigint, fecha_ref date, original_cent bigint, abonos_cent bigint, saldo_cent bigint)
+language sql stable security definer set search_path = ''
+as $$
+  with p as (
+    select pa.cliente_id, pa.id, pa.fecha_ref, pa.monto_cent,
+           sum(pa.monto_cent) over (partition by pa.cliente_id order by pa.fecha_ref, pa.id) - pa.monto_cent as antes
+    from apertura.partida pa join apertura.sesion s on s.id = pa.sesion_id
+    where s.estado = 'firmada' and pa.categoria = 'cxc'),
+  a as (select x.cliente_id, sum(x.monto_cent) as aplicado from operacion.pago_aplicacion_apertura x group by x.cliente_id)
+  select p.cliente_id, p.id, p.fecha_ref, p.monto_cent,
+         least(p.monto_cent, greatest(coalesce(a.aplicado, 0) - p.antes, 0))::bigint,
+         (p.monto_cent - least(p.monto_cent, greatest(coalesce(a.aplicado, 0) - p.antes, 0)))::bigint
+  from p left join a on a.cliente_id = p.cliente_id
+$$;
+
+-- Lo que de un pago aun no se aplico a ningun pedido ni a la apertura (0 si esta anulado o sin identificar).
+create or replace function operacion.pago_disponible(p_pago bigint) returns bigint
+language sql stable security definer set search_path = ''
+as $$
+  select case when exists (select 1 from operacion.pago_anulacion a where a.pago_id = p.id) or operacion.pago_cliente(p.id) is null then 0
+              else p.monto_cent - coalesce((select sum(x.monto_cent) from operacion.pago_aplicacion x where x.pago_id = p.id), 0)
+                                - coalesce((select sum(x.monto_cent) from operacion.pago_aplicacion_apertura x where x.pago_id = p.id), 0) end
+  from operacion.pago p where p.id = p_pago
+$$;
+
+create or replace function operacion.saldo_cliente(p_cliente bigint) returns bigint
+language sql stable security definer set search_path = ''
+as $$ select (coalesce(sum(operacion.pedido_saldo(pe.id)), 0) + operacion.apertura_cxc_cliente(p_cliente))::bigint from operacion.pedido pe where pe.cliente_id = p_cliente and pe.estado = 'enviado' $$;
+
+-- >0 a favor de la sociedad; <0 la sociedad le debe al proveedor. Incluye el saldo de apertura (2110 o 2120 con signo contrario: lo que se debe es negativo).
+create or replace function operacion.saldo_proveedor(p_proveedor bigint) returns bigint
+language sql stable security definer set search_path = ''
+as $$ select (coalesce(sum(monto_cent), 0) - contabilidad.apertura_saldo(contabilidad.cta_proveedor(p_proveedor)))::bigint from operacion.cuenta_proveedor_mov where proveedor_id = p_proveedor $$;
+
+-- Lo que el socio debe a la sociedad: fondos en su poder (1150/1160) y faltantes (1170/1180), con lo que traiga la apertura.
+create or replace function operacion.saldo_socio(p_socio bigint, p_aplica_a text default null) returns bigint
+language sql stable security definer set search_path = ''
+as $$
+  select (coalesce(sum(monto_cent), 0)
+          + case when p_aplica_a is null or p_aplica_a = 'fondos' then contabilidad.apertura_saldo(contabilidad.cta_socio(p_socio, 1150)) else 0 end
+          + case when p_aplica_a is null or p_aplica_a = 'diferencia' then contabilidad.apertura_saldo(contabilidad.cta_socio(p_socio, 1170)) else 0 end)::bigint
+  from operacion.cuenta_socio_mov where socio_id = p_socio and (p_aplica_a is null or aplica_a = p_aplica_a)
+$$;
+
+-- Aportado por un socio: capital (3110/3120) y gastos pagados por reembolsar (2310/2320), con lo que traiga la apertura.
+create or replace function operacion.aportado_socio(p_socio bigint, p_clasificacion text default null) returns bigint
+language sql stable security definer set search_path = ''
+as $$
+  select (coalesce(sum(monto_cent), 0)
+          + case when p_clasificacion is null or p_clasificacion = 'capital' then contabilidad.apertura_saldo(contabilidad.cta_socio(p_socio, 3110)) else 0 end
+          + case when p_clasificacion is null or p_clasificacion = 'reembolsable' then contabilidad.apertura_saldo(contabilidad.cta_socio(p_socio, 2310)) else 0 end)::bigint
+  from operacion.aportacion_socio where socio_id = p_socio and (p_clasificacion is null or clasificacion = p_clasificacion)
+$$;
+
+-- Libro del socio por concepto efectivo (una reversa cuenta con el concepto de lo que deshace). La utilidad no repartida de la apertura es 'utilidad_asignada' y el retiro previo es 'retiro'.
+create or replace function operacion.libro_socio(p_socio bigint, p_concepto text default null) returns bigint
+language sql stable security definer set search_path = ''
+as $$
+  select (coalesce(sum(l.monto_cent), 0)
+          + case when p_concepto is null or p_concepto = 'utilidad_asignada' then contabilidad.apertura_saldo(contabilidad.cta_socio(p_socio, 3310)) else 0 end
+          - case when p_concepto is null or p_concepto = 'retiro' then contabilidad.apertura_saldo(contabilidad.cta_socio(p_socio, 3210)) else 0 end)::bigint
+  from operacion.socio_libro l left join operacion.socio_libro o on o.id = l.reversa_de
+  where l.socio_id = p_socio and (p_concepto is null or coalesce(o.concepto, l.concepto) = p_concepto)
+$$;
+
+create or replace function operacion.aplicar_fifo(p_cliente bigint, p_evento bigint) returns bigint
+language plpgsql security definer set search_path = ''
+as $$
+declare ped record; pg record; v_saldo bigint; v_disp bigint; v_monto bigint; v_total bigint := 0; v_pasada int; v_ap bigint;
+begin
+  -- Primero la cuenta por cobrar de apertura (es la deuda mas antigua). Un anticipo destinado a un pedido vigente no se toca.
+  v_ap := operacion.apertura_cxc_cliente(p_cliente);
+  if v_ap > 0 then
+    for pg in
+      select p.id from operacion.pago p
+       where operacion.pago_cliente(p.id) = p_cliente
+         and (p.pedido_destino_id is null or exists (select 1 from operacion.pedido d where d.id = p.pedido_destino_id and d.estado in ('cancelado', 'anulado')))
+       order by p.fecha_neg, p.id
+    loop
+      exit when v_ap <= 0;
+      v_disp := operacion.pago_disponible(pg.id);
+      continue when v_disp <= 0;
+      v_monto := least(v_disp, v_ap);
+      insert into operacion.pago_aplicacion_apertura (pago_id, cliente_id, monto_cent, evento_id) values (pg.id, p_cliente, v_monto, p_evento);
+      v_ap := v_ap - v_monto; v_total := v_total + v_monto;
+    end loop;
+  end if;
+  for v_pasada in 1..2 loop
+    for ped in select pe.id from operacion.pedido pe where pe.cliente_id = p_cliente and pe.estado = 'enviado' order by pe.fecha_envio, pe.id loop
+      v_saldo := operacion.pedido_saldo(ped.id);
+      continue when v_saldo is null or v_saldo <= 0;
+      for pg in
+        select p.id from operacion.pago p
+         where operacion.pago_cliente(p.id) = p_cliente
+           and (p.pedido_destino_id is null or p.pedido_destino_id = ped.id
+                or exists (select 1 from operacion.pedido d where d.id = p.pedido_destino_id and (d.estado in ('cancelado', 'anulado') or (v_pasada = 2 and d.estado = 'enviado'))))
+         order by (p.pedido_destino_id = ped.id) desc nulls last, p.fecha_neg, p.id
+      loop
+        exit when v_saldo <= 0;
+        v_disp := operacion.pago_disponible(pg.id);
+        continue when v_disp <= 0;
+        v_monto := least(v_disp, v_saldo);
+        insert into operacion.pago_aplicacion (pago_id, pedido_id, monto_cent, evento_id) values (pg.id, ped.id, v_monto, p_evento);
+        v_saldo := v_saldo - v_monto; v_total := v_total + v_monto;
+      end loop;
+    end loop;
+  end loop;
+  return v_total;
+end $$;
+
+create or replace function operacion.anular_pago(p_clave_idem text, p_pago bigint, p_motivo text) returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare v_prev jsonb; p operacion.pago; v_ev bigint; v_res jsonb;
+begin
+  perform seguridad.exigir_rol(array['socio', 'importacion']);
+  v_prev := seguridad.iniciar_operacion(p_clave_idem, jsonb_build_object('fn', 'anular_pago', 'p', p_pago, 'm', p_motivo));
+  if v_prev is not null then return v_prev; end if;
+  if nullif(btrim(p_motivo), '') is null then raise exception 'anular exige motivo' using errcode = '23502'; end if;
+  select * into p from operacion.pago where id = p_pago for update;
+  if not found then raise exception 'pago desconocido' using errcode = '22023'; end if;
+  if exists (select 1 from operacion.pago_anulacion where pago_id = p.id) then raise exception 'el pago ya esta anulado' using errcode = 'P0428'; end if;
+  v_ev := operacion.crear_evento('pago_anulado', negocio.hoy(), p_clave_idem, jsonb_build_object('pago', p.folio, 'motivo', p_motivo));
+  insert into operacion.pago_anulacion (pago_id, motivo, evento_id) values (p.id, p_motivo, v_ev);
+  insert into operacion.pago_aplicacion (pago_id, pedido_id, monto_cent, evento_id, reversa_de)
+    select a.pago_id, a.pedido_id, -a.monto_cent, v_ev, a.id from operacion.pago_aplicacion a where a.pago_id = p.id and a.reversa_de is null
+      and not exists (select 1 from operacion.pago_aplicacion r where r.reversa_de = a.id);
+  insert into operacion.pago_aplicacion_apertura (pago_id, cliente_id, monto_cent, evento_id, reversa_de)
+    select a.pago_id, a.cliente_id, -a.monto_cent, v_ev, a.id from operacion.pago_aplicacion_apertura a where a.pago_id = p.id and a.reversa_de is null
+      and not exists (select 1 from operacion.pago_aplicacion_apertura r where r.reversa_de = a.id);
+  insert into operacion.cuenta_socio_mov (socio_id, fecha_neg, concepto, aplica_a, monto_cent, pago_id, cliente_id, nota, evento_id, reversa_de)
+    select m.socio_id, negocio.hoy(), 'reversa', m.aplica_a, -m.monto_cent, m.pago_id, m.cliente_id, 'Anulacion del pago ' || p.folio, v_ev, m.id
+    from operacion.cuenta_socio_mov m where m.pago_id = p.id and m.concepto = 'fondos_en_poder' and not exists (select 1 from operacion.cuenta_socio_mov r where r.reversa_de = m.id);
+  insert into operacion.cuenta_proveedor_mov (proveedor_id, fecha_neg, concepto, monto_cent, pago_id, cliente_id, nota, evento_id, reversa_de)
+    select m.proveedor_id, negocio.hoy(), 'reversa', -m.monto_cent, m.pago_id, m.cliente_id, 'Anulacion del pago ' || p.folio, v_ev, m.id
+    from operacion.cuenta_proveedor_mov m where m.pago_id = p.id and m.concepto = 'pago_cliente_redirigido' and not exists (select 1 from operacion.cuenta_proveedor_mov r where r.reversa_de = m.id);
+  perform operacion.resolver_avisos('pago_sin_identificar', 'pago', p.id);
+  v_res := jsonb_build_object('pago_id', p.id, 'anulado', true);
+  perform seguridad.terminar_operacion(p_clave_idem, v_res);
+  return v_res;
+end $$;
+
+-- Aplica un pago ya registrado (con saldo disponible) a la cuenta por cobrar de apertura de su cliente.
+create function operacion.aplicar_pago_apertura(p_clave_idem text, p_pago bigint, p_monto_cent bigint) returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare v_prev jsonb; v_ev bigint; v_cli bigint; v_saldo bigint; v_disp bigint; v_monto bigint; v_res jsonb;
+begin
+  perform seguridad.exigir_rol(array['socio', 'importacion']);
+  v_prev := seguridad.iniciar_operacion(p_clave_idem, jsonb_build_object('fn', 'aplicar_pago_apertura', 'pa', p_pago, 'm', p_monto_cent));
+  if v_prev is not null then return v_prev; end if;
+  v_cli := operacion.pago_cliente(p_pago);
+  if v_cli is null then raise exception 'el pago esta sin identificar o no existe: identificalo primero' using errcode = 'P0425'; end if;
+  v_saldo := operacion.apertura_cxc_cliente(v_cli); v_disp := operacion.pago_disponible(p_pago);
+  v_monto := least(coalesce(p_monto_cent, v_disp), v_saldo, v_disp);
+  if v_monto <= 0 then raise exception 'nada que aplicar: saldo de apertura del cliente % y disponible del pago %', v_saldo, v_disp using errcode = '23514'; end if;
+  v_ev := operacion.crear_evento('pago_aplicado', negocio.hoy(), p_clave_idem, jsonb_build_object('pago', p_pago, 'apertura', true, 'monto_cent', v_monto));
+  insert into operacion.pago_aplicacion_apertura (pago_id, cliente_id, monto_cent, evento_id) values (p_pago, v_cli, v_monto, v_ev);
+  v_res := jsonb_build_object('aplicado_cent', v_monto, 'saldo_apertura_cent', operacion.apertura_cxc_cliente(v_cli));
+  perform seguridad.terminar_operacion(p_clave_idem, v_res);
+  return v_res;
+end $$;
+create function api.pago_aplicar_apertura(p_clave_idem text, p_pago bigint, p_monto_cent bigint default null) returns jsonb language plpgsql security definer set search_path = ''
+as $$ begin perform seguridad.exigir_rol(array['socio']); return operacion.aplicar_pago_apertura(p_clave_idem, p_pago, p_monto_cent); end $$;
+grant execute on function api.pago_aplicar_apertura(text, bigint, bigint) to authenticated;
+
+-- Guardas de los asientos de apertura.
+create or replace function contabilidad.registrar_asiento_manual(p_clave_idem text, p_fecha date, p_motivo text, p_lineas jsonb, p_apertura boolean default false, p_mensaje_origen text default null) returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare v_prev jsonb; v_ev bigint; v_d bigint; v_h bigint; x jsonb; v_res jsonb; v_asiento bigint;
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  v_prev := seguridad.iniciar_operacion(p_clave_idem, jsonb_build_object('fn', 'registrar_asiento_manual', 'f', p_fecha, 'm', p_motivo, 'l', p_lineas, 'a', p_apertura));
+  if v_prev is not null then return v_prev; end if;
+  -- Un asiento de apertura solo nace de la firma de los dos socios (apertura.publicar); por aqui no se puede marcar como apertura.
+  if coalesce(p_apertura, false) then raise exception 'un asiento de apertura solo sale de la firma de los dos socios en la herramienta de apertura' using errcode = 'P0428'; end if;
+  if nullif(btrim(p_motivo), '') is null then raise exception 'el asiento manual exige motivo' using errcode = '23502'; end if;
+  if jsonb_typeof(p_lineas) <> 'array' or jsonb_array_length(p_lineas) < 2 then raise exception 'el asiento necesita al menos dos líneas' using errcode = '22023'; end if;
+  v_d := 0; v_h := 0;
+  for x in select * from jsonb_array_elements(p_lineas) loop
+    if not exists (select 1 from contabilidad.cuenta c where c.codigo = x->>'cuenta' and c.activa) then raise exception 'cuenta desconocida o inactiva: %', x->>'cuenta' using errcode = '22023'; end if;
+    if (coalesce((x->>'debe_cent')::bigint, 0) > 0) = (coalesce((x->>'haber_cent')::bigint, 0) > 0) or coalesce((x->>'debe_cent')::bigint, 0) < 0 or coalesce((x->>'haber_cent')::bigint, 0) < 0 then
+      raise exception 'cada línea lleva debe o haber (uno solo, positivo)' using errcode = '23514';
+    end if;
+    v_d := v_d + coalesce((x->>'debe_cent')::bigint, 0); v_h := v_h + coalesce((x->>'haber_cent')::bigint, 0);
+  end loop;
+  if v_d <> v_h then raise exception 'el asiento no cuadra: debe % contra haber %', v_d, v_h using errcode = 'P0430'; end if;
+  v_ev := operacion.crear_evento('asiento_manual', coalesce(p_fecha, negocio.hoy()), p_clave_idem, jsonb_build_object('motivo', p_motivo, 'lineas', p_lineas, 'apertura', p_apertura), p_mensaje_origen);
+  v_res := jsonb_build_object('evento_id', v_ev, 'debe_cent', v_d, 'haber_cent', v_h);
+  perform seguridad.terminar_operacion(p_clave_idem, v_res);
+  return v_res;
+end $$;
+
+create or replace function contabilidad.reversar_asiento(p_clave_idem text, p_asiento bigint, p_motivo text) returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare v_prev jsonb; a contabilidad.asiento; v_ev bigint; v_res jsonb;
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  v_prev := seguridad.iniciar_operacion(p_clave_idem, jsonb_build_object('fn', 'reversar_asiento', 'a', p_asiento, 'm', p_motivo));
+  if v_prev is not null then return v_prev; end if;
+  if nullif(btrim(p_motivo), '') is null then raise exception 'la reversa exige motivo' using errcode = '23502'; end if;
+  select * into a from contabilidad.asiento where id = p_asiento;
+  if not found then raise exception 'asiento desconocido' using errcode = '22023'; end if;
+  -- El asiento de una apertura firmada se deshace solo con la reversa de la apertura (que reversa tambien el kardex); por la reversa generica quedaria a medias.
+  if a.es_apertura and coalesce(current_setting('rtm.reversa_apertura', true), '') <> 'si' then raise exception 'el asiento de una apertura solo se revierte con la reversa de la apertura' using errcode = 'P0428'; end if;
+  if not a.es_manual then raise exception 'solo se reversan asientos manuales: un asiento de negocio se corrige anulando la operación que lo generó' using errcode = 'P0428'; end if;
+  if a.reversa_de is not null or exists (select 1 from contabilidad.asiento r where r.reversa_de = a.id) then raise exception 'ese asiento ya está reversado' using errcode = 'P0428'; end if;
+  v_ev := operacion.crear_evento('reversa_asiento', negocio.hoy(), p_clave_idem, jsonb_build_object('asiento_id', a.id, 'motivo', p_motivo), null, a.evento_id, p_motivo);
+  v_res := jsonb_build_object('evento_id', v_ev, 'asiento', a.folio);
+  perform seguridad.terminar_operacion(p_clave_idem, v_res);
+  return v_res;
+end $$;
+
+-- Lecturas para la web con los saldos de apertura.
+create or replace function api.cuentas_por_cobrar() returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_filas jsonb; v_ap jsonb; v_base jsonb; v_hoy date := negocio.hoy(); v_bp int := coalesce((catalogo.config_valor('recargo_credito_bp'))::text::int, 1000);
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  select coalesce(jsonb_agg(x order by (x->>'dias')::int desc), '[]'::jsonb) into v_filas from (
+    select jsonb_build_object(
+      'pedido_id', pe.id, 'folio', pe.folio, 'cliente_id', c.id, 'cliente', c.nombre_canonico, 'duenio', s.nombre, 'fecha_envio', pe.fecha_envio, 'plazo_dias', pe.plazo_dias,
+      'vence', case when pe.plazo_dias is null then null else pe.fecha_envio + pe.plazo_dias end, 'original_cent', operacion.pedido_cobrado(pe.id), 'abonos_cent', operacion.pedido_aplicado(pe.id),
+      'saldo_cent', operacion.pedido_saldo(pe.id), 'dias', v_hoy - pe.fecha_envio,
+      'dias_atraso', case when pe.plazo_dias is null then null else greatest(v_hoy - (pe.fecha_envio + pe.plazo_dias), 0) end,
+      'estado', case when operacion.pedido_saldo(pe.id) < 0 then 'saldo_a_favor' when pe.plazo_dias is null then 'sin_plazo' when v_hoy > pe.fecha_envio + pe.plazo_dias then 'vencido'
+                     when v_hoy >= pe.fecha_envio + pe.plazo_dias - 2 then 'por_vencer' else 'al_corriente' end,
+      'cubeta', case when v_hoy - pe.fecha_envio <= 7 then '0_7' when v_hoy - pe.fecha_envio <= 14 then '8_14' when v_hoy - pe.fecha_envio <= 30 then '15_30' else 'mas_30' end,
+      'recargo_cent', coalesce((select (n.snapshot_cliente->>'recargo_cent')::bigint from operacion.nota n where n.pedido_id = pe.id order by n.id desc limit 1), 0),
+      'recargo_sugerido_cent', coalesce((select ((n.snapshot_cliente->>'subtotal_cent')::bigint * v_bp + 9999) / 10000 from operacion.nota n where n.pedido_id = pe.id order by n.id desc limit 1), 0)) as x
+    from operacion.pedido pe join catalogo.cliente c on c.id = pe.cliente_id join catalogo.socio s on s.id = c.duenio_id
+    where pe.estado = 'enviado' and operacion.pedido_saldo(pe.id) <> 0) q;
+  -- Cuentas por cobrar de la apertura: una fila por partida con su fecha; entran a los totales, la antiguedad y la concentracion por cliente.
+  select coalesce(jsonb_agg(jsonb_build_object('partida_id', a.partida_id, 'cliente_id', a.cliente_id, 'cliente', c.nombre_canonico, 'duenio', s.nombre, 'fecha_ref', a.fecha_ref, 'original_cent', a.original_cent,
+           'abonos_cent', a.abonos_cent, 'saldo_cent', a.saldo_cent, 'dias', v_hoy - a.fecha_ref) order by a.fecha_ref, a.partida_id), '[]'::jsonb) into v_ap
+    from operacion.cxc_apertura() a join catalogo.cliente c on c.id = a.cliente_id join catalogo.socio s on s.id = c.duenio_id where a.saldo_cent <> 0;
+  v_base := v_filas || coalesce((select jsonb_agg(jsonb_build_object('pedido_id', null, 'cliente_id', x->'cliente_id', 'cliente', x->'cliente', 'duenio', x->'duenio', 'saldo_cent', x->'saldo_cent',
+                                    'estado', 'sin_plazo', 'dias', x->'dias', 'vence', null,
+                                    'cubeta', case when (x->>'dias')::int <= 7 then '0_7' when (x->>'dias')::int <= 14 then '8_14' when (x->>'dias')::int <= 30 then '15_30' else 'mas_30' end)) from jsonb_array_elements(v_ap) x), '[]'::jsonb);
+  return jsonb_build_object(
+    'hoy', v_hoy, 'filas', v_filas, 'apertura', v_ap, 'recargo_bp', v_bp,
+    'total_cent', (select coalesce(sum((f->>'saldo_cent')::bigint) filter (where (f->>'saldo_cent')::bigint > 0), 0) from jsonb_array_elements(v_base) f),
+    'vencido_cent', (select coalesce(sum((f->>'saldo_cent')::bigint) filter (where f->>'estado' = 'vencido'), 0) from jsonb_array_elements(v_base) f),
+    'antiguedad_cent', (select jsonb_object_agg(k, coalesce((select sum((f->>'saldo_cent')::bigint) from jsonb_array_elements(v_base) f where f->>'cubeta' = k and (f->>'saldo_cent')::bigint > 0), 0)) from unnest(array['0_7', '8_14', '15_30', 'mas_30']) k),
+    'por_duenio_cent', (select coalesce(jsonb_object_agg(d, coalesce((select sum((f->>'saldo_cent')::bigint) from jsonb_array_elements(v_base) f where f->>'duenio' = d and (f->>'saldo_cent')::bigint > 0), 0)), '{}'::jsonb) from unnest(array['Angelo', 'Javier']) d),
+    'por_cliente', coalesce((select jsonb_agg(jsonb_build_object('cliente_id', k.cid, 'cliente', k.cliente, 'duenio', k.duenio, 'saldo_cent', k.saldo, 'vencido_cent', k.vencido, 'pedidos', k.n, 'dias_max', k.dias_max,
+                  'proximo_vence', k.vence) order by k.saldo desc, k.cliente)
+      from (select (f->>'cliente_id')::bigint as cid, f->>'cliente' as cliente, f->>'duenio' as duenio,
+                   sum((f->>'saldo_cent')::bigint) filter (where (f->>'saldo_cent')::bigint > 0) as saldo,
+                   coalesce(sum((f->>'saldo_cent')::bigint) filter (where f->>'estado' = 'vencido'), 0) as vencido,
+                   count(*) filter (where (f->>'saldo_cent')::bigint > 0)::int as n, max((f->>'dias')::int) as dias_max,
+                   min((f->>'vence')::date) filter (where (f->>'saldo_cent')::bigint > 0) as vence
+            from jsonb_array_elements(v_base) f group by 1, 2, 3 having coalesce(sum((f->>'saldo_cent')::bigint) filter (where (f->>'saldo_cent')::bigint > 0), 0) > 0) k), '[]'::jsonb),
+    'saldos_a_favor', coalesce((select jsonb_agg(jsonb_build_object('cliente_id', c.id, 'cliente', c.nombre_canonico, 'duenio', s.nombre, 'monto_cent', operacion.saldo_favor_cliente(c.id)) order by c.nombre_canonico)
+      from catalogo.cliente c join catalogo.socio s on s.id = c.duenio_id where operacion.saldo_favor_cliente(c.id) > 0), '[]'::jsonb),
+    'pagos_sin_identificar', coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'folio', p.folio, 'fecha_neg', p.fecha_neg, 'monto_cent', p.monto_cent, 'cuenta', cd.nombre) order by p.id)
+      from operacion.pago p join operacion.cuenta_dinero cd on cd.id = p.cuenta_destino_id
+      where p.identificacion = 'sin_identificar' and not exists (select 1 from operacion.pago_identificacion i where i.pago_id = p.id) and not exists (select 1 from operacion.pago_anulacion a where a.pago_id = p.id)), '[]'::jsonb),
+    'socios', coalesce((select jsonb_agg(jsonb_build_object('socio', s.nombre, 'deuda_cent', operacion.saldo_socio(s.id), 'fondos_cent', operacion.saldo_socio(s.id, 'fondos'), 'diferencia_cent', operacion.saldo_socio(s.id, 'diferencia'),
+        'dias_fondos', operacion.dias_fondos_en_poder(s.id),
+        'alerta_fondos', coalesce(operacion.dias_fondos_en_poder(s.id) > (catalogo.config_valor('fondos_alerta_dias'))::text::int, false)) order by s.nombre) from catalogo.socio s), '[]'::jsonb));
+end $$;
+
+create or replace function api.cxc_cliente(p_cliente bigint) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  return jsonb_build_object(
+    'cliente', (select jsonb_build_object('id', c.id, 'nombre', c.nombre_canonico, 'duenio', s.nombre) from catalogo.cliente c join catalogo.socio s on s.id = c.duenio_id where c.id = p_cliente),
+    'saldo_cent', operacion.saldo_cliente(p_cliente), 'saldo_favor_cent', operacion.saldo_favor_cliente(p_cliente),
+    'apertura', coalesce((select jsonb_agg(jsonb_build_object('partida_id', a.partida_id, 'fecha_ref', a.fecha_ref, 'original_cent', a.original_cent, 'abonos_cent', a.abonos_cent, 'saldo_cent', a.saldo_cent) order by a.fecha_ref, a.partida_id)
+                           from operacion.cxc_apertura() a where a.cliente_id = p_cliente), '[]'::jsonb),
+    'pedidos', coalesce((select jsonb_agg(jsonb_build_object('id', pe.id, 'folio', pe.folio, 'estado', pe.estado, 'fecha_envio', pe.fecha_envio, 'cobrado_cent', operacion.pedido_cobrado(pe.id), 'saldo_cent', operacion.pedido_saldo(pe.id),
+        'notas', (select jsonb_agg(n.folio_documento order by n.id) from operacion.nota n where n.pedido_id = pe.id)) order by pe.id desc) from operacion.pedido pe where pe.cliente_id = p_cliente and pe.estado in ('enviado', 'anulado')), '[]'::jsonb),
+    'pagos', coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'folio', p.folio, 'fecha_neg', p.fecha_neg, 'monto_cent', p.monto_cent, 'cuenta', cd.nombre, 'disponible_cent', operacion.pago_disponible(p.id),
+        'anulado', exists (select 1 from operacion.pago_anulacion a where a.pago_id = p.id)) || operacion.evento_info(p.evento_id) order by p.id desc)
+      from operacion.pago p join operacion.cuenta_dinero cd on cd.id = p.cuenta_destino_id where operacion.pago_cliente(p.id) = p_cliente), '[]'::jsonb));
+end $$;
+
+create or replace function api.proveedor_cuenta(p_proveedor text) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_prov catalogo.proveedor; v_saldo bigint;
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  select * into v_prov from catalogo.proveedor where id = catalogo.proveedor_id(p_proveedor);
+  if not found then raise exception 'proveedor desconocido' using errcode = '22023'; end if;
+  v_saldo := operacion.saldo_proveedor(v_prov.id);
+  return jsonb_build_object('id', v_prov.id, 'proveedor', v_prov.nombre, 'modalidad', v_prov.modalidad, 'saldo_cent', v_saldo,
+    'etiqueta', case when v_saldo > 0 then 'A favor' when v_saldo < 0 then 'Se debe' else 'Saldo cero' end,
+    'movimientos', coalesce((select jsonb_agg(x order by (x->>'id')::bigint desc) from (
+        select jsonb_build_object('id', m.id, 'fecha_neg', m.fecha_neg, 'concepto', m.concepto, 'monto_cent', m.monto_cent, 'saldo_corrido_cent', sum(m.monto_cent) over (order by m.id),
+          'compra', (select folio from operacion.compra where id = m.compra_id), 'pago', (select folio from operacion.pago where id = m.pago_id), 'cliente', (select nombre_canonico from catalogo.cliente where id = m.cliente_id),
+          'cuenta_origen', (select nombre from operacion.cuenta_dinero where id = m.cuenta_origen_id), 'nota', m.nota) || operacion.evento_info(m.evento_id) as x
+        from (select c.id, c.fecha_neg, c.concepto, c.monto_cent, c.compra_id, c.pago_id, c.cliente_id, c.cuenta_origen_id, c.nota, c.evento_id from operacion.cuenta_proveedor_mov c where c.proveedor_id = v_prov.id
+              union all
+              select 0::bigint, se.fecha_corte, 'apertura', (-contabilidad.apertura_saldo(contabilidad.cta_proveedor(v_prov.id)))::bigint, null::bigint, null::bigint, null::bigint, null::bigint, 'Saldo de apertura', se.evento_id
+                from apertura.sesion se where se.estado = 'firmada' and se.evento_id is not null and contabilidad.apertura_saldo(contabilidad.cta_proveedor(v_prov.id)) <> 0) m) q), '[]'::jsonb),
+    'puente_cent', operacion.saldo_puente());
+end $$;
+
+create or replace function api.socio_cuenta(p_socio text) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_id bigint; v_movs jsonb;
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  select id into v_id from catalogo.socio where nombre = p_socio;
+  if v_id is null then raise exception 'socio desconocido' using errcode = '22023'; end if;
+  -- Cada renglon trae su efecto sobre la posicion neta y el saldo corrido.
+  select coalesce(jsonb_agg(jsonb_build_object('tipo', m.tipo, 'id', m.id, 'fecha_neg', m.fecha_neg, 'concepto', m.concepto, 'efecto_cent', m.efecto, 'saldo_cent', m.corrido,
+                                               'hora', m.hora, 'deshacible', m.deshacible) || operacion.evento_info(m.evento_id) order by m.orden desc, m.id desc), '[]'::jsonb) into v_movs
+  from (
+    select x.*, sum(x.efecto) over (order by x.orden, x.id) as corrido from (
+      select e.id * 10 + 1 as orden, 'aportacion'::text as tipo, a.id, a.fecha_neg, a.concepto, a.monto_cent as efecto, e.hora, a.evento_id,
+             (a.ref_tipo in ('captura', 'gasto') and a.reversa_de is null and not exists (select 1 from operacion.aportacion_socio r where r.reversa_de = a.id)) as deshacible
+        from operacion.aportacion_socio a join operacion.evento e on e.id = a.evento_id where a.socio_id = v_id
+      union all
+      select e.id * 10 + 2, 'libro', l.id, l.fecha_neg, coalesce(l.nota, l.concepto), l.monto_cent, e.hora, l.evento_id,
+             (l.cierre_id is null and l.concepto <> 'reversa' and not exists (select 1 from operacion.socio_libro r where r.reversa_de = l.id))
+        from operacion.socio_libro l join operacion.evento e on e.id = l.evento_id where l.socio_id = v_id
+      union all
+      select 0::bigint, 'apertura', 0::bigint, se.fecha_corte, 'Saldo de apertura al corte', ef.v, (select ev.hora from operacion.evento ev where ev.id = se.evento_id), se.evento_id, false
+        from apertura.sesion se
+        cross join lateral (select contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 3110)) + contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 2310)) + contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 3310))
+                                 - contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 3210)) - contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 1150)) - contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 1170)) as v) ef
+       where se.estado = 'firmada' and se.evento_id is not null and ef.v <> 0
+      union all
+      select e.id * 10 + 3, 'deuda', c.id, c.fecha_neg, replace(c.concepto, '_', ' ') || coalesce(': ' || c.nota, ''), -c.monto_cent, e.hora, c.evento_id, false
+        from operacion.cuenta_socio_mov c join operacion.evento e on e.id = c.evento_id where c.socio_id = v_id
+    ) x
+  ) m;
+  return jsonb_build_object('socio', p_socio, 'neto_cent', operacion.neto_socio(v_id),
+    'aportaciones_capital_cent', operacion.aportado_socio(v_id, 'capital'), 'gastos_pagados_cent', operacion.aportado_socio(v_id, 'reembolsable'),
+    'reembolsos_recibidos_cent', -operacion.libro_socio(v_id, 'pago_reembolso'), 'devoluciones_recibidas_cent', -operacion.libro_socio(v_id, 'pago_devolucion_aportacion'),
+    'retiros_cent', -(operacion.libro_socio(v_id, 'retiro') + operacion.libro_socio(v_id, 'pago_utilidad') + operacion.libro_socio(v_id, 'liquidacion_recibida')),
+    'utilidad_asignada_cent', operacion.libro_socio(v_id, 'utilidad_asignada'),
+    'fondos_cent', operacion.saldo_socio(v_id, 'fondos'), 'faltantes_cent', operacion.saldo_socio(v_id, 'diferencia'), 'debe_cent', operacion.saldo_socio(v_id),
+    'reembolso_pendiente_cent', operacion.reembolso_pendiente(v_id), 'aportacion_pendiente_cent', operacion.aportacion_pendiente(v_id),
+    'dias_fondos', operacion.dias_fondos_en_poder(v_id), 'movimientos', v_movs);
+end $$;
+
+create or replace function api.estado_socio(p_socio text) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_id bigint;
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  select id into v_id from catalogo.socio where nombre = p_socio;
+  if v_id is null then raise exception 'socio desconocido' using errcode = '22023'; end if;
+  return jsonb_build_object('socio', p_socio, 'deuda_cent', operacion.saldo_socio(v_id), 'fondos_cent', operacion.saldo_socio(v_id, 'fondos'), 'diferencia_cent', operacion.saldo_socio(v_id, 'diferencia'),
+    'aportaciones_cent', (select coalesce(sum(monto_cent), 0) from operacion.aportacion_socio where socio_id = v_id and clasificacion = 'capital'),
+    'reembolsable_cent', (select coalesce(sum(monto_cent), 0) from operacion.aportacion_socio where socio_id = v_id and clasificacion = 'reembolsable'),
+    'movimientos', coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'fecha_neg', m.fecha_neg, 'concepto', m.concepto, 'aplica_a', m.aplica_a, 'monto_cent', m.monto_cent, 'saldo_corrido_cent', m.corrido, 'nota', m.nota) order by m.id desc)
+      from (select x.*, sum(x.monto_cent) over (order by x.id) as corrido from (
+              select c.id, c.fecha_neg, c.concepto, c.aplica_a, c.monto_cent, c.nota from operacion.cuenta_socio_mov c where c.socio_id = v_id
+              union all
+              select -1::bigint, se.fecha_corte, 'apertura', 'fondos', contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 1150)), 'Saldo de apertura' from apertura.sesion se
+               where se.estado = 'firmada' and contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 1150)) <> 0
+              union all
+              select -2::bigint, se.fecha_corte, 'apertura', 'diferencia', contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 1170)), 'Saldo de apertura' from apertura.sesion se
+               where se.estado = 'firmada' and contabilidad.apertura_saldo(contabilidad.cta_socio(v_id, 1170)) <> 0) x) m), '[]'::jsonb));
+end $$;
 
 -- Lineas del asiento de apertura. p_con_inventario = true es la vista completa (para mostrar); false es el contenido del asiento manual (el inventario y su
 -- contrapartida salen del movimiento 'apertura'). Positivo: signo de debe/haber segun el sentido de cada partida.
@@ -623,7 +1041,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- Los controles reconocen el saldo de apertura como auxiliar (clientes, proveedores, fondos, faltantes y posicion de cada socio).
+-- Los controles reconocen el saldo de apertura como auxiliar: clientes, proveedores y la posicion de cada socio ya lo traen las funciones de saldo; los fondos y faltantes de los socios lo suman aqui.
 -- ---------------------------------------------------------------------------
 create or replace function contabilidad.reproducir_saldos() returns table (clave text, descripcion text, mayor_cent bigint, operativo_cent bigint, ok boolean)
 language sql stable security definer set search_path = ''
@@ -636,7 +1054,7 @@ as $$
          + coalesce((select sum(a.monto_cent) from operacion.aportacion_socio a join operacion.compra c on c.id = a.ref_id where a.ref_tipo = 'compra' and a.reversa_de is null and c.estado = 'anulada'), 0)::bigint
     union all select 'puente', 'Diferencias de recepción (1340) contra el puente operativo', contabilidad.saldo('1340'), operacion.saldo_puente()
     union all select 'clientes', 'Clientes (1210) contra los saldos de pedidos enviados', contabilidad.saldo('1210'),
-           coalesce((select sum(operacion.saldo_cliente(c.id)) from catalogo.cliente c), 0)::bigint + contabilidad.apertura_saldo('1210')
+           coalesce((select sum(operacion.saldo_cliente(c.id)) from catalogo.cliente c), 0)::bigint
     union all select 'saldos_favor', 'Saldos a favor de clientes (2410) contra pagos sin aplicar', contabilidad.saldo('2410'),
            coalesce((select sum(operacion.saldo_favor_cliente(c.id)) from catalogo.cliente c), 0)::bigint
     union all select 'por_identificar', 'Depósitos por identificar (2420) contra pagos sin cliente', contabilidad.saldo('2420'),
@@ -647,15 +1065,13 @@ as $$
     union all select 'faltantes_socios', 'Faltantes por cobrar a socios (1170 y 1180) contra la cuenta de los socios', contabilidad.saldo('1170') + contabilidad.saldo('1180'),
            coalesce((select sum(monto_cent) from operacion.cuenta_socio_mov where aplica_a = 'diferencia'), 0)::bigint + contabilidad.apertura_saldo('1170') + contabilidad.apertura_saldo('1180')
     union all select 'proveedor_isaac', 'Isaac (2110) contra su cuenta, los pedidos directos y lo pagado de más fuera de la sociedad', contabilidad.saldo('2110'),
-           (-operacion.saldo_proveedor(catalogo.proveedor_id('Isaac')) + contabilidad.fuera_sociedad(null, catalogo.proveedor_id('Isaac')) + contabilidad.directos_proveedor('Isaac') + contabilidad.apertura_saldo('2110'))::bigint
+           (-operacion.saldo_proveedor(catalogo.proveedor_id('Isaac')) + contabilidad.fuera_sociedad(null, catalogo.proveedor_id('Isaac')) + contabilidad.directos_proveedor('Isaac'))::bigint
     union all select 'proveedor_karen', 'Karen (2120) contra su cuenta, los pedidos directos y lo pagado de más fuera de la sociedad', contabilidad.saldo('2120'),
-           (-operacion.saldo_proveedor(catalogo.proveedor_id('Karen')) + contabilidad.fuera_sociedad(null, catalogo.proveedor_id('Karen')) + contabilidad.directos_proveedor('Karen') + contabilidad.apertura_saldo('2120'))::bigint
+           (-operacion.saldo_proveedor(catalogo.proveedor_id('Karen')) + contabilidad.fuera_sociedad(null, catalogo.proveedor_id('Karen')) + contabilidad.directos_proveedor('Karen'))::bigint
     union all select 'socio_' || lower(s.nombre), 'Posición de ' || s.nombre || ' (aportaciones, reembolsos y utilidad menos lo que tiene en su poder) contra la cuenta de socios',
            contabilidad.saldo(contabilidad.cta_socio(s.id, 2310)) + contabilidad.saldo(contabilidad.cta_socio(s.id, 3110)) + contabilidad.saldo(contabilidad.cta_socio(s.id, 3310))
              - contabilidad.saldo(contabilidad.cta_socio(s.id, 3210)) - contabilidad.saldo(contabilidad.cta_socio(s.id, 1150)) - contabilidad.saldo(contabilidad.cta_socio(s.id, 1170)),
-           (operacion.neto_socio(s.id) - contabilidad.fuera_sociedad(s.id, null)
-             + contabilidad.apertura_saldo(contabilidad.cta_socio(s.id, 2310)) + contabilidad.apertura_saldo(contabilidad.cta_socio(s.id, 3110)) + contabilidad.apertura_saldo(contabilidad.cta_socio(s.id, 3310))
-             - contabilidad.apertura_saldo(contabilidad.cta_socio(s.id, 3210)) - contabilidad.apertura_saldo(contabilidad.cta_socio(s.id, 1150)) - contabilidad.apertura_saldo(contabilidad.cta_socio(s.id, 1170)))::bigint
+           (operacion.neto_socio(s.id) - contabilidad.fuera_sociedad(s.id, null))::bigint
       from catalogo.socio s
     union all select 'omar', 'Omar: renta por pagar (2210) menos tomas por cobrar (1220) contra sus devengos, tomas y pagos', contabilidad.saldo('2210') - contabilidad.saldo('1220'), contabilidad.omar_operativo()
   ) r
@@ -719,6 +1135,14 @@ begin
   if nullif(btrim(p_motivo), '') is null then raise exception 'la reversa exige motivo' using errcode = '23502'; end if;
   select * into s from apertura.sesion where id = p_sesion for update;
   if s.estado <> 'firmada' then raise exception 'solo se revierte una apertura firmada' using errcode = 'P0441'; end if;
+  -- No se revierte si ya salio mercancia de un modelo de la apertura (la reversa dejaria un costo promedio que no corresponde a ningun costo real) ni si ya se cobro una cuenta por cobrar de la apertura.
+  if exists (select 1 from operacion.movimiento_inventario mi join operacion.movimiento_inventario xi on xi.modelo_id = mi.modelo_id and xi.id > mi.id and xi.cantidad < 0
+              where mi.evento_id = s.evento_inventario_id and mi.tipo = 'apertura') then
+    raise exception 'ya salió mercancía de un modelo de la apertura: no se puede revertir; corrige con un ajuste de inventario' using errcode = 'P0423';
+  end if;
+  if exists (select 1 from operacion.pago_aplicacion_apertura x where x.reversa_de is null and not exists (select 1 from operacion.pago_aplicacion_apertura r where r.reversa_de = x.id)) then
+    raise exception 'ya se cobraron cuentas por cobrar de la apertura: anula esos pagos antes de revertirla' using errcode = 'P0441';
+  end if;
   if s.evento_inventario_id is not null then
     v_ev_rev := operacion.crear_evento('apertura_reversa_inventario', negocio.hoy(), p_clave || ':inventario', jsonb_build_object('sesion_id', p_sesion), p_motivo, s.evento_inventario_id, p_motivo);
     for m in select * from operacion.movimiento_inventario where evento_id = s.evento_inventario_id and tipo = 'apertura' order by id loop
@@ -731,7 +1155,9 @@ begin
   -- Una apertura solo de inventario no produce asiento manual (el inventario y su contrapartida 3990 salen del movimiento 'apertura', que se deshace arriba con
   -- su contramovimiento): no hay asiento que reversar. Si el asiento manual traia lineas y no existe, es un error real y se detiene.
   if v_asiento is not null then
+    perform set_config('rtm.reversa_apertura', 'si', true);
     perform contabilidad.reversar_asiento(p_clave || ':asiento', v_asiento, p_motivo);
+    perform set_config('rtm.reversa_apertura', '', true);
   elsif jsonb_array_length(coalesce((select e.payload->'lineas' from operacion.evento e where e.id = s.evento_id), '[]'::jsonb)) > 0 then
     raise exception 'la apertura tiene líneas de asiento pero no se encontró su asiento' using errcode = 'P0441';
   end if;

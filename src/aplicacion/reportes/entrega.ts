@@ -12,7 +12,7 @@ export async function entregaTelegramYCorreo(paquete: Paquete, reporte: ReporteP
     telegram = true;
   }
   if (!correo) {
-    await entrega.correoDuenos(construirCorreo(paquete), { nombre, bytes: pdf });
+    await entrega.correoDuenos(construirCorreo(paquete), `/reportes/${encodeURIComponent(reporte.clave)}/${reporte.version}`);
     await repo.marcarEntrega(reporte.clave, reporte.version, 'correo');
     correo = true;
   }

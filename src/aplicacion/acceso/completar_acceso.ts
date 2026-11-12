@@ -1,7 +1,7 @@
 // Lo que pasa cuando el enlace aterriza en /auth/callback: canjear el codigo, exigir cuenta ACTIVA con rol de la tabla
 // (nunca de user_metadata) y decidir a donde ir. Si algo falla: motivo con nombre y, si el enlace caduco, reenvio automatico.
 import { aParametro, motivoDeIntercambio, motivoSinCode, type MotivoLogin } from '@/dominio/acceso/motivo_login';
-import { destinoSeguro } from '@/dominio/acceso/ruta_segura';
+import { DESTINO_OMAR, destinoSeguro } from '@/dominio/acceso/ruta_segura';
 import { reenviarEnlaceCaducado } from './reenvio';
 import type { DepsAcceso } from './puertos';
 
@@ -28,6 +28,8 @@ export async function completarAcceso(deps: DepsAcceso, entrada: EntradaCallback
         const estado = await deps.autenticador.sesion();
         const perfil = estado.autenticado ? estado.perfil : null;
         if (perfil && perfil.activo && perfil.rol === 'socio') return { destino };
+        // Omar con cuenta ACTIVA (interruptor de M2) entra solo a su vista; desactivada cae al fallback de abajo.
+        if (perfil && perfil.activo && perfil.rol === 'omar') return { destino: DESTINO_OMAR };
         // Cuenta sin fila, inactiva (Omar hasta M2) o con rol sin pantallas: el enlace canjea pero no hay sesion usable.
         try {
           await deps.autenticador.cerrarSesion();
@@ -80,6 +82,7 @@ export async function completarConfirmacion(deps: DepsAcceso, entrada: EntradaCo
     const estado = await deps.autenticador.sesion();
     const perfil = estado.autenticado ? estado.perfil : null;
     if (perfil && perfil.activo && perfil.rol === 'socio') return { destino };
+    if (perfil && perfil.activo && perfil.rol === 'omar') return { destino: DESTINO_OMAR };
     try {
       await deps.autenticador.cerrarSesion();
     } catch {

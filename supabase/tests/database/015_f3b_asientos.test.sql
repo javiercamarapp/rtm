@@ -135,7 +135,12 @@ select ok((contabilidad.valuacion()->'identidades'->'i1'->>'cuadra')::boolean, '
 select ok((contabilidad.valuacion()->'identidades'->'i2'->>'cuadra')::boolean, 'GU-3: identidad I-2 cuadra al centavo');
 select is(((contabilidad.balance_general(negocio.hoy()))->>'diferencia_cent')::bigint, 0::bigint, 'v_balance: activo igual a pasivo mas capital');
 
-select operacion.registrar_pago_a_socio('f3b5', 'Angelo', 300000, 'retiro');
+-- Desde la fusion con dinero-socios, registrar_pago_a_socio exige utilidad asignada y caja de la empresa (H10); esta prueba solo verifica
+-- el MAPEO contable del retiro (socio_libro 'retiro' -> Dr 3210 / Cr 1101), asi que siembra el evento y su renglon del libro directamente.
+select operacion.crear_evento('pago_a_socio', negocio.hoy(), 'f3b5', jsonb_build_object('socio', 'Angelo', 'monto_cent', 300000, 'tipo', 'retiro'), null);
+insert into operacion.socio_libro (socio_id, fecha_neg, concepto, monto_cent, via, nota, evento_id)
+  select (select id from catalogo.socio where nombre = 'Angelo'), negocio.hoy(), 'retiro', -300000, 'transferencia', 'Retiro de utilidad',
+         (select id from operacion.evento where clave_idem = 'f3b5');
 select pg_temp.flush();
 select is(pg_temp.debe('f3b5', '3210'), 300000::bigint, 'GU-4: el retiro de 3,000.00 va a 3210 (contra capital)');
 select is(pg_temp.d('v04_utilidad_empresa_cent'), 564538::bigint, 'GU-4: la utilidad no cambia con el retiro (no es perdida)');
@@ -180,9 +185,10 @@ select throws_ok($t$do $b$ begin set constraints all immediate; insert into cont
 -- Asientos manuales, reversas y periodos -------------------------------------------------------------------------------------------------------------
 select throws_ok($$select contabilidad.registrar_asiento_manual('f3m0', '2026-10-05', 'prueba', '[{"cuenta":"1101","debe_cent":100},{"cuenta":"3990","haber_cent":90}]'::jsonb)$$, 'P0430', null, 'un asiento manual descuadrado se rechaza');
 select throws_ok($$select contabilidad.registrar_asiento_manual('f3m0b', '2026-10-05', '', '[{"cuenta":"1101","debe_cent":100},{"cuenta":"3990","haber_cent":100}]'::jsonb)$$, '23502', null, 'el asiento manual exige motivo');
-select lives_ok($$select contabilidad.registrar_asiento_manual('f3m1', '2026-10-05', 'saldo de apertura de prueba', '[{"cuenta":"1101","debe_cent":100},{"cuenta":"3990","haber_cent":100}]'::jsonb, true)$$, 'asiento manual de apertura');
+select throws_ok($$select contabilidad.registrar_asiento_manual('f3m1a', '2026-10-05', 'apertura por fuera de la firma', '[{"cuenta":"1101","debe_cent":100},{"cuenta":"3990","haber_cent":100}]'::jsonb, true)$$, 'P0428', null, 'un asiento manual no se puede marcar como apertura: solo la firma de los dos socios lo hace');
+select lives_ok($$select contabilidad.registrar_asiento_manual('f3m1', '2026-10-05', 'ajuste de prueba', '[{"cuenta":"1101","debe_cent":100},{"cuenta":"3990","haber_cent":100}]'::jsonb)$$, 'asiento manual');
 select pg_temp.flush();
-select ok((select es_apertura from contabilidad.asiento where evento_id = pg_temp.ev('f3m1')), 'queda marcado como apertura');
+select ok(not (select es_apertura from contabilidad.asiento where evento_id = pg_temp.ev('f3m1')), 'no queda marcado como apertura');
 select is(pg_temp.debe('f3m1', '1101'), 100::bigint, 'el manual registra sus lineas');
 select lives_ok($$select contabilidad.reversar_asiento('f3m1x', (select id from contabilidad.asiento where evento_id = pg_temp.ev('f3m1')), 'se capturo por error')$$, 'la reversa de un manual');
 select pg_temp.flush();

@@ -83,8 +83,10 @@ export interface FilaCxc {
   original_cent: Cent; abonos_cent: Cent; saldo_cent: Cent; dias: number; dias_atraso: number | null; estado: 'al_corriente' | 'por_vencer' | 'vencido' | 'sin_plazo' | 'saldo_a_favor'; cubeta: '0_7' | '8_14' | '15_30' | 'mas_30';
   recargo_cent: Cent; recargo_sugerido_cent: Cent;
 }
+/** Cuenta por cobrar cargada en la apertura: una fila por partida con la fecha del adeudo; los cobros se asignan a la mas antigua primero. */
+export interface FilaCxcApertura { partida_id: number; cliente_id: number; cliente: string; duenio: 'Angelo' | 'Javier'; fecha_ref: string; original_cent: Cent; abonos_cent: Cent; saldo_cent: Cent; dias: number }
 export interface CuentasPorCobrar {
-  hoy: string; filas: FilaCxc[]; total_cent: Cent; vencido_cent: Cent; antiguedad_cent: Record<'0_7' | '8_14' | '15_30' | 'mas_30', Cent>; por_duenio_cent: Record<string, Cent>;
+  hoy: string; filas: FilaCxc[]; apertura: FilaCxcApertura[]; total_cent: Cent; vencido_cent: Cent; antiguedad_cent: Record<'0_7' | '8_14' | '15_30' | 'mas_30', Cent>;
   saldos_a_favor: { cliente_id: number; cliente: string; duenio: string; monto_cent: Cent }[];
   pagos_sin_identificar: { id: number; folio: string; fecha_neg: string; monto_cent: Cent; cuenta: string }[];
   socios: { socio: 'Angelo' | 'Javier'; deuda_cent: Cent; fondos_cent: Cent; diferencia_cent: Cent; dias_fondos: number | null; alerta_fondos: boolean }[];
@@ -93,6 +95,7 @@ export interface CuentasPorCobrar {
 }
 export interface CxcCliente {
   cliente: { id: number; nombre: string; duenio: string }; saldo_cent: Cent; saldo_favor_cent: Cent;
+  apertura: { partida_id: number; fecha_ref: string; original_cent: Cent; abonos_cent: Cent; saldo_cent: Cent }[];
   pedidos: { id: number; folio: string; estado: string; fecha_envio: string; cobrado_cent: Cent; saldo_cent: Cent; notas: string[] | null }[];
   pagos: (EventoInfo & { id: number; folio: string; fecha_neg: string; monto_cent: Cent; cuenta: string; disponible_cent: Cent; anulado: boolean })[];
 }
@@ -155,28 +158,31 @@ export interface CuentaSocios {
   financiado_por_sociedad_cent: Cent; cuadra: boolean; partidas_fuera_sociedad: { socio: string; monto_cent: Cent; concepto: string; estado: string; piezas: number | null }[];
   socios: SocioResumen[]; movimientos: MovimientoSocios[];
 }
-export interface MovimientoEstadoSocio extends EventoInfo { tipo: 'aportacion' | 'libro' | 'deuda'; id: number; fecha_neg: string; concepto: string; efecto_cent: Cent; saldo_cent: Cent; deshacible: boolean }
+export interface MovimientoEstadoSocio extends EventoInfo { tipo: 'aportacion' | 'libro' | 'deuda' | 'apertura'; id: number; fecha_neg: string; concepto: string; efecto_cent: Cent; saldo_cent: Cent; deshacible: boolean }
 export interface EstadoCuentaSocio {
   socio: 'Angelo' | 'Javier'; neto_cent: Cent; aportaciones_capital_cent: Cent; gastos_pagados_cent: Cent; reembolsos_recibidos_cent: Cent; devoluciones_recibidas_cent: Cent; retiros_cent: Cent;
   utilidad_asignada_cent: Cent; fondos_cent: Cent; faltantes_cent: Cent; debe_cent: Cent; reembolso_pendiente_cent: Cent; aportacion_pendiente_cent: Cent; dias_fondos: number | null;
   movimientos: MovimientoEstadoSocio[];
 }
 export interface ResultadoSocioCascada {
-  reembolso_pendiente_cent: Cent; aportacion_pendiente_cent: Cent; paga_reembolso_cent: Cent; paga_aportacion_cent: Cent; utilidad_cent: Cent; asignado_cent: Cent;
+  reembolso_pendiente_cent: Cent; aportacion_pendiente_cent: Cent; paga_reembolso_cent: Cent; utilidad_cent: Cent; anticipo_cent: Cent; asignado_cent: Cent;
   tiene_en_poder_cent: Cent; debe_cent: Cent; resultado_cent: Cent; sigue_pendiente_cent: Cent;
 }
 export interface Cascada {
   periodo_ini: string; periodo_fin: string; utilidad_cent: Cent; perdida_cent: Cent; utilidad_provisional: boolean;
   utilidad_detalle: { utilidad_pedidos_cent: Cent; pedidos: number; utilidad_tomas_cent: Cent; gastos_cent: Cent; provisional: boolean; utilidad_cent: Cent };
-  efectivo: { en_poder_cent: Cent; caja_cent: Cent; total_cent: Cent };
+  arrastre_ini_cent: Cent; arrastre_fin_cent: Cent; utilidad_acumulada_cent: Cent;
+  efectivo: { en_poder_cent: Cent; caja_cent: Cent; total_cent: Cent; comprometido_cent: Cent; disponible_cent: Cent };
   reembolsos: { pendiente_cent: Cent; pagado_cent: Cent }; aportaciones: { pendiente_cent: Cent; pagado_cent: Cent };
-  repartible_cent: Cent; remanente_cent: Cent; limitado_por_efectivo: boolean; devolver_aportaciones_antes: boolean;
+  repartible_cent: Cent; remanente_cent: Cent; limitado_por_efectivo: boolean;
   por_socio: Record<'Angelo' | 'Javier', ResultadoSocioCascada>; suma_asignada_cent: Cent; suma_resultados_cent: Cent; identidad_cuadra: boolean;
+  identidad: { via1_cent: Cent; via2_cent: Cent; efectivo_repartido_cent: Cent; deuda_no_efectivo_cent: Cent; cuadra: boolean };
   liquidar: { de: 'Angelo' | 'Javier'; a: 'Angelo' | 'Javier'; monto_cent: Cent } | null;
 }
 export interface CascadaProyeccion extends Cascada { hoy: string; en_vivo: boolean }
 export interface CierreReparto {
-  id: number; folio: string; periodo_ini: string; periodo_fin: string; utilidad_cent: Cent; utilidad_provisional: boolean; efectivo_caja_cent: Cent; nota: string | null; snapshot: Cascada;
+  id: number; folio: string; tipo: 'periodo' | 'contra'; corrige_a: number | null; corregida: boolean; periodo_ini: string; periodo_fin: string; utilidad_cent: Cent; utilidad_provisional: boolean; efectivo_caja_cent: Cent; nota: string | null; snapshot: Cascada;
+  decisiones: Record<string, { retira: Cent; reinvierte: Cent }>; arrastre_ini_cent: Cent; arrastre_fin_cent: Cent;
   creado_at: string; propuesto_por: string | null; firmas: { socio: string; firmado_at: string }[]; estado: 'propuesto' | 'firmado_por_uno' | 'cerrado' | 'anulado'; yo_firme: boolean;
 }
 

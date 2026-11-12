@@ -29,7 +29,7 @@ export interface LectorOperacion {
   liquidacionesProveedor(proveedor: string): Promise<LiquidacionProveedor[]>;
   cuentaSocios(): Promise<CuentaSocios>;
   socioCuenta(socio: string): Promise<EstadoCuentaSocio>;
-  cascadaProyeccion(ini: string | null, fin: string | null, cajaCent: bigint): Promise<CascadaProyeccion>;
+  cascadaProyeccion(ini: string | null, fin: string | null): Promise<CascadaProyeccion>;
   cierresReparto(): Promise<CierreReparto[]>;
   omarCuenta(semanaIni: string | null): Promise<OmarCuenta>;
   textoCobro(clienteId: number): Promise<{ texto: string | null; total_cent: bigint; cliente: string; vencidos?: number }>;
@@ -39,10 +39,13 @@ export interface LectorOperacion {
 export const ACCIONES_OPERACION = [
   'crear_compra', 'confirmar_compra', 'marcar_compra_enviada', 'registrar_guia_compra', 'marcar_llego_merida', 'recibir_compra', 'asignar_diferencia', 'cerrar_compra', 'anular_compra',
   'crear_pedido', 'confirmar_pedido', 'cancelar_pedido', 'marcar_empacado', 'enviar_pedido', 'anular_pedido', 'emitir_correccion', 'acordar_plazo', 'marcar_entregado', 'fijar_costo_guia',
-  'registrar_pago', 'aplicar_pago', 'identificar_pago', 'anular_pago', 'pago_proveedor_de_socio', 'registrar_entrega_socio',
+  'registrar_pago', 'aplicar_pago', 'pago_aplicar_apertura', 'identificar_pago', 'anular_pago', 'pago_proveedor_de_socio', 'registrar_entrega_socio',
   'registrar_toma_omar', 'resolver_toma_omar', 'cerrar_liquidacion_omar', 'registrar_pago_omar', 'aviso_marcar_leido',
   // F3a
   'registrar_aportacion', 'registrar_gasto_socio', 'registrar_pago_a_socio', 'registrar_liquidacion_entre_socios', 'anular_movimiento_socio', 'proponer_cierre_reparto', 'firmar_cierre_reparto', 'anular_cierre_reparto',
+  // Integracion: costos del sistema
+  'costos_registrar_cargo', 'costos_anular_cargo', 'costos_registrar_reembolso', 'costos_registrar_tipo_cambio',
+  'contra_acta_reparto', 'proponer_retiro_capital', 'confirmar_retiro_capital', 'registrar_movimiento_efectivo', 'registrar_gasto_empresa',
   'registrar_ajuste_proveedor', 'registrar_pago_proveedor_sociedad', 'anular_movimiento_proveedor', 'fijar_ambito_pedido', 'registrar_dicho_proveedor', 'cerrar_liquidacion_proveedor', 'registrar_recargo_credito',
   // F3b
   'conta_preparar_periodo', 'conta_aprobar_periodo', 'conta_publicar_periodo', 'conta_reabrir_periodo', 'conta_asiento_manual', 'conta_reversar_asiento',

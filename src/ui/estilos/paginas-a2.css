@@ -6,7 +6,7 @@
 .rtm-a2-campo > input[type='search'] { min-width: 200px; }
 .rtm-a2-campo > input[type='number'] { width: 110px; }
 .rtm-a2-aplicar { display: none; }
-@media (max-width: 767px) { .rtm-a2-filtros { align-items: stretch; } .rtm-a2-campo { flex: 1 1 140px; } .rtm-a2-campo > :is(input, select) { height: 44px; font-size: 16px; width: 100%; } .rtm-a2-aplicar { display: inline-flex; } }
+@media (max-width: 767px) { .rtm-a2-filtros { align-items: stretch; } .rtm-a2-campo { flex-grow: 1; min-width: min(140px, 100%); } .rtm-a2-campo > :is(input, select) { height: 44px; font-size: 16px; width: 100%; } .rtm-a2-aplicar { display: inline-flex; } }
 .rtm-a2-sin-js .rtm-a2-aplicar { display: inline-flex; }
 
 .rtm-a2-dos { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: var(--rtm-ritmo); align-items: start; }
@@ -37,6 +37,6 @@
 }
 @media (max-width: 767px) {
   .rtm-a2-campo > input[type='search'] { min-width: 0; width: 100%; }
-  .rtm-a2-campo:has(> input[type='search']) { flex: 1 1 100%; }
+  .rtm-a2-campo:has(> input[type='search']) { flex-grow: 1; min-width: 100%; }
   .rtm-a2-filtros > .rtm-boton { min-height: 44px; }
 }

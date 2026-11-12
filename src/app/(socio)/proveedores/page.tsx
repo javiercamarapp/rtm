@@ -75,6 +75,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
         acciones={
           <>
             <Segmentado etiquetaAria="Proveedor" opciones={[{ valor: 'Isaac', etiqueta: 'Isaac', href: '/proveedores?p=Isaac', activa: proveedor === 'Isaac' }, { valor: 'Karen', etiqueta: 'Karen', href: '/proveedores?p=Karen', activa: proveedor === 'Karen' }]} />
+            <Link className="rtm-boton" href="/proveedores/inventario" data-testid="ir-inventario">Inventario actual de proveedores</Link>
             <Link className="rtm-boton rtm-boton-primario" href={`/proveedores/compras/nueva?p=${proveedor}`} data-testid="nueva-oc">Nueva orden de compra</Link>
           </>
         }

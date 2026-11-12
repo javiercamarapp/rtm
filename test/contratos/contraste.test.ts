@@ -18,7 +18,7 @@ const TEMAS = { claro, oscuro } as const;
 
 describe('contraste de tokens', () => {
   it('el borde de control apunta a line-strong', () => {
-    expect(css).toMatch(/--rtm-borde-control:\s*var\(--rtm-line-strong\)/);
+    expect(css).toMatch(/--rtm-borde-control:\s*var\(--rtm-campo-borde\)/);
   });
   for (const [nombre, t] of Object.entries(TEMAS)) {
     for (const fondo of ['panel', 'surface'] as const) {
@@ -27,7 +27,7 @@ describe('contraste de tokens', () => {
       });
       it(`${nombre}: marcas de datos (--rtm-d-*) y borde de control >= 3 sobre ${fondo}`, () => {
         for (const k of Object.keys(t).filter((x) => x.startsWith('d-'))) expect(cr(t[k]!, t[fondo]!), k).toBeGreaterThanOrEqual(3);
-        expect(cr(t['line-strong']!, t[fondo]!)).toBeGreaterThanOrEqual(3);
+        expect(cr(t['campo-borde']!, t[fondo]!)).toBeGreaterThanOrEqual(3);
       });
     }
   }

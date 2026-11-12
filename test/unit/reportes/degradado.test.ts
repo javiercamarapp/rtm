@@ -72,7 +72,7 @@ describe('reportes con datos escasos o vacios no se rompen', () => {
     const html = renderHtml(r, { cssFuentes: '' });
     expect(html).toContain('<section');
     expect(construirTelegram(p)).toContain('Reporte semanal');
-    expect(construirCorreo(p).cuerpo).toContain('Adjunto el reporte semanal');
+    expect(construirCorreo(p).cuerpo).toContain('El reporte semanal');
   });
   it('mes vacio construye las 12 paginas con mensajes de falta de muestra', () => {
     const p = armarPaquete(vacioMes());

@@ -50,6 +50,7 @@ export function crearEnviadorTelegram(config: { token: string; fetch: FetchLike;
         reply_markup: tecladoDe(m.botones),
         reply_to_message_id: m.respondeA,
         protect_content: m.protegido === true,
+        disable_notification: m.silencioso === true,
         link_preview_options: { is_disabled: true },
       });
       return { messageId: res.message_id };

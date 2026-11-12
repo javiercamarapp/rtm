@@ -33,6 +33,8 @@ export interface EnvioRegistrado {
   readonly texto: string;
   readonly asunto?: string;
   readonly adjunto: { nombre: string; bytes: Uint8Array } | null;
+  /** Solo el correo: ruta autenticada del reporte (nunca un archivo adjunto). */
+  readonly enlace?: string;
 }
 
 /** Entrega que registra lo enviado. No tiene forma de escribir a clientes ni a proveedores: solo al grupo de socios y a los dos dueños. */
@@ -41,8 +43,8 @@ export class EntregaMemoria implements EntregaReportes {
   async telegramSocios(texto: string, adjunto: { nombre: string; bytes: Uint8Array } | null): Promise<void> {
     this.envios.push({ canal: 'telegram', texto, adjunto });
   }
-  async correoDuenos(correo: { asunto: string; cuerpo: string }, adjunto: { nombre: string; bytes: Uint8Array }): Promise<void> {
-    this.envios.push({ canal: 'correo', texto: correo.cuerpo, asunto: correo.asunto, adjunto });
+  async correoDuenos(correo: { asunto: string; cuerpo: string }, enlace: string): Promise<void> {
+    this.envios.push({ canal: 'correo', texto: correo.cuerpo, asunto: correo.asunto, adjunto: null, enlace });
   }
 }
 

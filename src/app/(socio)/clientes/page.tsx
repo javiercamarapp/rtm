@@ -57,7 +57,7 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
         eyebrow={`Clientes · ${etiquetaHoy()}`}
         titulo={`${todos.length} ${todos.length === 1 ? 'cliente' : 'clientes'}`}
         descripcion={`${conSaldo.length} con saldo (${cxc ? formatearMoneda(saldoTot) : 'sin dato'}) · ${conVencido.length} con saldo vencido. Cada cliente tiene un tabulador por modelo con su historial.`}
-        acciones={<Link className="rtm-boton rtm-boton-primario" href="/pedidos/nuevo">Nuevo pedido</Link>}
+        acciones={<><Link className="rtm-boton" href="/pedidos/nuevo">Nuevo pedido</Link><Link className="rtm-boton rtm-boton-primario" href="/clientes/nuevo" data-testid="nuevo-cliente">Nuevo cliente</Link></>}
       />
       <BarraFiltros etiquetaAria="Vistas de clientes">
         {VISTAS.map((v) => <Chip key={v.clave} href={filtro(v.clave)} activo={vista === v.clave} tono={v.clave === 'vencido' ? 'malo' : 'neutro'}>{`${v.texto} ${cuenta(v.clave)}`}</Chip>)}

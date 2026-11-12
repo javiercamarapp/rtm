@@ -71,6 +71,34 @@ function urlLocal(): string {
   if (process.env.RTM_DB_URL) return process.env.RTM_DB_URL;
   return (JSON.parse(execFileSync('supabase', ['status', '-o', 'json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })) as { DB_URL: string }).DB_URL;
 }
+// Modo nube: no se conecta; escribe un archivo SQL (una transaccion, idempotente) que se ejecuta con `supabase db query --linked -f`.
+const salidaSql = (() => { const i = process.argv.indexOf('--sql-salida'); return i > 0 ? process.argv[i + 1] : null; })();
+if (salidaSql) {
+  const arr = (a: unknown[]): string => `{${a.map((x) => (x === null ? 'NULL' : `"${String(x).replace(/(["\\\\])/g, '\\$1')}"`)).join(',')}}`;
+  const lit = (v: unknown): string => (v === null || v === undefined ? 'null' : pg.escapeLiteral(Array.isArray(v) ? arr(v) : String(v)));
+  const sentencias: string[] = ['begin;', "select set_config('rtm.canal', 'importacion', true);"];
+  const q = async (sql: string, p: unknown[]) => { sentencias.push(`${sql.replace(/\$(\d+)/g, (_m, n) => lit(p[Number(n) - 1]))};`); return { rows: [] }; };
+  await (async () => {
+    // Misma secuencia que aplicar(), con q que acumula.
+    for (const mo of plan.modelos) await q('select catalogo.asegurar_modelo($1,$2,$3,$4)', [mo.marca, mo.nombre, mo.puffs, mo.lista]);
+    for (const n of plan.sinDisponibilidad) await q('select catalogo.fijar_disponibilidad($1,$2,$3)', [`imp:disp:${normalizar(n)}:sin_disponibilidad`, n, 'sin_disponibilidad']);
+    for (const cl of plan.clientes) await q('select catalogo.asegurar_cliente($1,$2,$3,$4)', [cl.nombre, cl.duenio, cl.tipo, cl.nota]);
+    if (plan.personaBodega) await q('select catalogo.asegurar_persona_bodega($1,$2)', [plan.personaBodega.cliente, plan.personaBodega.nombre]);
+    for (const d of plan.destinos) await q('select catalogo.agregar_destino($1,$2,$3)', [d.cliente, d.etiqueta, d.zona]);
+    for (const a of plan.aliasModelo) await q("select catalogo.agregar_alias($1,'modelo',$2,$3,$4,$5)", [`imp:am:${normalizar(a.alias)}`, a.alias, a.destinos, a.porConfirmar, a.nota]);
+    for (const a of plan.aliasCliente) await q("select catalogo.agregar_alias($1,'cliente',$2,$3,$4,$5)", [`imp:ac:${normalizar(a.alias)}`, a.alias, a.destinos, a.porConfirmar, a.nota]);
+    for (const k of plan.costos) await q('select catalogo.fijar_costo($1,$2,$3,$4,$5,$6,null,$7)', [`imp:costo:${k.proveedor}:${normalizar(k.modelo)}:${k.desde}:${k.centavos}`, k.proveedor, k.modelo, k.centavos.toString(), k.desde, k.fuente, k.supuesto]);
+    for (const p of plan.precios) await q('select catalogo.fijar_precio($1,$2,$3,$4,$5,$6,$7)', [`imp:precio:${normalizar(p.cliente)}:${normalizar(p.modelo)}:${p.desde}:${p.centavos}`, p.cliente, p.modelo, p.centavos.toString(), p.desde, p.origen, p.nota]);
+    for (const l of plan.listasSinDuenio) await q('select catalogo.guardar_lista_sin_duenio($1,$2,$3)', [l.referencia, l.origen, JSON.stringify(l.filas.map((f) => ({ modelo: f.modelo, precio_cent: Number(f.centavos) })))]);
+    for (const h of plan.historicos) await q('select catalogo.registrar_precio_historico_externo($1,$2,$3,$4,$5,$6)', [`imp:hist:${normalizar(h.cliente)}:${normalizar(h.modelo)}:${h.centavos}`, h.cliente, h.modelo, h.centavos.toString(), h.origen, h.nota]);
+  })();
+  sentencias.push('commit;');
+  const { writeFileSync, chmodSync } = await import('node:fs');
+  writeFileSync(salidaSql, sentencias.join('\n') + '\n');
+  chmodSync(salidaSql, 0o600);
+  console.log(`SQL de importacion escrito (${sentencias.length - 3} llamadas); no contiene telefonos ni direcciones, pero NO se versiona.`);
+  process.exit(0);
+}
 const url = urlLocal();
 const host = new URL(url).hostname;
 if (host !== '127.0.0.1' && host !== 'localhost') { console.error('El importador solo corre contra la base local.'); process.exit(2); }
