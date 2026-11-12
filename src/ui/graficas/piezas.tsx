@@ -3,9 +3,8 @@
 // Piezas comunes de las graficas: patrones (para no depender solo del color), marcadores de forma, delta con flecha, marca de procedencia
 // y navegacion por teclado con indice itinerante.
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { siguienteIndice, r2, type SentidoDelta } from './geo';
-import { palabraSentido } from './formato';
-import { FORMAS_SERIE, PATRONES_SERIE, type DeltaTexto, type FormaMarcador, type NombrePatron, type Procedencia } from './tipos';
+import { siguienteIndice, r2 } from './geo';
+import { FORMAS_SERIE, PATRONES_SERIE, type FormaMarcador, type NombrePatron, type Procedencia } from './tipos';
 
 /** Identificador seguro para referencias url(#...) dentro de un SVG. */
 export function useUidSvg(): string {
@@ -88,23 +87,8 @@ export function Marcador({ forma, x, y, r, className }: PropsMarcador) {
   }
 }
 
-// ---------- Delta ----------
-const FLECHAS: Record<SentidoDelta, string> = { sube: '▲', baja: '▼', igual: '■' };
-
-export function flechaDe(sentido: SentidoDelta): string {
-  return FLECHAS[sentido];
-}
-
-/** Cambio entre periodos: flecha, signo (en el texto) y palabra. Sin semaforo: ni rojo ni verde. */
-export function Delta({ delta }: { delta: DeltaTexto }) {
-  return (
-    <span className="rtm-g-delta" data-sentido={delta.sentido}>
-      <span aria-hidden="true" className="rtm-g-delta-flecha">{flechaDe(delta.sentido)}</span>
-      <span className="rtm-num">{delta.texto}</span>
-      <span className="rtm-solo-lectores">{palabraSentido(delta.sentido)}</span>
-    </span>
-  );
-}
+// ---------- Delta (vive en delta.tsx para poder usarse desde componentes de servidor) ----------
+export { Delta, flechaDe } from './delta';
 
 // ---------- Procedencia ----------
 const PROCEDENCIAS: Record<Procedencia, { palabra: string; ayuda: string }> = {

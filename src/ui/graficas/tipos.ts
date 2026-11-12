@@ -26,7 +26,7 @@ export interface BaseGrafica {
 }
 
 /** Cambio entre dos periodos. El texto ya viene formateado; el sentido se dice con flecha, signo y palabra (sin semaforo). */
-export interface DeltaTexto { texto: string; sentido: SentidoDelta }
+export interface DeltaTexto { texto: string; sentido: SentidoDelta; /** Si el cambio es bueno o malo para el negocio; sin dato, el delta no usa semaforo. */ bueno?: boolean }
 
 export type FormaMarcador = 'circulo' | 'cuadrado' | 'triangulo' | 'rombo';
 export type NombrePatron = 'liso' | 'rayas' | 'puntos' | 'cuadros' | 'cruz';
