@@ -24,6 +24,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
   const [c, rec] = await Promise.all([lector.compra(n), lector.compraRecepcion(n)]);
   if (!c) notFound();
   const enRecepcion = c.estado === 'recibida_parcial';
+  const cerrada = c.estado !== 'recibida_parcial';
   const recibible = ['confirmada', 'enviada', 'en_trayecto', 'llego_merida', 'recibida_parcial'].includes(c.estado);
   const catalogo = recibible ? await lector.catalogoCompra(c.proveedor.nombre) : null;
   const sabores: Record<string, SaborOpcion[]> = {};
@@ -82,14 +83,14 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
       </Tarjeta>
 
       {rec && (enRecepcion || rec.llegadas.length > 0) && (
-        <Tarjeta plana titulo="Llegadas de la orden" descripcion={`${progresoRecepcion(rec.lineas)} % de lo facturado ya llegó`}>
+        <Tarjeta plana titulo="Llegadas de la orden" descripcion={cerrada ? `Recepción cerrada: llegaron ${formatearPiezas(rec.lineas.reduce((a, l) => a + l.recibidas, 0))} de ${formatearPiezas(rec.lineas.reduce((a, l) => a + l.facturadas, 0))} facturadas; el faltante pasó a diferencia` : `${progresoRecepcion(rec.lineas)} % de lo facturado ya llegó`}>
           <DataTable etiqueta="Avance de la recepción por renglón" densidad="densa" plana primeraFija clave={(l) => l.linea_id} filas={rec.lineas}
             totales={{ etiqueta: 'Total', celdas: { f: formatearPiezas(rec.lineas.reduce((a, l) => a + l.facturadas, 0)), r: formatearPiezas(rec.lineas.reduce((a, l) => a + l.recibidas, 0)), p: formatearPiezas(rec.lineas.reduce((a, l) => a + l.pendientes, 0)), e: m(rec.lineas.reduce((a, l) => a + l.entrada_cent, 0n)), c: m(rec.lineas.reduce((a, l) => a + l.puesto_cent, 0n)) } }}
             columnas={[
               { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (l) => <Dos a={l.modelo} b={l.sabor} /> },
               { id: 'f', titulo: 'Facturadas', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.facturadas) },
               { id: 'r', titulo: 'Llegadas', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.recibidas) },
-              { id: 'p', titulo: 'Pendientes', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.pendientes) },
+              { id: 'p', titulo: cerrada ? 'Faltante' : 'Pendientes', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.pendientes) },
               { id: 'e', titulo: 'Entró al inventario', numerica: true, ancho: 'm', celda: (l) => m(l.entrada_cent) },
               { id: 'c', titulo: 'Costo puesto', numerica: true, ancho: 'm', secundaria: true, celda: (l) => m(l.puesto_cent) },
             ]}
