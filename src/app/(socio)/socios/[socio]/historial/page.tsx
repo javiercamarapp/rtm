@@ -49,7 +49,9 @@ export default async function PaginaHistorial({ params, searchParams }: { params
   const anios = anosDe(h.actas.map((a) => a.periodo_fin));
   const anio = q.anio && anios.includes(q.anio) ? q.anio : null;
   const actas = h.actas.filter((a) => !anio || a.periodo_fin.startsWith(anio));
-  const cerradas = actas.filter((a) => a.estado === 'cerrado' && a.tipo === 'periodo');
+  // Vigentes: cerradas de periodo y NO corregidas por una contra-acta firmada (su efecto ya se deshizo y no suma al total).
+  const cerradas = actas.filter((a) => a.estado === 'cerrado' && a.tipo === 'periodo' && !a.corregida);
+  const corregidas = actas.filter((a) => a.estado === 'cerrado' && a.tipo === 'periodo' && a.corregida).length;
 
   const filas: FilaSerie[] = vista === 'mes' ? [...h.meses].reverse() : vista === 'semana' ? [...h.semanas].reverse() : [...h.dias].reverse();
   const etiqueta = (f: FilaSerie) => (vista === 'mes' ? mesEtiqueta(f.ini) : vista === 'semana' ? `Sem. ${semanaEtiqueta(f.ini)}` : etiquetaFecha(f.ini));
@@ -122,7 +124,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
       <Tarjeta
           plana
           titulo="Línea de tiempo de actas"
-          descripcion={`${cerradas.length} ${cerradas.length === 1 ? 'acta cerrada' : 'actas cerradas'} · cada acta fija 50/50, retiro y reinversión`}
+          descripcion={`${cerradas.length} ${cerradas.length === 1 ? 'acta vigente' : 'actas vigentes'}${corregidas ? ` · ${corregidas} ${corregidas === 1 ? 'corregida' : 'corregidas'} por contra-acta (no suman al total)` : ''} · cada acta fija 50/50, retiro y reinversión`}
         >
           {anios.length > 1 && <nav className="rtm-seg" aria-label="Año de las actas"><Link href={href({ anio: null })} aria-current={!anio ? 'true' : undefined}>Todos</Link>{anios.map((a) => <Link key={a} href={href({ anio: a })} aria-current={anio === a ? 'true' : undefined}>{a}</Link>)}</nav>}
           <DataTable
@@ -140,7 +142,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
               { id: 'r', titulo: 'Retira (decisión)', numerica: true, ancho: 'm', celda: (a) => m(a.retira_cent) },
               { id: 'i', titulo: 'Reinvierte (decisión)', numerica: true, ancho: 'm', celda: (a) => m(a.reinvierte_cent) },
               { id: 'v', titulo: 'Valor de su participación', etiquetaMovil: 'Valor', numerica: true, ancho: 'l', secundaria: true, prioridadMovil: 'normal' as const, celda: (a) => (a.valor_cent === null ? <span className="rtm-sin-dato">Sin dato</span> : m(a.valor_cent)) },
-              { id: 'e', titulo: 'Firmas', ancho: 'l', prioridadMovil: 'detalle' as const, celda: (a) => <Dos a={<Estado tono={a.estado === 'cerrado' ? 'ok' : 'atencion'}>{a.estado === 'cerrado' ? 'Firmada por los dos' : a.estado === 'firmado_por_uno' ? 'Falta una firma' : 'Sin firmas'}</Estado>} b={a.tipo === 'contra' ? 'Contra-acta' : a.corregida ? 'Corregida por contra-acta' : a.firmas.map((f) => f.socio).join(' y ') || 'Pendiente'} /> },
+              { id: 'e', titulo: 'Firmas', ancho: 'l', prioridadMovil: 'detalle' as const, celda: (a) => <Dos a={<Estado tono={a.estado === 'cerrado' ? 'ok' : 'atencion'}>{a.estado === 'cerrado' ? 'Firmada por los dos' : a.estado === 'firmado_por_uno' ? 'Falta una firma' : 'Sin firmas'}</Estado>} b={a.tipo === 'contra' ? 'Contra-acta' : a.corregida ? 'Corregida por contra-acta' : a.contra_propuesta ? 'Contra-acta propuesta' : a.firmas.map((f) => f.socio).join(' y ') || 'Pendiente'} /> },
               { id: 'd', titulo: 'PDF', ancho: 's', prioridadMovil: 'detalle' as const, celda: (a) => <a href={`/socios/actas/${a.id}/pdf`} className="rtm-enlace">PDF</a> },
             ]}
           />
@@ -168,13 +170,13 @@ export default async function PaginaHistorial({ params, searchParams }: { params
                 densidad="densa" plana clave={(x) => x.n}
                 filas={proy.meses.map((x, i) => ({ n: i + 1, ...x }))}
                 columnas={[
-                  { id: 'n', titulo: 'Mes', ancho: 's', prioridadMovil: 'titulo' as const, celda: (x) => `Mes +${x.n}` },
-                  { id: 'e', prioridadMovil: 'normal' as const, titulo: proy.base === 'retiro' ? 'Retiro esperado' : 'Su parte esperada', numerica: true, ancho: 'm', celda: (x) => m(x.esperado_cent) },
-                  { id: 'b', titulo: 'Desde', numerica: true, ancho: 'm', celda: (x) => m(x.bajo_cent) },
-                  { id: 'a', titulo: 'Hasta', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (x) => m(x.alto_cent) },
+                  { id: 'n', titulo: 'Acumulado a', ancho: 'm', prioridadMovil: 'titulo' as const, celda: (x) => `${x.n} ${x.n === 1 ? 'mes' : 'meses'}` },
+                  { id: 'e', prioridadMovil: 'normal' as const, titulo: proy.base === 'retiro' ? 'Retiro esperado' : 'Su parte esperada', numerica: true, ancho: 'm', celda: (x) => m(x.esperado_cent, x.esperado_cent < 0n) },
+                  { id: 'b', titulo: 'Desde', numerica: true, ancho: 'm', celda: (x) => m(x.bajo_cent, x.bajo_cent < 0n) },
+                  { id: 'a', titulo: 'Hasta', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (x) => m(x.alto_cent, x.alto_cent < 0n) },
                 ]}
               />
-              <Pie>Estimado con {proy.n} meses completos; la banda es ± una desviación predictiva ({m(proy.banda_cent)}) y se estrecha con más meses. {proy.base === 'retiro' ? `Retiro = su parte esperada por el payout observado (${bpAPct(r.payout_bp)}).` : 'Sin retiros en efectivo contra actas todavía: no se proyecta un retiro (sería un cero inventado), se proyecta su parte de la utilidad.'}</Pie>
+              <Pie>Estimado con {proy.n} meses completos; cada fila es el acumulado de los próximos meses. La banda es ± una desviación predictiva (un mes: {m(proy.banda_cent)}), crece con el horizonte y se estrecha con más meses; un resultado negativo se muestra con su signo. {proy.base === 'retiro' ? `Retiro = su parte esperada por el payout observado (${bpAPct(r.payout_bp)}).` : 'Sin retiros en efectivo contra actas todavía: no se proyecta un retiro (sería un cero inventado), se proyecta su parte de la utilidad.'}</Pie>
             </>
           ) : (
             <p className="a3-grafica-vacia" data-testid="proyeccion-insuficiente"><strong>Estimado, historial insuficiente</strong>Se necesitan al menos 3 meses completos; hoy hay {proy.n}. No se emite proyección con menos.</p>

@@ -14,6 +14,9 @@ import { NOMBRES } from '../../../_historial/util';
 
 export const metadata: Metadata = { title: 'Acta de corte' };
 
+/** El resultado de las dos vias lo decide la base; la pantalla solo lo muestra (null = sin comprobar). */
+const estadoComprobacion = (v: boolean | null | undefined) => (v === true ? 'cuadra' as const : v === false ? 'no_cuadra' as const : 'sin_comprobar' as const);
+
 const ESTADO = { propuesto: 'Propuesta: faltan las dos firmas', firmado_por_uno: 'Firmada por uno: falta el otro socio', cerrado: 'Cerrada y firmada por los dos', anulado: 'Anulada' } as const;
 
 export default async function PaginaActa({ params }: { params: Promise<{ id: string }> }) {
@@ -30,7 +33,7 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
     const x = contra ? null : s.por_socio[nombre];
     const dec = c.decisiones[nombre] ?? { retira: 0n, reinvierte: 0n };
     const calc = d.por_socio_acta?.[nombre];
-    return { nombre, x, dec, disp: calc?.disponible_cent ?? 0n, resto: calc?.queda_cent ?? 0n, sello: k?.por_socio[nombre] ?? null, valor: k?.valor_participacion_cent?.[nombre] ?? null, firma: c.firmas.find((f) => f.socio === nombre) ?? null };
+    return { nombre, x, dec, disp: calc?.disponible_cent ?? 0n, cuadra: calc?.cuadra ?? null, resto: calc?.queda_cent ?? 0n, sello: k?.por_socio[nombre] ?? null, valor: k?.valor_participacion_cent?.[nombre] ?? null, firma: c.firmas.find((f) => f.socio === nombre) ?? null };
   });
   const pendiente = c.estado === 'propuesto' || c.estado === 'firmado_por_uno';
 
@@ -62,7 +65,7 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
           <KpiLinea
             etiquetaAria="Cifras del acta"
             celdas={[
-              { id: 'u', etiqueta: 'Utilidad neta del periodo', testid: 'acta-utilidad', valor: <CifraComprobada texto={m(c.utilidad_cent, c.utilidad_cent < 0n)} cifra={`cascada:utilidad:${c.periodo_ini}:${c.periodo_fin}`} comprobacion="cuadra" />, categoria: 2, nota: c.utilidad_provisional ? 'Provisional' : `Arrastre previo ${m(c.arrastre_ini_cent, c.arrastre_ini_cent < 0n)}` },
+              { id: 'u', etiqueta: 'Utilidad neta del periodo', testid: 'acta-utilidad', valor: <CifraComprobada texto={m(c.utilidad_cent, c.utilidad_cent < 0n)} cifra={`cascada:utilidad:${c.periodo_ini}:${c.periodo_fin}`} comprobacion={estadoComprobacion(d.utilidad_cuadra)} />, categoria: 2, nota: c.utilidad_provisional ? 'Provisional' : `Arrastre previo ${m(c.arrastre_ini_cent, c.arrastre_ini_cent < 0n)}` },
               { id: 're', etiqueta: 'Reembolsos pagados', valor: m(s.reembolsos.pagado_cent), categoria: 6, nota: `Pendientes ${m(s.reembolsos.pendiente_cent)}` },
               { id: 'ef', etiqueta: 'Efectivo de la sociedad', valor: m(s.efectivo.total_cent), categoria: 1, nota: s.limitado_por_efectivo ? 'Reparto limitado por el efectivo' : `Comprometido ${m(s.efectivo.comprometido_cent)}` },
               { id: 'rp', etiqueta: 'Utilidad repartida 50/50', testid: 'acta-repartible', valor: m(s.repartible_cent), categoria: 7, nota: `Pasa al siguiente periodo ${m(c.arrastre_fin_cent, c.arrastre_fin_cent < 0n)}` },
@@ -79,7 +82,7 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
                 { id: 'rb', titulo: 'Reembolso recibido', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.x?.paga_reembolso_cent ?? 0n) },
                 { id: 'p', titulo: 'Su parte (50/50)', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (f) => m(f.x?.utilidad_cent ?? 0n) },
                 { id: 'a', titulo: 'Retiros previos', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.x?.anticipo_cent ?? 0n) },
-                { id: 'd', titulo: 'Disponible', numerica: true, ancho: 'm', celda: (f) => <span className="a3-sin-corte"><CifraComprobada texto={m(f.disp)} cifra={`historial:parte:${c.id}:${f.nombre}`} comprobacion="cuadra" /></span> },
+                { id: 'd', titulo: 'Disponible', numerica: true, ancho: 'm', celda: (f) => <span className="a3-sin-corte"><CifraComprobada texto={m(f.disp)} cifra={`historial:parte:${c.id}:${f.nombre}`} comprobacion={estadoComprobacion(f.cuadra)} /></span> },
                 { id: 'r', titulo: 'Retira', numerica: true, ancho: 'm', celda: (f) => m(f.dec.retira) },
                 { id: 'i', titulo: 'Reinvierte', numerica: true, ancho: 'm', celda: (f) => m(f.dec.reinvierte) },
                 { id: 'q', titulo: 'Queda por distribuir', numerica: true, ancho: 'm', celda: (f) => m(f.resto) },
@@ -98,9 +101,9 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
           <DataTable
             etiqueta="Firmas del acta" densidad="densa" plana clave={(f) => f.nombre} filas={filas}
             columnas={[
-              { id: 's', titulo: 'Socio', ancho: 'm', celda: (f) => f.nombre },
-              { id: 'e', titulo: 'Estado', ancho: 'l', celda: (f) => (f.firma ? <Estado tono="ok">Firmada</Estado> : <Estado tono={c.estado === 'anulado' ? 'neutro' : 'atencion'}>{c.estado === 'anulado' ? 'No aplica' : 'Pendiente'}</Estado>) },
-              { id: 'f', titulo: 'Fecha', ancho: 'l', celda: (f) => (f.firma ? etiquetaFechaHora(f.firma.firmado_at) : <span className="rtm-sin-dato">Sin dato</span>) },
+              { id: 's', titulo: 'Socio', ancho: 'm', prioridadMovil: 'titulo' as const, celda: (f) => f.nombre },
+              { id: 'e', titulo: 'Estado', ancho: 'l', prioridadMovil: 'principal' as const, celda: (f) => (f.firma ? <Estado tono="ok">Firmada</Estado> : <Estado tono={c.estado === 'anulado' ? 'neutro' : 'atencion'}>{c.estado === 'anulado' ? 'No aplica' : 'Pendiente'}</Estado>) },
+              { id: 'f', titulo: 'Fecha', ancho: 'l', celda: (f) => (f.firma ? <span className="rtm-nowrap">{etiquetaFechaHora(f.firma.firmado_at)}</span> : <span className="rtm-sin-dato">Sin dato</span>) },
             ]}
           />
           <Pie>Propuesta por {c.propuesto_por ?? 'un socio'} el {etiquetaFechaHora(c.creado_at)}. Un acta firmada por los dos no se edita: se corrige con una contra-acta.</Pie>
