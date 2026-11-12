@@ -66,6 +66,8 @@ test('1 apertura: saldos iniciales, inventario, cuentas por cobrar y por pagar, 
   await page.getByTestId('campo-p_resolucion').selectOption('capital_50_50');
   await page.getByTestId('campo-p_justificacion').fill('Diferencia entre el capital declarado y los saldos de la demostracion');
   await page.getByRole('button', { name: 'Guardar resolución' }).click();
+  // La resolucion debe quedar guardada ANTES de firmar: si no, la diferencia de apertura se queda en la cuenta puente 3990 y C20 sale en rojo.
+  await expect.poll(async () => (await consultar<{ r: string }>('select resolucion_puente as r from apertura.sesion order by id desc limit 1'))[0]!.r, { timeout: 15_000 }).toBe('capital_50_50');
   await page.goto('/apertura/paso/10');
   await page.getByTestId('apertura-firmar').click();
   await page.getByRole('button', { name: 'Firmar', exact: true }).click();
@@ -265,15 +267,15 @@ test('9 todo cuadra: comprobaciones, Contabilidad, Cuentas por cobrar, Socios y 
   const total = await consultar<{ n: string }>('select count(*)::text as n from contabilidad.comprobaciones()');
   expect(total[0]!.n).toBe('26');
 
-  // Efectivo: las cajas de la apertura (8,000) mas la aportacion capturada (2,000) llegan a Socios y a la Cascada.
+  // Efectivo: cajas de la apertura (8,000) + aportacion capturada (2,000) - reembolso pagado a Angelo (400) = 9,600 en las cajas; llegan a Socios y a la Cascada.
   const ef = (await consultar<{ e: string; t: string; l: string }>(
     "select operacion.saldo_efectivo()::text as e, (operacion.efectivo_sociedad()->>'total_cent') as t, contabilidad.apertura_saldo('1101')::text as l"))[0]!;
-  expect(ef.e).toBe('1000000');
+  expect(ef.e).toBe('960000');
   expect(ef.l).toBe('800000');
   const dinero = (c: string) => `$${(Number(c) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   await page.goto('/socios/cascada');
   await expect(page.getByTestId('efectivo-calculado')).toContainText(dinero(ef.t));
-  await expect(page.getByTestId('efectivo-calculado')).toContainText(dinero('1000000'));
+  await expect(page.getByTestId('efectivo-calculado')).toContainText(dinero('960000'));
   await expect(page.getByText('Identidad por dos vías').locator('..')).toContainText('Cuadra');
 
   // Socios: la compra a Isaac fue a credito y la pagaron la sociedad y un socio. Eso es "salio dinero de la sociedad que no pusieron los socios":
