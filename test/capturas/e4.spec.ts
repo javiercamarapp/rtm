@@ -13,11 +13,9 @@ const TEMAS = ['claro', 'oscuro'] as const;
 
 test('capturas y metricas E4', async ({ browser }: { browser: Browser }) => {
   mkdirSync(SALIDA, { recursive: true });
-  const [pedido, cliente, modelo, compra] = await conDb(async (c) => [
-    (await c.query('select id from operacion.pedido order by id desc limit 1')).rows[0]?.id,
+  const [cliente, modelo] = await conDb(async (c) => [
     (await c.query('select id from catalogo.cliente where activo order by id limit 1')).rows[0]?.id,
     (await c.query('select id from catalogo.modelo order by id limit 1')).rows[0]?.id,
-    (await c.query('select id from operacion.compra order by id limit 1')).rows[0]?.id,
   ]);
   const correo = correoUnico('e4');
   await altaUsuario(process.env.E4_ROL === 'omar' ? { correo, rol: 'omar' } : { correo, socio: 'Javier' });
