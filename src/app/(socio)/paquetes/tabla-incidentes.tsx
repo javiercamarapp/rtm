@@ -8,7 +8,7 @@ import { Tarjeta } from '@/ui/componentes/pagina';
 import { DialogoResolver } from './dialogos-incidente';
 
 const RESPONSABLE = { sociedad: 'La sociedad (50/50)', socio: 'Un socio', proveedor: 'El proveedor', cliente: 'El cliente', mixto: 'Varios' } as const;
-const ACCION = { reponer: 'Reposición', bonificar: 'Bonificación', castigar: 'Castigo', asignar: 'Cobro al socio', reclamar: 'Reclamo', ninguna: 'Sin cambio' } as const;
+const ACCION = { reponer: 'Reposición', bonificar: 'Bonificación', castigar: 'Castigo', asignar: 'Cobro al socio', reclamar: 'Reclamo', mixta: 'Varias', ninguna: 'Sin cambio' } as const;
 
 /** Incidentes de paquetes perdidos o dañados de un sentido: estado, piezas, costo, quién absorbe y efecto. Cifras con "Explicar este número". */
 export function TablaIncidentes({ incidentes, sentido, testid }: { incidentes: IncidentePaquete[]; sentido: 'salida' | 'entrada'; testid: string }) {
@@ -27,16 +27,18 @@ export function TablaIncidentes({ incidentes, sentido, testid }: { incidentes: I
         filas={filas}
         vacio={{ titulo: 'Sin incidentes', texto: sentido === 'salida' ? 'Un paquete enviado que se pierde o llega dañado se reporta desde Enviados recientes.' : 'Una orden en camino que se pierde o llega dañada se reporta desde su renglón.' }}
         columnas={[
-          { id: 'f', titulo: 'Folio', celda: (i) => <span className="rtm-mono" data-testid={`${testid}-folio`}>{i.folio}</span> },
-          { id: 'o', titulo: sentido === 'salida' ? 'Pedido' : 'Orden', celda: (i) => (sentido === 'salida' ? <Link className="rtm-mono" href={`/pedidos/${i.pedido_id}`}>{i.pedido_folio}</Link> : <Link className="rtm-mono" href={`/proveedores/compras/${i.compra_id}`}>{i.compra_folio}</Link>) },
-          { id: 'c', titulo: sentido === 'salida' ? 'Cliente' : 'Proveedor', secundaria: true, celda: (i) => (sentido === 'salida' ? i.cliente : i.proveedor) },
+          { id: 'f', titulo: 'Folio', ancho: 'm', celda: (i) => <span className="rtm-mono rtm-a2-nowrap" data-testid={`${testid}-folio`}>{i.folio}</span> },
+          { id: 'o', titulo: sentido === 'salida' ? 'Pedido' : 'Orden', ancho: 'm', celda: (i) => (sentido === 'salida' ? <Link className="rtm-mono rtm-a2-nowrap" href={`/pedidos/${i.pedido_id}`}>{i.pedido_folio}</Link> : <Link className="rtm-mono rtm-a2-nowrap" href={`/proveedores/compras/${i.compra_id}`}>{i.compra_folio}</Link>) },
+          { id: 'c', titulo: sentido === 'salida' ? 'Cliente' : 'Proveedor', secundaria: true, truncar: 'm', celda: (i) => (sentido === 'salida' ? i.cliente : i.proveedor) },
           { id: 't', titulo: 'Tipo', celda: (i) => (i.tipo === 'perdido' ? 'Perdido' : 'Dañado') },
-          { id: 'r', titulo: 'Por modelo y sabor', secundaria: true, celda: (i) => i.renglones.map((r) => `${r.modelo} ${r.sabor} ${r.piezas}`).join(' · ') },
+          { id: 'r', titulo: 'Por modelo y sabor', secundaria: true, truncar: 'l', celda: (i) => i.renglones.map((r) => `${r.modelo} / ${r.sabor}: ${r.piezas} pz`).join(' · ') },
           { id: 'z', titulo: 'Piezas', numerica: true, celda: (i) => formatearPiezas(i.piezas) },
           { id: 'v', titulo: 'Costo de lo perdido', numerica: true, celda: (i) => <CifraComprobada texto={formatearMoneda(i.valor_cent)} cifra={`paquete:valor:${i.id}`} comprobacion="cuadra" /> },
-          { id: 'q', titulo: 'Quién absorbe', celda: (i) => {
-            const r = i.resolucion?.responsable ?? i.responsable_vigente;
-            return r ? `${RESPONSABLE[r]}${i.resolucion?.socio ? ` (${i.resolucion.socio})` : ''}` : 'Por decidir';
+          { id: 'q', titulo: 'Quién absorbe', ancho: 'l', celda: (i) => {
+            // En entrada manda el responsable vigente (puede haberse reasignado desde la compra); en salida, el de la resolucion.
+            const r = i.sentido === 'entrada' ? (i.responsable_vigente ?? i.resolucion?.responsable) : i.resolucion?.responsable;
+            const socio = r === 'socio' ? i.resolucion?.socio : null;
+            return r ? `${RESPONSABLE[r]}${socio ? ` (${socio})` : ''}` : 'Por decidir';
           } },
           { id: 'e', titulo: 'Efecto', secundaria: true, celda: (i) => (i.resolucion ? ACCION[i.resolucion.accion] : 'Pendiente') },
           { id: 'a', titulo: 'Absorbe la sociedad', numerica: true, celda: (i) => (i.resolucion ? <CifraComprobada texto={formatearMoneda(i.resolucion.absorbe_sociedad_cent)} cifra={`paquete:absorbe:${i.id}`} comprobacion="cuadra" /> : 'Pendiente') },
