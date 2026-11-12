@@ -50,7 +50,7 @@ const existencia = z.object({
   sabores: e.sabores.map((s) => ({ skuId: s.sku_id, modeloId: s.modelo_id, sabor: s.sabor, ubicacion: s.ubicacion, ubicacionCodigo: s.ubicacion_codigo, piezas: s.piezas })),
 }));
 
-const explicacion = z.object({
+export const explicacion = z.object({
   cifra: z.string(), titulo: z.string(), unidad: z.enum(['pz', 'mxn']), valor: z.number().nullable(),
   comprobacion: z.object({ via1: z.string(), via1_valor: z.number(), via2: z.string(), via2_valor: z.number(), cuadra: z.boolean() }).optional(),
   movimientos: z.array(z.object({ hora: z.string(), fecha_neg: z.string(), tipo: z.string(), sabor: z.string(), ubicacion: z.string(), cantidad: z.number(), saldo: z.number(), valor_cent: cent, evento: z.string(), canal: z.string(), mensaje_origen: z.string().nullable(), autor: z.string().nullable() })),
@@ -67,7 +67,7 @@ const explicacion = z.object({
   renglones: (e.renglones ?? []).map((r) => ({ concepto: r.concepto, montoCent: r.monto_cent, saldoCent: r.saldo_cent ?? null, hora: r.hora ?? null, fechaNeg: r.fecha_neg ?? null, evento: r.evento ?? null, canal: r.canal ?? null, autor: r.autor ?? null, mensajeOrigen: r.mensaje_origen ?? null })),
 }));
 
-async function llamar<T>(fn: string, args: Record<string, unknown>, esquema: z.ZodType<T, unknown>): Promise<T> {
+export async function llamar<T>(fn: string, args: Record<string, unknown>, esquema: z.ZodType<T, unknown>): Promise<T> {
   const sb = await crearClienteServidor();
   const { data, error } = await sb.rpc(fn, args);
   if (error) throw new Error(`${fn}: ${error.message}`);
