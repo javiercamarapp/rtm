@@ -1,4 +1,4 @@
-// Implementa el puerto del historial con las funciones api.* de la migracion 20261112400000 (sesion del usuario, llave publica; nunca la de servicio).
+// Implementa el puerto del historial con las funciones api.* de la migracion 20261113200000 (sesion del usuario, llave publica; nunca la de servicio).
 import type { LectorHistorial } from '@/aplicacion/historial/puertos';
 import { decisionesABigint, type ActaDetalle } from '@/dominio/historial/tipos';
 import { centavosABigint } from '@/dominio/operacion/json';

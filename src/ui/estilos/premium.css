@@ -383,6 +383,11 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal']::before { content: attr(data-label); display: block; font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal'] { grid-row: 1 / span 2; }
 }
+/* Las etiquetas de la tarjeta no se parten a mitad de palabra y las pastillas de estado envuelven en vez de cortarse en el borde */
+@media (max-width: 767px) {
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda::before { overflow-wrap: normal; word-break: normal; hyphens: manual; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-chip-estado { max-width: 100%; white-space: normal; height: auto; min-height: 22px; }
+}
 @media (max-width: 767px) {
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:first-child { border-right: 0; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='titulo'] { order: -1; }

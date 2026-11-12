@@ -139,8 +139,8 @@ export default async function PaginaHistorial({ params, searchParams }: { params
               { id: 'p2', titulo: 'Su parte', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (a) => (a.tipo === 'contra' ? '—' : m(a.parte_cent)) },
               { id: 'r', titulo: 'Retira (decisión)', numerica: true, ancho: 'm', celda: (a) => m(a.retira_cent) },
               { id: 'i', titulo: 'Reinvierte (decisión)', numerica: true, ancho: 'm', celda: (a) => m(a.reinvierte_cent) },
-              { id: 'v', titulo: 'Valor de su participación', numerica: true, ancho: 'l', secundaria: true, prioridadMovil: 'normal' as const, celda: (a) => (a.valor_cent === null ? <span className="rtm-sin-dato">Sin dato</span> : m(a.valor_cent)) },
-              { id: 'e', titulo: 'Firmas', ancho: 'l', celda: (a) => <Dos a={<Estado tono={a.estado === 'cerrado' ? 'ok' : 'atencion'}>{a.estado === 'cerrado' ? 'Firmada por los dos' : a.estado === 'firmado_por_uno' ? 'Falta una firma' : 'Sin firmas'}</Estado>} b={a.tipo === 'contra' ? 'Contra-acta' : a.corregida ? 'Corregida por contra-acta' : a.firmas.map((f) => f.socio).join(' y ') || 'Pendiente'} /> },
+              { id: 'v', titulo: 'Valor de su participación', etiquetaMovil: 'Valor', numerica: true, ancho: 'l', secundaria: true, prioridadMovil: 'normal' as const, celda: (a) => (a.valor_cent === null ? <span className="rtm-sin-dato">Sin dato</span> : m(a.valor_cent)) },
+              { id: 'e', titulo: 'Firmas', ancho: 'l', prioridadMovil: 'detalle' as const, celda: (a) => <Dos a={<Estado tono={a.estado === 'cerrado' ? 'ok' : 'atencion'}>{a.estado === 'cerrado' ? 'Firmada por los dos' : a.estado === 'firmado_por_uno' ? 'Falta una firma' : 'Sin firmas'}</Estado>} b={a.tipo === 'contra' ? 'Contra-acta' : a.corregida ? 'Corregida por contra-acta' : a.firmas.map((f) => f.socio).join(' y ') || 'Pendiente'} /> },
               { id: 'd', titulo: 'PDF', ancho: 's', prioridadMovil: 'detalle' as const, celda: (a) => <a href={`/socios/actas/${a.id}/pdf`} className="rtm-enlace">PDF</a> },
             ]}
           />

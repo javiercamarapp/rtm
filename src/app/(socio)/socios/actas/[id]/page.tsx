@@ -84,9 +84,9 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
                 { id: 'i', titulo: 'Reinvierte', numerica: true, ancho: 'm', celda: (f) => m(f.dec.reinvierte) },
                 { id: 'q', titulo: 'Queda por distribuir', numerica: true, ancho: 'm', celda: (f) => m(f.resto) },
                 { id: 'fp', titulo: 'Fondos en su poder', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.fondos_en_poder_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
-                { id: 'co', titulo: 'Compensaciones', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.compensaciones_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
-                { id: 'iv', titulo: 'Invertido acumulado', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.invertido_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
-                { id: 'v', titulo: 'Valor de su participación', numerica: true, ancho: 'l', prioridadMovil: 'normal' as const, celda: (f) => (f.valor === null ? <span className="rtm-sin-dato">Sin dato</span> : m(f.valor)) },
+                { id: 'co', titulo: 'Compensaciones', etiquetaMovil: 'Compens.', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.compensaciones_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
+                { id: 'iv', titulo: 'Invertido acumulado', etiquetaMovil: 'Invertido', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.invertido_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
+                { id: 'v', titulo: 'Valor de su participación', etiquetaMovil: 'Valor', numerica: true, ancho: 'l', prioridadMovil: 'normal' as const, celda: (f) => (f.valor === null ? <span className="rtm-sin-dato">Sin dato</span> : m(f.valor)) },
               ]}
             />
           </Tarjeta>
