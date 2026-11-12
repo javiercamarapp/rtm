@@ -86,7 +86,7 @@ export interface FilaCxc {
 /** Cuenta por cobrar cargada en la apertura: una fila por partida con la fecha del adeudo; los cobros se asignan a la mas antigua primero. */
 export interface FilaCxcApertura { partida_id: number; cliente_id: number; cliente: string; duenio: 'Angelo' | 'Javier'; fecha_ref: string; original_cent: Cent; abonos_cent: Cent; saldo_cent: Cent; dias: number }
 export interface CuentasPorCobrar {
-  hoy: string; filas: FilaCxc[]; apertura: FilaCxcApertura[]; total_cent: Cent; vencido_cent: Cent; antiguedad_cent: Record<'0_7' | '8_14' | '15_30' | 'mas_30', Cent>; por_duenio_cent: Record<string, Cent>;
+  hoy: string; filas: FilaCxc[]; apertura: FilaCxcApertura[]; total_cent: Cent; vencido_cent: Cent; antiguedad_cent: Record<'0_7' | '8_14' | '15_30' | 'mas_30', Cent>;
   saldos_a_favor: { cliente_id: number; cliente: string; duenio: string; monto_cent: Cent }[];
   pagos_sin_identificar: { id: number; folio: string; fecha_neg: string; monto_cent: Cent; cuenta: string }[];
   socios: { socio: 'Angelo' | 'Javier'; deuda_cent: Cent; fondos_cent: Cent; diferencia_cent: Cent; dias_fondos: number | null; alerta_fondos: boolean }[];

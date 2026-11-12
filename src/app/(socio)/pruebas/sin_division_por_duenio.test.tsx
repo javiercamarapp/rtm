@@ -21,7 +21,7 @@ vi.mock('@/composicion/operacion', () => ({
     pedidos: async () => [pedido(1, 'Cliente Alfa', 'Angelo'), pedido(2, 'Cliente Beta', 'Javier')],
     contextoPagos: async () => ({ cuentas: [], clientes: [] }),
     cuentasPorCobrar: async () => ({
-      hoy: '2026-11-10', filas: [fila(1, 'Cliente Alfa', 'Angelo'), fila(2, 'Cliente Beta', 'Javier')], total_cent: 200n, vencido_cent: 200n,
+      hoy: '2026-11-10', filas: [fila(1, 'Cliente Alfa', 'Angelo'), fila(2, 'Cliente Beta', 'Javier')], apertura: [], total_cent: 200n, vencido_cent: 200n,
       antiguedad_cent: { '0_7': 200n, '8_14': 0n, '15_30': 0n, mas_30: 0n }, saldos_a_favor: [{ cliente_id: 1, cliente: 'Cliente Alfa', duenio: 'Angelo', monto_cent: 5n }],
       pagos_sin_identificar: [], socios: [], recargo_bp: 0, por_cliente: [{ cliente_id: 1, cliente: 'Cliente Alfa', duenio: 'Angelo', saldo_cent: 100n, vencido_cent: 100n, pedidos: 1, dias_max: 2, proximo_vence: null }],
     }),
