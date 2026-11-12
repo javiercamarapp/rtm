@@ -44,3 +44,7 @@ begin
                       contabilidad.apertura_saldo('1101') = (select coalesce(sum(operacion.apertura_efectivo(c.socio_id)), 0)::bigint from operacion.cuenta_efectivo c where c.activa and c.titular = 'socio' and c.tipo = 'caja'),
                       'mxn'::text;
 end $$;
+
+-- Las funciones nuevas nacen con EXECUTE para PUBLIC: se cierran como todas las del negocio (solo las llama el servidor y las envolturas api.*, que son security definer).
+revoke all on function operacion.apertura_efectivo(bigint) from public, anon, authenticated;
+revoke all on function contabilidad.comprobaciones() from public, anon, authenticated;
