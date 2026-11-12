@@ -1,0 +1,190 @@
+// Raiz de composicion de las integraciones con base de datos: webhook de Telegram, latido de tareas, inventario de proveedores y reportes.
+// Todo recibe sus dependencias externas por parametro (Telegram, IA, fuente de proveedores, Chromium, reloj): las pruebas usan dobles y NINGUNA llama a un servicio real.
+import { AgenteTelegram } from '@/aplicacion/agente/agente';
+import { ErrorLlm, type ClienteLlm, type EnviadorTelegram } from '@/aplicacion/agente/puertos';
+import { despacharUnaVez } from '@/aplicacion/notificaciones/despachador';
+import { ejecutarConfirmacion, ejecutarLecturaHoraria, ejecutarLecturaPromociones, type DepsCiclo } from '@/aplicacion/proveedores/ciclo';
+import type { PuertoLecturaProveedor } from '@/aplicacion/proveedores/puertos';
+import { generarReporte } from '@/aplicacion/reportes/generar_reporte';
+import type { RenderizadorPdf } from '@/aplicacion/reportes/puertos';
+import { correrLatido, type Manejador, type ResumenLatido } from '@/aplicacion/tareas/latido';
+import { configPrivada } from '@/config/privada';
+import { TAREAS } from '@/config/tareas';
+import { fechaNeg, sumarDias } from '@/dominio/calendario';
+import { AlmacenAgenteDb, AlmacenPresupuestoDb, AlmacenTokensDb, CatalogoAgenteDb, NegocioAgenteDb } from '@/infra/agente/postgres';
+import { crearClienteOpenRouter } from '@/infra/agente/openrouter';
+import { crearEnviadorTelegram, type FetchLike } from '@/infra/agente/telegram_api';
+import { manejarWebhook, type RespuestaWebhook } from '@/infra/agente/telegram_webhook';
+import { PuertoTareasDb, RepositorioEntregasDb } from '@/infra/notificaciones/postgres';
+import { enviadorTelegramDeLotes } from '@/infra/notificaciones/telegram_lotes';
+import { llamadaProveedoresServidor } from '@/infra/postgres/proveedores';
+import { sqlServidor, type Sql } from '@/infra/postgres/servidor';
+import { secretoValido } from '@/infra/agente/telegram_webhook';
+import { appUrl } from '@/config/env';
+import { AvisosDb, ContextoNegocioDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
+import { lectorDesdeEntorno } from '@/infra/proveedores/lector_http';
+import { cargarCssFuentes } from '@/infra/reportes/fuentes_css';
+import { EntregaReportesAvisos, FuenteInsumosDb, RepositorioReportesDb } from '@/infra/reportes/postgres';
+import { RenderizadorChromium } from '@/infra/reportes/render_pdf_chromium';
+
+export interface DepsProduccion {
+  sql: Sql;
+  ahora?: () => Date;
+  /** Doble de Telegram en pruebas; en produccion se arma con el token privado. */
+  telegram?: EnviadorTelegram | null;
+  llm?: ClienteLlm;
+  fetchFn?: FetchLike;
+  /** Lector de la fuente de proveedores: en pruebas, un simulador; nunca se lee la fuente real desde aqui salvo con la variable privada. */
+  lectorProveedor?: PuertoLecturaProveedor;
+  renderizador?: (fecha14: string) => RenderizadorPdf;
+  urlApp?: string | null;
+  entorno?: Record<string, string | undefined>;
+}
+
+const ahoraDe = (d: DepsProduccion): (() => Date) => d.ahora ?? (() => new Date());
+
+function telegramDe(d: DepsProduccion): EnviadorTelegram | null {
+  if (d.telegram !== undefined) return d.telegram;
+  const token = configPrivada(d.entorno).TELEGRAM_BOT_TOKEN;
+  if (!token) return null;
+  return crearEnviadorTelegram({ token, fetch: d.fetchFn ?? ((u, i) => fetch(u, i)) });
+}
+
+const SIN_LLAVE: ClienteLlm = { extraer: async () => { throw new ErrorLlm('politica', 'sin llave de IA configurada'); } };
+
+function llmDe(d: DepsProduccion): ClienteLlm {
+  if (d.llm) return d.llm;
+  const apiKey = configPrivada(d.entorno).OPENROUTER_API_KEY;
+  return apiKey ? crearClienteOpenRouter({ apiKey, fetch: d.fetchFn ?? ((u, i) => fetch(u, i)) }) : SIN_LLAVE;
+}
+
+/** Agente de produccion: identidad por id de Telegram desde la base (nunca desde el repo), IA detras de un puerto y escrituras por funciones SQL. */
+export function crearAgenteProduccion(d: DepsProduccion): AgenteTelegram {
+  const tg = telegramDe(d);
+  if (!tg) throw new Error('Telegram no esta configurado (falta TELEGRAM_BOT_TOKEN)');
+  return new AgenteTelegram({
+    almacen: new AlmacenAgenteDb(d.sql), presupuesto: new AlmacenPresupuestoDb(d.sql), llm: llmDe(d), telegram: tg, tokens: new AlmacenTokensDb(d.sql),
+    catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d),
+  });
+}
+
+/** Webhook: secreto en tiempo constante, 200 siempre salvo secreto invalido, reclamo por update_id dentro del agente. Sin secreto configurado rechaza todo. */
+export async function procesarWebhook(d: DepsProduccion, cabeceraSecreto: string | null, cuerpo: string): Promise<RespuestaWebhook> {
+  const secreto = configPrivada(d.entorno).TELEGRAM_WEBHOOK_SECRET ?? '';
+  return manejarWebhook({
+    cabeceraSecreto, secretoEsperado: secreto, cuerpo,
+    procesar: (u) => crearAgenteProduccion(d).procesarUpdate(u),
+  });
+}
+
+// ---------------------------------------------------------------- tareas
+
+function depsProveedores(d: DepsProduccion, promocionesActivas: boolean): DepsCiclo {
+  const db = llamadaProveedoresServidor(d.sql);
+  const lector = d.lectorProveedor ?? lectorDesdeEntorno(d.entorno ?? process.env).lector;
+  return { lector, repo: new RepositorioProveedorDb(db), contexto: new ContextoNegocioDb(db), avisos: new AvisosDb(db), reloj: ahoraDe(d), promocionesActivas };
+}
+
+async function frescura(d: DepsProduccion): Promise<{ lectura: boolean; promociones: boolean }> {
+  const r = await d.sql<{ j: { lectura_activa: boolean; promociones_activas: boolean } }>('select proveedores.frescura() as j');
+  return { lectura: r[0]!.j.lectura_activa, promociones: r[0]!.j.promociones_activas };
+}
+
+async function paraProveedores(d: DepsProduccion, tipo: 'horaria' | 'confirmacion' | 'promociones'): ReturnType<Manejador> {
+  const f = await frescura(d);
+  if (!f.lectura) return { estado: 'omitida', detalle: 'interruptor lectura_proveedores apagado' };
+  if (tipo === 'promociones' && !f.promociones) return { estado: 'omitida', detalle: 'interruptor promociones_lectura apagado (espera la autorizacion del dueno)' };
+  if (!d.lectorProveedor && !configPrivada(d.entorno).INVENTARIO_PROVEEDORES_FUENTE) return { estado: 'omitida', detalle: 'sin fuente configurada' };
+  const deps = depsProveedores(d, f.promociones);
+  const r = tipo === 'horaria' ? await ejecutarLecturaHoraria(deps) : tipo === 'confirmacion' ? await ejecutarConfirmacion(deps) : await ejecutarLecturaPromociones(deps);
+  return { estado: 'ok', detalle: r.estado };
+}
+
+/** Semanal: la semana que cerro ayer (lunes a domingo). Mensual: el mes anterior. Ambos con la fecha de negocio de Merida. */
+export function periodoDeReporte(tipo: 'semanal' | 'mensual', hoy: string): string {
+  if (tipo === 'mensual') {
+    const [a, m] = hoy.split('-').map(Number) as [number, number];
+    const ant = m === 1 ? `${a - 1}-12` : `${a}-${String(m - 1).padStart(2, '0')}`;
+    return `${ant}-01`;
+  }
+  const d = new Date(`${hoy}T12:00:00Z`);
+  const dow = (d.getUTCDay() + 6) % 7; // lunes = 0
+  return sumarDias(hoy, -(dow + 7));
+}
+
+export async function generarReporteDeSistema(d: DepsProduccion, tipo: 'semanal' | 'mensual', inicio: string) {
+  const [anio, mes] = inicio.split('-').map(Number) as [number, number];
+  const fin = tipo === 'semanal' ? sumarDias(inicio, 6) : `${inicio.slice(0, 7)}-${String(new Date(Date.UTC(anio, mes, 0)).getUTCDate()).padStart(2, '0')}`;
+  const fecha14 = `${fin.replaceAll('-', '')}235959`;
+  const clave = `${tipo}:${inicio}`;
+  const renderizador = d.renderizador ? d.renderizador(fecha14) : new RenderizadorChromium({ fecha14 });
+  return generarReporte(
+    { tipo, inicio },
+    { fuente: new FuenteInsumosDb(d.sql), renderizador, repositorio: new RepositorioReportesDb(d.sql), entrega: new EntregaReportesAvisos(d.sql, clave, tipo === 'semanal' ? 'reporte_semanal' : 'reporte_mensual'), cssFuentes: cargarCssFuentes('src/fuentes') },
+  );
+}
+
+export function manejadoresDeTareas(d: DepsProduccion): Record<string, Manejador> {
+  const hoy = () => fechaNeg(ahoraDe(d)());
+  const reporte = (tipo: 'semanal' | 'mensual'): Manejador => async () => {
+    const r = await generarReporteDeSistema(d, tipo, periodoDeReporte(tipo, hoy()));
+    return { estado: 'ok', detalle: r.salio ? r.salio && 'accion' in r ? r.accion : 'ok' : 'no_sale' };
+  };
+  return {
+    'inventario-proveedores': () => paraProveedores(d, 'horaria'),
+    'confirmacion-lectura': () => paraProveedores(d, 'confirmacion'),
+    'promociones-html': () => paraProveedores(d, 'promociones'),
+    'reporte-semanal': reporte('semanal'),
+    'reporte-semanal-reintento': reporte('semanal'),
+    'reporte-mensual': reporte('mensual'),
+  };
+}
+
+/** Trabajo propio del latido: reglas de aviso, caducidades, tomas vencidas y despacho de entregas por Telegram. */
+async function propioDelLatido(d: DepsProduccion): Promise<void> {
+  await d.sql('select notificacion.latido()');
+  const tg = telegramDe(d);
+  if (tg) {
+    try { await crearAgenteProduccion({ ...d, telegram: tg }).caducarTomasVencidas(); } catch { /* una toma que no caduca hoy caduca en la siguiente pasada */ }
+  }
+  const tokens = new AlmacenTokensDb(d.sql);
+  const enviadores = tg ? { telegram: enviadorTelegramDeLotes(tg, tokens, d.urlApp ?? null, ahoraDe(d)) } : {};
+  await despacharUnaVez(new RepositorioEntregasDb(d.sql), enviadores, 10);
+}
+
+export async function ejecutarLatidoProduccion(d: DepsProduccion): Promise<ResumenLatido> {
+  const puerto = new PuertoTareasDb(d.sql);
+  await puerto.sembrar(TAREAS);
+  return correrLatido({ tareas: TAREAS, puerto, manejadores: manejadoresDeTareas(d), propio: () => propioDelLatido(d), ahora: ahoraDe(d)() });
+}
+
+// ---------------------------------------------------------------- entradas de las rutas HTTP (las rutas de app no importan infra)
+
+export function webhookTelegram(cabeceraSecreto: string | null, cuerpo: string): Promise<RespuestaWebhook> {
+  return procesarWebhook({ sql: sqlServidor, urlApp: appUrl() }, cabeceraSecreto, cuerpo);
+}
+
+export type RespuestaTarea = { status: number; cuerpo: unknown };
+
+/** `/api/tareas/<tarea>`: latido (unica entrada de reloj) o una tarea de la lista corrida a mano con su propia ventana. Sin secreto configurado rechaza todo. */
+export async function tareaProgramada(tarea: string, autorizacion: string | null, d: Partial<DepsProduccion> = {}): Promise<RespuestaTarea> {
+  const esperado = configPrivada(d.entorno).TAREAS_SECRETO ?? '';
+  if (!secretoValido(autorizacion?.startsWith('Bearer ') ? autorizacion.slice(7) : null, esperado)) return { status: 401, cuerpo: null };
+  const deps: DepsProduccion = { sql: sqlServidor, urlApp: appUrl(), ...d };
+  if (tarea === 'latido') return { status: 200, cuerpo: await ejecutarLatidoProduccion(deps) };
+  const def = TAREAS.find((t) => t.tarea === tarea);
+  const manejador = manejadoresDeTareas(deps)[tarea];
+  if (!def || !manejador) return { status: 404, cuerpo: null };
+  const puerto = new PuertoTareasDb(deps.sql);
+  await puerto.sembrar(TAREAS);
+  const ventana = `manual:${ahoraDe(deps)().toISOString().slice(0, 16)}`;
+  if (!(await puerto.reclamar(tarea, ventana))) return { status: 200, cuerpo: { estado: 'ya_reclamada' } };
+  try {
+    const r = await manejador(ventana);
+    await puerto.terminar(tarea, ventana, r.estado, r.detalle);
+    return { status: 200, cuerpo: r };
+  } catch (e) {
+    await puerto.terminar(tarea, ventana, 'error', e instanceof Error ? e.name : 'error');
+    return { status: 500, cuerpo: { estado: 'error' } };
+  }
+}

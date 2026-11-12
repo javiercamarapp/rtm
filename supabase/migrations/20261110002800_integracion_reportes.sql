@@ -340,3 +340,21 @@ revoke execute on all functions in schema rep from public, anon, authenticated;
 grant execute on all functions in schema rep to servidor;
 revoke execute on function api.rep_historial(), api.rep_versiones(text), api.rep_html(text, int), api.rep_pdf(text, int) from public, anon;
 grant execute on function api.rep_historial(), api.rep_versiones(text), api.rep_html(text, int), api.rep_pdf(text, int) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Aviso de reporte: UN aviso (campana + Telegram al grupo con el enlace autenticado + correo corto sin adjunto) por version. Idempotente por clave y version.
+-- ---------------------------------------------------------------------------
+create function rep.emitir_aviso(p_clave text, p_codigo text, p_texto text) returns bigint
+language plpgsql security definer set search_path = ''
+as $$
+declare v_version int; v_folio text;
+begin
+  perform seguridad.exigir_socio_o_sistema();
+  if p_codigo not in ('reporte_semanal', 'reporte_mensual', 'reporte_no_salio') then raise exception 'codigo de aviso de reporte desconocido' using errcode = '22023'; end if;
+  select r.version, r.folio into v_version, v_folio from rep.reporte r where r.clave = p_clave order by r.version desc limit 1;
+  if v_version is null then raise exception 'no hay reporte % para avisar', p_clave using errcode = '22023'; end if;
+  return operacion.avisar(p_codigo, null, 'rep:' || p_clave || ':' || v_version || ':' || p_codigo, null, left(p_texto, 200), 'reporte', null,
+    jsonb_build_object('clave', p_clave, 'version', v_version, 'folio', v_folio, 'texto', p_texto));
+end $$;
+revoke execute on function rep.emitir_aviso(text, text, text) from public, anon, authenticated;
+grant execute on function rep.emitir_aviso(text, text, text) to servidor;

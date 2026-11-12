@@ -33,6 +33,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
         <Link href="/proveedores?p=Isaac" aria-current={proveedor === 'Isaac'}>Isaac</Link>
         <Link href="/proveedores?p=Karen" aria-current={proveedor === 'Karen'}>Karen</Link>
       </div>
+      <p className="rtm-nota"><Link href="/proveedores/inventario" data-testid="ir-inventario">Inventario actual de proveedores</Link>: lo que hay disponible hoy y la lista para clientes.</p>
 
       <section className="rtm-bloque rtm-entra rtm-i-2" aria-label="Saldo de la cuenta">
         <p className="rtm-nota">Saldo de la cuenta con {proveedor} (positivo = a favor, negativo = se debe)</p>

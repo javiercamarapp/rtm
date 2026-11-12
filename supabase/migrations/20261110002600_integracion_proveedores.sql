@@ -369,7 +369,7 @@ as $$
 begin
   perform seguridad.exigir_socio_o_sistema();
   return coalesce((select jsonb_agg(jsonb_build_object('producto_id', m.producto_id, 'marca', m.marca, 'titulo', m.titulo, 'puffs', m.puffs, 'estado', m.estado, 'nuevo_sin_costo', m.nuevo_sin_costo,
-      'mapeo', m.mapeo, 'canonico_id', m.canonico_id, 'sin_sabores', m.sin_sabores,
+      'mapeo', m.mapeo, 'canonico_id', m.canonico_id, 'canonico_nombre', (select mo.nombre_canonico from catalogo.modelo mo where m.canonico_id is not null and mo.id = m.canonico_id::bigint), 'sin_sabores', m.sin_sabores,
       'sabores', coalesce((select jsonb_agg(jsonb_build_object('variante_id', v.variante_id, 'sabor', v.sabor_original, 'disponible', v.disponible, 'estado', v.estado, 'inestable', v.inestable_hasta is not null and v.inestable_hasta > now(),
           'sabor_canonico_id', v.sabor_canonico_id) order by v.sabor_original) from proveedores.variante v where v.producto_id = m.producto_id and v.estado <> 'descontinuada'), '[]'::jsonb),
       'costo_vigente', (select jsonb_build_object('costo_cent', c.costo_cent, 'desde', c.vigente_desde) from catalogo.costo_proveedor c join catalogo.proveedor pr on pr.id = c.proveedor_id

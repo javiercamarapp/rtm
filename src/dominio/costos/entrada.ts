@@ -16,6 +16,8 @@ export function ppmDeTexto(texto: string): bigint | null {
   return ppm > 1_000_000n ? null : ppm;
 }
 
+const miles = (n: bigint): string => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
 /** Millonesimas a texto con dos decimales como minimo ("75.50"), sin redondear mentiras: muestra hasta 6 decimales si hacen falta. */
 export function textoMicro(micro: bigint, minimo = 2): string {
   const neg = micro < 0n;
@@ -23,7 +25,7 @@ export function textoMicro(micro: bigint, minimo = 2): string {
   const ent = a / 1_000_000n;
   let dec = (a % 1_000_000n).toString().padStart(6, '0');
   while (dec.length > minimo && dec.endsWith('0')) dec = dec.slice(0, -1);
-  return `${neg ? '-' : ''}${ent.toLocaleString('en-US')}.${dec}`;
+  return `${neg ? '-' : ''}${miles(ent)}.${dec}`;
 }
 
 /** Centavos x 1e6 (el "exacto") a pesos con hasta 4 decimales significativos: 23587500000n -> "235.875". */
@@ -33,7 +35,7 @@ export function pesosDeExactoE6(e6: bigint): string {
   const ent = a / 100_000_000n;
   let dec = (a % 100_000_000n).toString().padStart(8, '0');
   while (dec.length > 2 && dec.endsWith('0')) dec = dec.slice(0, -1);
-  return `${neg ? '-' : ''}${ent.toLocaleString('en-US')}.${dec}`;
+  return `${neg ? '-' : ''}${miles(ent)}.${dec}`;
 }
 
 /** Participacion en ppm a porcentaje: 166666n -> "16.67" (solo para mostrar). */

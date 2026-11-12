@@ -8,7 +8,6 @@ export function LogoMarca({ slug, nombre, alto = 20 }: { slug: string | null; no
   if (m.icono) {
     return (
       <span className="rtm-marca">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={`${base}/${m.icono}`} alt="" width={alto} height={alto} style={{ height: alto, width: alto }} />
         <span className="rtm-marca-texto">{m.nombre}</span>
       </span>
@@ -17,9 +16,7 @@ export function LogoMarca({ slug, nombre, alto = 20 }: { slug: string | null; no
   const ancho = Math.round(alto * m.proporcion);
   return (
     <span className="rtm-marca" role="img" aria-label={`Logo de ${m.nombre}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="rtm-marca-claro" src={`${base}/${m.claro}`} alt="" height={alto} width={ancho} style={{ height: alto, width: 'auto' }} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="rtm-marca-oscuro" src={`${base}/${m.oscuro}`} alt="" height={alto} width={ancho} style={{ height: alto, width: 'auto' }} />
     </span>
   );

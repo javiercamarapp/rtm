@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { normalizar } from '@/dominio/catalogo/normalizar';
 import { formatearMoneda } from '@/dominio/formato';
 import type { CatalogoCompra } from '@/dominio/operacion/tipos';
 import { centavosDeTexto, useAccion } from '../../../operacion/usar-accion';
@@ -9,7 +10,7 @@ import { centavosDeTexto, useAccion } from '../../../operacion/usar-accion';
 interface Renglon { sku_id: number; modelo: string; sabor: string; pagadas: number; facturadas: number | null; costo: string; lista: bigint | null; motivo: string }
 const textoPesos = (c: bigint | null) => (c === null ? '' : formatearMoneda(c).replace('$', ''));
 
-export function FormularioCompra({ proveedor, catalogo }: { proveedor: string; catalogo: CatalogoCompra }) {
+export function FormularioCompra({ proveedor, catalogo, modeloInicial, disponibles }: { proveedor: string; catalogo: CatalogoCompra; modeloInicial?: string; disponibles?: string[] }) {
   const router = useRouter();
   const { correr, ocupado, error } = useAccion();
   const modelos = useMemo(() => {
@@ -17,7 +18,7 @@ export function FormularioCompra({ proveedor, catalogo }: { proveedor: string; c
     for (const s of catalogo.skus) if (!vistos.has(s.modelo)) vistos.set(s.modelo, s.marca);
     return [...vistos.entries()].map(([modelo, marca]) => ({ marca, modelo }));
   }, [catalogo.skus]);
-  const [modelo, setModelo] = useState('');
+  const [modelo, setModelo] = useState(modeloInicial && catalogo.skus.some((x) => x.modelo === modeloInicial) ? modeloInicial : '');
   const [skuId, setSkuId] = useState<number | ''>('');
   const [pagadas, setPagadas] = useState('');
   const [facturadas, setFacturadas] = useState('');
@@ -76,7 +77,7 @@ export function FormularioCompra({ proveedor, catalogo }: { proveedor: string; c
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Sabor
             <select className="rtm-campo" value={skuId} onChange={(e) => { const v = e.target.value === '' ? '' : Number(e.target.value); setSkuId(v); setCosto(textoPesos(catalogo.skus.find((s) => s.sku_id === v)?.costo_cent ?? null)); }} disabled={modelo === ''} data-testid="oc-sabor">
               <option value="">Elige un sabor</option>
-              {sabores.map((s) => <option key={s.sku_id} value={s.sku_id}>{s.sabor}</option>)}
+              {sabores.map((s) => { const agotado = disponibles !== undefined && !disponibles.some((d) => normalizar(d) === normalizar(s.sabor)); return <option key={s.sku_id} value={s.sku_id} disabled={agotado}>{s.sabor}{agotado ? ' (agotado en Karen)' : ''}</option>; })}
             </select>
           </label>
           <label className="rtm-etiqueta-campo">Pagadas<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={pagadas} onChange={(e) => setPagadas(e.target.value)} data-testid="oc-pagadas" /></label>

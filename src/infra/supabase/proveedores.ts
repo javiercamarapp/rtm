@@ -3,7 +3,7 @@ import type { LlamadaProveedores } from '@/infra/proveedores/postgres';
 import { crearClienteServidor } from './cliente-servidor';
 
 export interface FilaInventarioProv {
-  producto_id: string; marca: string; titulo: string; puffs: number | null; estado: string; nuevo_sin_costo: boolean; mapeo: string; canonico_id: string | null; sin_sabores: boolean;
+  producto_id: string; marca: string; titulo: string; puffs: number | null; estado: string; nuevo_sin_costo: boolean; mapeo: string; canonico_id: string | null; canonico_nombre: string | null; sin_sabores: boolean;
   sabores: { variante_id: string; sabor: string; disponible: boolean; estado: string; inestable: boolean; sabor_canonico_id: string | null }[];
   costo_vigente: { costo_cent: number; desde: string } | null; existencia_propia: number;
 }

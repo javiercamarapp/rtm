@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatearMoneda } from '@/dominio/formato';
 import { bigintACentavos } from '@/dominio/operacion/json';
 import { useAccion, centavosDeTexto } from '../operacion/usar-accion';
 
@@ -36,7 +37,7 @@ export function FormularioReembolso({ aSocio, pendienteCent, hoy }: { aSocio: 'j
         </label>
         <button type="submit" className="rtm-boton rtm-boton-primario" disabled={ocupado || invalido} data-testid="reembolso-guardar">{paso === 1 ? 'Revisar' : 'Confirmar reembolso'}</button>
       </div>
-      {paso === 2 && cent !== null && <p role="status">Se reembolsan ${(BigInt(cent) / 100n).toLocaleString('en-US')}.{(BigInt(cent) % 100n).toString().padStart(2, '0')} de lo pendiente; el cargo original no cambia. Confirma para guardarlo.</p>}
+      {paso === 2 && cent !== null && <p role="status">Se reembolsan {formatearMoneda(BigInt(cent))} de lo pendiente; el cargo original no cambia. Confirma para guardarlo.</p>}
       {error && <p className="rtm-error" role="alert">{error}</p>}
     </form>
   );
