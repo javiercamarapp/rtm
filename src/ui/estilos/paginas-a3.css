@@ -62,3 +62,5 @@
 .a3-filtros-form select.rtm-campo { max-width: 150px; }
 
 .a3-filtros-form .rtm-campo-num { width: 172px; }
+
+.a3-sin-corte { white-space: nowrap; }

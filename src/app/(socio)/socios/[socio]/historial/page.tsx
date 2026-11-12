@@ -135,7 +135,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
               { id: 'f', titulo: 'Acta', ancho: 'm', prioridadMovil: 'titulo' as const, celda: (a) => <Link href={`/socios/actas/${a.id}`} className="rtm-mono">{a.folio}</Link> },
               { id: 'p', titulo: 'Periodo', ancho: 'l', celda: (a) => (a.periodo_ini.slice(8) === '01' && a.periodo_ini.slice(0, 7) === a.periodo_fin.slice(0, 7) && mesAlFinal(a.periodo_fin) ? mesEtiqueta(a.periodo_ini) : `${fechaCorta(a.periodo_ini)} al ${fechaCorta(a.periodo_fin)}`) },
               { id: 'u', titulo: 'Utilidad del mes', numerica: true, ancho: 'm', celda: (a) => (a.tipo === 'contra' ? '—' : m(a.utilidad_cent, a.utilidad_cent < 0n)) },
-              { id: 'p2', titulo: 'Su parte', numerica: true, ancho: 'm', prioridadMovil: 'principal' as const, celda: (a) => (a.tipo === 'contra' ? '—' : m(a.parte_cent)) },
+              { id: 'p2', titulo: 'Su parte', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (a) => (a.tipo === 'contra' ? '—' : m(a.parte_cent)) },
               { id: 'r', titulo: 'Retira', numerica: true, ancho: 'm', celda: (a) => m(a.retira_cent) },
               { id: 'i', titulo: 'Reinvierte', numerica: true, ancho: 'm', celda: (a) => m(a.reinvierte_cent) },
               { id: 'v', titulo: 'Valor de su participación', numerica: true, ancho: 'l', secundaria: true, prioridadMovil: 'normal' as const, celda: (a) => (a.valor_cent === null ? <span className="rtm-sin-dato">Sin dato</span> : m(a.valor_cent)) },
@@ -167,7 +167,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
                 filas={proy.meses.map((x, i) => ({ n: i + 1, ...x }))}
                 columnas={[
                   { id: 'n', titulo: 'Mes', ancho: 's', prioridadMovil: 'titulo' as const, celda: (x) => `Mes +${x.n}` },
-                  { id: 'e', prioridadMovil: 'principal' as const, titulo: proy.base === 'retiro' ? 'Retiro esperado' : 'Su parte esperada', numerica: true, ancho: 'm', celda: (x) => m(x.esperado_cent) },
+                  { id: 'e', prioridadMovil: 'normal' as const, titulo: proy.base === 'retiro' ? 'Retiro esperado' : 'Su parte esperada', numerica: true, ancho: 'm', celda: (x) => m(x.esperado_cent) },
                   { id: 'b', titulo: 'Desde', numerica: true, ancho: 'm', celda: (x) => m(x.bajo_cent) },
                   { id: 'a', titulo: 'Hasta', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (x) => m(x.alto_cent) },
                 ]}
@@ -197,7 +197,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
           columnas={[
             { id: 'e', titulo: 'Periodo', ancho: 'l', prioridadMovil: 'titulo' as const, celda: (f) => <>{etiqueta(f)}{f.parcial ? <span className="rtm-celda-sub">En curso</span> : null}</> },
             { id: 'u', titulo: 'Utilidad de la empresa', numerica: true, ancho: 'l', celda: (f) => m(f.utilidad_cent, f.utilidad_cent < 0n) },
-            { id: 'p', titulo: 'Su parte (50 %)', numerica: true, ancho: 'l', prioridadMovil: 'principal' as const, celda: (f) => m(f.parte_cent, f.parte_cent < 0n) },
+            { id: 'p', titulo: 'Su parte (50 %)', numerica: true, ancho: 'l', prioridadMovil: 'normal' as const, celda: (f) => m(f.parte_cent, f.parte_cent < 0n) },
             { id: 'v', titulo: 'Ventas', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.ventas_cent) },
             { id: 'pe', titulo: 'Pedidos', numerica: true, ancho: 's', secundaria: true, celda: (f) => f.pedidos },
             { id: 'pz', titulo: 'Piezas', numerica: true, ancho: 's', secundaria: true, celda: (f) => formatearDecimal(Number(f.piezas), 0) },

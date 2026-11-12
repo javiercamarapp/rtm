@@ -77,9 +77,9 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
               columnas={[
                 { id: 's', titulo: 'Socio', ancho: 'm', prioridadMovil: 'titulo' as const, celda: (f) => <Link href={`/socios/${f.nombre}/historial`} data-testid={`acta-historial-${f.nombre}`}>{f.nombre}</Link> },
                 { id: 'rb', titulo: 'Reembolso recibido', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.x?.paga_reembolso_cent ?? 0n) },
-                { id: 'p', titulo: 'Su parte (50/50)', numerica: true, ancho: 'm', prioridadMovil: 'principal' as const, celda: (f) => m(f.x?.utilidad_cent ?? 0n) },
+                { id: 'p', titulo: 'Su parte (50/50)', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (f) => m(f.x?.utilidad_cent ?? 0n) },
                 { id: 'a', titulo: 'Retiros previos', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.x?.anticipo_cent ?? 0n) },
-                { id: 'd', titulo: 'Disponible', numerica: true, ancho: 'm', celda: (f) => <span style={{ whiteSpace: 'nowrap' }}><CifraComprobada texto={m(f.disp)} cifra={`historial:parte:${c.id}:${f.nombre}`} comprobacion="cuadra" /></span> },
+                { id: 'd', titulo: 'Disponible', numerica: true, ancho: 'm', celda: (f) => <span className="a3-sin-corte"><CifraComprobada texto={m(f.disp)} cifra={`historial:parte:${c.id}:${f.nombre}`} comprobacion="cuadra" /></span> },
                 { id: 'r', titulo: 'Retira', numerica: true, ancho: 'm', celda: (f) => m(f.dec.retira) },
                 { id: 'i', titulo: 'Reinvierte', numerica: true, ancho: 'm', celda: (f) => m(f.dec.reinvierte) },
                 { id: 'q', titulo: 'Queda por distribuir', numerica: true, ancho: 'm', celda: (f) => m(f.resto) },

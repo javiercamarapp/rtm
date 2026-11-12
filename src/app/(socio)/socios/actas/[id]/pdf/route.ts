@@ -1,9 +1,11 @@
+import { exigirSocio } from '@/composicion/acceso';
 import { pdfDeActa } from '@/composicion/historial';
 
 export const dynamic = 'force-dynamic';
 
 /** PDF del acta de corte (con el sello si ya se cerro). Solo socios. El mismo acta da los mismos bytes. */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  await exigirSocio();
   const { id } = await params;
   const n = Number(id);
   if (!Number.isInteger(n) || n <= 0) return new Response('No encontrada', { status: 404 });
