@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { IncidentePaquete } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
@@ -7,7 +7,7 @@ import { ChipEstado } from '@/ui/componentes/controles';
 import { Tarjeta } from '@/ui/componentes/pagina';
 import { DialogoResolver } from './dialogos-incidente';
 
-const RESPONSABLE = { sociedad: 'La sociedad (50/50)', socio: 'Un socio', proveedor: 'El proveedor', cliente: 'El cliente', mixto: 'Varios' } as const;
+const RESPONSABLE = { sociedad: 'Sociedad', socio: 'Socio', proveedor: 'Proveedor', cliente: 'Cliente', mixto: 'Varios' } as const;
 const ACCION = { reponer: 'Reposición', bonificar: 'Bonificación', castigar: 'Castigo', asignar: 'Cobro al socio', reclamar: 'Reclamo', mixta: 'Varias', ninguna: 'Sin cambio' } as const;
 
 /** Incidentes de paquetes perdidos o dañados de un sentido: estado, piezas, costo, quién absorbe y efecto. Cifras con "Explicar este número". */
@@ -29,21 +29,19 @@ export function TablaIncidentes({ incidentes, sentido, testid }: { incidentes: I
         columnas={[
           { id: 'f', titulo: 'Folio', ancho: 'm', celda: (i) => <span className="rtm-mono rtm-a2-nowrap" data-testid={`${testid}-folio`}>{i.folio}</span> },
           { id: 'o', titulo: sentido === 'salida' ? 'Pedido' : 'Orden', ancho: 'm', celda: (i) => (sentido === 'salida' ? <Link className="rtm-mono rtm-a2-nowrap" href={`/pedidos/${i.pedido_id}`}>{i.pedido_folio}</Link> : <Link className="rtm-mono rtm-a2-nowrap" href={`/proveedores/compras/${i.compra_id}`}>{i.compra_folio}</Link>) },
-          { id: 'c', titulo: sentido === 'salida' ? 'Cliente' : 'Proveedor', secundaria: true, truncar: 'm', celda: (i) => (sentido === 'salida' ? i.cliente : i.proveedor) },
-          { id: 't', titulo: 'Tipo', celda: (i) => (i.tipo === 'perdido' ? 'Perdido' : 'Dañado') },
-          { id: 'r', titulo: 'Por modelo y sabor', secundaria: true, truncar: 'l', celda: (i) => i.renglones.map((r) => `${r.modelo} / ${r.sabor}: ${r.piezas} pz`).join(' · ') },
+          { id: 'c', titulo: sentido === 'salida' ? 'Cliente' : 'Proveedor', secundaria: true, truncar: 's', celda: (i) => (sentido === 'salida' ? i.cliente : i.proveedor) },
+          { id: 'r', titulo: 'Tipo, sabor y modelo', secundaria: true, truncar: 's', celda: (i) => `${i.tipo === 'perdido' ? 'Perdido' : 'Dañado'}: ` + i.renglones.map((r) => `${r.sabor} ${r.piezas} pz (${r.modelo})`).join(' · ') },
           { id: 'z', titulo: 'Piezas', numerica: true, celda: (i) => formatearPiezas(i.piezas) },
           { id: 'v', titulo: 'Costo de lo perdido', numerica: true, celda: (i) => <CifraComprobada texto={formatearMoneda(i.valor_cent)} cifra={`paquete:valor:${i.id}`} comprobacion="cuadra" /> },
-          { id: 'q', titulo: 'Quién absorbe', ancho: 'l', celda: (i) => {
+          { id: 'q', titulo: 'Quién absorbe', celda: (i) => {
             // En entrada manda el responsable vigente (puede haberse reasignado desde la compra); en salida, el de la resolucion.
             const r = i.sentido === 'entrada' ? (i.responsable_vigente ?? i.resolucion?.responsable) : i.resolucion?.responsable;
             const socio = r === 'socio' ? i.resolucion?.socio : null;
-            return r ? `${RESPONSABLE[r]}${socio ? ` (${socio})` : ''}` : 'Por decidir';
+            return <span className="rtm-nowrap">{r ? `${RESPONSABLE[r]}${socio ? ` (${socio})` : ''}` : 'Por decidir'}</span>;
           } },
           { id: 'e', titulo: 'Efecto', secundaria: true, celda: (i) => (i.resolucion ? ACCION[i.resolucion.accion] : 'Pendiente') },
           { id: 'a', titulo: 'Absorbe la sociedad', numerica: true, celda: (i) => (i.resolucion ? <CifraComprobada texto={formatearMoneda(i.resolucion.absorbe_sociedad_cent)} cifra={`paquete:absorbe:${i.id}`} comprobacion="cuadra" /> : 'Pendiente') },
           { id: 'k', titulo: 'Por cobrar', numerica: true, secundaria: true, celda: (i) => (i.resolucion ? formatearMoneda(i.resolucion.recuperable_cent) : 'Pendiente') },
-          { id: 'd', titulo: 'Reportado', secundaria: true, celda: (i) => etiquetaFecha(i.fecha_neg) },
           { id: 's', titulo: 'Estado', celda: (i) => <ChipEstado tono={i.estado === 'abierto' ? 'atencion' : 'ok'}>{i.estado === 'abierto' ? 'Por resolver' : 'Resuelto'}</ChipEstado> },
           { id: 'x', titulo: 'Acciones', celda: (i) => (i.estado === 'abierto' ? <DialogoResolver incidente={i} /> : null) },
         ]}

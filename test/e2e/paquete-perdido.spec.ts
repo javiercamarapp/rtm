@@ -61,7 +61,7 @@ test('salida: reportar piezas perdidas y resolver con bonificacion absorbida por
   await r.getByLabel('Motivo').fill('La sociedad absorbe la pérdida');
   await r.getByTestId('confirmar').click();
   await expect(page.getByRole('row').filter({ hasText: folioInc }).first()).toContainText('Resuelto');
-  await expect(page.getByRole('row').filter({ hasText: folioInc }).first()).toContainText('La sociedad (50/50)');
+  await expect(page.getByRole('row').filter({ hasText: folioInc }).first()).toContainText('Sociedad');
   const res = (await consultar<{ absorbe: string; bonif: string }>('select absorbe_sociedad_cent::text as absorbe, bonificacion_cent::text as bonif from operacion.paquete_incidente_resolucion where incidente_id = $1', [inc.id]))[0]!;
   expect(res.absorbe).toBe('50000');
   expect(res.bonif).toBe('75000');
