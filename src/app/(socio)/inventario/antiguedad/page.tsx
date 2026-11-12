@@ -55,7 +55,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           <Tarjeta titulo="Valor por tramo de antigüedad" descripcion="Parte del valor a costo"><BarList etiquetaAria="Valor por tramo" items={TRAMOS.map((t) => ({ id: t.id, etiqueta: t.etiqueta, texto: m(ac.tramos.get(t.id)!.valor) ?? '', pct: partePct(ac.tramos.get(t.id)!.valor, totalV) }))} /></Tarjeta>
         </Rejilla>
       )}
-      <Tarjeta plana titulo="Por sabor" descripcion="Orden: más antiguo primero">
+      <Tarjeta plana className="rtm-a2-tabla" titulo="Por sabor" descripcion="Orden: más antiguo primero">
         <DataTable
           etiqueta="Antigüedad y rotación por sabor" clave={(f) => f.id} filas={filas} densidad="densa" pegajosa primeraFija plana
           vacio={{ titulo: 'Sin existencias', texto: 'Aparece con la primera compra recibida y contada.' }}

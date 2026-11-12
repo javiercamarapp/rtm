@@ -6,6 +6,7 @@ import { SinDato } from '@/ui/componentes/estado-texto';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { AreaSerie } from '@/ui/graficas';
+import { SubnavContabilidad } from '../../subnav';
 import { Campo, FiltrosUrl } from '../../../_a2/filtros-url';
 import { bpTexto, fecha, fechaParam, hoyNeg, m, mesEtiqueta, semanaEtiqueta, textoParam, type Params } from '../../../_a2/util';
 
@@ -23,11 +24,13 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   const crecimientos = filas.filter((f) => f.crecimiento_bp !== null);
   const mejor = [...crecimientos].sort((a, b) => b.crecimiento_bp! - a.crecimiento_bp!)[0] ?? null;
   const etiqueta = (f: string) => (paso === 'mes' ? mesEtiqueta(f) : semanaEtiqueta(f));
-  const puntos = (campo: 'valuacion_cent' | 'diferencia_cent' | 'utilidad_cent') => filas.map((f) => ({ id: f.corte, etiqueta: etiqueta(f.corte), valor: Number(f[campo]), texto: m(f[campo]) ?? '', parcial: f.parcial }));
+  const puntos = (campo: 'valuacion_cent' | 'diferencia_cent' | 'utilidad_cent') => filas.map((f) => ({ id: f.corte, etiqueta: etiqueta(f.corte), valor: Number(f[campo]) / 100, texto: m(f[campo]) ?? '', parcial: f.parcial }));
   const noNeg = (campo: 'valuacion_cent' | 'diferencia_cent' | 'utilidad_cent') => filas.every((f) => f[campo] >= 0n);
   const pie = `Cortes ${paso === 'mes' ? 'mensuales' : 'semanales'} del ${fecha(s.desde)} al ${fecha(s.hasta)} · Fuente: libro contable`;
   const neg = (c: bigint | null) => (c === null ? <SinDato /> : <span className={c < 0n ? 'rtm-a2-num-neg' : undefined}>{m(c)}</span>);
   return (
+    <>
+    <SubnavContabilidad />
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow="Contabilidad · historial de valuación" titulo={sd ? 'Todavía no hay historial de valuación' : `${filas.length} cortes ${paso === 'mes' ? 'mensuales' : 'semanales'}`} descripcion="Valuación al cierre de cada periodo, su cambio, el crecimiento y la utilidad. Cada corte usa la misma función que la valuación." acciones={<Link className="rtm-boton" href="/contabilidad/valuacion">Valuación al detalle</Link>} />
       <FiltrosUrl etiquetaAria="Periodo del historial" restablecer="/contabilidad/valuacion/historial">
@@ -42,16 +45,16 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
         { id: 'm', etiqueta: 'Mejor crecimiento', valor: mejor ? bpTexto(mejor.crecimiento_bp) : null, categoria: 4, nota: mejor ? `Corte ${fecha(mejor.corte)}` : undefined },
       ]} />
       <Rejilla dividir="6-6">
-        <Tarjeta titulo="Valuación" descripcion="Al cierre de cada corte">
-          {filas.length >= 2 && noNeg('valuacion_cent') ? <AreaSerie titulo="Valuación por corte" descripcion={`Valuación al cierre de ${filas.length} cortes.`} unidad="Pesos" procedencia="observado" pie={pie} alto={150} formatoEje={(n) => `$${Math.round(n / 100000)}k`} puntos={puntos('valuacion_cent')} />
+        <Tarjeta>
+          {filas.length >= 2 && noNeg('valuacion_cent') ? <AreaSerie titulo="Valuación por corte" descripcion={`Valuación al cierre de ${filas.length} cortes.`} unidad="Pesos" procedencia="observado" pie={pie} alto={150} puntos={puntos('valuacion_cent')} />
             : <p className="rtm-a2-nota">Con menos de dos cortes, o con valores negativos, no se dibuja la serie: la tabla trae todos los números.</p>}
         </Tarjeta>
-        <Tarjeta titulo="Diferencia (valuación menos deudas)" descripcion="Al cierre de cada corte">
-          {filas.length >= 2 && noNeg('diferencia_cent') ? <AreaSerie titulo="Diferencia por corte" descripcion={`Valuación menos deudas al cierre de ${filas.length} cortes.`} unidad="Pesos" procedencia="observado" pie={pie} alto={150} formatoEje={(n) => `$${Math.round(n / 100000)}k`} puntos={puntos('diferencia_cent')} />
+        <Tarjeta>
+          {filas.length >= 2 && noNeg('diferencia_cent') ? <AreaSerie titulo="Diferencia por corte" descripcion={`Valuación menos deudas al cierre de ${filas.length} cortes.`} unidad="Pesos" procedencia="observado" pie={pie} alto={150} puntos={puntos('diferencia_cent')} />
             : <p className="rtm-a2-nota">Con menos de dos cortes, o con valores negativos, no se dibuja la serie: la tabla trae todos los números.</p>}
         </Tarjeta>
       </Rejilla>
-      <Tarjeta plana titulo="Por corte" descripcion="Orden: más reciente primero">
+      <Tarjeta plana className="rtm-a2-tabla" titulo="Por corte" descripcion="Orden: más reciente primero">
         <DataTable
           etiqueta="Historial de valuación" clave={(f) => f.corte} filas={[...filas].reverse()} densidad="densa" pegajosa primeraFija plana
           vacio={{ titulo: 'Sin cortes', texto: 'El historial aparece con el primer asiento contable.' }}
@@ -69,5 +72,6 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
       </Tarjeta>
       <p className="rtm-a2-nota">Cada corte es la valuación contable a esa fecha; el crecimiento es la variación de la valuación contra el corte anterior y queda en «Sin dato» si el corte anterior no tiene valuación positiva. El último corte puede ser parcial (el periodo sigue en curso). La utilidad es la de la empresa acumulada: no se mezcla con valuaciones de otro concepto.</p>
     </Pagina>
+    </>
   );
 }

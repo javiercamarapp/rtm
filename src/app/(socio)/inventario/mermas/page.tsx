@@ -35,7 +35,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
       ]} />
       {!sd && (
         <Rejilla dividir="6-6">
-          <Tarjeta titulo="Piezas perdidas por mes" descripcion="Mermas y faltantes de conteo">
+          <Tarjeta>
             {r.meses.length >= 2 ? (
               <ColumnasPeriodo titulo="Piezas perdidas por mes" descripcion={`Mermas y ajustes en ${r.meses.length} meses.`} unidad="Piezas" procedencia="observado" pie="Fuente: libro de movimientos" alto={140}
                 datos={r.meses.map((x) => ({ id: x.mes, etiqueta: mesEtiqueta(x.mes), valor: Math.max(0, x.merma_piezas + x.ajuste_piezas), texto: pz(x.merma_piezas + x.ajuste_piezas) ?? '', detalle: `Merma ${pz(x.merma_piezas)} · ajuste ${pz(x.ajuste_piezas)}` }))} />
@@ -46,7 +46,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           </Tarjeta>
         </Rejilla>
       )}
-      <Tarjeta plana titulo="Movimientos" descripcion="Orden: más reciente primero">
+      <Tarjeta plana className="rtm-a2-tabla" titulo="Movimientos" descripcion="Orden: más reciente primero">
         <DataTable
           etiqueta="Mermas y diferencias de conteo" clave={(x) => x.id} filas={r.movimientos} densidad="libro" pegajosa primeraFija plana
           vacio={{ titulo: 'Sin mermas ni ajustes de conteo', texto: 'Aparecen cuando se registra una merma o se cierra un conteo con diferencias.' }}

@@ -23,3 +23,20 @@
 .rtm-a2-etiqueta-tipo { white-space: nowrap; }
 .rtm-a2-reversa { text-decoration: line-through; text-decoration-style: dashed; text-decoration-color: var(--rtm-ink-3); }
 .rtm-a2-grafica-corta { min-width: 0; }
+.rtm-a2-campo > select { max-width: 240px; }
+.rtm-a2-campo > input[type='date'] { width: 140px; }
+.rtm-a2-nowrap { white-space: nowrap; }
+.rtm-a2-pie-tabla { border-top: 0; }
+.rtm-dt-celda .rtm-num, .rtm-dt-celda .rtm-mono { white-space: nowrap; }
+.rtm-a2-tabla .rtm-dt-celda { white-space: nowrap; }
+.rtm-a2-tabla .rtm-dt-celda > a, .rtm-a2-tabla .rtm-dt-celda > span { white-space: nowrap; }
+.rtm-a2-pie-tabla .rtm-paginador { border: 0; padding: 0; margin: 0; }
+@media (max-width: 767px) {
+  .rtm-a2-tabla .rtm-dt-fila > .rtm-dt-celda:first-child { min-width: 0 !important; max-width: 42vw; overflow: hidden; text-overflow: ellipsis; }
+  .rtm-a2-tabla .rtm-dt-celda:first-child .rtm-a2-nowrap, .rtm-a2-tabla .rtm-dt-celda:first-child .rtm-dt-grupo-boton { overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block; vertical-align: bottom; }
+}
+@media (max-width: 767px) {
+  .rtm-a2-campo > input[type='search'] { min-width: 0; width: 100%; }
+  .rtm-a2-campo:has(> input[type='search']) { flex: 1 1 100%; }
+  .rtm-a2-filtros > .rtm-boton { min-height: 44px; }
+}

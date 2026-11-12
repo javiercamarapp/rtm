@@ -41,15 +41,15 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
         <Rejilla dividir="4-4-4">
           <Tarjeta titulo="Valor por marca" descripcion="Parte del valor a costo"><BarList etiquetaAria="Valor por marca" items={r.marcas.map((x) => ({ id: String(x.marca_id), etiqueta: x.marca, texto: m(x.valor_cent) ?? '', pct: partePct(x.valor_cent, total) }))} /></Tarjeta>
           <Tarjeta titulo="Piezas por marca" descripcion="Contra la marca con más piezas"><BarList etiquetaAria="Piezas por marca" items={r.marcas.map((x) => ({ id: String(x.marca_id), etiqueta: x.marca, texto: pz(x.piezas) ?? '', pct: maxPz > 0 ? Math.round((x.piezas / maxPz) * 100) : null }))} mostrarPct={false} /></Tarjeta>
-          <Tarjeta titulo="Compras por semana" descripcion="Valor de las entradas de compra">
+          <Tarjeta>
             {r.compras_semana.length >= 2 ? (
-              <ColumnasPeriodo titulo="Compras por semana" descripcion={`Valor de las entradas de compra en ${r.compras_semana.length} semanas.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140} formatoEje={(n) => `$${Math.round(n / 100000)}k`}
-                datos={r.compras_semana.map((s) => ({ id: s.semana, etiqueta: semanaEtiqueta(s.semana), valor: Number(s.valor_cent), texto: m(s.valor_cent) ?? '', detalle: `${pz(s.piezas)} piezas` }))} />
+              <ColumnasPeriodo titulo="Compras por semana" descripcion={`Valor de las entradas de compra en ${r.compras_semana.length} semanas.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140}
+                datos={r.compras_semana.map((s) => ({ id: s.semana, etiqueta: semanaEtiqueta(s.semana), valor: Number(s.valor_cent) / 100, texto: m(s.valor_cent) ?? '', detalle: `${pz(s.piezas)} piezas` }))} />
             ) : <p className="rtm-a2-nota">Con menos de dos semanas de compras no se dibuja la serie.</p>}
           </Tarjeta>
         </Rejilla>
       )}
-      <Tarjeta plana titulo="Por marca" descripcion="Orden por valor descendente">
+      <Tarjeta plana className="rtm-a2-tabla" titulo="Por marca" descripcion="Orden por valor descendente">
         <DataTable
           etiqueta="Inventario por marca y proveedor" clave={(x) => x.marca_id} filas={r.marcas} densidad="densa" pegajosa primeraFija plana
           vacio={{ titulo: 'Sin existencias por marca', texto: 'Aparecen con la primera compra recibida y contada.' }}
@@ -71,7 +71,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           totales={{ etiqueta: 'Total', celdas: { pz: pz(piezas), v: m(total), en: pz(r.marcas.reduce((a, x) => a + x.entradas, 0)), sl: pz(r.marcas.reduce((a, x) => a + x.salidas, 0)), pc: sd ? null : '100 %' } }}
         />
       </Tarjeta>
-      <Tarjeta plana titulo="Cuenta con cada proveedor" descripcion="Saldo del libro de proveedores">
+      <Tarjeta plana className="rtm-a2-tabla" titulo="Cuenta con cada proveedor" descripcion="Saldo del libro de proveedores">
         <DataTable etiqueta="Cuenta con proveedores" clave={(c) => c.proveedor} filas={r.cuentas_proveedor} densidad="densa" plana
           vacio={{ titulo: 'Sin proveedores', texto: 'No hay cuentas de proveedor.' }}
           columnas={[{ id: 'p', titulo: 'Proveedor', celda: (c) => c.proveedor }, { id: 's', titulo: 'Saldo', numerica: true, celda: (c) => m(c.saldo_cent) }, { id: 'e', titulo: 'Estado', celda: (c) => c.etiqueta }]} />

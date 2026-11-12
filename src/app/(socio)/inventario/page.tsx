@@ -75,7 +75,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
 
   const columnas: Columna<Fila>[] = [
     { id: 'mo', titulo: 'Modelo › sabor', ancho: 'xl', celda: (f) => (f.s ? f.s.sabor : 'Sin sabores registrados') },
-    { id: 'ma', titulo: 'Marca', ancho: 'm', secundaria: true, celda: (f) => f.mod.marca },
+    { id: 'ma', titulo: 'Marca', ancho: 'm', secundaria: true, celda: () => '' },
     { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', resaltar: (f) => ((f.s ? f.s.piezas : f.mod.piezas ?? 0) === 0 ? 'cero' : (f.s ? f.s.piezas : f.mod.piezas ?? 0) < 0 ? 'negativo' : null), celda: (f) => (f.s ? pz(f.s.piezas) : pz(f.mod.piezas)) },
     { id: 'a', titulo: 'Apartadas', numerica: true, ancho: 's', celda: (f) => (f.s ? pz(f.s.reservado) : pz(f.mod.reservado)) },
     { id: 'd', titulo: 'Disponibles', numerica: true, ancho: 's', celda: (f) => (f.s ? pz(f.s.disponible) : pz(f.mod.disponible)) },
@@ -110,7 +110,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
     <Pagina ancho="tablero">
       <EncabezadoPagina
         eyebrow={`Inventario · ${etiquetaHoy()}`}
-        titulo={sd ? 'Todavía no hay existencias' : `${formatearPiezas(inv.totales.piezas)} piezas en la bodega`}
+        titulo={sd ? 'Todavía no hay existencias' : `${formatearPiezas(inv.totales.piezas)} en la bodega`}
         descripcion="Existencia por modelo y sabor a costo promedio, con semáforo de reposición. El inventario es de los socios; su ubicación es la Bodega Omar."
         acciones={<><a className="rtm-boton" href="/inventario/csv" data-testid="inventario-csv">CSV</a><ExportarInventario marcas={marcas} modelos={conDato.map((x) => ({ marca: x.marca, modelo: x.modelo }))} clientes={clientes.filter((c) => c.precios > 0 && c.activo).map((c) => ({ id: c.id, nombre: c.nombre }))} /></>}
       />
@@ -125,7 +125,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
         { id: 'valor', etiqueta: 'Valor del inventario', testid: 'inv-valor', categoria: 1, valor: sd ? null : <CifraComprobada texto={formatearMoneda(inv.totales.valor_cent)} cifra="inventario:valor" comprobacion={inv.comprobacion.valor_modelos_cent === inv.comprobacion.valor_sabores_cent ? 'cuadra' : 'no_cuadra'} />, nota: sd ? undefined : 'A costo promedio' },
         { id: 'piezas', etiqueta: 'Piezas en la bodega', testid: 'inv-piezas', categoria: 2, valor: sd ? null : formatearPiezas(inv.totales.piezas), nota: sd ? undefined : `${inv.totales.modelos_con_existencia} modelos con existencia` },
         { id: 'apartado', etiqueta: 'Vendidas por recoger', testid: 'inv-apartado', categoria: 3, valor: sd ? null : formatearPiezas(inv.totales.reservado), progreso: sd || inv.totales.piezas <= 0 ? undefined : { pct: (inv.totales.reservado / inv.totales.piezas) * 100 }, nota: sd ? undefined : 'Parte de las piezas' },
-        { id: 'disponible', etiqueta: 'Disponibles', categoria: 4, valor: sd ? null : formatearPiezas(inv.totales.piezas - inv.totales.reservado), nota: sd ? undefined : 'Piezas menos apartadas' },
+        { id: 'disponible', etiqueta: 'Disponibles', categoria: 4, valor: sd ? null : formatearPiezas(conDato.reduce((a, x) => a + (x.disponible ?? 0), 0)), nota: sd ? undefined : 'Suma de los modelos' },
         { id: 'cero', etiqueta: 'Modelos en cero', categoria: 5, valor: sd ? null : String(agotados), href: sd ? undefined : enlace(base, sp, { solo: 'cero', vista: null }), nota: sd ? undefined : 'Agotados o negativos' },
         { id: 'reponer', etiqueta: 'Modelos por reponer', testid: 'inv-reponer', categoria: 6, valor: sd ? null : String(porReponer), nota: sd ? undefined : `Entrega ${ltMin} d, objetivo ${p.objetivo_dias} d` },
       ]} />
@@ -172,19 +172,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
               </div>
             </Rejilla>
           )}
-          {calorModelos.length >= 2 && saboresTop.length >= 2 && (
-            <MapaCalor
-              titulo="Piezas por modelo y sabor"
-              descripcion={`Mapa de calor de ${calorModelos.length} modelos por ${saboresTop.length} sabores; cada celda trae su número exacto y la celda punteada no tiene dato.`}
-              pie={pie}
-              filas={calorModelos.map((x) => `${x.marca} ${x.modelo}`)}
-              columnas={saboresTop}
-              unidad="piezas"
-              celdas={calorModelos.map((x) => saboresTop.map((s) => { const z = x.sabores.find((w) => w.sabor === s); return z ? { valor: z.piezas, texto: formatearPiezas(z.piezas) } : null; }))}
-            />
-          )}
-
-          <Tarjeta plana titulo="Existencias por modelo y sabor" descripcion={`${visibles.length} modelos · abre un modelo para ver sus sabores`}>
+          <Tarjeta plana className="rtm-a2-tabla" titulo="Existencias por modelo y sabor" descripcion={`${visibles.length} modelos · abre un modelo para ver sus sabores`}>
             <DataTable
               etiqueta="Existencia y semáforo de reposición por modelo y sabor"
               clave={(f) => f.clave}
@@ -199,8 +187,9 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
                   const x = fs[0]!.mod;
                   const d = detMod.get(x.modelo_id);
                   return {
-                    titulo: <><Link href={`/inventario/kardex?modelo=${x.modelo_id}`}>{x.modelo}</Link><span className="rtm-a2-nota"> · {x.marca} · {x.sabores.length} sabores</span></>,
+                    titulo: <span className="rtm-a2-nowrap"><Link href={`/inventario/kardex?modelo=${x.modelo_id}`}>{x.modelo}</Link><span className="rtm-a2-nota"> · {x.sabores.length} sabores</span></span>,
                     subtotales: {
+                      ma: x.marca,
                       p: <CifraComprobada texto={x.piezas === null ? null : formatearPiezas(x.piezas)} cifra={`existencia:modelo:${x.modelo_id}`} comprobacion="cuadra" />,
                       a: pz(x.reservado), d: pz(x.disponible), cu: x.costo_prom_cent === null || (x.piezas ?? 0) === 0 ? <SinDato /> : m(x.costo_prom_cent), v: m(x.valor_cent) ?? <SinDato />,
                       pc: pctTexto(partePct(x.valor_cent ?? 0n, totalValor)) ?? <SinDato />, en: pz(d?.entradas ?? 0), sa: pz(d?.salidas ?? 0), ro: rot(d?.piezas_inicial, x.piezas ?? 0, d?.salidas ?? 0) ?? <SinDato />,
@@ -213,12 +202,24 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
               totales={{ etiqueta: `Totales del filtro (${visibles.length} modelos)`, celdas: { p: pz(suma.piezas), a: pz(suma.res), d: pz(suma.disp), v: m(suma.valor), pc: pctTexto(partePct(suma.valor, totalValor)), en: pz(suma.ent), sa: pz(suma.sal) } }}
             />
           </Tarjeta>
+          {calorModelos.length >= 2 && saboresTop.length >= 2 && (
+            <MapaCalor
+              titulo="Piezas por modelo y sabor"
+              descripcion={`Mapa de calor de ${calorModelos.length} modelos por ${saboresTop.length} sabores; cada celda trae su número exacto y la celda punteada no tiene dato.`}
+              pie={pie}
+              filas={calorModelos.map((x) => x.modelo)}
+              columnas={saboresTop}
+              unidad="piezas"
+              celdas={calorModelos.map((x) => saboresTop.map((s) => { const z = x.sabores.find((w) => w.sabor === s); return z ? { valor: z.piezas, texto: formatearPiezas(z.piezas) } : null; }))}
+            />
+          )}
+
           <p className="rtm-a2-nota">Cobertura = disponible entre la demanda diaria de los últimos {p.ventana_dias} días con existencia. Pedir ya si se acaba antes de {ltMin} d (entrega); objetivo {p.objetivo_dias} d; sobrestock arriba de {p.sobrestock_x * p.objetivo_dias} d. El valor del sabor es a costo del modelo. Rotación = salidas entre la existencia media del periodo. Antigüedad = días desde la última entrada de compra (costo promedio, no por lotes). Comprobación: Σ sabores = Σ modelos ({formatearMoneda(inv.comprobacion.valor_sabores_cent)} contra {formatearMoneda(inv.comprobacion.valor_modelos_cent)}). Un modelo sin movimientos dice «Sin dato», nunca cero.</p>
         </>
       )}
 
       {vista === 'compras' && (
-        <Tarjeta plana titulo="Compras: pagadas, facturadas y recibidas">
+        <Tarjeta plana className="rtm-a2-tabla" titulo="Compras: pagadas, facturadas y recibidas">
           <DataTable
             etiqueta="Tres cantidades de las últimas compras recibidas" clave={(c) => c.compra_id} filas={inv.compras_recientes} densidad="densa" plana
             vacio={{ titulo: 'Sin compras recibidas', texto: 'Cuando se confirme la recepción de una compra verás aquí sus tres cantidades y el puente de diferencias.' }}
@@ -235,7 +236,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
         </Tarjeta>
       )}
       {vista === 'documentos' && (
-        <Tarjeta plana titulo="Documentos exportados">
+        <Tarjeta plana className="rtm-a2-tabla" titulo="Documentos exportados">
           <DataTable
             etiqueta="PDF del inventario exportados" clave={(d) => d.id} filas={documentos} densidad="densa" plana
             vacio={{ titulo: 'Sin documentos', texto: 'Cada PDF queda guardado con su folio y huella para reabrirlo idéntico.' }}
@@ -249,7 +250,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
         </Tarjeta>
       )}
       {vista === 'sin-movimientos' && (
-        <Tarjeta plana titulo="Sin movimientos registrados" descripcion="Un modelo sin movimientos dice «Sin dato», nunca cero">
+        <Tarjeta plana className="rtm-a2-tabla" titulo="Sin movimientos registrados" descripcion="Un modelo sin movimientos dice «Sin dato», nunca cero">
           <DataTable
             etiqueta="Modelos del catálogo sin movimientos" clave={(x) => x.modelo_id} filas={sinMovimientos} densidad="densa" plana
             vacio={{ titulo: 'Todos los modelos tienen movimientos', texto: 'No hay modelos del catálogo sin historia en el libro.' }}

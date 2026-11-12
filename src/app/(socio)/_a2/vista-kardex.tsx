@@ -59,36 +59,37 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
   const vS = modo === 'sabor';
   const cel = <T,>(f: Fila, fn: (x: FilaKardex) => T) => (f.inicial ? null : fn(f.k));
   const columnas: Columna<Fila>[] = [
-    { id: 'f', titulo: 'Fecha', ancho: 's', celda: (f) => (f.inicial ? <strong>Saldo inicial</strong> : <span className="rtm-num" title={etiquetaFechaHora(f.k.hora)}>{fecha(f.k.fecha_neg)}</span>) },
+    { id: 'f', titulo: 'Fecha', ancho: 'm', celda: (f) => (f.inicial ? <strong>Saldo inicial</strong> : <span className="rtm-num" title={etiquetaFechaHora(f.k.hora)}>{fecha(f.k.fecha_neg)}</span>) },
     { id: 't', titulo: 'Concepto', ancho: 'l', celda: (f) => (f.inicial ? 'Antes del periodo' : (
       <span className={f.k.es_reversa ? 'rtm-a2-reversa' : 'rtm-a2-etiqueta-tipo'} data-testid={f.k.es_reversa ? 'kardex-reversa' : undefined}>{TIPO_MOV[f.k.tipo] ?? f.k.tipo}</span>
     )) },
-    { id: 'r', titulo: 'Referencia', ancho: 'm', secundaria: true, celda: (f) => cel(f, (x) => <span className="rtm-mono">{x.referencia}{x.reversa_de ? ` · corrige ${x.reversa_de}` : ''}</span>) },
-    ...(unico ? [] : [{ id: 'mo', titulo: 'Modelo', ancho: 'l' as const, celda: (f: Fila) => cel(f, (x) => `${x.modelo}`) }]),
-    { id: 's', titulo: 'Sabor', ancho: 'm', celda: (f) => cel(f, (x) => x.sabor) },
+    ...(vS ? [] : unico
+      ? [{ id: 's', titulo: 'Sabor', ancho: 'm' as const, celda: (f: Fila) => cel(f, (x) => x.sabor) }]
+      : [{ id: 'mo', titulo: 'Modelo › sabor', ancho: 'xl' as const, celda: (f: Fila) => cel(f, (x) => <span className="rtm-a2-nowrap">{x.modelo}<span className="rtm-a2-nota"> › {x.sabor}</span></span>) }]),
     { id: 'ec', titulo: 'Cantidad', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_piezas === null ? '' : pz(x.entra_piezas))) },
-    { id: 'eu', titulo: 'Valor unit.', bloque: 'Entradas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.entra_unit_cent === null ? '' : m(x.entra_unit_cent))) },
-    { id: 'et', titulo: 'Valor total', bloque: 'Entradas', numerica: true, ancho: 'l', celda: (f) => cel(f, (x) => (x.entra_total_cent === null ? '' : m(x.entra_total_cent))) },
+    { id: 'eu', titulo: 'Valor unit.', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_unit_cent === null ? '' : m(x.entra_unit_cent))) },
+    { id: 'et', titulo: 'Valor total', bloque: 'Entradas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.entra_total_cent === null ? '' : m(x.entra_total_cent))) },
     { id: 'sc', titulo: 'Cantidad', bloque: 'Salidas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.sale_piezas === null ? '' : pz(x.sale_piezas))) },
-    { id: 'su', titulo: 'Valor unit.', bloque: 'Salidas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.sale_unit_cent === null ? '' : m(x.sale_unit_cent))) },
-    { id: 'st', titulo: 'Valor total', bloque: 'Salidas', numerica: true, ancho: 'l', celda: (f) => cel(f, (x) => (x.sale_total_cent === null ? '' : m(x.sale_total_cent))) },
+    { id: 'su', titulo: 'Valor unit.', bloque: 'Salidas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.sale_unit_cent === null ? '' : m(x.sale_unit_cent))) },
+    { id: 'st', titulo: 'Valor total', bloque: 'Salidas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.sale_total_cent === null ? '' : m(x.sale_total_cent))) },
     ...(vS ? [
       { id: 'xc', titulo: 'Cantidad', bloque: 'Existencias del sabor', numerica: true, ancho: 's' as const, resaltar: (f: Fila) => (f.inicial ? null : f.k.saldo_sabor_piezas === 0 ? ('cero' as const) : f.k.saldo_sabor_piezas < 0 ? ('negativo' as const) : null), celda: (f: Fila) => (f.inicial ? pz(f.piezas) : pz(f.k.saldo_sabor_piezas)) },
-      { id: 'xu', titulo: 'Costo del modelo', bloque: 'Existencias del sabor', numerica: true, ancho: 'm' as const, celda: (f: Fila) => (f.inicial ? m(f.costo) ?? <SinDato /> : (m(f.k.costo_prom_cent) ?? <SinDato />)) },
-      { id: 'xt', titulo: 'Valor a costo del modelo', bloque: 'Existencias del sabor', numerica: true, ancho: 'l' as const, celda: (f: Fila) => (f.inicial ? m(f.valor) : (m(f.k.saldo_sabor_valor_cent) ?? <SinDato />)) },
+      { id: 'xu', titulo: 'Costo modelo', bloque: 'Existencias del sabor', numerica: true, ancho: 's' as const, celda: (f: Fila) => (f.inicial ? m(f.costo) ?? <SinDato /> : (m(f.k.costo_prom_cent) ?? <SinDato />)) },
+      { id: 'xt', titulo: 'Valor a costo', bloque: 'Existencias del sabor', numerica: true, ancho: 'm' as const, celda: (f: Fila) => (f.inicial ? m(f.valor) : (m(f.k.saldo_sabor_valor_cent) ?? <SinDato />)) },
     ] : [
       { id: 'xc', titulo: 'Cantidad', bloque: 'Existencias', numerica: true, ancho: 's' as const, resaltar: (f: Fila) => (f.inicial ? null : f.k.saldo_piezas === 0 ? ('cero' as const) : f.k.saldo_piezas < 0 ? ('negativo' as const) : null), celda: (f: Fila) => (f.inicial ? pz(f.piezas) : pz(f.k.saldo_piezas)) },
-      { id: 'xu', titulo: 'Valor unit.', bloque: 'Existencias', numerica: true, ancho: 'm' as const, celda: (f: Fila) => (f.inicial ? m(f.costo) ?? <SinDato /> : (m(f.k.costo_prom_cent) ?? <SinDato />)) },
-      { id: 'xt', titulo: 'Valor total', bloque: 'Existencias', numerica: true, ancho: 'l' as const, celda: (f: Fila) => (f.inicial ? m(f.valor) : m(f.k.saldo_valor_cent)) },
+      { id: 'xu', titulo: 'Valor unit.', bloque: 'Existencias', numerica: true, ancho: 's' as const, celda: (f: Fila) => (f.inicial ? m(f.costo) ?? <SinDato /> : (m(f.k.costo_prom_cent) ?? <SinDato />)) },
+      { id: 'xt', titulo: 'Valor total', bloque: 'Existencias', numerica: true, ancho: 'm' as const, celda: (f: Fila) => (f.inicial ? m(f.valor) : m(f.k.saldo_valor_cent)) },
       { id: 'xs', titulo: 'Del sabor', numerica: true, ancho: 's' as const, secundaria: true, celda: (f: Fila) => cel(f, (x) => pz(x.saldo_sabor_piezas)) },
     ]),
+    { id: 'r', titulo: 'Referencia', ancho: 'm', celda: (f) => cel(f, (x) => <span className="rtm-mono">{x.referencia}{x.reversa_de ? ` · corrige ${x.reversa_de}` : ''}</span>) },
     { id: 'a', titulo: 'Autor', ancho: 'm', secundaria: true, celda: (f) => cel(f, (x) => x.autor ?? 'Sistema') },
     { id: 'ms', titulo: 'Mensaje original', ancho: 'xl', secundaria: true, celda: (f) => cel(f, (x) => (x.mensaje_origen ? <span className="rtm-a2-mono-mensaje" title={x.mensaje_origen}>“{x.mensaje_origen}”</span> : '')) },
   ];
 
   const t = k.totales;
   const kpis = [
-    { id: 'ini', etiqueta: 'Existencia inicial', valor: pz(k.inicial.piezas), nota: `${m(k.inicial.valor_cent)}${k.inicial.costo_prom_cent !== null ? ` · prom. ${m(k.inicial.costo_prom_cent)}` : ''}`, categoria: 1 as const },
+    { id: 'ini', etiqueta: 'Existencia inicial', valor: pz(k.inicial.piezas), nota: ini ? `${m(k.inicial.valor_cent)}${k.inicial.costo_prom_cent !== null ? ` · prom. ${m(k.inicial.costo_prom_cent)}` : ''}` : 'Desde el inicio del libro', categoria: 1 as const },
     { id: 'ent', etiqueta: 'Entradas del periodo', valor: pz(t.entradas_piezas), nota: m(t.entradas_valor_cent), categoria: 2 as const },
     { id: 'sal', etiqueta: 'Salidas del periodo', valor: pz(t.salidas_piezas), nota: m(t.salidas_valor_cent), categoria: 3 as const },
     { id: 'fin', etiqueta: 'Existencia final', valor: pz(k.final.piezas), nota: m(k.final.valor_cent), categoria: 4 as const, testid: 'kardex-final' },
@@ -157,18 +158,18 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
 
       {semanas.length >= 2 && (
         <Rejilla dividir="4-4-4">
-          <Tarjeta titulo="Existencia por semana" descripcion="Piezas al cierre de cada semana">
+          <Tarjeta>
             <AreaSerie titulo="Existencia por semana" descripcion={`Existencia en piezas al cierre de ${existencia.length} semanas; ahora ${pz(sd)}.`} unidad="Piezas" procedencia="observado" pie={pie} alto={140}
               puntos={existencia.map((p, i) => ({ ...p, parcial: i === existencia.length - 1 && parcial(semanas[i]!.semana) }))} />
           </Tarjeta>
-          <Tarjeta titulo="Salidas por semana" descripcion="Piezas que salieron">
+          <Tarjeta>
             <ColumnasPeriodo titulo="Salidas por semana" descripcion={`Piezas que salieron en ${semanas.length} semanas.`} unidad="Piezas" procedencia="observado" pie={pie} alto={140}
               datos={semanas.map((s, i) => ({ id: s.semana, etiqueta: semanaEtiqueta(s.semana), valor: s.salidas_piezas, texto: pz(s.salidas_piezas) ?? '', parcial: i === semanas.length - 1 && parcial(s.semana), detalle: `Entradas ${pz(s.entradas_piezas)} · ${m(s.entradas_valor_cent)}` }))} />
           </Tarjeta>
           {costos.length >= 2 ? (
-            <Tarjeta titulo="Costo promedio tras cada entrada" descripcion="Cuándo sube o baja el promedio">
+            <Tarjeta>
               <AreaSerie titulo="Costo promedio tras cada entrada" descripcion={`Costo promedio del modelo en ${costos.length} entradas de compra.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140}
-                formatoEje={(n) => `$${Math.round(n / 100)}`} puntos={costos.map((c, i) => ({ id: `${c.fecha_neg}-${i}`, etiqueta: fecha(c.fecha_neg) ?? '', valor: Number(c.costo_prom_cent), texto: m(c.costo_prom_cent) ?? '' }))} />
+                puntos={costos.map((c, i) => ({ id: `${c.fecha_neg}-${i}`, etiqueta: fecha(c.fecha_neg) ?? '', valor: Number(c.costo_prom_cent) / 100, texto: m(c.costo_prom_cent) ?? '' }))} />
             </Tarjeta>
           ) : (
             <Tarjeta titulo="Movimiento por tipo" descripcion="Valor absoluto de cada tipo">
@@ -178,7 +179,7 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
         </Rejilla>
       )}
 
-      <Tarjeta plana titulo={vS ? 'Kárdex del sabor' : 'Kárdex'} descripcion={`${t.n} renglones · orden cronológico`}>
+      <Tarjeta plana className="rtm-a2-tabla" titulo={vS ? 'Kárdex del sabor' : 'Kárdex'} descripcion={`${t.n} renglones · orden cronológico`}>
         <Pestanas etiquetaAria="Tipo de movimiento" items={tabs.map((x) => ({ id: x.id || 'todos', etiqueta: x.etiqueta, href: enlace(base, sp, { tipo: x.id || null, pag: null }), activa: (filtro.tipo ?? '') === x.id, contador: x.n }))} />
         {sinMov ? (
           <div className="rtm-a2-vacio-tabla">Sin movimientos con este filtro. Cambia las fechas, el sabor o la búsqueda.</div>
@@ -190,7 +191,7 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
             densidad="libro" pegajosa primeraFija plana
             columnas={columnas}
             totales={{
-              etiqueta: `Totales del filtro (${t.n})`,
+              etiqueta: 'Totales',
               celdas: { ec: pz(t.entradas_piezas), et: m(t.entradas_valor_cent), sc: pz(t.salidas_piezas), st: m(t.salidas_valor_cent), xc: pz(k.final.piezas), xt: m(k.final.valor_cent), xu: vS ? m(null) : m(k.final.costo_prom_cent) },
             }}
           />

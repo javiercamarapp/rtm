@@ -6,6 +6,7 @@ import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { AreaSerie, ColumnasPeriodo } from '@/ui/graficas';
+import { SubnavContabilidad } from '../subnav';
 import { Campo, FiltrosUrl } from '../../_a2/filtros-url';
 import { fecha, m, partePct, pctTexto, periodo, semanaEtiqueta, type Params } from '../../_a2/util';
 
@@ -26,9 +27,11 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   const socios = cuentas.filter((x) => x.tipo === 'socio').reduce((a, x) => a + x.saldo_cent, 0n);
   const neto = c.totales.entradas_cent - c.totales.salidas_cent;
   const pie = `Periodo ${fecha(c.ini)} al ${fecha(c.fin)} · Fuente: libro contable (cuentas de fondos)`;
-  const dias = c.dias.map((d) => ({ id: d.fecha, etiqueta: fecha(d.fecha) ?? '', valor: Number(d.saldo_cent), texto: m(d.saldo_cent) ?? '' }));
+  const dias = c.dias.map((d) => ({ id: d.fecha, etiqueta: fecha(d.fecha) ?? '', valor: Number(d.saldo_cent) / 100, texto: m(d.saldo_cent) ?? '' }));
   const semanas = c.semanas;
   return (
+    <>
+    <SubnavContabilidad />
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow="Contabilidad · caja y liquidez" titulo={sd ? 'Todavía no hay movimientos de caja' : `Liquidez de ${m(c.l01_liquidez_cent)}`} descripcion="Entradas y salidas de fondos, saldo por lugar o persona y liquidez después del pago semanal al proveedor." />
       <FiltrosUrl etiquetaAria="Periodo" restablecer="/contabilidad/caja">
@@ -43,18 +46,18 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
         { id: 'p', etiqueta: 'Después del pago semanal', valor: m(c.l04_despues_de_pago_cent), categoria: 6, nota: c.l03_pago_semana_cent === null ? 'Sin pago calculado' : `Pago ${m(c.l03_pago_semana_cent)} (L04)` },
       ]} />
       <Rejilla dividir="4-4-4">
-        <Tarjeta titulo="Liquidez diaria" descripcion="Saldo de fondos al cierre de cada día con movimiento">
-          {dias.length >= 2 && dias.every((d) => d.valor >= 0) ? <AreaSerie titulo="Liquidez diaria" descripcion={`Saldo de fondos en ${dias.length} días con movimiento.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140} formatoEje={(n) => `$${Math.round(n / 100000)}k`} puntos={dias} /> : <p className="rtm-a2-nota">Se dibuja con dos días de movimiento o más y saldos no negativos.</p>}
+        <Tarjeta>
+          {dias.length >= 2 && dias.every((d) => d.valor >= 0) ? <AreaSerie titulo="Liquidez diaria" descripcion={`Saldo de fondos en ${dias.length} días con movimiento.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140} puntos={dias} /> : <p className="rtm-a2-nota">Se dibuja con dos días de movimiento o más y saldos no negativos.</p>}
         </Tarjeta>
-        <Tarjeta titulo="Entradas por semana" descripcion="Fondos que entraron">
-          {semanas.length >= 2 ? <ColumnasPeriodo titulo="Entradas por semana" descripcion={`Entradas de fondos en ${semanas.length} semanas.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140} formatoEje={(n) => `$${Math.round(n / 100000)}k`} datos={semanas.map((x) => ({ id: x.semana, etiqueta: semanaEtiqueta(x.semana), valor: Number(x.entradas_cent), texto: m(x.entradas_cent) ?? '', detalle: `Salidas ${m(x.salidas_cent)}` }))} /> : <p className="rtm-a2-nota">Se dibuja con dos semanas de movimiento o más.</p>}
+        <Tarjeta>
+          {semanas.length >= 2 ? <ColumnasPeriodo titulo="Entradas por semana" descripcion={`Entradas de fondos en ${semanas.length} semanas.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140} datos={semanas.map((x) => ({ id: x.semana, etiqueta: semanaEtiqueta(x.semana), valor: Number(x.entradas_cent) / 100, texto: m(x.entradas_cent) ?? '', detalle: `Salidas ${m(x.salidas_cent)}` }))} /> : <p className="rtm-a2-nota">Se dibuja con dos semanas de movimiento o más.</p>}
         </Tarjeta>
-        <Tarjeta titulo="Salidas por semana" descripcion="Fondos que salieron">
-          {semanas.length >= 2 ? <ColumnasPeriodo titulo="Salidas por semana" descripcion={`Salidas de fondos en ${semanas.length} semanas.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140} formatoEje={(n) => `$${Math.round(n / 100000)}k`} datos={semanas.map((x) => ({ id: x.semana, etiqueta: semanaEtiqueta(x.semana), valor: Number(x.salidas_cent), texto: m(x.salidas_cent) ?? '' }))} /> : <p className="rtm-a2-nota">Se dibuja con dos semanas de movimiento o más.</p>}
+        <Tarjeta>
+          {semanas.length >= 2 && semanas.some((x) => x.salidas_cent > 0n) ? <ColumnasPeriodo titulo="Salidas por semana" descripcion={`Salidas de fondos en ${semanas.length} semanas.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140} datos={semanas.map((x) => ({ id: x.semana, etiqueta: semanaEtiqueta(x.semana), valor: Number(x.salidas_cent) / 100, texto: m(x.salidas_cent) ?? '' }))} /> : <p className="rtm-a2-nota">Sin salidas de fondos en el periodo, o menos de dos semanas de movimiento: no se dibuja la serie.</p>}
         </Tarjeta>
       </Rejilla>
-      <Rejilla dividir="8-4">
-        <Tarjeta plana titulo="Por lugar o persona" descripcion="Cada cuenta de fondos con su saldo al corte">
+      <Rejilla dividir="8-4" alinear="inicio">
+        <Tarjeta plana className="rtm-a2-tabla" titulo="Por lugar o persona" descripcion="Cada cuenta de fondos con su saldo al corte">
           <DataTable
             etiqueta="Saldo de caja por lugar o persona" clave={(x) => x.codigo} filas={cuentas} densidad="densa" plana
             vacio={{ titulo: 'Sin cuentas de fondos', texto: 'Aparecen con el primer cobro o pago.' }}
@@ -75,7 +78,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           <Tarjeta titulo="Dónde está el dinero" descripcion="Parte de la liquidez">
             <BarList etiquetaAria="Liquidez por tipo" items={[
               { id: 'ef', etiqueta: 'Efectivo de la sociedad', texto: sd ? 'Sin dato' : m(efectivo) ?? '', pct: sd || c.l01_liquidez_cent === null ? null : partePct(efectivo, c.l01_liquidez_cent) },
-              { id: 'ba', etiqueta: 'Banco', texto: sd ? 'Sin dato' : m(banco) ?? '', pct: sd || c.l01_liquidez_cent === null ? null : partePct(banco, c.l01_liquidez_cent) },
+              { id: 'ba', etiqueta: 'Banco', texto: cuentas.some((x) => x.tipo === 'banco') ? (m(banco) ?? '') : 'Sin cuenta bancaria', pct: null },
               { id: 'so', etiqueta: 'En poder de socios', texto: sd ? 'Sin dato' : m(socios) ?? '', pct: sd || c.l01_liquidez_cent === null ? null : partePct(socios, c.l01_liquidez_cent) },
             ]} />
           </Tarjeta>
@@ -88,5 +91,6 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
       </Rejilla>
       <p className="rtm-a2-nota">Hoy no hay cuentas bancarias de la sociedad: el dinero vive en cajas por persona (cuentas 1150 y 1160) y en el efectivo de la sociedad (1101). El conteo de efectivo por denominación todavía no tiene modelo en la base; no se muestra para no inventarlo. Sin movimientos de fondos todo dice «Sin dato».</p>
     </Pagina>
+    </>
   );
 }
