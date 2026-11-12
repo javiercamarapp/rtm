@@ -66,6 +66,7 @@ try {
     ok(`Ruta protegida ${ruta} redirige al acceso`, [301, 302, 303, 307, 308].includes(c.status()) && /\/login/.test(loc), String(c.status()));
   }
   ok('/api/health publico', (await ctx.request.get(`${base}/api/health`)).status() === 200);
+  ok('/api/salud publico (alias)', (await ctx.request.get(`${base}/api/salud`)).status() === 200);
 
   async function pedir(correo) {
     await pag.goto(`${base}/login`, { waitUntil: 'networkidle' });
