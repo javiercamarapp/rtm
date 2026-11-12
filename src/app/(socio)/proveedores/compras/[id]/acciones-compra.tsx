@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { formatearPiezas } from '@/dominio/formato';
 import { armarLlegada } from '@/dominio/operacion/devoluciones';
 import type { CompraDetalle, RecepcionCompra } from '@/dominio/operacion/tipos';
+import { Tarjeta } from '@/ui/componentes/pagina';
 import { BotonAccion, DialogoSimple } from '../../../operacion/dialogo-simple';
 import { useAccion } from '../../../operacion/usar-accion';
 import { FormularioGuia } from '../../../paquetes/en-trayecto/formulario-guia';
@@ -112,27 +113,30 @@ export function FormularioLlegada({ compra, recepcion, sabores }: { compra: Comp
     correr('recibir_compra_parcial', { p_compra: compra.id, p_recibido: r.valor }, () => setFilas((f) => f.map((x) => ({ ...x, piezas: '' }))));
   };
   return (
-    <section className="rtm-seccion" aria-label="Registrar una llegada" id="llegada">
-      <h2>Registrar una llegada parcial</h2>
-      <p className="rtm-nota">Cuenta lo que llegó hoy por sabor. Suma al inventario solo lo contado, con su parte del costo puesto (mercancía, guía y seguro). Lo que falte se queda pendiente hasta que llegue o hasta cerrar la recepción.</p>
-      {filas.map((f, i) => {
-        const l = recepcion.lineas.find((x) => x.linea_id === f.linea_id)!;
-        return (
-          <div key={i} className="rtm-form-fila">
-            <span className="rtm-campo-ancho">{l.modelo} (facturadas {formatearPiezas(l.facturadas)}, llevan {formatearPiezas(l.recibidas)}, faltan {formatearPiezas(l.pendientes)})</span>
-            <label className="rtm-etiqueta-campo">Sabor
-              <select className="rtm-campo" value={f.sku_id} onChange={(e) => cambiar(i, { sku_id: Number(e.target.value) })} aria-label={`Sabor que llegó de ${l.modelo} ${i + 1}`}>
-                {(sabores[l.modelo] ?? []).map((s) => <option key={s.sku_id} value={s.sku_id}>{s.sabor}</option>)}
-              </select>
-            </label>
-            <label className="rtm-etiqueta-campo">Llegaron<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={f.piezas} onChange={(e) => cambiar(i, { piezas: e.target.value })} aria-label={`Piezas que llegaron de ${l.modelo} ${i + 1}`} /></label>
-            <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setFilas((x) => [...x.slice(0, i + 1), { linea_id: f.linea_id, sku_id: f.sku_id, piezas: '' }, ...x.slice(i + 1)])}>Otro sabor</button>
-          </div>
-        );
-      })}
-      {avisos.map((a) => <p key={a} className="rtm-nota">{a}</p>)}
-      {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
-      <div className="rtm-acciones-fila"><button type="button" className="rtm-boton rtm-boton-primario" onClick={confirmar} disabled={ocupado} data-testid="registrar-llegada">{ocupado ? 'Guardando' : 'Registrar llegada'}</button></div>
-    </section>
+    <Tarjeta titulo="Registrar una llegada parcial" descripcion="Cuenta lo que llegó hoy por sabor. Suma al inventario solo lo contado, con su parte del costo puesto (mercancía, guía y seguro). Lo que falte se queda pendiente hasta que llegue o hasta cerrar la recepción." className="rtm-llegada-tarjeta">
+      <div id="llegada" aria-label="Registrar una llegada" className="rtm-llegada-cuerpo">
+        {filas.map((f, i) => {
+          const l = recepcion.lineas.find((x) => x.linea_id === f.linea_id)!;
+          return (
+            <div key={i} className="rtm-llegada-fila">
+              <div className="rtm-llegada-renglon">
+                <strong>{l.modelo}</strong>
+                <span>Facturadas {formatearPiezas(l.facturadas)} · llevan {formatearPiezas(l.recibidas)} · faltan {formatearPiezas(l.pendientes)}</span>
+              </div>
+              <label className="rtm-etiqueta-campo">Sabor
+                <select className="rtm-campo" value={f.sku_id} onChange={(e) => cambiar(i, { sku_id: Number(e.target.value) })} aria-label={`Sabor que llegó de ${l.modelo} ${i + 1}`}>
+                  {(sabores[l.modelo] ?? []).map((s) => <option key={s.sku_id} value={s.sku_id}>{s.sabor}</option>)}
+                </select>
+              </label>
+              <label className="rtm-etiqueta-campo">Llegaron<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={f.piezas} onChange={(e) => cambiar(i, { piezas: e.target.value })} aria-label={`Piezas que llegaron de ${l.modelo} ${i + 1}`} /></label>
+              <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setFilas((x) => [...x.slice(0, i + 1), { linea_id: f.linea_id, sku_id: f.sku_id, piezas: '' }, ...x.slice(i + 1)])}>Otro sabor</button>
+            </div>
+          );
+        })}
+        {avisos.map((a) => <p key={a} className="rtm-nota">{a}</p>)}
+        {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
+        <div className="rtm-acciones-fila"><button type="button" className="rtm-boton rtm-boton-primario" onClick={confirmar} disabled={ocupado} data-testid="registrar-llegada">{ocupado ? 'Guardando' : 'Registrar llegada'}</button></div>
+      </div>
+    </Tarjeta>
   );
 }

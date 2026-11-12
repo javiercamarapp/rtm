@@ -231,3 +231,11 @@ details.rtm-explicar-linea p { margin: var(--rtm-e-1) 0; font-size: 13px; font-v
 .rtm-lista-sabores li { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); padding: 2px var(--rtm-e-3); font-size: 13px; background: var(--rtm-surface); }
 .rtm-lista-sabores li[data-agotado='true'] { color: var(--rtm-ink-3); text-decoration: line-through; }
 .rtm-reportes-marco { width: 100%; min-height: 70vh; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
+
+/* Llegada parcial de una compra: tarjeta con una fila por renglon (renglon a la izquierda, sabor, cantidad y accion alineados a la derecha). */
+.rtm-llegada-cuerpo { display: flex; flex-direction: column; gap: var(--rtm-e-3); padding: 12px 16px 16px; }
+.rtm-llegada-fila { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(150px, 220px) minmax(110px, 140px) auto; gap: var(--rtm-e-3); align-items: end; padding-bottom: var(--rtm-e-3); border-bottom: 1px solid var(--rtm-borde-tarjeta); }
+.rtm-llegada-renglon { display: flex; flex-direction: column; gap: 2px; min-width: 0; align-self: center; }
+.rtm-llegada-renglon span { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
+.rtm-llegada-fila .rtm-campo { width: 100%; }
+@media (max-width: 760px) { .rtm-llegada-fila { grid-template-columns: 1fr 1fr; } .rtm-llegada-renglon { grid-column: 1 / -1; } .rtm-llegada-fila .rtm-boton { grid-column: 1 / -1; } }
