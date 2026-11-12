@@ -66,27 +66,27 @@ export default async function PaginaContabilidad() {
         <Tarjeta titulo="De la valuación a la utilidad" descripcion="Valuación − deudas − capital aportado − utilidades retenidas = utilidad de la empresa" acciones={dato ? <Estado tono={idOk ? 'ok' : 'malo'}>{idOk ? 'Cuadra' : 'No cuadra'}</Estado> : undefined}>
           {dato ? <Cascada titulo="Cascada de la valuación" descripcion={`Valuación ${m(v.v01_valuacion_cent)}, deudas ${m(v.v02_deudas_cent)}, capital ${m(v.v06_capital_aportado_cent)}, retenidas ${m(v.v05_utilidades_retenidas_cent)}; utilidad ${m(v.v04_utilidad_empresa_cent, true)}.`} pasos={pasos} unidad="Pesos" /> : <p className="a3-grafica-vacia"><strong>Sin dato</strong>La cascada aparece con el primer asiento.</p>}
         </Tarjeta>
-        <Tarjeta titulo="De qué se compone el activo" descripcion="Parte de la valuación">
-          {dato ? <BarList etiquetaAria="Composición del activo" items={activo.map((a) => ({ id: a.id, etiqueta: a.etiqueta, texto: m(a.c), pct: pct(a.c, v.v01_valuacion_cent) }))} /> : <p className="a3-grafica-vacia"><strong>Sin dato</strong></p>}
-          <Pie>Cada cifra sale del libro de asientos y se comprueba por una segunda vía.</Pie>
-        </Tarjeta>
+        <div className="a3-pila">
+          <Tarjeta titulo="De qué se compone el activo" descripcion="Parte de la valuación">
+            {dato ? <BarList etiquetaAria="Composición del activo" items={activo.map((a) => ({ id: a.id, etiqueta: a.etiqueta, texto: m(a.c), pct: pct(a.c, v.v01_valuacion_cent) }))} /> : <p className="a3-grafica-vacia"><strong>Sin dato</strong></p>}
+            <Pie>Cada cifra sale del libro de asientos y se comprueba por una segunda vía.</Pie>
+          </Tarjeta>
+          <Tarjeta titulo="Liquidez" descripcion="El dinero de la sociedad vive en cuentas de los socios">
+            <ListaClaveValor items={[
+              { k: 'Fondos de la sociedad (L01)', v: <span data-testid="l01">{dato && v.l01_liquidez_cent !== null ? <CifraComprobada texto={m(v.l01_liquidez_cent)} cifra="conta:l01" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
+              { k: 'Fondos más clientes (L02)', v: <span data-testid="l02">{dato && v.l02_liquidez_total_cent !== null ? <CifraComprobada texto={m(v.l02_liquidez_total_cent)} cifra="conta:l02" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
+              { k: 'Pago de la semana a Isaac (L03)', v: <span data-testid="l03">{dato && v.l03_pago_semana_cent !== null ? <CifraComprobada texto={m(v.l03_pago_semana_cent)} cifra="conta:l01" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
+              { k: 'Liquidez después de pago (L04)', v: <span data-testid="l04">{dato && v.l04_despues_de_pago_cent !== null ? <CifraComprobada texto={m(v.l04_despues_de_pago_cent)} cifra="conta:l02" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
+              { k: 'Liquidez conservadora (L04c)', v: <span data-testid="l04c">{dato && v.l04c_conservadora_cent !== null ? <CifraComprobada texto={m(v.l04c_conservadora_cent)} cifra="conta:l01" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
+            ]} />
+            <Pie>Mientras no haya movimientos de dinero registrados, la liquidez dice «Sin dato».</Pie>
+          </Tarjeta>
+        </div>
       </Rejilla>
 
-      <Rejilla dividir="6-6">
-        <Tarjeta titulo="Liquidez" descripcion="El dinero de la sociedad vive en cuentas de los socios">
-          <ListaClaveValor items={[
-            { k: 'Fondos de la sociedad (L01)', v: <span data-testid="l01">{dato && v.l01_liquidez_cent !== null ? <CifraComprobada texto={m(v.l01_liquidez_cent)} cifra="conta:l01" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
-            { k: 'Fondos más clientes (L02)', v: <span data-testid="l02">{dato && v.l02_liquidez_total_cent !== null ? <CifraComprobada texto={m(v.l02_liquidez_total_cent)} cifra="conta:l02" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
-            { k: 'Pago de la semana a Isaac (L03)', v: <span data-testid="l03">{dato && v.l03_pago_semana_cent !== null ? <CifraComprobada texto={m(v.l03_pago_semana_cent)} cifra="conta:l01" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
-            { k: 'Liquidez después de pago (L04)', v: <span data-testid="l04">{dato && v.l04_despues_de_pago_cent !== null ? <CifraComprobada texto={m(v.l04_despues_de_pago_cent)} cifra="conta:l02" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
-            { k: 'Liquidez conservadora (L04c)', v: <span data-testid="l04c">{dato && v.l04c_conservadora_cent !== null ? <CifraComprobada texto={m(v.l04c_conservadora_cent)} cifra="conta:l01" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },
-          ]} />
-          <Pie>Mientras no haya movimientos de dinero registrados, la liquidez dice «Sin dato».</Pie>
-        </Tarjeta>
-        <Tarjeta titulo="Utilidad neta por semana" descripcion="Las últimas 12 semanas; la semana en curso va parcial">
-          <GraficaSemanas titulo="Utilidad neta por semana" descripcion="Utilidad neta de cada una de las últimas semanas, del estado de resultados." semanas={semanas} valor={(s) => s.utilidad_neta_cent} pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: libro de asientos, estado de resultados semanal`} />
-        </Tarjeta>
-      </Rejilla>
+      <Tarjeta titulo="Utilidad neta por semana" descripcion="Las últimas 12 semanas; la semana en curso va parcial">
+          <GraficaSemanas columnas={2} titulo="Utilidad neta por semana" descripcion="Utilidad neta de cada una de las últimas semanas, del estado de resultados." semanas={semanas} valor={(s) => s.utilidad_neta_cent} pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: libro de asientos, estado de resultados semanal`} />
+      </Tarjeta>
 
       <Tarjeta titulo="Ventas netas por semana" descripcion="De lunes a domingo">
         <GraficaSemanas titulo="Ventas netas por semana" descripcion="Ventas netas de cada una de las últimas semanas." semanas={semanas} valor={(s) => s.ventas_netas_cent} pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: libro de asientos`} alto={140} />

@@ -13,9 +13,11 @@ interface Props {
   valor: (s: SemanaSerie) => bigint;
   pie: string;
   alto?: number;
+  /** 2 = la lista de semanas con signo en dos columnas (tarjetas de ancho completo). */
+  columnas?: 1 | 2;
 }
 
-export function GraficaSemanas({ titulo, descripcion, semanas: todas, valor, pie, alto }: Props) {
+export function GraficaSemanas({ titulo, descripcion, semanas: todas, valor, pie, alto, columnas = 1 }: Props) {
   // Las semanas anteriores al primer movimiento no son historia: no se dibujan.
   const primera = todas.findIndex((s) => s.con_movimientos);
   const semanas = primera < 0 ? [] : todas.slice(primera);
@@ -33,7 +35,7 @@ export function GraficaSemanas({ titulo, descripcion, semanas: todas, valor, pie
   const max = semanas.reduce((a, s) => (abs(valor(s)) > a ? abs(valor(s)) : a), 0n);
   return (
     <>
-      <BarList etiquetaAria={titulo} items={[...semanas].reverse().map((s) => ({ id: s.ini, etiqueta: `Semana del ${fechaCorta(s.ini)}${s.parcial ? ' (en curso)' : ''}`, texto: s.con_movimientos ? m(valor(s), true) : 'Sin movimientos', pct: s.con_movimientos ? pct(abs(valor(s)), max) : null, tono: valor(s) < 0n ? ('malo' as const) : undefined }))} />
+      <BarList columnas={columnas} etiquetaAria={titulo} items={[...semanas].reverse().map((s) => ({ id: s.ini, etiqueta: `Semana del ${fechaCorta(s.ini)}${s.parcial ? ' (en curso)' : ''}`, texto: s.con_movimientos ? m(valor(s), true) : 'Sin movimientos', pct: s.con_movimientos ? pct(abs(valor(s)), max) : null, tono: valor(s) < 0n ? ('malo' as const) : undefined }))} />
       <p className="a3-pie">{pie}</p>
     </>
   );

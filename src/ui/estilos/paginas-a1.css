@@ -29,10 +29,8 @@
 
 /* Etapa 3: pilas de tarjetas que comparten fila con una tarjeta alta (sin vacios) y listados que crecen para llenar la altura */
 .rtm-pila-llena { display: flex; flex-direction: column; gap: var(--rtm-ritmo); min-width: 0; }
-.rtm-pila-llena > .rtm-tarjeta-v2 { flex: 1 1 auto; }
-.rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos), .rtm-pila-llena > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos) { flex: 1 1 auto; }
-.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-barlist > li, .rtm-pila-llena > .rtm-tarjeta-v2 > .rtm-barlist > li { flex: 1 1 auto; max-height: 96px; display: flex; flex-direction: column; justify-content: center; }
-.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-hallazgos > li { flex: 1 1 auto; max-height: 76px; }
+.rtm-pila-llena > .rtm-tarjeta-v2, .a3-pila > .rtm-tarjeta-v2, .rtm-a2-apilado > .rtm-tarjeta-v2 { flex: 1 1 auto; }
+:is(.rtm-rejilla, .rtm-pila-llena, .a3-pila, .rtm-a2-apilado) > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos) { flex: 1 1 auto; }
+:is(.rtm-rejilla, .rtm-pila-llena, .a3-pila, .rtm-a2-apilado) > .rtm-tarjeta-v2 > .rtm-barlist:not([data-columnas='2']) > li { flex: 1 1 auto; max-height: 96px; display: flex; flex-direction: column; justify-content: center; }
+:is(.rtm-rejilla, .a3-pila) > .rtm-tarjeta-v2 > .rtm-hallazgos > li { flex: 1 1 auto; max-height: 76px; }
 .rtm-hallazgos { display: flex; flex-direction: column; }
-
-.a3-pila > .rtm-tarjeta-v2, .rtm-a2-apilado > .rtm-tarjeta-v2 { flex: 1 1 auto; }
