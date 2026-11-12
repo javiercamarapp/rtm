@@ -21,8 +21,8 @@ export function TablaIncidentes({ incidentes, sentido, testid }: { incidentes: I
   return (
     <Tarjeta plana titulo={sentido === 'salida' ? 'Paquetes perdidos o dañados en el envío a clientes' : 'Paquetes perdidos o dañados en camino desde proveedores'} descripcion={`${abiertos.length} por resolver · ${filas.length} en total`}>
       <DataTable
-        etiqueta={sentido === 'salida' ? 'Incidentes de paquetes enviados' : 'Incidentes de paquetes en trayecto'} densidad="densa" plana primeraFija interactiva={{ busqueda: 'Buscar folio o pedido', exportar: `incidentes-${sentido}` }}
-        totales={filas.length ? { etiqueta: 'Totales', celdas: { z: formatearPiezas(piezas), v: formatearMoneda(valor), a: formatearMoneda(absorbido), c: formatearMoneda(porCobrar) } } : undefined}
+        etiqueta={sentido === 'salida' ? 'Incidentes de paquetes enviados' : 'Incidentes de paquetes en trayecto'} densidad="densa" plana primeraFija interactiva={{ busqueda: sentido === 'salida' ? 'Buscar folio o pedido' : 'Buscar folio u orden', exportar: `incidentes-${sentido}` }}
+        totales={filas.length ? { etiqueta: 'Totales', celdas: { z: formatearPiezas(piezas), v: formatearMoneda(valor), a: formatearMoneda(absorbido), k: formatearMoneda(porCobrar) } } : undefined}
         clave={(i) => i.id}
         filas={filas}
         vacio={{ titulo: 'Sin incidentes', texto: sentido === 'salida' ? 'Un paquete enviado que se pierde o llega dañado se reporta desde Enviados recientes.' : 'Una orden en camino que se pierde o llega dañada se reporta desde su renglón.' }}
