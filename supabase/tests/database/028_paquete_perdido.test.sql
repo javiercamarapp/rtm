@@ -139,6 +139,31 @@ select is(operacion.saldo_socio((select id from catalogo.socio where nombre = 'A
 select is(operacion.ajuste_utilidad_paquetes(negocio.hoy(), negocio.hoy()), (select aj0 from _f), 'asignado a un socio: la sociedad no absorbe, la utilidad no baja');
 select is((api.paquetes_incidentes()->'incidentes'->0->>'estado'), 'resuelto', 'la lectura de la web trae el incidente');
 
+-- ENTRADA F2: reasignar desde la pantalla de la compra: la lectura muestra el responsable VIGENTE, no el guardado al resolver -------------------------------
+create function pg_temp.lec(p_inc bigint) returns jsonb language sql as $$ select x from jsonb_array_elements(api.paquetes_incidentes()->'incidentes') x where (x->>'id')::bigint = p_inc $$;
+select is(pg_temp.lec(pg_temp.inc('pqf1'))->'resolucion'->>'responsable', 'socio', 'antes de reasignar: socio');
+select is(pg_temp.lec(pg_temp.inc('pqf1'))->'resolucion'->>'socio', 'Angelo', 'y es Angelo');
+select lives_ok($$select operacion.asignar_diferencia('pqfx', (select diferencia_id from operacion.paquete_incidente_linea where incidente_id = pg_temp.inc('pqf1') limit 1), 'proveedor', null, 'se reclama al proveedor')$$, 'reasignar la diferencia al proveedor desde la compra');
+select is(pg_temp.lec(pg_temp.inc('pqf1'))->>'responsable_vigente', 'proveedor', 'responsable_vigente es proveedor');
+select is(pg_temp.lec(pg_temp.inc('pqf1'))->'resolucion'->>'responsable', 'proveedor', 'la resolucion que se lee ya es la vigente (proveedor), no la guardada (socio)');
+select is(pg_temp.lec(pg_temp.inc('pqf1'))->'resolucion'->>'socio', null, 'y ya no rotula a Angelo');
+select is((pg_temp.lec(pg_temp.inc('pqf1'))->'resolucion'->>'recuperable_cent')::bigint, (select sum(valor_cent)::bigint from operacion.paquete_incidente_linea where incidente_id = pg_temp.inc('pqf1')), 'por cobrar = valor, ahora al proveedor');
+select is((api.explicar_cifra('paquete:absorbe:' || pg_temp.inc('pqf1'))->'comprobacion'->>'cuadra')::boolean, true, 'Explicar lo que absorbe tras reasignar: cuadra');
+
+-- ENTRADA G: resuelta solo desde la pantalla de la compra (sin fila de resolucion del flujo) ---------------------------------------------------------------------
+select operacion.crear_compra('pqg', 'Isaac', '[{"modelo":"PQ Modelo 50K","sabor":"Mango","pagadas":20}]'::jsonb);
+select operacion.confirmar_compra('pqgc', pg_temp.cid('pqg'));
+select operacion.reportar_paquete_entrada('pqg1', pg_temp.cid('pqg'), 'danado', 'llegaron mojadas', (select jsonb_build_array(jsonb_build_object('linea_id', id, 'sabor', 'Mango', 'piezas', 15)) from operacion.compra_linea where compra_id = pg_temp.cid('pqg')));
+select is(pg_temp.lec(pg_temp.inc('pqg1'))->>'estado', 'abierto', 'G abierto');
+select throws_ok($$select api.explicar_cifra('paquete:absorbe:' || pg_temp.inc('pqg1'))$$, '22023', null, 'abierto: aun sin resolucion para explicar');
+select lives_ok($$select operacion.resolver_diferencia('pqgr', (select diferencia_id from operacion.paquete_incidente_linea where incidente_id = pg_temp.inc('pqg1') limit 1), 'castigar', 'la sociedad lo castiga')$$, 'castigar desde la compra');
+select is((select count(*)::int from operacion.paquete_incidente_resolucion where incidente_id = pg_temp.inc('pqg1')), 0, 'no hay fila de resolucion del flujo');
+select is(pg_temp.lec(pg_temp.inc('pqg1'))->>'estado', 'resuelto', 'G resuelto');
+select is(pg_temp.lec(pg_temp.inc('pqg1'))->'resolucion'->>'responsable', 'sociedad', 'la lectura trae la resolucion derivada: sociedad');
+select is(pg_temp.lec(pg_temp.inc('pqg1'))->'resolucion'->>'accion', 'castigar', 'accion castigar');
+select is((pg_temp.lec(pg_temp.inc('pqg1'))->'resolucion'->>'absorbe_sociedad_cent')::bigint, (select sum(valor_cent)::bigint from operacion.paquete_incidente_linea where incidente_id = pg_temp.inc('pqg1')), 'absorbe todo el valor');
+select is((api.explicar_cifra('paquete:absorbe:' || pg_temp.inc('pqg1'))->'comprobacion'->>'cuadra')::boolean, true, 'Explicar lo que absorbe (resuelta desde la compra): cuadra por dos vias');
+
 -- Lecturas y explicar ------------------------------------------------------------------------------------------------------------------------------
 select ok((select count(*) from jsonb_array_elements(api.paquetes_incidentes()->'incidentes') x where x->>'folio' = (select folio from operacion.paquete_incidente where id = pg_temp.inc('pqa3'))) = 1, 'api.paquetes_incidentes trae el folio de la salida A');
 select is((api.explicar_cifra('paquete:valor:' || pg_temp.inc('pqa3'))->'comprobacion'->>'cuadra')::boolean, true, 'Explicar el costo de lo perdido (salida): dos vias cuadran');

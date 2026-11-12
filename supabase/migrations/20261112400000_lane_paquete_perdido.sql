@@ -355,6 +355,30 @@ create trigger diferencia_asignacion_paquete_aviso after insert on operacion.dif
 -- ---------------------------------------------------------------------------
 -- Lecturas para la web (rol socio)
 -- ---------------------------------------------------------------------------
+-- Entrada: el efecto VIGENTE de un incidente se lee siempre de las asignaciones vigentes de sus diferencias, no de lo guardado al resolver. Asi una reasignacion
+-- hecha despues desde la pantalla de la compra, o una resolucion hecha alli sin pasar por este flujo, se leen igual (responsable, quien absorbe, por cobrar).
+create function operacion.paquete_entrada_vigente(p_incidente bigint) returns jsonb
+language sql stable security definer set search_path = ''
+as $$
+  with v as (
+    select a.monto_cent, a.socio_id, a.motivo, a.creado_at,
+           case a.responsable when 'castigo' then 'sociedad' when 'reposicion' then 'proveedor' else a.responsable end as resp
+      from operacion.paquete_incidente_linea l
+      join operacion.diferencia_asignacion a on a.diferencia_id = l.diferencia_id and a.cancela_a is null
+       and not exists (select 1 from operacion.diferencia_asignacion y where y.cancela_a = a.id)
+     where l.incidente_id = p_incidente)
+  select case when count(*) = 0 then null else jsonb_build_object(
+    'responsable', case when count(distinct resp) = 1 then min(resp) else 'mixto' end,
+    'socio', case when count(distinct resp) = 1 and min(resp) = 'socio' and count(distinct socio_id) = 1
+                  then (select s.nombre from catalogo.socio s where s.id = min(v.socio_id)) end,
+    'accion', case when count(distinct resp) > 1 then 'mixta' else case min(resp) when 'sociedad' then 'castigar' when 'socio' then 'asignar' else 'reclamar' end end,
+    'absorbe_sociedad_cent', coalesce(sum(monto_cent) filter (where resp = 'sociedad'), 0)::bigint,
+    'recuperable_cent', coalesce(sum(monto_cent) filter (where resp <> 'sociedad'), 0)::bigint,
+    'motivo', (select x.motivo from v x order by x.creado_at desc limit 1),
+    'fecha_neg', negocio.fecha_neg(max(creado_at))) end
+  from v
+$$;
+
 create function api.paquetes_incidentes() returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
@@ -371,10 +395,14 @@ begin
       'valor_cent', (select sum(l.valor_cent) from operacion.paquete_incidente_linea l where l.incidente_id = i.id)::bigint,
       'renglones', (select jsonb_agg(jsonb_build_object('modelo', m.nombre_canonico, 'sabor', sa.nombre_canonico, 'piezas', l.piezas, 'valor_cent', l.valor_cent) order by m.nombre_canonico, sa.nombre_canonico)
                       from operacion.paquete_incidente_linea l join catalogo.sku k on k.id = l.sku_id join catalogo.modelo m on m.id = k.modelo_id join catalogo.sabor sa on sa.id = k.sabor_id where l.incidente_id = i.id),
-      'resolucion', (select jsonb_build_object('responsable', r.responsable, 'socio', s.nombre, 'accion', r.accion, 'absorbe_sociedad_cent', r.absorbe_sociedad_cent, 'recuperable_cent', r.recuperable_cent,
+      'resolucion', case when i.sentido = 'entrada' then
+                      (select case when operacion.paquete_incidente_resuelto(i.id) and e.x is not null
+                                   then e.x || jsonb_build_object('bonificacion_cent', 0, 'ajuste_utilidad_cent', -(e.x->>'absorbe_sociedad_cent')::bigint, 'guia', null) end
+                         from (select operacion.paquete_entrada_vigente(i.id) as x) e)
+                    else (select jsonb_build_object('responsable', r.responsable, 'socio', s.nombre, 'accion', r.accion, 'absorbe_sociedad_cent', r.absorbe_sociedad_cent, 'recuperable_cent', r.recuperable_cent,
                                                  'bonificacion_cent', r.bonificacion_cent, 'ajuste_utilidad_cent', r.ajuste_utilidad_cent, 'motivo', r.motivo, 'fecha_neg', r.fecha_neg,
                                                  'guia', (select jsonb_build_object('paqueteria', g.paqueteria, 'numero', g.numero, 'costo_cent', g.costo_cent) from operacion.guia g where g.id = r.reposicion_guia_id))
-                       from operacion.paquete_incidente_resolucion r left join catalogo.socio s on s.id = r.socio_id where r.incidente_id = i.id),
+                       from operacion.paquete_incidente_resolucion r left join catalogo.socio s on s.id = r.socio_id where r.incidente_id = i.id) end,
       -- Entrada: responsable VIGENTE leido de la asignacion de la diferencia (puede haberse reasignado desde la compra).
       'responsable_vigente', (select case when count(distinct v.resp) = 1 then min(v.resp) when count(*) = 0 then null else 'mixto' end
                                 from (select case a.responsable when 'castigo' then 'sociedad' when 'reposicion' then 'proveedor' else a.responsable end as resp
@@ -432,7 +460,7 @@ create function api.explicar_cifra(p_cifra text) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare
-  partes text[] := string_to_array(p_cifra, ':'); i operacion.paquete_incidente; r operacion.paquete_incidente_resolucion; v_rengs jsonb; v_via1 bigint; v_via2 bigint; v_tit text;
+  partes text[] := string_to_array(p_cifra, ':'); i operacion.paquete_incidente; r operacion.paquete_incidente_resolucion; v_rengs jsonb; v_via1 bigint; v_via2 bigint; v_tit text; v_e jsonb; v_resp text; v_abs bigint; v_rec bigint; v_v1 text;
 begin
   if partes[1] <> 'paquete' then return api.explicar_cifra_sin_paquetes(p_cifra); end if;
   perform seguridad.exigir_rol(array['socio']);
@@ -456,17 +484,31 @@ begin
                                          'via2', case when i.sentido = 'salida' then 'Costo del surtido del pedido, pieza por pieza' else 'Diferencia de recepcion de la orden' end, 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   elsif partes[2] = 'absorbe' then
-    select * into r from operacion.paquete_incidente_resolucion where incidente_id = i.id;
-    if not found then raise exception 'el incidente aun no tiene resolucion' using errcode = '22023'; end if;
+    if i.sentido = 'entrada' then
+      -- Entrada: se lee la asignacion vigente de las diferencias (existe aunque se resolviera desde la pantalla de la compra y no haya fila de resolucion).
+      v_e := operacion.paquete_entrada_vigente(i.id);
+      if v_e is null or not operacion.paquete_incidente_resuelto(i.id) then raise exception 'el incidente aun no tiene resolucion' using errcode = '22023'; end if;
+      v_resp := v_e->>'responsable'; v_abs := (v_e->>'absorbe_sociedad_cent')::bigint; v_rec := (v_e->>'recuperable_cent')::bigint; v_v1 := 'Asignacion vigente de la diferencia';
+      -- Segunda via: valor de las diferencias de recepcion que hoy estan castigadas por la sociedad.
+      select coalesce(sum(df.valor_cent), 0)::bigint into v_via2
+        from operacion.paquete_incidente_linea l join operacion.compra_diferencia df on df.id = l.diferencia_id
+        join operacion.diferencia_asignacion a on a.diferencia_id = df.id and a.responsable = 'castigo' and a.cancela_a is null
+         and not exists (select 1 from operacion.diferencia_asignacion y where y.cancela_a = a.id)
+       where l.incidente_id = i.id;
+    else
+      select * into r from operacion.paquete_incidente_resolucion where incidente_id = i.id;
+      if not found then raise exception 'el incidente aun no tiene resolucion' using errcode = '22023'; end if;
+      v_resp := r.responsable; v_abs := r.absorbe_sociedad_cent; v_rec := r.recuperable_cent; v_v1 := 'Resolucion registrada';
+      -- Segunda via: valor del incidente si lo absorbe la sociedad (bonificacion) o costo de las mermas del evento de resolucion (reposicion).
+      v_via2 := case when r.responsable <> 'sociedad' then 0
+                     when r.accion = 'reponer' then coalesce((select -sum(mi.valor_cent) from operacion.movimiento_inventario mi where mi.evento_id = r.evento_id and mi.tipo = 'merma'), 0)::bigint
+                     else coalesce((select sum(l.valor_cent) from operacion.paquete_incidente_linea l where l.incidente_id = i.id), 0)::bigint end;
+    end if;
     v_tit := 'Lo que absorbe la sociedad por ' || i.folio || ' (se reparte 50/50 en la utilidad)';
-    v_rengs := jsonb_build_array(jsonb_build_object('concepto', 'Responsable: ' || case r.responsable when 'sociedad' then 'la sociedad' when 'socio' then 'socio (se le cobra)' when 'proveedor' then 'proveedor (reclamo)' else 'cliente' end, 'monto_cent', r.absorbe_sociedad_cent),
-                                 jsonb_build_object('concepto', 'Por cobrar al responsable', 'monto_cent', r.recuperable_cent));
-    -- Segunda via: valor del incidente si lo absorbe la sociedad (bonificacion/castigo) o costo de las mermas del evento de resolucion (reposicion).
-    v_via2 := case when r.responsable <> 'sociedad' then 0
-                   when r.accion = 'reponer' then coalesce((select -sum(mi.valor_cent) from operacion.movimiento_inventario mi where mi.evento_id = r.evento_id and mi.tipo = 'merma'), 0)::bigint
-                   else coalesce((select sum(l.valor_cent) from operacion.paquete_incidente_linea l where l.incidente_id = i.id), 0)::bigint end;
-    return jsonb_build_object('cifra', p_cifra, 'titulo', v_tit, 'valor', r.absorbe_sociedad_cent, 'unidad', 'mxn',
-      'comprobacion', jsonb_build_object('via1', 'Resolucion registrada', 'via1_valor', r.absorbe_sociedad_cent, 'via2', 'Recalculado desde los hechos de la resolucion', 'via2_valor', v_via2, 'cuadra', r.absorbe_sociedad_cent = v_via2),
+    v_rengs := jsonb_build_array(jsonb_build_object('concepto', 'Responsable: ' || case v_resp when 'sociedad' then 'la sociedad' when 'socio' then 'socio (se le cobra)' when 'proveedor' then 'proveedor (reclamo)' when 'mixto' then 'varios (por renglon)' else 'cliente' end, 'monto_cent', v_abs),
+                                 jsonb_build_object('concepto', 'Por cobrar al responsable', 'monto_cent', v_rec));
+    return jsonb_build_object('cifra', p_cifra, 'titulo', v_tit, 'valor', v_abs, 'unidad', 'mxn',
+      'comprobacion', jsonb_build_object('via1', v_v1, 'via1_valor', v_abs, 'via2', 'Recalculado desde los hechos de la resolucion', 'via2_valor', v_via2, 'cuadra', v_abs = v_via2),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   end if;
   raise exception 'cifra de paquete desconocida' using errcode = '22023';
