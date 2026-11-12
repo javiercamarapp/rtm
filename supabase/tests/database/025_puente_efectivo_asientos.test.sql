@@ -28,7 +28,7 @@ select is((select nombre from contabilidad.cuenta where codigo = '7200'), 'Sobra
 select is((select tipo || naturaleza from contabilidad.cuenta where codigo = '7200'), 'GD', 'la cuenta 7200 es de resultados (gasto) y de naturaleza deudora');
 select is((select count(*)::int from catalogo.config where clave in ('puente_efectivo_contra_saldo_inicial', 'puente_efectivo_cuenta_diferencia_conteo')), 2, 'los dos parametros del puente estan documentados en la configuracion');
 select is((select count(*)::int from contabilidad.comprobaciones() where codigo = 'C23'), 1, 'C23 existe una sola vez');
-select is((select count(*)::int from contabilidad.comprobaciones()), 26, 'C1 a C23 mas CU1 a CU3');
+select is((select count(*)::int from contabilidad.comprobaciones()), 27, 'C1 a C24 mas CU1 a CU3');
 select is((select bloqueante from contabilidad.comprobaciones() where codigo = 'C23'), false, 'C23 avisa y no bloquea (hay efectivo de clientes y de proveedores fuera del libro de efectivo)');
 select ok((select ok from pg_temp.c23()), 'C23: sin movimientos, 0 contra 0 cuadra');
 

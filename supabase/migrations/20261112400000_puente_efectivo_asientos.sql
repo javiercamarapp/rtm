@@ -28,11 +28,24 @@ returns table (cuenta text, debe_cent bigint, haber_cent bigint, cliente_id bigi
 language plpgsql stable security definer set search_path = ''
 as $$
 #variable_conflict use_column
-declare v_tipo text; v_fecha date; v_apertura text; v_dif text;
+declare v_tipo text; v_fecha date; v_apertura text; v_dif text; v_cajas int; v_custodio bigint; v_efectivo bigint; v_solo_cajas boolean; v_base bigint;
 begin
   select e.tipo, e.fecha_neg into v_tipo, v_fecha from operacion.evento e where e.id = p_evento;
   if v_tipo is null then return; end if;
   if v_tipo not in ('movimiento_efectivo', 'movimiento_efectivo_anulado') then
+    -- Caja por persona: si el evento mueve el efectivo de una sola caja y su efecto neto es el mismo que el de 1101 en el asiento base, la dimension de 1101 es el
+    -- custodio de esa caja (la empresa = sin dimension), no quien deposito o entrego. Si no coincide, el asiento base queda tal cual y C23 y C24 lo senalan.
+    select count(distinct coalesce(c.socio_id, 0))::int, min(c.socio_id), coalesce(sum(m.monto_cent), 0)::bigint, coalesce(bool_and(c.tipo = 'caja'), false)
+      into v_cajas, v_custodio, v_efectivo, v_solo_cajas
+      from operacion.cuenta_efectivo_mov m join operacion.cuenta_efectivo c on c.id = m.cuenta_id where m.evento_id = p_evento;
+    if v_cajas = 1 and v_solo_cajas then
+      select coalesce(sum(b.debe_cent - b.haber_cent), 0)::bigint into v_base from contabilidad.lineas_de_evento_base(p_evento) b where b.cuenta = '1101';
+      if v_base = v_efectivo then
+        return query select b.cuenta, b.debe_cent, b.haber_cent, b.cliente_id, b.proveedor_id, case when b.cuenta = '1101' then v_custodio else b.socio_id end, b.modelo_id, b.pedido_id, b.nota
+                       from contabilidad.lineas_de_evento_base(p_evento) b;
+        return;
+      end if;
+    end if;
     return query select b.cuenta, b.debe_cent, b.haber_cent, b.cliente_id, b.proveedor_id, b.socio_id, b.modelo_id, b.pedido_id, b.nota from contabilidad.lineas_de_evento_base(p_evento) b;
     return;
   end if;
@@ -95,6 +108,28 @@ begin
 end $$;
 revoke execute on function operacion.anular_movimiento_efectivo(text, bigint, text) from public, anon, authenticated;
 
+
+-- ---------------------------------------------------------------------------
+-- Cajas por persona contra el libro: para cada caja (o banco) de efectivo, su saldo operativo contra la cuenta 1101 (1102) con esa persona como dimension.
+-- La caja de la empresa no lleva dimension (socio null). Incluye las dimensiones del libro que no tienen cuenta de efectivo (diferencia = todo su saldo).
+-- ---------------------------------------------------------------------------
+create function contabilidad.efectivo_por_caja()
+returns table (cuenta text, socio_id bigint, caja text, operativo_cent bigint, libro_cent bigint, diferencia_cent bigint)
+language sql stable security definer set search_path = ''
+as $$
+  with k as (
+    select case c.tipo when 'banco' then '1102' else '1101' end as cta, c.socio_id, string_agg(c.nombre, ', ' order by c.id) as nombre, sum(operacion.saldo_efectivo(c.id))::bigint as oper
+      from operacion.cuenta_efectivo c where c.activa group by 1, 2),
+  l as (
+    select x.cuenta as cta, x.socio_id, sum(x.debe_cent - x.haber_cent)::bigint as libro
+      from contabilidad.asiento_linea x where x.cuenta in ('1101', '1102') group by 1, 2)
+  select coalesce(k.cta, l.cta)::text, coalesce(k.socio_id, l.socio_id),
+         coalesce(k.nombre, 'Sin cuenta de efectivo' || coalesce(' (' || (select s.nombre from catalogo.socio s where s.id = l.socio_id) || ')', ' (sociedad)')),
+         coalesce(k.oper, 0)::bigint, coalesce(l.libro, 0)::bigint, (coalesce(k.oper, 0) - coalesce(l.libro, 0))::bigint
+    from k full join l on l.cta = k.cta and l.socio_id is not distinct from k.socio_id
+   order by 1, 2 nulls first
+$$;
+revoke execute on function contabilidad.efectivo_por_caja() from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Comprobaciones: C23 (efectivo operativo contra caja contable) y C16 con el sobrante o faltante de caja. Estado de resultados con la cuenta 7200 en otros.
@@ -214,6 +249,9 @@ begin
   v_a := operacion.saldo_efectivo();
   v_b := contabilidad.saldo_deudor('1101') + contabilidad.saldo_deudor('1102');
   codigo := 'C23'; nombre := 'Efectivo: cuentas de efectivo operativas contra caja contable (1101 y 1102)'; bloqueante := false; via_a_nombre := 'Suma de las cuentas de efectivo'; via_a_cent := v_a; via_b_nombre := 'Cuentas 1101 y 1102 del libro'; via_b_cent := v_b; ok := v_a = v_b; return next;
+  -- C24 cajas por persona: cada caja de efectivo contra su dimension en 1101 (suma de diferencias absolutas; 0 cuando todas cuadran)
+  select coalesce(sum(abs(x.diferencia_cent)), 0)::bigint into v_a from contabilidad.efectivo_por_caja() x;
+  codigo := 'C24'; nombre := 'Cajas por persona: cada caja de efectivo contra su dimensión en 1101'; bloqueante := false; via_a_nombre := 'Suma de diferencias por caja (valor absoluto)'; via_a_cent := v_a; via_b_nombre := 'Cero: cada caja igual a su dimensión del libro'; via_b_cent := 0; ok := v_a = 0; return next;
   -- Identidades de la paridad con el Excel (doc 18)
   v_activo := contabilidad.suma_tipo('A'); v_pasivo := contabilidad.suma_tipo('P'); v_capital := contabilidad.suma_tipo('K'); v_res := contabilidad.resultado();
   codigo := 'CU1'; nombre := 'Identidad I-1: activo igual a pasivo más capital'; bloqueante := true; via_a_nombre := 'Activo'; via_a_cent := v_activo; via_b_nombre := 'Pasivo más capital más resultado'; via_b_cent := v_pasivo + v_capital + v_res; ok := v_activo = v_pasivo + v_capital + v_res; return next;
