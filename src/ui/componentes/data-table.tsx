@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import { Pestanas } from './controles';
+import { IndicadorScroll } from './indicador-scroll';
 import { TablaInteractiva, type OpcionesInteractiva } from './tabla-interactiva';
 
 export interface Columna<T> {
@@ -14,6 +15,13 @@ export interface Columna<T> {
   ancho?: 'xs' | 's' | 'm' | 'l' | 'xl';
   /** Etiqueta de bloque (ENTRADAS, SALIDAS, EXISTENCIAS): se pinta en una fila de cabecera de grupo sobre las columnas consecutivas que la comparten. */
   bloque?: string;
+  /** Recorta el texto largo con puntos suspensivos (el texto completo queda en el atributo title): s 120, m 200, l 280 px. */
+  truncar?: 's' | 'm' | 'l';
+  /** Tarjeta-fila en movil (<= 767 px): titulo = linea principal (izquierda), principal = cifra clave a la derecha, normal = dato con etiqueta en rejilla de 3 columnas,
+   *  oculta = no se muestra. Si alguna columna lo declara, la tabla pasa a tarjetas en movil. */
+  prioridadMovil?: 'titulo' | 'principal' | 'normal' | 'oculta';
+  /** Etiqueta del dato en la tarjeta movil (por omision, el titulo de la columna). */
+  etiquetaMovil?: string;
   /** Resalta existencia en cero (ambar, "Agotado") o negativa (rojo, "Negativa"): palabra y color, nunca solo color. */
   resaltar?: (fila: T) => 'cero' | 'negativo' | null;
 }
@@ -79,7 +87,12 @@ export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo
     );
   }
   const cargando = estado === 'cargando';
-  const atributosCelda = (c: Columna<T>) => ({ 'data-num': c.numerica || undefined, 'data-secundaria': c.secundaria || undefined, 'data-ancho': c.ancho });
+  const atributosCelda = (c: Columna<T>) => ({ 'data-num': c.numerica || undefined, 'data-secundaria': c.secundaria || undefined, 'data-ancho': c.ancho, 'data-mov': c.prioridadMovil, 'data-label': c.etiquetaMovil ?? c.titulo });
+  const tarjetaMovil = columnas.some((c) => c.prioridadMovil !== undefined);
+  const celdaContenido = (c: Columna<T>, f: T) => {
+    const v = c.celda(f);
+    return c.truncar ? <span className="rtm-dt-trunc" data-trunc={c.truncar} title={typeof v === 'string' ? v : undefined}>{v}</span> : v;
+  };
   const hayBloques = columnas.some((c) => c.bloque);
 
   const filaDe = (f: T, grupo?: string) => (
@@ -88,7 +101,7 @@ export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo
         const r = c.resaltar?.(f) ?? null;
         return (
           <div key={c.id} role="cell" className="rtm-dt-celda" {...atributosCelda(c)} data-resalte={r ?? undefined}>
-            {c.celda(f)}
+            {celdaContenido(c, f)}
             {r && <span className="rtm-dt-marca">{r === 'cero' ? 'Agotado' : 'Negativa'}</span>}
           </div>
         );
@@ -139,8 +152,8 @@ export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo
     cuerpo = filas.map((f) => filaDe(f));
   }
 
-  const tabla = (
-    <div className="rtm-dt-caja" data-estado={estado} data-densidad={densidad} data-plana={plana || undefined} data-pegajosa={pegajosa || undefined} data-primera-fija={primeraFija || undefined} aria-busy={cargando || undefined}>
+  const caja = (
+    <div className="rtm-dt-caja" data-estado={estado} data-densidad={densidad} data-plana={plana || undefined} data-pegajosa={pegajosa || undefined} data-primera-fija={primeraFija || undefined} data-tarjeta-movil={tarjetaMovil || undefined} aria-busy={cargando || undefined}>
       <div className="rtm-dt" role="table" aria-label={etiqueta} aria-rowcount={cargando ? undefined : filas.length + 1}>
         <div className="rtm-dt-grupo" role="rowgroup">
           {hayBloques && (
@@ -174,6 +187,12 @@ export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo
         )}
       </div>
       {cargando && <span className="rtm-solo-lectores">Cargando</span>}
+    </div>
+  );
+  const tabla = (
+    <div className="rtm-dt-env">
+      {caja}
+      <IndicadorScroll />
     </div>
   );
 
