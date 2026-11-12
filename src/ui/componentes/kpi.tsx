@@ -34,7 +34,7 @@ function BarraPartes({ partes }: { partes: ParteBarra[] }) {
   let x = 0;
   return (
     <span className="rtm-kpi-partes">
-      <svg width="100%" height="100%" role="img" aria-label={partes.map((p) => `${p.etiqueta}${p.estado === 'parcial' ? ' (parcial)' : ''}`).join(', ')} focusable="false">
+      <svg width="100%" height="6" role="img" aria-label={partes.map((p) => `${p.etiqueta}${p.estado === 'parcial' ? ' (parcial)' : ''}`).join(', ')} focusable="false">
         <defs>
           <pattern id={`${uid}-t`} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" className="rtm-kpi-trama" /></pattern>
         </defs>
@@ -42,8 +42,8 @@ function BarraPartes({ partes }: { partes: ParteBarra[] }) {
           const w = (Math.max(0, p.valor) / total) * 100;
           const el = (
             <g key={p.etiqueta}>
-              <rect x={`${x}%`} y="0" width={`${Math.max(0, w - 0.8)}%`} height="100%" className="rtm-kpi-parte" data-i={i % 4} />
-              {p.estado === 'parcial' && <rect x={`${x}%`} y="0" width={`${Math.max(0, w - 0.8)}%`} height="100%" fill={`url(#${uid}-t)`} />}
+              <rect x={`${x}%`} y="0" width={`${Math.max(0, w - 0.8)}%`} height="6" className="rtm-kpi-parte" data-i={i % 4} />
+              {p.estado === 'parcial' && <rect x={`${x}%`} y="0" width={`${Math.max(0, w - 0.8)}%`} height="6" fill={`url(#${uid}-t)`} />}
             </g>
           );
           x += w;
@@ -69,7 +69,7 @@ function Celda({ c }: { c: KpiCelda }) {
       {!sinDato && c.partes && <BarraPartes partes={c.partes} />}
       {!sinDato && c.progreso && (
         <span className="rtm-kpi-progreso">
-          <svg width="100%" height="100%" role="img" aria-label={`${Math.round(pct(c.progreso.pct))} %${c.progreso.meta !== undefined ? `, meta ${Math.round(pct(c.progreso.meta))} %` : ''}`} focusable="false">
+          <svg width="100%" height="6" role="img" aria-label={`${Math.round(pct(c.progreso.pct))} %${c.progreso.meta !== undefined ? `, meta ${Math.round(pct(c.progreso.meta))} %` : ''}`} focusable="false">
             <rect x="0" y="0" width="100%" height="6" rx="3" className="rtm-kpi-pista" />
             <rect x="0" y="0" width={`${pct(c.progreso.pct)}%`} height="6" rx="3" className="rtm-kpi-valor" />
             {c.progreso.meta !== undefined && <rect x={`${pct(c.progreso.meta)}%`} y="0" width="2" height="6" className="rtm-kpi-meta" />}

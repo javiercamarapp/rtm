@@ -59,10 +59,11 @@
 .rtm-kpi-cifra .rtm-cifra { border-bottom-width: 0; font: inherit; letter-spacing: inherit; text-align: left; }
 .rtm-kpi-nota { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); line-height: 1.4; }
 .rtm-kpi-spark { display: block; margin-top: auto; }
-.rtm-kpi-partes { display: block; width: 100%; height: var(--rtm-g-pista); margin-top: auto; border-radius: var(--rtm-r-pildora); overflow: hidden; }
+.rtm-kpi-partes svg, .rtm-kpi-progreso svg { display: block; }
+.rtm-kpi-partes { display: block; flex: none; width: 100%; height: var(--rtm-g-pista); margin-top: auto; border-radius: var(--rtm-r-pildora); overflow: hidden; }
 .rtm-kpi-parte { fill: var(--rtm-ink); } .rtm-kpi-parte[data-i='1'] { opacity: 0.62; } .rtm-kpi-parte[data-i='2'] { opacity: 0.4; } .rtm-kpi-parte[data-i='3'] { opacity: 0.25; }
 .rtm-kpi-trama { stroke: var(--rtm-surface); stroke-width: 1.6; }
-.rtm-kpi-progreso { display: block; width: 100%; height: var(--rtm-g-pista); margin-top: auto; }
+.rtm-kpi-progreso { display: block; flex: none; width: 100%; height: var(--rtm-g-pista); margin-top: auto; }
 .rtm-kpi-pista { fill: var(--rtm-line); } .rtm-kpi-valor { fill: var(--rtm-kpi-color); } .rtm-kpi-meta { fill: var(--rtm-ink); }
 .rtm-kpi-linea[data-variante='tarjetas'] { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: var(--rtm-ritmo); border: 0; background: transparent; overflow: visible; }
 .rtm-kpi-linea[data-variante='tarjetas'] > .rtm-kpi-celda[data-categoria] { border-top-color: var(--rtm-kpi-color); }
@@ -287,3 +288,16 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-tarjeta-v2[data-plana] .rtm-dt-caja { border: 0; border-radius: 0; }
 .rtm-tarjeta-v2[data-plana] .rtm-dt-interactiva > .rtm-paginador { border-top: var(--rtm-borde); }
 @media (max-width: 767px) { .rtm-dt-caja[data-densidad] .rtm-dt-celda { height: 44px; } }
+@media (max-width: 767px) {
+  .rtm-paginador { flex-wrap: wrap; }
+  .rtm-paginador-botones { flex-wrap: wrap; white-space: nowrap; }
+  .rtm-dt-celda[data-ancho='xl'] { min-width: 150px; }
+  .rtm-dt-barra .rtm-boton { white-space: nowrap; }
+}
+
+/* Escala de salud: tres tramos con palabra, sin degradado */
+.rtm-salud { display: flex; flex-direction: column; gap: 4px; }
+.rtm-salud-malo { fill: var(--rtm-bad); opacity: 0.85; } .rtm-salud-medio { fill: var(--rtm-warn); opacity: 0.85; } .rtm-salud-bueno { fill: var(--rtm-ok); opacity: 0.85; }
+.rtm-salud-marca { fill: var(--rtm-ink); stroke: var(--rtm-surface); stroke-width: 1.5; }
+.rtm-salud-pie { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
+.rtm-salud-pie strong { color: var(--rtm-ink); font-weight: var(--rtm-peso-fuerte); font-size: var(--rtm-t-cuerpo); }
