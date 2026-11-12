@@ -175,7 +175,7 @@ end $$;
 create function api.acta_detalle(p_cierre bigint) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
-declare v_c jsonb; v_s jsonb; v_corrige text; v_contra text;
+declare v_c jsonb; v_s jsonb; v_corrige text; v_contra text; v_disp jsonb;
 begin
   perform seguridad.exigir_rol(array['socio']);
   select x into v_c from jsonb_array_elements(api.cierres_reparto()) x where (x ->> 'id')::bigint = p_cierre;
@@ -183,7 +183,25 @@ begin
   select jsonb_build_object('contenido', s.contenido, 'huella', s.huella, 'sellado_at', s.sellado_at) into v_s from operacion.acta_sello s where s.cierre_id = p_cierre;
   select o.folio into v_corrige from operacion.cierre_reparto c join operacion.cierre_reparto o on o.id = c.corrige_a where c.id = p_cierre;
   select k.folio into v_contra from operacion.cierre_reparto k where k.corrige_a = p_cierre;
-  return jsonb_build_object('cierre', v_c, 'sello', v_s, 'corrige_folio', v_corrige, 'contra_acta_folio', v_contra);
+  -- Disponible (utilidad menos lo ya recibido, sin bajar de cero) y lo que queda por distribuir tras las decisiones: la resta vive aqui, la pantalla solo la muestra.
+  select coalesce(jsonb_object_agg(e.key, jsonb_build_object(
+           'disponible_cent', greatest((e.value ->> 'utilidad_cent')::bigint - (e.value ->> 'anticipo_cent')::bigint, 0),
+           'queda_cent', greatest((e.value ->> 'utilidad_cent')::bigint - (e.value ->> 'anticipo_cent')::bigint, 0)
+                         - coalesce((v_c -> 'decisiones' -> e.key ->> 'retira')::bigint, 0) - coalesce((v_c -> 'decisiones' -> e.key ->> 'reinvierte')::bigint, 0))), '{}'::jsonb)
+    into v_disp from jsonb_each(coalesce(v_c -> 'snapshot' -> 'por_socio', '{}'::jsonb)) e where (v_c ->> 'tipo') <> 'contra';
+  return jsonb_build_object('cierre', v_c, 'sello', v_s, 'corrige_folio', v_corrige, 'contra_acta_folio', v_contra, 'por_socio_acta', v_disp);
+end $$;
+
+-- Disponible por socio de un periodo para el formulario de la propuesta (utilidad menos lo ya recibido, sin bajar de cero). Misma resta que el tope que valida la base.
+create function api.acta_disponible(p_ini date, p_fin date) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_p jsonb;
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  v_p := api.cascada_proyeccion(p_ini, p_fin);
+  return coalesce((select jsonb_object_agg(e.key, jsonb_build_object('disponible_cent', greatest((e.value ->> 'utilidad_cent')::bigint - (e.value ->> 'anticipo_cent')::bigint, 0)))
+                     from jsonb_each(v_p -> 'por_socio') e), '{}'::jsonb);
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -410,4 +428,4 @@ end $$;
 -- ---------------------------------------------------------------------------
 revoke execute on all functions in schema operacion from public, anon, authenticated;
 revoke execute on all functions in schema api from public, anon;
-grant execute on function api.acta_periodo_sugerido(), api.acta_detalle(bigint), api.historial_socio(text, date), api.explicar_historial(text) to authenticated;
+grant execute on function api.acta_periodo_sugerido(), api.acta_detalle(bigint), api.acta_disponible(date, date), api.historial_socio(text, date), api.explicar_historial(text) to authenticated;

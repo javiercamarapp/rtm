@@ -29,8 +29,8 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
   const filas = NOMBRES.map((nombre) => {
     const x = contra ? null : s.por_socio[nombre];
     const dec = c.decisiones[nombre] ?? { retira: 0n, reinvierte: 0n };
-    const disp = x ? (x.utilidad_cent > x.anticipo_cent ? x.utilidad_cent - x.anticipo_cent : 0n) : 0n;
-    return { nombre, x, dec, disp, resto: disp - dec.retira - dec.reinvierte, sello: k?.por_socio[nombre] ?? null, valor: k?.valor_participacion_cent?.[nombre] ?? null, firma: c.firmas.find((f) => f.socio === nombre) ?? null };
+    const calc = d.por_socio_acta?.[nombre];
+    return { nombre, x, dec, disp: calc?.disponible_cent ?? 0n, resto: calc?.queda_cent ?? 0n, sello: k?.por_socio[nombre] ?? null, valor: k?.valor_participacion_cent?.[nombre] ?? null, firma: c.firmas.find((f) => f.socio === nombre) ?? null };
   });
   const pendiente = c.estado === 'propuesto' || c.estado === 'firmado_por_uno';
 

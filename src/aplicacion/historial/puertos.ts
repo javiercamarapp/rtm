@@ -6,5 +6,7 @@ export interface LectorHistorial {
   historial(socio: string, hasta: string | null): Promise<HistorialSocio>;
   acta(cierreId: number): Promise<ActaDetalle | null>;
   periodoSugerido(): Promise<PeriodoSugerido>;
+  /** Disponible por socio de un periodo (la resta la hace la base). */
+  disponibleActa(ini: string, fin: string): Promise<Record<string, { disponible_cent: bigint }>>;
   explicar(cifra: string): Promise<Explicacion>;
 }

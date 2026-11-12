@@ -141,6 +141,10 @@ select throws_ok($$select api.explicar_historial('historial:otra:Angelo')$$, '22
 
 -- Detalle y periodo sugerido.
 select is((api.acta_detalle((select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1))->'sello'->>'huella') = (select huella from operacion.acta_sello), true, 'acta_detalle trae el sello');
+select is((api.acta_detalle((select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1))->'por_socio_acta'->'Angelo'->>'disponible_cent'), '600000', 'acta_detalle: disponible de Angelo lo calcula la base');
+select is((api.acta_detalle((select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1))->'por_socio_acta'->'Angelo'->>'queda_cent'), '0', 'acta_detalle: queda por distribuir tras retirar 4,000 y reinvertir 2,000');
+select is((api.acta_detalle((select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1))->'por_socio_acta'->'Javier'->>'queda_cent'), '0', 'acta_detalle: Javier reinvierte todo, no queda nada');
+select is(has_function_privilege('anon', 'api.acta_disponible(date, date)', 'execute'), false, 'anon no ejecuta el disponible del acta');
 select is(api.acta_detalle(-1), null::jsonb, 'acta inexistente: nulo');
 select is((api.acta_periodo_sugerido()->>'ini')::date, '2021-03-09'::date, 'el siguiente corte empieza el dia despues del ultimo');
 select is((api.acta_periodo_sugerido()->>'fin')::date, '2021-03-31'::date, 'y termina al fin de mes');

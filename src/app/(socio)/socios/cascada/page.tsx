@@ -27,7 +27,8 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
   const ini = q.ini && FECHA.test(q.ini) ? q.ini : sem.inicio;
   const fin = q.fin && FECHA.test(q.fin) ? q.fin : hoy;
   const lector = await operacionDeSocio();
-  const [c, cierres, sug] = await Promise.all([lector.cascadaProyeccion(ini, fin), lector.cierresReparto(), (await historialDeSocio()).periodoSugerido()]);
+  const hist = await historialDeSocio();
+  const [c, cierres, sug, disp] = await Promise.all([lector.cascadaProyeccion(ini, fin), lector.cierresReparto(), hist.periodoSugerido(), hist.disponibleActa(ini, fin)]);
   const ps = c.por_socio;
   const ant = semanaReporte(sumarDias(sem.inicio, -1));
   const terminado = fin < hoy;
@@ -147,7 +148,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
           )}
           {terminado ? (
             <div className="a3-acciones">
-              <FormularioActa ini={ini} fin={fin} disponibles={(['Angelo', 'Javier'] as const).map((n) => ({ socio: n, disponible_cent: String(ps[n].utilidad_cent > ps[n].anticipo_cent ? ps[n].utilidad_cent - ps[n].anticipo_cent : 0n) }))} />
+              <FormularioActa ini={ini} fin={fin} disponibles={(['Angelo', 'Javier'] as const).map((n) => ({ socio: n, disponible_cent: String(disp[n]?.disponible_cent ?? 0n) }))} />
             </div>
           ) : <Pie>El periodo aún no termina: se puede proponer el cierre a partir del {etiquetaFecha(sumarDias(fin, 1))}. Mientras tanto esta vista es una proyección.</Pie>}
         </Tarjeta>

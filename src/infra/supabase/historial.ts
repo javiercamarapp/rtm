@@ -22,6 +22,7 @@ export function lectorHistorialSupabase(): LectorHistorial {
       if (d.sello) d.sello.contenido.decisiones = decisionesABigint(d.sello.contenido.decisiones);
       return d;
     },
+    disponibleActa: (ini, fin) => leer('acta_disponible', { p_ini: ini, p_fin: fin }),
     periodoSugerido: () => leer('acta_periodo_sugerido'),
     explicar: (cifra) => llamar('explicar_historial', { p_cifra: cifra }, explicacion),
   };

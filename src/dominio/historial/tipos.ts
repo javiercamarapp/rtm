@@ -47,7 +47,7 @@ export interface SelloActa {
   };
   huella: string; sellado_at: string;
 }
-export interface ActaDetalle { cierre: CierreReparto; sello: SelloActa | null; corrige_folio: string | null; contra_acta_folio: string | null }
+export interface ActaDetalle { cierre: CierreReparto; sello: SelloActa | null; /** Disponible y lo que queda por distribuir por socio, calculados por la base (ausente en una contra-acta). */ por_socio_acta: Record<string, { disponible_cent: Cent; queda_cent: Cent }>; corrige_folio: string | null; contra_acta_folio: string | null }
 export interface PeriodoSugerido { ini: string; fin: string; hoy: string; ultimo_corte: string | null; listo: boolean; disponible_desde: string; acta_pendiente_id: number | null; hay_actividad: boolean }
 
 /** Las decisiones de un acta viajan como {retira, reinvierte} (sin sufijo _cent), asi que la conversion general de centavos no las toca: se convierten aqui. */
