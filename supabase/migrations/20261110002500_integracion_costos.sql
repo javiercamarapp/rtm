@@ -414,7 +414,7 @@ as $$
     'tc_micro', c.tc_micro, 'tc_fecha', c.tc_fecha, 'tc_fuente', c.tc_fuente,
     'exacto_mxn_e6', c.exacto_mxn_e6, 'exacto_puro_mxn_e6', c.exacto_puro_mxn_e6, 'monto_cent', c.monto_cent, 'como_seria_cent', c.como_seria_cent, 'como_deberia_cent', c.como_deberia_cent,
     'pagado_por', c.pagado_por, 'cobrable', c.cobrable, 'etiqueta', c.etiqueta, 'estado', c.estado, 'evidencia_tipo', c.evidencia_tipo, 'tiene_evidencia', c.evidencia_sha256 is not null,
-    'nota', c.nota, 'reversa_de', c.reversa_de, 'anulado', exists (select 1 from costos.cargo r where r.reversa_de = c.id), 'gasto_folio', (select g.folio from operacion.gasto g where g.id = c.gasto_id))
+    'nota', c.nota, 'clave_idem', c.clave_idem, 'evidencia_sha256', c.evidencia_sha256, 'reversa_de', c.reversa_de, 'anulado', exists (select 1 from costos.cargo r where r.reversa_de = c.id), 'gasto_folio', (select g.folio from operacion.gasto g where g.id = c.gasto_id))
   from costos.servicio s where s.id = c.servicio_id
 $$;
 
@@ -430,6 +430,13 @@ create function costos.cargos(p_mes text default null) returns jsonb
 language sql stable security definer set search_path = ''
 as $$
   select coalesce(jsonb_agg(costos.cargo_json(c) order by c.fecha_neg desc, c.id desc), '[]'::jsonb) from costos.cargo c where p_mes is null or c.mes = p_mes
+$$;
+
+create function costos.reembolsos() returns jsonb
+language sql stable security definer set search_path = ''
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('id', r.id, 'folio', r.folio, 'a_socio', r.a_socio, 'fondos_de', r.fondos_de, 'monto_cent', r.monto_cent, 'fecha_neg', r.fecha_neg, 'medio', r.medio,
+    'comprobante_sha256', r.comprobante_sha256, 'clave_idem', r.clave_idem) order by r.id), '[]'::jsonb) from costos.reembolso r
 $$;
 
 -- Cuenta por pagar de la sociedad a quien pago: cargado, reembolsado y pendiente. Debe cuadrar con la cuenta de socios (aportaciones reembolsables).
@@ -526,6 +533,8 @@ create function api.costos_resumen(p_mes text, p_incluir_construccion boolean de
 as $$ begin perform seguridad.exigir_rol(array['socio']); return costos.resumen_mes(p_mes, p_incluir_construccion); end $$;
 create function api.costos_cargos(p_mes text default null) returns jsonb language plpgsql stable security definer set search_path = ''
 as $$ begin perform seguridad.exigir_rol(array['socio']); return costos.cargos(p_mes); end $$;
+create function api.costos_reembolsos() returns jsonb language plpgsql stable security definer set search_path = ''
+as $$ begin perform seguridad.exigir_rol(array['socio']); return costos.reembolsos(); end $$;
 create function api.costos_cuenta(p_socio text default 'javier') returns jsonb language plpgsql stable security definer set search_path = ''
 as $$ begin perform seguridad.exigir_rol(array['socio']); return costos.cuenta_por_pagar(p_socio); end $$;
 create function api.costos_explicar(p_cargo_id bigint) returns jsonb language plpgsql stable security definer set search_path = ''
@@ -552,9 +561,9 @@ revoke execute on all functions in schema costos from public, anon, authenticate
 revoke execute on all functions in schema ia from public, anon, authenticated;
 revoke execute on function seguridad.exigir_socio_o_sistema() from public, anon, authenticated;
 grant execute on function costos.insumo_reporte(text), costos.resumen_mes(text, boolean), costos.tipo_cambio_del_dia(date), ia.gasto_mes_micro(text) to servidor;
-revoke execute on function api.costos_servicios(), api.costos_resumen(text, boolean), api.costos_cargos(text), api.costos_cuenta(text), api.costos_explicar(bigint), api.costos_tipo_cambio(date),
+revoke execute on function api.costos_reembolsos(), api.costos_servicios(), api.costos_resumen(text, boolean), api.costos_cargos(text), api.costos_cuenta(text), api.costos_explicar(bigint), api.costos_tipo_cambio(date),
   api.costos_registrar_cargo(text, text, text, date, text, bigint, text, int, int, bigint, date, text, bigint, bigint, bigint, bigint, bigint, text, boolean, text, text, text, text, text),
   api.costos_anular_cargo(text, bigint, date, text), api.costos_registrar_reembolso(text, text, text, bigint, date, text, text), api.costos_registrar_tipo_cambio(text, date, bigint, text) from public, anon;
-grant execute on function api.costos_servicios(), api.costos_resumen(text, boolean), api.costos_cargos(text), api.costos_cuenta(text), api.costos_explicar(bigint), api.costos_tipo_cambio(date),
+grant execute on function api.costos_reembolsos(), api.costos_servicios(), api.costos_resumen(text, boolean), api.costos_cargos(text), api.costos_cuenta(text), api.costos_explicar(bigint), api.costos_tipo_cambio(date),
   api.costos_registrar_cargo(text, text, text, date, text, bigint, text, int, int, bigint, date, text, bigint, bigint, bigint, bigint, bigint, text, boolean, text, text, text, text, text),
   api.costos_anular_cargo(text, bigint, date, text), api.costos_registrar_reembolso(text, text, text, bigint, date, text, text), api.costos_registrar_tipo_cambio(text, date, bigint, text) to authenticated;

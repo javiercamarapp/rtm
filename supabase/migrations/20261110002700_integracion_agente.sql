@@ -434,7 +434,7 @@ begin
       from catalogo.cliente c where c.id = p_modelo;
   elsif p_tipo = 'proveedor' then
     select jsonb_build_object('titulo', 'Cuenta con ' || p.nombre, 'lineas', jsonb_build_array(jsonb_build_object('etiqueta', 'Saldo (positivo: a favor)', 'centavos', -operacion.saldo_proveedor(p.id)))) into v_res
-      from catalogo.proveedor p where p.id = p_modelo;
+      from catalogo.proveedor p where p.nombre = initcap(p_sujeto);
   else
     raise exception 'consulta desconocida' using errcode = '22023';
   end if;
@@ -445,10 +445,11 @@ end $$;
 create function agente.ejecutar(p_clave_idem text, p_tipo text, p_args jsonb) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
-declare v_res jsonb; v_socio text;
+declare v_res jsonb; v_socio text; v_existia boolean; v_sku jsonb;
 begin
   perform notificacion.exigir_sistema();
   perform set_config('rtm.canal', 'telegram', true);
+  v_existia := exists (select 1 from seguridad.operacion where clave = p_clave_idem and resultado is not null);
   if p_tipo = 'gasto' then
     v_socio := initcap(p_args ->> 'pagado_por');
     if v_socio not in ('Angelo', 'Javier') then raise exception 'un gasto de la sociedad pagado en efectivo de la caja aun no se captura por Telegram: dile al agente quien lo pago' using errcode = 'P0460'; end if;
@@ -456,11 +457,47 @@ begin
   elsif p_tipo = 'aportacion' then
     v_res := operacion.registrar_aportacion(p_clave_idem, initcap(p_args ->> 'socio'), (p_args ->> 'monto_cent')::bigint, coalesce(p_args ->> 'concepto', 'Aportacion por Telegram'), coalesce(p_args ->> 'clasificacion', 'reembolsable'));
   elsif p_tipo = 'toma_omar' then
-    v_res := operacion.registrar_toma_omar(p_clave_idem, p_args -> 'sku', (p_args ->> 'piezas')::int, null, null, 'telegram_omar');
+    v_sku := coalesce(p_args -> 'sku', jsonb_build_object('sku_id', (select k.id from catalogo.sku k where k.modelo_id = (p_args ->> 'modelo_id')::bigint and k.sabor_id = (p_args ->> 'sabor_id')::bigint)));
+    v_res := operacion.registrar_toma_omar(p_clave_idem, v_sku, (p_args ->> 'piezas')::int, null, null, 'telegram_omar');
   else
     raise exception 'tipo de indicacion no soportado por Telegram todavia: %', p_tipo using errcode = 'P0460';
   end if;
-  return v_res;
+  return v_res || jsonb_build_object('repetido', v_existia);
+end $$;
+
+-- Ultimo hecho aplicado por el agente (canal telegram) o el folio indicado: gasto G-, toma T- o aportacion (por su folio de evento).
+create function agente.localizar(p_folio text) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  perform notificacion.exigir_sistema();
+  return coalesce((select jsonb_build_object('folio', x.folio, 'tipo', x.tipo, 'ejecutado_en', x.hora) from (
+      select g.folio, 'gasto' as tipo, e.hora from operacion.gasto g join operacion.evento e on e.id = g.evento_id where e.canal = 'telegram' and (p_folio is null or g.folio = p_folio)
+        and not exists (select 1 from operacion.gasto_anulacion a where a.gasto_id = g.id)
+      union all
+      select t.folio, 'toma', e.hora from operacion.toma_omar t join operacion.evento e on e.id = t.evento_id where e.canal = 'telegram' and t.estado in ('pendiente', 'autorizada') and (p_folio is null or t.folio = p_folio)
+      order by hora desc limit 1) x), 'null'::jsonb);
+end $$;
+
+create function agente.deshacer(p_clave_idem text, p_folio text) returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare v_gasto bigint; v_aport bigint; v_toma bigint; v_estado text; v_res jsonb;
+begin
+  perform notificacion.exigir_sistema();
+  perform set_config('rtm.canal', 'telegram', true);
+  select id into v_gasto from operacion.gasto where folio = p_folio;
+  if v_gasto is not null then
+    select id into v_aport from operacion.aportacion_socio where ref_tipo = 'gasto' and ref_id = v_gasto and reversa_de is null;
+    v_res := operacion.anular_movimiento_socio(p_clave_idem, 'aportacion', v_aport, 'Deshecho desde Telegram');
+    return v_res || jsonb_build_object('folio', p_folio);
+  end if;
+  select id, estado into v_toma, v_estado from operacion.toma_omar where folio = p_folio;
+  if v_toma is not null then
+    v_res := operacion.resolver_toma_omar(p_clave_idem, v_toma, case v_estado when 'pendiente' then 'rechazar' else 'deshacer' end);
+    return v_res;
+  end if;
+  raise exception 'folio desconocido o que aun no se deshace por Telegram' using errcode = 'P0460';
 end $$;
 
 -- Autorizar o rechazar una toma de Omar (pendiente hasta que un socio decide) y caducar las que pasan de las horas dadas.

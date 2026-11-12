@@ -63,6 +63,28 @@ select is((agente.ejecutar('tg:a1', 'aportacion', '{"socio":"angelo","monto_cent
 select set_config('rtm.canal', '', true);
 select throws_ok($$ select operacion.registrar_gasto_socio('x', 'Javier', 100, 'uber') $$, '42501', null, 'fuera de agente.ejecutar la marca de canal no existe: nadie escribe por este camino');
 
+-- Deshacer y tomas de Omar
+select is((agente.localizar(null) ->> 'tipo'), 'gasto', 'el ultimo hecho del agente es el gasto');
+select is((agente.deshacer('tg:d1', (agente.localizar(null) ->> 'folio')) ->> 'deshecho')::boolean, true, 'deshacer un gasto con su contramovimiento');
+select is((select count(*)::int from operacion.gasto_anulacion where gasto_id = (select id from operacion.gasto order by id desc limit 1)), 1, 'el gasto queda anulado');
+select throws_ok($$ select agente.deshacer('tg:d2', 'G-9999999') $$, 'P0460', null, 'folio desconocido');
+select catalogo.asegurar_cliente('Ag Omar Persona', 'Javier');
+select catalogo.asegurar_persona_bodega('Ag Omar Persona', 'Ag Omar Persona');
+select catalogo.asegurar_modelo('Ag Marca', 'Ag Modelo 10K', 10000, 'ambas');
+select catalogo.asegurar_sku('Ag Modelo 10K', 'Sandia');
+select catalogo.fijar_costo('ag:k', 'Isaac', 'Ag Modelo 10K', 10000, negocio.hoy() - 30, 'prueba');
+select catalogo.fijar_precio('ag:p', 'Ag Omar Persona', 'Ag Modelo 10K', 15000, negocio.hoy() - 30, 'chat');
+select operacion.registrar_movimiento('ag:m', 'Ag Modelo 10K', 'Sandia', 'bodega_omar', 'entrada_compra', 30, 300000, negocio.hoy() - 1);
+create function pg_temp.ids() returns jsonb language sql as $$ select jsonb_build_object('modelo_id', (select id from catalogo.modelo where nombre_canonico = 'Ag Modelo 10K'), 'sabor_id', (select id from catalogo.sabor where nombre_canonico = 'Sandia'), 'piezas', 3) $$;
+select is((agente.ejecutar('tg:t1', 'toma_omar', pg_temp.ids()) ->> 'estado'), 'pendiente', 'la solicitud de Omar nace pendiente: no mueve kardex ni saldo');
+select is((select count(*)::int from operacion.reserva where origen_tipo = 'toma_omar' and estado = 'activa'), 1, 'con reserva activa');
+select is((agente.ejecutar('tg:t1', 'toma_omar', pg_temp.ids()) ->> 'repetido')::boolean, true, 'el mismo mensaje no duplica la toma');
+select is((agente.resolver_toma('tg:t1a', (select folio from operacion.toma_omar order by id desc limit 1), 'autorizar') ->> 'estado'), 'autorizada', 'un socio autoriza');
+select throws_ok($$ select agente.resolver_toma('tg:t1b', (select folio from operacion.toma_omar order by id desc limit 1), 'rechazar') $$, 'P0428', null, 'la segunda decision ya no aplica');
+select is(agente.resolver_toma('tg:t0', 'T-9999999', 'autorizar') ->> 'estado', 'no_encontrada', 'folio de toma inexistente');
+select is(jsonb_array_length(agente.catalogo_modelos()) >= 1, true, 'catalogo de modelos para resolver alias');
+select is((agente.consulta('inventario', (select id from catalogo.modelo where nombre_canonico = 'Ag Modelo 10K')) -> 'lineas' -> 0 ->> 'piezas')::int, 27, 'consulta de existencia: 30 menos 3 de la toma');
+
 -- Latido: ejecucion una vez por ventana
 select is(notificacion.sembrar_programacion('[{"tarea":"latido","expresionLocal":"cada 5 min","expresionUtc":"*/5 * * * *","descripcion":"d"}]'), 1, 'se siembra la programacion');
 select is(notificacion.reclamar_ejecucion('latido', '2026-11-16T12:00'), true, 'la primera corrida de la ventana la reclama');
