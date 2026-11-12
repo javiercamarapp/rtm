@@ -12,7 +12,7 @@ Se recorrio por la interfaz real, en Chromium 1440x900 y sobre una base vacia, e
 2. **`/api/salud` respondia 307.** No existe ninguna referencia a `/api/salud` en el repo, la documentacion ni los scripts: la ruta de la app es `/api/health` (publica, 200). El proxy mandaba toda ruta desconocida sin sesion a `/login`, y un monitor que consulte `/api/salud` lo leia como caida. Se agrego el alias publico `/api/salud`, las demas rutas `/api/*` sin sesion responden 401 JSON (en vez de redirigir), y el humo de despliegue (`scripts/despliegue/humo.mjs`) verifica el alias. Verificado por curl y por la prueba 0 del recorrido (health 200, salud 200, ruta inexistente 401).
 3. **El encabezado decia "Por cobrar: Sin dato" con una apertura firmada**, aunque Cuentas por cobrar mostraba 7,500.00. El chip se arma con la lectura de Cuentas por cobrar y solo miraba pedidos; ahora cuenta tambien la apertura (`src/dominio/operacion/pulso.ts`, con prueba vitest). Ademas, migracion aditiva `20261113000100_pulso_incluye_apertura.sql` para que `api.pulso()` (el inicio) sume la misma cifra, con pgTAP `a4_001` (4 afirmaciones, incluida la igualdad con `api.cuentas_por_cobrar`).
 4. **Cuentas por cobrar: "Antiguedad de saldos por cliente" decia "Sin saldos que mostrar"** con un saldo de apertura de 7,500.00. El cuadro solo agregaba pedidos; ahora incluye los saldos de apertura por su fecha de adeudo.
-5. **Las cajas de efectivo de la apertura no llegaban a Socios ni a la Cascada (hueco de dinero).** `operacion.saldo_efectivo` solo sumaba el libro de cajas; la categoria `caja` de la apertura se publica en la cuenta 1101 por persona. Con caja Angelo 5,000 + Javier 3,000, Contabilidad decia 9,000 y la Cascada 4,800. Corregido con la migracion aditiva `20261113000200_apertura_efectivo_en_cajas.sql` (nueva `operacion.apertura_efectivo`, `saldo_efectivo` suma la apertura firmada a la caja de cada persona) y una comprobacion nueva no bloqueante `CA1` (libro 1101 por la apertura contra cajas), con nombre fuera del patron `C<n>` para no alterar los reportes. pgTAP `a4_002` (10 afirmaciones: borrador no suma, firmada suma por persona, Cascada incluye, CA1 verde, reversa la quita). Despues del arreglo la Cascada dice 12,400.00 = 2,800.00 en poder de socios + 9,600.00 en cajas (8,000 apertura + 2,000 aportacion - 400 reembolso).
+5. **Las cajas de efectivo de la apertura no llegaban a Socios ni a la Cascada (hueco de dinero).** `operacion.saldo_efectivo` solo sumaba el libro de cajas; la categoria `caja` de la apertura se publica en la cuenta 1101 por persona. Con caja Angelo 5,000 + Javier 3,000, Contabilidad decia 9,000 y la Cascada 4,800. Corregido con la migracion aditiva `20261113000200_apertura_efectivo_en_cajas.sql` (nueva `operacion.apertura_efectivo`, `saldo_efectivo` suma la apertura firmada a la caja de cada persona) y una comprobacion nueva no bloqueante `CA1` (libro 1101 por la apertura contra cajas), con nombre fuera del patron `C<n>` para no alterar los reportes. pgTAP `a4_002` (10 afirmaciones: borrador no suma, firmada suma por persona, Cascada incluye, CA1 verde, reversa la quita). Despues de ese arreglo la Cascada decia 12,400.00; la ronda 2 (abajo) lo corrige a 11,400.00 por el pago de la sociedad a Isaac.
 6. **Cuentas por cobrar con apertura: indicadores incongruentes.** Antiguedad media 0.0 dias y "0 pedidos" sin plazo pese a 7,500.00. Ahora la antiguedad media pondera tambien la apertura (23.0 dias en la demo), los saldos iniciales cuentan en "Sin plazo acordado" (7,500.00 · 1) y las notas lo dicen. Vencido y Por vencer siguen en 0.00 a proposito: los saldos de apertura no traen plazo y no se inventa un vencimiento.
 7. **Pestanas cortadas a 1440 px** (Comprobaciones, 10. Firma): en pantalla ancha (900 px o mas) la tira de subpaginas se acomoda en dos renglones. Verificado en la captura 25 (Comprobaciones y Proyecciones visibles).
 8. **Recorrido endurecido.** La prueba 9 ahora exige: ninguna de las 26 comprobaciones en rojo (sin `.catch`), efectivo de las cajas = 9,600.00 y el mismo numero en la Cascada, Cascada "Cuadra", y el estado real de Socios (aviso + `cuadra = false`). Tambien se descubrio y se corrigio una carrera: la prueba firmaba antes de que la resolucion del puente quedara guardada, y C20 salia en rojo (3990 con -111,755.00); ahora espera a que quede guardada.
@@ -21,7 +21,7 @@ Se recorrio por la interfaz real, en Chromium 1440x900 y sobre una base vacia, e
 
 | Comando | Resultado |
 |---|---|
-| `npx next build` y `npx next start -p 3190`, luego `npx playwright test --config playwright.cuadre.config.ts` (base reiniciada) | 10 de 10 pasaron (2.8 min), con las aserciones nuevas |
+| (ronda 1, superada por la ronda 2) `npx playwright test --config playwright.cuadre.config.ts` | 10 de 10 |
 | `npx vitest run` | 112 archivos, 1,716 pruebas pasaron, 2 esperadas como fallo |
 | `npx tsc --noEmit` | sin errores |
 | `npm run lint` | sin hallazgos |
@@ -52,3 +52,33 @@ Nota: `supabase test db` solo es valido sobre una base recien reiniciada; corrid
 ## Consumo
 
 Builds de Vercel: 0. Despliegues: 0. Push: ninguno. Paquetes npm agregados: ninguno (`node_modules` clonado de `~/rtm-rediseno`).
+
+## Ronda 2: reparacion de los hallazgos del verificador
+
+Commits: `0ecf2a1`, `819d559`, `8a37f99`, `ba937a2`, `056766d`, test del recorrido y guia, capturas. 0 builds de Vercel, 0 despliegues, sin push.
+
+1. **Efectivo de la Cascada contra Contabilidad (dinero, bloqueante).** Causa: `registrar_pago_proveedor_sociedad` baja 1101 en el libro pero no escribe en ninguna caja, asi que `operacion.saldo_efectivo()` seguia contando ese efectivo. Migracion aditiva `20261113000300`: `operacion.pagos_sociedad_proveedor()` (neto de pagos deshechos) y `saldo_efectivo()` total lo descuenta; las cajas por persona NO cambian (de que caja sale el pago sigue siendo decision del dueno, no se invento). Nueva comprobacion `CA2` (libro 1101 contra efectivo de la Cascada, no bloqueante, fuera del patron C<n>) que se pone en rojo si vuelven a diferir. Resultado real en la demo: libro 1101 = 8,600.00, Caja y liquidez 8,600.00, Cascada efectivo 11,400.00 = 2,800.00 + 8,600.00, Disponible para repartir 4,900.00 (antes 5,900.00, sobrestimado por 1,000.00). pgTAP `a4_003` (12 afirmaciones: pago, reversa, CA2, cajas intactas). Sigue pendiente del dueno: de que caja sale el pago.
+2. **Socios "No cuadra" en la demostracion.** No se cambio la regla (decision del dueno sobre como leer "puso cada socio" con credito de proveedor). Se demostro con pgTAP `a4_004` (7 afirmaciones) que cuadra cuando los socios ponen todo el costo y que la diferencia entre las dos vias es EXACTAMENTE lo financiado por la sociedad. El aviso de la pantalla lo dice asi y la guia da el camino (Proveedores > pago de un socio). En la demo sigue "No cuadra" (pago de 1,000.00 de la sociedad y deuda a credito): es el estado esperado, fijado en el recorrido. El objetivo literal "Socios cuadra" no se cumple en esa demo; con datos reales cuadra solo si los socios pusieron el costo, y eso depende de los datos y de la regla pendiente.
+3. **Guia.** Corregidos: C20 queda en rojo con la cuenta puente mantenida (ya no promete todo en verde), etiquetas reales de los botones, punto de Cascada/CA2, camino de Socios. El titulo de Comprobaciones ya no dice "Todo cuadra" con una no bloqueante en rojo.
+4. **Persona de bodega y catalogo.** No hay pantalla; la ruta existe y esta documentada en la guia (importador `importar:nube`, idempotente, lee `persona_bodega` de `~/.rtm-datos/decisiones-importacion.json`, que esta definida). NO se pudo verificar la base de produccion (no se toca la nube): antes del primer pedido real, correr el importador o confirmar la fila en `catalogo.persona_bodega`.
+5. **Defecto visual CxC.** La nota "Sin plazo acordado" decia "pedido o saldo" y se truncaba; ahora "1 partida". Verificado en la captura 30 a 1440 px.
+6. **/api/salud.** Sin cambios: alias publico aceptado. `humo.mjs` fallara contra produccion hasta que se despliegue esta rama (decision de producto ya descrita).
+
+### Comandos corridos en la ronda 2 (carga entre 26 y 33 al lanzar los pesados)
+
+| Comando | Resultado real |
+|---|---|
+| `supabase db reset` y `supabase test db` | 49 archivos, 2,232 pruebas; solo falla la 13 de `024_omar_cuenta_sin_folio` (preexistente, fecha 2026-11-11 contra `negocio.hoy()`); a4_003 y a4_004 en verde |
+| `npx tsc --noEmit` | sin errores |
+| `npx eslint src scripts test` | sin hallazgos |
+| `npm run guardas` / `npm run secretos` | 0 violaciones / 0 hallazgos |
+| `npx vitest run` | 112 archivos, 1,717 pruebas, 2 esperadas como fallo |
+| `supabase db reset`, `npx next build`, `next start -p 3190`, `npx playwright test --config playwright.cuadre.config.ts` | 10 de 10 pasaron (1.9 min) con 27 comprobaciones todas en verde, efectivo 8,600.00 igual en libro, Caja y Cascada, titulo "Todo cuadra" |
+
+Capturas regeneradas en `docs/capturas/cuadre/` y revisadas a ojo (25 Comprobaciones 27 de 27, 29 Caja, 30 CxC, 31 Socios con el aviso nuevo, 32 Cascada).
+
+### Pendientes reales
+
+- Decision del dueno: de que caja sale el pago de la sociedad a un proveedor; como leer "puso cada socio" con credito de proveedor.
+- Confirmar persona de bodega y catalogo en produccion antes del primer pedido.
+- Movil y tema oscuro sin recorrido en este carril.
