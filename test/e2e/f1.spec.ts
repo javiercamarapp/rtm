@@ -90,6 +90,8 @@ test('inventario: sin movimientos muestra "Sin dato", nunca un cero', async ({ p
   const correo = correoUnico('f1-inv');
   await altaUsuario({ correo, socio: 'Javier' });
   await entrarComo(page, correo, '/inventario');
+  // Los modelos sin movimientos viven en su pestana del rediseno.
+  await page.goto('/inventario?vista=sin-movimientos');
   const fila = page.getByRole('row', { name: /E2E Prueba Modelo 50K/ });
   await expect(fila).toContainText('Sin dato');
   await expect(fila).not.toContainText('0 pz');
