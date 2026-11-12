@@ -3,6 +3,9 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { altaUsuario, conDb, contarUsuariosAuth, correoUnico, enlaceDe, esperarMensajes, estado, ipFalsa, mensajesPara } from './ayudas';
 
+// Puerto del servidor de las pruebas (E2E_PUERTO permite correr en un puerto propio si el 3100 esta ocupado por otra sesion).
+const BASE = `http://127.0.0.1:${process.env.E2E_PUERTO ?? '3100'}`;
+
 const TARJETA_ENVIADO = 'Te mandamos un enlace a tu correo.';
 
 test.beforeEach(async ({ context }) => {
@@ -39,7 +42,7 @@ test.describe('acceso por enlace magico', () => {
     const correo = correoUnico('uso');
     await altaUsuario({ correo, socio: 'Angelo' });
     await entrar(page, correo);
-    await expect(page).toHaveURL('http://127.0.0.1:3100/');
+    await expect(page).toHaveURL(`${BASE}/`);
     await expect(page.getByRole('navigation', { name: 'Secciones' })).toBeVisible();
     await expect(page.getByText('Sesión de Angelo')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Tu turno' })).toBeVisible();
@@ -114,14 +117,14 @@ test.describe('acceso por enlace magico', () => {
     expect(await esperarMensajes(correo, 2)).toHaveLength(2);
     // Y el enlace nuevo si funciona.
     await page.goto(await enlaceDe(correo, 0));
-    await expect(page).toHaveURL('http://127.0.0.1:3100/');
+    await expect(page).toHaveURL(`${BASE}/`);
   });
 
   test('6. doble uso: el segundo uso del mismo enlace falla con su motivo y no abre sesion', async ({ page, browser }: { page: Page; browser: Browser }) => {
     const correo = correoUnico('doble');
     await altaUsuario({ correo });
     await entrar(page, correo);
-    await expect(page).toHaveURL('http://127.0.0.1:3100/');
+    await expect(page).toHaveURL(`${BASE}/`);
     const enlace = await enlaceDe(correo);
 
     const otro = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
@@ -155,7 +158,7 @@ test.describe('acceso por enlace magico', () => {
     await expect(page.getByText(TARJETA_ENVIADO)).toBeVisible();
     await esperarMensajes(correo, 1);
     await page.goto(await enlaceDe(correo));
-    await expect(page).toHaveURL('http://127.0.0.1:3100/pedidos');
+    await expect(page).toHaveURL(`${BASE}/pedidos`);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('pedidos');
   });
 });
@@ -185,7 +188,7 @@ test.describe('refuerzos de la especificacion', () => {
     const socio = correoUnico('socio');
     await altaUsuario({ correo: socio });
     await entrar(page, socio, 'https://externo.example.test/robo');
-    await expect(page).toHaveURL('http://127.0.0.1:3100/');
+    await expect(page).toHaveURL(`${BASE}/`);
   });
 
   test('11. con movimiento reducido el arte pinta un solo cuadro (sin ciclo de animacion)', async ({ browser }) => {

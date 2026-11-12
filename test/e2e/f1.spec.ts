@@ -58,7 +58,7 @@ test('clientes: lista sin dueno y ficha con tabulador, historial, grafica y "Exp
   const correo = correoUnico('f1-clientes');
   await altaUsuario({ correo, socio: 'Angelo' });
   await entrarComo(page, correo, '/clientes');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('clientes');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(/\d+ clientes?/);
   await expect(page.getByRole('link', { name: /De (Angelo|Javier)/ })).toHaveCount(0);
   await expect(page.getByText(/Dueño/)).toHaveCount(0);
   await page.getByRole('link', { name: 'E2E Prueba Cliente' }).click();

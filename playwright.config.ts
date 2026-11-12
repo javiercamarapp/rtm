@@ -17,6 +17,8 @@ const MOVIL_F3BI = /movil-f3b-inventario\.spec\.ts/;
 const F3C = /[\\/]f3c-apertura\.spec\.ts$/;
 const MOVIL_F3C = /movil-f3c-apertura\.spec\.ts/;
 
+const PUERTO = process.env.E2E_PUERTO ?? '3100';
+
 export default defineConfig({
   testDir: 'test/e2e',
   testMatch: /.*\.spec\.ts/,
@@ -26,7 +28,7 @@ export default defineConfig({
   retries: 0,
   timeout: 90_000,
   reporter: [['list']],
-  use: { baseURL: 'http://127.0.0.1:3100', trace: 'off' },
+  use: { baseURL: `http://127.0.0.1:${PUERTO}`, trace: 'off' },
   projects: [
     { name: 'laptop-1440', testMatch: [ACCESO, F1, CONFIRMAR, F2, F3A, F3B, F3BI, F3C], use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'iphone-16-pro', testMatch: [CONFIRMAR, MOVIL, MOVIL_F2, MOVIL_F3A, MOVIL_F3B, MOVIL_F3BI, MOVIL_F3C], use: { ...devices['iPhone 15 Pro'], viewport: { width: 402, height: 874 }, screen: { width: 402, height: 874 }, deviceScaleFactor: 3 } },
@@ -34,8 +36,8 @@ export default defineConfig({
     { name: 'fold-abierto', testMatch: [CONFIRMAR, MOVIL, MOVIL_F2, MOVIL_F3A, MOVIL_F3B, MOVIL_F3BI, MOVIL_F3C], use: { ...devices['Pixel 7'], viewport: { width: 880, height: 860 }, screen: { width: 880, height: 860 } } },
   ],
   webServer: {
-    command: 'sh -c "npx next build && npx next start -p 3100"',
-    url: 'http://127.0.0.1:3100/api/health',
+    command: `sh -c "npx next build && npx next start -p ${PUERTO}"`,
+    url: `http://127.0.0.1:${PUERTO}/api/health`,
     reuseExistingServer: true,
     timeout: 300_000,
   },
