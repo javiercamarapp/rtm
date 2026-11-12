@@ -1,9 +1,10 @@
 // Grafica de una serie semanal de contabilidad. Columnas por periodo si todo es positivo; con valores negativos una lista de barras con signo escrito
 // (las columnas no pintan negativos y un cero falso seria deshonesto). Menos de 2 semanas con movimientos: estado vacio honesto.
+import { ColumnasPesos } from './graficas-pesos';
 import type { SemanaSerie } from '@/dominio/contabilidad/serie';
 import { BarList } from '@/ui/componentes/datos';
-import { ColumnasPeriodo } from '@/ui/graficas';
-import { abs, ejePesos, fechaCorta, m, pct } from './util';
+
+import { abs, fechaCorta, m, pct } from './util';
 
 interface Props {
   titulo: string;
@@ -25,7 +26,7 @@ export function GraficaSemanas({ titulo, descripcion, semanas: todas, valor, pie
   const hayNegativos = semanas.some((s) => valor(s) < 0n);
   if (!hayNegativos) {
     return (
-      <ColumnasPeriodo titulo={titulo} descripcion={descripcion} unidad="Pesos" procedencia="observado" pie={pie} alto={alto} formatoEje={ejePesos}
+      <ColumnasPesos titulo={titulo} descripcion={descripcion} procedencia="observado" pie={pie} alto={alto}
         datos={semanas.map((s) => ({ id: s.ini, etiqueta: fechaCorta(s.ini), valor: Number(valor(s)), texto: m(valor(s)), parcial: s.parcial, detalle: `Semana del ${fechaCorta(s.ini)} al ${fechaCorta(s.fin)}` }))} />
     );
   }

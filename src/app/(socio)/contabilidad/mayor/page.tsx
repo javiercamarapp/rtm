@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AreaPesos } from '../../_a3/graficas-pesos';
 import Link from 'next/link';
 import { contabilidadDeSocio } from '@/composicion/contabilidad';
 import { fechaNeg } from '@/dominio/calendario';
@@ -10,8 +11,8 @@ import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
-import { AreaSerie } from '@/ui/graficas';
-import { Dos, Estado, Pie, abs, fechaCorta, m, pct, suma, ejePesos } from '../../_a3/util';
+
+import { Dos, Estado, Pie, abs, fechaCorta, m, pct, suma } from '../../_a3/util';
 import { SubnavContabilidad } from '../subnav';
 
 export const metadata: Metadata = { title: 'Mayor' };
@@ -132,7 +133,7 @@ export default async function PaginaMayor({ searchParams }: { searchParams: Prom
           />
         </Tarjeta>
         <Tarjeta titulo="Saldo en el tiempo" descripcion="Magnitud del saldo tras cada movimiento">
-          {puntos.length >= 2 ? <AreaSerie titulo={`Saldo de la cuenta ${r.cuenta.codigo}`} descripcion={`Saldo de ${r.cuenta.nombre} tras cada uno de ${puntos.length} movimientos.`} unidad="Pesos" formatoEje={ejePesos} procedencia="observado" pie="Fuente: libro de asientos" puntos={puntos} /> : <p className="a3-grafica-vacia"><strong>Pocos movimientos</strong>Con dos o más movimientos se dibuja el saldo.</p>}
+          {puntos.length >= 2 ? <AreaPesos titulo={`Saldo de la cuenta ${r.cuenta.codigo}`} descripcion={`Saldo de ${r.cuenta.nombre} tras cada uno de ${puntos.length} movimientos.`} procedencia="observado" pie="Fuente: libro de asientos" puntos={puntos} /> : <p className="a3-grafica-vacia"><strong>Pocos movimientos</strong>Con dos o más movimientos se dibuja el saldo.</p>}
         </Tarjeta>
       </Rejilla>
       <FilaRatios etiqueta="Cuenta" items={[{ etiqueta: 'Tipo', valor: String(r.cuenta.tipo) }, { etiqueta: 'Naturaleza', valor: r.cuenta.naturaleza === 'D' ? 'Deudora' : 'Acreedora' }]} />

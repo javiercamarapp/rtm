@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AreaPesos } from '../../_a3/graficas-pesos';
 import { notFound } from 'next/navigation';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { etiquetaFecha } from '@/dominio/formato';
@@ -8,9 +9,9 @@ import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
-import { AreaSerie } from '@/ui/graficas';
+
 import { BotonAccion } from '../../operacion/formulario-accion';
-import { Dos, Estado, Pie, abs, m, pct, suma, ejePesos } from '../../_a3/util';
+import { Dos, Estado, Pie, abs, m, pct, suma } from '../../_a3/util';
 
 export const metadata: Metadata = { title: 'Estado de cuenta del socio' };
 
@@ -65,7 +66,7 @@ export default async function PaginaEstadoSocio({ params }: { params: Promise<{ 
       <Rejilla dividir="8-4">
         <Tarjeta titulo="Posición después de cada movimiento" descripcion="Magnitud de la posición neta; el signo va en el dato">
           {puntos.length >= 2 ? (
-            <AreaSerie titulo={`Posición neta de ${socio}`} descripcion={`Posición neta de ${socio} tras cada uno de ${puntos.length} movimientos.`} unidad="Pesos" formatoEje={ejePesos} procedencia="observado" pie="Fuente: libro de la cuenta de socios" puntos={puntos} />
+            <AreaPesos titulo={`Posición neta de ${socio}`} descripcion={`Posición neta de ${socio} tras cada uno de ${puntos.length} movimientos.`} procedencia="observado" pie="Fuente: libro de la cuenta de socios" puntos={puntos} />
           ) : <p className="a3-grafica-vacia"><strong>Pocos movimientos</strong>Con dos o más movimientos se dibuja la posición neta.</p>}
         </Tarjeta>
         <Tarjeta titulo="De dónde viene la posición" descripcion="Cada concepto, en su magnitud">

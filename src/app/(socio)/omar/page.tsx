@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ColumnasPesos } from '../_a3/graficas-pesos';
 import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { sumarDias } from '@/dominio/calendario';
@@ -10,8 +11,8 @@ import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
-import { Cascada, ColumnasPeriodo } from '@/ui/graficas';
-import { Dos, Estado, Pie, fechaCorta, m, pct, suma, ejePesos } from '../_a3/util';
+import { Cascada } from '@/ui/graficas';
+import { Dos, Estado, Pie, fechaCorta, m, pct, suma } from '../_a3/util';
 import { CerrarSemana, ExportarCsv, FormularioToma, PagoOmar, ResolverToma } from './acciones-omar';
 
 export const metadata: Metadata = { title: 'Cuenta con Omar' };
@@ -108,14 +109,14 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
           </Tarjeta>
           <Tarjeta titulo="Renta devengada por semana" descripcion="La semana abierta va con trama">
             {colRenta.length >= 2 ? (
-              <ColumnasPeriodo titulo="Renta por semana" descripcion={`Renta devengada de ${colRenta.length} semanas.`} unidad="Pesos" formatoEje={ejePesos} procedencia="observado" pie="Fuente: liquidaciones cerradas y semana en curso" datos={colRenta} alto={140} />
+              <ColumnasPesos titulo="Renta por semana" descripcion={`Renta devengada de ${colRenta.length} semanas.`} procedencia="observado" pie="Fuente: liquidaciones cerradas y semana en curso" datos={colRenta} alto={140} />
             ) : <p className="a3-grafica-vacia"><strong>Pocas semanas</strong>Con dos o más semanas se dibuja la renta por semana.</p>}
           </Tarjeta>
         </div>
       </Rejilla>
       {colTomas.length >= 2 && (
         <Tarjeta titulo="Tomas por semana" descripcion="Lo que Omar tomó a su precio">
-          <ColumnasPeriodo titulo="Tomas por semana" descripcion={`Tomas a su precio de ${colTomas.length} semanas.`} unidad="Pesos" formatoEje={ejePesos} procedencia="observado" pie="Fuente: tomas autorizadas" datos={colTomas} alto={140} />
+          <ColumnasPesos titulo="Tomas por semana" descripcion={`Tomas a su precio de ${colTomas.length} semanas.`} procedencia="observado" pie="Fuente: tomas autorizadas" datos={colTomas} alto={140} />
         </Tarjeta>
       )}
 

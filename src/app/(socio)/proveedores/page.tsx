@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AreaPesos } from '../_a3/graficas-pesos';
 import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
@@ -10,10 +11,10 @@ import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
-import { AreaSerie, Cascada } from '@/ui/graficas';
+import { Cascada } from '@/ui/graficas';
 import { CONCEPTO_CUENTA, ESTADO_COMPRA, ORIGEN } from '../operacion/etiquetas';
 import { FormularioAccion } from '../operacion/formulario-accion';
-import { Dos, Estado, Pie, m, pct, suma, ejePesos } from '../_a3/util';
+import { Dos, Estado, Pie, m, pct, suma } from '../_a3/util';
 import { PagoSocioProveedor } from './pago-socio';
 
 export const metadata: Metadata = { title: 'Proveedores' };
@@ -136,7 +137,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       <Rejilla dividir="6-6">
         <Tarjeta titulo="Saldo corrido de la cuenta" descripcion="Magnitud del saldo tras cada movimiento; el signo va en el dato">
           {puntosSaldo.length >= 2 ? (
-            <AreaSerie titulo="Saldo corrido con el proveedor" descripcion={`Saldo de la cuenta con ${proveedor} tras cada uno de ${puntosSaldo.length} movimientos.`} unidad="Pesos" formatoEje={ejePesos} procedencia="observado" pie={`Fuente: movimientos de la cuenta con ${proveedor}`} puntos={puntosSaldo} />
+            <AreaPesos titulo="Saldo corrido con el proveedor" descripcion={`Saldo de la cuenta con ${proveedor} tras cada uno de ${puntosSaldo.length} movimientos.`} procedencia="observado" pie={`Fuente: movimientos de la cuenta con ${proveedor}`} puntos={puntosSaldo} />
           ) : (
             <p className="a3-grafica-vacia"><strong>Pocos movimientos</strong>Con dos o más movimientos de la cuenta se dibuja el saldo corrido.</p>
           )}
