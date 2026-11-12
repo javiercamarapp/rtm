@@ -1,0 +1,54 @@
+/* Vista de Omar: blanco y negro, solo tokens. Laptop, Samsung plegable (344 cerrado / 880 abierto) y movil.
+   Las columnas se reparten con grid auto-fit: sin bases flex y sin huecos muertos; el cambio de plegado a desplegado es solo un redimensionado. */
+
+.omar-app { min-height: 100dvh; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
+.omar-barra {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: var(--rtm-e-3); flex-wrap: wrap;
+  padding: var(--rtm-e-2) max(var(--rtm-e-4), env(safe-area-inset-left)) var(--rtm-e-2) max(var(--rtm-e-4), env(safe-area-inset-right));
+  background: var(--rtm-chrome); border-bottom: 1px solid var(--rtm-line);
+}
+.omar-barra-marca { display: inline-flex; align-items: center; height: 32px; text-decoration: none; color: var(--rtm-ink); }
+.omar-nav { display: flex; gap: 2px; margin: 0; padding: 0; list-style: none; min-width: 0; overflow-x: auto; }
+.omar-nav a {
+  display: inline-flex; align-items: center; height: 32px; padding: 0 var(--rtm-e-3); border-radius: var(--rtm-r-pildora);
+  color: var(--rtm-ink-2); text-decoration: none; font-weight: 500; white-space: nowrap;
+}
+.omar-nav a[aria-current='page'] { background: var(--rtm-fill-active); color: var(--rtm-ink); font-weight: 600; }
+.omar-barra-acciones { margin-left: auto; display: flex; align-items: center; gap: var(--rtm-e-2); }
+.omar-contenido {
+  width: 100%; max-width: 1120px; margin: 0 auto; flex: 1 1 auto; min-width: 0;
+  padding: var(--rtm-e-6) max(var(--rtm-e-4), env(safe-area-inset-left)) var(--rtm-e-8) max(var(--rtm-e-4), env(safe-area-inset-right));
+  display: flex; flex-direction: column; gap: var(--rtm-e-6);
+}
+.omar-pie { padding: var(--rtm-e-3) var(--rtm-e-4); text-align: center; font-size: 12px; color: var(--rtm-ink-3); }
+
+/* Rejilla de bloques: 1 columna en el plegado cerrado, 2 desde ~640 px de contenido. */
+.omar-rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--rtm-e-6); align-items: start; }
+.omar-rejilla > * { min-width: 0; }
+.omar-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: var(--rtm-e-3); }
+.omar-cifra { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-3) var(--rtm-e-4); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.omar-cifra-valor { font-family: var(--rtm-fuente-serif); font-size: 32px; line-height: 36px; font-variant-numeric: tabular-nums; margin: 0; overflow-wrap: anywhere; }
+.omar-cifra-etiqueta { font-size: 12px; color: var(--rtm-ink-3); margin: 0; }
+
+.omar-estimado { border: 1px solid var(--rtm-ink); border-radius: var(--rtm-r-3); padding: var(--rtm-e-4); display: flex; flex-direction: column; gap: var(--rtm-e-2); background: var(--rtm-surface); }
+.omar-sello { align-self: flex-start; border: 1px solid var(--rtm-ink); border-radius: var(--rtm-r-pildora); padding: 0 var(--rtm-e-3); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.omar-form { display: flex; flex-direction: column; gap: var(--rtm-e-3); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-4); }
+.omar-form .rtm-etiqueta-campo { width: 100%; }
+.omar-form select, .omar-form input { width: 100%; }
+.omar-ok { margin: 0; font-size: 13px; color: var(--rtm-ok); }
+
+.omar-paquete { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-3) var(--rtm-e-4); display: flex; flex-direction: column; gap: var(--rtm-e-2); }
+.omar-paquete-cab { display: flex; justify-content: space-between; align-items: baseline; gap: var(--rtm-e-3); flex-wrap: wrap; }
+.omar-paquete ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.omar-paquete li { display: flex; justify-content: space-between; gap: var(--rtm-e-3); font-variant-numeric: tabular-nums; }
+.omar-lista { display: flex; flex-direction: column; gap: var(--rtm-e-3); margin: 0; padding: 0; list-style: none; }
+
+@media (max-width: 480px) {
+  .omar-cifra-valor { font-size: 26px; line-height: 30px; }
+  .omar-barra-acciones { margin-left: 0; }
+}
+@media (pointer: coarse) {
+  .omar-nav a { min-height: 44px; }
+}

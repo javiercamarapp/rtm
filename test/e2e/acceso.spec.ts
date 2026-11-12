@@ -39,7 +39,7 @@ test.describe('acceso por enlace magico', () => {
     const correo = correoUnico('uso');
     await altaUsuario({ correo, socio: 'Angelo' });
     await entrar(page, correo);
-    await expect(page).toHaveURL('http://127.0.0.1:3100/');
+    await expect(page).toHaveURL((process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100') + '/');
     await expect(page.getByRole('navigation', { name: 'Secciones' })).toBeVisible();
     await expect(page.getByText('Sesión de Angelo')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Tu turno' })).toBeVisible();
@@ -114,14 +114,14 @@ test.describe('acceso por enlace magico', () => {
     expect(await esperarMensajes(correo, 2)).toHaveLength(2);
     // Y el enlace nuevo si funciona.
     await page.goto(await enlaceDe(correo, 0));
-    await expect(page).toHaveURL('http://127.0.0.1:3100/');
+    await expect(page).toHaveURL((process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100') + '/');
   });
 
   test('6. doble uso: el segundo uso del mismo enlace falla con su motivo y no abre sesion', async ({ page, browser }: { page: Page; browser: Browser }) => {
     const correo = correoUnico('doble');
     await altaUsuario({ correo });
     await entrar(page, correo);
-    await expect(page).toHaveURL('http://127.0.0.1:3100/');
+    await expect(page).toHaveURL((process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100') + '/');
     const enlace = await enlaceDe(correo);
 
     const otro = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
@@ -155,7 +155,7 @@ test.describe('acceso por enlace magico', () => {
     await expect(page.getByText(TARJETA_ENVIADO)).toBeVisible();
     await esperarMensajes(correo, 1);
     await page.goto(await enlaceDe(correo));
-    await expect(page).toHaveURL('http://127.0.0.1:3100/pedidos');
+    await expect(page).toHaveURL((process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100') + '/pedidos');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('pedidos');
   });
 });
@@ -185,7 +185,7 @@ test.describe('refuerzos de la especificacion', () => {
     const socio = correoUnico('socio');
     await altaUsuario({ correo: socio });
     await entrar(page, socio, 'https://externo.example.test/robo');
-    await expect(page).toHaveURL('http://127.0.0.1:3100/');
+    await expect(page).toHaveURL((process.env.APP_URL_E2E ?? 'http://127.0.0.1:3100') + '/');
   });
 
   test('11. con movimiento reducido el arte pinta un solo cuadro (sin ciclo de animacion)', async ({ browser }) => {

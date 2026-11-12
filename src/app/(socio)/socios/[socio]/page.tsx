@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { exigirSocio } from '@/composicion/acceso';
 import { operacionDeSocio } from '@/composicion/operacion';
+import { desglosarSocio } from '@/dominio/operacion/desglose_socio';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
@@ -9,13 +11,19 @@ import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { EncabezadoPagina } from '@/ui/componentes/pagina';
 import { etiquetaHoy } from '../../contexto';
 import { BotonAccion } from '../../operacion/formulario-accion';
+import { DesgloseSocio } from '../desglose';
 
 export const metadata: Metadata = { title: 'Estado de cuenta del socio' };
 
 export default async function Pagina({ params }: { params: Promise<{ socio: string }> }) {
   const { socio } = await params;
   if (socio !== 'Angelo' && socio !== 'Javier') notFound();
-  const e = await (await operacionDeSocio()).socioCuenta(socio);
+  const otro = socio === 'Angelo' ? 'Javier' : 'Angelo';
+  const { perfil } = await exigirSocio();
+  const lector = await operacionDeSocio();
+  const [e, eOtro] = await Promise.all([lector.socioCuenta(socio), lector.socioCuenta(otro)]);
+  const d = desglosarSocio(e);
+  const suma = e.neto_cent + eOtro.neto_cent;
   const palabra = e.neto_cent > 0n ? 'La sociedad le debe' : e.neto_cent < 0n ? 'Debe a la sociedad' : 'En paz';
 
   return (
@@ -33,16 +41,16 @@ export default async function Pagina({ params }: { params: Promise<{ socio: stri
         <p><EstadoTexto tono={e.neto_cent === 0n ? 'ok' : 'atencion'}>{palabra}</EstadoTexto></p>
         {e.dias_fondos !== null && <p className="rtm-nota">El dinero de la sociedad en su poder lleva {e.dias_fondos} días.</p>}
       </section>
-      <div className="rtm-kpis rtm-entra rtm-i-2">
-        <div className="rtm-kpi"><span>Aportaciones de capital</span><strong>{formatearMoneda(e.aportaciones_capital_cent)}</strong></div>
-        <div className="rtm-kpi"><span>Gastos pagados</span><strong>{formatearMoneda(e.gastos_pagados_cent)}</strong></div>
-        <div className="rtm-kpi"><span>Reembolsos recibidos</span><strong>{formatearMoneda(e.reembolsos_recibidos_cent)}</strong></div>
-        <div className="rtm-kpi"><span>Capital devuelto</span><strong>{formatearMoneda(e.devoluciones_recibidas_cent)}</strong></div>
-        <div className="rtm-kpi"><span>Retiros y liquidaciones</span><strong>{formatearMoneda(e.retiros_cent)}</strong></div>
-        <div className="rtm-kpi"><span>Utilidad asignada</span><strong>{formatearMoneda(e.utilidad_asignada_cent)}</strong></div>
-        <div className="rtm-kpi"><span>Fondos en su poder</span><strong><CifraComprobada texto={formatearMoneda(e.fondos_cent)} cifra={`socio:fondos:${socio}`} comprobacion="cuadra" /></strong></div>
-        <div className="rtm-kpi"><span>Faltantes asignados</span><strong><CifraComprobada texto={formatearMoneda(e.faltantes_cent)} cifra={`socio:diferencia:${socio}`} comprobacion="cuadra" /></strong></div>
-      </div>
+      <nav className="rtm-barra-filtros" aria-label="Ver la cuenta de">
+        {(['Angelo', 'Javier'] as const).map((n) => (
+          <Link key={n} className="rtm-chip-filtro" href={`/socios/${n}`} aria-current={n === socio} data-testid={`ver-${n}`}>{n === perfil.socio_nombre ? `Mi cuenta (${n})` : `Cuenta de ${n}`}</Link>
+        ))}
+      </nav>
+      <div className="rtm-entra rtm-i-2"><DesgloseSocio d={d} /></div>
+      <p className="rtm-nota" data-testid="suma-cuentas">
+        Suma de las posiciones de {socio} y {otro}: {formatearMoneda(suma, { conSigno: true })}. Es lo que la sociedad les debe a los dos y debe igualar sus activos netos.
+        El gasto pagado por un socio se descuenta una sola vez de la utilidad; el reembolso solo liquida la deuda de la sociedad con él.
+      </p>
       <section className="rtm-seccion rtm-entra rtm-i-3" aria-label="Movimientos del socio">
         <h2>Movimientos</h2>
         <DataTable

@@ -40,7 +40,7 @@ export function lectorOperacionSupabase(): LectorOperacion {
     liquidacionesProveedor: (p) => leer('liquidaciones_proveedor', { p_proveedor: p }),
     cuentaSocios: () => leer('socios_cuenta'),
     socioCuenta: (s) => leer('socio_cuenta', { p_socio: s }),
-    cascadaProyeccion: (i, f, c) => leer('cascada_proyeccion', { p_ini: i, p_fin: f, p_caja_cent: Number(c) }),
+    cascadaProyeccion: (i, f) => leer('cascada_proyeccion', { p_ini: i, p_fin: f }),
     cierresReparto: () => leer('cierres_reparto'),
     omarCuenta: (s) => leer('omar_cuenta', { p_semana_ini: s }),
     textoCobro: (id) => leer('texto_cobro', { p_cliente: id }),

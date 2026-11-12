@@ -1,8 +1,11 @@
 import Link from 'next/link';
 import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { Pulso as DatosPulso } from '@/dominio/notificaciones/tipos';
+import type { ChipPulso } from '@/dominio/operacion/pulso';
+import { CifraComprobada } from '../componentes/cifra';
+import { SinDato } from '../componentes/estado-texto';
 
-/** Pulso de 4 indicadores con datos reales. Sin ningun hecho que lo respalde se muestra "Sin dato", nunca un cero inventado. */
+/** Pulso de 4 indicadores con datos reales (tablero de inicio). Sin ningun hecho que lo respalde se muestra "Sin dato", nunca un cero inventado. */
 export function chipsPulso(p: DatosPulso | null): { id: string; etiqueta: string; texto: string | null; href: string; ayuda: string }[] {
   return [
     { id: 'isaac', etiqueta: 'Por pagar a Isaac', texto: p?.por_pagar_isaac_cent == null ? null : formatearMoneda(p.por_pagar_isaac_cent), href: '/proveedores', ayuda: 'Lo que la sociedad debe a Isaac según su cuenta' },
@@ -12,14 +15,32 @@ export function chipsPulso(p: DatosPulso | null): { id: string; etiqueta: string
   ];
 }
 
-export function Pulso({ datos }: { datos: DatosPulso | null }) {
+/** Un indicador del pulso de la barra: cifra real con "Explicar este numero" cuando la base la sabe explicar; si no, enlace al detalle. Sin datos: "Sin dato", nunca un cero inventado. */
+export function ChipDelPulso({ chip }: { chip: ChipPulso }) {
+  return (
+    <span className="rtm-chip" data-testid={`pulso-${chip.clave}`}>
+      {chip.etiqueta}
+      <b>
+        {chip.texto === null ? (
+          chip.href ? <Link className="rtm-chip-enlace" href={chip.href}><SinDato /></Link> : <SinDato />
+        ) : chip.cifra ? (
+          <CifraComprobada texto={chip.texto} cifra={chip.cifra} comprobacion="cuadra" />
+        ) : chip.href ? (
+          <Link className="rtm-chip-enlace" href={chip.href} aria-label={`${chip.texto}. Ver el detalle`}>{chip.texto}</Link>
+        ) : (
+          chip.texto
+        )}
+      </b>
+      {chip.detalle && chip.texto !== null && <span className="rtm-chip-detalle">{chip.detalle}</span>}
+    </span>
+  );
+}
+
+export function Pulso({ chips }: { chips: ChipPulso[] }) {
   return (
     <>
-      {chipsPulso(datos).map((c) => (
-        <Link key={c.id} href={c.href} className="rtm-chip" title={c.ayuda} data-testid={`pulso-${c.id}`}>
-          {c.etiqueta}
-          <b>{c.texto ?? 'Sin dato'}</b>
-        </Link>
+      {chips.map((c) => (
+        <ChipDelPulso key={c.clave} chip={c} />
       ))}
     </>
   );

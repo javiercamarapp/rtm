@@ -28,7 +28,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Cliente
             <select name="cliente" className="rtm-campo" defaultValue={elegido?.id ?? ''} data-testid="elegir-cliente">
               <option value="" disabled>Elige un cliente</option>
-              {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre} ({c.duenio})</option>)}
+              {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </label>
           <button type="submit" className="rtm-boton">Elegir cliente</button>

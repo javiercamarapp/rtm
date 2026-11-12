@@ -1,0 +1,64 @@
+import { describe, expect, it } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { armarPulso, type EntradasPulso } from '@/dominio/operacion/pulso';
+import type { Existencia } from '@/dominio/catalogo/tipos';
+import type { CuentaProveedor, CuentaSocios, CuentasPorCobrar } from '@/dominio/operacion/tipos';
+import { ExplicarProvider } from '@/ui/componentes/explicar';
+import { Pulso } from '@/ui/shell/pulso';
+
+const vacio: EntradasPulso = { isaac: null, cxc: null, socios: null, existencia: null };
+const mov = { evento: 'e', canal: 'web', hora: '2026-11-10T10:00:00Z', mensaje_origen: null, autor: null, id: 1, fecha_neg: '2026-11-10', concepto: 'x', monto_cent: 1n, saldo_corrido_cent: 1n, compra: null, pago: null, cliente: null, cuenta_origen: null, nota: null };
+const isaac = (saldo: bigint, movimientos: unknown[] = [mov]) => ({ id: 7, proveedor: 'Isaac', modalidad: 'semanal_viernes', saldo_cent: saldo, etiqueta: 'Se debe', puente_cent: 0n, movimientos }) as unknown as CuentaProveedor;
+const cxc = (total: bigint, filas = 1) => ({ hoy: '2026-11-11', filas: new Array(filas).fill({}), total_cent: total, saldos_a_favor: [], pagos_sin_identificar: [] }) as unknown as CuentasPorCobrar;
+const socios = (d: bigint, hayMovs = true) => ({ hoy: '2026-11-11', costo_cent: hayMovs ? 100n : 0n, javier_debe_a_angelo_cent: d, movimientos: hayMovs ? [{}] : [] }) as unknown as CuentaSocios;
+const bodega = (piezas: (number | null)[]): Existencia => ({ modelos: piezas.map((p, i) => ({ modeloId: i, marca: 'm', modelo: `m${i}`, estado: 'disponible', piezas: p, valorCent: null, costoPromCent: null, ultimoMovimiento: null })), sabores: [] });
+
+describe('armarPulso', () => {
+  it('sin ninguna lectura todo es "Sin dato" y el corte tambien', () => {
+    const p = armarPulso(vacio);
+    expect(p.chips.map((c) => c.texto)).toEqual([null, null, null, null]);
+    expect(p.chips.map((c) => c.etiqueta)).toEqual(['Por pagar a Isaac', 'Por cobrar', 'Entre socios', 'En bodega']);
+    expect(p.corte).toBeNull();
+  });
+  it('cuentas vacias (sin movimientos) siguen siendo Sin dato, no un cero inventado', () => {
+    const p = armarPulso({ isaac: isaac(0n, []), cxc: cxc(0n, 0), socios: socios(0n, false), existencia: bodega([null, null]) });
+    expect(p.chips.every((c) => c.texto === null)).toBe(true);
+  });
+  it('Isaac: saldo negativo se muestra como lo que se debe, con su cifra explicable', () => {
+    const c = armarPulso({ ...vacio, isaac: isaac(-123450n) }).chips[0]!;
+    expect(c.texto).toBe('$1,234.50');
+    expect(c.detalle).toBe('se debe');
+    expect(c.cifra).toBe('proveedor:saldo:7');
+  });
+  it('Isaac: saldo a favor y saldo cero reales', () => {
+    expect(armarPulso({ ...vacio, isaac: isaac(5000n) }).chips[0]!.detalle).toBe('a favor');
+    const cero = armarPulso({ ...vacio, isaac: isaac(0n) }).chips[0]!;
+    expect(cero.texto).toBe('$0.00');
+    expect(cero.detalle).toBe('saldo cero');
+  });
+  it('por cobrar, entre socios y bodega con cifra real', () => {
+    const p = armarPulso({ isaac: null, cxc: cxc(980000n), socios: socios(-250000n), existencia: bodega([10, null, 5]) });
+    expect(p.chips[1]!.texto).toBe('$9,800.00');
+    expect(p.chips[1]!.cifra).toBe('cxc:total');
+    expect(p.chips[2]!.cifra).toBe('socios:diferencia');
+    expect(p.chips[2]!.texto).toContain('2,500.00');
+    expect(p.chips[3]!.texto).toBe('15 pz');
+    expect(p.chips[3]!.cifra).toBeNull();
+    expect(p.chips[3]!.href).toBe('/inventario');
+    expect(p.corte).toBe('11 nov 2026');
+  });
+});
+
+describe('Pulso (componente)', () => {
+  const explicar = () => Promise.reject(new Error('no se usa'));
+  it('escribe "Sin dato" con enlace al detalle cuando no hay datos', () => {
+    const html = renderToStaticMarkup(<ExplicarProvider explicar={explicar}><Pulso chips={armarPulso(vacio).chips} /></ExplicarProvider>);
+    expect(html.match(/Sin dato/g)).toHaveLength(4);
+    expect(html).toContain('href="/cuentas-por-cobrar"');
+  });
+  it('con datos muestra la cifra como boton "Explicar este número"', () => {
+    const html = renderToStaticMarkup(<ExplicarProvider explicar={explicar}><Pulso chips={armarPulso({ ...vacio, cxc: cxc(980000n) }).chips} /></ExplicarProvider>);
+    expect(html).toContain('$9,800.00. Explicar este número');
+    expect(html).toContain('data-testid="pulso-cobrar"');
+  });
+});

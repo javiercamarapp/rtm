@@ -10,10 +10,10 @@ import { EncabezadoPagina } from '@/ui/componentes/pagina';
 import { GraficaBarras } from '@/ui/graficas/barras';
 import { GraficaLinea } from '@/ui/graficas/linea';
 import { etiquetaHoy } from '../../contexto';
+import { etiquetaOrigen } from './origen';
 
 export const metadata: Metadata = { title: 'Ficha de cliente' };
 
-const ORIGEN: Record<string, string> = { documento: 'Documento de Angelo', chat: 'Indicación de un socio', lista_javier: 'Lista de Javier' };
 
 export default async function Pagina({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,13 +35,12 @@ export default async function Pagina({ params }: { params: Promise<{ id: string 
       <p className="rtm-migaja"><Link href="/clientes">Clientes</Link> / {f.nombre}</p>
       <EncabezadoPagina
         eyebrow={`Ficha de cliente · ${etiquetaHoy()}`}
-        antes="Cliente de"
-        enfasis={f.duenio}
-        despues={`: ${f.nombre}`}
+        antes="Cliente"
+        enfasis={f.nombre}
         contexto={`${f.tabulador.length} modelos con precio vigente. Un precio de una nota no cambia el tabulador: solo cambia cuando un socio lo indica.`}
+        acciones={<><Link className="rtm-boton rtm-boton-primario" href={`/clientes/${f.id}/precios`} data-testid="editar-precios">Editar precios</Link><Link className="rtm-boton" href={`/clientes/${f.id}/editar`}>Editar cliente</Link></>}
       />
       <div className="rtm-etiquetas" aria-label="Datos del cliente">
-        <span className="rtm-etiqueta">Dueño: {f.duenio}</span>
         {f.esBodega && <span className="rtm-etiqueta">Presta la bodega (Omar Yacaman, desactivado hasta M2)</span>}
         {f.alias.map((a) => <span key={a.alias} className="rtm-etiqueta">También: {a.alias}{a.porConfirmar ? ' (por confirmar)' : ''}{a.ambiguo ? ' (ambiguo)' : ''}</span>)}
         {f.destinos.map((d) => <span key={d.etiqueta} className="rtm-etiqueta">Destino: {d.etiqueta}</span>)}
@@ -61,7 +60,7 @@ export default async function Pagina({ params }: { params: Promise<{ id: string 
             { id: 'mi', titulo: 'Margen vs Isaac', numerica: true, celda: (t) => { const m = t.margenes.find((x) => x.proveedor === 'Isaac'); return m ? <CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${f.id}:${t.modeloId}`} comprobacion="cuadra" /> : <SinDato />; } },
             { id: 'mk', titulo: 'Margen vs Karen', numerica: true, celda: (t) => { const m = t.margenes.find((x) => x.proveedor === 'Karen'); return m ? <><CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${f.id}:${t.modeloId}`} comprobacion="cuadra" /> {m.supuesto && <EstadoTexto tono="atencion">supuesto</EstadoTexto>}</> : <SinDato />; } },
             { id: 'd', titulo: 'Desde', secundaria: true, celda: (t) => etiquetaFecha(t.desde) },
-            { id: 'o', titulo: 'Origen', secundaria: true, celda: (t) => <>{ORIGEN[t.origen] ?? t.origen}{t.nota && <><br /><span className="rtm-nota">{t.nota}</span></>}</> },
+            { id: 'o', titulo: 'Origen', secundaria: true, celda: (t) => <>{etiquetaOrigen(t.origen)}{t.nota && <><br /><span className="rtm-nota">{t.nota}</span></>}</> },
           ]}
         />
       </section>

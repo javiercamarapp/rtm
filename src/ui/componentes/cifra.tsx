@@ -15,7 +15,7 @@ export function CifraComprobada({ texto, cifra, comprobacion = 'sin_comprobar' }
   const { abrir } = useExplicar();
   if (texto === null) return <span className="rtm-sin-dato">Sin dato</span>;
   return (
-    <button type="button" className="rtm-cifra rtm-num" aria-label={`${texto}. Explicar este número`} data-comprobacion={comprobacion} onClick={(e) => abrir(cifra, e.currentTarget)}>
+    <button type="button" className="rtm-cifra rtm-num" aria-label={`${texto}. Explicar este número`} data-comprobacion={comprobacion} data-cifra={cifra} onClick={(e) => abrir(cifra, e.currentTarget)}>
       {texto}
     </button>
   );

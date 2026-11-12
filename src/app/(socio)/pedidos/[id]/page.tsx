@@ -41,7 +41,6 @@ export default async function Pagina({ params, searchParams }: { params: Promise
         eyebrow={`Pedido ${p.folio} · ${etiquetaHoy()}`}
         antes={enviado ? 'Enviado a' : 'Pedido de'}
         enfasis={p.cliente.nombre}
-        despues={`· ${p.cliente.duenio}`}
         contexto={`${ORIGEN[p.origen]} · creado el ${etiquetaFecha(p.fecha_neg)}${p.fecha_envio ? ` · enviado el ${etiquetaFecha(p.fecha_envio)}` : ''}. Nada se descuenta ni devenga renta antes de marcarlo enviado.`}
       />
       <div className="rtm-etiquetas" aria-label="Estado del pedido">

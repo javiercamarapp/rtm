@@ -19,7 +19,7 @@ create function pg_temp.limpiar() returns void language sql as
 create function pg_temp.listo(p_entrega bigint) returns void language sql as $$ update notificacion.entrega set siguiente_intento_at = now() where id = $1 $$;
 
 -- Catalogo ------------------------------------------------------------------------------------------------------------------------------------
-select is((select count(*)::int from notificacion.tipo), 123, 'el catalogo trae los 122 tipos de la matriz mas el cierre de reparto');
+select is((select count(*)::int from notificacion.tipo), 125, 'el catalogo trae los 122 tipos de la matriz, el cierre de reparto y los dos avisos de produccion (retiro de capital y toma pedida por Omar)');
 select is((select count(*)::int from notificacion.tipo where canal = 'OM'), 7, 'siete tipos del chat de Omar (spec 26, seccion 12)');
 select is((select activo from notificacion.tipo where codigo = 'omar_sin_existencia'), false, 'omar_sin_existencia nace apagado');
 select is((select count(*)::int from notificacion.tipo where codigo like '%despach%'), 0, 'no existe tipo que avise a Omar de despachar (adenda 27, D2)');
