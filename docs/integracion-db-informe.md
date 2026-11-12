@@ -17,9 +17,11 @@ Cuatro migraciones nuevas (0025 a 0028), todas con RLS forzada, sin privilegios 
 | Prueba | Resultado |
 |---|---|
 | pgTAP nuevos (023 costos, 024 proveedores, 025 agente, 026 reportes) | 24 + 31 + 64 + 33 = 152 afirmaciones, con cifras escritas a mano (Supabase US$75, 10 de 60 horas, 17 %, TC 18.50 = 235.875 exacto y 236.00 redondeado) |
-| vitest | ver cierre del informe |
+| vitest | 76 archivos, 1299 pruebas en verde |
 | Integracion contra la base (transaccion revertida) | 14: paridad del techo SQL y TypeScript en 600 casos, paridad del presupuesto de IA en 100 secuencias, webhook con secreto, idempotencia por `update_id`, indicacion de Javier con canal telegram y reserva de IA liquidada, toma de Omar pendiente y autorizada una sola vez, latido con proveedores, semanal con Chromium real y despacho por Telegram simulado |
-| Playwright | ver cierre del informe |
+| Playwright | 113 en verde (laptop 1440, iPhone 16 Pro, plegable cerrado y abierto), incluidos los dos specs nuevos de esta integracion. Los specs de costos suponen una base recien reiniciada. Los enlaces nuevos del menu (Reportes y Costos) no precargan rutas (`prefetch={false}`) para no saturar el Auth local durante la corrida. Caso conocido: anular un cargo despues de un reembolso parcial deja un pendiente negativo y la pantalla dice "Se reembolso de mas". |
+| verificar | `npm run verificar` en verde (13 pasos) tras un `supabase db reset` limpio |
+| Capturas | `docs/capturas/integracion-db/` (160 PNG, Chromium y WebKit, claro y oscuro, 1440x900, 402x874, 344 y 880 plegable) con `manifest.md` |
 
 ## Desviaciones (la spec 14, las adendas 18 a 29 y los documentos 25 y 26 mandan sobre lo anterior)
 

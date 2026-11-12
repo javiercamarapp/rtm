@@ -133,7 +133,9 @@ test('capturas de la integracion con base de datos', async ({ browser, browserNa
   await iniciarSesion(generador);
   const pg = await generador.newPage();
   for (const inicio of ['2026-11-02', '2026-11-09']) {
-    await pg.goto(`${BASE}/reportes`);
+    await pg.waitForLoadState('networkidle').catch(() => {});
+    await pg.goto(`${BASE}/reportes`, { waitUntil: 'domcontentloaded' });
+    await pg.waitForLoadState('networkidle').catch(() => {});
     await pg.getByTestId('reporte-inicio').fill(inicio);
     await pg.getByTestId('reporte-preparar').click();
     await pg.getByTestId('reporte-mensaje').waitFor({ timeout: 240_000 });

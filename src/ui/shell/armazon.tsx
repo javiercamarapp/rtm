@@ -27,8 +27,8 @@ const SECCIONES = [
   { href: '/contabilidad', etiqueta: 'Contabilidad', icono: <IconoContabilidad /> },
   { href: '/movimientos', etiqueta: 'Movimientos', icono: <IconoMovimientos /> },
   { href: '/apertura', etiqueta: 'Apertura', icono: <IconoApertura /> },
-  { href: '/reportes', etiqueta: 'Reportes', icono: <IconoReportes /> },
-  { href: '/costos', etiqueta: 'Costos del sistema', icono: <IconoCostos /> },
+  { href: '/reportes', etiqueta: 'Reportes', icono: <IconoReportes />, prefetch: false },
+  { href: '/costos', etiqueta: 'Costos del sistema', icono: <IconoCostos />, prefetch: false },
   { href: '/avisos', etiqueta: 'Avisos', icono: <IconoAviso /> },
 ] as const;
 
@@ -70,7 +70,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso = null, noLe
           <ul className="rtm-nav">
             {SECCIONES.map((s, i) => (
               <li key={s.href}>
-                <Link href={s.href} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined}>
+                <Link href={s.href} prefetch={'prefetch' in s ? s.prefetch : undefined} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined}>
                   {s.icono}
                   <span>{s.etiqueta}</span>
                 </Link>
