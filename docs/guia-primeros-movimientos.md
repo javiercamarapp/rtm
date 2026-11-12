@@ -19,7 +19,7 @@ Las cifras de las capturas de esta guía (`docs/capturas/cuadre/`) son de demost
 |---|---|---|
 | Que existan en el catálogo todos los modelos y sabores que hay en bodega, con su costo de Isaac y de Karen | Catálogo y precios | Isaac y Karen: lista vigente de modelos, sabores y costos |
 | Que existan todos los clientes con saldo pendiente y su precio por modelo | Clientes | Javier y Angelo: lista de clientes que hoy deben algo |
-| Que exista la persona de bodega (Omar) configurada. Sin ella la aplicación no deja marcar un pedido como enviado y responde "no hay persona de bodega configurada (Omar Yacaman)" | Cargada con la importación inicial (`catalogo.asegurar_persona_bodega`); la lleva Javier, no se hace desde pantallas | Javier |
+| Que exista la persona de bodega (Omar) configurada. Sin ella la aplicación no deja marcar un pedido como enviado y responde "no hay persona de bodega configurada (Omar Yacaman)" | No se hace desde pantallas. La da de alta el importador (`npm run importar:nube -- /ruta/privada/importacion.sql` y luego `supabase db query --linked -f` sobre ese archivo, ver `docs/DESPLIEGUE.md`, sección Datos iniciales), que lee `persona_bodega` de `~/.rtm-datos/decisiones-importacion.json` (ya definida en esa Mac) y es idempotente. Si no se sabe si producción ya la tiene, correrlo es seguro: no duplica. Con ella verificada, el primer pedido real puede marcarse enviado | Javier |
 | Que los dos socios tengan acceso (correo en la lista de permitidos) | Inicio de sesión | Javier |
 
 Si un modelo, sabor o cliente no existe, la apertura no lo deja cargar: primero se da de alta en el catálogo (el paso 2 de la apertura muestra cuántos hay).
@@ -54,7 +54,7 @@ Abre **Apertura** y pulsa "Abrir la apertura" (una sola sesión vigente a la vez
 6. **Por cobrar:** una partida por cliente con su monto y la fecha del adeudo. Los pagos futuros del cliente se aplican primero a esta deuda, la más antigua.
 7. **Proveedores:** "Lo que se debe" a Isaac o a Karen, o "Saldo a favor" si hay un anticipo. Cada proveedor por separado.
 8. **Utilidades y deuda:** utilidad no repartida, retiros previos y faltantes por cobrar a un socio.
-9. **Validación:** revisa la identidad (activo, pasivo y capital), la vista previa y el ensayo. Ninguno de los dos escribe nada. La diferencia contra la identidad queda en la cuenta puente 3990. Elige "Mantener en la cuenta puente" mientras investigan la diferencia, o "Repartir al capital 50/50" cuando la diferencia ya esté explicada (si supera 0.5 % del activo se exige una justificación escrita).
+9. **Validación:** revisa la identidad (activo, pasivo y capital), la vista previa y el ensayo. Ninguno de los dos escribe nada. La diferencia contra la identidad queda en la cuenta puente 3990. Elige "Mantenerla en la cuenta puente 3990" mientras investigan la diferencia (C20 queda en rojo hasta resolverla), o "Repartirla al capital 50/50 (el centavo impar a Angelo)" cuando la diferencia ya esté explicada (si supera 0.5 % del activo se exige una justificación escrita).
 10. **Firma:** firma el primer socio; el segundo firma desde su propia sesión y la segunda firma publica la apertura.
 
 Qué debe verse al terminar:
@@ -63,7 +63,7 @@ Qué debe verse al terminar:
 - En el encabezado: "Por pagar a Isaac" y "Por cobrar" con las cifras cargadas, y "En bodega" con las piezas contadas.
 - En **Cuentas por cobrar**: el total por cobrar, la antigüedad de cada saldo y la tarjeta "Saldos de apertura por cobrar".
 - En **Proveedores**: la cuenta con Isaac o Karen con su saldo inicial.
-- En **Contabilidad > Comprobaciones**: "Todo cuadra" (todas las comprobaciones en verde y ninguna bloqueante fallando).
+- En **Contabilidad > Comprobaciones**: "Todo cuadra" solo si NO elegiste "Mantenerla en la cuenta puente 3990" con una diferencia distinta de cero. En ese caso la comprobación C20 (cuadre inicial, no bloqueante) queda en rojo a propósito mientras la diferencia exista, y el título dice "N de 27 comprobaciones no cuadran (ninguna bloquea reportes)". Se pone en verde al repartir la diferencia al capital.
 
 Si algo está mal después de firmar: Apertura > paso 10 > "Revertir la apertura", con el motivo. Falla si ya salió mercancía de esos modelos; en ese caso se corrige con un movimiento normal.
 
@@ -112,9 +112,9 @@ Revisa, en este orden:
 3. **Cuentas por cobrar**: el total coincide con el chip "Por cobrar" del encabezado.
 4. **Proveedores**: el saldo con Isaac y Karen coincide con su estado de cuenta.
 5. **Cuenta de socios y Cascada de reparto**. Son dos identidades distintas y no tienen por qué coincidir:
-   - **Cascada, "Identidad por dos vías"**: debe decir "Cuadra". El efectivo que muestra ("calculado de las cajas") incluye el efectivo de la apertura por persona; debe ser igual a lo que dice Contabilidad > Caja y liquidez en efectivo, salvo los pagos de la sociedad a proveedores (ver abajo).
-   - **Cuenta de socios, "Diferencia por la compra"**: compara lo que pusieron los socios con la mitad del costo de la compra inicial. Si una compra se financia a crédito con Isaac y la pagan la sociedad o un socio con cobros de clientes, esta cuenta dice "No cuadra" y muestra el aviso "Parte del costo no la pusieron los socios". Es esperable en ese caso y NO es un registro faltante: la regla de cómo leer "puso cada socio" cuando hay crédito con proveedor es una decisión pendiente del dueño. No se corrige tecleando nada; solo cuadra cuando los socios ponen entre los dos el costo de la compra.
-   - **Pago de la sociedad a un proveedor**: hoy el libro contable lo descuenta del efectivo (cuenta 1101), pero las cajas de efectivo de Socios no se mueven. Si lo registras, "Efectivo" de la Cascada queda por encima de Caja y liquidez por ese monto. Pendiente de decisión del dueño (de qué caja sale).
+   - **Cascada, "Identidad por dos vías"**: debe decir "Cuadra". El efectivo que muestra ("calculado de las cajas") incluye el efectivo de la apertura por persona; debe ser igual a lo que dice Contabilidad > Caja y liquidez en efectivo. La comprobación CA2 lo vigila (libro 1101 contra Cascada) y se pone en rojo si algún día difieren.
+   - **Cuenta de socios, "Diferencia por la compra"**: compara lo que pusieron los socios con la mitad del costo de la compra. Cuadra cuando los socios ponen entre los dos TODO el costo (pagos de un socio al proveedor o aportaciones; está probado en pgTAP `a4_004`). Lo que pagó la sociedad con su efectivo, o que sigue a crédito con el proveedor, aparece en el aviso "Parte del costo no la pusieron los socios" y la diferencia entre las dos vías es exactamente esa cifra. Camino concreto: para dejarla en cero, cada socio registra en **Proveedores > Registrar pago de un socio** lo que él pagó; lo que salió de la caja de la sociedad no se puede "reclasificar" y mantiene el aviso. Cómo leer "puso cada socio" cuando hay crédito con proveedor o pago de la sociedad es una decisión pendiente del dueño; no se cambió la cuenta.
+   - **Pago de la sociedad a un proveedor**: descuenta el efectivo total de la Cascada y de Caja y liquidez por igual (CA2 en verde). Todavía no mueve ninguna caja por persona: de qué caja sale el pago es decisión pendiente del dueño.
 6. **Reportes**: "Preparar reporte". El reporte sale como definitivo solo cuando el periodo está aprobado y las comprobaciones pasan; en caso contrario sale "Preliminar" o "Parcial" y lo dice.
 
 ## Errores frecuentes
