@@ -54,16 +54,16 @@ test('catalogo: filtra, muestra costos con "supuesto" y precios por cliente; el 
   expect(dialogosNativos).toEqual([]);
 });
 
-test('clientes: lista con dueno y ficha con tabulador, historial, grafica y "Explicar este numero"', async ({ page }) => {
+test('clientes: lista sin dueno y ficha con tabulador, historial, grafica y "Explicar este numero"', async ({ page }) => {
   const correo = correoUnico('f1-clientes');
   await altaUsuario({ correo, socio: 'Angelo' });
   await entrarComo(page, correo, '/clientes');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('clientes');
-  await page.getByRole('link', { name: 'De Javier' }).click();
-  await expect(page.getByRole('row', { name: /E2E Prueba Cliente/ })).toContainText('Javier');
+  await expect(page.getByRole('link', { name: /De (Angelo|Javier)/ })).toHaveCount(0);
+  await expect(page.getByText(/Dueño/)).toHaveCount(0);
   await page.getByRole('link', { name: 'E2E Prueba Cliente' }).click();
 
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Javier');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('E2E Prueba Cliente');
   const tab = page.getByRole('table', { name: /Tabulador de E2E Prueba Cliente/ });
   await expect(tab).toContainText('$260.00');
   // Margen = precio - costo: 260 - 200 = 60 (Isaac) y 260 - 150 = 110 (Karen, supuesto).
