@@ -123,7 +123,7 @@ export function calcularRatios(h: HistorialSocio): Ratios {
     cobertura_caja_x100: pendiente > 0n ? divRedondeada(c.efectivo_disponible_cent * 100n, pendiente) : null,
     participacion_capital_bp: bp(c.invertido_cent, c.invertido_ambos_cent),
     participacion_utilidad_bp: 5000n,
-    cuenta_neta_cent: c.neto_cent,
+    cuenta_neta_cent: c.cuenta_cent,
   };
 }
 

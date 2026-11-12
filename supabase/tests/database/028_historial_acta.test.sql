@@ -121,6 +121,16 @@ select is((select j->'por_cliente'->0->>'cliente' from _h), 'H28 Cliente', 'por 
 select is((select j->'por_modelo'->0->>'utilidad_cent' from _h), '1000000', 'por modelo: venta menos costo 10,000.00');
 select is((select jsonb_array_length(j->'flujos') from _h), 0, 'sin aportaciones declaradas ni retiros no hay flujos');
 
+-- Valuacion personal: una sola cifra por socio y la suma de los dos es SIEMPRE el capital contable (sin centavo perdido), con o sin utilidad sin acta.
+select is((select sum(operacion.valor_socio(n, 5000001, 0))::bigint from (values ('Angelo'), ('Javier')) v(n)), 5000001::bigint, 'valor personal: la suma de los dos socios es el capital contable (impar)');
+select is((select sum(operacion.valor_socio(n, -7, 0))::bigint from (values ('Angelo'), ('Javier')) v(n)), -7::bigint, 'valor personal: tambien con capital contable negativo');
+select is(operacion.valor_socio('Angelo', operacion.capital_socio(pg_temp.sid('Angelo')) + operacion.capital_socio(pg_temp.sid('Javier')), 0), operacion.capital_socio(pg_temp.sid('Angelo')),
+  'valor personal: sin utilidad sin acta es su cuenta de capital, no la mitad plana');
+select isnt(operacion.valor_socio('Angelo', 1000000, 0), operacion.valor_socio('Javier', 1000000, 0), 'valor personal: no es plano 50/50 cuando las cuentas de capital difieren');
+select is((select (j->'cabecera'->>'cuenta_cent')::bigint from _h), operacion.reembolso_pendiente(pg_temp.sid('Angelo')) - operacion.saldo_socio(pg_temp.sid('Angelo')), 'cabecera: deuda o credito = reembolsos por cobrar menos fondos en su poder');
+select is((select (j->'cabecera'->>'neto_cent')::bigint from _h), (select (j->'cabecera'->>'capital_cuenta_cent')::bigint + (j->'cabecera'->>'cuenta_cent')::bigint from _h), 'cabecera: posicion neta = cuenta de capital + deuda o credito');
+select is((select (j->'cabecera'->'comprobaciones'->>'cuenta')::boolean from _h), true, 'cabecera: la comprobacion de la cuenta sale de las dos vias reales');
+
 -- Misma cifra, dos vias: explicar.
 select is((api.explicar_historial('historial:parte:' || (select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1) || ':Angelo')->'comprobacion'->>'cuadra')::boolean, true, 'explicar parte: cuadra');
 select is((api.explicar_historial('historial:invertido:Angelo')->'comprobacion'->>'cuadra')::boolean, true, 'explicar invertido: cuadra');

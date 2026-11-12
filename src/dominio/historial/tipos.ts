@@ -19,7 +19,15 @@ export interface Cabecera {
   aportaciones_cent: Cent; reinversion_cent: Cent; invertido_cent: Cent; invertido_ambos_cent: Cent;
   retirado_utilidad_cent: Cent; retirado_capital_cent: Cent; retirado_cent: Cent; utilidad_asignada_cent: Cent; utilidad_por_distribuir_cent: Cent;
   capital_contable_cent: Cent | null; valor_cent: Cent | null; valor_bajo_cent: Cent | null; valor_alto_cent: Cent | null; por_cobrar_clientes_cent: Cent | null;
-  neto_cent: Cent; reembolso_pendiente_cent: Cent; fondos_cent: Cent; efectivo_total_cent: Cent; efectivo_disponible_cent: Cent;
+  /** Su cuenta de capital (aportaciones + utilidad recibida - retiros): la base del valor de su participacion. */
+  capital_cuenta_cent: Cent;
+  /** Posicion neta total (cuenta de capital + deuda o credito); la cifra con la que se ve la cuenta es `cuenta_cent`. */
+  neto_cent: Cent;
+  /** Deuda o credito con la sociedad: reembolsos por cobrar menos fondos en su poder (+ la sociedad le debe). */
+  cuenta_cent: Cent;
+  reembolso_pendiente_cent: Cent; fondos_cent: Cent; efectivo_total_cent: Cent; efectivo_disponible_cent: Cent;
+  /** Resultado de la comprobacion por dos vias de cada cifra; null = sin dato. */
+  comprobaciones: Record<'invertido' | 'retirado' | 'utilidad' | 'valor' | 'cuenta', boolean | null>;
   primera_fecha: string | null; meses_activo: number;
 }
 export interface PorCliente { cliente_id: number; cliente: string; pedidos: number; piezas: number; utilidad_cent: Cent; parte_cent: Cent }
@@ -35,7 +43,7 @@ export interface SelloActa {
   contenido: {
     periodo_ini: string; periodo_fin: string; utilidad_cent: Cent; decisiones: Record<string, { retira: Cent; reinvierte: Cent }>;
     valuacion_cent: Cent | null; deudas_cent: Cent | null; capital_contable_cent: Cent | null; valor_participacion_cent: Record<string, Cent> | null;
-    por_socio: Record<string, { invertido_cent: Cent; retirado_cent: Cent; por_distribuir_cent: Cent; fondos_en_poder_cent: Cent; compensaciones_cent: Cent; neto_cent: Cent }>;
+    por_socio: Record<string, { invertido_cent: Cent; retirado_cent: Cent; por_distribuir_cent: Cent; fondos_en_poder_cent: Cent; compensaciones_cent: Cent; cuenta_cent: Cent; neto_cent: Cent }>;
   };
   huella: string; sellado_at: string;
 }

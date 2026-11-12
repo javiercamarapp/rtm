@@ -37,8 +37,8 @@ const sello = (): SelloActa => ({
     periodo_ini: '2026-10-01', periodo_fin: '2026-10-31', utilidad_cent: 1_200_000n, decisiones: {}, valuacion_cent: 3_000_000n, deudas_cent: 500_000n, capital_contable_cent: 2_500_000n,
     valor_participacion_cent: { Angelo: 1_250_000n, Javier: 1_250_000n },
     por_socio: {
-      Angelo: { invertido_cent: 200_000n, retirado_cent: 0n, por_distribuir_cent: 400_000n, fondos_en_poder_cent: 0n, compensaciones_cent: 0n, neto_cent: 400_000n },
-      Javier: { invertido_cent: 600_000n, retirado_cent: 0n, por_distribuir_cent: 0n, fondos_en_poder_cent: 0n, compensaciones_cent: 0n, neto_cent: 0n },
+      Angelo: { invertido_cent: 200_000n, retirado_cent: 0n, por_distribuir_cent: 400_000n, fondos_en_poder_cent: 0n, compensaciones_cent: 0n, cuenta_cent: 0n, neto_cent: 400_000n },
+      Javier: { invertido_cent: 600_000n, retirado_cent: 0n, por_distribuir_cent: 0n, fondos_en_poder_cent: 0n, compensaciones_cent: 0n, cuenta_cent: 0n, neto_cent: 0n },
     },
   },
 });
@@ -61,7 +61,7 @@ describe('PDF del estado de cuenta personal', () => {
     cabecera: {
       aportaciones_cent: 0n, reinversion_cent: 200_000n, invertido_cent: 200_000n, invertido_ambos_cent: 800_000n, retirado_utilidad_cent: 0n, retirado_capital_cent: 0n, retirado_cent: 0n,
       utilidad_asignada_cent: 600_000n, utilidad_por_distribuir_cent: 400_000n, capital_contable_cent: null, valor_cent: null, valor_bajo_cent: null, valor_alto_cent: null, por_cobrar_clientes_cent: null,
-      neto_cent: 400_000n, reembolso_pendiente_cent: 0n, fondos_cent: 0n, efectivo_total_cent: 0n, efectivo_disponible_cent: 0n, primera_fecha: '2026-10-01', meses_activo: 2,
+      capital_cuenta_cent: 400_000n, neto_cent: 400_000n, cuenta_cent: 0n, comprobaciones: { invertido: true, retirado: true, utilidad: true, valor: null, cuenta: true }, reembolso_pendiente_cent: 0n, fondos_cent: 0n, efectivo_total_cent: 0n, efectivo_disponible_cent: 0n, primera_fecha: '2026-10-01', meses_activo: 2,
     },
     flujos: [], actas: [], totales: null, dias: [], semanas: [], meses: [], por_cliente: [], por_modelo: [],
   });

@@ -18,6 +18,27 @@ begin
   return case when p_total < 0 then -(v_r ->> p_socio)::bigint else (v_r ->> p_socio)::bigint end;
 end $$;
 
+-- Valuacion personal (decision): el valor de la participacion de un socio es SU cuenta de capital (aportaciones y reinversiones, mas la utilidad que ya recibio en actas, menos lo que retiro)
+-- mas su 50 % de la utilidad que aun no pasa por un acta (regla F: la utilidad se reparte 50/50, el capital aportado no). La suma de los dos socios es EXACTAMENTE el capital contable.
+-- No incluye reembolsos por cobrar ni fondos en su poder: esas son deudas o creditos con la sociedad y van aparte (cuenta_socio).
+create function operacion.capital_socio(p_socio bigint) returns bigint
+language sql stable security definer set search_path = ''
+as $$ select (operacion.aportado_socio(p_socio, 'capital') + operacion.libro_socio(p_socio) - operacion.libro_socio(p_socio, 'pago_reembolso'))::bigint $$;
+
+create function operacion.valor_socio(p_socio text, p_capital_contable bigint, p_rotor int default 0) returns bigint
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_sin_acta bigint;
+begin
+  v_sin_acta := p_capital_contable - (select coalesce(sum(operacion.capital_socio(s.id)), 0) from catalogo.socio s where s.nombre in ('Angelo', 'Javier'));
+  return operacion.capital_socio((select id from catalogo.socio where nombre = p_socio)) + operacion.mitad_socio(v_sin_acta, p_socio, p_rotor);
+end $$;
+
+-- Deuda o credito con la sociedad (+ la sociedad le debe): reembolsos de gastos por cobrar menos fondos que tiene en su poder.
+create function operacion.cuenta_socio(p_socio bigint) returns bigint
+language sql stable security definer set search_path = ''
+as $$ select (operacion.reembolso_pendiente(p_socio) - operacion.saldo_socio(p_socio))::bigint $$;
+
 -- Piezas y ventas del periodo con las mismas reglas de utilidad_periodo (pedidos enviados y tomas de Omar autorizadas con precio).
 create function operacion.volumen_periodo(p_ini date, p_fin date) returns jsonb
 language plpgsql stable security definer set search_path = ''
@@ -104,7 +125,7 @@ begin
   if v_val is not null and (v_val ->> 'con_movimientos')::boolean then
     v_dif := (v_val ->> 'v03_diferencia_cent')::bigint;
     for s in select nombre from catalogo.socio where nombre in ('Angelo', 'Javier') order by nombre loop
-      v_valor := v_valor || jsonb_build_object(s.nombre, operacion.mitad_socio(v_dif, s.nombre, c.id::int));
+      v_valor := v_valor || jsonb_build_object(s.nombre, operacion.valor_socio(s.nombre, v_dif, c.id::int));
     end loop;
   end if;
   for s in select id, nombre from catalogo.socio where nombre in ('Angelo', 'Javier') order by nombre loop
@@ -115,6 +136,7 @@ begin
       'por_distribuir_cent', operacion.utilidad_por_distribuir(s.id),
       'fondos_en_poder_cent', operacion.saldo_socio(s.id),
       'compensaciones_cent', v_comp,
+      'cuenta_cent', operacion.cuenta_socio(s.id),
       'neto_cent', operacion.neto_socio(s.id)));
   end loop;
   v_cont := jsonb_build_object(
@@ -173,7 +195,7 @@ as $$
 declare
   v_hoy date := negocio.hoy(); v_hasta date := least(coalesce(p_hasta, v_hoy), negocio.hoy()); v_id bigint; v_otro bigint; v_primera date; v_ini_mes date;
   v_apo bigint; v_rei bigint; v_ret_u bigint; v_ret_c bigint; v_val jsonb; v_dif bigint; v_cli bigint; v_ef jsonb; v_u jsonb; v_vol jsonb; v_flujos jsonb; v_actas jsonb;
-  v_dias jsonb; v_sem jsonb; v_mes jsonb; v_cli_top jsonb; v_mod_top jsonb; v_cab jsonb; v_meses int;
+  v_dias jsonb; v_sem jsonb; v_mes jsonb; v_cli_top jsonb; v_mod_top jsonb; v_cab jsonb; v_meses int; v_comp jsonb := '{}'::jsonb;
   r record;
 begin
   select id into v_id from catalogo.socio where nombre = p_socio and nombre in ('Angelo', 'Javier');
@@ -199,13 +221,22 @@ begin
     'retirado_utilidad_cent', v_ret_u, 'retirado_capital_cent', v_ret_c, 'retirado_cent', v_ret_u + v_ret_c,
     'utilidad_asignada_cent', operacion.libro_socio(v_id, 'utilidad_asignada'), 'utilidad_por_distribuir_cent', operacion.utilidad_por_distribuir(v_id),
     'capital_contable_cent', v_dif,
-    'valor_cent', case when v_dif is not null then operacion.mitad_socio(v_dif, p_socio, 0) end,
-    'valor_bajo_cent', case when v_dif is not null then operacion.mitad_socio(v_dif - coalesce(v_cli, 0), p_socio, 0) end,
-    'valor_alto_cent', case when v_dif is not null then operacion.mitad_socio(v_dif, p_socio, 0) end,
+    'capital_cuenta_cent', operacion.capital_socio(v_id),
+    'valor_cent', case when v_dif is not null then operacion.valor_socio(p_socio, v_dif, 0) end,
+    'valor_bajo_cent', case when v_dif is not null then operacion.valor_socio(p_socio, v_dif, 0) - operacion.mitad_socio(coalesce(v_cli, 0), p_socio, 0) end,
+    'valor_alto_cent', case when v_dif is not null then operacion.valor_socio(p_socio, v_dif, 0) end,
     'por_cobrar_clientes_cent', v_cli,
-    'neto_cent', operacion.neto_socio(v_id), 'reembolso_pendiente_cent', operacion.reembolso_pendiente(v_id), 'fondos_cent', operacion.saldo_socio(v_id),
+    'neto_cent', operacion.neto_socio(v_id), 'cuenta_cent', operacion.cuenta_socio(v_id), 'reembolso_pendiente_cent', operacion.reembolso_pendiente(v_id), 'fondos_cent', operacion.saldo_socio(v_id),
     'efectivo_total_cent', (v_ef ->> 'total_cent')::bigint, 'efectivo_disponible_cent', (v_ef ->> 'disponible_cent')::bigint,
     'primera_fecha', v_primera, 'meses_activo', v_meses);
+  -- Estado de la comprobacion por dos vias de cada cifra de la cabecera: sale de la misma funcion que usa "Explicar este numero" (null = sin dato o sin comprobar).
+  for r in select unnest(array['invertido', 'retirado', 'utilidad', 'valor', 'cuenta']) as k loop
+    begin
+      v_comp := v_comp || jsonb_build_object(r.k, (api.explicar_historial('historial:' || r.k || ':' || p_socio) -> 'comprobacion' ->> 'cuadra')::boolean);
+    exception when others then v_comp := v_comp || jsonb_build_object(r.k, null);
+    end;
+  end loop;
+  v_cab := v_cab || jsonb_build_object('comprobaciones', v_comp);
 
   -- Totales de toda la historia hasta la fecha de corte.
   if v_primera is not null then
@@ -293,7 +324,7 @@ create function api.explicar_historial(p_cifra text) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare
-  partes text[] := string_to_array(p_cifra, ':'); v_id bigint; v_rengs jsonb; v_via1 bigint; v_via2 bigint; v_val jsonb; v_dif bigint; c operacion.cierre_reparto; v_x jsonb; v_d jsonb; v_disp bigint; v_titulo text;
+  partes text[] := string_to_array(p_cifra, ':'); v_id bigint; v_rengs jsonb; v_via1 bigint; v_via2 bigint; v_val jsonb; v_dif bigint; c operacion.cierre_reparto; v_x jsonb; v_d jsonb; v_disp bigint; v_titulo text; v_otro_n text;
 begin
   perform seguridad.exigir_rol(array['socio']);
   if partes[1] <> 'historial' or partes[2] is null then raise exception 'cifra no explicable' using errcode = '22023'; end if;
@@ -345,26 +376,30 @@ begin
     v_val := contabilidad.valuacion(negocio.hoy());
     if not (v_val ->> 'con_movimientos')::boolean then raise exception 'sin dato: todavia no hay asientos contables' using errcode = 'P0428'; end if;
     v_dif := (v_val ->> 'v03_diferencia_cent')::bigint;
-    v_via1 := operacion.mitad_socio(v_dif, partes[3], 0);
-    v_via2 := operacion.mitad_socio((v_val -> 'identidades' -> 'i1' ->> 'via2_cent')::bigint, partes[3], 0);
+    select nombre into v_otro_n from catalogo.socio where nombre in ('Angelo', 'Javier') and id <> v_id;
+    v_via1 := operacion.valor_socio(partes[3], v_dif, 0);
+    -- Segunda via: el capital por cuentas de la contabilidad (identidad I-1) menos el valor del otro socio.
+    v_via2 := (v_val -> 'identidades' -> 'i1' ->> 'via2_cent')::bigint - operacion.valor_socio(v_otro_n, v_dif, 0);
     v_rengs := jsonb_build_array(
-      jsonb_build_object('concepto', 'Valuacion de la empresa al costo', 'monto_cent', (v_val ->> 'v01_valuacion_cent')::bigint),
-      jsonb_build_object('concepto', 'Menos las deudas', 'monto_cent', -(v_val ->> 'v02_deudas_cent')::bigint),
-      jsonb_build_object('concepto', 'Capital contable (valor en libros de la sociedad)', 'monto_cent', v_dif),
-      jsonb_build_object('concepto', 'Su participacion: la mitad, con el centavo suelto a quien mas aporta', 'monto_cent', v_via1),
-      jsonb_build_object('concepto', 'Rango bajo: sin contar lo que deben los clientes', 'monto_cent', operacion.mitad_socio(v_dif - (v_val ->> 'clientes_cent')::bigint, partes[3], 0)));
-    return jsonb_build_object('cifra', p_cifra, 'titulo', 'Valor estimado de la participacion de ' || partes[3] || ' (valor en libros, estimado)', 'valor', v_via1, 'unidad', 'mxn',
-      'comprobacion', jsonb_build_object('via1', 'Mitad de valuacion menos deudas', 'via1_valor', v_via1, 'via2', 'Mitad del capital por cuentas (identidad I-1)', 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
+      jsonb_build_object('concepto', 'Capital contable de la sociedad (valuacion al costo menos deudas)', 'monto_cent', v_dif),
+      jsonb_build_object('concepto', 'Su cuenta de capital: aportaciones y reinversiones, mas utilidad recibida en actas, menos retiros', 'monto_cent', operacion.capital_socio(v_id)),
+      jsonb_build_object('concepto', 'Cuenta de capital de ' || v_otro_n, 'monto_cent', operacion.capital_socio((select id from catalogo.socio where nombre = v_otro_n))),
+      jsonb_build_object('concepto', 'Utilidad que aun no pasa por un acta (capital contable menos las dos cuentas)', 'monto_cent', v_dif - operacion.capital_socio(v_id) - operacion.capital_socio((select id from catalogo.socio where nombre = v_otro_n))),
+      jsonb_build_object('concepto', 'Su 50 % de esa utilidad sin acta (regla F; el centavo suelto a quien mas aporta)', 'monto_cent', operacion.mitad_socio(v_dif - operacion.capital_socio(v_id) - operacion.capital_socio((select id from catalogo.socio where nombre = v_otro_n)), partes[3], 0)),
+      jsonb_build_object('concepto', 'Valor de su participacion', 'monto_cent', v_via1),
+      jsonb_build_object('concepto', 'Rango bajo: sin contar su parte de lo que deben los clientes', 'monto_cent', v_via1 - operacion.mitad_socio((v_val ->> 'clientes_cent')::bigint, partes[3], 0)));
+    return jsonb_build_object('cifra', p_cifra, 'titulo', 'Valor estimado de la participacion de ' || partes[3] || ' (su cuenta de capital mas su 50 % de la utilidad sin acta; estimado en libros)', 'valor', v_via1, 'unidad', 'mxn',
+      'comprobacion', jsonb_build_object('via1', 'Su cuenta de capital mas su mitad de la utilidad sin acta', 'via1_valor', v_via1, 'via2', 'Capital por cuentas de la contabilidad (I-1) menos el valor del otro socio', 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   elsif partes[2] = 'cuenta' then
-    v_via1 := operacion.neto_socio(v_id);
-    v_via2 := operacion.aportado_socio(v_id) + operacion.libro_socio(v_id) - operacion.saldo_socio(v_id);
+    -- Deuda o credito con la sociedad: reembolsos de gastos por cobrar menos fondos en su poder. Segunda via: la posicion neta menos su cuenta de capital.
+    v_via1 := operacion.cuenta_socio(v_id);
+    v_via2 := operacion.neto_socio(v_id) - operacion.capital_socio(v_id);
     v_rengs := jsonb_build_array(
-      jsonb_build_object('concepto', 'Aportaciones y gastos pagados', 'monto_cent', operacion.aportado_socio(v_id)),
-      jsonb_build_object('concepto', 'Libro con la sociedad (utilidad asignada menos pagos y reinversiones)', 'monto_cent', operacion.libro_socio(v_id)),
-      jsonb_build_object('concepto', 'Menos lo que tiene o debe a la sociedad', 'monto_cent', -operacion.saldo_socio(v_id)));
-    return jsonb_build_object('cifra', p_cifra, 'titulo', 'Cuenta de ' || partes[3] || ' con la sociedad (+ la sociedad le debe, - el debe)', 'valor', v_via1, 'unidad', 'mxn',
-      'comprobacion', jsonb_build_object('via1', 'Funcion de posicion neta del socio', 'via1_valor', v_via1, 'via2', 'Aportaciones mas libro menos lo que debe', 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
+      jsonb_build_object('concepto', 'Reembolsos de gastos pagados que la sociedad aun no le paga', 'monto_cent', operacion.reembolso_pendiente(v_id)),
+      jsonb_build_object('concepto', 'Menos los fondos que tiene en su poder', 'monto_cent', -operacion.saldo_socio(v_id)));
+    return jsonb_build_object('cifra', p_cifra, 'titulo', 'Deuda o credito de ' || partes[3] || ' con la sociedad (+ la sociedad le debe, - el debe)', 'valor', v_via1, 'unidad', 'mxn',
+      'comprobacion', jsonb_build_object('via1', 'Reembolsos por cobrar menos fondos en su poder', 'via1_valor', v_via1, 'via2', 'Posicion neta con la sociedad menos su cuenta de capital', 'via2_valor', v_via2, 'cuadra', v_via1 = v_via2),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   end if;
   raise exception 'cifra no explicable' using errcode = '22023';

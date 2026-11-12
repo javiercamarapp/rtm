@@ -60,6 +60,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
   const maxEst = estac.reduce((a, x) => (x.promedio_cent !== null && abs(x.promedio_cent) > a ? abs(x.promedio_cent) : a), 0n);
   const t = h.totales;
   const valorTxt = c.valor_cent === null ? null : m(c.valor_cent);
+  const compr = (x: keyof typeof c.comprobaciones) => (c.comprobaciones[x] === true ? 'cuadra' as const : c.comprobaciones[x] === false ? 'no_cuadra' as const : 'sin_comprobar' as const);
 
   return (
     <Pagina ancho="tablero">
@@ -83,12 +84,12 @@ export default async function PaginaHistorial({ params, searchParams }: { params
       <KpiLinea
         etiquetaAria="Cabecera del historial personal"
         celdas={[
-          { id: 'inv', etiqueta: 'Invertido total', testid: 'h-invertido', valor: sinH ? null : <CifraComprobada texto={m(c.invertido_cent)} cifra={`historial:invertido:${socio}`} comprobacion="cuadra" />, categoria: 1, nota: `Aportaciones ${m(c.aportaciones_cent)} · reinversiones ${m(c.reinversion_cent)}` },
-          { id: 'ret', etiqueta: 'Retirado total', testid: 'h-retirado', valor: sinH ? null : <CifraComprobada texto={m(c.retirado_cent)} cifra={`historial:retirado:${socio}`} comprobacion="cuadra" />, categoria: 2, nota: `Utilidad ${m(c.retirado_utilidad_cent)} · capital ${m(c.retirado_capital_cent)}` },
-          { id: 'ut', etiqueta: 'Utilidad recibida en actas', testid: 'h-utilidad', valor: sinH ? null : <CifraComprobada texto={m(c.utilidad_asignada_cent)} cifra={`historial:utilidad:${socio}`} comprobacion="cuadra" />, categoria: 3, nota: `Por distribuir ${m(c.utilidad_por_distribuir_cent)}` },
-          { id: 'val', etiqueta: 'Valor actual de su participación', testid: 'h-valor', valor: valorTxt === null ? null : <CifraComprobada texto={valorTxt} cifra={`historial:valor:${socio}`} comprobacion="cuadra" />, categoria: 4, nota: valorTxt === null ? 'Sin asientos contables todavía' : <><Estado tono="info">Estimado</Estado> rango {m(c.valor_bajo_cent!)} a {m(c.valor_alto_cent!)}</> },
+          { id: 'inv', etiqueta: 'Invertido total', testid: 'h-invertido', valor: sinH ? null : <CifraComprobada texto={m(c.invertido_cent)} cifra={`historial:invertido:${socio}`} comprobacion={compr('invertido')} />, categoria: 1, nota: `Aportaciones ${m(c.aportaciones_cent)} · reinversiones ${m(c.reinversion_cent)}` },
+          { id: 'ret', etiqueta: 'Retirado total', testid: 'h-retirado', valor: sinH ? null : <CifraComprobada texto={m(c.retirado_cent)} cifra={`historial:retirado:${socio}`} comprobacion={compr('retirado')} />, categoria: 2, nota: `Utilidad ${m(c.retirado_utilidad_cent)} · capital ${m(c.retirado_capital_cent)}` },
+          { id: 'ut', etiqueta: 'Utilidad recibida en actas', testid: 'h-utilidad', valor: sinH ? null : <CifraComprobada texto={m(c.utilidad_asignada_cent)} cifra={`historial:utilidad:${socio}`} comprobacion={compr('utilidad')} />, categoria: 3, nota: `Por distribuir ${m(c.utilidad_por_distribuir_cent)}` },
+          { id: 'val', etiqueta: 'Valor actual de su participación', testid: 'h-valor', valor: valorTxt === null ? null : <CifraComprobada texto={valorTxt} cifra={`historial:valor:${socio}`} comprobacion={compr('valor')} />, categoria: 4, nota: valorTxt === null ? 'Sin asientos contables todavía' : <><Estado tono="info">Estimado</Estado> su cuenta de capital {m(c.capital_cuenta_cent)} · rango {m(c.valor_bajo_cent!)} a {m(c.valor_alto_cent!)}</> },
           { id: 'rec', etiqueta: 'Recuperado de lo invertido', testid: 'h-recuperado', valor: bpAPct(r.recuperado_bp), categoria: 5, progreso: r.recuperado_bp === null ? undefined : { pct: Math.min(100, Number(r.recuperado_bp) / 100) }, nota: r.recuperado_bp === null ? 'Aún no invierte' : `Retirado ${m(c.retirado_cent)} de ${m(c.invertido_cent)}` },
-          { id: 'cta', etiqueta: 'Cuenta con la sociedad', testid: 'h-cuenta', valor: <CifraComprobada texto={m(c.neto_cent, true)} cifra={`historial:cuenta:${socio}`} comprobacion="cuadra" />, categoria: 6, nota: `${c.neto_cent > 0n ? 'La sociedad le debe' : c.neto_cent < 0n ? 'Debe a la sociedad' : 'En paz'} · reembolsos por cobrar ${m(c.reembolso_pendiente_cent)} · fondos en su poder ${m(c.fondos_cent)}` },
+          { id: 'cta', etiqueta: 'Deuda o crédito con la sociedad', testid: 'h-cuenta', valor: <CifraComprobada texto={m(c.cuenta_cent, true)} cifra={`historial:cuenta:${socio}`} comprobacion={compr('cuenta')} />, categoria: 6, nota: `${c.cuenta_cent > 0n ? 'La sociedad le debe' : c.cuenta_cent < 0n ? 'Debe a la sociedad' : 'En paz'} · reembolsos por cobrar ${m(c.reembolso_pendiente_cent)} menos fondos en su poder ${m(c.fondos_cent)}` },
         ]}
       />
       <FilaRatios
@@ -238,7 +239,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
         </Tarjeta>
       </Rejilla>
       <p className="rtm-nota" data-testid="nota-historial">
-        La utilidad se atribuye 50/50 y el centavo suelto va a quien más ha aportado (una sola regla de redondeo). {c.valor_cent !== null ? `El valor de su participación es la mitad del capital contable (${m(c.capital_contable_cent!)}); el rango bajo no cuenta lo que deben los clientes (${m(c.por_cobrar_clientes_cent ?? 0n)}). ` : ''}
+        La utilidad se atribuye 50/50 y el centavo suelto va a quien más ha aportado (una sola regla de redondeo). {c.valor_cent !== null ? `El valor de su participación es su cuenta de capital (aportaciones y reinversiones, más la utilidad recibida en actas, menos lo retirado) más su 50 % de la utilidad que aún no pasa por un acta; la suma de los dos socios es el capital contable (${m(c.capital_contable_cent!)}). El rango bajo no cuenta lo que deben los clientes (${m(c.por_cobrar_clientes_cent ?? 0n)}). La deuda o crédito con la sociedad (reembolsos por cobrar menos fondos en su poder) va aparte y no entra en ese valor. ` : ''}
         ROI, múltiplo y TIR usan lo invertido como aportaciones más reinversiones, según el acta de corte. Ninguna de estas cifras la calcula la IA: salen de la base y de funciones deterministas. Ver también el historial de {otro}: <Link href={`/socios/${otro}/historial`}>{otro}</Link>.
       </p>
     </Pagina>

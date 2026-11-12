@@ -36,7 +36,7 @@ export async function pdfHistorialSocio(h: HistorialSocio): Promise<Uint8Array> 
     fila('Utilidad por distribuir', formatearMoneda(c.utilidad_por_distribuir_cent));
     fila('Valor actual de su participacion (estimado)', c.valor_cent === null ? 'Sin dato' : formatearMoneda(c.valor_cent), true);
     if (c.valor_cent !== null) fila('Rango del estimado', `${formatearMoneda(c.valor_bajo_cent!)} a ${formatearMoneda(c.valor_alto_cent!)}`);
-    fila('Cuenta con la sociedad (+ le debe la sociedad)', formatearMoneda(c.neto_cent, { conSigno: true }));
+    fila('Deuda o credito con la sociedad (+ le debe la sociedad)', formatearMoneda(c.cuenta_cent, { conSigno: true }));
     fila('Reembolsos por cobrar', formatearMoneda(c.reembolso_pendiente_cent));
     fila('Fondos de la sociedad en su poder', formatearMoneda(c.fondos_cent));
 
