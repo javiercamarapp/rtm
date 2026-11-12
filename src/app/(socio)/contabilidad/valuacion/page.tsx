@@ -57,8 +57,8 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
 
   const filaAcum = (rows: Renglon[]) => (g: string) => rows.filter((x) => x.grupo === g).reduce((a, x) => a + x.importe, 0n);
   const col = (total: bigint) => [
-    { id: 'c', titulo: 'Concepto', ancho: 'l' as const, truncar: 'm' as const, celda: (x: Renglon) => x.concepto },
-    { id: 'd', titulo: 'Detalle', ancho: 'm' as const, truncar: 's' as const, secundaria: true, celda: (x: Renglon) => x.detalle },
+    { id: 'c', titulo: 'Concepto', ancho: 'l' as const, truncar: 'l' as const, celda: (x: Renglon) => x.concepto },
+    { id: 'd', titulo: 'Detalle', ancho: 'm' as const, truncar: 'l' as const, secundaria: true, celda: (x: Renglon) => x.detalle },
     { id: 'i', titulo: 'Importe', numerica: true, ancho: 'm' as const, celda: (x: Renglon) => (sd ? <SinDato /> : m(x.importe)) },
     { id: 'p', titulo: '% del total', numerica: true, ancho: 's' as const, celda: (x: Renglon) => (sd ? <SinDato /> : pctTexto(partePct(x.importe, total)) ?? <SinDato />) },
   ];
@@ -120,8 +120,9 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
         </Tarjeta>
       </Rejilla>
       <Tarjeta titulo="Activo por grupo" descripcion="Parte de la valuación">
+          <p className="rtm-a1-subtitulo">Activo</p>
           <BarList columnas={2} etiquetaAria="Activo por grupo" items={gruposActivo.map((g) => ({ id: g, etiqueta: g, texto: m(filaAcum(activo)(g)) ?? '', pct: sd ? null : partePct(filaAcum(activo)(g), v.v01_valuacion_cent) }))} />
-          {gruposDeuda.length > 0 && <BarList columnas={2} etiquetaAria="Deudas por grupo" items={gruposDeuda.map((g) => ({ id: g, etiqueta: g, texto: m(filaAcum(deudas)(g)) ?? '', pct: sd ? null : partePct(filaAcum(deudas)(g), v.v02_deudas_cent) }))} />}
+          {gruposDeuda.length > 0 && <><p className="rtm-a1-subtitulo">Deudas</p><BarList columnas={2} etiquetaAria="Deudas por grupo" items={gruposDeuda.map((g) => ({ id: g, etiqueta: g, texto: m(filaAcum(deudas)(g)) ?? '', pct: sd ? null : partePct(filaAcum(deudas)(g), v.v02_deudas_cent) }))} /></>}
       </Tarjeta>
       <Tarjeta plana className="rtm-a2-tabla" titulo="Activo a costo" descripcion="Cada renglón con su parte del total">
           <DataTable
