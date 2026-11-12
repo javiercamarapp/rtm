@@ -118,3 +118,38 @@ describe('DataTable v2', () => {
     expect(m.cont.textContent).toContain('Sin datos');
   });
 });
+
+describe('DataTable etapa 3', () => {
+  const filas = [{ id: 'a', n: 'Nombre muy largo de ejemplo', v: 5 }];
+  it('prioridadMovil activa la tarjeta-fila y etiqueta cada celda', () => {
+    const m = abrir(montar(<DataTable etiqueta="t" filas={filas} clave={(f) => f.id}
+      columnas={[{ id: 'n', titulo: 'Nombre', prioridadMovil: 'titulo', celda: (f) => f.n }, { id: 'v', titulo: 'Valor', numerica: true, prioridadMovil: 'principal', etiquetaMovil: 'Existencia', celda: (f) => String(f.v) }]} />));
+    expect(m.cont.querySelector('.rtm-dt-caja')?.hasAttribute('data-tarjeta-movil')).toBe(true);
+    const celdas = [...m.cont.querySelectorAll('.rtm-dt-cuerpo [role=cell]')];
+    expect(celdas.map((c) => c.getAttribute('data-mov'))).toEqual(['titulo', 'principal']);
+    expect(celdas[1]!.getAttribute('data-label')).toBe('Existencia');
+  });
+  it('sin prioridadMovil la tabla no cambia a tarjetas', () => {
+    const m = abrir(montar(<DataTable etiqueta="t" filas={filas} clave={(f) => f.id} columnas={[{ id: 'n', titulo: 'Nombre', celda: (f) => f.n }]} />));
+    expect(m.cont.querySelector('.rtm-dt-caja')?.hasAttribute('data-tarjeta-movil')).toBe(false);
+  });
+  it('truncar recorta con title y conserva el texto completo', () => {
+    const m = abrir(montar(<DataTable etiqueta="t" filas={filas} clave={(f) => f.id} columnas={[{ id: 'n', titulo: 'Nombre', truncar: 's', celda: (f) => f.n }]} />));
+    const t = m.cont.querySelector<HTMLElement>('.rtm-dt-trunc')!;
+    expect(t.getAttribute('title')).toBe('Nombre muy largo de ejemplo');
+    expect(t.getAttribute('data-trunc')).toBe('s');
+  });
+  it('la envoltura lleva el indicador de scroll horizontal (sin desborde no pinta botones)', () => {
+    const m = abrir(montar(<DataTable etiqueta="t" filas={filas} clave={(f) => f.id} columnas={[{ id: 'n', titulo: 'Nombre', celda: (f) => f.n }]} />));
+    expect(m.cont.querySelector('.rtm-dt-env .rtm-dt-indicador')).not.toBeNull();
+    expect(m.cont.querySelector('.rtm-dt-mas')).toBeNull();
+  });
+});
+
+describe('BarList y LineaTiempo en dos columnas', () => {
+  it('data-columnas llega al DOM', () => {
+    const m = abrir(montar(<BarList columnas={2} etiquetaAria="b" items={[{ id: '1', etiqueta: 'A', texto: '$1', pct: 10 }]} />));
+    expect(m.cont.querySelector('.rtm-barlist')?.getAttribute('data-columnas')).toBe('2');
+  });
+});
+
