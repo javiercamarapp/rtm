@@ -2,6 +2,7 @@ import type {
   AmbitoHoja, CascadaProyeccion, CierreReparto, CuentaSocios, EstadoCuentaSocio, HojaProveedor, LiquidacionProveedor, OmarCuenta,
   CatalogoCompra, CatalogoPedido, CompraDetalle, CompraResumen, ContextoPagos, CuentaProveedor, CuentasPorCobrar, CxcCliente, DocumentoGuardado, EstadoSocio, ListaAvisos,
   NotaFuente, PaqueteEnTransito, PaquetesPorHacer, UmbralesPaquetes, PedidoDetalle, PedidoResumen,
+  RecepcionCompra, DevolucionesLista, PedidoDevoluciones, CatalogoDevolucionProveedor, FuenteDevolucion,
 } from '@/dominio/operacion/tipos';
 
 /** Lo que la web lee de pedidos, compras, pagos, paquetes y avisos. Cada lectura es una funcion de la base; la interfaz no calcula dinero. */
@@ -32,12 +33,19 @@ export interface LectorOperacion {
   cascadaProyeccion(ini: string | null, fin: string | null): Promise<CascadaProyeccion>;
   cierresReparto(): Promise<CierreReparto[]>;
   omarCuenta(semanaIni: string | null): Promise<OmarCuenta>;
+  // Devoluciones y recepcion parcial
+  compraRecepcion(compraId: number): Promise<RecepcionCompra | null>;
+  devoluciones(): Promise<DevolucionesLista>;
+  pedidoDevoluciones(pedidoId: number): Promise<PedidoDevoluciones | null>;
+  catalogoDevolucionProveedor(): Promise<CatalogoDevolucionProveedor>;
+  devolucionFuente(tipo: 'cliente' | 'proveedor', id: number): Promise<FuenteDevolucion | null>;
+  devolucionDocumento(tipo: 'cliente' | 'proveedor', id: number): Promise<DocumentoGuardado | null>;
   textoCobro(clienteId: number): Promise<{ texto: string | null; total_cent: bigint; cliente: string; vencidos?: number }>;
 }
 
 /** Acciones de escritura permitidas desde la web (lista cerrada). Cada una es una funcion SQL atomica e idempotente: la clave de idempotencia viaja como `p_clave_idem`. */
 export const ACCIONES_OPERACION = [
-  'crear_compra', 'confirmar_compra', 'marcar_compra_enviada', 'registrar_guia_compra', 'marcar_llego_merida', 'recibir_compra', 'asignar_diferencia', 'cerrar_compra', 'anular_compra',
+  'crear_compra', 'confirmar_compra', 'marcar_compra_enviada', 'registrar_guia_compra', 'marcar_llego_merida', 'recibir_compra', 'recibir_compra_parcial', 'cerrar_recepcion_compra', 'registrar_devolucion_cliente', 'anular_devolucion_cliente', 'devolver_a_proveedor', 'anular_devolucion_proveedor', 'asignar_diferencia', 'cerrar_compra', 'anular_compra',
   'crear_pedido', 'confirmar_pedido', 'cancelar_pedido', 'marcar_empacado', 'enviar_pedido', 'anular_pedido', 'emitir_correccion', 'acordar_plazo', 'marcar_entregado', 'fijar_costo_guia',
   'registrar_pago', 'aplicar_pago', 'pago_aplicar_apertura', 'identificar_pago', 'anular_pago', 'pago_proveedor_de_socio', 'registrar_entrega_socio',
   'registrar_toma_omar', 'resolver_toma_omar', 'cerrar_liquidacion_omar', 'registrar_pago_omar', 'aviso_marcar_leido',
@@ -58,10 +66,12 @@ export type AccionOperacion = (typeof ACCIONES_OPERACION)[number];
 export interface EscritorOperacion {
   ejecutar(accion: AccionOperacion, args: Record<string, unknown>): Promise<Record<string, unknown>>;
   guardarDocumento(notaId: number, variante: 'cliente_pdf' | 'interna_pdf', sha256: string, bytes: Uint8Array): Promise<void>;
+  guardarDocumentoDevolucion(tipo: 'cliente' | 'proveedor', id: number, sha256: string, bytes: Uint8Array): Promise<void>;
 }
 
 export interface GeneradorPdf {
   notaCliente(n: NotaFuente): Promise<Uint8Array>;
   hojaInterna(n: NotaFuente): Promise<Uint8Array>;
+  devolucion(f: FuenteDevolucion): Promise<Uint8Array>;
   huella(bytes: Uint8Array): string;
 }

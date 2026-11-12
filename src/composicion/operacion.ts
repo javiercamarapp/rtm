@@ -1,12 +1,13 @@
 // Raiz de composicion de pedidos, compras, pagos, paquetes y avisos. Las paginas y las acciones importan de aqui, nunca de infra.
-import { obtenerDocumentoNota, type DocumentoNota, type VarianteNota } from '@/aplicacion/operacion/documentos';
+import { obtenerDocumentoDevolucion, obtenerDocumentoNota, type DocumentoDevolucion, type DocumentoNota, type VarianteNota } from '@/aplicacion/operacion/documentos';
 import { ACCIONES_OPERACION, type AccionOperacion, type EscritorOperacion, type GeneradorPdf, type LectorOperacion } from '@/aplicacion/operacion/puertos';
 import type { ResultadoAccion } from '@/dominio/operacion/tipos';
+import { pdfDevolucion } from '@/infra/pdf/devolucion';
 import { huella, pdfHojaInterna, pdfNotaCliente } from '@/infra/pdf/nota';
 import { ErrorDeNegocio, escritorOperacionSupabase, lectorOperacionSupabase } from '@/infra/supabase/operacion';
 import { exigirSocio } from './acceso';
 
-const generador: GeneradorPdf = { notaCliente: pdfNotaCliente, hojaInterna: pdfHojaInterna, huella };
+const generador: GeneradorPdf = { notaCliente: pdfNotaCliente, hojaInterna: pdfHojaInterna, devolucion: pdfDevolucion, huella };
 
 /** Lector para paginas de socio: exige sesion de socio ANTES de tocar la base (la autoridad igual es la funcion SQL). */
 export async function operacionDeSocio(): Promise<LectorOperacion> {
@@ -48,4 +49,9 @@ export async function ejecutarAccionDeSocio(accion: string, args: Record<string,
 export async function documentoDeNota(notaId: number, variante: VarianteNota): Promise<DocumentoNota | null> {
   await exigirSocio();
   return obtenerDocumentoNota({ lector: lectorOperacionSupabase(), escritor: escritorOperacionSupabase(), pdf: generador }, notaId, variante);
+}
+
+export async function documentoDeDevolucion(tipo: 'cliente' | 'proveedor', id: number): Promise<DocumentoDevolucion | null> {
+  await exigirSocio();
+  return obtenerDocumentoDevolucion({ lector: lectorOperacionSupabase(), escritor: escritorOperacionSupabase(), pdf: generador }, tipo, id);
 }
