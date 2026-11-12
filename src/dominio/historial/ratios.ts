@@ -199,8 +199,10 @@ export function proyeccionPersonal(meses: readonly FilaSerie[], payoutBp: bigint
   const ss = completos.reduce((a, m) => a + (m.parte_cent - media) * (m.parte_cent - media), 0n);
   const varianza = ss / (N - 1n);
   const banda = raizEntera((varianza * (N + 1n)) / N);
-  const base: 'retiro' | 'parte' = payoutBp !== null ? 'retiro' : 'parte';
-  const f = (x: bigint) => (payoutBp !== null ? divRedondeada(x * payoutBp, 10000n) : x);
+  // Un payout de 0 % (nadie ha retirado en efectivo) no es una tasa observable: multiplicar por cero emitiria un retiro esperado de $0 inventado. Se proyecta su parte.
+  const conPayout = payoutBp !== null && payoutBp > 0n;
+  const base: 'retiro' | 'parte' = conPayout ? 'retiro' : 'parte';
+  const f = (x: bigint) => (conPayout ? divRedondeada(x * payoutBp, 10000n) : x);
   const esperado = f(media);
   const b = f(banda);
   const piso = (x: bigint) => (x < 0n ? 0n : x);

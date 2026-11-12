@@ -169,6 +169,11 @@ describe('proyeccionPersonal', () => {
     const nueve = proyeccionPersonal(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'].map((k, i) => fila(k, BigInt(100 + (i % 3) * 100))), null);
     expect(nueve.banda_cent).toBeLessThan(tres.banda_cent);
   });
+  it('con payout 0 % (nadie ha retirado) se proyecta su parte y no un retiro esperado de cero', () => {
+    const p = proyeccionPersonal([fila('a', 100n), fila('b', 200n), fila('c', 300n)], 0n);
+    expect(p.base).toBe('parte');
+    expect(p.meses[0]!.esperado_cent).toBe(200n);
+  });
   it('sin payout observado se proyecta su parte, no el retiro; nunca negativo', () => {
     const p = proyeccionPersonal([fila('a', -300n), fila('b', 10n), fila('c', 20n)], null);
     expect(p.base).toBe('parte');
