@@ -119,7 +119,7 @@ export function calcularRatios(h: HistorialSocio): Ratios {
     payout_bp: c.utilidad_asignada_cent > 0n ? bp(c.retirado_utilidad_cent, c.utilidad_asignada_cent) : null,
     retiro_mensual_cent: retiroMensual,
     margen_neto_bp: t && t.ventas_cent > 0n ? divRedondeada(t.utilidad_cent * 10000n, t.ventas_cent) : null,
-    utilidad_por_pieza_cent: t && t.piezas > 0n ? divRedondeada(t.utilidad_cent, t.piezas) : null,
+    utilidad_por_pieza_cent: t && t.piezas > 0 ? divRedondeada(t.utilidad_cent, BigInt(t.piezas)) : null,
     cobertura_caja_x100: pendiente > 0n ? divRedondeada(c.efectivo_disponible_cent * 100n, pendiente) : null,
     participacion_capital_bp: bp(c.invertido_cent, c.invertido_ambos_cent),
     participacion_utilidad_bp: 5000n,

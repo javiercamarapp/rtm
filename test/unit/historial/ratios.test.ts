@@ -10,11 +10,11 @@ const cab = (o: Partial<Cabecera> = {}): Cabecera => ({
   neto_cent: 50_000n, reembolso_pendiente_cent: 100_000n, fondos_cent: 0n, efectivo_total_cent: 900_000n, efectivo_disponible_cent: 800_000n, primera_fecha: '2026-01-05', meses_activo: 10, ...o,
 });
 const fila = (ini: string, parte: bigint, o: Partial<FilaSerie> = {}): FilaSerie => ({
-  ini, fin: ini, parcial: false, utilidad_cent: parte * 2n, parte_cent: parte, pedidos: 3, piezas: 30n, ventas_cent: parte * 10n, retiros_cent: 0n, reinversion_cent: 0n, aportaciones_cent: 0n, provisional: false, ...o,
+  ini, fin: ini, parcial: false, utilidad_cent: parte * 2n, parte_cent: parte, pedidos: 3, piezas: 30, ventas_cent: parte * 10n, retiros_cent: 0n, reinversion_cent: 0n, aportaciones_cent: 0n, provisional: false, ...o,
 });
 const hist = (o: Partial<HistorialSocio> = {}): HistorialSocio => ({
   socio: 'Angelo', otro: 'Javier', hoy: '2026-11-12', hasta: '2026-11-12', con_historial: true, cabecera: cab(), flujos: [], actas: [],
-  totales: { utilidad_cent: 1_000_000n, parte_cent: 500_000n, pedidos: 20, piezas: 400n, ventas_cent: 5_000_000n, provisional: false },
+  totales: { utilidad_cent: 1_000_000n, parte_cent: 500_000n, pedidos: 20, piezas: 400, ventas_cent: 5_000_000n, provisional: false },
   dias: [], semanas: [], meses: [], por_cliente: [], por_modelo: [], ...o,
 });
 

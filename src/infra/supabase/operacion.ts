@@ -1,6 +1,8 @@
 // Implementa los puertos de operacion con las funciones api.* (sesion del usuario, llave publica; nunca la de servicio).
 import type { AccionOperacion, EscritorOperacion, LectorOperacion } from '@/aplicacion/operacion/puertos';
+import { decisionesABigint } from '@/dominio/historial/tipos';
 import { centavosABigint } from '@/dominio/operacion/json';
+import type { CierreReparto } from '@/dominio/operacion/tipos';
 import { crearClienteServidor } from './cliente-servidor';
 
 async function leer<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -41,7 +43,7 @@ export function lectorOperacionSupabase(): LectorOperacion {
     cuentaSocios: () => leer('socios_cuenta'),
     socioCuenta: (s) => leer('socio_cuenta', { p_socio: s }),
     cascadaProyeccion: (i, f) => leer('cascada_proyeccion', { p_ini: i, p_fin: f }),
-    cierresReparto: () => leer('cierres_reparto'),
+    cierresReparto: async () => (await leer<CierreReparto[]>('cierres_reparto')).map((c) => ({ ...c, decisiones: decisionesABigint(c.decisiones) })),
     omarCuenta: (s) => leer('omar_cuenta', { p_semana_ini: s }),
     textoCobro: (id) => leer('texto_cobro', { p_cliente: id }),
   };
