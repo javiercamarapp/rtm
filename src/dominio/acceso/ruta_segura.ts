@@ -2,7 +2,7 @@
 // la raiz o una de las secciones, tal cual o seguida de `/...`, `?...` o `#...`. Se rechazan segmentos `..`/`.`
 // (tambien codificados), barras invertidas, caracteres de control, `//` y rutas absurdamente largas.
 
-const PROPIA = /^\/(?:(?:pedidos|paquetes|cuentas-por-cobrar|avisos|catalogo|clientes|inventario|proveedores|socios|omar|contabilidad|movimientos|apertura|diseno)(?:[/?#]|$)|(?:[?#]|$))/;
+const PROPIA = /^\/(?:(?:pedidos|paquetes|cuentas-por-cobrar|avisos|catalogo|clientes|inventario|proveedores|socios|omar|contabilidad|movimientos|apertura|reportes|costos|diseno)(?:[/?#]|$)|(?:[?#]|$))/;
 // eslint-disable-next-line no-control-regex -- detectar caracteres de control es justo el proposito
 const CONTROL = /[\u0000-\u001f\u007f\\]/;
 

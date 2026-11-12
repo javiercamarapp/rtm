@@ -18,7 +18,7 @@ const CARAS: readonly Cara[] = [
 
 export function cargarCssFuentes(dirFuentes: string): string {
   return CARAS.map((c) => {
-    const b64 = readFileSync(join(dirFuentes, c.archivo)).toString('base64');
+    const b64 = readFileSync(/*turbopackIgnore: true*/ join(/*turbopackIgnore: true*/ dirFuentes, c.archivo)).toString('base64');
     return `@font-face{font-family:"${c.familia}";font-style:${c.estilo};font-weight:${c.peso};font-display:block;src:url(data:font/woff2;base64,${b64}) format("woff2")}`;
   }).join('\n');
 }

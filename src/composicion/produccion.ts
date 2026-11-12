@@ -5,8 +5,6 @@ import { ErrorLlm, type ClienteLlm, type EnviadorTelegram } from '@/aplicacion/a
 import { despacharUnaVez } from '@/aplicacion/notificaciones/despachador';
 import { ejecutarConfirmacion, ejecutarLecturaHoraria, ejecutarLecturaPromociones, type DepsCiclo } from '@/aplicacion/proveedores/ciclo';
 import type { PuertoLecturaProveedor } from '@/aplicacion/proveedores/puertos';
-import { generarReporte } from '@/aplicacion/reportes/generar_reporte';
-import type { RenderizadorPdf } from '@/aplicacion/reportes/puertos';
 import { correrLatido, type Manejador, type ResumenLatido } from '@/aplicacion/tareas/latido';
 import { configPrivada } from '@/config/privada';
 import { TAREAS } from '@/config/tareas';
@@ -32,9 +30,6 @@ function urlAppOpcional(): string | null {
 }
 import { AvisosDb, ContextoNegocioDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
 import { lectorDesdeEntorno } from '@/infra/proveedores/lector_http';
-import { cargarCssFuentes } from '@/infra/reportes/fuentes_css';
-import { EntregaReportesAvisos, FuenteInsumosDb, RepositorioReportesDb } from '@/infra/reportes/postgres';
-import { RenderizadorChromium } from '@/infra/reportes/render_pdf_chromium';
 
 export interface DepsProduccion {
   sql: Sql;
@@ -45,7 +40,7 @@ export interface DepsProduccion {
   fetchFn?: FetchLike;
   /** Lector de la fuente de proveedores: en pruebas, un simulador; nunca se lee la fuente real desde aqui salvo con la variable privada. */
   lectorProveedor?: PuertoLecturaProveedor;
-  renderizador?: (fecha14: string) => RenderizadorPdf;
+  renderizador?: (fecha14: string) => import('@/aplicacion/reportes/puertos').RenderizadorPdf;
   urlApp?: string | null;
   entorno?: Record<string, string | undefined>;
 }
@@ -121,21 +116,11 @@ export function periodoDeReporte(tipo: 'semanal' | 'mensual', hoy: string): stri
   return sumarDias(hoy, -(dow + 7));
 }
 
-export async function generarReporteDeSistema(d: DepsProduccion, tipo: 'semanal' | 'mensual', inicio: string) {
-  const [anio, mes] = inicio.split('-').map(Number) as [number, number];
-  const fin = tipo === 'semanal' ? sumarDias(inicio, 6) : `${inicio.slice(0, 7)}-${String(new Date(Date.UTC(anio, mes, 0)).getUTCDate()).padStart(2, '0')}`;
-  const fecha14 = `${fin.replaceAll('-', '')}235959`;
-  const clave = `${tipo}:${inicio}`;
-  const renderizador = d.renderizador ? d.renderizador(fecha14) : new RenderizadorChromium({ fecha14 });
-  return generarReporte(
-    { tipo, inicio },
-    { fuente: new FuenteInsumosDb(d.sql), renderizador, repositorio: new RepositorioReportesDb(d.sql), entrega: new EntregaReportesAvisos(d.sql, clave, tipo === 'semanal' ? 'reporte_semanal' : 'reporte_mensual'), cssFuentes: cargarCssFuentes('src/fuentes') },
-  );
-}
-
 export function manejadoresDeTareas(d: DepsProduccion): Record<string, Manejador> {
   const hoy = () => fechaNeg(ahoraDe(d)());
   const reporte = (tipo: 'semanal' | 'mensual'): Manejador => async () => {
+    // Carga diferida: Chromium y las fuentes no entran al grafo del webhook ni de las demas rutas.
+    const { generarReporteDeSistema } = await import('./reportes_sistema');
     const r = await generarReporteDeSistema(d, tipo, periodoDeReporte(tipo, hoy()));
     return { estado: 'ok', detalle: r.salio ? r.salio && 'accion' in r ? r.accion : 'ok' : 'no_sale' };
   };

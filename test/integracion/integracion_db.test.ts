@@ -3,7 +3,7 @@
 import fc from 'fast-check';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { tareaProgramada, webhookTelegram, type DepsProduccion } from '@/composicion/produccion';
+import { tareaProgramada, type DepsProduccion } from '@/composicion/produccion';
 import { techoCent, techoPctDeFraccion } from '@/dominio/dinero/techo';
 import { estadoInicial, evaluarReserva, aplicarLiquidacion, aplicarLiberacion, REPARTO_DIA_MICRO, type RolPresupuesto } from '@/dominio/agente/presupuesto';
 import { EnviadorTelegramMemoria } from '@/infra/agente/memoria';

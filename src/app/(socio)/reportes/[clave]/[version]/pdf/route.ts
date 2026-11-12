@@ -1,3 +1,4 @@
+import { exigirSocio } from '@/composicion/acceso';
 import { reportesDeSocio } from '@/composicion/reportes';
 
 export const dynamic = 'force-dynamic';
@@ -8,6 +9,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ clave: string;
   const clave = decodeURIComponent(p.clave);
   const version = Number(p.version);
   if (!/^(semanal|mensual):\d{4}-\d{2}-\d{2}$/.test(clave) || !Number.isInteger(version)) return new Response(null, { status: 404 });
+  await exigirSocio();
   const r = await reportesDeSocio();
   const pdf = await r.pdf(clave, version);
   if (!pdf) return new Response(null, { status: 404 });

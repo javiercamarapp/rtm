@@ -3,7 +3,7 @@ import { fechaNeg } from '@/dominio/calendario';
 import { sqlServidor } from '@/infra/postgres/servidor';
 import { appUrl } from '@/config/env';
 import { htmlDeReporte, historialReportes, pdfDeReporte } from '@/infra/supabase/reportes';
-import { generarReporteDeSistema, periodoDeReporte } from './produccion';
+import { periodoDeReporte } from './produccion';
 import { exigirSocio } from './acceso';
 
 export async function reportesDeSocio() {
@@ -19,6 +19,7 @@ export async function pedirReporte(tipo: 'semanal' | 'mensual', inicio: string |
   const desde = inicio ?? periodoDeReporte(tipo, fechaNeg(new Date()));
   if (!/^\d{4}-\d{2}-\d{2}$/.test(desde)) return { ok: false, mensaje: 'La fecha de inicio debe ser AAAA-MM-DD.' };
   try {
+    const { generarReporteDeSistema } = await import('./reportes_sistema');
     const r = await generarReporteDeSistema({ sql: sqlServidor, urlApp: appUrl() }, tipo, desde);
     return { ok: true, clave: `${tipo}:${desde}`, salio: r.salio, ...(r.salio ? {} : { aviso: r.aviso }) };
   } catch (e) {

@@ -32,6 +32,8 @@
     "capturas:f3b": "node scripts/capturas/capturas-f3b.mjs --restaurar-real",
     "capturas:f3b-inventario": "node scripts/capturas/capturas-f3b-inventario.mjs --restaurar-real",
     "capturas:apertura": "node scripts/capturas/capturas-apertura.mjs --restaurar-real",
+    "capturas:integracion-db": "node scripts/capturas/capturas-integracion-db.mjs --restaurar-real",
+    "agente:registrar": "node scripts/agente/registrar-miembros.mjs",
     "latido": "node scripts/latido-local.mjs"
   },
   "dependencies": {
