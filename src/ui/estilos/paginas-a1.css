@@ -1,0 +1,28 @@
+/* Estilos propios de las paginas A1 (inicio, pedidos, clientes, catalogo, paquetes, avisos). Solo tokens var(--rtm-*): sin colores literales, degradados ni sombras. */
+.rtm-a1-pila { display: flex; flex-direction: column; gap: var(--rtm-ritmo); }
+.rtm-a1-cuerpo { display: flex; flex-direction: column; gap: 8px; }
+.rtm-a1-nota { margin: 0; color: var(--rtm-muted); font-size: 12px; line-height: 1.4; }
+.rtm-a1-cifra-grande { font-size: 32px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1.1; margin: 0; }
+.rtm-a1-fila-tarjeta { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.rtm-a1-fila-tarjeta small { color: var(--rtm-muted); font-size: 12px; }
+.rtm-a1-sub { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px 16px; margin: 0; }
+.rtm-a1-sub div { display: flex; flex-direction: column; gap: 2px; }
+.rtm-a1-sub dt { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-muted); }
+.rtm-a1-sub dd { margin: 0; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rtm-a1-buscar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rtm-a1-buscar input[type='search'] { height: var(--rtm-h-ctl); min-width: 220px; flex: 1 1 220px; max-width: 360px; }
+.rtm-a1-estado-vacio { margin: 0; padding: 12px 0; color: var(--rtm-muted); font-size: 13px; }
+.rtm-a1-acciones-fila { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.rtm-a1-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rtm-a1-tarjeta-cuerpo-alta { min-height: 0; }
+@media (max-width: 767px) {
+  .rtm-kpi-linea .rtm-kpi-cifra { font-size: 20px; overflow-wrap: anywhere; }
+  .rtm-a1-cifra-grande { font-size: 26px; }
+  .rtm-a1-buscar input[type='search'] { max-width: none; min-height: 44px; }
+}
+.rtm-a1-subtitulo { margin: 4px 0 0; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-muted); }
+/* Las graficas con viewBox fijo (cascada, Pareto, barras con delta) desplazan dentro de su caja en pantallas angostas: la pagina nunca hace scroll horizontal. */
+.rtm-pagina-v2 .rtm-g[data-grafica='cascada'], .rtm-pagina-v2 .rtm-g[data-grafica='pareto'] { max-width: 100%; overflow-x: auto; }
+/* La pagina es una rejilla de una columna: sin minmax(0, 1fr) un hijo ancho (formulario, texto copiable) ensancha toda la pagina en movil. */
+.rtm-pagina-v2 { grid-template-columns: minmax(0, 1fr); }
+.rtm-texto-copiable { white-space: pre-wrap; overflow-wrap: anywhere; }

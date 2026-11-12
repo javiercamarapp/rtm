@@ -1,72 +1,205 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { inventarioDeSocio, notificacionesDeSocio } from '@/composicion/inventario';
-import { PALABRA_COBERTURA, URGENCIA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
-import { etiquetaFechaHora } from '@/dominio/formato';
+import { operacionDeSocio } from '@/composicion/operacion';
+import { fechaNeg } from '@/dominio/calendario';
+import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { URGENCIA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
 import { destinoAviso } from '@/dominio/notificaciones/tipos';
+import { aNumero, contarPor, porcentaje, sumarPorSemana, ultimasSemanas } from '@/dominio/tablero/agregados';
+import { Aviso, ChipEstado, Segmentado } from '@/ui/componentes/controles';
+import { BarList, ListaHallazgos } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
-import { EstadoTexto } from '@/ui/componentes/estado-texto';
-import { EncabezadoPagina } from '@/ui/componentes/pagina';
+import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
+import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
+import { CoberturaDias, ColumnasPeriodo } from '@/ui/graficas';
 import { chipsPulso } from '@/ui/shell/pulso';
+import '@/ui/estilos/paginas-a1.css';
+import { CUBETA, ESTADO_PEDIDO, SEVERIDAD } from './operacion/etiquetas';
+import { centTexto, columnasSemana, deltaSemanal, NUMERO_SEMANAS, semanasDe, sparkSemanal } from './_a1/comun';
 import { etiquetaHoy } from './contexto';
-import { SEVERIDAD } from './operacion/etiquetas';
 
 export const metadata: Metadata = { title: 'Inicio' };
 
-export default async function Inicio() {
+const TONO_HALLAZGO = { C: 'malo', I: 'atencion', F: 'info' } as const;
+
+export default async function Inicio({ searchParams }: { searchParams: Promise<{ semanas?: string }> }) {
+  const sp = await searchParams;
+  const n = semanasDe(sp.semanas);
+  const op = await operacionDeSocio();
   const lector = await notificacionesDeSocio();
-  const [pulso, turno, inv] = await Promise.all([lector.pulso().catch(() => null), lector.tuTurno().catch(() => ({ items: [] })), (await inventarioDeSocio()).completo().catch(() => null)]);
+  const [pulso, turno, inv, cxc, pedidos] = await Promise.all([
+    lector.pulso().catch(() => null),
+    lector.tuTurno().catch(() => ({ items: [] })),
+    (await inventarioDeSocio()).completo().catch(() => null),
+    op.cuentasPorCobrar().catch(() => null),
+    op.pedidos().catch(() => null),
+  ]);
+  const hoy = fechaNeg(new Date());
+  const semanas = ultimasSemanas(hoy, n);
+  const enviados = (pedidos ?? []).filter((p) => p.estado === 'enviado');
+  const ventas = sumarPorSemana(enviados, semanas, (p) => p.fecha_neg, (p) => aNumero(p.cobrado_cent));
+  const utilidad = sumarPorSemana(enviados, semanas, (p) => p.fecha_neg, (p) => (p.utilidad_cent === null ? 0 : aNumero(p.utilidad_cent)));
+  const piezas = sumarPorSemana(enviados, semanas, (p) => p.fecha_neg, (p) => p.piezas_surtidas);
+  const hayPedidos = pedidos !== null && pedidos.length > 0;
+  const iSemana = semanas.length - 1;
+  const porEnviar = (pedidos ?? []).filter((p) => p.estado === 'confirmado');
+  const borradores = (pedidos ?? []).filter((p) => p.estado === 'borrador');
+  const conAvisos = (pedidos ?? []).filter((p) => p.avisos > 0 && p.estado !== 'anulado' && p.estado !== 'cancelado');
+  const utilidadProvisional = enviados.some((p) => p.utilidad_provisional);
+
   const indicadores = chipsPulso(pulso);
-  const hayDatos = indicadores.some((c) => c.texto !== null);
-  const reponer = (inv?.modelos ?? []).filter((m) => m.estado !== null && ['urge', 'brevedad'].includes(m.estado)).sort((a, b) => URGENCIA_COBERTURA[a.estado!] - URGENCIA_COBERTURA[b.estado!] || (a.cobertura_dias ?? 0) - (b.cobertura_dias ?? 0)).slice(0, 5);
+  const categoriaPulso = { isaac: 5, cobrar: 2, socios: 7, bodega: 8 } as const;
+  const notaPulso = {
+    isaac: 'Saldo de su cuenta',
+    cobrar: cxc ? `${cxc.por_cliente.length} clientes con saldo` : undefined,
+    socios: 'Posición neta de cada socio',
+    bodega: pulso?.en_bodega ? `${formatearPiezas(pulso.en_bodega.piezas)} · ${inv ? `${inv.totales.modelos_con_existencia} modelos` : 'a costo promedio'}` : undefined,
+  } as const;
+  const pulsoCeldas = indicadores.map((c) => ({
+    id: c.id, etiqueta: c.etiqueta, valor: c.id === 'bodega' ? (pulso?.en_bodega ? formatearMoneda(pulso.en_bodega.valor_cent) : null) : c.texto, href: c.href, ayuda: c.ayuda, testid: `inicio-${c.id}`, categoria: categoriaPulso[c.id as keyof typeof categoriaPulso], nota: notaPulso[c.id as keyof typeof notaPulso],
+    partes: c.id === 'cobrar' && cxc && cxc.total_cent > 0n ? (['0_7', '8_14', '15_30', 'mas_30'] as const).map((k) => ({ etiqueta: CUBETA[k]!, valor: aNumero(cxc.antiguedad_cent[k]) })) : undefined,
+  }));
+
+  const reponer = (inv?.modelos ?? []).filter((m) => m.estado !== null && ['urge', 'brevedad', 'siguiente'].includes(m.estado)).sort((a, b) => URGENCIA_COBERTURA[a.estado!] - URGENCIA_COBERTURA[b.estado!] || (a.cobertura_dias ?? 0) - (b.cobertura_dias ?? 0)).slice(0, 6);
+  const conCobertura = (inv?.modelos ?? []).filter((m) => m.cobertura_dias !== null);
+  const coberturaMedia = conCobertura.length ? conCobertura.reduce((a, m) => a + (m.cobertura_dias ?? 0), 0) / conCobertura.length : null;
+  const porMarca = new Map<string, bigint>();
+  for (const m of inv?.modelos ?? []) if (m.valor_cent !== null) porMarca.set(m.marca, (porMarca.get(m.marca) ?? 0n) + m.valor_cent);
+  const marcas = [...porMarca.entries()].sort((a, b) => (a[1] === b[1] ? 0 : a[1] < b[1] ? 1 : -1)).slice(0, 5);
+  const totalMarcas = marcas.reduce((a, [, v]) => a + v, 0n);
+
+  const vencidoPct = cxc ? porcentaje(aNumero(cxc.vencido_cent), aNumero(cxc.total_cent)) : null;
+  const asuntos = turno.items.length;
+  const subtitulo = hayPedidos
+    ? `Ventas de la semana ${centTexto(ventas[iSemana] ?? 0)} · por cobrar ${cxc ? formatearMoneda(cxc.total_cent) : 'sin dato'} · ${porEnviar.length} ${porEnviar.length === 1 ? 'pedido' : 'pedidos'} por enviar.`
+    : 'Todavía no hay pedidos: los indicadores dicen “Sin dato” en vez de inventar ceros.';
+
   return (
-    <>
+    <Pagina ancho="tablero">
       <EncabezadoPagina
         eyebrow={`Inicio · ${etiquetaHoy()}`}
-        antes={turno.items.length === 0 ? 'Nada que' : 'Te tocan'}
-        enfasis={turno.items.length === 0 ? 'atender' : `${turno.items.length} ${turno.items.length === 1 ? 'asunto' : 'asuntos'}`}
-        contexto={hayDatos ? 'Los cuatro indicadores salen de los hechos registrados y cada uno lleva a su pantalla. “Tu turno” lista lo abierto que pide una acción de tu parte.' : 'Todavía no hay datos: los indicadores dicen “Sin dato” en vez de inventar ceros. Aquí aparecerá lo que requiere tu turno.'}
+        titulo={asuntos === 0 ? 'Nada que atender' : `Te tocan ${asuntos} ${asuntos === 1 ? 'asunto' : 'asuntos'}`}
+        descripcion={subtitulo}
+        acciones={
+          <>
+            <Segmentado etiquetaAria="Periodo de las gráficas" tamano="chico" opciones={NUMERO_SEMANAS.map((s) => ({ valor: String(s), etiqueta: `${s} sem`, href: s === 8 ? '/' : `/?semanas=${s}`, activa: s === n }))} />
+            <Link className="rtm-boton rtm-boton-primario" href="/pedidos/nuevo">Nuevo pedido</Link>
+          </>
+        }
       />
-      <section className="rtm-kpis rtm-entra rtm-i-1" aria-label="Indicadores del pulso">
-        {indicadores.map((c) => (
-          <Link key={c.id} href={c.href} className="rtm-kpi rtm-kpi-enlace" data-testid={`inicio-${c.id}`} title={c.ayuda}>
-            <span>{c.etiqueta}</span>
-            <strong>{c.texto ?? <span className="rtm-sin-dato">Sin dato</span>}</strong>
-          </Link>
-        ))}
-      </section>
+      <KpiLinea etiquetaAria="Indicadores del pulso" celdas={pulsoCeldas} />
+      <KpiLinea
+        etiquetaAria="Indicadores de la operación"
+        celdas={[
+          {
+            id: 'ventas', etiqueta: 'Ventas de la semana', valor: hayPedidos ? centTexto(ventas[iSemana] ?? 0) : null, categoria: 1, href: '/pedidos',
+            delta: deltaSemanal(semanas, ventas, true), spark: sparkSemanal(semanas, ventas, centTexto), nota: `${formatearPiezas(piezas[iSemana] ?? 0)} surtidas · semana en curso`,
+          },
+          {
+            id: 'utilidad', etiqueta: utilidadProvisional ? 'Utilidad de la semana (provisional)' : 'Utilidad de la semana', valor: hayPedidos ? centTexto(utilidad[iSemana] ?? 0) : null, categoria: 3, href: '/contabilidad/estado-de-resultados',
+            delta: deltaSemanal(semanas, utilidad, true), nota: ventas[iSemana] ? `Margen ${(((utilidad[iSemana] ?? 0) / (ventas[iSemana] ?? 1)) * 100).toFixed(1)} % sobre lo vendido` : 'Sin ventas enviadas todavía',
+          },
+          { id: 'porenviar', etiqueta: 'Pedidos por enviar', valor: pedidos === null ? null : String(porEnviar.length), categoria: 6, href: '/pedidos?estado=confirmado', nota: `${borradores.length} ${borradores.length === 1 ? 'borrador' : 'borradores'} · ${conAvisos.length} con avisos` },
+          {
+            id: 'vencido', etiqueta: 'Vencido por cobrar', valor: cxc ? formatearMoneda(cxc.vencido_cent) : null, categoria: 4, href: '/cuentas-por-cobrar',
+            progreso: vencidoPct === null ? undefined : { pct: vencidoPct }, nota: vencidoPct === null ? undefined : `${vencidoPct.toFixed(1)} % del saldo por cobrar`,
+          },
+        ]}
+      />
+      <FilaRatios
+        etiqueta="Razones del negocio"
+        items={[
+          { etiqueta: 'Cobertura media', valor: coberturaMedia === null ? null : textoDias(coberturaMedia) },
+          { etiqueta: 'Modelos por reponer', valor: inv ? String((inv.modelos ?? []).filter((m) => m.estado === 'urge' || m.estado === 'brevedad').length) : null },
+          { etiqueta: 'Piezas apartadas', valor: inv ? formatearPiezas(inv.totales.reservado) : null },
+          { etiqueta: 'Clientes con saldo', valor: cxc ? String(cxc.por_cliente.length) : null },
+          { etiqueta: 'Saldos a favor', valor: cxc ? String(cxc.saldos_a_favor.length) : null },
+          { etiqueta: 'Pagos sin identificar', valor: cxc ? String(cxc.pagos_sin_identificar.length) : null },
+        ]}
+      />
+      {cxc && cxc.pagos_sin_identificar.length > 0 && (
+        <Aviso tono="atencion" titulo="Hay pagos sin identificar." acciones={<Link className="rtm-boton rtm-boton-chico" href="/cuentas-por-cobrar">Asignarlos</Link>}>{cxc.pagos_sin_identificar.length} {cxc.pagos_sin_identificar.length === 1 ? 'pago espera' : 'pagos esperan'} un cliente antes de aplicarse.</Aviso>
+      )}
 
-      <section className="rtm-seccion rtm-entra rtm-i-2" aria-label="Tu turno">
-        <h2>Tu turno</h2>
+      <Rejilla dividir="6-6">
+        <Tarjeta titulo="Ventas por semana" descripcion={`Lo cobrado de los pedidos enviados, últimas ${n} semanas; la semana en curso va con trama`}>
+          {hayPedidos ? (
+            <ColumnasPeriodo
+              titulo="Ventas cobradas por semana" descripcion={`Ventas de los pedidos enviados en las últimas ${n} semanas; la última es parcial.`} unidad="Ventas (pesos)" procedencia="observado"
+              pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: pedidos enviados`} datos={columnasSemana(semanas, ventas, centTexto, 'ventas', 100)}
+            />
+          ) : <p className="rtm-a1-estado-vacio">Sin pedidos todavía: aquí aparecerán las ventas por semana.</p>}
+        </Tarjeta>
+        <Tarjeta titulo="Por reponer primero" descripcion="Cobertura en días contra el tiempo de entrega" acciones={<Link href="/inventario">Inventario</Link>}>
+          {reponer.length >= 1 && inv ? (
+            <CoberturaDias
+              titulo="¿Qué modelos se acaban primero?" descripcion={`Cobertura en días de ${reponer.length} modelos contra el objetivo.`} procedencia="estimado" pie={`Corte: ${etiquetaFechaHora(inv.corte)}`}
+              filas={reponer.map((m) => ({ id: String(m.modelo_id), etiqueta: m.modelo, dias: m.cobertura_dias, textoDias: textoDias(m.cobertura_dias), estado: m.estado ?? 'sin_historia' }))}
+              umbrales={[{ id: 'obj', etiqueta: 'Objetivo', dias: inv.parametros.objetivo_dias }]}
+            />
+          ) : <p className="rtm-a1-estado-vacio">{inv ? 'Ningún modelo pide reposición ahora.' : 'Sin dato de inventario.'}</p>}
+        </Tarjeta>
+      </Rejilla>
+
+      <Rejilla dividir="6-6">
+        <Tarjeta titulo="Antigüedad de lo por cobrar" descripcion={cxc ? `Total ${formatearMoneda(cxc.total_cent)} · vencido ${formatearMoneda(cxc.vencido_cent)}` : undefined} acciones={<Link href="/cuentas-por-cobrar">Ver cuentas</Link>}>
+          {cxc && cxc.total_cent > 0n ? (
+            <BarList
+              etiquetaAria="Saldo por antigüedad"
+              items={(['0_7', '8_14', '15_30', 'mas_30'] as const).map((k) => ({ id: k, etiqueta: CUBETA[k]!, texto: formatearMoneda(cxc.antiguedad_cent[k]), pct: porcentaje(aNumero(cxc.antiguedad_cent[k]), aNumero(cxc.total_cent)), tono: k === 'mas_30' ? ('malo' as const) : k === '15_30' ? ('atencion' as const) : undefined }))}
+            />
+          ) : <p className="rtm-a1-estado-vacio">{cxc ? 'Nada por cobrar: no hay saldos abiertos.' : 'Sin dato de cobranza.'}</p>}
+        </Tarjeta>
+        <Tarjeta titulo="Mayores saldos" descripcion="Cliente, saldo y lo vencido" acciones={<Link href="/clientes">Clientes</Link>}>
+          {cxc && cxc.por_cliente.length > 0 ? (
+            <BarList
+              etiquetaAria="Clientes con mayor saldo"
+              items={[...cxc.por_cliente].sort((a, b) => (a.saldo_cent === b.saldo_cent ? 0 : a.saldo_cent < b.saldo_cent ? 1 : -1)).slice(0, 6).map((c) => ({
+                id: String(c.cliente_id), etiqueta: c.cliente, href: `/clientes/${c.cliente_id}`, texto: formatearMoneda(c.saldo_cent), pct: porcentaje(aNumero(c.saldo_cent), aNumero(cxc.total_cent)),
+                nota: c.vencido_cent > 0n ? `vencido ${formatearMoneda(c.vencido_cent)} · ${c.dias_max} d` : `${c.dias_max} d`, tono: c.vencido_cent > 0n ? ('malo' as const) : undefined,
+              }))}
+            />
+          ) : <p className="rtm-a1-estado-vacio">{cxc ? 'Ningún cliente con saldo.' : 'Sin dato de cobranza.'}</p>}
+        </Tarjeta>
+      </Rejilla>
+
+      <Rejilla dividir="8-4">
+        <Tarjeta titulo="Tu turno" descripcion="Lo abierto que pide una acción tuya" acciones={<Link href="/avisos">Ver todo</Link>}>
+          <ListaHallazgos
+            etiquetaAria="Tu turno" vacio="Nada que atender"
+            items={turno.items.slice(0, 6).map((i) => {
+              const d = destinoAviso(i.entidad_tipo, i.entidad_id);
+              return {
+                id: `${i.clase}-${i.id}`, tono: TONO_HALLAZGO[i.severidad], palabra: SEVERIDAD[i.severidad]!.texto, titulo: d ? <Link href={d}>{i.titulo}</Link> : i.titulo,
+                detalle: `${i.botones.length ? i.botones.join(' / ') : 'Abrir'} · desde ${etiquetaFechaHora(i.creado_at)}`,
+              };
+            })}
+          />
+        </Tarjeta>
+        <Tarjeta titulo="Inventario por marca" descripcion={inv ? `${formatearPiezas(inv.totales.piezas)} · ${formatearMoneda(inv.totales.valor_cent)} a costo promedio` : undefined}>
+          {marcas.length > 0 ? (
+            <BarList etiquetaAria="Valor del inventario por marca" items={marcas.map(([m, v]) => ({ id: m, etiqueta: m, texto: formatearMoneda(v), pct: porcentaje(aNumero(v), aNumero(totalMarcas)) }))} />
+          ) : <p className="rtm-a1-estado-vacio">Sin existencia registrada.</p>}
+        </Tarjeta>
+      </Rejilla>
+
+      <Tarjeta plana titulo="Pedidos recientes" descripcion={pedidos ? `${pedidos.length} en el libro · ${contarPor(pedidos, (p) => p.estado).map((c) => `${c.n} ${ESTADO_PEDIDO[c.clave as keyof typeof ESTADO_PEDIDO].texto.toLowerCase()}`).join(' · ')}` : undefined} acciones={<Link href="/pedidos">Ver todos</Link>}>
         <DataTable
-          etiqueta="Tu turno"
-          clave={(i) => `${i.clase}-${i.id}`}
-          filas={turno.items}
-          vacio={{ titulo: 'Nada que atender', texto: 'Aquí verás los avisos abiertos que piden una acción, las diferencias de recepción sin resolver y las tomas de Omar pendientes de autorización.' }}
+          etiqueta="Pedidos recientes" densidad="densa" plana primeraFija clave={(p) => p.id}
+          filas={[...(pedidos ?? [])].sort((a, b) => b.fecha_neg.localeCompare(a.fecha_neg) || b.id - a.id).slice(0, 8)}
+          vacio={{ titulo: 'Sin pedidos', texto: 'Crea el primer pedido para ver aquí su avance.', accion: <Link className="rtm-boton" href="/pedidos/nuevo">Nuevo pedido</Link> }}
+          totales={pedidos && pedidos.length > 0 ? { etiqueta: 'Total mostrado', celdas: { z: formatearPiezas([...pedidos].sort((a, b) => b.fecha_neg.localeCompare(a.fecha_neg) || b.id - a.id).slice(0, 8).reduce((a, p) => a + p.piezas_pedidas, 0)) } } : undefined}
           columnas={[
-            { id: 's', titulo: 'Severidad', celda: (i) => <EstadoTexto tono={SEVERIDAD[i.severidad]!.tono}>{SEVERIDAD[i.severidad]!.texto}</EstadoTexto> },
-            { id: 't', titulo: 'Asunto', celda: (i) => { const d = destinoAviso(i.entidad_tipo, i.entidad_id); return d ? <Link href={d}>{i.titulo}</Link> : i.titulo; } },
-            { id: 'a', titulo: 'Acciones', secundaria: true, celda: (i) => (i.botones.length ? i.botones.join(' / ') : 'Abrir') },
-            { id: 'h', titulo: 'Desde', secundaria: true, celda: (i) => etiquetaFechaHora(i.creado_at) },
+            { id: 'f', titulo: 'Folio', ancho: 'm', celda: (p) => <Link className="rtm-mono" href={`/pedidos/${p.id}`}>{p.folio}</Link> },
+            { id: 'c', titulo: 'Cliente', ancho: 'l', celda: (p) => p.cliente },
+            { id: 'd', titulo: 'Fecha', ancho: 'm', secundaria: true, celda: (p) => etiquetaFecha(p.fecha_neg) },
+            { id: 'z', titulo: 'Piezas', numerica: true, ancho: 's', celda: (p) => formatearPiezas(p.piezas_pedidas) },
+            { id: 'b', titulo: 'Cobrado', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? formatearMoneda(p.cobrado_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
+            { id: 'e', titulo: 'Estado', ancho: 'm', celda: (p) => <ChipEstado tono={p.estado === 'enviado' ? 'ok' : p.estado === 'anulado' ? 'malo' : p.estado === 'confirmado' ? 'atencion' : 'apagado'}>{ESTADO_PEDIDO[p.estado].texto}</ChipEstado> },
           ]}
         />
-      </section>
-
-      {reponer.length > 0 && (
-        <section className="rtm-seccion rtm-entra rtm-i-3" aria-label="Por reponer">
-          <h2>Por reponer</h2>
-          <DataTable
-            etiqueta="Modelos que se acaban primero"
-            clave={(m) => m.modelo_id}
-            filas={reponer}
-            columnas={[
-              { id: 'm', titulo: 'Modelo', celda: (m) => <Link href={`/inventario/kardex?modelo=${m.modelo_id}`}>{m.marca} · {m.modelo}</Link> },
-              { id: 'c', titulo: 'Cobertura', numerica: true, celda: (m) => textoDias(m.cobertura_dias) },
-              { id: 's', titulo: 'Semáforo', celda: (m) => <EstadoTexto tono={m.estado === 'urge' ? 'malo' : 'atencion'}>{PALABRA_COBERTURA[m.estado!]}</EstadoTexto> },
-            ]}
-          />
-        </section>
-      )}
-    </>
+      </Tarjeta>
+    </Pagina>
   );
 }

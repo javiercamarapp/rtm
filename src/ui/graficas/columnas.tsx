@@ -32,7 +32,7 @@ interface Props extends BaseGrafica {
   tablaAbierta?: boolean;
 }
 
-const MI = 36; // margen izquierdo para las marcas del eje
+const MI = 46; // margen izquierdo para las marcas del eje
 const MS = 14;
 const MB = 24;
 
