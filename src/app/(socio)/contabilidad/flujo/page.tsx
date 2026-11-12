@@ -65,7 +65,7 @@ export default async function PaginaFlujo({ searchParams }: { searchParams: Prom
               { etiqueta: 'Cambio en pasivos de operación', valor: m(f.indirecto.cambio_pasivos_cent, true) },
             ]}
           />
-          <Rejilla dividir="8-4">
+          <Rejilla dividir="6-6">
             <Tarjeta titulo="Del saldo inicial al final" descripcion="Operación y financiamiento">
               <Cascada titulo="Cascada del flujo de efectivo" descripcion={`Saldo inicial ${m(f.saldo_inicial_cent)}; operación ${m(f.flujo_operacion_cent, true)}; financiamiento ${m(f.flujo_financiamiento_cent, true)}; saldo final ${m(f.saldo_final_cent)}.`} pasos={pasos} unidad="Pesos" />
             </Tarjeta>

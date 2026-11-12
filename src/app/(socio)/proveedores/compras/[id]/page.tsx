@@ -81,7 +81,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
 
       {recibible && <FormularioRecepcion compra={c} sabores={sabores} />}
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="12">
         <div className="a3-pila">
           {c.recepciones.length > 0 && (
             <Tarjeta plana titulo="Recepción por sabor">
@@ -110,7 +110,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
           )}
         </div>
         <Tarjeta titulo="Línea de tiempo">
-          <LineaTiempo eventos={c.linea_tiempo.map((e) => ({ id: e.evento, fecha: etiquetaFechaHora(e.hora), titulo: (e.tipo ?? e.evento).replaceAll('_', ' '), detalle: `${e.autor ?? e.canal} · ${e.evento}` }))} />
+          <LineaTiempo columnas={2} eventos={c.linea_tiempo.map((e) => ({ id: e.evento, fecha: etiquetaFechaHora(e.hora), titulo: (e.tipo ?? e.evento).replaceAll('_', ' '), detalle: `${e.autor ?? e.canal} · ${e.evento}` }))} />
         </Tarjeta>
       </Rejilla>
     </Pagina>

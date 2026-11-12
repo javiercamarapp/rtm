@@ -99,7 +99,7 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
         ]}
       />
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Renta menos tomas igual al neto" descripcion="De lo que se devenga a lo que se liquida">
           <Cascada titulo="Cascada de la semana con Omar" descripcion={`Renta ${m(o.renta_cent)}, tomas ${m(o.tomas_cent)}, neto ${m(neto, true)}.`} pasos={pasos} unidad="Pesos" />
         </Tarjeta>

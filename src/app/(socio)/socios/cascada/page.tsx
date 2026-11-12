@@ -90,7 +90,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
         ]}
       />
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Del efectivo de la sociedad a lo que queda" descripcion="La cascada completa del periodo">
           <Cascada titulo="Cascada de reparto" descripcion={`Efectivo ${m(c.efectivo.total_cent)}; reembolsos ${m(c.reembolsos.pagado_cent)}; aportaciones ${m(c.aportaciones.pagado_cent)}; utilidad repartida ${m(c.repartible_cent)}; queda ${m(c.remanente_cent)}.`} pasos={pasos} unidad="Pesos" />
         </Tarjeta>
@@ -131,8 +131,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
           />
       </Tarjeta>
 
-      <Rejilla dividir="4-8">
-        <div className="a3-pila">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Resultado de cada socio" descripcion="Recibe o entrega, en magnitud">
           <BarList etiquetaAria="Resultado por socio" items={(['Angelo', 'Javier'] as const).map((s) => ({ id: s, etiqueta: s, texto: m(ps[s].resultado_cent, true), pct: maxRes > 0n ? pct(abs(ps[s].resultado_cent), maxRes) : null, nota: ps[s].resultado_cent > 0n ? 'Recibe' : ps[s].resultado_cent < 0n ? 'Entrega' : 'En paz', tono: ps[s].resultado_cent < 0n ? 'malo' : undefined }))} />
           <Pie>Identidad: lo que se asigna a los dos ({m(c.suma_asignada_cent)}) es exactamente el efectivo repartido.</Pie>
@@ -154,7 +153,8 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
             </div>
           ) : <Pie>El periodo aún no termina: se puede proponer el cierre a partir del {etiquetaFecha(sumarDias(fin, 1))}. Mientras tanto esta vista es una proyección.</Pie>}
         </Tarjeta>
-        </div>
+      </Rejilla>
+
         <Tarjeta plana titulo="Cierre firmado por los dos" descripcion="Cada cierre congela las cifras y requiere las dos firmas">
           <DataTable
             etiqueta="Cierres de reparto"
@@ -175,7 +175,6 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
             ]}
           />
         </Tarjeta>
-      </Rejilla>
     </Pagina>
   );
 }

@@ -355,3 +355,21 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-seg > a[aria-current='true'] small { color: inherit; opacity: 0.8; }
 .rtm-chip-v2[aria-current='true'] { background: var(--rtm-ink); color: var(--rtm-panel); border-color: var(--rtm-ink); }
 .rtm-pestanas a[aria-current='page']::before, .rtm-seg > a[aria-current='true']::before { content: none; }
+
+/* Etapa 3 (ancho): la etiqueta de bloque no ensancha su columna; el titulo de grupo se recorta; relleno denso de 8 px */
+.rtm-dt-bloques .rtm-dt-celda { max-width: 0; overflow: visible; white-space: nowrap; }
+.rtm-dt-grupo-boton { max-width: 100%; min-width: 0; }
+.rtm-dt-grupo-boton > :not(.rtm-dt-flecha) { min-width: 0; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.rtm-dt-caja[data-densidad='densa'] .rtm-dt-celda { padding: 0 8px; }
+.rtm-dt-fila-grupo .rtm-dt-celda:first-child { max-width: 320px; }
+
+/* BarList en dos columnas (tarjetas de ancho completo) */
+.rtm-barlist[data-columnas='2'] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 40px; align-content: start; }
+@media (max-width: 767px) { .rtm-barlist[data-columnas='2'] { grid-template-columns: minmax(0, 1fr); } }
+/* Etiqueta de bloque (ENTRADAS, SALIDAS, EXISTENCIAS): la celda inicial va por encima de las siguientes para que el texto desborde sin recortarse */
+.rtm-dt-caja:not([data-pegajosa]) .rtm-dt-bloques .rtm-dt-celda[data-bloque-inicio] { position: relative; }
+.rtm-dt-caja .rtm-dt-bloques .rtm-dt-celda[data-bloque-inicio] { z-index: 6; }
+.rtm-ckv[data-columnas='2'] > div { grid-template-columns: minmax(0, 1fr) auto; }
+
+.rtm-ltiempo[data-columnas='2'] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 40px; }
+@media (max-width: 767px) { .rtm-ltiempo[data-columnas='2'] { grid-template-columns: minmax(0, 1fr); } }

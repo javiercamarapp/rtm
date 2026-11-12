@@ -91,7 +91,7 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
         ]}
       />
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="De dónde sale lo que falta" descripcion="Saldo anterior + costo total con guías − pagos − ajustes">
           <Cascada titulo="Cascada de la liquidación" descripcion={`Falta por saldar ${m(t.falta_por_saldar_cent)} desde un saldo anterior de ${m(t.saldo_anterior_cent)}.`} pasos={pasos} unidad="Pesos" />
         </Tarjeta>

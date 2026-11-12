@@ -47,8 +47,11 @@ export default async function PaginaMayor({ searchParams }: { searchParams: Prom
             { id: 'activas', etiqueta: 'Cuentas activas', valor: String(l.cuentas.filter((c) => c.activa).length), categoria: 4, nota: `${l.cuentas.filter((c) => !c.activa).length} inactivas` },
           ]}
         />
-        <Rejilla dividir="8-4">
-          <Tarjeta plana titulo="Plan de cuentas" descripcion="Agrupadas por tipo; el saldo está en la naturaleza de cada cuenta">
+        <Tarjeta titulo="Saldo por tipo de cuenta" descripcion="Cada tipo en su naturaleza">
+            <BarList columnas={2} etiquetaAria="Saldo por tipo" items={tipos.map((x) => ({ id: x.t, etiqueta: NOMBRE_TIPO[x.t], texto: m(x.saldo), pct: maxTipo > 0n ? pct(abs(x.saldo), maxTipo) : null, nota: `${x.n} con saldo` }))} />
+            <Pie>Los tipos no se suman entre sí: cada uno se lee en su naturaleza deudora o acreedora.</Pie>
+        </Tarjeta>
+        <Tarjeta plana titulo="Plan de cuentas" descripcion="Agrupadas por tipo; el saldo está en la naturaleza de cada cuenta">
             <DataTable
               etiqueta="Cuentas del mayor"
               densidad="libro" plana pegajosa primeraFija
@@ -66,12 +69,7 @@ export default async function PaginaMayor({ searchParams }: { searchParams: Prom
                 { id: 's', titulo: 'Saldo', numerica: true, ancho: 'm', celda: (c) => <CifraComprobada texto={m(c.saldo_cent)} cifra={`conta:saldo:${c.codigo}`} comprobacion="cuadra" /> },
               ]}
             />
-          </Tarjeta>
-          <Tarjeta titulo="Saldo por tipo de cuenta" descripcion="Cada tipo en su naturaleza">
-            <BarList etiquetaAria="Saldo por tipo" items={tipos.map((x) => ({ id: x.t, etiqueta: NOMBRE_TIPO[x.t], texto: m(x.saldo), pct: maxTipo > 0n ? pct(abs(x.saldo), maxTipo) : null, nota: `${x.n} con saldo` }))} />
-            <Pie>Los tipos no se suman entre sí: cada uno se lee en su naturaleza deudora o acreedora.</Pie>
-          </Tarjeta>
-        </Rejilla>
+        </Tarjeta>
       </Pagina>
     );
   }

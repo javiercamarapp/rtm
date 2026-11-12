@@ -65,7 +65,7 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
     )) },
     ...(vS ? [] : unico
       ? [{ id: 's', titulo: 'Sabor', ancho: 'm' as const, prioridadMovil: 'normal' as const, celda: (f: Fila) => cel(f, (x) => x.sabor) }]
-      : [{ id: 'mo', titulo: 'Modelo › sabor', ancho: 'l' as const, truncar: 'l' as const, prioridadMovil: 'normal' as const, celda: (f: Fila) => cel(f, (x) => <span className="rtm-a2-nowrap">{x.modelo}<span className="rtm-a2-nota"> › {x.sabor}</span></span>) }]),
+      : [{ id: 'mo', titulo: 'Modelo › sabor', ancho: 'l' as const, truncar: 'm' as const, prioridadMovil: 'normal' as const, celda: (f: Fila) => cel(f, (x) => <span className="rtm-a2-nowrap">{x.modelo}<span className="rtm-a2-nota"> › {x.sabor}</span></span>) }]),
     { id: 'ec', prioridadMovil: 'normal' as const, titulo: 'Piezas', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_piezas === null ? '' : pzs(x.entra_piezas))) },
     { id: 'eu', prioridadMovil: 'normal' as const, titulo: 'V. unit.', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_unit_cent === null ? '' : m(x.entra_unit_cent))) },
     { id: 'et', prioridadMovil: 'normal' as const, titulo: 'Total', bloque: 'Entradas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.entra_total_cent === null ? '' : m(x.entra_total_cent))) },

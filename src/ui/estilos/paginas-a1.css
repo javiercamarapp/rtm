@@ -31,6 +31,8 @@
 .rtm-pila-llena { display: flex; flex-direction: column; gap: var(--rtm-ritmo); min-width: 0; }
 .rtm-pila-llena > .rtm-tarjeta-v2 { flex: 1 1 auto; }
 .rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos), .rtm-pila-llena > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos) { flex: 1 1 auto; }
-.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-barlist > li, .rtm-pila-llena > .rtm-tarjeta-v2 > .rtm-barlist > li { flex: 1 1 auto; max-height: 64px; display: flex; flex-direction: column; justify-content: center; }
+.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-barlist > li, .rtm-pila-llena > .rtm-tarjeta-v2 > .rtm-barlist > li { flex: 1 1 auto; max-height: 96px; display: flex; flex-direction: column; justify-content: center; }
 .rtm-rejilla > .rtm-tarjeta-v2 > .rtm-hallazgos > li { flex: 1 1 auto; max-height: 76px; }
 .rtm-hallazgos { display: flex; flex-direction: column; }
+
+.a3-pila > .rtm-tarjeta-v2, .rtm-a2-apilado > .rtm-tarjeta-v2 { flex: 1 1 auto; }

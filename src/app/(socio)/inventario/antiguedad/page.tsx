@@ -67,11 +67,11 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
             { id: 't', titulo: 'Tramo', ancho: 'm', celda: (f) => (f.dias === null ? <SinDato /> : tramoDe(f.dias).etiqueta) },
             { id: 'us', titulo: 'Días sin salida', numerica: true, ancho: 'm', celda: (f) => (f.diasSal === null ? <SinDato /> : String(f.diasSal)) },
             { id: 'v', titulo: 'Valor a costo', numerica: true, ancho: 'm', celda: (f) => m(f.valor_cent) },
+            { id: 'e', titulo: 'Semáforo', ancho: 'l', celda: (f) => (f.estado ? <ChipEstado tono={tonoChip(TONO_COBERTURA[f.estado])}>{PALABRA_COBERTURA[f.estado]}</ChipEstado> : <SinDato />) },
             { id: 'en', titulo: 'Entradas', numerica: true, ancho: 's', celda: (f) => pzs(f.entradas) },
             { id: 'sa', titulo: 'Salidas', numerica: true, ancho: 's', celda: (f) => pzs(f.salidas) },
             { id: 'ro', titulo: 'Rotación', numerica: true, ancho: 's', celda: (f) => (f.rot === null ? <SinDato /> : dec(f.rot, 2)) },
             { id: 'c', titulo: 'Cobertura', numerica: true, ancho: 's', celda: (f) => (f.cobertura_dias === null ? <SinDato /> : textoDias(f.cobertura_dias)) },
-            { id: 'e', titulo: 'Semáforo', ancho: 'l', celda: (f) => (f.estado ? <ChipEstado tono={tonoChip(TONO_COBERTURA[f.estado])}>{PALABRA_COBERTURA[f.estado]}</ChipEstado> : <SinDato />) },
           ]}
           totales={{ etiqueta: `Total (${filas.length} sabores)`, celdas: { p: pz(totalPz), v: m(totalV), en: pz(filas.reduce((a, f) => a + f.entradas, 0)), sa: pz(filas.reduce((a, f) => a + f.salidas, 0)) } }}
         />

@@ -61,7 +61,7 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
       />
       <FilaRatios etiqueta="Razones de los avisos" items={[{ etiqueta: 'Informativas', valor: String(por('F')) }, { etiqueta: 'Leídas', valor: todas.length ? `${(((todas.length - todas.filter((a) => !a.leida).length) / todas.length) * 100).toFixed(0)} %` : null }, { etiqueta: 'Repetidos', valor: String(todas.filter((a) => a.conteo > 1).length) }, { etiqueta: 'Telegram no salió', valor: String(sinTelegram) }]} />
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Pendientes por atender" descripcion="Avisos abiertos, de mayor a menor severidad">
           <ListaHallazgos
             etiquetaAria="Avisos con acción" vacio="Nada que atender"

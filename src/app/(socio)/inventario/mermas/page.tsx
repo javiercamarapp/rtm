@@ -39,7 +39,17 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
             {r.meses.length >= 2 ? (
               <ColumnasPeriodo titulo="Piezas perdidas por mes" descripcion={`Mermas y ajustes en ${r.meses.length} meses.`} unidad="Piezas" procedencia="observado" pie="Fuente: libro de movimientos" alto={140}
                 datos={r.meses.map((x) => ({ id: x.mes, etiqueta: mesEtiqueta(x.mes), valor: Math.max(0, x.merma_piezas + x.ajuste_piezas), texto: pz(x.merma_piezas + x.ajuste_piezas) ?? '', detalle: `Merma ${pz(x.merma_piezas)} · ajuste ${pz(x.ajuste_piezas)}` }))} />
-            ) : <p className="rtm-a2-nota">Con un solo mes no se dibuja la serie: {r.meses[0] ? `${mesEtiqueta(r.meses[0].mes)}, ${pz(r.meses[0].merma_piezas + r.meses[0].ajuste_piezas)} piezas.` : ''}</p>}
+            ) : r.meses[0] ? (
+              <>
+                <p className="rtm-a2-nota">Con un solo mes no se dibuja la serie. Este es el mes con movimiento:</p>
+                <dl className="rtm-a1-sub">
+                  <div><dt>Mes</dt><dd>{mesEtiqueta(r.meses[0].mes)}</dd></div>
+                  <div><dt>Mermas</dt><dd>{pz(r.meses[0].merma_piezas)}</dd></div>
+                  <div><dt>Ajustes de conteo</dt><dd>{pz(r.meses[0].ajuste_piezas)}</dd></div>
+                  <div><dt>Total</dt><dd>{pz(r.meses[0].merma_piezas + r.meses[0].ajuste_piezas)}</dd></div>
+                </dl>
+              </>
+            ) : <p className="rtm-a2-nota">Sin movimientos en el periodo.</p>}
           </Tarjeta>
           <Tarjeta titulo="Valor perdido por modelo" descripcion="A costo promedio">
             <BarList etiquetaAria="Valor perdido por modelo" items={r.modelos.slice(0, 8).map((x) => ({ id: String(x.modelo_id), etiqueta: x.modelo, texto: `${pz(x.piezas)} · ${m(x.valor_cent)}`, pct: maxMod > 0n ? Math.round((Number(x.valor_cent) / Number(maxMod)) * 100) : null }))} mostrarPct={false} />

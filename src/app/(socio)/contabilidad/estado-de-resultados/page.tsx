@@ -113,7 +113,7 @@ export default async function PaginaEstadoResultados({ searchParams }: { searchP
               { etiqueta: 'Reparto 50/50', valor: `Angelo ${m(e.angelo_cent)} · Javier ${m(e.javier_cent)}` },
             ]}
           />
-          <Rejilla dividir="8-4">
+          <Rejilla dividir="6-6">
             <Tarjeta titulo="De las ventas a la utilidad neta" descripcion="Cada paso del estado de resultados">
               <Cascada titulo="Cascada del estado de resultados" descripcion={`Ventas netas ${m(e.ventas_netas_cent)}; utilidad neta ${m(e.utilidad_neta_cent, true)}.`} pasos={pasos} unidad="Pesos" />
             </Tarjeta>

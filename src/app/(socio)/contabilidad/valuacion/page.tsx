@@ -57,8 +57,8 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
 
   const filaAcum = (rows: Renglon[]) => (g: string) => rows.filter((x) => x.grupo === g).reduce((a, x) => a + x.importe, 0n);
   const col = (total: bigint) => [
-    { id: 'c', titulo: 'Concepto', ancho: 'l' as const, truncar: 'l' as const, celda: (x: Renglon) => x.concepto },
-    { id: 'd', titulo: 'Detalle', ancho: 'm' as const, truncar: 'm' as const, secundaria: true, celda: (x: Renglon) => x.detalle },
+    { id: 'c', titulo: 'Concepto', ancho: 'l' as const, truncar: 'm' as const, celda: (x: Renglon) => x.concepto },
+    { id: 'd', titulo: 'Detalle', ancho: 'm' as const, truncar: 's' as const, secundaria: true, celda: (x: Renglon) => x.detalle },
     { id: 'i', titulo: 'Importe', numerica: true, ancho: 'm' as const, celda: (x: Renglon) => (sd ? <SinDato /> : m(x.importe)) },
     { id: 'p', titulo: '% del total', numerica: true, ancho: 's' as const, celda: (x: Renglon) => (sd ? <SinDato /> : pctTexto(partePct(x.importe, total)) ?? <SinDato />) },
   ];
@@ -86,9 +86,17 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
         { id: 'c', etiqueta: 'Crecimiento del mes', valor: bpTexto(crec), categoria: 6, nota: previo ? `Contra el corte del ${fecha(previo.corte)}` : 'Sin corte anterior' },
       ]} />
 
+        <Tarjeta titulo="Comprobaciones" descripcion="Identidades de la valuación">
+            <ListaClaveValor columnas={2} items={[
+              { k: 'I-1 valuación menos deudas = capital por cuentas', v: <EstadoTexto tono={v.identidades.i1.cuadra ? 'ok' : 'malo'}>{v.identidades.i1.cuadra ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
+              { k: 'I-2 utilidad = diferencia − capital − retenidas', v: <EstadoTexto tono={v.identidades.i2.cuadra ? 'ok' : 'malo'}>{v.identidades.i2.cuadra ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
+              { k: 'Activo por renglones = valuación', v: <EstadoTexto tono={cuadraA ? 'ok' : 'malo'}>{cuadraA ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
+              { k: 'Deudas por renglones = deudas', v: <EstadoTexto tono={cuadraD ? 'ok' : 'malo'}>{cuadraD ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
+            ]} />
+        </Tarjeta>
       <Rejilla dividir="6-6">
         <Tarjeta titulo="De la valuación a la utilidad" descripcion="Cascada hasta la utilidad">
-            {sd ? <p className="rtm-a2-nota">Sin asientos: la cascada aparece con el primer movimiento.</p> : (
+          {sd ? <p className="rtm-a2-nota">Sin asientos: la cascada aparece con el primer movimiento.</p> : (
               <Cascada titulo="De la valuación a la utilidad" descripcion="Valuación menos deudas, menos capital aportado neto y utilidades retenidas igual a la utilidad de la empresa." unidad="Pesos" procedencia="observado" pie={`Corte: ${fecha(hasta)}`}
                 pasos={[
                   { id: 'v', etiqueta: 'Valuación', valor: Number(v.v01_valuacion_cent), tipo: 'inicio', texto: m(v.v01_valuacion_cent) ?? '' },
@@ -100,32 +108,6 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
                 ]} />
             )}
           </Tarjeta>
-        <div className="rtm-a2-apilado">
-          <Tarjeta titulo="Comprobaciones" descripcion="Identidades de la valuación">
-            <ListaClaveValor items={[
-              { k: 'I-1 valuación menos deudas = capital por cuentas', v: <EstadoTexto tono={v.identidades.i1.cuadra ? 'ok' : 'malo'}>{v.identidades.i1.cuadra ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
-              { k: 'I-2 utilidad = diferencia − capital − retenidas', v: <EstadoTexto tono={v.identidades.i2.cuadra ? 'ok' : 'malo'}>{v.identidades.i2.cuadra ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
-              { k: 'Activo por renglones = valuación', v: <EstadoTexto tono={cuadraA ? 'ok' : 'malo'}>{cuadraA ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
-              { k: 'Deudas por renglones = deudas', v: <EstadoTexto tono={cuadraD ? 'ok' : 'malo'}>{cuadraD ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
-            ]} />
-          </Tarjeta>
-        <Tarjeta titulo="Activo por grupo" descripcion="Parte de la valuación">
-          <BarList etiquetaAria="Activo por grupo" items={gruposActivo.map((g) => ({ id: g, etiqueta: g, texto: m(filaAcum(activo)(g)) ?? '', pct: sd ? null : partePct(filaAcum(activo)(g), v.v01_valuacion_cent) }))} />
-          {gruposDeuda.length > 0 && <BarList etiquetaAria="Deudas por grupo" items={gruposDeuda.map((g) => ({ id: g, etiqueta: g, texto: m(filaAcum(deudas)(g)) ?? '', pct: sd ? null : partePct(filaAcum(deudas)(g), v.v02_deudas_cent) }))} />}
-        </Tarjeta>
-        </div>
-      </Rejilla>
-      <Rejilla dividir="6-6">
-        <Tarjeta plana className="rtm-a2-tabla" titulo="Activo a costo" descripcion="Cada renglón con su parte del total">
-          <DataTable
-            etiqueta="Activo a costo por renglón" clave={(x) => x.clave} filas={activo} densidad="densa" plana primeraFija
-            vacio={{ titulo: 'Sin activo registrado', texto: 'Aparece con el primer asiento contable.' }}
-            columnas={col(v.v01_valuacion_cent)}
-            agrupar={{ clave: (x) => x.grupo, cerradosPorDefecto: false, cabecera: (g) => ({ titulo: g, subtotales: { i: sd ? <SinDato /> : m(filaAcum(activo)(g)), p: sd ? <SinDato /> : pctTexto(partePct(filaAcum(activo)(g), v.v01_valuacion_cent)) ?? <SinDato /> } }) }}
-            totales={{ etiqueta: 'Total del activo', celdas: { i: sd ? <SinDato /> : m(totA), p: sd ? null : '100 %' } }}
-          />
-          <div className="rtm-a2-pie-tabla"><span>Comprobación: renglones {m(totA)} contra valuación {m(v.v01_valuacion_cent)}</span><EstadoTexto tono={cuadraA ? 'ok' : 'malo'}>{cuadraA ? 'Cuadra' : 'No cuadra'}</EstadoTexto></div>
-        </Tarjeta>
         <Tarjeta plana className="rtm-a2-tabla" titulo="Deudas" descripcion="Lo que la sociedad debe al corte">
           <DataTable
             etiqueta="Deudas por renglón" clave={(x) => x.clave} filas={deudas} densidad="densa" plana primeraFija
@@ -137,6 +119,20 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           <div className="rtm-a2-pie-tabla"><span>Comprobación: renglones {m(totD)} contra deudas {m(v.v02_deudas_cent)}</span><EstadoTexto tono={cuadraD ? 'ok' : 'malo'}>{cuadraD ? 'Cuadra' : 'No cuadra'}</EstadoTexto></div>
         </Tarjeta>
       </Rejilla>
+      <Tarjeta titulo="Activo por grupo" descripcion="Parte de la valuación">
+          <BarList columnas={2} etiquetaAria="Activo por grupo" items={gruposActivo.map((g) => ({ id: g, etiqueta: g, texto: m(filaAcum(activo)(g)) ?? '', pct: sd ? null : partePct(filaAcum(activo)(g), v.v01_valuacion_cent) }))} />
+          {gruposDeuda.length > 0 && <BarList columnas={2} etiquetaAria="Deudas por grupo" items={gruposDeuda.map((g) => ({ id: g, etiqueta: g, texto: m(filaAcum(deudas)(g)) ?? '', pct: sd ? null : partePct(filaAcum(deudas)(g), v.v02_deudas_cent) }))} />}
+      </Tarjeta>
+      <Tarjeta plana className="rtm-a2-tabla" titulo="Activo a costo" descripcion="Cada renglón con su parte del total">
+          <DataTable
+            etiqueta="Activo a costo por renglón" clave={(x) => x.clave} filas={activo} densidad="densa" plana primeraFija
+            vacio={{ titulo: 'Sin activo registrado', texto: 'Aparece con el primer asiento contable.' }}
+            columnas={col(v.v01_valuacion_cent)}
+            agrupar={{ clave: (x) => x.grupo, cerradosPorDefecto: false, cabecera: (g) => ({ titulo: g, subtotales: { i: sd ? <SinDato /> : m(filaAcum(activo)(g)), p: sd ? <SinDato /> : pctTexto(partePct(filaAcum(activo)(g), v.v01_valuacion_cent)) ?? <SinDato /> } }) }}
+            totales={{ etiqueta: 'Total del activo', celdas: { i: sd ? <SinDato /> : m(totA), p: sd ? null : '100 %' } }}
+          />
+          <div className="rtm-a2-pie-tabla"><span>Comprobación: renglones {m(totA)} contra valuación {m(v.v01_valuacion_cent)}</span><EstadoTexto tono={cuadraA ? 'ok' : 'malo'}>{cuadraA ? 'Cuadra' : 'No cuadra'}</EstadoTexto></div>
+      </Tarjeta>
       <p className="rtm-a2-nota">Las utilidades retenidas son capital, no deuda. El inventario sale al costo promedio del kárdex a la fecha de corte; los renglones de clientes salen del auxiliar de cuentas por cobrar. Un saldo deudor con un proveedor se muestra como activo (saldo a favor), igual que en la valuación contable. Con una sola definición de cuentas por cobrar y una sola utilidad: las diferencias con la hoja de Excel están en el informe de paridad.</p>
     </Pagina>
     </>

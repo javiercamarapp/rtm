@@ -69,6 +69,10 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   const marcas = [...porMarca.entries()].sort((a, b) => (a[1] === b[1] ? 0 : a[1] < b[1] ? 1 : -1)).slice(0, 5);
   const totalMarcas = marcas.reduce((a, [, v]) => a + v, 0n);
 
+  const sumaCob = new Map<string, { n: number; d: number }>();
+  for (const x of conCobertura) { const a = sumaCob.get(x.marca) ?? { n: 0, d: 0 }; sumaCob.set(x.marca, { n: a.n + 1, d: a.d + (x.cobertura_dias ?? 0) }); }
+  const coberturaMarca = [...sumaCob.entries()].map(([marca, v]) => [marca, v.d / v.n] as const).sort((a, b) => b[1] - a[1]).slice(0, 4);
+
   const vencidoPct = cxc ? porcentaje(aNumero(cxc.vencido_cent), aNumero(cxc.total_cent)) : null;
   const asuntos = turno.items.length;
   const subtitulo = hayPedidos
@@ -157,6 +161,12 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
               umbrales={[{ id: 'obj', etiqueta: 'Objetivo', dias: inv.parametros.objetivo_dias }]}
             />
           ) : <p className="rtm-a1-estado-vacio">{inv ? 'Ningún modelo pide reposición ahora.' : 'Sin dato de inventario.'}</p>}
+          {coberturaMarca.length > 0 && (
+            <div className="rtm-a1-cuerpo">
+              <p className="rtm-a1-subtitulo">Cobertura media por marca (días)</p>
+              <BarList etiquetaAria="Cobertura media por marca" items={coberturaMarca.map(([marca, dias]) => ({ id: marca, etiqueta: marca, texto: textoDias(dias), pct: porcentaje(dias, coberturaMarca[0]![1]) }))} />
+            </div>
+          )}
         </Tarjeta>
         <div className="rtm-a1-pila rtm-pila-llena">
         <Tarjeta titulo="Mayores saldos" descripcion="Cliente, saldo y lo vencido" acciones={<Link href="/clientes">Clientes</Link>}>

@@ -101,7 +101,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
         ]}
       />
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Hoja de la semana" descripcion="Del saldo anterior a lo que falta por saldar" acciones={<Estado tono={hoja.comprobaciones.cuadra ? 'ok' : 'malo'}>{hoja.comprobaciones.cuadra ? 'Cuadra' : 'No cuadra'}</Estado>}>
           <Cascada titulo="Cascada de la hoja semanal" descripcion={`Saldo anterior ${m(t.saldo_anterior_cent)}, mercancía ${m(t.mercancia_cent)}, seguros ${m(t.seguros_cent)}, guías ${m(t.guias_cent)}, pagos ${m(t.pagos_cent)}, ajustes ${m(t.ajustes_cent)}; falta por saldar ${m(t.falta_por_saldar_cent)}.`} pasos={pasos} unidad="Pesos" />
           <Pie>Falta por saldar = saldo anterior + costo total con guías − pagos − ajustes. <Link href={`/proveedores/liquidacion?p=${proveedor}`} data-testid="abrir-liquidacion">Abrir hoja y liquidar</Link></Pie>

@@ -62,7 +62,7 @@ export default async function PaginaContabilidad() {
         ]}
       />
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="De la valuación a la utilidad" descripcion="Valuación − deudas − capital aportado − utilidades retenidas = utilidad de la empresa" acciones={dato ? <Estado tono={idOk ? 'ok' : 'malo'}>{idOk ? 'Cuadra' : 'No cuadra'}</Estado> : undefined}>
           {dato ? <Cascada titulo="Cascada de la valuación" descripcion={`Valuación ${m(v.v01_valuacion_cent)}, deudas ${m(v.v02_deudas_cent)}, capital ${m(v.v06_capital_aportado_cent)}, retenidas ${m(v.v05_utilidades_retenidas_cent)}; utilidad ${m(v.v04_utilidad_empresa_cent, true)}.`} pasos={pasos} unidad="Pesos" /> : <p className="a3-grafica-vacia"><strong>Sin dato</strong>La cascada aparece con el primer asiento.</p>}
         </Tarjeta>
@@ -72,7 +72,7 @@ export default async function PaginaContabilidad() {
         </Tarjeta>
       </Rejilla>
 
-      <Rejilla dividir="4-8">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Liquidez" descripcion="El dinero de la sociedad vive en cuentas de los socios">
           <ListaClaveValor items={[
             { k: 'Fondos de la sociedad (L01)', v: <span data-testid="l01">{dato && v.l01_liquidez_cent !== null ? <CifraComprobada texto={m(v.l01_liquidez_cent)} cifra="conta:l01" comprobacion="cuadra" /> : <span className="rtm-sin-dato">Sin dato</span>}</span> },

@@ -7,9 +7,9 @@ const pct = (n: number) => Math.min(100, Math.max(0, Number.isFinite(n) ? n : 0)
 export interface ItemBarList { id: string; etiqueta: string; texto: ReactNode; pct: number | null; nota?: string; tono?: 'ok' | 'atencion' | 'malo'; href?: string; /** Marca de umbral 0-100 sobre la pista. */ umbral?: number }
 
 /** Ranking con barra horizontal proporcional ("Tarjetas  58 %  $745,045"). `pct: null` = sin dato: pista rayada, nunca 0. */
-export function BarList({ etiquetaAria, items, mostrarPct = true }: { etiquetaAria: string; items: ItemBarList[]; mostrarPct?: boolean }) {
+export function BarList({ etiquetaAria, items, mostrarPct = true, columnas = 1 }: { etiquetaAria: string; items: ItemBarList[]; mostrarPct?: boolean; /** 2 = dos columnas en tarjetas anchas (llena el ancho sin alargar la tarjeta). */ columnas?: 1 | 2 }) {
   return (
-    <ul className="rtm-barlist" aria-label={etiquetaAria}>
+    <ul className="rtm-barlist" data-columnas={columnas} aria-label={etiquetaAria}>
       {items.map((it) => (
         <li key={it.id} data-tono={it.tono}>
           <span className="rtm-barlist-fila">
@@ -68,9 +68,9 @@ export function Pasos({ etiquetaAria, items, actual }: { etiquetaAria: string; i
 }
 
 /** Eventos con fecha, vertical, con hilo de 2 px. */
-export function LineaTiempo({ eventos }: { eventos: { id: string; fecha: string; titulo: ReactNode; detalle?: ReactNode; tono?: 'ok' | 'atencion' | 'malo' }[] }) {
+export function LineaTiempo({ eventos, columnas = 1 }: { eventos: { id: string; fecha: string; titulo: ReactNode; detalle?: ReactNode; tono?: 'ok' | 'atencion' | 'malo' }[]; /** 2 = dos columnas en tarjetas de ancho completo. */ columnas?: 1 | 2 }) {
   return (
-    <ol className="rtm-ltiempo">
+    <ol className="rtm-ltiempo" data-columnas={columnas}>
       {eventos.map((e) => (
         <li key={e.id} data-tono={e.tono}>
           <time>{e.fecha}</time>

@@ -11,7 +11,7 @@
 
 .rtm-a2-dos { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: var(--rtm-ritmo); align-items: start; }
 @media (max-width: 1199px) { .rtm-a2-dos { grid-template-columns: minmax(0, 1fr); } }
-.rtm-a2-apilado { display: grid; gap: var(--rtm-ritmo); min-width: 0; }
+.rtm-a2-apilado { display: flex; flex-direction: column; gap: var(--rtm-ritmo); min-width: 0; }
 .rtm-a2-nota { margin: 0; color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); line-height: 1.45; }
 .rtm-a2-nota strong { color: var(--rtm-ink-2); font-weight: var(--rtm-peso-fuerte); }
 .rtm-a2-comprobacion { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); }

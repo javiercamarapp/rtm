@@ -124,7 +124,7 @@ export default async function PaginaProyecciones() {
         ]}
       />
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="6-6">
         <div data-testid="proyeccion-bloque"><Tarjeta titulo="Flujo de caja a 4 semanas" descripcion="Cobros esperados contra pagos conocidos; la banda es el rango" acciones={<Estado tono="atencion">Estimado</Estado>}>
           {puntosCaja.length >= 2 ? (
             <LineaProyeccion titulo="Saldo de fondos proyectado" descripcion="Saldo de fondos de las últimas semanas y proyección a cuatro semanas con rango." unidad="Pesos" procedencia="estimado" pie={`Corte: ${etiquetaFecha(hoy)} · ${LEYENDA_ESTIMADO} · método: ${flujo && flujo.emite ? flujo.metodo : ''}`} puntos={puntosCaja} />

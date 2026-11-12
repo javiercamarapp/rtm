@@ -75,19 +75,18 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
 
   const columnas: Columna<Fila>[] = [
     { id: 'mo', titulo: 'Modelo › sabor', prioridadMovil: 'titulo', ancho: 'l', celda: (f) => (f.s ? f.s.sabor : 'Sin sabores registrados') },
-    { id: 'ma', titulo: 'Marca', prioridadMovil: 'oculta', ancho: 's', secundaria: true, celda: () => '' },
     { id: 'p', titulo: 'Piezas', prioridadMovil: 'principal', numerica: true, ancho: 's', resaltar: (f) => ((f.s ? f.s.piezas : f.mod.piezas ?? 0) === 0 ? 'cero' : (f.s ? f.s.piezas : f.mod.piezas ?? 0) < 0 ? 'negativo' : null), celda: (f) => (f.s ? pzs(f.s.piezas) : pzs(f.mod.piezas)) },
-    { id: 'a', titulo: 'Apartadas', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (f) => (f.s ? pzs(f.s.reservado) : pzs(f.mod.reservado)) },
-    { id: 'd', titulo: 'Disponibles', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (f) => (f.s ? pzs(f.s.disponible) : pzs(f.mod.disponible)) },
+    { id: 'a', titulo: 'Apart.', etiquetaMovil: 'Apartadas', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (f) => (f.s ? pzs(f.s.reservado) : pzs(f.mod.reservado)) },
+    { id: 'd', titulo: 'Disp.', etiquetaMovil: 'Disponibles', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (f) => (f.s ? pzs(f.s.disponible) : pzs(f.mod.disponible)) },
     { id: 'cu', titulo: 'Costo', prioridadMovil: 'oculta', numerica: true, ancho: 'm', celda: (f) => (f.mod.costo_prom_cent === null || (f.mod.piezas ?? 0) === 0 ? <SinDato /> : m(f.mod.costo_prom_cent)) },
     { id: 'v', titulo: 'Valor total', prioridadMovil: 'normal', numerica: true, ancho: 'l', celda: (f) => (f.s ? m(f.s.valor_cent) : (m(f.mod.valor_cent) ?? <SinDato />)) },
     { id: 'pc', titulo: '% del total', prioridadMovil: 'oculta', numerica: true, ancho: 's', celda: (f) => pctTexto(partePct((f.s ? f.s.valor_cent : f.mod.valor_cent) ?? 0n, totalValor)) ?? <SinDato /> },
-    { id: 'en', titulo: 'Entradas', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => pzs((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.entradas ?? 0) },
-    { id: 'sa', titulo: 'Salidas', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => pzs((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.salidas ?? 0) },
-    { id: 'ro', titulo: 'Rotación', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => { const d = f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id); return rot(d?.piezas_inicial, f.s ? f.s.piezas : f.mod.piezas ?? 0, d?.salidas ?? 0) ?? <SinDato />; } },
     { id: 'c', titulo: 'Cobertura', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (f) => (f.s ? (f.s.cobertura_dias === null ? <SinDato /> : textoDias(f.s.cobertura_dias)) : (f.mod.cobertura_dias === null ? <SinDato /> : <CifraComprobada texto={textoDias(f.mod.cobertura_dias)} cifra={`cobertura:modelo:${f.mod.modelo_id}`} comprobacion="cuadra" />)) },
     { id: 's', titulo: 'Semáforo', prioridadMovil: 'normal', ancho: 'm', celda: (f) => semaforo(f.s ? f.s.estado : f.mod.estado, f.s ? `${f.mod.modelo_id}-${f.s.sku_id}` : String(f.mod.modelo_id)) },
-    { id: 'an', titulo: 'Antigüedad', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => { const a = ant((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.ultima_entrada); return a === null ? <SinDato /> : `${a} d`; } },
+    { id: 'en', titulo: 'Entr.', etiquetaMovil: 'Entradas', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => pzs((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.entradas ?? 0) },
+    { id: 'sa', titulo: 'Sal.', etiquetaMovil: 'Salidas', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => pzs((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.salidas ?? 0) },
+    { id: 'ro', titulo: 'Rot.', etiquetaMovil: 'Rotación', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => { const d = f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id); return rot(d?.piezas_inicial, f.s ? f.s.piezas : f.mod.piezas ?? 0, d?.salidas ?? 0) ?? <SinDato />; } },
+    { id: 'an', titulo: 'Antig.', etiquetaMovil: 'Antigüedad', prioridadMovil: 'oculta', numerica: true, ancho: 's', secundaria: true, celda: (f) => { const a = ant((f.s ? detSku.get(f.s.sku_id) : detMod.get(f.mod.modelo_id))?.ultima_entrada); return a === null ? <SinDato /> : `${a} d`; } },
     { id: 'u', titulo: 'Último mov.', prioridadMovil: 'oculta', ancho: 'm', secundaria: true, celda: (f) => (f.mod.ultimo_movimiento ? (fechaCorta(f.mod.ultimo_movimiento.slice(0, 10)) ?? '') : <SinDato />) },
   ];
 
@@ -187,9 +186,8 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
                   const x = fs[0]!.mod;
                   const d = detMod.get(x.modelo_id);
                   return {
-                    titulo: <span className="rtm-a2-nowrap"><Link href={`/inventario/kardex?modelo=${x.modelo_id}`}>{x.modelo}</Link><span className="rtm-a2-nota"> · {x.sabores.length} sabores</span></span>,
+                    titulo: <span className="rtm-a2-nowrap"><Link href={`/inventario/kardex?modelo=${x.modelo_id}`}>{x.modelo}</Link><span className="rtm-a2-nota"> · {x.marca} · {x.sabores.length} sabores</span></span>,
                     subtotales: {
-                      ma: x.marca,
                       p: <CifraComprobada texto={x.piezas === null ? null : formatearPiezas(x.piezas)} cifra={`existencia:modelo:${x.modelo_id}`} comprobacion="cuadra" />,
                       a: pzs(x.reservado), d: pzs(x.disponible), cu: x.costo_prom_cent === null || (x.piezas ?? 0) === 0 ? <SinDato /> : m(x.costo_prom_cent), v: m(x.valor_cent) ?? <SinDato />,
                       pc: pctTexto(partePct(x.valor_cent ?? 0n, totalValor)) ?? <SinDato />, en: pzs(d?.entradas ?? 0), sa: pzs(d?.salidas ?? 0), ro: rot(d?.piezas_inicial, x.piezas ?? 0, d?.salidas ?? 0) ?? <SinDato />,

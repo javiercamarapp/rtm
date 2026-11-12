@@ -67,7 +67,7 @@ export default async function PaginaComprobaciones() {
         />
       </Tarjeta>
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="12">
         <Tarjeta plana titulo="Auxiliares contra el libro" descripcion="Cada auxiliar operativo contra su cuenta de control">
           <DataTable
             etiqueta="Auxiliares operativos contra cuentas de control"
