@@ -16,8 +16,9 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
   const lector = await movimientosDeSocio();
   const [grupos, utilidad, desglose] = await Promise.all([lector.agrupado(dim), lector.utilidad(), idSel ? lector.desglose(dim, idSel) : Promise.resolve(null)]);
   const sel = idSel ? grupos.find((g) => g.id === idSel) : null;
-  const dif = utilidad.posicion_diferencia_cent;
-  const frase = dif === 0n ? 'Entre socios: en paz.' : `Entre socios: ${utilidad.posicion_mayor} +${formatearMoneda(dif)}.`;
+  const deuda = utilidad.deuda_entre_socios_cent;
+  const frase = deuda === 0n || !utilidad.deudor ? 'Entre socios: en paz.' : `${utilidad.deudor} le debe a ${utilidad.acreedor} ${formatearMoneda(deuda)}.`;
+  const brecha = utilidad.posicion_diferencia_cent;
   return (
     <>
       <EncabezadoPagina
@@ -96,8 +97,9 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
 
       <section className="rtm-seccion" aria-label="Quién debe a quién">
         <h2>Quién debe a quién</h2>
-        <p data-testid="quien-debe"><EstadoTexto tono={dif === 0n ? 'ok' : 'atencion'}>{frase}</EstadoTexto></p>
-        <p className="rtm-nota" data-testid="posiciones-socios">Posición de cada socio con la sociedad (más: la sociedad le debe; menos: él le debe): Angelo {formatearMoneda(utilidad.posicion_angelo_cent, { conSigno: true })}, Javier {formatearMoneda(utilidad.posicion_javier_cent, { conSigno: true })}. Es la misma cifra del encabezado; sale de lo aportado, lo pagado y lo que cada uno tiene en su poder. <Link href="/socios">Ver la cuenta de socios</Link>.</p>
+        <p data-testid="quien-debe"><EstadoTexto tono={deuda === 0n ? 'ok' : 'atencion'}>{frase}</EstadoTexto></p>
+        <p className="rtm-nota" data-testid="posiciones-socios">Posición de cada socio con la sociedad (más: la sociedad le debe; menos: él le debe): Angelo {formatearMoneda(utilidad.posicion_angelo_cent, { conSigno: true })}, Javier {formatearMoneda(utilidad.posicion_javier_cent, { conSigno: true })}. Sale de lo aportado, lo pagado y lo que cada uno tiene en su poder.</p>
+        <p className="rtm-nota" data-testid="brecha-socios">{brecha === 0n ? 'Las dos posiciones son iguales.' : `El encabezado muestra la brecha entre las dos posiciones (${utilidad.posicion_mayor} +${formatearMoneda(brecha)}); lo que un socio le debe al otro es la mitad de la diferencia de lo aportado neto (sin lo pagado de más fuera de la sociedad), porque al pagarlo uno baja y el otro sube lo mismo.`} <Link href="/socios">Ver la cuenta de socios</Link>.</p>
       </section>
     </>
   );

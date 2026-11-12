@@ -53,7 +53,12 @@ export interface UtilidadMovimientos {
   posicion_angelo_cent: Cent;
   posicion_javier_cent: Cent;
   posicion_mayor: 'Angelo' | 'Javier';
+  /** Brecha entre las dos posiciones (la del encabezado). No es lo que un socio le debe al otro: eso es la mitad (deuda_entre_socios_cent). */
   posicion_diferencia_cent: Cent;
+  /** Quien debe a quien: (AportadoNeto(A) - AportadoNeto(J)) / 2, la cifra de cuenta_socios() cuando la compra la pusieron los socios. */
+  deudor: 'Angelo' | 'Javier' | null;
+  acreedor: 'Angelo' | 'Javier' | null;
+  deuda_entre_socios_cent: Cent;
   javier_debe_a_angelo_cent: Cent;
   cuadra: boolean;
   costo_cent: Cent;

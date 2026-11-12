@@ -283,10 +283,28 @@ $$;
 
 -- Utilidad por pedido (la de la nota vigente de cada pedido enviado), utilidad acumulada por socio (50/50, el centavo impar a Angelo) con lo retirado y lo retenido, y
 -- la posicion de cada socio con la sociedad (la misma cifra del encabezado) y, aparte, la diferencia por la compra de la cuenta de socios. Todas las cifras salen de funciones existentes: aqui no se calcula nada nuevo.
+-- Quien debe a quien entre los socios (spec 14, seccion 12): (AportadoNeto(Angelo) - AportadoNeto(Javier)) / 2. AportadoNeto = lo puesto o pagado por la sociedad
+-- (aportaciones y libro del socio: pagos, retiros, utilidad asignada) menos el dinero de la sociedad que tiene en su poder (neto_socio), sin lo pagado de mas que quedo
+-- fuera de la sociedad (partidas abiertas), igual que cuenta_socios(). El centavo impar se redondea como cuenta_socios() (hacia abajo de (A - J) / 2), para que las
+-- dos cifras coincidan centavo a centavo cuando la compra la pusieron los socios. Signo de javier_debe_a_angelo_cent: > 0 Javier debe a Angelo; < 0 Angelo debe a Javier.
+create function operacion.posicion_socios() returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_ida bigint; v_idj bigint; v_a bigint; v_j bigint; v_d bigint;
+begin
+  select id into v_ida from catalogo.socio where nombre = 'Angelo';
+  select id into v_idj from catalogo.socio where nombre = 'Javier';
+  v_a := operacion.neto_socio(v_ida) - coalesce((select sum(monto_cent) from operacion.partida_fuera_sociedad where socio_id = v_ida and estado = 'abierta'), 0);
+  v_j := operacion.neto_socio(v_idj) - coalesce((select sum(monto_cent) from operacion.partida_fuera_sociedad where socio_id = v_idj and estado = 'abierta'), 0);
+  v_d := floor((v_a - v_j)::numeric / 2)::bigint;
+  return jsonb_build_object('aportado_neto_angelo_cent', v_a, 'aportado_neto_javier_cent', v_j, 'javier_debe_a_angelo_cent', v_d,
+    'deudor', case when v_d > 0 then 'Javier' when v_d < 0 then 'Angelo' end, 'acreedor', case when v_d > 0 then 'Angelo' when v_d < 0 then 'Javier' end, 'monto_cent', abs(v_d));
+end $$;
+
 create function operacion.movimientos_utilidad() returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
-declare v_u jsonb; v_total bigint; v_ped jsonb; v_socios jsonb; v_cs jsonb; v_na bigint; v_nj bigint;
+declare v_u jsonb; v_total bigint; v_ped jsonb; v_socios jsonb; v_cs jsonb; v_na bigint; v_nj bigint; v_deuda jsonb;
 begin
   select coalesce(jsonb_agg(jsonb_build_object('pedido_id', x.id, 'folio', x.folio, 'cliente', x.cliente, 'fecha_envio', x.fecha_envio, 'utilidad_cent', x.u, 'provisional', x.prov, 'cobrado_cent', x.cobrado) order by x.fecha_envio desc, x.id desc), '[]'::jsonb),
          coalesce(sum(x.u), 0)::bigint
@@ -306,8 +324,13 @@ begin
   -- Posicion de cada socio con la sociedad: la MISMA cifra que el encabezado de la app (api.pulso): neto_socio, + la sociedad le debe, - el debe.
   v_na := operacion.neto_socio((select id from catalogo.socio where nombre = 'Angelo'));
   v_nj := operacion.neto_socio((select id from catalogo.socio where nombre = 'Javier'));
+  v_deuda := operacion.posicion_socios();
+  -- posicion_diferencia_cent es la brecha entre las dos posiciones (lo que muestra el encabezado); quien debe a quien es la MITAD de la brecha de lo aportado neto
+  -- (spec 14, seccion 12: (AportadoNeto(A) - AportadoNeto(J)) / 2), la misma cifra de cuenta_socios() cuando la compra la pusieron los socios.
   return jsonb_build_object('posicion_angelo_cent', v_na, 'posicion_javier_cent', v_nj,
-    'posicion_mayor', case when v_na >= v_nj then 'Angelo' else 'Javier' end, 'posicion_diferencia_cent', abs(v_na - v_nj), 'pedidos', v_ped, 'utilidad_pedidos_cent', v_total, 'utilidad_total_cent', (v_u->>'utilidad_cent')::bigint, 'provisional', (v_u->>'provisional')::boolean,
+    'posicion_mayor', case when v_na >= v_nj then 'Angelo' else 'Javier' end, 'posicion_diferencia_cent', abs(v_na - v_nj),
+    'deudor', v_deuda->>'deudor', 'acreedor', v_deuda->>'acreedor', 'deuda_entre_socios_cent', (v_deuda->>'monto_cent')::bigint,
+    'pedidos', v_ped, 'utilidad_pedidos_cent', v_total, 'utilidad_total_cent', (v_u->>'utilidad_cent')::bigint, 'provisional', (v_u->>'provisional')::boolean,
     'socios', v_socios, 'javier_debe_a_angelo_cent', (v_cs->>'javier_debe_a_angelo_cent')::bigint, 'cuadra', (v_cs->>'cuadra')::boolean, 'costo_cent', (v_cs->>'costo_cent')::bigint);
 end $$;
 
