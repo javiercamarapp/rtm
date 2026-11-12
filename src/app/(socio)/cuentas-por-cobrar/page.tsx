@@ -102,7 +102,7 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
     { id: 'pv', etiqueta: 'Por vencer', c: porVencer, n: cuenta('por_vencer') },
     { id: 've', etiqueta: 'Vencido', c: d.vencido_cent, n: cuenta('vencido'), tono: 'malo' as const },
     { id: 'sp', etiqueta: 'Sin plazo acordado', c: sinPlazo, n: nSinPlazo },
-  ].map((e) => ({ id: e.id, etiqueta: e.etiqueta, texto: m(e.c), pct: pct(e.c, d.total_cent), nota: `${e.n} ${e.n === 1 ? 'pedido o saldo' : 'pedidos o saldos'}`, tono: e.tono }));
+  ].map((e) => ({ id: e.id, etiqueta: e.etiqueta, texto: m(e.c), pct: pct(e.c, d.total_cent), nota: `${e.n} ${e.n === 1 ? 'partida' : 'partidas'}`, tono: e.tono }));
 
   const maxFondos = suma(d.socios.map((s) => (s.deuda_cent > s.fondos_cent ? s.deuda_cent : s.fondos_cent)));
   const barrasSocios = d.socios.map((s) => ({
