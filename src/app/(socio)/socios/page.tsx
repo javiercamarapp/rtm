@@ -43,7 +43,7 @@ export default async function PaginaSocios() {
         eyebrow="Cuentas de socios"
         titulo="Cuenta de socios"
         descripcion={parejo ? 'La cuenta entre socios está pareja: cada uno puso la mitad del costo.' : `${quien} ${m(abs(d))} por la compra · costo ${m(c.costo_cent)}, mitad ${m(c.mitad_cent)}`}
-        acciones={<div className="a3-acciones"><AccionesSocios /></div>}
+        acciones={<div className="a3-acciones"><Link className="rtm-boton" href="/socios/Angelo/historial" data-testid="ir-historial-Angelo">Historial de Angelo</Link><Link className="rtm-boton" href="/socios/Javier/historial" data-testid="ir-historial-Javier">Historial de Javier</Link><Link className="rtm-boton" href="/socios/cascada">Cascada y actas</Link><AccionesSocios /></div>}
       />
       {c.financiado_por_sociedad_cent !== 0n && <Aviso tono="atencion" titulo="Parte del costo no la pusieron los socios.">{m(c.financiado_por_sociedad_cent)} salió de la sociedad: la identidad por dos vías no cuadra hasta registrarlo.</Aviso>}
 

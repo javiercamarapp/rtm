@@ -1,10 +1,11 @@
 // PDF del ACTA de corte mensual (adenda 33): periodo, utilidad neta, reembolsos pagados, tope por efectivo, parte de cada socio (50/50), cuanto retira y cuanto
 // reinvierte cada uno, y las firmas de los dos. Mismo motor y huella estable que la nota: el PDF se genera una vez, se guarda y se adjunta por correo a los socios.
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import type { SelloActa } from '@/dominio/historial/tipos';
 import type { CierreReparto } from '@/dominio/operacion/tipos';
 import { Hoja, M, UTIL, nuevoDocumento, pie, sinAzar } from './nota';
 
-export async function pdfActaCorte(c: CierreReparto): Promise<Uint8Array> {
+export async function pdfActaCorte(c: CierreReparto, sello: SelloActa | null = null): Promise<Uint8Array> {
   return sinAzar(async () => {
     const s = c.snapshot;
     const { pdf, f } = await nuevoDocumento(`Acta de corte ${c.folio}`, c.creado_at);
@@ -52,6 +53,27 @@ export async function pdfActaCorte(c: CierreReparto): Promise<Uint8Array> {
         fila('Reinvierte (queda como inversion suya)', formatearMoneda(d.reinvierte));
         h.bajar(6);
       }
+    }
+    if (sello) {
+      const k = sello.contenido;
+      h.asegurar(120);
+      h.texto('AL CIERRE (sello inmutable)', M, 8, { fuente: f.negrita });
+      h.bajar(14);
+      if (k.capital_contable_cent !== null) {
+        fila('Capital contable resultante', formatearMoneda(k.capital_contable_cent), true);
+        for (const socio of Object.keys(k.valor_participacion_cent ?? {}).sort()) fila(`Valor de la participacion de ${socio} (estimado)`, formatearMoneda(k.valor_participacion_cent![socio]!));
+      } else fila('Capital contable resultante', 'Sin dato');
+      for (const socio of Object.keys(k.por_socio).sort()) {
+        const x = k.por_socio[socio]!;
+        fila(`${socio}: invertido acumulado`, formatearMoneda(x.invertido_cent));
+        fila(`${socio}: fondos de la sociedad en su poder`, formatearMoneda(x.fondos_en_poder_cent));
+        fila(`${socio}: compensaciones aplicadas en el acta`, formatearMoneda(x.compensaciones_cent));
+        fila(`${socio}: utilidad por distribuir despues del acta`, formatearMoneda(x.por_distribuir_cent));
+      }
+      h.texto(`Huella del sello (SHA-256): ${sello.huella.slice(0, 32)}`, M, 7);
+      h.bajar(10);
+      h.texto(sello.huella.slice(32), M, 7);
+      h.bajar(14);
     }
     h.asegurar(70);
     h.linea();
