@@ -19,7 +19,7 @@ interface Props extends BaseGrafica {
   tablaAbierta?: boolean;
 }
 
-const MI = 40;
+const MI = 46;
 const MD = 12;
 const MS = 14;
 const MB = 24;
