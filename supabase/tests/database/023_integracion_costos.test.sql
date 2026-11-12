@@ -23,6 +23,8 @@ select is((pg_temp.cargo('c:1') ->> 'folio'), pg_temp.fk(1), 'idempotente: misma
 select is((select count(*) from costos.cargo) - (select cargos from _b), 1::bigint, 'una sola fila nueva');
 select is((select count(*) from operacion.gasto) - (select gastos from _b), 1::bigint, 'nace el gasto de la sociedad pagado por Javier');
 select is(costos.pendiente_socio('javier') - (select pend from _b), 23600::bigint, 'pendiente de reembolso 236.00 mas lo previo');
+-- Reglas de reparto vigentes (dueño, 11-nov): todo pago a un socio sale primero del efectivo de la caja de la empresa; con la caja en cero el reembolso se rechaza.
+select operacion.registrar_movimiento_efectivo('t23:caja', 'Caja de la empresa', 'ajuste_conteo', 100000, 'fondos de prueba');
 select throws_ok($$ select api.costos_registrar_reembolso('r:grande', 'javier', 'angelo', 30000 + (select pend from _b)::bigint, negocio.hoy(), 'transferencia', null) $$, 'P0455', null, 'no se reembolsa mas de lo pendiente');
 select is((api.costos_registrar_reembolso('r:1', 'javier', 'angelo', 10000, negocio.hoy(), 'transferencia', null) ->> 'pendiente_cent')::bigint - (select pend from _b), 13600::bigint, 'reembolso parcial de 100.00 deja 136.00 mas lo previo');
 select is((api.costos_cuenta('javier') ->> 'pendiente_cent')::bigint - (select pend from _b), 13600::bigint, 'la cuenta por pagar coincide');
