@@ -46,3 +46,21 @@ Ver el final de este documento (seccion Resultados).
 - Playwright completo con base recien reiniciada: 111 pasan, 2 omitidas, 1 falla, 1 sin correr.
 - Falla restante: `integracion-db.spec.ts:145` (reportes semanal, laptop-1440). El reporte "no sale" porque las comprobaciones C4 y C5 difieren en $58,752. Es un descuadre de datos acumulado por pruebas anteriores de la misma corrida (cascada de reparto, apertura), no de interfaz; no se toco. Pendiente de diagnostico aparte.
 - Un primer pase (base con datos previos) fallo 9; tras reiniciar la base y subir el objetivo tactil de las pestanas a 44 px en pantallas tactiles (`pointer: coarse`, fold-abierto) quedaron solo 1.
+
+### Correccion adicional: vista previa de reportes en blanco
+
+El encabezado global `X-Frame-Options: DENY` y `frame-ancestors 'none'` (next.config.ts, commit 7ac9ffd de main) bloqueaba tambien el marco de la vista previa de reportes (`/reportes/:clave/:version/html`, `sandbox=""`): el marco quedaba vacio y la prueba `integracion-db` de reportes fallaba (tambien en main, el codigo no difiere). Ahora esa ruta, y solo esa, fija `SAMEORIGIN` y `frame-ancestors 'self'` con su CSP estricta; el resto del sitio sigue en DENY.
+
+## Resultados (corridos de verdad, base propia limpia)
+
+- `tsc --noEmit`: 0 errores. `eslint src scripts test`: 0. `npm run guardas`: 0 violaciones. `npm run secretos`: 0 hallazgos.
+- `vitest run`: 112 archivos, 1713 pruebas en verde (2 fallos esperados). Con la maquina muy cargada (load 40 a 100 por otras sesiones) hubo timeouts del axe a 20 s; se repitio con `--maxWorkers=4 --testTimeout=90000` y paso completo.
+- Playwright completo (`E2E_PUERTO=3107`, 4 proyectos, base `rtm-rd` recreada sin datos): 113 passed, 2 skipped (test.skip ya existentes), 0 failed, 14.7 min. Incluye `acceso.spec.ts` prueba 4.
+- Corridas intermedias: sobre una base con datos demo fallan pruebas que suponen base vacia (apertura vacia, comprobaciones del diario, reportes C4/C5); no son defectos de la rama.
+- pgTAP: no se corrio (no hay migraciones nuevas en este lote).
+
+## Pendientes
+
+- Las capturas de 390 se regeneraron antes de ocultar las etiquetas vacias de las tarjetas moviles (regla CSS final) y antes de `Pestanas` a 880 con puntero tactil: recapturar con `scripts/capturas/preparar-demo.mjs` en la siguiente pasada (ese script hace `supabase db reset`).
+- Con `supabase db reset` denegado por el clasificador del entorno, se uso `supabase stop --no-backup` y `start` sobre el proyecto propio `rtm-rd`; ya detenido.
+- Decision de Javier: PDFs y login a Geist; politica fail-open del limitador.
