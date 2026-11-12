@@ -45,7 +45,7 @@ export default async function PaginaSocios() {
         descripcion={parejo ? 'La cuenta entre socios está pareja: cada uno puso la mitad del costo.' : `${quien} ${m(abs(d))} por la compra · costo ${m(c.costo_cent)}, mitad ${m(c.mitad_cent)}`}
         acciones={<div className="a3-acciones"><AccionesSocios /></div>}
       />
-      {c.financiado_por_sociedad_cent !== 0n && <Aviso tono="atencion" titulo="Parte del costo no la pusieron los socios.">{m(c.financiado_por_sociedad_cent)} salió de la sociedad: la identidad por dos vías no cuadra hasta registrarlo.</Aviso>}
+      {c.financiado_por_sociedad_cent !== 0n && <Aviso tono="atencion" titulo="Parte del costo no la pusieron los socios.">{m(c.financiado_por_sociedad_cent)} lo pagó la sociedad o sigue a crédito con el proveedor. La diferencia entre las dos vías es exactamente esa cifra; baja cuando un socio paga con su dinero (Proveedores, registrar pago de un socio) y solo llega a cero si los socios ponen entre los dos todo el costo.</Aviso>}
 
       <KpiLinea
         etiquetaAria="Indicadores de la cuenta de socios"
