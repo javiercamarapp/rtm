@@ -4,7 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/config/env';
 
-const PUBLICAS = [/^\/login(?:\/|$)/, /^\/auth\//, /^\/api\/health$/, /^\/terminos$/, /^\/privacidad$/];
+const PUBLICAS = [/^\/login(?:\/|$)/, /^\/auth\//, /^\/api\/health$/, /^\/api\/telegram\/webhook$/, /^\/api\/tareas\/[a-z0-9-]+$/, /^\/terminos$/, /^\/privacidad$/];
 
 export async function actualizarSesion(req: NextRequest): Promise<NextResponse> {
   let respuesta = NextResponse.next({ request: req });

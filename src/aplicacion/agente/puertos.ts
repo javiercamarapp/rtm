@@ -125,6 +125,8 @@ export interface MensajeSalida {
   respondeA?: number;
   /** protect_content en mensajes financieros. */
   protegido?: boolean;
+  /** Sin sonido (horario silencioso). */
+  silencioso?: boolean;
 }
 
 export interface EnviadorTelegram {

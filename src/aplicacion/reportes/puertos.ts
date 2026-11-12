@@ -51,6 +51,6 @@ export interface RepositorioReportes {
 export interface EntregaReportes {
   /** Grupo de socios: nunca el chat de Omar. */
   telegramSocios(texto: string, adjunto: { nombre: string; bytes: Uint8Array } | null): Promise<void>;
-  /** A los dos dueños; nunca a Omar. */
-  correoDuenos(correo: { asunto: string; cuerpo: string }, adjunto: { nombre: string; bytes: Uint8Array }): Promise<void>;
+  /** A los dos dueños; nunca a Omar. Sin adjunto: el PDF se abre con el enlace autenticado (ruta relativa a la app, p. ej. /reportes/semanal:2026-11-09/1). */
+  correoDuenos(correo: { asunto: string; cuerpo: string }, enlace: string): Promise<void>;
 }

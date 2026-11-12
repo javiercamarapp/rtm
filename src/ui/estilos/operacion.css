@@ -173,3 +173,26 @@ textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(-
   .rtm-campana { position: static; }
   .rtm-campana-panel { position: fixed; left: var(--rtm-e-4); right: var(--rtm-e-4); top: 56px; width: auto; max-height: calc(100dvh - 72px); }
 }
+
+/* Costos del sistema: marcas oficiales sin alterar (un <img> por tema; la clase decide cual se ve). */
+.rtm-marca { display: inline-flex; align-items: center; gap: var(--rtm-e-2); min-width: 0; }
+.rtm-marca img { display: block; max-width: 100%; object-fit: contain; }
+.rtm-marca .rtm-marca-oscuro { display: none; }
+:root[data-tema='oscuro'] .rtm-marca .rtm-marca-claro { display: none; }
+:root[data-tema='oscuro'] .rtm-marca .rtm-marca-oscuro { display: block; }
+.rtm-marca-texto { font-size: 13px; font-weight: 600; color: var(--rtm-ink); }
+.rtm-tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--rtm-e-3); list-style: none; margin: 0; padding: 0; }
+.rtm-tarjeta-costo { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-4); display: flex; flex-direction: column; gap: var(--rtm-e-2); min-width: 0; }
+.rtm-tarjeta-costo header { min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: var(--rtm-e-2); }
+.rtm-tarjeta-costo .rtm-cifra-grande { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rtm-resumen-costos { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); padding: var(--rtm-e-5); display: grid; gap: var(--rtm-e-3); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); background: var(--rtm-surface); }
+.rtm-resumen-costos dt { font-size: 12px; color: var(--rtm-ink-3); }
+.rtm-resumen-costos dd { margin: 0; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rtm-pie-marcas { font-size: 12px; color: var(--rtm-ink-3); max-width: 900px; }
+details.rtm-explicar-linea summary { cursor: pointer; font-size: 12px; color: var(--rtm-ink-2); }
+details.rtm-explicar-linea p { margin: var(--rtm-e-1) 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.rtm-copiable-bloque { display: flex; flex-direction: column; gap: var(--rtm-e-3); }
+.rtm-lista-sabores { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--rtm-e-2); }
+.rtm-lista-sabores li { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); padding: 2px var(--rtm-e-3); font-size: 13px; background: var(--rtm-surface); }
+.rtm-lista-sabores li[data-agotado='true'] { color: var(--rtm-ink-3); text-decoration: line-through; }
+.rtm-reportes-marco { width: 100%; min-height: 70vh; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
-import { IconoApertura, IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoInicio, IconoInventario, IconoMenu, IconoMovimientos, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoSocios, IconoTrayecto } from '../iconos';
+import { IconoApertura, IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoInicio, IconoInventario, IconoMenu, IconoMovimientos, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoReportes, IconoCostos, IconoSocios, IconoTrayecto } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
 import type { ListaCampana, Pulso as DatosPulso } from '@/dominio/notificaciones/tipos';
@@ -27,6 +27,8 @@ const SECCIONES = [
   { href: '/contabilidad', etiqueta: 'Contabilidad', icono: <IconoContabilidad /> },
   { href: '/movimientos', etiqueta: 'Movimientos', icono: <IconoMovimientos /> },
   { href: '/apertura', etiqueta: 'Apertura', icono: <IconoApertura /> },
+  { href: '/reportes', etiqueta: 'Reportes', icono: <IconoReportes /> },
+  { href: '/costos', etiqueta: 'Costos del sistema', icono: <IconoCostos /> },
   { href: '/avisos', etiqueta: 'Avisos', icono: <IconoAviso /> },
 ] as const;
 

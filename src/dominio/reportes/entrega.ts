@@ -74,7 +74,7 @@ export function construirCorreo(p: Paquete): Correo {
   const asuntoPeriodo = p.tipo === 'semanal' ? `${etiquetaRango(p.periodo.inicio, p.periodo.fin).replace(' a ', ' al ')} ${anio}` : p.periodo.etiqueta;
   const asunto = renderizarVerificado(p, `${prefijo}RTM · Reporte ${p.tipo} · ${asuntoPeriodo} · ${est}`);
   const nRec = Math.min(3, p.insights.recomendaciones.length);
-  const lineas = [`Adjunto el reporte ${p.tipo} ${p.tipo === 'semanal' ? 'del' : 'de'} ${p.periodo.etiqueta}.`, `Estado: ${est.toLowerCase()}.`, `Comprobaciones: ${ok} de ${total}.`, `Hay ${nRec} recomendaciones en la primera página.`, `Huella: ${p.huella}.`];
+  const lineas = [`El reporte ${p.tipo} ${p.tipo === 'semanal' ? 'del' : 'de'} ${p.periodo.etiqueta} está listo: ábrelo con tu sesión en el enlace de abajo (el correo no lleva archivo adjunto).`, `Estado: ${est.toLowerCase()}.`, `Comprobaciones: ${ok} de ${total}.`, `Hay ${nRec} recomendaciones en la primera página.`, `Huella: ${p.huella}.`];
   if (p.estado.fallas.length) lineas.push(`No lo uses para decidir: falla la comprobación ${p.estado.fallas.join(', ')}.`);
   return { asunto, cuerpo: renderizarVerificado(p, lineas.join(' '), [String(nRec)]) };
 }

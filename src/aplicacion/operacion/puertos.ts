@@ -43,6 +43,8 @@ export const ACCIONES_OPERACION = [
   'registrar_toma_omar', 'resolver_toma_omar', 'cerrar_liquidacion_omar', 'registrar_pago_omar', 'aviso_marcar_leido',
   // F3a
   'registrar_aportacion', 'registrar_gasto_socio', 'registrar_pago_a_socio', 'registrar_liquidacion_entre_socios', 'anular_movimiento_socio', 'proponer_cierre_reparto', 'firmar_cierre_reparto', 'anular_cierre_reparto',
+  // Integracion: costos del sistema
+  'costos_registrar_cargo', 'costos_anular_cargo', 'costos_registrar_reembolso', 'costos_registrar_tipo_cambio',
   'registrar_ajuste_proveedor', 'registrar_pago_proveedor_sociedad', 'anular_movimiento_proveedor', 'fijar_ambito_pedido', 'registrar_dicho_proveedor', 'cerrar_liquidacion_proveedor', 'registrar_recargo_credito',
   // F3b
   'conta_preparar_periodo', 'conta_aprobar_periodo', 'conta_publicar_periodo', 'conta_reabrir_periodo', 'conta_asiento_manual', 'conta_reversar_asiento',

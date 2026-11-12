@@ -28,3 +28,6 @@ export const IconoAviso = () => <Base><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-
 export const IconoContabilidad = () => <Base><path d="M5 4h14v16H5z" /><path d="M8 8h8M8 12h3M13 12h3M8 16h3M13 16h3" /></Base>;
 export const IconoApertura = () => <Base><path d="M5 20V4" /><path d="M5 5h11l-2 3.5 2 3.5H5" /><path d="M9 20h10" /></Base>;
 export const IconoMovimientos = () => <Base><path d="M4 8h13M14 5l3 3-3 3" /><path d="M20 16H7M10 13l-3 3 3 3" /></Base>;
+
+export const IconoReportes = () => <Base><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5" /><path d="M9 13h7M9 17h5" /></Base>;
+export const IconoCostos = () => <Base><circle cx="12" cy="12" r="8" /><path d="M14.5 9.5c-.5-.8-1.4-1.2-2.5-1.2-1.4 0-2.4.7-2.4 1.8 0 2.6 5 1.2 5 3.9 0 1.1-1.1 1.9-2.6 1.9-1.2 0-2.2-.5-2.7-1.4M12 6.5v1.8M12 15.7v1.8" /></Base>;
