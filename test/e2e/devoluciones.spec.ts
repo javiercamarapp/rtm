@@ -95,6 +95,9 @@ test('devolucion de un cliente: tope de piezas, nota de credito con PDF estable,
   await expect(seccion).toContainText('$1,500.00');
   await expect(page.getByText('Devuelto (crédito)')).toBeVisible();
   await expect(page.getByText('$3,000.00').first()).toBeVisible(); // 30 pz a 150.00 = 4,500.00 menos 1,500.00
+  // Utilidad neta de la devolucion: 1,440.00 de la nota - 1,500.00 de credito + 1,000.00 de costo que regreso a bodega = 940.00, sobre 3,000.00 cobrados.
+  await expect(page.getByText('$940.00').first()).toBeVisible();
+  await expect(page.getByText('Margen 31.3 % del total cobrado neto')).toBeVisible();
 
   const href = await seccion.getByRole('link', { name: /DV-/ }).getAttribute('href');
   const a = await page.context().request.get(href!);
@@ -121,6 +124,9 @@ test('devolucion de un cliente: tope de piezas, nota de credito con PDF estable,
   await page.getByRole('dialog').getByLabel(/Destino de/).first().selectOption('merma');
   await page.getByTestId('confirmar').click();
   await expect(seccion).toContainText('$600.00', { timeout: 30_000 });
+  // Piezas danadas: el credito baja la utilidad y el costo de la merma no regresa: 1,440.00 - 600.00 = 840.00 sobre 3,900.00.
+  await expect(page.getByText('$840.00').first()).toBeVisible();
+  await expect(page.getByText('Margen 21.5 % del total cobrado neto')).toBeVisible();
 });
 
 test('devolucion a un proveedor: sale del inventario, sube la cuenta del proveedor y se puede anular', async ({ page }) => {

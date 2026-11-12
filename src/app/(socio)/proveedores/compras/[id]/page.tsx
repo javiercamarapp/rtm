@@ -90,7 +90,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
               { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (l) => <Dos a={l.modelo} b={l.sabor} /> },
               { id: 'f', titulo: 'Facturadas', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.facturadas) },
               { id: 'r', titulo: 'Llegadas', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.recibidas) },
-              { id: 'p', titulo: cerrada ? 'Faltante' : 'Pendientes', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.pendientes) },
+              { id: 'p', titulo: cerrada ? 'No llegaron' : 'Pendientes', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.pendientes) },
               { id: 'e', titulo: 'Entró al inventario', numerica: true, ancho: 'm', celda: (l) => m(l.entrada_cent) },
               { id: 'c', titulo: 'Costo puesto', numerica: true, ancho: 'm', secundaria: true, celda: (l) => m(l.puesto_cent) },
             ]}
