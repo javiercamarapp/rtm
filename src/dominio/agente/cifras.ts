@@ -107,6 +107,8 @@ export interface CifraExtraida {
   campo: string;
   /** Centesimas: piezas x 100; monto_centavos tal cual. */
   valor: bigint;
+  /** true en montos de dinero: si el mensaje solo lo explica con un formato ambiguo ("1.250") se pide aclarar en vez de aceptarlo. */
+  esDinero?: boolean;
 }
 
 /** Devuelve los campos cuya cifra NO aparece en el mensaje fuente. Lista vacia = todo con procedencia. */
@@ -120,7 +122,24 @@ export function cifrasDePiezas(campo: string, piezas: number): CifraExtraida {
 }
 
 export function cifrasDeMonto(campo: string, centavos: number): CifraExtraida {
-  return { campo, valor: BigInt(centavos) };
+  return { campo, valor: BigInt(centavos), esDinero: true };
+}
+
+/**
+ * BAJO-1: un monto que el modelo extrajo solo se explica en el mensaje con numeros de formato ambiguo ("1.250", "1.250,50", "1,5").
+ * Si OTRO numero claro del mensaje (o palabras) lo explica, no hay ambiguedad. Sirve a TODAS las intenciones con dinero, no solo al precio de un pedido.
+ */
+export function esMontoAmbiguo(fuente: string, valor: bigint): boolean {
+  const t = sinAcentos(fuente.toLowerCase());
+  if (numerosEnPalabras(t).includes(valor)) return false;
+  const explican = [...t.matchAll(/(\d[\d.,]*)(?:\s*(?:k|mil|millones|millon)\b)?/g)]
+    .map((m) => m[0])
+    .filter((tok) => valoresDeTexto(tok).has(valor));
+  return explican.length > 0 && explican.every((tok) => {
+    const num = /\d[\d.,]*/.exec(tok)![0];
+    const p = parsearPrecio(num);
+    return !p.ok && p.motivo === 'ambiguo';
+  });
 }
 
 /** Normaliza un grupo de digitos para comparar: sin separadores y sin ceros a la izquierda. */

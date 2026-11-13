@@ -138,14 +138,14 @@ describe('capital solo si el socio lo declara expresamente', () => {
   it('el modelo marca capital pero el mensaje no lo dice: se muestra y se trata como reembolso', async () => {
     const e = escenario([unaAccion(pp('capital'))], ESTRICTO);
     await e.socio('javier', 'pague 30,500 a Karen');
-    expect(e.ultimoGrupo().texto).toContain('Tipo: reembolso');
-    expect(e.ultimoGrupo().texto).not.toContain('capital que declaro');
+    expect(e.ultimoGrupo().texto).toContain('ninguna de capital (por omision es reembolso)');
+    expect(e.ultimoGrupo().texto).not.toContain('con sus palabras');
   });
 
   it('si el socio lo declara, el resumen lo dice con su texto citado', async () => {
     const e = escenario([unaAccion(pp('capital'))], ESTRICTO);
     await e.socio('javier', 'meti 30,500 de capital pagando a Karen');
-    expect(e.ultimoGrupo().texto).toContain('capital que declaro el socio');
+    expect(e.ultimoGrupo().texto).toContain('Declaracion del socio: capital, con sus palabras');
     expect(e.ultimoGrupo().texto).toContain('meti 30,500 de capital pagando a Karen');
   });
 

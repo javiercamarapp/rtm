@@ -175,7 +175,7 @@ describe('dia de operacion capturado por el chat (extremo a extremo)', () => {
     await sala.escribir('angelo', 'reembolso a Javier 500 por transferencia');
     expect(sala.ultimo().texto).toContain('caja de la empresa');
     await sala.escribir('angelo', 'puse 2000 para gastos');
-    expect(sala.ultimo().texto).toContain('reembolso, cuenta por pagar al socio');
+    expect(sala.ultimo().texto).toContain('El sistema lo registrara como reembolso (cuenta por pagar al socio)');
     await sala.confirmar('javier');
     await sala.escribir('angelo', 'reembolso a Javier 500 por transferencia');
     await sala.confirmar('javier');
@@ -388,5 +388,81 @@ describe('revision de seguridad: efecto confirmado, autor verificado y deshacer 
     await sala.escribir('javier', `/deshacer ${folio}`);
     const h = (await q<{ deshecho_por: string | null; autor: string }>('select deshecho_por, autor from agente.hecho where folio = $1', [folio]))[0]!;
     expect(h).toEqual({ deshecho_por: 'javier', autor: 'angelo' });
+  });
+});
+
+describe('verificacion independiente: lo que dice la tarjeta es lo que registra la base', () => {
+  const clasif = async () => q<{ clasificacion: string; monto_cent: string }>('select clasificacion, monto_cent::text from operacion.aportacion_socio order by id desc limit 1');
+
+  it('pago de un socio a un proveedor sin declarar capital: la tarjeta lee la clasificacion REAL de la base; si la base lo haria capital, no se registra', async () => {
+    const antes = await cuenta('operacion.aportacion_socio');
+    sala.llm = new LlmHeuristico();
+    await sala.escribir('javier', 'pague 500 a Isaac de mi bolsillo');
+    const t = sala.ultimo().texto;
+    const esCapital = (await q<{ n: string }>("select (select count(*) from pg_proc where proname = 'pago_proveedor_de_socio' and pronargs = 9)::text as n"))[0]!.n === '0';
+    if (esCapital) {
+      // Base de main (sin cuadrar-cuentas): registraria CAPITAL y el socio no lo declaro: el agente no lo registra y lo dice.
+      expect(t).toContain('CAPITAL');
+      expect(sala.ultimo().botones.flat().map((b) => b.texto)).not.toContain('Confirmar');
+    } else {
+      expect(t).toContain('El sistema lo registrara como reembolso (cuenta por pagar al socio)');
+      await sala.confirmar();
+      expect((await clasif())[0]!.clasificacion).toBe('reembolsable');
+      expect(sala.ultimo().texto).toContain('Registrado como reembolso');
+    }
+    expect(await cuenta('operacion.aportacion_socio')).toBe(esCapital ? antes : antes + 1);
+  });
+
+  it('pago de un socio a un proveedor DECLARANDO capital: la vista previa lo rechaza igual que la ejecucion (P0461) mientras no este cuadrar-cuentas', async () => {
+    const hay9 = (await q<{ n: string }>("select (select count(*) from pg_proc where proname = 'pago_proveedor_de_socio' and pronargs = 9)::text as n"))[0]!.n !== '0';
+    await sala.escribir('javier', 'pague 600 a Isaac con mi dinero, es capital que meto al negocio');
+    if (hay9) return;
+    expect(sala.ultimo().texto).toContain('integracion de cuadrar cuentas');
+    expect(sala.ultimo().botones.flat().map((b) => b.texto)).not.toContain('Confirmar');
+  });
+
+  it('lote historico: el modelo propone capital sin que el socio lo diga y la tarjeta muestra el reembolso; el otro socio da el segundo paso y la base lo registra como reembolso', async () => {
+    const f1 = (await q<{ f: string }>('select (negocio.hoy() - 20)::text as f'))[0]!.f;
+    sala.llm = new LlmGuionado([respuesta([{ tipo: 'lote_historico', etiqueta: 'prueba', total_dictado_centavos: null, renglones: [{ tipo: 'aportacion', fecha: f1, monto_centavos: 50000, socio: 'javier', cliente_texto: null, cuenta_texto: null, concepto: 'x', intencion: 'capital', via: null }], fuente_cita: 'lote' } as never])]);
+    await sala.escribir('javier', `lote historico ${f1} javier puso 500 para gastos`);
+    expect(sala.ultimo().texto).toContain('[sin declarar capital: reembolso]');
+    expect(sala.ultimo().texto).toContain('El sistema lo registrara como reembolso');
+    await sala.pulsar('javier', 'Confirmar');
+    await sala.pulsar('javier', 'Si, estoy seguro'); // el autor no basta
+    expect(sala.enviados.some((m) => m.texto.includes('lo debe confirmar el otro socio'))).toBe(true);
+    await sala.pulsar('angelo', 'Si, estoy seguro');
+    expect((await clasif())[0]).toEqual({ clasificacion: 'reembolsable', monto_cent: '50000' });
+    sala.llm = new LlmHeuristico();
+  });
+
+  it('el lote historico no se registra en SQL con un solo autor (aunque se llame directo a la puerta)', async () => {
+    await expect(q("select agente.ejecutar_ext('e2e:solo', 'lote_historico', jsonb_build_object('autor', 'javier', 'telegram_user_id', $1::bigint, 'origen', 'x', 'renglones', jsonb_build_array(jsonb_build_object('tipo', 'gasto', 'fecha', (negocio.hoy() - 3)::text, 'monto_cent', 100, 'socio', 'javier'))))", [ID.javier])).rejects.toMatchObject({ code: '42501' });
+  });
+
+  it('un monto ambiguo (1.250) en un cobro por IA se pregunta y no registra nada', async () => {
+    const antes = await cuenta('operacion.pago');
+    sala.llm = new LlmGuionado([respuesta([{ tipo: 'pago', cliente_texto: 'Tg Cliente', monto_centavos: 125000, cuenta_destino_texto: 'efectivo', pedido_folio: null, fuente_cita: 'Tg Cliente pago 1.250 en efectivo' }])]);
+    await sala.escribir('javier', 'Tg Cliente pago 1.250 en efectivo');
+    expect(sala.ultimo().texto).toContain('sin ambiguedad');
+    expect(await cuenta('operacion.pago')).toBe(antes);
+    sala.llm = new LlmHeuristico();
+  });
+
+  it('un telefono con parentesis no llega al modelo', async () => {
+    const llm = new LlmGuionado([respuesta([])]);
+    sala.llm = llm;
+    await sala.escribir('javier', 'Tg Cliente pago 6000 efectivo, cel (999) 123-4567 o 999 - 123 - 4567 o (999)1234567');
+    const u = llm.peticiones[0]!.usuario;
+    expect(u).not.toMatch(/123-4567|123 - 4567|1234567/);
+    expect(u).toContain('[telefono oculto]');
+    sala.llm = new LlmHeuristico();
+  });
+
+  it('resolver_toma exige al socio verificado y un gasto guarda su origen con un solo prefijo', async () => {
+    await expect(q("select agente.resolver_toma('e2e:rt', 'T-9999', 'autorizar', 'angelo', $1::bigint)", [ID.javier])).rejects.toMatchObject({ code: '42501' });
+    await sala.escribir('javier', 'pague 90 de uber');
+    await sala.confirmar();
+    const mo = (await q<{ mensaje_origen: string }>("select mensaje_origen from operacion.evento where mensaje_origen like 'telegram:%' order by id desc limit 1"))[0]!.mensaje_origen;
+    expect(mo).not.toMatch(/telegram:.*telegram:/);
   });
 });

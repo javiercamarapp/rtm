@@ -73,7 +73,8 @@ export function envolverMensaje(autor: Persona, fuente: FuenteMensaje, texto: st
 export function redactarContactos(texto: string): string {
   return texto
     .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g, '[correo oculto]')
-    .replace(/\+?\d(?:[\s.-]?\d){9,14}/g, (m) => (m.replace(/\D/g, '').length >= 10 ? '[telefono oculto]' : m));
+    // Telefonos con parentesis y separadores de 1 a 3 caracteres: (999) 123-4567, 999 - 123 - 4567, (999)1234567, +52 999 123 4567. La coma NO es separador (1,250.50 es un monto).
+    .replace(/\+?\(?\d(?:[\s().-]{0,3}\d){9,14}\)?/g, (m) => (m.replace(/\D/g, '').length >= 10 && !/\d\.\d{2}\s+\d/.test(m) ? '[telefono oculto]' : m));
 }
 
 /**

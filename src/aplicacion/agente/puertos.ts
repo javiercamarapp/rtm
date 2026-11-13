@@ -282,9 +282,16 @@ export interface TomaCaducada {
   lineas: CifraServidor[];
 }
 
+/** Lo que dejo (o dejaria) la base en operacion.aportacion_socio: la tarjeta lo LEE de aqui, nunca lo supone. 'capital' | 'reembolsable'. */
+export interface ClasificacionReal {
+  clasificacion: string;
+  montoCent: number;
+  socio: string;
+}
+
 /** Efecto que calcula el servidor al simular una escritura (se revierte siempre). */
 export type ResultadoSimulacion =
-  | { tipo: 'simulado'; lineas: CifraServidor[]; advertencias: string[]; cuadra: boolean; rojas: string[]; efectoHash?: string | null }
+  | { tipo: 'simulado'; lineas: CifraServidor[]; advertencias: string[]; cuadra: boolean; rojas: string[]; efectoHash?: string | null; clasificaciones?: ClasificacionReal[] }
   | { tipo: 'pregunta'; motivo: MotivoPreguntaNegocio; texto: string; cifras: CifraServidor[] }
   | { tipo: 'rechazado'; codigo: string; texto: string };
 

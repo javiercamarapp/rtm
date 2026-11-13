@@ -249,8 +249,8 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
       if (d.cliente !== null) l.push(`Por cuenta del cliente: ${r.servidor(d.cliente)}`);
       else if (i.pagado_por !== 'sociedad') {
         l.push(i.intencion === 'capital'
-          ? `Tipo: capital que declaro el socio con sus palabras ("${r.citaUsuario(i.fuente_cita)}"). Si no es lo que quisiste decir, cancela.`
-          : 'Tipo: reembolso, cuenta por pagar al socio (no es capital porque no lo declaro como capital)');
+          ? `Declaracion del socio: capital, con sus palabras ("${r.citaUsuario(i.fuente_cita)}"). Si no es lo que quisiste decir, cancela.`
+          : 'Declaracion del socio: ninguna de capital (por omision es reembolso). Abajo se muestra como lo registrara el sistema.');
       }
       break;
     case 'gasto':
@@ -258,7 +258,7 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
       if (i.descripcion !== null) l.push(`Nota: ${r.citaUsuario(i.descripcion)}`);
       break;
     case 'aportacion':
-      l.push(`Socio: ${NOMBRE_SOCIO[i.socio]}`, monto(i.monto_centavos), i.intencion === 'capital' ? 'Tipo: capital que declaro el socio (inversion)' : 'Tipo: reembolso, cuenta por pagar al socio (no es capital porque no se declaro como capital)');
+      l.push(`Socio: ${NOMBRE_SOCIO[i.socio]}`, monto(i.monto_centavos), i.intencion === 'capital' ? 'Declaracion del socio: capital (inversion), con sus palabras' : 'Declaracion del socio: ninguna de capital (por omision es reembolso)');
       if (i.motivo !== null) l.push(`Motivo: ${r.citaUsuario(i.motivo)}`);
       break;
     case 'reembolso_socio':
@@ -326,7 +326,8 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
       l.push(`Lote: ${r.citaUsuario(i.etiqueta ?? 'sin etiqueta')} (${r.config(i.renglones.length)} renglones, todos con fecha pasada)`);
       i.renglones.forEach((x, n) => {
         const quien = x.tipo === 'cobro' ? `${r.servidor(d.clientesLote?.[String(n)] ?? x.cliente_texto ?? 'cliente')} a ${r.citaUsuario(x.cuenta_texto ?? '')}` : x.socio === 'angelo' ? 'Angelo' : 'Javier';
-        l.push(`- ${r.citaUsuario(x.fecha)} ${x.tipo} ${quien} ${r.pesos(BigInt(x.monto_centavos))}${x.concepto ? ` (${r.citaUsuario(x.concepto)})` : ''}`);
+        const decl = x.tipo === 'aportacion' ? (x.intencion === 'capital' ? ' [declaro capital]' : ' [sin declarar capital: reembolso]') : '';
+        l.push(`- ${r.citaUsuario(x.fecha)} ${x.tipo} ${quien} ${r.pesos(BigInt(x.monto_centavos))}${x.concepto ? ` (${r.citaUsuario(x.concepto)})` : ''}${decl}`);
       });
       break;
     default:
@@ -334,6 +335,8 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
   }
   if (d.efecto) {
     if (d.efecto.lineas.length > 0) l.push('Efecto calculado por el sistema:', ...listar(r, d.efecto.lineas));
+    // Lo que la base registraria (leido de sus filas, no de una plantilla).
+    for (const c of d.efecto.clasificaciones ?? []) l.push(`El sistema lo registrara como ${c.clasificacion === 'capital' ? 'CAPITAL' : 'reembolso (cuenta por pagar al socio)'}: ${r.pesos(BigInt(c.montoCent))} de ${r.servidor(c.socio)}`);
     for (const a of d.efecto.advertencias) l.push(`Aviso: ${r.servidor(a)}`);
     l.push(d.efecto.cuadra ? 'Cuadre por dos vias despues de registrar: cuadra (debe = haber y saldos de socios = efectivo repartido).' : `Cuadre por dos vias despues de registrar: NO cuadra (${r.servidor(d.efecto.rojas.join('; '))}).`);
   }

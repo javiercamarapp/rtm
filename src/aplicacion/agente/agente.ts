@@ -6,7 +6,7 @@
 //   3. reclamo por (chat, mensaje)                        4. comandos (sin IA) o prefiltro + modo sin IA
 //   5. reserva de presupuesto -> modelo -> liquidacion    6. esquema estricto + guardia de cifras de entrada
 //   7. permisos por rol, resolucion de alias (pregunta ante duda), ejecucion idempotente, eco.
-import { cifrasDeMonto, cifrasDePiezas, cifrasSinProcedencia, parsearPrecio, valoresDeTexto, type CifraExtraida } from '@/dominio/agente/cifras';
+import { cifrasDeMonto, cifrasDePiezas, cifrasSinProcedencia, esMontoAmbiguo, parsearPrecio, valoresDeTexto, type CifraExtraida } from '@/dominio/agente/cifras';
 import { parsearComando } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN, evaluarDeshacer } from '@/dominio/agente/deshacer';
 import { debeProcesarConIa, declaraCapitalExpreso, detectarInyeccion, redactarContactos, sanitizar } from '@/dominio/agente/entrada';
@@ -146,6 +146,7 @@ interface ContextoMensaje {
   sospecha: boolean;
 }
 
+const MENSAJE_MONTO_AMBIGUO = 'el monto sin ambiguedad: con coma para los miles y punto para los centavos (un punto seguido de tres cifras puede leerse de dos maneras)';
 const MSG_ERROR = 'No pude procesar ese mensaje. Intentalo de nuevo o usa los comandos.';
 
 function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
@@ -265,6 +266,14 @@ export function opcionesFaltante(a: Intencion): OpcionFaltante[] | null {
     return (['transferencia', 'efectivo'] as const).map((v) => ({ texto: v === 'efectivo' ? 'Efectivo' : 'Transferencia', parche: (x) => (x.tipo === 'reembolso_socio' || x.tipo === 'retiro_utilidad' ? { ...x, via: v } : x) }));
   }
   return null;
+}
+
+/** BAJO-4: el capital lo declara cada socio por si mismo; un socio no lo registra a nombre del otro. */
+export function capitalAjeno(a: Intencion, autor: Persona): boolean {
+  if (a.tipo === 'aportacion') return a.intencion === 'capital' && a.socio !== autor;
+  if (a.tipo === 'pago_proveedor') return a.intencion === 'capital' && a.pagado_por !== 'sociedad' && a.pagado_por !== autor;
+  if (a.tipo === 'lote_historico') return a.renglones.some((r) => r.tipo === 'aportacion' && r.intencion === 'capital' && r.socio !== autor);
+  return false;
 }
 
 export class AgenteTelegram {
@@ -568,6 +577,13 @@ export class AgenteTelegram {
           await this.responder(ctx.autor, ctx.chats, P.cifraSinProcedencia(ctx.texto.slice(0, 120), faltan));
           continue;
         }
+        // BAJO-1: un monto que solo se explica con un formato ambiguo ("1.250") se pregunta en TODAS las intenciones con dinero, no solo en el precio de un pedido.
+        const ambiguos = cifrasDeIntencion(a).filter((c) => c.esDinero === true && esMontoAmbiguo(ctx.texto, c.valor)).map((c) => c.campo);
+        if (ambiguos.length > 0) {
+          await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `monto_ambiguo:${ambiguos.join(',')}`.slice(0, 280) });
+          await this.responder(ctx.autor, ctx.chats, P.faltaDato(MENSAJE_MONTO_AMBIGUO));
+          continue;
+        }
       }
 
       if (a.tipo === 'lote_historico' && a.total_dictado_centavos !== null) {
@@ -579,7 +595,12 @@ export class AgenteTelegram {
       }
 
       // El capital se declara con las palabras del socio: si el modelo lo marco pero el mensaje no lo dice, es reembolso (decision del dueno).
-      const declarada = ctx.verificarCifras && (a.tipo === 'pago_proveedor' || a.tipo === 'aportacion') && a.intencion === 'capital' && !declaraCapitalExpreso(ctx.texto) ? ({ ...a, intencion: 'reembolso' } as Intencion) : a;
+      const declarada = this.capitalSoloSiSeDeclaro(a, ctx);
+      if (capitalAjeno(declarada, ctx.autor.persona)) {
+        await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: 'capital_a_nombre_del_otro' });
+        await this.responder(ctx.autor, ctx.chats, P.rechazo('El capital lo declara cada socio por si mismo: que lo registre quien lo pone o lo paga. Si fue un deposito comun, dilo sin declararlo como capital y queda como reembolso.'));
+        continue;
+      }
       const estado: EstadoAccion = {
         intencion: declarada,
         overrides: {},
@@ -599,6 +620,24 @@ export class AgenteTelegram {
       hechas++;
     }
     return { estado: 'procesado', acciones: hechas };
+  }
+
+  /**
+   * El capital se declara con las palabras del socio (decision del dueno): si el modelo lo marco pero el mensaje no lo dice, es reembolso.
+   * Aplica al pago a proveedor, a la aportacion y a CADA renglon de aportacion de un lote (la linea del mensaje que lleva su fecha, o el mensaje completo).
+   */
+  private capitalSoloSiSeDeclaro(a: Intencion, ctx: ContextoMensaje): Intencion {
+    if (!ctx.verificarCifras) return a;
+    if ((a.tipo === 'pago_proveedor' || a.tipo === 'aportacion') && a.intencion === 'capital' && !declaraCapitalExpreso(ctx.texto)) return { ...a, intencion: 'reembolso' } as Intencion;
+    if (a.tipo === 'lote_historico') {
+      const lineas = ctx.texto.split('\n');
+      return { ...a, renglones: a.renglones.map((r) => {
+        if (r.tipo !== 'aportacion' || r.intencion !== 'capital') return r;
+        const propias = lineas.filter((l) => l.includes(r.fecha));
+        return declaraCapitalExpreso(propias.length > 0 ? propias.join('\n') : ctx.texto) ? r : { ...r, intencion: null };
+      }) };
+    }
+    return a;
   }
 
   private async resolverYEjecutar(estado: EstadoAccion, chats: ChatsRegistrados): Promise<void> {

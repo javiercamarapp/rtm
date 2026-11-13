@@ -144,12 +144,12 @@ describe('reembolso, retiro, aportacion y cuenta entre socios', () => {
   it('aportacion: es capital solo si el socio lo declara; si no, reembolso y el resumen lo dice', async () => {
     const e = escenario([unaAccion(aportacion('javier', 2_000_000, 'capital')), unaAccion(aportacion('javier', 100_000, null))], ESTRICTO);
     await e.socio('javier', 'meti 20,000 de capital para invertir');
-    expect(e.ultimoGrupo().texto).toContain('capital que declaro');
+    expect(e.ultimoGrupo().texto).toContain('Declaracion del socio: capital');
     await e.pulsar(IDS.javier, IDS.grupoSocios, e.ultimoGrupo(), 0, 0);
     expect(e.negocio.capitalDe('javier')).toBe(2_000_000n);
     expect(e.negocio.deudaCon('javier')).toBe(0n);
     await e.socio('javier', 'puse 1000 para gastos');
-    expect(e.ultimoGrupo().texto).toContain('reembolso, cuenta por pagar');
+    expect(e.ultimoGrupo().texto).toContain('ninguna de capital (por omision es reembolso)');
     await e.pulsar(IDS.javier, IDS.grupoSocios, e.ultimoGrupo(), 0, 0);
     expect(e.negocio.deudaCon('javier')).toBe(100_000n);
   });

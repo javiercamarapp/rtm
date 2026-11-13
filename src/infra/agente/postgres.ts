@@ -13,6 +13,7 @@ import type {
   EventoAgente,
   NegocioAgente,
   NuevoToken,
+  ClasificacionReal,
   ResultadoSimulacion,
   ResultadoConsumo,
   ResultadoDeshacer,
@@ -217,7 +218,11 @@ function precioDeTexto(t: string): number | null {
   return r.centavos;
 }
 
-type ResultadoSql = Record<string, unknown> & { folio?: string; repetido?: boolean; eco?: Parameters<typeof eco>[0] };
+type ClasificacionSql = { clasificacion: string; monto_cent: number; socio: string };
+type ResultadoSql = Record<string, unknown> & { folio?: string; repetido?: boolean; eco?: Parameters<typeof eco>[0]; clasificaciones?: ClasificacionSql[] };
+
+const aClasificaciones = (c: ClasificacionSql[] | undefined): ClasificacionReal[] => (c ?? []).map((x) => ({ clasificacion: x.clasificacion, montoCent: x.monto_cent, socio: x.socio }));
+const nombreClasificacion = (c: string): string => (c === 'capital' ? 'capital' : 'reembolso');
 
 /** Lineas de la respuesta: solo cifras que devolvio la base. */
 function lineasDeResultado(j: ResultadoSql): CifraServidor[] {
@@ -231,6 +236,8 @@ function lineasDeResultado(j: ResultadoSql): CifraServidor[] {
   if (typeof j.compra === 'string') salida.push({ tipo: 'folio', etiqueta: 'Compra', folio: j.compra });
   if (typeof j.estado === 'string') salida.push({ tipo: 'texto', etiqueta: 'Estado', texto: j.estado });
   if (Array.isArray(j.folios)) salida.push({ tipo: 'texto', etiqueta: 'Folios', texto: (j.folios as string[]).join(', ') });
+  // Lo que la base REALMENTE registro (no una plantilla): una linea por aportacion que dejo la operacion.
+  for (const c of aClasificaciones(j.clasificaciones)) salida.push({ tipo: 'pesos', etiqueta: `Registrado como ${nombreClasificacion(c.clasificacion)} (${c.socio})`, centavos: BigInt(c.montoCent) });
   return salida;
 }
 
@@ -321,10 +328,17 @@ export class NegocioAgenteDb implements NegocioAgente {
     const prep = a.intencion.tipo === 'toma_omar' || a.intencion.tipo === 'devolucion' || a.intencion.tipo === 'paquete_perdido' ? null : preparar(a, ctx, hoyDe(ctx.ahora));
     if (!prep) return { tipo: 'simulado', lineas: [], advertencias: [], cuadra: true, rojas: [] };
     try {
-      const j = (await F(this.sql, 'simular', [prep.hub, prep.tipo, JSON.stringify(prep.args)], ['text', 'text', 'jsonb'])) as { resultado: ResultadoSql; efecto: Record<string, unknown>; efecto_hash?: string; cuadra: boolean; comprobaciones_rojas: { nombre: string }[] };
+      const j = (await F(this.sql, 'simular', [prep.hub, prep.tipo, JSON.stringify(prep.args)], ['text', 'text', 'jsonb'])) as { resultado: ResultadoSql; efecto: Record<string, unknown>; efecto_hash?: string; clasificaciones?: ClasificacionSql[]; cuadra: boolean; comprobaciones_rojas: { nombre: string }[] };
+      const clasificaciones = aClasificaciones(j.clasificaciones);
+      // El capital se registra SOLO si el socio lo declaro: si la base lo clasificaria como capital sin esa declaracion (regla de main antes de integrar cuadrar-cuentas), NO se registra.
+      const declarados = prep.tipo === 'aportacion' ? (prep.args.intencion === 'capital' ? 1 : 0) : prep.tipo === 'pago_proveedor' ? (prep.args.declara_capital === true ? 1 : 0)
+        : prep.tipo === 'lote_historico' ? ((prep.args.renglones as { tipo: string; intencion: string | null }[]).filter((r) => r.tipo === 'aportacion' && r.intencion === 'capital').length) : 0;
+      if (clasificaciones.filter((c) => c.clasificacion === 'capital').length > declarados) {
+        return { tipo: 'rechazado', codigo: 'capital_sin_declarar', texto: 'La base registraria este dinero como CAPITAL y el socio no lo declaro como capital (la regla es reembolso por omision). No lo registro: hazlo en el software o declaralo expresamente.' };
+      }
       const lineas = [...efectoDeSimulacion(j.efecto ?? {}), ...lineasDeResultado(j.resultado ?? {}).filter((l) => l.tipo === 'texto' && l.etiqueta === 'Folios' ? false : true), ...eco(j.resultado?.eco).saldos];
       const avisos = Array.isArray(j.efecto?.avisos) ? (j.efecto.avisos as string[]) : [];
-      return { tipo: 'simulado', lineas, advertencias: avisos, cuadra: j.cuadra, rojas: (j.comprobaciones_rojas ?? []).map((r) => r.nombre), efectoHash: j.efecto_hash ?? null };
+      return { tipo: 'simulado', lineas, advertencias: avisos, cuadra: j.cuadra, rojas: (j.comprobaciones_rojas ?? []).map((r) => r.nombre), efectoHash: j.efecto_hash ?? null, clasificaciones };
     } catch (e) {
       const cod = (e as { code?: string }).code;
       if (cod === 'P0427') return { tipo: 'pregunta', motivo: 'otro', texto: `${(e as Error).message}. ¿Lo envio de todos modos, aceptando esos avisos?`, cifras: [] };
@@ -376,7 +390,8 @@ export class NegocioAgenteDb implements NegocioAgente {
 
   async autorizarToma(e: { folio: string; socio: Miembro; autorizar: boolean; claveIdem: string }): Promise<ResultadoTomaResuelta> {
     try {
-      const j = (await F(this.sql, 'resolver_toma', [e.claveIdem, e.folio, e.autorizar ? 'autorizar' : 'rechazar'], ['text', 'text', 'text'])) as { estado: string; folio?: string };
+      // El socio que pulso viaja verificado (id de Telegram): la base lo contrasta con agente.miembro.
+      const j = (await F(this.sql, 'resolver_toma', [e.claveIdem, e.folio, e.autorizar ? 'autorizar' : 'rechazar', e.socio.persona, e.socio.telegramUserId], ['text', 'text', 'text', 'text', 'bigint'])) as { estado: string; folio?: string };
       if (j.estado === 'no_encontrada') return { tipo: 'no_encontrada' };
       return { tipo: 'resuelta', folio: e.folio, estado: j.estado === 'autorizada' ? 'autorizada' : 'rechazada', lineas: [], saldoSemanal: null, repetido: false };
     } catch (err) {
