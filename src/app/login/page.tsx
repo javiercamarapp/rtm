@@ -33,13 +33,18 @@ export default async function Login({
     'use server';
     const dest = destinoSeguro(String(formData.get('next') ?? '/'));
     // Al exceder el limite por IP se responde el error GENERICO, no «vas muy rapido»: la diferencia le diria a quien prueba correos cuando dejo de contar.
-    if (!(await ipDentroDelLimite())) redirect(`/login?next=${encodeURIComponent(dest)}&error=1`);
     const email = String(formData.get('email') ?? '').trim();
     if (!email) redirect(`/login?next=${encodeURIComponent(dest)}&error=1`);
-    // La respuesta es identica en TEXTO y en TIEMPO para un correo con cuenta y uno sin ella (piso de 1,500 ms). Los topes por correo
-    // y globales viven dentro de `pedirEnlace`: al excederse NO se manda nada y se responde igual que un envio exitoso.
-    const { error } = await conPisoDeTiempo(() => pedirEnlace(email, dest));
-    if (respuestaOtp(error) === 'error') redirect(`/login?next=${encodeURIComponent(dest)}&error=1`);
+    // La respuesta es identica en TEXTO y en TIEMPO para un correo con cuenta y uno sin ella (piso de 1,500 ms, que cubre tambien la consulta del
+    // limite por IP). Los topes por correo y globales viven dentro de `pedirEnlace`: al excederse NO se manda nada y se responde igual que un envio exitoso.
+    // Si el limitador no responde (FALLA CERRADO) tampoco se manda nada y se responde exactamente igual que a un correo no permitido.
+    const salida = await conPisoDeTiempo(async () => {
+      const limiteIp = await ipDentroDelLimite();
+      if (limiteIp === 'excedido') return 'excedido' as const;
+      const { error } = await pedirEnlace(email, dest, limiteIp === 'no_disponible');
+      return respuestaOtp(error);
+    });
+    if (salida !== 'enviado') redirect(`/login?next=${encodeURIComponent(dest)}&error=1`);
     redirect(`/login?next=${encodeURIComponent(dest)}&enviado=1`);
   }
 

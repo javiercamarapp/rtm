@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { completarAcceso, completarConfirmacion } from '@/aplicacion/acceso/completar_acceso';
 import { correoExcedeTopes, TOPE_GLOBAL, TOPE_IP, TOPE_POR_CORREO } from '@/aplicacion/acceso/limites';
-import type { Autenticador, DepsAcceso, EstadoSesion, LimitadorIntentos, TipoClave } from '@/aplicacion/acceso/puertos';
+import { LimitadorNoDisponible, type Autenticador, type DepsAcceso, type EstadoSesion, type LimitadorIntentos, type TipoClave } from '@/aplicacion/acceso/puertos';
 import { reenviarEnlaceCaducado } from '@/aplicacion/acceso/reenvio';
 import { claveDeLimite } from '@/infra/limite/limitador_postgres';
 import { ipDeCabeceras } from '@/infra/web/ip';
@@ -157,6 +157,27 @@ describe('reenvio con frenos', () => {
     for (let i = 0; i < 10; i += 1) await a.deps.limitador.excede('ip', '9.9.9.9', TOPE_IP);
     expect(await reenviarEnlaceCaducado(a.deps, '/', '9.9.9.9')).toBe('no');
     expect(a.enviados).toHaveLength(0);
+  });
+});
+
+describe('limitador caido: falla CERRADO', () => {
+  const caido: LimitadorIntentos = { async excede() { throw new LimitadorNoDisponible('ECONNREFUSED'); } };
+
+  it('el tope por correo propaga el fallo (no lo toma por «no excede»)', async () => {
+    await expect(correoExcedeTopes(caido, 'a@example.test')).rejects.toBeInstanceOf(LimitadorNoDisponible);
+  });
+  it('el reenvio no manda nada, responde «no» (igual que un correo sin cuenta) y deja un aviso sin datos personales', async () => {
+    const a = armar();
+    a.deps.limitador = caido;
+    expect(await reenviarEnlaceCaducado(a.deps, '/', '9.9.9.9')).toBe('no');
+    expect(a.enviados).toHaveLength(0);
+    expect(a.eventos).toContain('login.limitador_no_disponible');
+    expect(a.eventos.join(' ')).not.toMatch(/example|@/);
+  });
+  it('otros errores no se disfrazan: solo LimitadorNoDisponible se degrada', async () => {
+    const a = armar();
+    a.deps.limitador = { async excede() { throw new Error('otro'); } };
+    await expect(reenviarEnlaceCaducado(a.deps, '/', '9.9.9.9')).rejects.toThrow('otro');
   });
 });
 
