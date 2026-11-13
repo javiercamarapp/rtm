@@ -15,7 +15,6 @@ test.use({ storageState: `${SS}/${ROL}.json` });
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(3_000_000);
 
-const EMOJI = /\p{Extended_Pictographic}/u;
 
 for (const tema of TEMAS) {
   test(`recorrido ${ROL} ${tema}`, async ({ page }, info) => {

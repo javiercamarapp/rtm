@@ -57,7 +57,7 @@ const flujos = {
     await q1(JAV, "select api.registrar_pago($1,'Efectivo',125000,2,$2::jsonb,true,'abono','2026-11-13',null,'total',null)", [K('p1p2'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 125000 }])]);
     s = (await q1(JAV, 'select operacion.pedido_saldo($1) s', [cr.pedido_id])).s;
     nota('cobro total', Number(s) === 0, `saldo=${s}`);
-    const dup = await q1(JAV, "select api.registrar_pago($1,'Efectivo',125000,2,$2::jsonb,true,'abono','2026-11-13',null,'total',null) as r", [K('p1p2'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 125000 }])]);
+    await q1(JAV, "select api.registrar_pago($1,'Efectivo',125000,2,$2::jsonb,true,'abono','2026-11-13',null,'total',null) as r", [K('p1p2'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 125000 }])]);
     s = (await q1(JAV, 'select operacion.pedido_saldo($1) s', [cr.pedido_id])).s;
     nota('reintento con la misma clave no duplica el cobro', Number(s) === 0, `saldo=${s}`);
     
@@ -140,7 +140,7 @@ const flujos = {
     const est = async () => (await q1(JAV, 'select api.pago_renta_panel() r')).r.estado;
     let e = await est();
     const por = Number(e.por_pagar_cent);
-    const r1 = (await q1(JAV, "select api.registrar_pago_renta($1,30000,'Javier','efectivo',null,'maestro parcial',null,false) r", [K('r1')])).r;
+    await q1(JAV, "select api.registrar_pago_renta($1,30000,'Javier','efectivo',null,'maestro parcial',null,false) r", [K('r1')]);
     const e1 = await est();
     nota('pago de renta parcial', Number(e1.por_pagar_cent) === por - 30000, `por_pagar ${por} -> ${e1.por_pagar_cent}`);
     const ex = await intenta(JAV, "select api.registrar_pago_renta($1,99999900,'Javier','efectivo',null,'exceso',null,false)", [K('r2')]);
