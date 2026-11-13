@@ -378,6 +378,9 @@ function paginaMes(a: Ayuda, id: string, titular: string, heroeId: string | null
   };
 }
 
+/** Tope de lineas de 'Pocos datos' en el anexo: con mucho historial sin muestra la lista desbordaba la pagina y el PDF no pasaba la verificacion. */
+const MAX_POCOS_DATOS = 12;
+
 export function construirReporte(p: Paquete): ReporteModelo {
   const a = crearAyuda(p);
   const g = p.graficas;
@@ -407,7 +410,7 @@ export function construirReporte(p: Paquete): ReporteModelo {
     { titulo: 'Comprobaciones', lineas: p.comprobaciones.map((c) => `${c.id}  ${c.nombre}: ${c.ok ? 'cuadra' : 'no cuadra'}`) },
     { titulo: 'Insights: umbrales vigentes (config)', lineas: anexoUmbrales().map((u) => `${u.id}  ${u.nombre}. Umbral: ${u.umbral}. Muestra: ${u.muestra}.`) },
     { titulo: 'Parámetros de proyección (config)', lineas: [`Promedio móvil exponencial: alfa ${PARAMETROS.alfaEma}, ventana ${PARAMETROS.ventanaEma} semanas, mínimo ${PARAMETROS.minSemanasEma}.`, `Rango empírico al ochenta por ciento: z ${PARAMETROS.z80}.`, `Tendencia: de ${PARAMETROS.tendencia.minSemanas} a ${PARAMETROS.tendencia.maxSemanas} semanas, t mínimo ${PARAMETROS.tendencia.tMinimo}, horizonte máximo ${PARAMETROS.tendencia.horizonteMax} semanas.`, `Punto de reorden: z ${PARAMETROS.reorden.z}, revisión ${PARAMETROS.reorden.revisionDias} días.`] },
-    ...(p.insights.pocosDatos.length ? [{ titulo: 'Pocos datos', lineas: p.insights.pocosDatos.map((x) => x.frase) }] : []),
+    ...(p.insights.pocosDatos.length ? [{ titulo: 'Pocos datos', lineas: [...p.insights.pocosDatos.slice(0, MAX_POCOS_DATOS).map((x) => x.frase), ...(p.insights.pocosDatos.length > MAX_POCOS_DATOS ? [`Y ${p.insights.pocosDatos.length - MAX_POCOS_DATOS} mas con muestra insuficiente (no se listan para que el anexo quepa en una pagina).`] : [])] }] : []),
   ];
   return { folio: p.periodo.folio, tipo: p.tipo, encabezado: `RTM · Reporte ${p.tipo} · ${p.periodo.etiqueta}`, estado, sale: p.estado.sale, preliminar: p.estado.etiquetas.includes('PRELIMINAR'), huella: p.huella, paginas, anexo };
 }
