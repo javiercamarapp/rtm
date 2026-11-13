@@ -47,8 +47,8 @@ select is((operacion.confirmar_compra('n905o1c', pg_temp.cid('n905o1'))->>'saldo
 select is(operacion.reembolso_pendiente(pg_temp.sid('Angelo')) - (select r from _r0), 45000::bigint, 'aportacion reembolsable de Angelo por la guia: +450.00');
 select is(pg_temp.piezas('N905 Modelo QA 50K'), 0, 'confirmar no sube el inventario');
 select throws_ok($$select operacion.confirmar_compra('n905o1d', (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'n905o1'))$$, 'P0428', null, 'confirmar dos veces con otra clave: P0428');
--- Pago de Angelo a Isaac con dinero propio: saldo 0 y capital pendiente
-select is((operacion.pago_proveedor_de_socio('n905pa', 'Isaac', 2000000, 'Angelo', 'auto', '2027-03-02')->>'aportacion_cent')::bigint, 2000000::bigint, 'Angelo paga 20,000.00 con dinero propio: aportacion');
+-- Pago de Angelo a Isaac con dinero propio declarado como capital: saldo 0 y capital pendiente (sin declaracion seria reembolso: ver a4_006)
+select is((operacion.pago_proveedor_de_socio('n905pa', 'Isaac', 2000000, 'Angelo', 'auto', '2027-03-02', p_declara_capital => true)->>'aportacion_cent')::bigint, 2000000::bigint, 'Angelo paga 20,000.00 con dinero propio: aportacion');
 select is(pg_temp.saldo('Isaac'), 0::bigint, 'saldo de Isaac 0.00');
 select is(operacion.aportacion_pendiente(pg_temp.sid('Angelo')) - (select c from _r0), 2000000::bigint, 'pendiente de devolver a Angelo: 20,000.00');
 -- Envio y guia de entrada (H-03: registrar_guia_compra no tenia prueba)

@@ -59,8 +59,11 @@ select is((select (c->>'via2_cent')::bigint from _a), -47500::bigint, 'via 2 = -
 select is((select (c->>'cuadra')::boolean from _a), false, 'sin los pagos de bolsillo, Socios dice No cuadra');
 
 -- Cada socio registra en Proveedores lo que pago de su bolsillo a Isaac (dinero propio): 2,900.00 cada uno = exactamente lo financiado.
-select operacion.pago_proveedor_de_socio('a4f-ba', 'Isaac', 290000, 'Angelo', 'aportacion', negocio.hoy());
-select operacion.pago_proveedor_de_socio('a4f-bj', 'Isaac', 290000, 'Javier', 'aportacion', negocio.hoy());
+select operacion.pago_proveedor_de_socio('a4f-ba', 'Isaac', 290000, 'Angelo', 'dinero_propio', negocio.hoy());
+select operacion.pago_proveedor_de_socio('a4f-bj', 'Isaac', 290000, 'Javier', 'dinero_propio', negocio.hoy());
+-- Regla del dueno: ese dinero propio es REEMBOLSO (cuenta por pagar al socio), no capital, porque ningun socio declaro capital.
+select is((select count(*) from operacion.aportacion_socio where ref_tipo = 'cuenta_proveedor' and clasificacion = 'reembolsable' and monto_cent = 290000), 2::bigint, 'los dos pagos de bolsillo quedan como reembolso');
+select is((select count(*) from operacion.aportacion_socio where ref_tipo = 'cuenta_proveedor' and clasificacion = 'capital'), 0::bigint, 'y ninguno como capital');
 create temp table _b as select operacion.cuenta_socios() as c;
 select is((select (c->>'financiado_por_sociedad_cent')::bigint from _b), 0::bigint, 'los socios pusieron todo el costo: nada financiado por la sociedad');
 select is((select (c->>'via1_cent')::bigint from _b), (select (c->>'via2_cent')::bigint from _b), 'via 1 = via 2');
