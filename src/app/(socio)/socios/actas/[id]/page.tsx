@@ -75,6 +75,7 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
             ]}
           />
           <Tarjeta plana titulo="Por socio" descripcion="Su parte 50/50, lo que retira y lo que reinvierte; la reinversión queda como inversión suya">
+            <div className="rtm-actas-tabla">
             <DataTable
               etiqueta="Acta por socio" densidad="densa" plana primeraFija clave={(f) => f.nombre} filas={filas}
               totales={{ etiqueta: 'Suma', celdas: { p: m(filas.reduce((a, f) => a + (f.x?.utilidad_cent ?? 0n), 0n)), r: m(filas.reduce((a, f) => a + f.dec.retira, 0n)), i: m(filas.reduce((a, f) => a + f.dec.reinvierte, 0n)), q: m(filas.reduce((a, f) => a + f.resto, 0n)) } }}
@@ -93,12 +94,14 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
                 { id: 'v', titulo: 'Valuación personal al corte', etiquetaMovil: 'Valuación', numerica: true, ancho: 'l', prioridadMovil: 'normal' as const, celda: (f) => (f.valor === null ? <span className="rtm-sin-dato">Sin dato</span> : m(f.valor)) },
               ]}
             />
+            </div>
           </Tarjeta>
         </>
       )}
 
       <Rejilla dividir="6-6">
         <Tarjeta titulo="Firmas" descripcion="Las firman los dos socios (web y botón en Telegram); cada firma recalcula con los libros de ese momento">
+          <div className="rtm-actas-tabla">
           <DataTable
             etiqueta="Firmas del acta" densidad="densa" plana clave={(f) => f.nombre} filas={filas}
             columnas={[
@@ -107,6 +110,7 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
               { id: 'f', titulo: 'Fecha', ancho: 'l', celda: (f) => (f.firma ? <span className="rtm-nowrap">{etiquetaFechaHora(f.firma.firmado_at)}</span> : <span className="rtm-sin-dato">Sin dato</span>) },
             ]}
           />
+          </div>
           <Pie>Propuesta por {c.propuesto_por ?? 'un socio'} el {etiquetaFechaHora(c.creado_at)}. Un acta firmada por los dos no se edita: se corrige con una contra-acta.</Pie>
         </Tarjeta>
         <Tarjeta titulo="Sello del acta" descripcion="Foto inmutable al cerrarse con las dos firmas">
