@@ -46,6 +46,9 @@ create function pg_temp.pedido_args(p_fc date, p_hc time) returns jsonb language
     jsonb_build_object('modelo_id', (select id from catalogo.modelo where nombre_norm = 'mt modelo 25k'), 'sabor_id', (select id from catalogo.sabor where nombre_norm = 'mango'), 'piezas', 20)),
     'origen_pedido', 'karen_directo', 'fecha_compromiso', p_fc, 'hora_compromiso', p_hc)) $$;
 
+select is(agente.socio_menudeo(), 'angelo', 'el socio de menudeo es Angelo por omision (lectura para el agente)');
+select is(has_function_privilege('authenticated', 'agente.socio_menudeo()', 'execute'), false, '... y authenticated no la ejecuta');
+
 -- ------------------------------------------------------------------ pedido_menudeo: solo el socio de menudeo, autor verificado
 select throws_ok($$ select agente.ejecutar_ext('mt:x1', 'pedido_menudeo', pg_temp.args('javier', 5800002, pg_temp.pedido_args(negocio.hoy() + 2, '10:00') - 'autor' - 'telegram_user_id')) $$, '42501', null, 'Javier no mete pedidos a costo (no es el socio de menudeo)');
 select throws_ok($$ select agente.simular('ejecutar_ext', 'pedido_menudeo', pg_temp.args('javier', 5800002, pg_temp.pedido_args(negocio.hoy() + 2, '10:00') - 'autor' - 'telegram_user_id')) $$, '42501', null, 'ni en la vista previa');
@@ -200,8 +203,8 @@ select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.
   and (has_function_privilege('anon', p.oid, 'execute') or has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('public', p.oid, 'execute'))), 0, 'ninguna funcion de agente la ejecuta PUBLIC, anon o authenticated');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'agente' and p.proname like '\_%' and has_function_privilege('servidor', p.oid, 'execute')), 0, 'servidor no ejecuta ningun ayudante _*');
 select is(has_function_privilege('authenticated', 'operacion.ds_reportar_pago_menudeo(text,bigint,text,bigint,text,text,date,text,text,text,text,text,text)', 'execute'), false, 'la funcion de dropshipping redefinida sigue sin GRANT a authenticated');
-select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'agente' and p.proname in ('igualacion', 'espera_abrir', 'espera_tomar', 'evidencia_guardar', 'envio_activo', 'recordatorios_menudeo', 'recordatorio_reclamar')
-  and has_function_privilege('servidor', p.oid, 'execute')), 7, 'las siete puertas nuevas son de servidor');
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'agente' and p.proname in ('igualacion', 'espera_abrir', 'espera_tomar', 'evidencia_guardar', 'envio_activo', 'recordatorios_menudeo', 'recordatorio_reclamar', 'socio_menudeo')
+  and has_function_privilege('servidor', p.oid, 'execute')), 8, 'las ocho puertas nuevas son de servidor');
 select is((select count(*)::int from information_schema.role_table_grants where table_schema = 'agente' and table_name in ('tg_espera', 'evidencia_tg') and grantee in ('anon', 'authenticated', 'public')), 0, 'las tablas nuevas no tienen GRANT a anon, authenticated ni public');
 select * from finish();
 rollback;
