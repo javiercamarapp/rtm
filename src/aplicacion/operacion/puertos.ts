@@ -1,7 +1,7 @@
 import type {
   AmbitoHoja, CascadaProyeccion, CierreReparto, CuentaSocios, EstadoCuentaSocio, HojaProveedor, LiquidacionProveedor, OmarCuenta,
   CatalogoCompra, CatalogoPedido, CompraDetalle, CompraResumen, ContextoPagos, CuentaProveedor, CuentasPorCobrar, CxcCliente, DocumentoGuardado, EstadoSocio, ListaAvisos,
-  NotaFuente, PaqueteEnTransito, PaquetesPorHacer, UmbralesPaquetes, PedidoDetalle, PedidoResumen,
+  NotaFuente, PaqueteEnTransito, PaquetesIncidentes, SalidaLineaIncidente, PaquetesPorHacer, UmbralesPaquetes, PedidoDetalle, PedidoResumen,
 } from '@/dominio/operacion/tipos';
 
 /** Lo que la web lee de pedidos, compras, pagos, paquetes y avisos. Cada lectura es una funcion de la base; la interfaz no calcula dinero. */
@@ -14,6 +14,8 @@ export interface LectorOperacion {
   porHacer(): Promise<PaquetesPorHacer>;
   enTransito(): Promise<PaqueteEnTransito[]>;
   umbralesPaquetes(): Promise<UmbralesPaquetes>;
+  incidentesPaquetes(): Promise<PaquetesIncidentes>;
+  salidaLineasIncidente(pedidoId: number): Promise<SalidaLineaIncidente[]>;
   compras(proveedor?: string): Promise<CompraResumen[]>;
   compra(id: number): Promise<CompraDetalle | null>;
   cuentaProveedor(proveedor: string): Promise<CuentaProveedor>;
@@ -42,6 +44,8 @@ export const ACCIONES_OPERACION = [
   'registrar_persona_bodega',
   'registrar_pago', 'aplicar_pago', 'pago_aplicar_apertura', 'identificar_pago', 'anular_pago', 'pago_proveedor_de_socio', 'registrar_entrega_socio',
   'registrar_toma_omar', 'resolver_toma_omar', 'cerrar_liquidacion_omar', 'registrar_pago_omar', 'aviso_marcar_leido',
+  // Carril paquete-perdido
+  'reportar_paquete_salida', 'reportar_paquete_entrada', 'resolver_paquete_incidente',
   // F3a
   'registrar_aportacion', 'registrar_gasto_socio', 'registrar_pago_a_socio', 'registrar_liquidacion_entre_socios', 'anular_movimiento_socio', 'proponer_cierre_reparto', 'firmar_cierre_reparto', 'anular_cierre_reparto',
   // Integracion: costos del sistema

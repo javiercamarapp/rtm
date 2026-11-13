@@ -142,3 +142,4 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
 .rtm-campo[aria-invalid='true'] { border-color: var(--rtm-bad); border-width: 2px; }
 .rtm-campo:disabled, .rtm-boton:disabled, .rtm-chip-filtro[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
 .rtm-campo:disabled { background: var(--rtm-tint); border-style: dashed; }
+.rtm-nowrap { white-space: nowrap; }

@@ -14,12 +14,15 @@ import { etiquetaHoy } from '../../contexto';
 import { DialogoEnviar } from '../../operacion/dialogo-enviar';
 import { BotonAccion } from '../../operacion/dialogo-simple';
 import { ORIGEN } from '../../operacion/etiquetas';
+import { DialogoReportarSalida } from '../dialogos-incidente';
+import { TablaIncidentes } from '../tabla-incidentes';
 
 export const metadata: Metadata = { title: 'Paquetes por hacer' };
 
 export default async function PaginaPorHacer() {
   const lector = await operacionDeSocio();
-  const [d, umbral] = await Promise.all([lector.porHacer(), lector.umbralesPaquetes()]);
+  const [d, umbral, inc] = await Promise.all([lector.porHacer(), lector.umbralesPaquetes(), lector.incidentesPaquetes()]);
+  const incAbiertos = inc.incidentes.filter((i) => i.sentido === 'salida' && i.estado === 'abierto').length;
   const faltan = d.surtido.filter((s) => s.falta > 0);
   const porEmpacar = d.pedidos.filter((p) => !p.empacado).length;
   const atrasados = d.pedidos.filter((p) => p.horas >= umbral.horas_sin_empacar).length;
@@ -45,7 +48,7 @@ export default async function PaginaPorHacer() {
           { id: 'atrasados', testid: 'ph-atrasados', etiqueta: `Con más de ${umbral.horas_sin_empacar} h`, valor: String(atrasados), categoria: 4, progreso: d.pedidos.length ? { pct: (atrasados / d.pedidos.length) * 100 } : undefined, nota: atrasados ? 'Superan el umbral sin empacar' : 'Ninguno rebasa el umbral' },
         ]}
       />
-      <FilaRatios etiqueta="Razones de los paquetes" items={[{ etiqueta: 'Envíos cobrados', valor: d.pedidos.length ? formatearMoneda(enviosCobrados) : null }, { etiqueta: 'Piezas por paquete', valor: d.pedidos.length ? String(Math.round(piezasTotal / d.pedidos.length)) : null }, { etiqueta: 'Modelos que no alcanzan', valor: String(faltan.length) }, { etiqueta: 'Enviados en 14 días', valor: String(d.enviados_recientes.length) }]} />
+      <FilaRatios etiqueta="Razones de los paquetes" items={[{ etiqueta: 'Envíos cobrados', valor: d.pedidos.length ? formatearMoneda(enviosCobrados) : null }, { etiqueta: 'Piezas por paquete', valor: d.pedidos.length ? String(Math.round(piezasTotal / d.pedidos.length)) : null }, { etiqueta: 'Modelos que no alcanzan', valor: String(faltan.length) }, { etiqueta: 'Enviados en 14 días', valor: String(d.enviados_recientes.length) }, { etiqueta: 'Perdidos o dañados por resolver', valor: String(incAbiertos) }]} />
       {faltan.length > 0 && (
         <Aviso tono="atencion" titulo="Falta existencia antes de empacar.">
           <span data-testid="falta-sabor">{faltan.map((f) => `${f.modelo} · ${f.sabor}: faltan ${formatearPiezas(f.falta)}`).join(' · ')}</span>
@@ -123,10 +126,16 @@ export default async function PaginaPorHacer() {
             { id: 'd', titulo: 'Enviado', secundaria: true, celda: (p) => etiquetaFecha(p.fecha_envio) },
             { id: 'g', titulo: 'Guía', celda: (p) => (p.guias ?? []).map((g) => `${g.paqueteria} ${g.numero}`).join(', ') || 'Sin guía' },
             { id: 'k', titulo: 'Costo de la guía', numerica: true, secundaria: true, celda: (p) => (p.guias ?? []).map((g) => (g.costo_cent === null ? 'Sin costear' : formatearMoneda(g.costo_cent))).join(', ') },
-            { id: 'e', titulo: 'Estado', celda: (p) => <EstadoTexto tono={p.entregado ? 'ok' : 'atencion'}>{p.entregado ? 'Entregado' : 'Enviado'}</EstadoTexto> },
+            { id: 'e', titulo: 'Estado', celda: (p) => {
+              const abierto = inc.incidentes.find((i) => i.pedido_id === p.id && i.estado === 'abierto');
+              if (abierto) return <EstadoTexto tono="malo">{abierto.tipo === 'perdido' ? 'Perdido' : 'Dañado'} · por resolver</EstadoTexto>;
+              return <EstadoTexto tono={p.entregado ? 'ok' : 'atencion'}>{p.entregado ? 'Entregado' : 'Enviado'}</EstadoTexto>;
+            } },
+            { id: 'a', titulo: 'Acciones', celda: (p) => <DialogoReportarSalida pedidoId={p.id} folio={p.folio} /> },
           ]}
         />
       </Tarjeta>
+      <TablaIncidentes incidentes={inc.incidentes} sentido="salida" testid="inc-salida" />
     </Contenedor>
   );
 }

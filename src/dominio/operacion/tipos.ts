@@ -214,3 +214,21 @@ export interface OmarCuenta {
 
 /** Umbrales de las paginas de paquetes (config): horas sin empacar o enviar, y dias de gracia sobre el plazo del proveedor. */
 export interface UmbralesPaquetes { horas_sin_empacar: number; trayecto_dias_extra: number; plazo_dias: Record<string, number> }
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Paquete perdido o danado (carril paquete-perdido). Salida = pedido ya enviado; entrada = orden de compra en camino.
+export type ResponsablePaquete = 'sociedad' | 'socio' | 'proveedor' | 'cliente' | 'mixto';
+export interface IncidentePaquete {
+  id: number; folio: string; sentido: 'salida' | 'entrada'; tipo: 'perdido' | 'danado'; estado: 'abierto' | 'resuelto'; detalle: string; fecha_neg: string; reportado_at: string; horas: number;
+  pedido_id: number | null; pedido_folio: string | null; compra_id: number | null; compra_folio: string | null; cliente: string | null; proveedor: string | null;
+  piezas: number; valor_cent: Cent; renglones: { modelo: string; sabor: string; piezas: number; valor_cent: Cent }[];
+  resolucion: {
+    responsable: ResponsablePaquete; socio: string | null; accion: 'reponer' | 'bonificar' | 'castigar' | 'asignar' | 'reclamar' | 'mixta' | 'ninguna'; absorbe_sociedad_cent: Cent; recuperable_cent: Cent;
+    bonificacion_cent: Cent; ajuste_utilidad_cent: Cent; motivo: string; fecha_neg: string; guia: { paqueteria: string; numero: string; costo_cent: Cent | null } | null;
+  } | null;
+  /** Entrada: responsable vigente leido de la asignacion de la diferencia (puede reasignarse desde la compra). */
+  responsable_vigente: 'sociedad' | 'socio' | 'proveedor' | 'mixto' | null;
+  guias: { paqueteria: string; numero: string }[];
+}
+export interface PaquetesIncidentes { incidentes: IncidentePaquete[] }
+export interface SalidaLineaIncidente { linea_id: number; sku_id: number; modelo: string; sabor: string; surtidas: number; reportadas: number }

@@ -26,6 +26,8 @@ export function lectorOperacionSupabase(): LectorOperacion {
     porHacer: () => leer('paquetes_por_hacer'),
     enTransito: () => leer('paquetes_en_transito'),
     umbralesPaquetes: () => leer('paquetes_umbrales'),
+    incidentesPaquetes: () => leer('paquetes_incidentes'),
+    salidaLineasIncidente: (id) => leer('paquete_salida_lineas', { p_pedido: id }),
     compras: (p) => leer('compras_lista', { p_proveedor: p ?? null }),
     compra: (id) => leer('compra_detalle', { p_compra: id }),
     cuentaProveedor: (p) => leer('proveedor_cuenta', { p_proveedor: p }),
