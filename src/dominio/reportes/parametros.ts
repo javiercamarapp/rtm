@@ -38,4 +38,6 @@ export const PARAMETROS = {
   maxPalabrasTitular: 22,
   /** Umbral de salida de PRELIMINAR: cobertura de L1 verde desde este valor (milesimas). */
   coberturaViernesVerde: 1200n,
+  /** Cobertura del viernes por debajo de este valor (milesimas, 1.0 veces) NO alcanza para liquidar: alerta. Entre este valor y el verde: justo (atencion). */
+  coberturaViernesAlerta: 1000n,
 } as const;
