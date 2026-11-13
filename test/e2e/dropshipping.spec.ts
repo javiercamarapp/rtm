@@ -60,12 +60,21 @@ async function capturar(page: Page, nombre: string, testInfo: { project: { name:
 }
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 const celdasSurtido = (page: Page) => page.$$eval('[data-testid^="surtido-"]', (els) => els.filter((e) => /^surtido-\d+$/.test(e.getAttribute('data-testid') ?? '')).map((e) => e.textContent ?? ''));
+const formatoPesos = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const num = (s: string) => Number(s.replace(/[^0-9.-]/g, ''));
+// Los dos proyectos (1440 y 390) comparten la base: las cifras globales se comparan contra lo que ya habia al empezar cada prueba (linea base), no contra un valor absoluto.
+async function leerKpi(page: Page, ruta: string, id: string, patron: RegExp): Promise<number> {
+  await page.goto(ruta);
+  const m = patron.exec(await page.getByTestId(id).innerText());
+  return m ? num(m[1]!) : 0;
+}
 
 test('captura el pedido, copia la orden, registra el folio de Karen, paga en parcialidades y ve el desglose', async ({ page }, testInfo) => {
   test.setTimeout(240_000);
   await sesion(page, '/dropshipping');
   await expect(page.getByRole('navigation', { name: 'Navegacion principal' }).or(page.getByLabel('Navegación principal')).getByText('Dropshipping', { exact: true })).toBeVisible();
+  const baseUtilidad = await leerKpi(page, '/dropshipping/utilidad', 'kpi-utilidad', /(\$[\d,]+\.\d{2})/);
+  const basePiezas = await leerKpi(page, '/dropshipping', 'kpi-piezas-movidas', /(\d[\d,]*) pz/);
 
   // Nuevo pedido
   await page.goto('/dropshipping/nuevo');
@@ -158,8 +167,8 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
 
   // Utilidad: 1,551.00 en total, 775.50 por socio, todo reinvertido; Explicar este numero cuadra
   await page.goto('/dropshipping/utilidad');
-  await expect(page.getByTestId('kpi-utilidad')).toContainText('$1,551.00');
-  await expect(page.getByText('$775.50').first()).toBeVisible();
+  await expect(page.getByTestId('kpi-utilidad')).toContainText(formatoPesos(baseUtilidad + 1551));
+  await expect(page.getByText(formatoPesos(baseUtilidad / 2 + 775.5)).first()).toBeVisible();
   await page.getByTestId('kpi-utilidad').getByRole('button').first().click();
   await expect(page.getByText('Utilidad de dropshipping').first()).toBeVisible();
   await page.keyboard.press('Escape');
@@ -167,7 +176,7 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
 
   // Resumen: desglose por origen y piezas movidas
   await page.goto('/dropshipping');
-  await expect(page.getByTestId('kpi-piezas-movidas')).toContainText('100');
+  await expect(page.getByTestId('kpi-piezas-movidas')).toContainText(`${basePiezas + 100} pz`);
   await expect(page.getByText('Dropshipping frente a inventario en Mérida')).toBeVisible();
   await page.getByTestId('ds-dim-modelo').click();
   await expect(page.getByText(MODELO).first()).toBeVisible();
@@ -199,6 +208,8 @@ test('Pedidos menudeo Angelo: solo Angelo los mete y los paga, Javier los superv
   const mas3 = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
   // Angelo (socio de menudeo) mete el pedido a costo con fecha comprometida
   await sesion(page, '/dropshipping/nuevo', 'Angelo');
+  const basePiezas2 = await leerKpi(page, '/dropshipping', 'kpi-piezas-movidas', /(\d[\d,]*) pz/);
+  await page.goto('/dropshipping/nuevo');
   await page.getByTestId('ds-elegir-cliente').selectOption({ label: CLIENTE_B });
   await page.getByTestId('ds-elegir').click();
   await page.waitForURL(/cliente=\d+/);
@@ -220,7 +231,7 @@ test('Pedidos menudeo Angelo: solo Angelo los mete y los paga, Javier los superv
   await page.getByTestId('ds-enviado').click();
   await expect(page.getByTestId('ds-estado')).toContainText('Enviado');
   await page.goto('/dropshipping');
-  await expect(page.getByTestId('kpi-piezas-movidas')).toContainText('130');
+  await expect(page.getByTestId('kpi-piezas-movidas')).toContainText(`${basePiezas2 + 30} pz`);
 
   // Credito (10 % de una semana) y costo distinto del catalogo (95.00 por pieza) antes de enviar
   await page.goto('/dropshipping/nuevo');
@@ -326,7 +337,7 @@ test('Pedidos menudeo Angelo: solo Angelo los mete y los paga, Javier los superv
   // Pago: Angelo avisa un pago parcial SIN evidencia -> Pago reportado; sigue pendiente hasta que Javier confirme
   await page.getByTestId(`marcar-pagado-${idCosto}`).click();
   await page.getByTestId('menudeo-monto').fill('1000');
-  await page.getByTestId('menudeo-referencia').fill('CLAVE-SINTETICA-001');
+  await page.getByTestId('menudeo-referencia').fill(`CLAVE-SINTETICA-${testInfo.project.name}`);
   await page.getByTestId('confirmar').click();
   await expect(page.getByTestId(`estado-pago-${idCosto}`)).toContainText('Pago reportado');
   await expect(page.getByTestId('menudeo-pendiente')).toContainText('$2,678.70');
@@ -334,7 +345,7 @@ test('Pedidos menudeo Angelo: solo Angelo los mete y los paga, Javier los superv
   await expect(page.getByTestId(`confirmar-recibido-${idCosto}`)).toHaveCount(0);
   await pj.goto('/menudeo');
   await pj.getByTestId(`reportes-${idCosto}`).locator('summary').click();
-  await expect(pj.getByText('CLAVE-SINTETICA-001')).toBeVisible();
+  await expect(pj.getByText(`CLAVE-SINTETICA-${testInfo.project.name}`)).toBeVisible();
   await capturar(pj, 'menudeo-pago-reportado', testInfo);
   await pj.locator('[data-testid^="confirmar-recibido-"]').first().click();
   await expect(pj.getByTestId(`estado-pago-${idCosto}`)).toContainText('Pendiente de pago');
@@ -351,7 +362,7 @@ test('Pedidos menudeo Angelo: solo Angelo los mete y los paga, Javier los superv
   await page.getByTestId(`reportes-${idCosto}`).locator('summary').click();
   const evid = await conDb((c) => c.query("select sha256 from entrega.evidencia_pago order by id desc limit 1"));
   expect(String(evid.rows[0].sha256)).toMatch(/^[0-9a-f]{64}$/);
-  await expect(page.getByText(`huella ${String(evid.rows[0].sha256).slice(0, 10)}`)).toBeVisible();
+  await expect(page.getByText(`huella ${String(evid.rows[0].sha256).slice(0, 10)}`).first()).toBeVisible();
   await capturar(page, 'menudeo-pagado-con-evidencia', testInfo);
   await page.goto('/');
   await expect(page.getByTestId('inicio-pedidos-Angelo')).toContainText('Sin pedidos pendientes');

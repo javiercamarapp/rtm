@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { defineConfig, devices } from '@playwright/test';
 
 // Recorrido de dropshipping contra el Supabase LOCAL propio (puertos 643xx) y un servidor de produccion local en el puerto 3417. Cero servicios externos, cero Vercel.
+// Las cifras globales (pendiente, fondos, aportacion neta) se acumulan en la base: correr UN proyecto por base recien reseteada (--project=laptop-1440 y despues, tras `supabase db reset`, --project=movil-390).
 // Sin globalSetup compartido: el acceso usa el enlace por token_hash (sin correo).
 const PUERTO = process.env.E2E_PUERTO ?? '3417';
 export default defineConfig({
