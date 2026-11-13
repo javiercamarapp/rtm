@@ -24,3 +24,8 @@ Pedido del dueño (13-nov): no presentar los fondos en poder de un socio como qu
 Recomendación técnica (no decisión): mantener A en el libro y usar B solo como PRESENTACIÓN, como está hoy. B en el libro es un cambio de diseño que toca asientos, comprobaciones C1..C24, la identidad I-1 y el auxiliar de fondos; se haría en un lote aparte con pgTAP propio.
 
 DECISIÓN DEL DUEÑO pendiente: ¿se queda A con presentación B (hoy), o se migra el libro a B?
+
+
+## Turno de aportación (corrección del dueño, 13-nov)
+
+Los socios deben estar siempre igualados y valuados a lo mismo; quien tiene más dinero metido no gana más participación. `api.socios_aportacion_neta` expone `le_toca_aportar` (el socio con menor aportación neta; `null` si están igualados) e `igualados`, y la tarjeta de Cuenta de socios muestra «Le toca aportar el siguiente pago: <socio>» o «Igualados». La diferencia a igualar no es deuda ni reembolso: se resuelve con las siguientes aportaciones del que tiene menos. La valuación igualada la implementa otro módulo (rama `feat/capital-por-mes`); este solo expone el turno. Los pedidos a costo no restan; los cobros en la cuenta del socio sí.
