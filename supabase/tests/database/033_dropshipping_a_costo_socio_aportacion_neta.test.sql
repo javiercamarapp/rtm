@@ -45,7 +45,12 @@ create function pg_temp.ped(p text) returns bigint language sql as $$ select (re
 
 -- (A) Angelo pide 50 piezas a Karen para su stock; Javier 30 a Isaac para el suyo; un cliente compra 40 a Karen
 select operacion.ds_crear_pedido('a2c-a', pg_temp.cli('A2C Stock Angelo'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":50}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo');
+-- El socio de menudeo es Angelo por omision; para este pedido de Javier se parametriza a Javier (solo el socio de menudeo mete pedidos a costo).
+select pg_temp.como('Javier');
+update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Javier') where id = 1;
 select operacion.ds_crear_pedido('a2c-j', pg_temp.cli('A2C Stock Javier'), '[{"modelo":"A2C Modelo 25K","sabor":"Mango","piezas":30}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Javier');
+update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Angelo') where id = 1;
+select pg_temp.como('Angelo');
 select operacion.ds_crear_pedido('a2c-c', pg_temp.cli('A2C Cliente'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":40}]'::jsonb, 'karen_directo');
 select is((select precio_cent from operacion.pedido_linea where pedido_id = pg_temp.ped('a2c-a:ped')), 8929::bigint, '(A) a Angelo se le cobra solo el costo de Karen');
 select is((select precio_cent from operacion.pedido_linea where pedido_id = pg_temp.ped('a2c-j:ped')), 9000::bigint, '(A) a Javier solo el costo de Isaac');
@@ -87,10 +92,17 @@ select is((select (x->>'aportacion_neta_cent')::bigint from _an, jsonb_array_ele
 select is((select (x->>'aportacion_neta_cent')::bigint from _an, jsonb_array_elements(r->'socios') x where x->>'socio' = 'Javier'), 3000000::bigint, '(B) Javier: aportacion neta 30,000.00');
 select is((select (x->>'diferencia_a_igualar_cent')::bigint from _an, jsonb_array_elements(r->'socios') x where x->>'socio' = 'Javier'), 1700000::bigint, '(B) Javier tiene 17,000.00 por igualar');
 select is((select (x->>'diferencia_a_igualar_cent')::bigint from _an, jsonb_array_elements(r->'socios') x where x->>'socio' = 'Angelo'), 0::bigint, '(B) Angelo 0 por igualar');
+select is((select r->>'le_toca_aportar' from _an), 'Javier', '(B) turno: le toca aportar el siguiente pago a Javier, el de menor aportacion neta');
+select is((select (r->>'igualados')::boolean from _an), false, '(B) no estan igualados');
+select is((select r::text !~* 'deuda|reembolso' from _an), true, '(B) el turno no usa lenguaje de deuda ni reembolso');
 select is((select (r->'identidad'->>'cuadra')::boolean from _an), true, '(B) la identidad (suma de netas = aportado - fondos) cuadra');
 select is((select r::text ~* 'debe|deuda' from _an), false, '(B) la lectura no usa lenguaje de deuda');
 select is(pg_temp.fallan(), '', '(B) Libro conciliado y auxiliar contra mayor intactos: la presentacion no cambia ningun asiento');
 select is((operacion.cuenta_socios()->'angelo'->>'debe_cent')::bigint, 300000::bigint, '(B) el dato contable de fondos en poder sigue igual en la base (solo cambia la presentacion)');
+-- Igualados: si Javier aporta la diferencia, nadie tiene turno
+select operacion.registrar_aportacion('a2c-igual', 'Javier', 1700000, 'aportacion para igualar (sintetica)', 'reembolso', negocio.hoy());
+select is(api.socios_aportacion_neta() ->> 'le_toca_aportar', null, '(B) con las aportaciones iguales no le toca a nadie');
+select is((api.socios_aportacion_neta() ->> 'igualados')::boolean, true, '(B) Igualados');
 select pg_temp.como('Omar');
 select throws_ok($$select api.socios_aportacion_neta()$$, '42501', null, '(B) Omar no lo ve');
 select * from finish();

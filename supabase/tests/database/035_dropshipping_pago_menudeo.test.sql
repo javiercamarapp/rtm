@@ -126,7 +126,9 @@ select api.ds_reportar_pago_menudeo('a2p-r3', pg_temp.ped('a2p-1:ped'), null, 10
 select is(pg_temp.pend(pg_temp.ped('a2p-1:ped')), 492900::bigint, 'parcial con PDF: el saldo sigue pendiente');
 select is(pg_temp.estado(pg_temp.ped('a2p-1:ped')), 'no_pagado', 'no esta pagado hasta cubrir el total');
 select pg_temp.web('Javier');
-select is(api.ds_reportar_pago_menudeo('a2p-r4', pg_temp.ped('a2p-1:ped'), null, 492900, 'efectivo', 'recibo en mano') ->> 'aplicado', 'true', 'lo registra el OTRO socio (el que recibe): se aplica de inmediato');
+select throws_ok($$select api.ds_reportar_pago_menudeo('a2p-r4x', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'a2p-1:ped'), null, 492900, 'efectivo', 'recibo en mano')$$, '42501', null, 'solo el socio de menudeo (Angelo) registra el pago; Javier solo supervisa, confirma o rechaza');
+select pg_temp.web('Angelo');
+select is(api.ds_reportar_pago_menudeo('a2p-r4', pg_temp.ped('a2p-1:ped'), null, 492900, 'efectivo', 'recibo en mano', null, 'proveedor', (select b from _png), 'image/png', 'recibo.png') ->> 'aplicado', 'true', 'con evidencia el pago del resto se aplica de inmediato');
 select is(pg_temp.estado(pg_temp.ped('a2p-1:ped')), 'pagado', 'cubre el total: Pagado');
 select is((api.ds_menudeo('Angelo')->'totales'->>'pendiente_cent')::bigint, 450000::bigint, 'total pendiente del socio = solo su otro pedido (50 x 90.00)');
 select is(pg_temp.v03(), (select v03 from _base), 'valuacion neta intacta con pagos por las dos vias');

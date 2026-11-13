@@ -220,7 +220,12 @@ select is((select count(*) from operacion.pedido_credito where pedido_id = pg_te
 -- ---------------------------------------------------------------------------
 -- (e) Venta interna a costo del socio para su menudeo: precio = costo, sin utilidad
 -- ---------------------------------------------------------------------------
+-- El socio de menudeo es Angelo por omision; para este pedido de Javier se parametriza a Javier (solo el socio de menudeo mete pedidos a costo).
+select pg_temp.como('Javier');
+update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Javier') where id = 1;
 select operacion.ds_crear_pedido('ds-e', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":50}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Cinco'), null, 'socio_a_costo', 'Javier');
+update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Angelo') where id = 1;
+select pg_temp.como('Angelo');
 select is((select (r->>'margen_estimado_cent')::bigint from seguridad.operacion o, lateral (select o.resultado r) q where o.clave = 'ds-e'), 0::bigint, '(e) a costo: margen cero');
 select is((select precio_cent from operacion.pedido_linea where pedido_id = pg_temp.ped('ds-e:ped')), 8929::bigint, '(e) el precio es exactamente el costo de Karen');
 select throws_ok($$select operacion.ds_crear_pedido('ds-e2', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', null)$$, '22023', null, '(e) la venta a costo exige el socio');

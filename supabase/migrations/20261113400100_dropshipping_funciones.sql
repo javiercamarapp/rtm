@@ -60,7 +60,7 @@ as $$ select operacion.saldo_proveedor(p_proveedor) - contabilidad.directos_prov
 create function operacion.ds_crear_pedido(p_clave_idem text, p_cliente_id bigint, p_lineas jsonb, p_origen text default 'karen_directo', p_destinatario jsonb default null,
                                           p_credito jsonb default null, p_tipo_venta text default 'cliente', p_socio text default null, p_folio_externo text default null,
                                           p_envio_cent bigint default 0, p_descuento_cent bigint default 0, p_fecha date default null, p_nota text default null,
-                                          p_mensaje_origen text default null) returns jsonb
+                                          p_mensaje_origen text default null, p_fecha_compromiso date default null, p_hora_compromiso time default null) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
 declare
@@ -71,8 +71,10 @@ begin
   perform seguridad.exigir_rol(array['socio', 'importacion']);
   if p_destinatario is not null then perform seguridad.exigir_rol(array['socio']); end if;
   v_prev := seguridad.iniciar_operacion(p_clave_idem, jsonb_build_object('fn', 'ds_crear_pedido', 'c', p_cliente_id, 'l', p_lineas, 'o', p_origen, 'd', p_destinatario, 'cr', p_credito, 't', p_tipo_venta,
-                                         's', p_socio, 'fe', p_folio_externo, 'e', p_envio_cent, 'de', p_descuento_cent, 'f', p_fecha, 'n', p_nota, 'mo', p_mensaje_origen));
+                                         's', p_socio, 'fe', p_folio_externo, 'e', p_envio_cent, 'de', p_descuento_cent, 'f', p_fecha, 'n', p_nota, 'mo', p_mensaje_origen, 'fc', p_fecha_compromiso, 'hc', p_hora_compromiso));
   if v_prev is not null then return v_prev; end if;
+  if p_hora_compromiso is not null and p_fecha_compromiso is null then raise exception 'la hora del compromiso exige una fecha' using errcode = '23514'; end if;
+  if p_fecha_compromiso is not null and p_fecha_compromiso < negocio.hoy() - 1 then raise exception 'la fecha comprometida no puede ser pasada' using errcode = '23514'; end if;
   if p_origen not in ('karen_directo', 'karen_via_isaac', 'isaac_directo') then raise exception 'el dropshipping solo admite origen karen_directo, karen_via_isaac o isaac_directo' using errcode = '22023'; end if;
   if p_tipo_venta not in ('cliente', 'socio_a_costo') then raise exception 'tipo de venta invalido' using errcode = '22023'; end if;
   if jsonb_typeof(p_lineas) <> 'array' or jsonb_array_length(p_lineas) = 0 then raise exception 'el pedido necesita renglones' using errcode = '22023'; end if;
@@ -80,6 +82,10 @@ begin
   if p_tipo_venta = 'socio_a_costo' then
     select id into v_socio from catalogo.socio where nombre = p_socio;
     if v_socio is null then raise exception 'la venta de un socio a costo exige indicar el socio' using errcode = '22023'; end if;
+    -- Solo el socio de menudeo (por omision Angelo) mete pedidos a costo; el otro socio los supervisa. Desde Telegram el agente verifica el autor antes de llamar.
+    if v_socio <> operacion.ds_socio_menudeo() or (operacion.actor_socio() is not null and operacion.actor_socio() <> v_socio) then
+      raise exception 'solo el socio de menudeo (%) mete pedidos a costo', (select nombre from catalogo.socio where id = operacion.ds_socio_menudeo()) using errcode = '42501';
+    end if;
     -- Pedido a costo para un socio: ingreso = costo, utilidad 0. Sin envio cobrado, descuento ni credito (cualquiera de ellos crearia utilidad o cuenta por cobrar por interes).
     if coalesce(p_envio_cent, 0) <> 0 or coalesce(p_descuento_cent, 0) <> 0 or p_credito is not null then
       raise exception 'el pedido a costo para un socio no lleva envio cobrado, descuento ni credito: no genera utilidad' using errcode = '22023';
@@ -131,6 +137,11 @@ begin
   v_ev := operacion.crear_evento('pedido_ds_creado', v_fecha, p_clave_idem || ':ds', jsonb_build_object('pedido', v_folio, 'origen', p_origen, 'tipo_venta', p_tipo_venta, 'credito', p_credito is not null), p_mensaje_origen);
   insert into operacion.pedido_ds (pedido_id, proveedor_id, tipo_venta, socio_id, folio_externo, folio_externo_at, evento_id)
     values (v_ped, v_prov, p_tipo_venta, v_socio, nullif(btrim(p_folio_externo), ''), case when nullif(btrim(p_folio_externo), '') is not null then now() end, v_ev);
+  if p_tipo_venta = 'socio_a_costo' then
+    -- Fecha comprometida de pago (puede quedar vacia: se muestra "sin fecha comprometida" como alerta).
+    insert into operacion.ds_pedido_compromiso (pedido_id, fecha_compromiso, hora_compromiso, comprometido_por, tipo, canal, evento_id)
+      values (v_ped, p_fecha_compromiso, p_hora_compromiso, coalesce(operacion.actor_socio(), v_socio), 'inicial', seguridad.canal_actual(), v_ev);
+  end if;
   if p_credito is not null then
     insert into operacion.pedido_credito (pedido_id, tasa_semanal_bp, semanas, fecha_pago_pactada, modo, base_cent, interes_cent, evento_id) values (v_ped, v_tasa, v_sem, v_fp, v_modo, v_base, v_interes, v_ev);
   end if;
@@ -544,7 +555,7 @@ begin
 end $$;
 
 revoke execute on function operacion.texto_orden_proveedor(text, jsonb, jsonb), operacion.ds_grupos_pedido(bigint), operacion.ds_fila(operacion.v_ds_pedido), operacion.interes_credito(bigint, int, int, text),
-  operacion.origen_surtido(text), operacion.ds_posicion_proveedor(bigint), operacion.ds_piezas_movidas(date, date), operacion.ds_crear_pedido(text, bigint, jsonb, text, jsonb, jsonb, text, text, text, bigint, bigint, date, text, text), operacion.ds_capturar_destinatario(text, bigint, jsonb),
+  operacion.origen_surtido(text), operacion.ds_posicion_proveedor(bigint), operacion.ds_piezas_movidas(date, date), operacion.ds_crear_pedido(text, bigint, jsonb, text, jsonb, jsonb, text, text, text, bigint, bigint, date, text, text, date, time), operacion.ds_capturar_destinatario(text, bigint, jsonb),
   operacion.ds_registrar_folio(text, bigint, text), operacion.ds_pagar_proveedor(text, text, bigint, text, text, bigint, bigint, date, text),
   entrega.mascara_telefono(text), entrega.mascara_correo(text), entrega.normalizar(jsonb) from public, anon, authenticated;
 

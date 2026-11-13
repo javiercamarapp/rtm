@@ -51,7 +51,12 @@ create temp table _base as select pg_temp.v03() as v03, pg_temp.neta('Angelo') a
 select operacion.ds_crear_pedido('a2m-1', pg_temp.cli('A2M Stock Angelo'), '[{"modelo":"A2M Modelo 25K","sabor":"Fresa","piezas":30},{"modelo":"A2M Modelo 25K","sabor":"Mango","piezas":20}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 2);
 select operacion.ds_crear_pedido('a2m-2', pg_temp.cli('A2M Stock Angelo'), '[{"modelo":"A2M Modelo 25K","sabor":"Fresa","piezas":30}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 1);
 select operacion.ds_crear_pedido('a2m-3', pg_temp.cli('A2M Stock Angelo'), '[{"modelo":"A2M Modelo 25K","sabor":"Mango","piezas":20}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo');
+-- El socio de menudeo es Angelo por omision; para este pedido de Javier se parametriza a Javier (solo el socio de menudeo mete pedidos a costo).
+select pg_temp.como('Javier');
+update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Javier') where id = 1;
 select operacion.ds_crear_pedido('a2m-4', pg_temp.cli('A2M Stock Javier'), '[{"modelo":"A2M Modelo 25K","sabor":"Fresa","piezas":10}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Javier');
+update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Angelo') where id = 1;
+select pg_temp.como('Angelo');
 select is((api.ds_menudeo('Angelo')->'totales'->>'pendiente_cent')::bigint, 0::bigint, 'borradores: nada pendiente aun (no comprometen)');
 select is((select estado_pago from jsonb_to_recordset(api.ds_menudeo('Angelo')->'filas') as x(estado_pago text, pedido_id bigint) where pedido_id = pg_temp.ped('a2m-3:ped')), 'por_confirmar', 'un borrador se muestra por confirmar');
 select operacion.confirmar_pedido('a2m-1c', pg_temp.ped('a2m-1:ped')); select operacion.confirmar_pedido('a2m-2c', pg_temp.ped('a2m-2:ped')); select operacion.confirmar_pedido('a2m-4c', pg_temp.ped('a2m-4:ped'));

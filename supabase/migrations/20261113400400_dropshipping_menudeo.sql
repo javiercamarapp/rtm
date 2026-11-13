@@ -72,11 +72,81 @@ end $$;
 revoke all on all sequences in schema entrega from public, anon, authenticated;
 revoke all on all sequences in schema operacion from public, anon, authenticated;
 
+--  * FECHA COMPROMETIDA (decision del dueno, 13-nov): cada pedido a costo guarda cuando el socio se compromete a pagar (fecha y hora opcional) y quien la comprometio. Sin fecha se muestra
+--    "sin fecha comprometida" como alerta. Un compromiso vencido sin pago aparece VENCIDO con los dias de atraso. Reprogramar exige motivo y deja historial (insert-only). Sin hora, vence al
+--    terminar ese dia (hora de Merida). Recordatorios: lectura, registro idempotente y respuesta; el envio por Telegram lo integra la rama de Telegram (contrato en docs).
+--  * SUPERVISION entre socios: cada socio ve los pedidos del otro (api.ds_menudeo con p_socio null = ambos) para vigilar que se pague y que no se "regalen" pedidos.
+
+create table operacion.ds_pedido_compromiso (
+  id bigint generated always as identity primary key,
+  pedido_id bigint not null references operacion.pedido (id),
+  fecha_compromiso date,
+  hora_compromiso time,
+  comprometido_por bigint not null references catalogo.socio (id),
+  tipo text not null check (tipo in ('inicial', 'reprogramacion')),
+  motivo text check (tipo = 'inicial' or length(btrim(coalesce(motivo, ''))) >= 3),
+  canal text not null default 'web' check (canal in ('web', 'telegram', 'importacion')),
+  evento_id bigint not null references operacion.evento (id),
+  creado_at timestamptz not null default now(),
+  check (hora_compromiso is null or fecha_compromiso is not null)
+);
+create index ds_pedido_compromiso_idx on operacion.ds_pedido_compromiso (pedido_id, id desc);
+
+-- Configuracion de recordatorios (una sola fila, editable por socios con registro): aviso previo, intervalo entre recordatorios de vencidos y maximo por pedido.
+create table operacion.ds_recordatorio_config (
+  id int primary key check (id = 1),
+  aviso_previo_horas int not null default 24 check (aviso_previo_horas between 1 and 168),
+  intervalo_horas int not null default 24 check (intervalo_horas between 1 and 720),
+  max_recordatorios int not null default 7 check (max_recordatorios between 1 and 60),
+  -- Socio de menudeo (por omision Angelo, su menudeo en Playa del Carmen): SOLO el crea pedidos a costo y registra su pago; el otro socio los supervisa, y confirma o rechaza pagos reportados.
+  socio_menudeo bigint not null references catalogo.socio (id),
+  actualizado_por bigint references catalogo.socio (id),
+  actualizado_at timestamptz not null default now()
+);
+insert into operacion.ds_recordatorio_config (id, socio_menudeo) values (1, (select id from catalogo.socio where nombre = 'Angelo'));
+create table operacion.ds_recordatorio_log (
+  id bigint generated always as identity primary key,
+  pedido_id bigint not null references operacion.pedido (id),
+  tipo text not null check (tipo in ('por_vencer', 'vence_hoy', 'vencido')),
+  ventana timestamptz not null,
+  enviado_at timestamptz not null,
+  canal text not null default 'telegram',
+  evento_id bigint not null references operacion.evento (id),
+  unique (pedido_id, ventana)
+);
+do $$
+declare t text;
+begin
+  foreach t in array array['ds_pedido_compromiso', 'ds_recordatorio_log'] loop
+    execute format('create trigger %I before update or delete on operacion.%I for each row execute function seguridad.t1_solo_insercion()', t || '_t1', t);
+    execute format('create trigger %I before truncate on operacion.%I for each statement execute function seguridad.t1_solo_insercion()', t || '_t1t', t);
+  end loop;
+  foreach t in array array['ds_pedido_compromiso', 'ds_recordatorio_log', 'ds_recordatorio_config'] loop
+    execute format('alter table operacion.%I enable row level security', t);
+    execute format('alter table operacion.%I force row level security', t);
+    execute format('revoke all on operacion.%I from public, anon, authenticated', t);
+  end loop;
+end $$;
+revoke all on all sequences in schema operacion from public, anon, authenticated;
+
+create function operacion.ds_socio_menudeo() returns bigint
+language sql stable security definer set search_path = ''
+as $$ select socio_menudeo from operacion.ds_recordatorio_config where id = 1 $$;
+
+-- Momento en que vence un compromiso: la fecha con su hora (o el final del dia) en hora de Merida.
+create function operacion.ds_vence_en(p_fecha date, p_hora time) returns timestamptz
+language sql immutable set search_path = ''
+as $$ select case when p_fecha is null then null else timezone('America/Merida', (p_fecha + coalesce(p_hora, time '23:59:59'))::timestamp) end $$;
+
+create function operacion.ds_compromiso_vigente(p_pedido bigint) returns operacion.ds_pedido_compromiso
+language sql stable security definer set search_path = ''
+as $$ select c from operacion.ds_pedido_compromiso c where c.pedido_id = p_pedido order by c.id desc limit 1 $$;
+
 create function operacion.ds_menudeo_filas(p_socio text, p_desde date, p_hasta date, p_proveedor text, p_estado text) returns table (
-  pedido_id bigint, folio text, fecha_neg date, fecha_envio date, estado text, proveedor text, cliente_id bigint, cliente text, piezas int, costo_cent bigint, pagado_cent bigint, pendiente_cent bigint, estado_pago text, reportado_cent bigint, por_confirmar int)
+  socio text, pedido_id bigint, folio text, fecha_neg date, fecha_envio date, estado text, proveedor text, cliente_id bigint, cliente text, piezas int, costo_cent bigint, pagado_cent bigint, pendiente_cent bigint, estado_pago text, reportado_cent bigint, por_confirmar int, fecha_compromiso date, hora_compromiso time, comprometido_por text, vence_en timestamptz, vencido boolean, dias_atraso int, sin_fecha boolean)
 language sql stable security definer set search_path = ''
 as $$
-  select v.pedido_id, v.folio, v.fecha_neg, v.fecha_envio, v.estado, v.proveedor, v.cliente_id, v.cliente,
+  select s.nombre, v.pedido_id, v.folio, v.fecha_neg, v.fecha_envio, v.estado, v.proveedor, v.cliente_id, v.cliente,
          (case when v.estado = 'enviado' then v.piezas_surtidas else v.piezas_pedidas end)::int,
          v.venta_cent,
          operacion.pedido_aplicado(v.pedido_id),
@@ -84,11 +154,19 @@ as $$
          case when v.estado = 'borrador' then 'por_confirmar'
               when v.estado = 'enviado' and v.venta_cent - operacion.pedido_aplicado(v.pedido_id) <= 0 then 'pagado'
               when exists (select 1 from operacion.ds_pago_reporte r where r.pedido_id = v.pedido_id and not r.aplicado and not exists (select 1 from operacion.ds_pago_decision d where d.reporte_id = r.id)) then 'pago_reportado'
+              when cp.fecha_compromiso is not null and v.estado = 'enviado' and operacion.ds_vence_en(cp.fecha_compromiso, cp.hora_compromiso) < now() then 'vencido'
               else 'no_pagado' end,
          coalesce((select sum(r.monto_cent) from operacion.ds_pago_reporte r where r.pedido_id = v.pedido_id and not r.aplicado and not exists (select 1 from operacion.ds_pago_decision d where d.reporte_id = r.id)), 0)::bigint,
-         (select count(*) from operacion.ds_pago_reporte r where r.pedido_id = v.pedido_id and not exists (select 1 from operacion.ds_pago_decision d where d.reporte_id = r.id))::int
+         (select count(*) from operacion.ds_pago_reporte r where r.pedido_id = v.pedido_id and not exists (select 1 from operacion.ds_pago_decision d where d.reporte_id = r.id))::int,
+         cp.fecha_compromiso, cp.hora_compromiso, sc.nombre, operacion.ds_vence_en(cp.fecha_compromiso, cp.hora_compromiso),
+         (v.estado = 'enviado' and cp.fecha_compromiso is not null and operacion.ds_vence_en(cp.fecha_compromiso, cp.hora_compromiso) < now() and v.venta_cent - operacion.pedido_aplicado(v.pedido_id) > 0),
+         case when v.estado = 'enviado' and cp.fecha_compromiso is not null and operacion.ds_vence_en(cp.fecha_compromiso, cp.hora_compromiso) < now() and v.venta_cent - operacion.pedido_aplicado(v.pedido_id) > 0
+              then greatest((negocio.hoy() - cp.fecha_compromiso), 0) else 0 end,
+         (cp.fecha_compromiso is null and v.estado in ('confirmado', 'enviado') and v.venta_cent - operacion.pedido_aplicado(v.pedido_id) > 0)
   from operacion.v_ds_pedido v join catalogo.socio s on s.id = v.socio_venta_id
-  where v.tipo_venta = 'socio_a_costo' and s.nombre = p_socio and v.estado in ('borrador', 'confirmado', 'enviado')
+  left join lateral (select c.* from operacion.ds_pedido_compromiso c where c.pedido_id = v.pedido_id order by c.id desc limit 1) cp on true
+  left join catalogo.socio sc on sc.id = cp.comprometido_por
+  where v.tipo_venta = 'socio_a_costo' and (p_socio is null or s.nombre = p_socio) and v.estado in ('borrador', 'confirmado', 'enviado')
     and (p_desde is null or v.fecha_neg >= p_desde) and (p_hasta is null or v.fecha_neg <= p_hasta) and (p_proveedor is null or v.proveedor = p_proveedor)
 $$;
 
@@ -109,17 +187,20 @@ as $$
 declare v_filas jsonb; v_t jsonb;
 begin
   perform seguridad.exigir_rol(array['socio']);
-  if not exists (select 1 from catalogo.socio where nombre = p_socio) then raise exception 'socio desconocido' using errcode = '22023'; end if;
-  if p_estado is not null and p_estado not in ('pagado', 'no_pagado', 'pago_reportado', 'por_confirmar') then raise exception 'estado de pago invalido' using errcode = '22023'; end if;
+  if p_socio is not null and not exists (select 1 from catalogo.socio where nombre = p_socio) then raise exception 'socio desconocido' using errcode = '22023'; end if;
+  if p_estado is not null and p_estado not in ('pagado', 'no_pagado', 'pago_reportado', 'por_confirmar', 'vencido') then raise exception 'estado de pago invalido' using errcode = '22023'; end if;
   select coalesce(jsonb_agg(jsonb_build_object('pedido_id', f.pedido_id, 'folio', f.folio, 'fecha_neg', f.fecha_neg, 'fecha_envio', f.fecha_envio, 'estado', f.estado, 'proveedor', f.proveedor,
-           'cliente_id', f.cliente_id, 'cliente', f.cliente, 'piezas', f.piezas, 'costo_cent', f.costo_cent, 'pagado_cent', f.pagado_cent, 'pendiente_cent', f.pendiente_cent, 'estado_pago', f.estado_pago, 'reportado_cent', f.reportado_cent, 'por_confirmar', f.por_confirmar,
+           'cliente_id', f.cliente_id, 'cliente', f.cliente, 'piezas', f.piezas, 'costo_cent', f.costo_cent, 'pagado_cent', f.pagado_cent, 'pendiente_cent', f.pendiente_cent, 'estado_pago', f.estado_pago, 'reportado_cent', f.reportado_cent, 'por_confirmar', f.por_confirmar, 'socio', f.socio,
+           'fecha_compromiso', f.fecha_compromiso, 'hora_compromiso', f.hora_compromiso, 'comprometido_por', f.comprometido_por, 'vencido', f.vencido, 'dias_atraso', f.dias_atraso, 'sin_fecha', f.sin_fecha,
+           'compromisos', operacion.ds_compromisos(f.pedido_id),
            'reportes', operacion.ds_menudeo_reportes(f.pedido_id),
            'renglones', operacion.ds_menudeo_renglones(f.pedido_id, f.estado = 'enviado')) order by f.fecha_neg desc, f.pedido_id desc), '[]'::jsonb),
          jsonb_build_object('pedidos', count(*), 'piezas', coalesce(sum(f.piezas), 0), 'costo_cent', coalesce(sum(f.costo_cent), 0), 'pagado_cent', coalesce(sum(f.pagado_cent), 0),
                             'pendiente_cent', coalesce(sum(f.pendiente_cent), 0), 'pedidos_pendientes', count(*) filter (where f.pendiente_cent > 0),
-                            'reportado_cent', coalesce(sum(f.reportado_cent), 0), 'pedidos_reportados', count(*) filter (where f.estado_pago = 'pago_reportado'))
+                            'reportado_cent', coalesce(sum(f.reportado_cent), 0), 'pedidos_reportados', count(*) filter (where f.estado_pago = 'pago_reportado'),
+                            'vencidos', count(*) filter (where f.vencido), 'vencido_cent', coalesce(sum(f.pendiente_cent) filter (where f.vencido), 0), 'sin_fecha', count(*) filter (where f.sin_fecha))
     into v_filas, v_t
-    from operacion.ds_menudeo_filas(p_socio, p_desde, p_hasta, p_proveedor, p_estado) f where p_estado is null or f.estado_pago = p_estado;
+    from operacion.ds_menudeo_filas(p_socio, p_desde, p_hasta, p_proveedor, p_estado) f where p_estado is null or f.estado_pago = p_estado or (p_estado = 'vencido' and f.vencido);
   return jsonb_build_object('socio', p_socio, 'totales', v_t, 'filas', v_filas);
 end $$;
 
@@ -131,10 +212,10 @@ as $$
 begin
   perform seguridad.exigir_rol(array['socio']);
   return coalesce((select jsonb_agg(jsonb_build_object('socio', s.nombre, 'pedidos', q.n, 'pendiente_cent', q.p,
-                     'reportado_cent', q.rc, 'pedidos_reportados', q.nr, 'fondos_pendiente_cent', greatest(operacion.saldo_socio(s.id, 'fondos'), 0),
+                     'reportado_cent', q.rc, 'pedidos_reportados', q.nr, 'vencidos', q.nv, 'vencido_cent', q.vc, 'sin_fecha', q.sf, 'fondos_pendiente_cent', greatest(operacion.saldo_socio(s.id, 'fondos'), 0),
                      'fondos_cobros', (select count(*) from operacion.cuenta_socio_mov m where m.socio_id = s.id and m.aplica_a = 'fondos' and m.concepto = 'fondos_en_poder' and m.reversa_de is null
                                          and not exists (select 1 from operacion.cuenta_socio_mov r where r.reversa_de = m.id))) order by s.id)
-                   from catalogo.socio s cross join lateral (select count(*) filter (where x.pendiente_cent > 0) as n, coalesce(sum(x.pendiente_cent), 0)::bigint as p, coalesce(sum(x.reportado_cent), 0)::bigint as rc, count(*) filter (where x.estado_pago = 'pago_reportado') as nr from operacion.ds_menudeo_filas(s.nombre, null, null, null, null) x) q), '[]'::jsonb);
+                   from catalogo.socio s cross join lateral (select count(*) filter (where x.pendiente_cent > 0) as n, coalesce(sum(x.pendiente_cent), 0)::bigint as p, coalesce(sum(x.reportado_cent), 0)::bigint as rc, count(*) filter (where x.estado_pago = 'pago_reportado') as nr, count(*) filter (where x.vencido) as nv, coalesce(sum(x.pendiente_cent) filter (where x.vencido), 0)::bigint as vc, count(*) filter (where x.sin_fecha) as sf from operacion.ds_menudeo_filas(s.nombre, null, null, null, null) x) q), '[]'::jsonb);
 end $$;
 
 -- Detalle de los fondos de la sociedad cobrados en la cuenta del socio: cada cobro (fecha, folio del pago, cliente, pedidos a los que se aplico) y lo ya entregado, con saldo corrido.
@@ -233,6 +314,14 @@ begin
 end $$;
 
 
+create function operacion.ds_compromisos(p_pedido bigint) returns jsonb
+language sql stable security definer set search_path = ''
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'tipo', c.tipo, 'fecha_compromiso', c.fecha_compromiso, 'hora_compromiso', c.hora_compromiso, 'motivo', c.motivo,
+           'comprometido_por', (select s.nombre from catalogo.socio s where s.id = c.comprometido_por), 'canal', c.canal, 'creado_at', c.creado_at) order by c.id), '[]'::jsonb)
+  from operacion.ds_pedido_compromiso c where c.pedido_id = p_pedido
+$$;
+
 -- Reportes de pago de un pedido (para la pantalla): con metadato de evidencia, nunca su contenido.
 create function operacion.ds_menudeo_reportes(p_pedido bigint) returns jsonb
 language sql stable security definer set search_path = ''
@@ -271,6 +360,7 @@ begin
   if r.estado <> 'enviado' then raise exception 'el pedido aun no esta enviado: no hay nada que pagar todavia' using errcode = 'P0428'; end if;
   v_rep := coalesce(operacion.actor_socio(), (select id from catalogo.socio where nombre = p_socio));
   if v_rep is null then raise exception 'indica que socio reporta el pago' using errcode = '23502'; end if;
+  if v_rep <> operacion.ds_socio_menudeo() then raise exception 'solo el socio de menudeo registra el pago de sus pedidos: el otro socio los confirma o rechaza' using errcode = '42501'; end if;
   if p_evidencia_b64 is not null and v_canal <> 'web' then raise exception 'la evidencia solo se adjunta desde la web: el bot no lee ni recibe tickets' using errcode = '22023'; end if;
   v_pend := greatest(operacion.pedido_saldo(v_ped), 0) - coalesce((select sum(q.monto_cent) from operacion.ds_pago_reporte q where q.pedido_id = v_ped and not q.aplicado and not exists (select 1 from operacion.ds_pago_decision d where d.reporte_id = q.id)), 0);
   if p_monto_cent > v_pend then raise exception 'el monto excede lo pendiente de pago (descontando pagos ya reportados por confirmar)' using errcode = '23514'; end if;
@@ -354,9 +444,9 @@ as $$ begin perform seguridad.exigir_rol(array['socio']); return operacion.ds_de
 -- Escritura: envoltorio api.* (rol socio)
 create function api.ds_pagar_pedido_menudeo(p_clave_idem text, p_pedido bigint, p_via text, p_monto_cent bigint default null, p_fecha date default null, p_nota text default null) returns jsonb
 language plpgsql security definer set search_path = ''
-as $$ begin perform seguridad.exigir_rol(array['socio']); return operacion.ds_pagar_pedido_menudeo(p_clave_idem => p_clave_idem, p_pedido => p_pedido, p_via => p_via, p_monto_cent => p_monto_cent, p_fecha => p_fecha, p_nota => p_nota); end $$;
+as $$ begin perform seguridad.exigir_rol(array['socio']); if operacion.actor_socio() is distinct from operacion.ds_socio_menudeo() then raise exception 'solo el socio de menudeo registra el pago de sus pedidos' using errcode = '42501'; end if; return operacion.ds_pagar_pedido_menudeo(p_clave_idem => p_clave_idem, p_pedido => p_pedido, p_via => p_via, p_monto_cent => p_monto_cent, p_fecha => p_fecha, p_nota => p_nota); end $$;
 
-revoke execute on function operacion.ds_menudeo_filas(text, date, date, text, text), operacion.ds_menudeo_renglones(bigint, boolean), operacion.ds_menudeo_reportes(bigint),
+revoke execute on function operacion.ds_socio_menudeo(), operacion.ds_menudeo_filas(text, date, date, text, text), operacion.ds_vence_en(date, time), operacion.ds_compromiso_vigente(bigint), operacion.ds_compromisos(bigint), operacion.ds_menudeo_renglones(bigint, boolean), operacion.ds_menudeo_reportes(bigint),
   operacion.ds_reportar_pago_menudeo(text, bigint, text, bigint, text, text, date, text, text, text, text, text, text), operacion.ds_decidir_pago_menudeo(text, bigint, text, text), operacion.ds_pagar_pedido_menudeo(text, bigint, text, bigint, date, text) from public, anon, authenticated;
 revoke execute on function api.ds_menudeo(text, date, date, text, text), api.ds_menudeo_pendientes(), api.ds_fondos_en_poder(text), api.ds_explicar_menudeo(text), api.ds_pagar_pedido_menudeo(text, bigint, text, bigint, date, text),
   api.ds_evidencia(bigint), api.ds_reportar_pago_menudeo(text, bigint, text, bigint, text, text, date, text, text, text, text, text, text), api.ds_decidir_pago_menudeo(text, bigint, text, text) from public, anon;
