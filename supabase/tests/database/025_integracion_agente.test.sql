@@ -54,20 +54,20 @@ select is(agente.token_consumir('NoExiste01', 'socio', -100200, now()) ->> 'esta
 select throws_ok($$ select agente.token_emitir('x' || repeat('y', 70), 'otro', array['socio'], 1, now(), null, '{}') $$, '23514', null, 'el token no pasa de 64 bytes');
 
 -- Escrituras por indicacion de un socio: con eco, canal telegram, idempotentes
-select is((agente.ejecutar('tg:g1', 'gasto', '{"pagado_por":"javier","monto_cent":9000,"categoria":"uber","origen":"mensaje de prueba"}') ->> 'folio') is not null, true, 'un gasto de Javier se registra');
+select is((agente.ejecutar('tg:g1', 'gasto', '{"pagado_por":"javier","monto_cent":9000,"categoria":"uber","origen":"mensaje de prueba","autor":"javier","telegram_user_id":5000002}') ->> 'folio') is not null, true, 'un gasto de Javier se registra');
 select is((select canal from operacion.evento where clave_idem = 'tg:g1'), 'telegram', 'el evento queda con canal telegram');
-select is((agente.ejecutar('tg:g1', 'gasto', '{"pagado_por":"javier","monto_cent":9000,"categoria":"uber","origen":"mensaje de prueba"}') ->> 'gasto_id')::bigint, (select id from operacion.gasto order by id desc limit 1), 'el mismo mensaje no duplica');
-select throws_ok($$ select agente.ejecutar('tg:g2', 'gasto', '{"pagado_por":"sociedad","monto_cent":9000,"categoria":"uber"}') $$, 'P0460', null, 'gasto de caja sin socio pide aclarar');
+select is((agente.ejecutar('tg:g1', 'gasto', '{"pagado_por":"javier","monto_cent":9000,"categoria":"uber","origen":"mensaje de prueba","autor":"javier","telegram_user_id":5000002}') ->> 'gasto_id')::bigint, (select id from operacion.gasto order by id desc limit 1), 'el mismo mensaje no duplica');
+select throws_ok($$ select agente.ejecutar('tg:g2', 'gasto', '{"pagado_por":"sociedad","monto_cent":9000,"categoria":"uber","autor":"javier","telegram_user_id":5000002}') $$, 'P0460', null, 'gasto de caja sin socio pide aclarar');
 select throws_ok($$ select agente.ejecutar('tg:p1', 'pedido', '{}') $$, 'P0460', null, 'lo que aun no soporta se rechaza con claro motivo');
-select is((agente.ejecutar('tg:a1', 'aportacion', '{"socio":"angelo","monto_cent":100000,"concepto":"prueba"}') ->> 'eco') is not null, true, 'aportacion con eco');
+select is((agente.ejecutar('tg:a1', 'aportacion', '{"socio":"angelo","monto_cent":100000,"concepto":"prueba","autor":"angelo","telegram_user_id":5000001,"origen":"prueba"}') ->> 'eco') is not null, true, 'aportacion con eco');
 select set_config('rtm.canal', '', true);
 select throws_ok($$ select operacion.registrar_gasto_socio('x', 'Javier', 100, 'uber') $$, '42501', null, 'fuera de agente.ejecutar la marca de canal no existe: nadie escribe por este camino');
 
 -- Deshacer y tomas de Omar
-select is((agente.localizar(null) ->> 'tipo'), 'gasto', 'el ultimo hecho del agente es el gasto');
-select is((agente.deshacer('tg:d1', (agente.localizar(null) ->> 'folio')) ->> 'deshecho')::boolean, true, 'deshacer un gasto con su contramovimiento');
+select is((agente.localizar((select folio from operacion.gasto order by id desc limit 1)) ->> 'tipo'), 'gasto', 'el ultimo hecho del agente es el gasto');
+select is((agente.deshacer('tg:d1', (agente.localizar((select folio from operacion.gasto order by id desc limit 1)) ->> 'folio'), 'javier', 5000002) ->> 'deshecho')::boolean, true, 'deshacer un gasto con su contramovimiento');
 select is((select count(*)::int from operacion.gasto_anulacion where gasto_id = (select id from operacion.gasto order by id desc limit 1)), 1, 'el gasto queda anulado');
-select throws_ok($$ select agente.deshacer('tg:d2', 'G-9999999') $$, 'P0460', null, 'folio desconocido');
+select throws_ok($$ select agente.deshacer('tg:d2', 'G-9999999', 'javier', 5000002) $$, 'P0460', null, 'folio desconocido');
 select catalogo.asegurar_cliente('Ag Omar Persona', 'Javier');
 select catalogo.asegurar_persona_bodega('Ag Omar Persona', 'Ag Omar Persona');
 select catalogo.asegurar_modelo('Ag Marca', 'Ag Modelo 10K', 10000, 'ambas');
@@ -79,9 +79,9 @@ create function pg_temp.ids() returns jsonb language sql as $$ select jsonb_buil
 select is((agente.ejecutar('tg:t1', 'toma_omar', pg_temp.ids()) ->> 'estado'), 'pendiente', 'la solicitud de Omar nace pendiente: no mueve kardex ni saldo');
 select is((select count(*)::int from operacion.reserva where origen_tipo = 'toma_omar' and estado = 'activa'), 1, 'con reserva activa');
 select is((agente.ejecutar('tg:t1', 'toma_omar', pg_temp.ids()) ->> 'repetido')::boolean, true, 'el mismo mensaje no duplica la toma');
-select is((agente.resolver_toma('tg:t1a', (select folio from operacion.toma_omar order by id desc limit 1), 'autorizar') ->> 'estado'), 'autorizada', 'un socio autoriza');
-select throws_ok($$ select agente.resolver_toma('tg:t1b', (select folio from operacion.toma_omar order by id desc limit 1), 'rechazar') $$, 'P0428', null, 'la segunda decision ya no aplica');
-select is(agente.resolver_toma('tg:t0', 'T-9999999', 'autorizar') ->> 'estado', 'no_encontrada', 'folio de toma inexistente');
+select is((agente.resolver_toma('tg:t1a', (select folio from operacion.toma_omar order by id desc limit 1), 'autorizar', 'javier', 5000002) ->> 'estado'), 'autorizada', 'un socio autoriza');
+select throws_ok($$ select agente.resolver_toma('tg:t1b', (select folio from operacion.toma_omar order by id desc limit 1), 'rechazar', 'javier', 5000002) $$, 'P0428', null, 'la segunda decision ya no aplica');
+select is(agente.resolver_toma('tg:t0', 'T-9999999', 'autorizar', 'javier', 5000002) ->> 'estado', 'no_encontrada', 'folio de toma inexistente');
 select is(jsonb_array_length(agente.catalogo_modelos()) >= 1, true, 'catalogo de modelos para resolver alias');
 select is((agente.consulta('inventario', (select id from catalogo.modelo where nombre_canonico = 'Ag Modelo 10K')) -> 'lineas' -> 0 ->> 'piezas')::int, 27, 'consulta de existencia: 30 menos 3 de la toma');
 

@@ -23,7 +23,7 @@ export type PreguntaAbierta =
 
 export type SalidaResolucion = { ok: true; resuelta: AccionResuelta } | { ok: false; pregunta: PreguntaAbierta };
 
-const KEYWORDS_SUJETO = new Set(['omar', 'isaac', 'karen', 'vapemate', 'socios', 'socio']);
+const KEYWORDS_SUJETO = new Set(['omar', 'isaac', 'karen', 'vapemate', 'socios', 'socio', 'angelo', 'javier']);
 
 type ResultadoCampo = { ok: true; id: string } | { ok: false; pregunta: PreguntaAbierta };
 
@@ -68,6 +68,8 @@ async function modeloYSabor(
   catalogo: CatalogoAgente,
   modelos: readonly EntradaCatalogo[],
   overrides: Overrides,
+  exigirSabor = false,
+  todosSabores = false,
 ): Promise<{ ok: true; modeloId: string; saborId: string | null } | { ok: false; pregunta: PreguntaAbierta }> {
   const claveModelo = `lineas.${i}.modelo`;
   const previo = overrides[claveModelo];
@@ -79,12 +81,20 @@ async function modeloYSabor(
     if (!m.ok) return m;
     modeloId = m.id;
   }
-  if (l.sabor_texto === null) return { ok: true, modeloId, saborId: null };
-
   const claveSabor = `lineas.${i}.sabor`;
+  if (l.sabor_texto === null) {
+    if (!exigirSabor) return { ok: true, modeloId, saborId: null };
+    const previoS = overrides[claveSabor];
+    if (previoS !== undefined) return { ok: true, modeloId, saborId: previoS };
+    const opciones = (await sabores(catalogo, modeloId, todosSabores)).slice(0, 4).map((e) => ({ id: e.id, nombre: e.nombre }));
+    return opciones.length > 0
+      ? { ok: false, pregunta: { tipo: 'elegir', clave: claveSabor, campo: 'sabor', textoUsuario: '(sin sabor)', candidatos: opciones } }
+      : { ok: false, pregunta: { tipo: 'no_encontrado', clave: claveSabor, campo: 'sabor', textoUsuario: '(sin sabor)', sugerencias: [] } };
+  }
+
   const saborPrevio = overrides[claveSabor];
   if (saborPrevio !== undefined) return { ok: true, modeloId, saborId: saborPrevio };
-  const enExistencia = await catalogo.saboresEnExistencia(modeloId);
+  const enExistencia = await sabores(catalogo, modeloId, todosSabores);
   const s = resolverSabor(l.sabor_texto, enExistencia);
   if (s.estado === 'unico') return { ok: true, modeloId, saborId: s.id };
   if (s.estado === 'ninguno' || s.estado === 'vacio') {
@@ -97,17 +107,21 @@ async function modeloYSabor(
   return { ok: false, pregunta: { tipo: 'elegir', clave: claveSabor, campo: 'sabor', textoUsuario: l.sabor_texto, candidatos: s.candidatos } };
 }
 
+const sabores = (c: CatalogoAgente, modeloId: string, todos: boolean) => (todos && c.saboresDe ? c.saboresDe(modeloId) : c.saboresEnExistencia(modeloId));
+
 const VACIAS = (): Resoluciones => ({ clienteId: null, proveedorId: null, lineas: [], modeloId: null });
 
 async function lineas(
   ls: readonly Pick<ILineaCompraTexto, 'modelo_texto' | 'sabor_texto'>[],
   catalogo: CatalogoAgente,
   overrides: Overrides,
+  exigirSabor = false,
+  todosSabores = false,
 ): Promise<{ ok: true; lineas: Resoluciones['lineas'] } | { ok: false; pregunta: PreguntaAbierta }> {
   const modelos = await catalogo.modelos();
   const salida: Resoluciones['lineas'] = [];
   for (let i = 0; i < ls.length; i++) {
-    const r = await modeloYSabor(i, ls[i]!, catalogo, modelos, overrides);
+    const r = await modeloYSabor(i, ls[i]!, catalogo, modelos, overrides, exigirSabor, todosSabores);
     if (!r.ok) return r;
     salida.push({ modeloId: r.modeloId, saborId: r.saborId });
   }
@@ -116,7 +130,7 @@ async function lineas(
 
 async function consulta(c: IConsulta, autor: Miembro, catalogo: CatalogoAgente, overrides: Overrides): Promise<SalidaResolucion> {
   const res = VACIAS();
-  if (c.modelo_texto !== null && (c.consulta === 'inventario' || c.consulta === 'precio')) {
+  if (c.modelo_texto !== null && (c.consulta === 'inventario' || c.consulta === 'precio' || c.consulta === 'cobertura')) {
     const previo = overrides.modelo;
     if (previo !== undefined) {
       res.modeloId = previo;
@@ -138,7 +152,7 @@ async function consulta(c: IConsulta, autor: Miembro, catalogo: CatalogoAgente, 
  * Resuelve una intencion de escritura o de consulta. `overrides` trae las respuestas a preguntas anteriores (clave -> id elegido).
  * Un pedido cuyo cliente resulta ser la toma de la bodega de Omar se convierte en toma (queda pendiente de autorizacion).
  */
-export async function resolverAccion(intencion: Intencion, autor: Miembro, catalogo: CatalogoAgente, overrides: Overrides = {}): Promise<SalidaResolucion> {
+export async function resolverAccion(intencion: Intencion, autor: Miembro, catalogo: CatalogoAgente, overrides: Overrides = {}, exigirSabor = false): Promise<SalidaResolucion> {
   const res = VACIAS();
   switch (intencion.tipo) {
     case 'pedido': {
@@ -152,7 +166,7 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
         };
         return resolverAccion(toma, autor, catalogo, overrides);
       }
-      const ls = await lineas(intencion.lineas, catalogo, overrides);
+      const ls = await lineas(intencion.lineas, catalogo, overrides, exigirSabor);
       if (!ls.ok) return ls;
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, clienteId: k.id, lineas: ls.lineas } } };
     }
@@ -179,19 +193,88 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
     case 'orden_compra': {
       const p = proveedor(intencion.proveedor_texto, overrides);
       if (!p.ok) return p;
-      const ls = await lineas(intencion.lineas, catalogo, overrides);
+      const ls = await lineas(intencion.lineas, catalogo, overrides, exigirSabor, true);
       if (!ls.ok) return ls;
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, proveedorId: p.id, lineas: ls.lineas } } };
+    }
+    case 'devolucion': {
+      const k = await cliente(intencion.cliente_texto, autor, catalogo, overrides);
+      if (!k.ok) return k;
+      if (k.id === ID_TOMA_OMAR_BODEGA) {
+        return { ok: false, pregunta: { tipo: 'no_encontrado', clave: 'cliente', campo: 'cliente', textoUsuario: intencion.cliente_texto, sugerencias: [] } };
+      }
+      const ls = await lineas(intencion.lineas, catalogo, overrides);
+      if (!ls.ok) return ls;
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, clienteId: k.id, lineas: ls.lineas } } };
+    }
+    case 'paquete_perdido': {
+      if (intencion.cliente_texto === null) return { ok: true, resuelta: { intencion, resoluciones: res } };
+      const k = await cliente(intencion.cliente_texto, autor, catalogo, overrides);
+      if (!k.ok) return k;
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, clienteId: k.id === ID_TOMA_OMAR_BODEGA ? null : k.id } } };
     }
     case 'toma_omar': {
       const ls = await lineas(intencion.lineas, catalogo, overrides);
       if (!ls.ok) return ls;
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, lineas: ls.lineas } } };
     }
+    case 'compra_recepcion': {
+      if (intencion.lineas.length === 0) return { ok: true, resuelta: { intencion, resoluciones: res } };
+      const ls = await lineas(intencion.lineas, catalogo, overrides, true, true);
+      if (!ls.ok) return ls;
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, lineas: ls.lineas } } };
+    }
+    case 'conteo': {
+      const ls = await lineas(intencion.lineas, catalogo, overrides, true, true);
+      if (!ls.ok) return ls;
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, lineas: ls.lineas } } };
+    }
+    case 'merma': {
+      const ls = await lineas([intencion], catalogo, overrides, true, true);
+      if (!ls.ok) return ls;
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, lineas: ls.lineas } } };
+    }
+    case 'cliente_precio': {
+      const k = await cliente(intencion.cliente_texto, autor, catalogo, overrides);
+      if (!k.ok) return k;
+      if (k.id === ID_TOMA_OMAR_BODEGA) return { ok: false, pregunta: { tipo: 'no_encontrado', clave: 'cliente', campo: 'cliente', textoUsuario: intencion.cliente_texto, sugerencias: [] } };
+      const previo = overrides.modelo;
+      let modeloId: string;
+      if (previo !== undefined) modeloId = previo;
+      else {
+        const m = desdeResolucion('modelo', 'modelo', intencion.modelo_texto, resolverModelo(intencion.modelo_texto, await catalogo.modelos()));
+        if (!m.ok) return m;
+        modeloId = m.id;
+      }
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, clienteId: k.id, modeloId } } };
+    }
+    case 'lote_historico': {
+      const clientes: Record<string, string> = {};
+      for (const [i, r] of intencion.renglones.entries()) {
+        if (r.tipo !== 'cobro' || r.cliente_texto === null) continue;
+        const previo = overrides[`renglon.${i}.cliente`];
+        if (previo !== undefined) { clientes[String(i)] = previo; continue; }
+        const rc = resolverCliente(r.cliente_texto, await catalogo.clientes(), autor);
+        const d = desdeResolucion(`renglon.${i}.cliente`, 'cliente', r.cliente_texto, rc.estado === 'toma_propia' ? { estado: 'ninguno', sugerencias: [] } : rc);
+        if (!d.ok) return d;
+        clientes[String(i)] = d.id;
+      }
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, clientesLote: clientes } } };
+    }
     case 'consulta':
       return consulta(intencion, autor, catalogo, overrides);
+    case 'pedido_envio':
+    case 'pedido_cancelar':
+    case 'compra_aprobar':
+    case 'compra_estado':
+    case 'gasto_servicio':
+    case 'cliente_alta':
+    case 'acta_propuesta':
+    case 'acta_firma':
     case 'gasto':
     case 'aportacion':
+    case 'reembolso_socio':
+    case 'retiro_utilidad':
     case 'deshacer':
     case 'aclarar':
     case 'ninguna':

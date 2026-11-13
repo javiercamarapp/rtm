@@ -67,7 +67,7 @@ export const FIXTURE_CLIENTES: ClienteFixture[] = [
   { id: 'c6', nombre: 'Gemelo Dos', alias: ['gemelo'], tabulador: { m3: 25000n } },
 ];
 
-const PREFIJO = { P: 'P', PG: 'PG', G: 'G', A: 'A', C: 'C', OC: 'OC', T: 'T', X: 'X' } as const;
+const PREFIJO = { P: 'P', PG: 'PG', G: 'G', A: 'A', C: 'C', OC: 'OC', T: 'T', X: 'X', R: 'R', D: 'D', K: 'K' } as const;
 type SerieFolio = keyof typeof PREFIJO;
 
 interface Hecho {
@@ -75,6 +75,8 @@ interface Hecho {
   autor: Miembro;
   ejecutadoEn: Date;
   clienteId: string | null;
+  /** Efecto del hecho en la utilidad operativa (centavos, con signo). */
+  utilidadCent: bigint;
   deshecho: boolean;
   revertir: () => void;
   resultado: ResultadoEjecutado;
@@ -111,7 +113,16 @@ export class NegocioSimulado implements NegocioAgente {
   /** Lo que la sociedad debe a cada socio (reembolsos y devolucion de aportaciones). */
   private readonly deudaConSocio = new Map<string, bigint>([['angelo', 0n], ['javier', 0n]]);
   private saldoOmarCent = 0n;
-  private readonly contadores: Record<SerieFolio, number> = { P: 0, PG: 0, G: 0, A: 0, C: 0, OC: 0, T: 0, X: 0 };
+  private readonly contadores: Record<SerieFolio, number> = { P: 0, PG: 0, G: 0, A: 0, C: 0, OC: 0, T: 0, X: 0, R: 0, D: 0, K: 0 };
+  /** Capital declarado por cada socio (no es deuda: se devuelve por la cascada, no por reembolso). */
+  private readonly capitalSocio = new Map<string, bigint>([['angelo', 0n], ['javier', 0n]]);
+  private readonly reembolsadoSocio = new Map<string, bigint>([['angelo', 0n], ['javier', 0n]]);
+  private readonly retiradoSocio = new Map<string, bigint>([['angelo', 0n], ['javier', 0n]]);
+  /** Utilidad que la cascada ya le asigno a cada socio y todavia no retira (la fija la prueba: el agente no la calcula). */
+  private readonly utilidadAsignada = new Map<string, bigint>([['angelo', 0n], ['javier', 0n]]);
+  /** Dependencias de otras ramas: mientras sean false, devolucion y paquete perdido responden "dependencia pendiente" y no registran nada. */
+  readonly dependencias = { devolucion: false, paquete: false };
+  readonly incidentes: Array<{ folio: string; pedido: string; incidente: string }> = [];
   private readonly hechos = new Map<string, Hecho>();
   private readonly porClave = new Map<string, ResultadoEjecutado>();
   private readonly deshechosPorClave = new Map<string, ResultadoDeshacer>();
@@ -148,6 +159,18 @@ export class NegocioSimulado implements NegocioAgente {
   }
   deudaCon(socio: 'angelo' | 'javier'): bigint {
     return this.deudaConSocio.get(socio) ?? 0n;
+  }
+  capitalDe(socio: 'angelo' | 'javier'): bigint {
+    return this.capitalSocio.get(socio) ?? 0n;
+  }
+  reembolsadoA(socio: 'angelo' | 'javier'): bigint {
+    return this.reembolsadoSocio.get(socio) ?? 0n;
+  }
+  retiradoPor(socio: 'angelo' | 'javier'): bigint {
+    return this.retiradoSocio.get(socio) ?? 0n;
+  }
+  ponerUtilidadAsignada(socio: 'angelo' | 'javier', centavos: bigint): void {
+    this.utilidadAsignada.set(socio, centavos);
   }
   saldoOmar(): bigint {
     return this.saldoOmarCent;
@@ -198,6 +221,14 @@ export class NegocioSimulado implements NegocioAgente {
         return this.gasto(i, ctx);
       case 'aportacion':
         return this.aportacion(i, ctx);
+      case 'reembolso_socio':
+        return this.reembolsoSocio(i, ctx);
+      case 'retiro_utilidad':
+        return this.retiroUtilidad(i, ctx);
+      case 'devolucion':
+        return this.devolucion(i, a.resoluciones, ctx);
+      case 'paquete_perdido':
+        return this.paquetePerdido(i, ctx);
       case 'compra':
         return this.compra(i, a.resoluciones, ctx);
       case 'orden_compra':
@@ -221,6 +252,7 @@ export class NegocioSimulado implements NegocioAgente {
     saldos?: CifraServidor[];
     advertencias?: string[];
     clienteId?: string | null;
+    utilidad?: bigint;
     detalle: HechoAplicado['lineas'];
     revertir: () => void;
   }): ResultadoEjecutado {
@@ -241,6 +273,7 @@ export class NegocioSimulado implements NegocioAgente {
       autor: entrada.ctx.autor,
       ejecutadoEn: entrada.ctx.ahora,
       clienteId: entrada.clienteId ?? null,
+      utilidadCent: entrada.utilidad ?? 0n,
       deshecho: false,
       revertir: entrada.revertir,
       resultado,
@@ -256,6 +289,7 @@ export class NegocioSimulado implements NegocioAgente {
     const lineas: CifraServidor[] = [];
     const detalle: HechoAplicado['lineas'] = [];
     let total = 0n;
+    let utilidad = 0n;
     let totalPiezas = 0;
     const salidas: Array<{ modeloId: string; n: number }> = [];
     for (let k = 0; k < i.lineas.length; k++) {
@@ -281,6 +315,7 @@ export class NegocioSimulado implements NegocioAgente {
       }
       const sub = precio * BigInt(l.piezas);
       total += sub;
+      utilidad += (precio - (this.modelos.get(modeloId)?.costoCent ?? 0n)) * BigInt(l.piezas);
       totalPiezas += l.piezas;
       salidas.push({ modeloId, n: l.piezas });
       lineas.push(pesos(`${this.nombreModelo(modeloId)}, ${l.piezas} pz x ${precio / 100n}`, sub));
@@ -304,6 +339,7 @@ export class NegocioSimulado implements NegocioAgente {
       comprobacion: [piezas('Piezas por modelo (suma)', totalPiezas), pesos('Piezas x precio (suma)', total)],
       saldos: [pesos(`Saldo de ${cliente.nombre}`, this.saldoCliente(cliente.id))],
       clienteId: cliente.id,
+      utilidad,
       detalle,
       revertir: () => {
         for (const s of salidas) this.existencia.set(s.modeloId, this.existenciaDe(s.modeloId) + s.n);
@@ -370,6 +406,7 @@ export class NegocioSimulado implements NegocioAgente {
       titulo: `Gasto: ${i.gasto}`,
       lineas: [pesos('Gasto', monto)],
       saldos: socio ? [pesos(`Reembolso pendiente a ${socio}`, this.deudaCon(socio))] : [],
+      utilidad: -monto,
       detalle: [{ concepto: `gasto_${i.gasto}`, piezas: 0, centavos: monto }],
       revertir: () => {
         if (socio) this.deudaConSocio.set(socio, this.deudaCon(socio) - monto);
@@ -379,16 +416,141 @@ export class NegocioSimulado implements NegocioAgente {
 
   private aportacion(i: Extract<Intencion, { tipo: 'aportacion' }>, ctx: ContextoEjecucion): ResultadoNegocio {
     const monto = BigInt(i.monto_centavos);
+    // Adenda 32: es capital solo si el socio lo declaro; todo lo demas es reembolso (cuenta por pagar al socio).
+    if (i.intencion === 'capital') {
+      this.capitalSocio.set(i.socio, this.capitalDe(i.socio) + monto);
+      return this.registrar({
+        serie: 'A',
+        tipo: 'aportacion',
+        ctx,
+        titulo: `Aportacion de capital de ${i.socio}`,
+        lineas: [pesos('Aportacion de capital', monto)],
+        saldos: [pesos(`Capital aportado por ${i.socio}`, this.capitalDe(i.socio))],
+        detalle: [{ concepto: 'aportacion_capital', piezas: 0, centavos: monto }],
+        revertir: () => this.capitalSocio.set(i.socio, this.capitalDe(i.socio) - monto),
+      });
+    }
     this.deudaConSocio.set(i.socio, this.deudaCon(i.socio) + monto);
     return this.registrar({
       serie: 'A',
       tipo: 'aportacion',
       ctx,
-      titulo: `Aportacion de capital de ${i.socio}`,
-      lineas: [pesos('Aportacion', monto)],
+      titulo: `Deposito de ${i.socio} como reembolso`,
+      lineas: [pesos('Deposito', monto)],
       saldos: [pesos(`Por devolver a ${i.socio}`, this.deudaCon(i.socio))],
-      detalle: [{ concepto: 'aportacion', piezas: 0, centavos: monto }],
+      detalle: [{ concepto: 'aportacion_reembolso', piezas: 0, centavos: monto }],
       revertir: () => this.deudaConSocio.set(i.socio, this.deudaCon(i.socio) - monto),
+    });
+  }
+
+  /** Espejo de operacion.registrar_pago_a_socio(tipo reembolso): no puede exceder lo pendiente (23514). */
+  private reembolsoSocio(i: Extract<Intencion, { tipo: 'reembolso_socio' }>, ctx: ContextoEjecucion): ResultadoNegocio {
+    const monto = BigInt(i.monto_centavos);
+    const pendiente = this.deudaCon(i.socio);
+    if (monto > pendiente) {
+      return { tipo: 'rechazado', codigo: '23514', texto: 'El reembolso excede lo que la sociedad le debe a ese socio.' };
+    }
+    this.deudaConSocio.set(i.socio, pendiente - monto);
+    this.reembolsadoSocio.set(i.socio, this.reembolsadoA(i.socio) + monto);
+    return this.registrar({
+      serie: 'R',
+      tipo: 'reembolso_socio',
+      ctx,
+      titulo: `Reembolso a ${i.socio}`,
+      lineas: [pesos('Reembolso pagado', monto)],
+      saldos: [pesos(`Reembolso pendiente a ${i.socio}`, pendiente - monto)],
+      detalle: [{ concepto: 'reembolso_socio', piezas: 0, centavos: monto }],
+      revertir: () => {
+        this.deudaConSocio.set(i.socio, this.deudaCon(i.socio) + monto);
+        this.reembolsadoSocio.set(i.socio, this.reembolsadoA(i.socio) - monto);
+      },
+    });
+  }
+
+  /** Espejo de registrar_pago_a_socio(tipo retiro): solo sale de la utilidad ya asignada (H10). */
+  private retiroUtilidad(i: Extract<Intencion, { tipo: 'retiro_utilidad' }>, ctx: ContextoEjecucion): ResultadoNegocio {
+    const monto = BigInt(i.monto_centavos);
+    const asignada = this.utilidadAsignada.get(i.socio) ?? 0n;
+    if (monto > asignada) {
+      return { tipo: 'rechazado', codigo: '23514', texto: 'El retiro excede la utilidad que ya se le asigno a ese socio.' };
+    }
+    this.utilidadAsignada.set(i.socio, asignada - monto);
+    this.retiradoSocio.set(i.socio, this.retiradoPor(i.socio) + monto);
+    return this.registrar({
+      serie: 'R',
+      tipo: 'retiro_utilidad',
+      ctx,
+      titulo: `Retiro de utilidad de ${i.socio}`,
+      lineas: [pesos('Retiro', monto)],
+      saldos: [pesos(`Utilidad asignada que le queda a ${i.socio}`, asignada - monto)],
+      detalle: [{ concepto: 'retiro_utilidad', piezas: 0, centavos: monto }],
+      revertir: () => {
+        this.utilidadAsignada.set(i.socio, (this.utilidadAsignada.get(i.socio) ?? 0n) + monto);
+        this.retiradoSocio.set(i.socio, this.retiradoPor(i.socio) - monto);
+      },
+    });
+  }
+
+  /** Espejo del contrato de lane/devolucion-parcial (operacion.registrar_devolucion_cliente). Apagado hasta que la rama este en la base. */
+  private devolucion(i: Extract<Intencion, { tipo: 'devolucion' }>, r: Resoluciones, ctx: ContextoEjecucion): ResultadoNegocio {
+    if (!this.dependencias.devolucion) {
+      return { tipo: 'rechazado', codigo: 'dependencia_pendiente', texto: 'La devolucion todavia no se registra desde Telegram: depende de la rama de devoluciones. Hazla en el software.' };
+    }
+    const cliente = this.clientes.get(r.clienteId ?? '');
+    if (!cliente) return { tipo: 'rechazado', codigo: 'cliente_desconocido', texto: 'Cliente desconocido.' };
+    const destino = i.destino ?? 'inventario';
+    let nota = 0n;
+    let utilidad = 0n;
+    const piezasPorModelo: Array<{ modeloId: string; n: number }> = [];
+    const lineas: CifraServidor[] = [];
+    for (let k = 0; k < i.lineas.length; k++) {
+      const modeloId = r.lineas[k]!.modeloId;
+      const precio = cliente.tabulador[modeloId];
+      if (precio === undefined) return { tipo: 'rechazado', codigo: 'sin_precio', texto: `${cliente.nombre} no tiene precio para ${this.nombreModelo(modeloId)}.` };
+      const n = i.lineas[k]!.piezas;
+      nota += precio * BigInt(n);
+      utilidad -= destino === 'merma' ? precio * BigInt(n) : (precio - (this.modelos.get(modeloId)?.costoCent ?? 0n)) * BigInt(n);
+      piezasPorModelo.push({ modeloId, n });
+      lineas.push(piezas(this.nombreModelo(modeloId), n));
+    }
+    if (destino === 'inventario') for (const p of piezasPorModelo) this.existencia.set(p.modeloId, this.existenciaDe(p.modeloId) + p.n);
+    this.cxc.set(cliente.id, this.saldoCliente(cliente.id) - nota);
+    return this.registrar({
+      serie: 'D',
+      tipo: 'devolucion',
+      ctx,
+      titulo: `Devolucion de ${cliente.nombre} (nota de credito)`,
+      lineas: [...lineas, pesos('Nota de credito', nota)],
+      saldos: [pesos(`Saldo de ${cliente.nombre}`, this.saldoCliente(cliente.id))],
+      clienteId: cliente.id,
+      utilidad,
+      detalle: [{ concepto: 'devolucion', piezas: 0, centavos: nota }],
+      revertir: () => {
+        if (destino === 'inventario') for (const p of piezasPorModelo) this.existencia.set(p.modeloId, this.existenciaDe(p.modeloId) - p.n);
+        this.cxc.set(cliente.id, this.saldoCliente(cliente.id) + nota);
+      },
+    });
+  }
+
+  /** Espejo del contrato de lane/paquete-perdido (operacion.reportar_paquete_salida). Solo abre el incidente: no mueve dinero. */
+  private paquetePerdido(i: Extract<Intencion, { tipo: 'paquete_perdido' }>, ctx: ContextoEjecucion): ResultadoNegocio {
+    if (!this.dependencias.paquete) {
+      return { tipo: 'rechazado', codigo: 'dependencia_pendiente', texto: 'El paquete perdido todavia no se registra desde Telegram: depende de la rama de paquetes. Hazlo en el software.' };
+    }
+    const pedido = i.pedido_folio ?? '';
+    const folio = this.folio('K');
+    this.incidentes.push({ folio, pedido, incidente: i.incidente });
+    return this.registrar({
+      serie: 'K',
+      tipo: 'paquete_perdido',
+      ctx,
+      titulo: `Incidente de paquete ${i.incidente}`,
+      lineas: [{ tipo: 'texto', etiqueta: 'Pedido', texto: pedido }],
+      detalle: [{ concepto: 'incidente_paquete', piezas: 0, centavos: 0n }],
+      revertir: () => {
+        const n = this.incidentes.findIndex((x) => x.folio === folio);
+        if (n >= 0) this.incidentes.splice(n, 1);
+      },
     });
   }
 
@@ -532,7 +694,7 @@ export class NegocioSimulado implements NegocioAgente {
 
   // ---- consultas
 
-  async consultar(c: IConsulta, r: Resoluciones, autor: Miembro): Promise<RespuestaConsulta> {
+  async consultar(c: IConsulta, r: Resoluciones, autor: Miembro, ahora: Date = new Date(0)): Promise<RespuestaConsulta> {
     switch (c.consulta) {
       case 'inventario': {
         const ids = r.modeloId ? [r.modeloId] : [...this.modelos.keys()];
@@ -561,6 +723,37 @@ export class NegocioSimulado implements NegocioAgente {
       case 'pendientes': {
         const n = [...this.tomas.values()].filter((t) => t.estado === 'pendiente').length;
         return { titulo: 'Pendientes', lineas: [piezas('Tomas por autorizar', n)] };
+      }
+      case 'estado_cuenta_socio': {
+        const socio = normalizar(c.sujeto_texto ?? '');
+        if (socio !== 'angelo' && socio !== 'javier') return { titulo: 'Estado de cuenta', lineas: [{ tipo: 'texto', etiqueta: 'Falta', texto: 'Dime de que socio, Angelo o Javier.' }] };
+        return {
+          titulo: `Estado de cuenta de ${socio === 'angelo' ? 'Angelo' : 'Javier'}`,
+          lineas: [
+            pesos('Reembolso pendiente', this.deudaCon(socio)),
+            pesos('Reembolsos ya pagados', this.reembolsadoA(socio)),
+            pesos('Capital aportado', this.capitalDe(socio)),
+            pesos('Utilidad asignada sin retirar', this.utilidadAsignada.get(socio) ?? 0n),
+            pesos('Retiros de utilidad', this.retiradoPor(socio)),
+          ],
+        };
+      }
+      case 'utilidad': {
+        const periodo = c.periodo ?? 'mes';
+        const dia = 86_400_000;
+        
+        const dentro = (d: Date) =>
+          periodo === 'hoy' ? ahora.toISOString().slice(0, 10) === d.toISOString().slice(0, 10)
+            : periodo === 'ayer' ? ahora.getTime() - d.getTime() < 2 * dia && ahora.toISOString().slice(0, 10) !== d.toISOString().slice(0, 10)
+              : periodo === 'semana' ? ahora.getTime() - d.getTime() < 7 * dia
+                : ahora.toISOString().slice(0, 7) === d.toISOString().slice(0, 7);
+        let total = 0n;
+        for (const h of this.hechos.values()) if (!h.deshecho && dentro(h.ejecutadoEn)) total += h.utilidadCent;
+        return { titulo: `Utilidad operativa (${periodo})`, lineas: [pesos('Utilidad operativa', total), { tipo: 'texto', etiqueta: 'Nota', texto: 'Aproximacion operativa; la cifra contable esta en el software.' }] };
+      }
+      case 'cartera': {
+        const filas = [...this.clientes.values()].map((cl) => ({ cl, saldo: this.saldoCliente(cl.id) })).filter((x) => x.saldo > 0n);
+        return { titulo: 'Cuanto debe cada cliente', lineas: filas.length === 0 ? [{ tipo: 'texto', etiqueta: 'Cartera', texto: 'Ningun cliente debe nada.' }] : filas.map((x) => pesos(x.cl.nombre, x.saldo)) };
       }
       default:
         return { titulo: 'Consulta no disponible todavia', lineas: [] };

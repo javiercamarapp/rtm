@@ -6,16 +6,17 @@
 //   3. reclamo por (chat, mensaje)                        4. comandos (sin IA) o prefiltro + modo sin IA
 //   5. reserva de presupuesto -> modelo -> liquidacion    6. esquema estricto + guardia de cifras de entrada
 //   7. permisos por rol, resolucion de alias (pregunta ante duda), ejecucion idempotente, eco.
-import { cifrasDeMonto, cifrasDePiezas, cifrasSinProcedencia, valoresDeTexto, type CifraExtraida } from '@/dominio/agente/cifras';
+import { cifrasDeMonto, cifrasDePiezas, cifrasSinProcedencia, esMontoAmbiguo, parsearPrecio, valoresDeTexto, type CifraExtraida } from '@/dominio/agente/cifras';
 import { parsearComando } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN, evaluarDeshacer } from '@/dominio/agente/deshacer';
-import { debeProcesarConIa, detectarInyeccion, sanitizar } from '@/dominio/agente/entrada';
-import { esEscritura, type Intencion, type RespuestaExtractor } from '@/dominio/agente/intenciones';
+import { debeProcesarConIa, declaraCapitalExpreso, detectarInyeccion, redactarContactos, sanitizar } from '@/dominio/agente/entrada';
+import { CATALOGO_INTENCIONES, confirmacionDe } from '@/dominio/agente/catalogo_intenciones';
+import { esEscritura, exigeConfirmacion, type Intencion, type RespuestaExtractor, type TipoIntencion } from '@/dominio/agente/intenciones';
 import { cadenaParaRol, peorCasoTokens } from '@/dominio/agente/modelos';
 import { permisoParaIntencion } from '@/dominio/agente/permisos';
 import { ALERTA_PORCENTAJE, type AvisoPresupuesto } from '@/dominio/agente/presupuesto';
 import type { Candidato } from '@/dominio/agente/resolutor';
-import type { ChatsRegistrados, FuenteMensaje, Miembro } from '@/dominio/agente/tipos';
+import type { ChatsRegistrados, FuenteMensaje, Miembro, Persona } from '@/dominio/agente/tipos';
 import { fechaNeg } from '@/dominio/calendario';
 import { Comunicador, verificarMensajeOmar } from './comunicador';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
@@ -32,7 +33,9 @@ import type {
   BotonEnLinea,
   CatalogoAgente,
   ClienteLlm,
+  ContextoEjecucion,
   EnviadorTelegram,
+  ResultadoSimulacion,
   NegocioAgente,
   RespuestaLlm,
 } from './puertos';
@@ -45,6 +48,15 @@ export interface ConfigAgente {
   caducaTomaHoras: number;
   ventanaDeshacerMin: number;
   maxOpciones: number;
+  /**
+   * Modo de los socios (produccion): todo movimiento de dinero se muestra en un resumen y NO se registra hasta que un socio pulsa Confirmar;
+   * si falta un dato (cuenta, quien pago, via, pedido) se pregunta en vez de suponerlo. En false conserva el comportamiento anterior (eco + Deshacer).
+   */
+  confirmarMovimientos: boolean;
+  /** Produccion: un renglon sin sabor se pregunta (la base exige sku). En simulacion sin base se deja en false. */
+  exigirSabor: boolean;
+  /** Limite de frecuencia por chat: mensajes procesados por minuto (0 = sin limite). */
+  limiteMensajesPorMinuto: number;
 }
 
 export const CONFIG_POR_OMISION: ConfigAgente = {
@@ -53,6 +65,9 @@ export const CONFIG_POR_OMISION: ConfigAgente = {
   caducaTomaHoras: 72,
   ventanaDeshacerMin: VENTANA_DESHACER_MIN,
   maxOpciones: 4,
+  confirmarMovimientos: true,
+  exigirSabor: false,
+  limiteMensajesPorMinuto: 20,
 };
 
 export interface DependenciasAgente {
@@ -84,8 +99,26 @@ interface EstadoAccion {
   origen: { updateId: number; chatId: number; messageId: number };
   autor: Miembro;
   confirmado: boolean;
+  /** Un socio ya pulso Confirmar en el resumen del movimiento (distinto de `confirmado`, que contesta preguntas del negocio). */
+  vistoBueno: boolean;
+  confirmadoPor: Persona | null;
+  /** Confirmacion reforzada (acciones que no se deshacen por Telegram): el segundo "si, estoy seguro". */
+  refuerzo: boolean;
+  /** Hash del efecto que mostro la vista previa al socio (la base aborta si el efecto real cambio). */
+  efectoHash: string | null;
+  /** Boton "Si, estoy seguro" que consumio el autor (la base lo exige para la firma del acta). */
+  tokenConfirmacion: string | null;
   cita: string;
 }
+
+/**
+ * POLITICA DE QUIEN CONFIRMA (MEDIO-2).
+ *  - Por omision, el AUTOR de la indicacion confirma lo suyo (Confirmar, "Si, continuar" y "Si, estoy seguro"). Si el otro socio pulsa, no se registra nada
+ *    y se vuelve a mostrar la tarjeta; el otro socio puede cancelar, completar un dato faltante o elegir una opcion de aclaracion, pero no confirmar.
+ *  - Un segundo socio NO es obligatorio, salvo en las acciones listadas aqui: el segundo paso ("Si, estoy seguro") lo da el OTRO socio.
+ *  - La firma del acta es personal: solo la da quien la pide (acta_firma), con su propio boton.
+ */
+export const SEGUNDO_SOCIO_OBLIGATORIO: ReadonlySet<TipoIntencion> = new Set<TipoIntencion>(['lote_historico']);
 
 interface PayloadAclarar {
   estado: EstadoAccion;
@@ -113,6 +146,7 @@ interface ContextoMensaje {
   sospecha: boolean;
 }
 
+const MENSAJE_MONTO_AMBIGUO = 'el monto sin ambiguedad: con coma para los miles y punto para los centavos (un punto seguido de tres cifras puede leerse de dos maneras)';
 const MSG_ERROR = 'No pude procesar ese mensaje. Intentalo de nuevo o usa los comandos.';
 
 function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
@@ -126,7 +160,31 @@ function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
     case 'pago_proveedor':
     case 'gasto':
     case 'aportacion':
+    case 'reembolso_socio':
+    case 'retiro_utilidad':
       salida.push(cifrasDeMonto('monto', a.monto_centavos));
+      break;
+    case 'devolucion':
+    case 'compra_recepcion':
+    case 'conteo':
+      a.lineas.forEach((l, i) => salida.push(cifrasDePiezas(`lineas.${i}.piezas`, l.piezas)));
+      break;
+    case 'merma':
+      salida.push(cifrasDePiezas('piezas', a.piezas));
+      break;
+    case 'gasto_servicio':
+      if (a.monto_usd_centavos !== null) salida.push(cifrasDeMonto('monto_usd', a.monto_usd_centavos));
+      if (a.monto_mxn_centavos !== null) salida.push(cifrasDeMonto('monto_mxn', a.monto_mxn_centavos));
+      break;
+    case 'cliente_precio':
+      salida.push(cifrasDeMonto('precio', a.precio_centavos));
+      break;
+    case 'acta_propuesta':
+      for (const [k, v] of Object.entries(a)) if (k.endsWith('_centavos') && typeof v === 'number') salida.push(cifrasDeMonto(k, v));
+      break;
+    case 'lote_historico':
+      a.renglones.forEach((r, i) => salida.push(cifrasDeMonto(`renglones.${i}.monto`, r.monto_centavos)));
+      if (a.total_dictado_centavos !== null) salida.push(cifrasDeMonto('total', a.total_dictado_centavos));
       break;
     case 'compra':
     case 'orden_compra':
@@ -150,6 +208,72 @@ function cifrasDePrecios(a: Intencion, fuente: string): string[] {
     if (valores.size === 0 || [...valores].every((v) => !enFuente.has(v))) faltan.push(`lineas.${i}.precio`);
   });
   return faltan;
+}
+
+/** Dato que la base necesita y el mensaje no trajo. Se pregunta; jamas se supone un valor por omision. */
+export function datoFaltante(a: Intencion): string | null {
+  switch (a.tipo) {
+    case 'pedido':
+      return a.lineas.some((l) => l.precio_texto !== null && parsearPrecio(l.precio_texto).ok === false)
+        ? 'el precio de cada renglon sin ambiguedad: con coma para los miles y punto para los centavos (un punto seguido de tres cifras puede leerse de dos maneras)'
+        : null;
+    case 'pago':
+      return a.cuenta_destino_texto === null ? 'a que cuenta entro el pago (Angelo, Javier, Isaac, Karen o efectivo)' : null;
+    case 'gasto':
+      return a.pagado_por === 'sociedad' ? 'quien pago el gasto, Angelo o Javier' : null;
+    case 'reembolso_socio':
+    case 'retiro_utilidad':
+      return a.via === null ? 'si fue por transferencia o en efectivo' : null;
+    case 'devolucion':
+      return a.pedido_folio === null ? 'de que pedido es la devolucion (folio)' : null;
+    case 'paquete_perdido':
+      return a.pedido_folio === null ? 'de que pedido es el paquete (folio)' : null;
+    case 'pedido_envio':
+      return a.pedido_folio === null ? 'el folio del pedido (por ejemplo P-0001)' : null;
+    case 'pedido_cancelar':
+      return a.pedido_folio === null ? 'el folio del pedido (por ejemplo P-0001)' : a.motivo === null ? 'el motivo de la cancelacion' : null;
+    case 'compra_aprobar':
+    case 'compra_estado':
+    case 'compra_recepcion':
+      return a.compra_folio === null ? 'el folio de la compra (por ejemplo C-0001)' : null;
+    case 'merma':
+      return a.motivo === null ? 'el motivo de la merma' : null;
+    case 'gasto_servicio':
+      return a.monto_usd_centavos === null && a.monto_mxn_centavos === null ? 'el monto del cargo (en dolares o en pesos)' : a.pagado_por === 'sociedad' ? 'quien pago el servicio, Angelo o Javier' : null;
+    case 'lote_historico':
+      return a.renglones.some((r) => (r.tipo !== 'cobro' && r.socio === null) || (r.tipo === 'cobro' && (r.cliente_texto === null || r.cuenta_texto === null)) || ((r.tipo === 'reembolso' || r.tipo === 'retiro') && r.via === null))
+        ? 'en cada renglon: socio (o cliente y cuenta en un cobro) y via en reembolsos y retiros'
+        : null;
+    default:
+      return null;
+  }
+}
+
+interface OpcionFaltante {
+  texto: string;
+  parche: (a: Intencion) => Intencion;
+}
+
+/** Datos que se piden con botones (estado de conversacion en el token, con expiracion). El resto se pide por texto. */
+export function opcionesFaltante(a: Intencion): OpcionFaltante[] | null {
+  if (a.tipo === 'pago' && a.cuenta_destino_texto === null) {
+    return ['Angelo', 'Javier', 'Isaac', 'Karen', 'Efectivo'].map((c) => ({ texto: c, parche: (x) => (x.tipo === 'pago' ? { ...x, cuenta_destino_texto: c } : x) }));
+  }
+  if ((a.tipo === 'gasto' || a.tipo === 'gasto_servicio') && a.pagado_por === 'sociedad') {
+    return (['angelo', 'javier'] as const).map((q) => ({ texto: q === 'angelo' ? 'Angelo' : 'Javier', parche: (x) => (x.tipo === 'gasto' || x.tipo === 'gasto_servicio' ? { ...x, pagado_por: q } : x) }));
+  }
+  if ((a.tipo === 'reembolso_socio' || a.tipo === 'retiro_utilidad') && a.via === null) {
+    return (['transferencia', 'efectivo'] as const).map((v) => ({ texto: v === 'efectivo' ? 'Efectivo' : 'Transferencia', parche: (x) => (x.tipo === 'reembolso_socio' || x.tipo === 'retiro_utilidad' ? { ...x, via: v } : x) }));
+  }
+  return null;
+}
+
+/** BAJO-4: el capital lo declara cada socio por si mismo; un socio no lo registra a nombre del otro. */
+export function capitalAjeno(a: Intencion, autor: Persona): boolean {
+  if (a.tipo === 'aportacion') return a.intencion === 'capital' && a.socio !== autor;
+  if (a.tipo === 'pago_proveedor') return a.intencion === 'capital' && a.pagado_por !== 'sociedad' && a.pagado_por !== autor;
+  if (a.tipo === 'lote_historico') return a.renglones.some((r) => r.tipo === 'aportacion' && r.intencion === 'capital' && r.socio !== autor);
+  return false;
 }
 
 export class AgenteTelegram {
@@ -224,12 +348,22 @@ export class AgenteTelegram {
     const autor = await this.autorizar(msg, miembro, chats);
     if (!autor) return { estado: 'ignorado', motivo: 'no_autorizado' };
 
+    // El reclamo por (chat, mensaje) va ANTES del limite de frecuencia: un mensaje rechazado por frecuencia queda reclamado, y su edicion posterior no se procesa como nuevo.
     if (!(await this.d.almacen.reclamarMensaje(msg.chat.id, msg.message_id))) {
       await this.d.almacen.registrarEvento({ tipo: 'mensaje_duplicado', miembro: autor.telegramUserId, detalle: esEdicion ? 'edicion' : 'reenvio' });
       if (esEdicion) {
         await this.responder(autor, chats, P.textoSimple('Ese mensaje ya se proceso y no se vuelve a ejecutar. Si hay un error, usa /deshacer y mandalo de nuevo.'));
       }
       return { estado: 'duplicado', motivo: 'mensaje' };
+    }
+    if (this.cfg.limiteMensajesPorMinuto > 0 && this.d.almacen.mensajesRecientes) {
+      // El mensaje actual ya cuenta (acaba de reclamarse): el limite es "mas de N por minuto".
+      const n = await this.d.almacen.mensajesRecientes(msg.chat.id, 60);
+      if (n > this.cfg.limiteMensajesPorMinuto) {
+        await this.d.almacen.registrarEvento({ tipo: 'limite_frecuencia', miembro: autor.telegramUserId, detalle: 'chat_con_demasiados_mensajes' });
+        await this.responder(autor, chats, P.textoSimple('Demasiados mensajes seguidos. Espera un minuto antes de seguir.'));
+        return { estado: 'ignorado', motivo: 'limite_frecuencia' };
+      }
     }
 
     const texto = sanitizar(msg.text ?? msg.caption ?? '');
@@ -242,6 +376,13 @@ export class AgenteTelegram {
     }
 
     const base = { autor, chats, texto, updateId: update.update_id, messageId: msg.message_id, chatId: msg.chat.id };
+    // Un mensaje reenviado es dato no confiable (puede ser texto ajeno pegado por alguien): sus /comandos no se ejecutan y, mas abajo, solo admite consultas.
+    const reenviado = msg.forward_origin !== undefined;
+    if (reenviado && texto.startsWith('/')) {
+      await this.d.almacen.registrarEvento({ tipo: 'sospecha_inyeccion', miembro: autor.telegramUserId, detalle: 'reenviado_comando' });
+      await this.responder(autor, chats, P.textoSimple('Los comandos no se ejecutan desde mensajes reenviados. Escribelo tu con tus palabras.'));
+      return { estado: 'ignorado', motivo: 'reenviado_comando' };
+    }
     const cmd = parsearComando(texto);
     if (cmd) {
       if (!cmd.ok) {
@@ -262,7 +403,7 @@ export class AgenteTelegram {
       await this.avisarModoSinIa(chats);
       return { estado: 'sin_ia' };
     }
-    return this.conIa({ ...base, fuente: msg.forward_origin === undefined ? 'texto' : 'reenviado', verificarCifras: true, sospecha: false });
+    return this.conIa({ ...base, fuente: reenviado ? 'reenviado' : 'texto', verificarCifras: true, sospecha: false });
   }
 
   /** Identidad por id de Telegram. Devuelve el miembro solo si el chat de origen es el que le corresponde. */
@@ -418,6 +559,12 @@ export class AgenteTelegram {
         continue;
       }
 
+      if (ctx.fuente === 'reenviado' && esEscritura(a.tipo)) {
+        await this.d.almacen.registrarEvento({ tipo: 'sospecha_inyeccion', miembro: ctx.autor.telegramUserId, detalle: 'reenviado_escritura' });
+        await this.responder(ctx.autor, ctx.chats, P.rechazo('Ese mensaje esta reenviado: por seguridad no registro movimientos desde mensajes reenviados (las consultas si). Escribelo tu con tus palabras.'));
+        continue;
+      }
+
       if (ctx.sospecha && esEscritura(a.tipo)) {
         await this.responder(ctx.autor, ctx.chats, P.textoSimple('Marque ese mensaje como sospechoso y no ejecute nada. Reescribelo con tus palabras o usa el comando.'));
         continue;
@@ -430,17 +577,44 @@ export class AgenteTelegram {
           await this.responder(ctx.autor, ctx.chats, P.cifraSinProcedencia(ctx.texto.slice(0, 120), faltan));
           continue;
         }
+        // BAJO-1: un monto que solo se explica con un formato ambiguo ("1.250") se pregunta en TODAS las intenciones con dinero, no solo en el precio de un pedido.
+        const ambiguos = cifrasDeIntencion(a).filter((c) => c.esDinero === true && esMontoAmbiguo(ctx.texto, c.valor)).map((c) => c.campo);
+        if (ambiguos.length > 0) {
+          await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `monto_ambiguo:${ambiguos.join(',')}`.slice(0, 280) });
+          await this.responder(ctx.autor, ctx.chats, P.faltaDato(MENSAJE_MONTO_AMBIGUO));
+          continue;
+        }
       }
 
+      if (a.tipo === 'lote_historico' && a.total_dictado_centavos !== null) {
+        const suma = a.renglones.reduce((t, r) => t + BigInt(r.monto_centavos), 0n);
+        if (suma !== BigInt(a.total_dictado_centavos)) {
+          await this.responder(ctx.autor, ctx.chats, P.sumaNoCuadra(suma, BigInt(a.total_dictado_centavos)));
+          continue;
+        }
+      }
+
+      // El capital se declara con las palabras del socio: si el modelo lo marco pero el mensaje no lo dice, es reembolso (decision del dueno).
+      const declarada = this.capitalSoloSiSeDeclaro(a, ctx);
+      if (capitalAjeno(declarada, ctx.autor.persona)) {
+        await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: 'capital_a_nombre_del_otro' });
+        await this.responder(ctx.autor, ctx.chats, P.rechazo('El capital lo declara cada socio por si mismo: que lo registre quien lo pone o lo paga. Si fue un deposito comun, dilo sin declararlo como capital y queda como reembolso.'));
+        continue;
+      }
       const estado: EstadoAccion = {
-        intencion: a,
+        intencion: declarada,
         overrides: {},
         preguntasPrevias: 0,
         claveIdem: `tg:${ctx.updateId}:${i}`,
         origen: { updateId: ctx.updateId, chatId: ctx.chatId, messageId: ctx.messageId },
         autor: ctx.autor,
         confirmado: false,
-        cita: ctx.texto.slice(0, 120),
+        vistoBueno: false,
+        confirmadoPor: null,
+        refuerzo: false,
+        efectoHash: null,
+        tokenConfirmacion: null,
+        cita: redactarContactos(ctx.texto).slice(0, 120),
       };
       await this.resolverYEjecutar(estado, ctx.chats);
       hechas++;
@@ -448,8 +622,26 @@ export class AgenteTelegram {
     return { estado: 'procesado', acciones: hechas };
   }
 
+  /**
+   * El capital se declara con las palabras del socio (decision del dueno): si el modelo lo marco pero el mensaje no lo dice, es reembolso.
+   * Aplica al pago a proveedor, a la aportacion y a CADA renglon de aportacion de un lote (la linea del mensaje que lleva su fecha, o el mensaje completo).
+   */
+  private capitalSoloSiSeDeclaro(a: Intencion, ctx: ContextoMensaje): Intencion {
+    if (!ctx.verificarCifras) return a;
+    if ((a.tipo === 'pago_proveedor' || a.tipo === 'aportacion') && a.intencion === 'capital' && !declaraCapitalExpreso(ctx.texto)) return { ...a, intencion: 'reembolso' } as Intencion;
+    if (a.tipo === 'lote_historico') {
+      const lineas = ctx.texto.split('\n');
+      return { ...a, renglones: a.renglones.map((r) => {
+        if (r.tipo !== 'aportacion' || r.intencion !== 'capital') return r;
+        const propias = lineas.filter((l) => l.includes(r.fecha));
+        return declaraCapitalExpreso(propias.length > 0 ? propias.join('\n') : ctx.texto) ? r : { ...r, intencion: null };
+      }) };
+    }
+    return a;
+  }
+
   private async resolverYEjecutar(estado: EstadoAccion, chats: ChatsRegistrados): Promise<void> {
-    const salida = await resolverAccion(estado.intencion, estado.autor, this.d.catalogo, estado.overrides);
+    const salida = await resolverAccion(estado.intencion, estado.autor, this.d.catalogo, estado.overrides, this.cfg.exigirSabor);
     if (!salida.ok) {
       await this.preguntar(estado, salida.pregunta, chats);
       return;
@@ -462,7 +654,7 @@ export class AgenteTelegram {
         await this.responder(estado.autor, chats, P.ayuda());
         return;
       }
-      const resp = await this.d.negocio.consultar(intencion, a.resoluciones, estado.autor);
+      const resp = await this.d.negocio.consultar(intencion, a.resoluciones, estado.autor, this.d.reloj());
       await this.responder(estado.autor, chats, P.consulta(resp));
       return;
     }
@@ -477,12 +669,32 @@ export class AgenteTelegram {
       return;
     }
 
+    if (intencion.tipo === 'pedido' && datoFaltante(intencion) !== null) {
+      await this.responder(estado.autor, chats, P.faltaDato(datoFaltante(intencion)!));
+      return;
+    }
+
+    if (this.cfg.confirmarMovimientos && exigeConfirmacion(intencion.tipo) && !estado.vistoBueno) {
+      await this.pedirConfirmacion(estado, a, chats);
+      return;
+    }
+    if (this.cfg.confirmarMovimientos && exigeConfirmacion(intencion.tipo) && confirmacionDe(intencion.tipo) === 'reforzada' && !estado.refuerzo) {
+      if (intencion.tipo === 'acta_firma' && estado.confirmadoPor !== estado.autor.persona) {
+        await this.responder(estado.autor, chats, P.rechazo('La firma del acta es personal: la da quien la pide, desde su propio Telegram. No firme nada.'));
+        return;
+      }
+      await this.pedirRefuerzo(estado, chats);
+      return;
+    }
+
     const r = await this.d.negocio.ejecutar(a, {
       autor: estado.autor,
       claveIdem: estado.claveIdem,
       origen: estado.origen,
       ahora: this.d.reloj(),
       confirmado: estado.confirmado,
+      efectoHash: estado.efectoHash,
+      tokenBoton: estado.tokenConfirmacion,
     });
 
     switch (r.tipo) {
@@ -493,7 +705,7 @@ export class AgenteTelegram {
           ejecutadoEn: r.ejecutadoEn.toISOString(),
           claveIdem: `${estado.claveIdem}:deshacer`,
         } satisfies PayloadDeshacer);
-        await this.com.aGrupo(chats, P.ecoEjecutado(r, estado.autor), { botones: [[boton]] });
+        await this.com.aGrupo(chats, P.ecoEjecutado(r, estado.autor, estado.confirmadoPor), { botones: [[boton]] });
         return;
       }
       case 'pregunta': {
@@ -509,6 +721,86 @@ export class AgenteTelegram {
         await this.responder(estado.autor, chats, P.rechazo(r.texto));
         return;
     }
+  }
+
+  // ------------------------------------------------------------------ resumen y confirmacion explicita
+
+  /** Muestra el resumen del movimiento y espera el Confirmar de un socio. Nada se registra antes. Si falta un dato, pregunta. */
+  private async pedirConfirmacion(estado: EstadoAccion, a: AccionResuelta, chats: ChatsRegistrados): Promise<void> {
+    const falta = datoFaltante(a.intencion);
+    if (falta !== null) {
+      const opciones = opcionesFaltante(a.intencion);
+      if (opciones === null) {
+        await this.responder(estado.autor, chats, P.faltaDato(falta));
+        return;
+      }
+      // Estado de conversacion: las opciones viajan en tokens de un solo uso con expiracion; al elegir una se completa la accion y sigue el resumen.
+      const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
+      const exclusivo = `falta:${estado.claveIdem}`;
+      const botones: BotonEnLinea[][] = [];
+      for (const o of opciones) {
+        botones.push([await this.boton1(o.texto, 'completar', ['socio'], chats.grupoSocios, caduca, exclusivo, { ...estado, intencion: o.parche(a.intencion) } satisfies EstadoAccion)]);
+      }
+      botones.push([await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null)]);
+      await this.com.aGrupo(chats, P.faltaDatoConOpciones(falta), { botones });
+      return;
+    }
+    if (a.intencion.tipo === 'acta_firma' && estado.confirmadoPor !== null && estado.confirmadoPor !== estado.autor.persona) {
+      await this.responder(estado.autor, chats, P.rechazo('La firma del acta es personal: la da quien la pide, desde su propio Telegram. No firme nada.'));
+      return;
+    }
+    const ctx: ContextoEjecucion = { autor: estado.autor, claveIdem: estado.claveIdem, origen: estado.origen, ahora: this.d.reloj(), confirmado: estado.confirmado };
+    let efecto: Extract<ResultadoSimulacion, { tipo: 'simulado' }> | null = null;
+    if (this.d.negocio.simular) {
+      const sim = await this.d.negocio.simular(a, ctx);
+      if (sim.tipo === 'rechazado') {
+        await this.responder(estado.autor, chats, P.rechazo(sim.texto));
+        return;
+      }
+      if (sim.tipo === 'pregunta') {
+        const si = await this.boton1('Si, continuar', 'confirmar_accion', ['socio'], chats.grupoSocios, this.mas(this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, { ...estado, confirmado: true } satisfies EstadoAccion);
+        const no = await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, this.mas(this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, null);
+        await this.com.aGrupo(chats, P.preguntaNegocio(sim.texto, sim.cifras), { botones: [[si, no]] });
+        return;
+      }
+      efecto = sim;
+    }
+    const [clientes, modelos] = await Promise.all([this.d.catalogo.clientes(), this.d.catalogo.modelos()]);
+    const nombreDe = (lista: readonly { id: string; nombre: string }[], id: string | null): string | null => (id === null ? null : (lista.find((x) => x.id === id)?.nombre ?? null));
+    const lineas = a.resoluciones.lineas.map((l) => nombreDe(modelos, l.modeloId) ?? 'modelo');
+    const horas = this.cfg.caducaPreguntaHoras;
+    const caduca = this.mas(horas * 3_600_000);
+    const exclusivo = `res:${estado.claveIdem}`;
+    // El hash del efecto que se le muestra viaja en el boton: si al ejecutar el efecto real es otro, la base aborta.
+    const si = await this.boton1('Confirmar', 'confirmar_resumen', ['socio'], chats.grupoSocios, caduca, exclusivo, { ...estado, vistoBueno: true, efectoHash: efecto?.efectoHash ?? null } satisfies EstadoAccion);
+    const no = await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null);
+    const clientesLote = a.resoluciones.clientesLote;
+    await this.com.aGrupo(
+      chats,
+      P.resumenConfirmacion(a.intencion, {
+        autor: estado.autor,
+        cliente: nombreDe(clientes, a.resoluciones.clienteId),
+        proveedor: a.resoluciones.proveedorId,
+        lineas,
+        horas,
+        efecto,
+        reversa: CATALOGO_INTENCIONES[a.intencion.tipo].reversa,
+        reforzada: confirmacionDe(a.intencion.tipo) === 'reforzada',
+        modelo: nombreDe(modelos, a.resoluciones.modeloId),
+        clientesLote: clientesLote === undefined ? null : Object.fromEntries(Object.entries(clientesLote).map(([k, v]) => [k, nombreDe(clientes, v) ?? 'cliente'])),
+      }),
+      { botones: [[si, no]] },
+    );
+  }
+
+  /** Segundo paso de las acciones que no se deshacen por Telegram: dice con todas sus letras que es irreversible y pide otro si. */
+  private async pedirRefuerzo(estado: EstadoAccion, chats: ChatsRegistrados): Promise<void> {
+    const reversa = CATALOGO_INTENCIONES[estado.intencion.tipo].reversa;
+    const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
+    const exclusivo = `ref:${estado.claveIdem}`;
+    const si = await this.boton1('Si, estoy seguro', 'confirmar_refuerzo', ['socio'], chats.grupoSocios, caduca, exclusivo, { ...estado, refuerzo: true } satisfies EstadoAccion);
+    const no = await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null);
+    await this.com.aGrupo(chats, P.refuerzo(estado.intencion.tipo, reversa), { botones: [[si, no]] });
   }
 
   // ------------------------------------------------------------------ preguntas de aclaracion
@@ -571,7 +863,7 @@ export class AgenteTelegram {
     const chatId = cb.message.chat.id;
     const messageId = cb.message.message_id;
     const chats = await this.d.almacen.chats();
-    const res = await this.d.tokens.consumir({ token: cb.data, rol: miembro.rol, chatId, ahora: this.d.reloj() });
+    const res = await this.d.tokens.consumir({ token: cb.data, rol: miembro.rol, chatId, ahora: this.d.reloj(), usuarioId: miembro.telegramUserId });
 
     if (res.estado !== 'ok') {
       const textos: Record<typeof res.estado, string> = {
@@ -589,14 +881,14 @@ export class AgenteTelegram {
     }
 
     await this.d.telegram.responderCallback(cb.id, 'Listo.', false);
-    await this.accionDeBoton(res.accion, res.payload, { miembro, chats, chatId, messageId, callbackId: cb.id });
+    await this.accionDeBoton(res.accion, res.payload, { miembro, chats, chatId, messageId, callbackId: cb.id, token: cb.data });
     return { estado: 'boton', resultado: res.accion };
   }
 
   private async accionDeBoton(
     accion: AccionBoton,
     payload: unknown,
-    ctx: { miembro: Miembro; chats: ChatsRegistrados; chatId: number; messageId: number; callbackId: string },
+    ctx: { miembro: Miembro; chats: ChatsRegistrados; chatId: number; messageId: number; callbackId: string; token: string },
   ): Promise<void> {
     const { miembro, chats } = ctx;
     switch (accion) {
@@ -612,8 +904,29 @@ export class AgenteTelegram {
         await this.resolverYEjecutar({ ...p.estado, overrides: { ...p.estado.overrides, [p.clave]: p.opcionId } }, chats);
         return;
       }
+      case 'confirmar_resumen': {
+        const e = payload as EstadoAccion;
+        if (!(await this.confirmaQuienDebe(e, miembro, chats, ctx, 'resumen'))) return;
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple(`Confirmado por ${P.nombrePersona(miembro.persona)}. Registrando.`));
+        await this.resolverYEjecutar({ ...e, vistoBueno: true, confirmadoPor: miembro.persona }, chats);
+        return;
+      }
+      case 'confirmar_refuerzo': {
+        const e = payload as EstadoAccion;
+        if (!(await this.confirmaQuienDebe(e, miembro, chats, ctx, 'refuerzo'))) return;
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple(`Confirmado de nuevo por ${P.nombrePersona(miembro.persona)}. Registrando.`));
+        await this.resolverYEjecutar({ ...e, refuerzo: true, confirmadoPor: miembro.persona, tokenConfirmacion: ctx.token }, chats);
+        return;
+      }
+      case 'completar': {
+        const e = payload as EstadoAccion;
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Dato completado.'));
+        await this.resolverYEjecutar(e, chats);
+        return;
+      }
       case 'confirmar_accion': {
         const e = payload as EstadoAccion;
+        if (!(await this.confirmaQuienDebe(e, miembro, chats, ctx, 'pregunta'))) return;
         await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Confirmado.'));
         await this.resolverYEjecutar({ ...e, confirmado: true }, chats);
         return;
@@ -650,6 +963,35 @@ export class AgenteTelegram {
         return;
       }
     }
+  }
+
+  /**
+   * Aplica SEGUNDO_SOCIO_OBLIGATORIO y "el autor confirma lo suyo". Si quien pulso no es quien debe, no se registra nada y se vuelve a mostrar la tarjeta
+   * del mismo paso (el boton pulsado ya se gasto), asi que el socio correcto puede confirmar con una tarjeta nueva.
+   */
+  private async confirmaQuienDebe(
+    e: EstadoAccion,
+    miembro: Miembro,
+    chats: ChatsRegistrados,
+    ctx: { chatId: number; messageId: number },
+    paso: 'resumen' | 'refuerzo' | 'pregunta',
+  ): Promise<boolean> {
+    if (e.autor.rol !== 'socio') return true;
+    const otroSocio = paso === 'refuerzo' && SEGUNDO_SOCIO_OBLIGATORIO.has(e.intencion.tipo);
+    const esAutor = miembro.persona === e.autor.persona;
+    if (otroSocio ? !esAutor : esAutor) return true;
+    await this.d.almacen.registrarEvento({ tipo: 'boton_no_autorizado', miembro: miembro.telegramUserId, detalle: otroSocio ? 'refuerzo_requiere_otro_socio' : 'confirma_el_autor' });
+    await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Esa tarjeta no la puede confirmar quien la pulso.'));
+    await this.responder(
+      miembro,
+      chats,
+      P.rechazo(otroSocio ? `Este movimiento lo debe confirmar el otro socio, no ${P.nombrePersona(e.autor.persona)}.` : `Lo pidio ${P.nombrePersona(e.autor.persona)}: lo confirma el. Te mando la tarjeta otra vez.`),
+    );
+    // Se reinicia el paso: la tarjeta nueva la confirma quien corresponde.
+    if (paso === 'resumen') await this.resolverYEjecutar({ ...e, vistoBueno: false, efectoHash: null }, chats);
+    else if (paso === 'refuerzo') await this.resolverYEjecutar({ ...e, refuerzo: false }, chats);
+    else await this.resolverYEjecutar({ ...e, confirmado: false }, chats);
+    return false;
   }
 
   // ------------------------------------------------------------------ deshacer

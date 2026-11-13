@@ -28,6 +28,7 @@ export interface EventoAgente {
     | 'modo_sin_ia'
     | 'omar_fuera_de_alcance'
     | 'respuesta_bloqueada'
+    | 'limite_frecuencia'
     | 'error_llm'
     | 'validacion_fallida';
   miembro: number | null;
@@ -49,6 +50,8 @@ export interface AlmacenAgente {
   corrida(clave: string): Promise<unknown | null>;
   guardarCorrida(clave: string, resultado: unknown): Promise<void>;
   contarNoProcesado(): Promise<void>;
+  /** Mensajes reclamados en ese chat en los ultimos `segundos` (limite de frecuencia). */
+  mensajesRecientes?(chatId: number, segundos: number): Promise<number>;
   registrarEvento(evento: EventoAgente): Promise<void>;
 }
 
@@ -146,6 +149,9 @@ export type AccionBoton =
   | 'rechazar_toma'
   | 'aclarar'
   | 'confirmar_accion'
+  | 'confirmar_resumen'
+  | 'confirmar_refuerzo'
+  | 'completar'
   | 'cancelar'
   | 'otro';
 
@@ -174,7 +180,7 @@ export interface AlmacenTokens {
    * Orden de validacion: (1) rol del que pulsa; (2) chat registrado del token; (3) caducidad; (4) un solo uso.
    * Un pulsador no autorizado NO consume el token.
    */
-  consumir(entrada: { token: string; rol: RolMiembro; chatId: number; ahora: Date }): Promise<ResultadoConsumo>;
+  consumir(entrada: { token: string; rol: RolMiembro; chatId: number; ahora: Date; /** Id de Telegram de quien pulsa: la base lo guarda (la firma del acta exige el boton de ese socio). */ usuarioId?: number }): Promise<ResultadoConsumo>;
 }
 
 // ---------------------------------------------------------------- catalogo (solo lectura) y negocio (lo que calcula el servidor)
@@ -184,6 +190,8 @@ export interface CatalogoAgente {
   modelos(): Promise<EntradaCatalogo[]>;
   /** Sabores EN EXISTENCIA de un modelo. */
   saboresEnExistencia(modeloId: string): Promise<EntradaCatalogo[]>;
+  /** Todos los sabores con sku del modelo (compras, recepciones y conteos). Opcional: sin el, se usan los de existencia. */
+  saboresDe?(modeloId: string): Promise<EntradaCatalogo[]>;
 }
 
 /** Ids resueltos por el codigo para una intencion de escritura. */
@@ -194,6 +202,8 @@ export interface Resoluciones {
   lineas: Array<{ modeloId: string; saborId: string | null }>;
   /** Para consultas: id de modelo ya resuelto. */
   modeloId: string | null;
+  /** Lote historico: cliente resuelto por posicion de renglon. */
+  clientesLote?: Record<string, string>;
 }
 
 export interface AccionResuelta {
@@ -209,6 +219,10 @@ export interface ContextoEjecucion {
   ahora: Date;
   /** El socio ya contesto "si" a la pregunta del servidor (precio fuera de tabulador, etc.). */
   confirmado: boolean;
+  /** Hash del efecto que mostro la vista previa: la base aborta si el efecto real ya es otro (precio, tipo de cambio, existencia). */
+  efectoHash?: string | null;
+  /** Boton "Si, estoy seguro" consumido por el autor (la firma del acta lo exige en la base). */
+  tokenBoton?: string | null;
 }
 
 export type MotivoPreguntaNegocio =
@@ -246,6 +260,11 @@ export interface RespuestaConsulta {
   lineas: CifraServidor[];
 }
 
+/**
+ * B1: HOY `dependenciasDe` es un stub que devuelve 0 (NegocioAgenteDb): el agente NO calcula dependencias de un folio. La proteccion real vive en la base:
+ * cada anulacion (operacion.anular_*, cancelar_pedido, reversar_evento) rechaza lo que tiene dependientes con un motivo en espanol, y agente.deshacer solo
+ * acepta los tipos con reversa directa. Lo que el stub si impide es nada: la unica barrera del agente es la ventana de 10 minutos y la politica de quien deshace.
+ */
 export interface DependenciasDeFolio {
   cantidad: number;
   descripcion: CifraServidor[];
@@ -263,9 +282,24 @@ export interface TomaCaducada {
   lineas: CifraServidor[];
 }
 
+/** Lo que dejo (o dejaria) la base en operacion.aportacion_socio: la tarjeta lo LEE de aqui, nunca lo supone. 'capital' | 'reembolsable'. */
+export interface ClasificacionReal {
+  clasificacion: string;
+  montoCent: number;
+  socio: string;
+}
+
+/** Efecto que calcula el servidor al simular una escritura (se revierte siempre). */
+export type ResultadoSimulacion =
+  | { tipo: 'simulado'; lineas: CifraServidor[]; advertencias: string[]; cuadra: boolean; rojas: string[]; efectoHash?: string | null; clasificaciones?: ClasificacionReal[] }
+  | { tipo: 'pregunta'; motivo: MotivoPreguntaNegocio; texto: string; cifras: CifraServidor[] }
+  | { tipo: 'rechazado'; codigo: string; texto: string };
+
 export interface NegocioAgente {
+  /** Opcional: el negocio simulado de las pruebas unitarias no lo implementa. */
+  simular?(a: AccionResuelta, ctx: ContextoEjecucion): Promise<ResultadoSimulacion>;
   ejecutar(a: AccionResuelta, ctx: ContextoEjecucion): Promise<ResultadoNegocio>;
-  consultar(c: IConsulta, r: Resoluciones, autor: Miembro): Promise<RespuestaConsulta>;
+  consultar(c: IConsulta, r: Resoluciones, autor: Miembro, ahora: Date): Promise<RespuestaConsulta>;
   /** Ultimo hecho aplicado por el autor, o el folio dado. */
   localizarParaDeshacer(autor: Miembro, folio: string | null): Promise<{ folio: string; ejecutadoEn: Date } | null>;
   dependenciasDe(folio: string): Promise<DependenciasDeFolio>;

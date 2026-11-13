@@ -112,7 +112,8 @@ describe('webhook de Telegram contra la base', () => {
     respuesta([{ tipo: 'gasto', gasto: 'uber', monto_centavos: 9000, pagado_por: 'javier', descripcion: null, fuente_cita: 'uber 90' }]),
     respuesta([{ tipo: 'toma_omar', lineas: [{ modelo_texto: 'Int Modelo 10K', sabor_texto: 'Sandia', piezas: 3 }], fuente_cita: '3 sandia' }]),
   ], 150_000n);
-  const deps = (): DepsProduccion => ({ sql, telegram: tg, llm, ahora: () => new Date(), entorno: { TELEGRAM_WEBHOOK_SECRET: SECRETO } });
+  // Esta bateria ensaya el camino directo (eco + Deshacer); el modo de confirmacion explicita de los socios se prueba en telegram_e2e.test.ts.
+  const deps = (): DepsProduccion => ({ sql, telegram: tg, llm, ahora: () => new Date(), entorno: { TELEGRAM_WEBHOOK_SECRET: SECRETO }, configAgente: { confirmarMovimientos: false, limiteMensajesPorMinuto: 0 } });
   const enviar = (u: unknown, secreto: string | null = SECRETO) => webhookTelegram2(deps(), secreto, JSON.stringify(u));
   const webhookTelegram2 = async (d: DepsProduccion, s: string | null, cuerpo: string) => (await import('@/composicion/produccion')).procesarWebhook(d, s, cuerpo);
 
@@ -150,7 +151,7 @@ describe('webhook de Telegram contra la base', () => {
   it('una indicacion de Javier en el grupo se ejecuta directo, con canal telegram, eco y reserva de IA liquidada', async () => {
     const antes = (await sql<{ n: number }>("select count(*)::int as n from operacion.evento where canal = 'telegram'"))[0]!.n;
     const r = await enviar(updateTexto(cont, { de: IDS.javier, chat: IDS.grupo, texto: 'uber 90 pago javier', updateId: 9001 }));
-    expect(r).toEqual({ status: 200, detalle: 'procesado' });
+    expect(r).toEqual({ status: 200, detalle: 'procesado' }); console.log('MSG', JSON.stringify(tg.aChat(IDS.grupo).map((m) => m.texto)));
     expect((await sql<{ n: number }>("select count(*)::int as n from operacion.evento where canal = 'telegram'"))[0]!.n).toBeGreaterThan(antes);
     expect((await sql<{ n: number }>("select count(*)::int as n from operacion.gasto where categoria = 'uber' and monto_cent = 9000 and evento_id in (select id from operacion.evento where canal = 'telegram')"))[0]!.n).toBe(1);
     expect(tg.aChat(IDS.grupo).some((m) => m.texto.includes('$90.00'))).toBe(true);
