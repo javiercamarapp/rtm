@@ -76,6 +76,7 @@ export default async function PaginaDiario({ searchParams }: { searchParams: Pro
                   descripcion={`${etiquetaFecha(a.fecha_neg)}${a.fecha_contable !== a.fecha_neg ? ` · contable ${etiquetaFecha(a.fecha_contable)}` : ''}${a.periodo_afectado ? ` · ajuste del periodo ${etiquetaFecha(a.periodo_afectado)}` : ''} · ${a.autor ?? a.canal} · evento ${a.evento}${a.mensaje_origen ? ` · «${a.mensaje_origen}»` : ''}${a.reversa_de ? ` · reversa de ${a.reversa_de}` : ''}${a.reversado_por ? ` · reversado por ${a.reversado_por}` : ''}`}
                   acciones={<><Estado tono="ok">Total {m(a.total_cent)}</Estado><BotonVerificar asiento={a.id} /></>}
                 >
+                  <div className="a3-diario-lineas">
                   <DataTable
                     etiqueta={`Líneas del asiento ${a.folio}`}
                     densidad="libro" plana
@@ -89,6 +90,7 @@ export default async function PaginaDiario({ searchParams }: { searchParams: Pro
                       { id: 'h', titulo: 'Haber', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (l) => (l.haber_cent > 0n ? m(l.haber_cent) : '') },
                     ]}
                   />
+                  </div>
                   <div className="a3-pie-tarjeta"><p className="a3-pie rtm-mono" aria-label="Huella del asiento">hash {a.hash.slice(0, 16)}…</p></div>
                 </Tarjeta>
               </div>
