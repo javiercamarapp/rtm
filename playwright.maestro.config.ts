@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 const PUERTO = process.env.E2E_PUERTO ?? '3290';
 export default defineConfig({
   testDir: 'test/e2e/maestro',
-  testMatch: /.*\.spec\.ts/,
+  testMatch: process.env.MAESTRO_SPEC ? new RegExp(process.env.MAESTRO_SPEC) : /.*\.spec\.ts/,
   fullyParallel: false, workers: 1, retries: 0, timeout: 3_000_000, reporter: [['list']],
   use: { baseURL: `http://127.0.0.1:${PUERTO}`, trace: 'off' },
   projects: [
