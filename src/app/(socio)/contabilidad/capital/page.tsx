@@ -115,7 +115,7 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
               <p className="rtm-capital-nota">Reinvertida = acta de corte más lo respaldado por utilidad en saldo a favor con proveedores (calculado: lo que excede la utilidad es anticipo, no utilidad{a.anticipo_proveedor_cent > 0n ? `; hoy ${m(a.anticipo_proveedor_cent)}` : ''}).</p>
             </Tarjeta>
 
-            <Rejilla dividir="8-4" alinear="inicio">
+            <Rejilla dividir="12" alinear="inicio">
               <Tarjeta plana className="rtm-a2-tabla" titulo="Fondos de la sociedad en poder de socios" descripcion={`Al ${fecha(fin.fin)}: cada renglón con su motivo`}>
                 {hayFondos ? (
                   <DataTable etiqueta="Fondos de la sociedad en poder de socios" clave={(x) => x.clave} filas={fondosFilas} densidad="densa" plana
