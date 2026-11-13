@@ -34,6 +34,7 @@ const SECCIONES = [
   { href: '/reportes', etiqueta: 'Reportes', icono: <IconoReportes />, prefetch: false },
   { href: '/costos', etiqueta: 'Costos del sistema', icono: <IconoCostos />, prefetch: false },
   { href: '/avisos', etiqueta: 'Avisos', icono: <IconoAviso /> },
+  { href: '/cuentas', etiqueta: 'Cuentas', icono: <IconoSocios /> },
 ] as const;
 
 function indiceActivo(ruta: string): number {
