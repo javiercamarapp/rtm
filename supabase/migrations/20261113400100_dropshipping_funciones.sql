@@ -135,8 +135,7 @@ begin
     insert into operacion.pedido_credito (pedido_id, tasa_semanal_bp, semanas, fecha_pago_pactada, modo, base_cent, interes_cent, evento_id) values (v_ped, v_tasa, v_sem, v_fp, v_modo, v_base, v_interes, v_ev);
   end if;
   if v_dest is not null then
-    insert into entrega.destinatario (pedido_id, nombre, calle_numero, colonia, cp, municipio, estado, telefono, correo, referencias)
-      values (v_ped, v_dest->>'nombre', v_dest->>'calle_numero', v_dest->>'colonia', v_dest->>'cp', v_dest->>'municipio', v_dest->>'estado', v_dest->>'telefono', v_dest->>'correo', v_dest->>'referencias');
+    perform entrega.guardar(v_ped, v_dest);
   end if;
   v_venta_est := v_base + coalesce(p_envio_cent, 0) + v_interes;
   v_res := v_res || jsonb_build_object('origen', p_origen, 'origen_surtido', 'dropshipping', 'tipo_venta', p_tipo_venta, 'costo_estimado_cent', v_costo_est, 'venta_estimada_cent', v_venta_est,
@@ -159,10 +158,7 @@ begin
   if not found or not exists (select 1 from operacion.pedido_ds where pedido_id = p_pedido) then raise exception 'pedido de dropshipping desconocido' using errcode = '22023'; end if;
   if pe.estado in ('cancelado', 'anulado') then raise exception 'el pedido ya no esta vigente' using errcode = 'P0428'; end if;
   v_d := entrega.normalizar(p_destinatario);
-  insert into entrega.destinatario (pedido_id, nombre, calle_numero, colonia, cp, municipio, estado, telefono, correo, referencias)
-    values (p_pedido, v_d->>'nombre', v_d->>'calle_numero', v_d->>'colonia', v_d->>'cp', v_d->>'municipio', v_d->>'estado', v_d->>'telefono', v_d->>'correo', v_d->>'referencias')
-  on conflict (pedido_id) do update set nombre = excluded.nombre, calle_numero = excluded.calle_numero, colonia = excluded.colonia, cp = excluded.cp, municipio = excluded.municipio,
-    estado = excluded.estado, telefono = excluded.telefono, correo = excluded.correo, referencias = excluded.referencias, actualizado_at = now();
+  perform entrega.guardar(p_pedido, v_d);
   v_ev := operacion.crear_evento('destinatario_capturado', negocio.hoy(), p_clave_idem || ':ev', jsonb_build_object('pedido', pe.folio));
   v_res := jsonb_build_object('pedido_id', p_pedido, 'tiene_destinatario', true);
   perform seguridad.terminar_operacion(p_clave_idem, v_res);
@@ -411,7 +407,7 @@ as $$
 declare d entrega.destinatario;
 begin
   perform seguridad.exigir_rol(array['socio']);
-  select * into d from entrega.destinatario where pedido_id = p_pedido;
+  select l.* into d from entrega.leer(p_pedido) l where l.pedido_id is not null;
   if not found then return null; end if;
   return jsonb_build_object('pedido_id', d.pedido_id, 'nombre', d.nombre, 'calle_numero', d.calle_numero, 'colonia', d.colonia, 'cp', d.cp, 'municipio', d.municipio, 'estado', d.estado,
     'telefono_mascara', entrega.mascara_telefono(d.telefono), 'correo_mascara', entrega.mascara_correo(d.correo), 'tiene_telefono', d.telefono <> '', 'tiene_correo', d.correo <> '', 'referencias', d.referencias);
@@ -425,7 +421,7 @@ declare d entrega.destinatario;
 begin
   perform seguridad.exigir_rol(array['socio']);
   if p_campo not in ('telefono', 'correo') then raise exception 'campo invalido' using errcode = '22023'; end if;
-  select * into d from entrega.destinatario where pedido_id = p_pedido;
+  select l.* into d from entrega.leer(p_pedido) l where l.pedido_id is not null;
   if not found then raise exception 'el pedido no tiene destinatario' using errcode = 'P0404'; end if;
   insert into entrega.revelacion (pedido_id, accion, actor, motivo) values (p_pedido, p_campo, auth.uid(), nullif(btrim(p_motivo), ''));
   return jsonb_build_object('pedido_id', p_pedido, 'campo', p_campo, 'valor', case p_campo when 'telefono' then d.telefono else d.correo end);
@@ -441,7 +437,7 @@ begin
   select * into pe from operacion.pedido where id = p_pedido;
   select * into pd from operacion.pedido_ds where pedido_id = p_pedido;
   if pe.id is null or pd.pedido_id is null then raise exception 'pedido de dropshipping desconocido' using errcode = '22023'; end if;
-  select * into d from entrega.destinatario where pedido_id = p_pedido;
+  select l.* into d from entrega.leer(p_pedido) l where l.pedido_id is not null;
   v_grupos := operacion.ds_grupos_pedido(p_pedido);
   if found then
     v_dest := jsonb_build_object('nombre', d.nombre, 'calle_numero', d.calle_numero, 'colonia', d.colonia, 'cp', d.cp, 'municipio', d.municipio, 'estado', d.estado,

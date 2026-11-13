@@ -118,20 +118,137 @@ revoke all on all sequences in schema operacion from public, anon, authenticated
 create schema if not exists entrega;
 revoke all on schema entrega from public, anon, authenticated;
 
+-- CIFRADO EN REPOSO (decision del dueno, 13-nov): los datos del destinatario viven en `datos_cifrados` (pgcrypto, AES-256, cifrado a nivel de columna); las columnas en claro quedan
+-- vacias. La llave NO vive en la base ni en el repo: la entrega el servidor en cada llamada (cabecera `x-rtm-llave`, variable de entorno privada del servidor). Sin llave o con llave
+-- incorrecta, leer y escribir FALLAN CERRADOS (nunca texto plano). Las columnas en claro solo existen para poder migrar filas anteriores (entrega.cifrar_pendientes).
 create table entrega.destinatario (
   pedido_id bigint primary key references operacion.pedido (id),
-  nombre text not null check (length(btrim(nombre)) between 2 and 120),
-  calle_numero text not null check (length(btrim(calle_numero)) between 3 and 160),
-  colonia text not null default '' check (length(colonia) <= 120),
-  cp text not null check (cp ~ '^[0-9]{5}$'),
-  municipio text not null check (length(btrim(municipio)) between 2 and 120),
-  estado text not null check (length(btrim(estado)) between 2 and 80),
-  telefono text not null default '' check (length(telefono) <= 30),
-  correo text not null default '' check (length(correo) <= 160),
-  referencias text not null default '' check (length(referencias) <= 400),
+  datos_cifrados bytea,
+  llave_version int not null default 1 check (llave_version >= 1),
+  nombre text check (nombre is null or length(btrim(nombre)) between 2 and 120),
+  calle_numero text check (calle_numero is null or length(btrim(calle_numero)) between 3 and 160),
+  colonia text check (colonia is null or length(colonia) <= 120),
+  cp text check (cp is null or cp ~ '^[0-9]{5}$'),
+  municipio text check (municipio is null or length(btrim(municipio)) between 2 and 120),
+  estado text check (estado is null or length(btrim(estado)) between 2 and 80),
+  telefono text check (telefono is null or length(telefono) <= 30),
+  correo text check (correo is null or length(correo) <= 160),
+  referencias text check (referencias is null or length(referencias) <= 400),
   creado_at timestamptz not null default now(),
-  actualizado_at timestamptz not null default now()
+  actualizado_at timestamptz not null default now(),
+  check (datos_cifrados is not null or nombre is not null),
+  check (datos_cifrados is null or (nombre is null and calle_numero is null and colonia is null and cp is null and municipio is null and estado is null and telefono is null and correo is null and referencias is null))
 );
+
+-- Llave (nunca guardada): cabecera de la peticion `x-rtm-llave` (y `x-rtm-llave-anterior` mientras se rota) o, para tareas de sistema y pruebas, el ajuste de transaccion
+-- `rtm.llave_destinatario` (y `rtm.llave_destinatario_anterior`). `x-rtm-llave-version` (opcional, entero) numera la llave vigente.
+create function entrega.llave(p_anterior boolean default false) returns text
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v text; v_h json;
+begin
+  v := nullif(current_setting(case when p_anterior then 'rtm.llave_destinatario_anterior' else 'rtm.llave_destinatario' end, true), '');
+  if v is null then
+    begin v_h := nullif(current_setting('request.headers', true), '')::json; exception when others then v_h := null; end;
+    v := nullif(v_h ->> case when p_anterior then 'x-rtm-llave-anterior' else 'x-rtm-llave' end, '');
+  end if;
+  if v is null and not p_anterior then raise exception 'la llave de cifrado de los destinatarios no esta disponible: la operacion falla cerrada' using errcode = 'P0450'; end if;
+  if v is not null and length(v) < 32 then raise exception 'la llave de cifrado de los destinatarios es demasiado corta (minimo 32 caracteres)' using errcode = 'P0450'; end if;
+  return v;
+end $$;
+
+create function entrega.llave_version() returns int
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v text; v_h json;
+begin
+  v := nullif(current_setting('rtm.llave_destinatario_version', true), '');
+  if v is null then begin v_h := nullif(current_setting('request.headers', true), '')::json; exception when others then v_h := null; end; v := nullif(v_h ->> 'x-rtm-llave-version', ''); end if;
+  return coalesce(v::int, 1);
+exception when invalid_text_representation then return 1;
+end $$;
+
+create function entrega.cifrar(p jsonb) returns bytea
+language sql volatile security definer set search_path = ''
+as $$ select extensions.pgp_sym_encrypt(p::text, entrega.llave(), 'cipher-algo=aes256, compress-algo=0') $$;
+
+-- Descifra con la llave vigente y, si falla, con la anterior. Sin llave o llave incorrecta: error, nunca texto plano.
+create function entrega.descifrar(p bytea) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_ant text;
+begin
+  begin
+    return extensions.pgp_sym_decrypt(p, entrega.llave())::jsonb;
+  exception when sqlstate 'P0450' then raise;
+            when others then null;
+  end;
+  v_ant := entrega.llave(true);
+  if v_ant is not null then
+    begin return extensions.pgp_sym_decrypt(p, v_ant)::jsonb; exception when others then null; end;
+  end if;
+  raise exception 'no se pudo descifrar el destinatario: llave incorrecta o datos alterados' using errcode = 'P0451';
+end $$;
+
+-- Fila del destinatario con sus datos descifrados (solo para las funciones api.ds_*). Fila anterior en claro: se devuelve y queda para entrega.cifrar_pendientes.
+create function entrega.leer(p_pedido bigint) returns entrega.destinatario
+language plpgsql stable security definer set search_path = ''
+as $$
+declare t entrega.destinatario; j jsonb;
+begin
+  select * into t from entrega.destinatario where pedido_id = p_pedido;
+  if not found then return null; end if;
+  if t.datos_cifrados is null then return t; end if;
+  j := entrega.descifrar(t.datos_cifrados);
+  t.nombre := j->>'nombre'; t.calle_numero := j->>'calle_numero'; t.colonia := j->>'colonia'; t.cp := j->>'cp'; t.municipio := j->>'municipio'; t.estado := j->>'estado';
+  t.telefono := j->>'telefono'; t.correo := j->>'correo'; t.referencias := j->>'referencias';
+  return t;
+end $$;
+
+-- Guarda (o reemplaza) el destinatario cifrado. v = objeto ya normalizado por entrega.normalizar.
+create function entrega.guardar(p_pedido bigint, p_datos jsonb) returns void
+language plpgsql volatile security definer set search_path = ''
+as $$
+begin
+  insert into entrega.destinatario (pedido_id, datos_cifrados, llave_version) values (p_pedido, entrega.cifrar(p_datos), entrega.llave_version())
+  on conflict (pedido_id) do update set datos_cifrados = excluded.datos_cifrados, llave_version = excluded.llave_version, actualizado_at = now(),
+    nombre = null, calle_numero = null, colonia = null, cp = null, municipio = null, estado = null, telefono = null, correo = null, referencias = null;
+end $$;
+
+-- Cifra las filas anteriores que aun estan en claro (idempotente: no toca las ya cifradas). Exige la llave. Devuelve cuantas cifro.
+create function entrega.cifrar_pendientes() returns int
+language plpgsql volatile security definer set search_path = ''
+as $$
+declare t record; n int := 0;
+begin
+  for t in select * from entrega.destinatario where datos_cifrados is null and nombre is not null loop
+    update entrega.destinatario set datos_cifrados = entrega.cifrar(jsonb_build_object('nombre', t.nombre, 'calle_numero', t.calle_numero, 'colonia', coalesce(t.colonia, ''), 'cp', t.cp, 'municipio', t.municipio,
+        'estado', t.estado, 'telefono', coalesce(t.telefono, ''), 'correo', coalesce(t.correo, ''), 'referencias', coalesce(t.referencias, ''))), llave_version = entrega.llave_version(),
+      nombre = null, calle_numero = null, colonia = null, cp = null, municipio = null, estado = null, telefono = null, correo = null, referencias = null, actualizado_at = now()
+    where pedido_id = t.pedido_id;
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+
+-- Rotacion: vuelve a cifrar con la llave vigente lo que esta cifrado con la anterior (o con otra version). Idempotente. Exige la llave vigente y la anterior.
+create function entrega.recifrar() returns int
+language plpgsql volatile security definer set search_path = ''
+as $$
+declare t record; n int := 0; v_ver int := entrega.llave_version(); v_actual text := entrega.llave();
+begin
+  for t in select pedido_id, datos_cifrados from entrega.destinatario where datos_cifrados is not null loop
+    begin
+      perform extensions.pgp_sym_decrypt(t.datos_cifrados, v_actual);
+      update entrega.destinatario set llave_version = v_ver where pedido_id = t.pedido_id and llave_version <> v_ver;
+    exception when others then
+      update entrega.destinatario set datos_cifrados = entrega.cifrar(entrega.descifrar(t.datos_cifrados)), llave_version = v_ver, actualizado_at = now() where pedido_id = t.pedido_id;
+      n := n + 1;
+    end;
+  end loop;
+  return n;
+end $$;
+revoke execute on function entrega.llave(boolean), entrega.llave_version(), entrega.cifrar(jsonb), entrega.descifrar(bytea), entrega.leer(bigint), entrega.guardar(bigint, jsonb), entrega.cifrar_pendientes(), entrega.recifrar() from public, anon, authenticated;
 
 -- Cada vez que un socio revela telefono o correo, o copia la orden con el bloque completo del destinatario, queda registrado (quien, cuando, por que). Solo insercion.
 create table entrega.revelacion (

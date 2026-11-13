@@ -14,6 +14,8 @@ insert into auth.users (id, instance_id, aud, role, email) values
 create function pg_temp.como(p text) returns void language sql as
   $$ select set_config('request.jwt.claim.sub', case $1 when 'Angelo' then '88888888-8888-8888-8888-8888888888a1' when 'Omar' then '88888888-8888-8888-8888-8888888888a3' else '88888888-8888-8888-8888-8888888888a2' end, true) $$;
 select pg_temp.como('Angelo');
+-- Llave de prueba generada aqui (nunca en el repo): el destinatario va cifrado en reposo.
+select set_config('rtm.llave_destinatario', encode(extensions.gen_random_bytes(32), 'base64'), true);
 
 create function pg_temp.fallan() returns text language plpgsql as $$
 declare r text;
