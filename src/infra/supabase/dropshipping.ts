@@ -2,10 +2,12 @@
 import type { FiltroPedidosDs, LectorDropshipping } from '@/aplicacion/dropshipping/puertos';
 import type { Explicacion } from '@/dominio/catalogo/tipos';
 import { centavosABigint } from '@/dominio/operacion/json';
+import { cabecerasLlave } from '@/config/llave_destinatario';
 import { crearClienteServidor } from './cliente-servidor';
 
 async function llamar<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
-  const sb = await crearClienteServidor();
+  // La llave de cifrado de los destinatarios viaja por cabecera solo en la ruta del servidor (nunca al navegador).
+  const sb = await crearClienteServidor(cabecerasLlave());
   const { data, error } = await sb.rpc(fn, args);
   if (error) throw new Error(`${fn}: ${error.message}`);
   return centavosABigint<T>(data);
@@ -49,6 +51,7 @@ export function lectorDropshippingSupabase(): LectorDropshipping {
     menudeo: (socio, f) => llamar('ds_menudeo', { p_socio: socio, p_desde: f.desde ?? null, p_hasta: f.hasta ?? null, p_proveedor: f.proveedor ?? null, p_estado: f.estadoPago ?? null }),
     menudeoPendientes: () => llamar('ds_menudeo_pendientes'),
     fondosEnPoder: (socio) => llamar('ds_fondos_en_poder', { p_socio: socio }),
+    evidencia: (id) => llamar('ds_evidencia', { p_reporte: id }),
     explicar: async (cifra) => aExplicacion(await llamar<ExplicacionCruda>(cifra.startsWith('dsu:') ? 'ds_explicar_utilidad' : cifra.startsWith('dsm:') ? 'ds_explicar_menudeo' : 'ds_explicar', { p_cifra: cifra })),
   };
 }

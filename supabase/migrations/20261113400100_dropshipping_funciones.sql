@@ -296,16 +296,17 @@ end $$;
 
 -- Fila de lista (sin ningun dato del destinatario).
 create function operacion.ds_fila(v operacion.v_ds_pedido) returns jsonb
-language sql immutable set search_path = ''
+language plpgsql stable security definer set search_path = ''
 as $$
-  select jsonb_build_object('pedido_id', v.pedido_id, 'folio', v.folio, 'fecha_neg', v.fecha_neg, 'fecha_envio', v.fecha_envio, 'estado', v.estado, 'origen', v.origen, 'origen_surtido', v.origen_surtido,
+begin
+  return jsonb_build_object('pedido_id', v.pedido_id, 'folio', v.folio, 'fecha_neg', v.fecha_neg, 'fecha_envio', v.fecha_envio, 'estado', v.estado, 'origen', v.origen, 'origen_surtido', v.origen_surtido,
     'proveedor', v.proveedor, 'folio_externo', v.folio_externo, 'tipo_venta', v.tipo_venta, 'cliente_id', v.cliente_id, 'cliente', v.cliente, 'piezas_pedidas', v.piezas_pedidas, 'piezas_surtidas', v.piezas_surtidas,
     'real', v.real, 'venta_cent', v.venta_cent, 'costo_cent', v.costo_cent, 'seguro_cent', v.seguro_cent, 'costo_total_cent', v.costo_total_cent, 'guia_cent', v.guia_cent,
     'margen_producto_cent', v.venta_cent - v.costo_cent - v.seguro_cent, 'margen_cent', v.utilidad_total_cent, 'utilidad_cent', v.utilidad_total_cent, 'utilidad_provisional', v.utilidad_provisional,
     'saldo_cliente_cent', v.saldo_cliente_cent, 'interes_cent', v.interes_cent, 'tasa_semanal_bp', v.tasa_semanal_bp, 'semanas', v.semanas, 'fecha_pago_pactada', v.fecha_pago_pactada, 'modo_interes', v.modo_interes,
     'amortizado_cent', v.amortizado_cent, 'por_pagar_cent', case when v.origen_surtido = 'dropshipping' and v.estado = 'enviado' then greatest(v.costo_cent - v.seguro_cent - v.amortizado_cent, 0) else 0 end,
-    'avisos', v.avisos, 'tiene_destinatario', v.tiene_destinatario)
-$$;
+    'avisos', v.avisos, 'tiene_destinatario', v.tiene_destinatario, 'diferencia_catalogo_cent', operacion.ds_diferencia_pedido(v.pedido_id));
+end $$;
 
 create function api.ds_pedidos(p_origen_surtido text default null, p_proveedor text default null, p_estado text default null, p_cliente_id bigint default null, p_desde date default null,
                                p_hasta date default null, p_busqueda text default null, p_tipo_venta text default null) returns jsonb
@@ -444,7 +445,7 @@ begin
       'telefono', case when p_completo then d.telefono else entrega.mascara_telefono(d.telefono) end, 'correo', case when p_completo then d.correo else entrega.mascara_correo(d.correo) end, 'referencias', d.referencias);
     if p_completo then insert into entrega.revelacion (pedido_id, accion, actor, motivo) values (p_pedido, 'orden', auth.uid(), 'copiar orden para el proveedor'); end if;
   end if;
-  select coalesce(sum(l.piezas_pedidas * operacion.costo_ref_pedido(pe.origen, l.modelo_id, negocio.hoy())), 0)::bigint into v_cost from operacion.pedido_linea l where l.pedido_id = p_pedido;
+  select coalesce(sum(l.piezas_pedidas * operacion.ds_costo_ref_linea(l.id, pe.origen, l.modelo_id, negocio.hoy())), 0)::bigint into v_cost from operacion.pedido_linea l where l.pedido_id = p_pedido;
   return jsonb_build_object('pedido_id', p_pedido, 'folio', pe.folio, 'texto', operacion.texto_orden_proveedor(pe.folio, v_grupos, v_dest), 'grupos', v_grupos,
     'piezas', (select coalesce(sum(piezas_pedidas), 0) from operacion.pedido_linea where pedido_id = p_pedido), 'costo_proveedor_cent', v_cost,
     'incluye_destinatario', v_dest is not null, 'completo', p_completo and v_dest is not null, 'falta_destinatario', v_dest is null);

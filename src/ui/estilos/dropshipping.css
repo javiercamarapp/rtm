@@ -10,3 +10,8 @@
 .rtm-ficha-datos dt { color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); }
 .rtm-ficha-datos dd { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 480px) { .rtm-ficha-datos { grid-template-columns: 1fr; gap: 0; } .rtm-ficha-datos dd { margin-bottom: 8px; } }
+
+/* Fichas desplegables dentro de tablas en tarjeta (movil): el texto largo (referencias, huellas) parte en vez de ensanchar la pagina. */
+.rtm-dt-celda details, .rtm-dt-celda details ul, .rtm-dt-celda details li { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.rtm-lineas-form li { overflow-wrap: anywhere; }
+@media (max-width: 767px) { .rtm-form-fila.rtm-ds-filtros > button { width: 100%; } .rtm-form-fila.rtm-ds-filtros select, .rtm-form-fila.rtm-ds-filtros input { max-width: 100%; } }

@@ -15,7 +15,7 @@ export async function salir(): Promise<void> {
 
 /** "Explicar este numero": cada accion exige sesion de socio antes de tocar la base. */
 const F = '(?:-|\\d{4}-\\d{2}-\\d{2})';
-const CIFRA_DS = new RegExp(`^(?:ds:(?:pedidos|piezas|venta|costo|margen|porcobrar|porpagar):(?:todos|dropshipping|inventario_merida):${F}:${F}|dsu:(?:utilidad|reinvertida|costo|venta):${F}:${F}|dsm:(?:Angelo|Javier):(?:pendiente|pagado|costo|piezas|fondos):${F}:${F}|dsu:resultado:\\d{4}-\\d{2}-\\d{2}:\\d{4}-\\d{2}-\\d{2})$`);
+const CIFRA_DS = new RegExp(`^(?:ds:(?:pedidos|piezas|venta|costo|margen|porcobrar|porpagar):(?:todos|dropshipping|inventario_merida):${F}:${F}|dsu:(?:utilidad|reinvertida|costo|venta):${F}:${F}|dsm:(?:Angelo|Javier):(?:pendiente|pagado|costo|piezas|fondos|reportado):${F}:${F}|dsu:resultado:\\d{4}-\\d{2}-\\d{2}:\\d{4}-\\d{2}-\\d{2})$`);
 
 export async function explicarCifra(cifra: string): Promise<Explicacion> {
   if (CIFRA_DS.test(cifra)) return (await dropshippingDeSocio()).explicar(cifra);

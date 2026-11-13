@@ -37,9 +37,9 @@ test.beforeAll(async () => {
   });
 });
 
-async function sesion(page: Page, ruta: string) {
+async function sesion(page: Page, ruta: string, socio: 'Angelo' | 'Javier' = 'Javier') {
   const correo = correoUnico('ds');
-  await altaUsuario({ correo, socio: 'Javier' });
+  await altaUsuario({ correo, socio });
   await entrarComo(page, correo, ruta);
 }
 async function tema(page: Page, t: 'claro' | 'oscuro') {
@@ -193,7 +193,7 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
   expect(num('0')).toBe(0);
 });
 
-test('el pedido a costo para un socio no genera utilidad y suma a las piezas movidas; Por cobrar y Cuenta de socios', async ({ page }, testInfo) => {
+test('el pedido a costo para un socio no genera utilidad y suma a las piezas movidas; Por cobrar y Cuenta de socios', async ({ page, browser }, testInfo) => {
   await sesion(page, '/dropshipping/nuevo');
   await page.getByTestId('ds-elegir-cliente').selectOption({ label: CLIENTE_B });
   await page.getByTestId('ds-elegir').click();
@@ -243,7 +243,7 @@ test('el pedido a costo para un socio no genera utilidad y suma a las piezas mov
   await page.goto('/menudeo?socio=Angelo');
   await expect(page.getByTestId('menudeo-pendiente')).toContainText('$2,678.70');
   const idCosto = Number((await conDb((c) => c.query("select p.id from operacion.pedido p join operacion.pedido_ds d on d.pedido_id = p.id where d.tipo_venta = 'socio_a_costo' order by p.id desc limit 1"))).rows[0].id);
-  await expect(page.getByTestId(`estado-pago-${idCosto}`)).toContainText('No pagado');
+  await expect(page.getByTestId(`estado-pago-${idCosto}`)).toContainText('Pendiente de pago');
   await page.getByTestId(`renglones-${idCosto}`).locator('summary').click();
   await expect(page.getByTestId(`renglones-${idCosto}`)).toContainText('Fresa');
   await expect(page.getByTestId(`renglones-${idCosto}`)).toContainText('$89.29');
@@ -252,12 +252,45 @@ test('el pedido a costo para un socio no genera utilidad y suma a las piezas mov
   await expect(page.getByTestId('inicio-pedidos-Angelo')).toContainText('$2,678.70');
   await expect(page.getByTestId('inicio-fondos-Angelo')).toContainText('Sin fondos pendientes de entregar');
   await expect(page.getByTestId('inicio-pedidos-Javier')).toContainText('Sin pedidos pendientes');
+
+  // Pago: Angelo (dueno del pedido) avisa un pago parcial SIN evidencia -> Pago reportado; sigue pendiente hasta que Javier confirme
+  const ctxA = await browser.newContext({ viewport: page.viewportSize() ?? undefined, baseURL: testInfo.project.use.baseURL, extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() }, permissions: ['clipboard-read', 'clipboard-write'] });
+  const pa = await ctxA.newPage();
+  await sesion(pa, '/menudeo?socio=Angelo', 'Angelo');
+  await pa.getByTestId(`marcar-pagado-${idCosto}`).click();
+  await pa.getByTestId('menudeo-monto').fill('1000');
+  await pa.getByTestId('menudeo-referencia').fill('CLAVE-SINTETICA-001');
+  await pa.getByTestId('confirmar').click();
+  await expect(pa.getByTestId(`estado-pago-${idCosto}`)).toContainText('Pago reportado');
+  await expect(pa.getByTestId('menudeo-pendiente')).toContainText('$2,678.70');
+  await expect(pa.getByTestId('menudeo-reportado')).toContainText('$1,000.00');
+  await expect(pa.getByTestId(`confirmar-recibido-${idCosto}`)).toHaveCount(0);
+  await page.goto('/');
+  await expect(page.getByTestId('inicio-reportado-Angelo')).toContainText('$1,000.00');
+  // Javier (el otro socio) confirma que recibio: se aplica y el saldo sigue pendiente (parcial)
   await page.goto('/menudeo?socio=Angelo');
-  await page.getByTestId(`pagar-menudeo-${idCosto}`).click();
-  await page.getByTestId('menudeo-via').selectOption('proveedor');
-  await page.getByTestId('confirmar').click();
-  await expect(page.getByTestId(`estado-pago-${idCosto}`)).toContainText('Pagado');
-  await expect(page.getByTestId('menudeo-pendiente')).toContainText('$0.00');
+  await page.getByTestId(`reportes-${idCosto}`).locator('summary').click();
+  await expect(page.getByText('CLAVE-SINTETICA-001')).toBeVisible();
+  await capturar(page, 'menudeo-pago-reportado', testInfo);
+  await page.locator('[data-testid^="confirmar-recibido-"]').first().click();
+  await expect(page.getByTestId(`estado-pago-${idCosto}`)).toContainText('Pendiente de pago');
+  await expect(page.getByTestId('menudeo-pendiente')).toContainText('$1,678.70');
+  // Angelo paga el resto CON evidencia (PNG): basta registrar; queda Pagado y la evidencia lleva huella
+  await pa.goto('/menudeo?socio=Angelo');
+  await pa.getByTestId(`marcar-pagado-${idCosto}`).click();
+  await pa.getByTestId('menudeo-metodo').selectOption('deposito');
+  await pa.getByTestId('menudeo-referencia').fill('FOLIO-DEP-002');
+  await pa.getByTestId('menudeo-evidencia').setInputFiles({ name: 'ticket-sintetico.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64') });
+  await pa.getByTestId('confirmar').click();
+  await expect(pa.getByTestId(`estado-pago-${idCosto}`)).toContainText('Pagado');
+  await expect(pa.getByTestId('menudeo-pendiente')).toContainText('$0.00');
+  await pa.getByTestId(`reportes-${idCosto}`).locator('summary').click();
+  await expect(pa.getByText('ticket-sintetico.png')).toBeVisible();
+  const evid = await conDb((c) => c.query("select sha256, tam_bytes from entrega.evidencia_pago order by id desc limit 1"));
+  expect(String(evid.rows[0].sha256)).toMatch(/^[0-9a-f]{64}$/);
+  await expect(pa.getByText(`huella ${String(evid.rows[0].sha256).slice(0, 10)}`)).toBeVisible();
+  await capturar(pa, 'menudeo-pagado-con-evidencia', testInfo);
+  await ctxA.close();
   await page.goto('/');
   await expect(page.getByTestId('inicio-pedidos-Angelo')).toContainText('Sin pedidos pendientes');
 

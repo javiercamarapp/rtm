@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { defineConfig, devices } from '@playwright/test';
 
 // Recorrido de dropshipping contra el Supabase LOCAL propio (puertos 643xx) y un servidor de produccion local en el puerto 3417. Cero servicios externos, cero Vercel.
@@ -16,5 +17,6 @@ export default defineConfig({
     { name: 'laptop-1440', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'movil-390', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true } },
   ],
-  webServer: { command: `sh -c "npx next start -p ${PUERTO}"`, url: `http://127.0.0.1:${PUERTO}/api/health`, reuseExistingServer: true, timeout: 120_000 },
+  // La llave de cifrado de destinatarios es de PRUEBA, generada en cada corrida y solo vive en el entorno del servidor de prueba (nunca en un archivo).
+  webServer: { command: `sh -c "npx next start -p ${PUERTO}"`, url: `http://127.0.0.1:${PUERTO}/api/health`, reuseExistingServer: true, timeout: 120_000, env: { DS_LLAVE_DESTINATARIO: randomBytes(32).toString('base64') } },
 });

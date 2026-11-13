@@ -82,14 +82,19 @@ export interface ReporteMensual { meses: { mes: string; utilidad_cent: Cent; rei
 export interface SkuDs { sku_id: number; modelo_id: number; marca: string; modelo: string; sabor: string; estado: string; precio_cent: Cent | null; costo_cent: Cent | null }
 export interface CatalogoDs { interes_defecto_bp: number; envio_default_cent: Cent; skus: SkuDs[] }
 
-export type EstadoPagoMenudeo = 'pagado' | 'no_pagado' | 'por_confirmar';
+export type EstadoPagoMenudeo = 'pagado' | 'no_pagado' | 'pago_reportado' | 'por_confirmar';
+export interface ReportePagoMenudeo {
+  id: number; fecha_pago: string; monto_cent: Cent; metodo: 'transferencia' | 'deposito' | 'efectivo'; referencia: string; via: 'proveedor' | 'sociedad'; canal: string; reportado_por: string;
+  aplicado: boolean; estado: 'por_confirmar' | 'confirmado' | 'rechazado'; motivo: string | null; decidido_por: string | null;
+  evidencia: { sha256: string; mime: string; nombre: string; tam_bytes: number } | null;
+}
 export interface RenglonMenudeo { marca: string; modelo: string; sabor: string; piezas: number; costo_unit_cent: Cent; costo_cent: Cent }
 export interface FilaMenudeo {
   pedido_id: number; folio: string; fecha_neg: string; fecha_envio: string | null; estado: string; proveedor: string | null; cliente_id: number; cliente: string; piezas: number;
-  costo_cent: Cent; pagado_cent: Cent; pendiente_cent: Cent; estado_pago: EstadoPagoMenudeo; renglones: RenglonMenudeo[];
+  costo_cent: Cent; pagado_cent: Cent; pendiente_cent: Cent; estado_pago: EstadoPagoMenudeo; reportado_cent: Cent; por_confirmar: number; reportes: ReportePagoMenudeo[]; renglones: RenglonMenudeo[];
 }
-export interface Menudeo { socio: string; totales: { pedidos: number; piezas: number; costo_cent: Cent; pagado_cent: Cent; pendiente_cent: Cent; pedidos_pendientes: number }; filas: FilaMenudeo[] }
-export interface PendientesSocio { socio: string; pedidos: number; pendiente_cent: Cent; fondos_pendiente_cent: Cent; fondos_cobros: number }
+export interface Menudeo { socio: string; totales: { pedidos: number; piezas: number; costo_cent: Cent; pagado_cent: Cent; pendiente_cent: Cent; pedidos_pendientes: number; reportado_cent: Cent; pedidos_reportados: number }; filas: FilaMenudeo[] }
+export interface PendientesSocio { socio: string; pedidos: number; pendiente_cent: Cent; reportado_cent: Cent; pedidos_reportados: number; fondos_pendiente_cent: Cent; fondos_cobros: number }
 export interface FondosEnPoder {
   socio: string; pendiente_cent: Cent;
   movimientos: { id: number; fecha_neg: string; concepto: string; monto_cent: Cent; saldo_corrido_cent: Cent; pago: string | null; cliente: string | null; pedidos: string[]; nota: string | null }[];

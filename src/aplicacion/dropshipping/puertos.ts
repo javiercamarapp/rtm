@@ -31,5 +31,7 @@ export interface LectorDropshipping {
   /** Dos renglones por socio: pedidos a costo pendientes de pago y fondos de la sociedad cobrados en su cuenta pendientes de entregar. */
   menudeoPendientes(): Promise<PendientesSocio[]>;
   fondosEnPoder(socio: string): Promise<FondosEnPoder>;
+  /** Contenido de la evidencia de un pago (solo socios en la web; cada lectura queda registrada). Nunca llega a la IA ni a Telegram. */
+  evidencia(reporteId: number): Promise<{ mime: string; nombre: string; sha256: string; b64: string } | null>;
   explicar(cifra: string): Promise<Explicacion>;
 }

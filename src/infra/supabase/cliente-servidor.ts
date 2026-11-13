@@ -3,11 +3,12 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { env } from '@/config/env';
 
-export async function crearClienteServidor() {
+export async function crearClienteServidor(cabeceras?: Record<string, string>) {
   const jar = await cookies();
   const e = env();
   return createServerClient(e.NEXT_PUBLIC_SUPABASE_URL, e.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     db: { schema: 'api' },
+    ...(cabeceras && Object.keys(cabeceras).length ? { global: { headers: cabeceras } } : {}),
     cookies: {
       getAll: () => jar.getAll(),
       setAll: (lista) => {

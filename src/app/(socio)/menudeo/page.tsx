@@ -11,11 +11,12 @@ import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import '@/ui/estilos/paginas-a1.css';
 import { etiquetaHoy } from '../contexto';
 import { fechaOpcional } from '../dropshipping/comun';
-import { PagarPedidoMenudeo } from './formulario-pago-menudeo';
+import { DecidirPago, MarcarPagado, VerEvidencia } from './formulario-pago-menudeo';
 
 export const metadata: Metadata = { title: 'Pedidos menudeo' };
-const ESTADO_PAGO = { pagado: 'Pagado', no_pagado: 'No pagado', por_confirmar: 'Por confirmar' } as const;
-const TONO = { pagado: 'ok', no_pagado: 'atencion', por_confirmar: 'apagado' } as const;
+const ESTADO_PAGO = { pagado: 'Pagado', no_pagado: 'Pendiente de pago', pago_reportado: 'Pago reportado', por_confirmar: 'Por confirmar' } as const;
+const TONO = { pagado: 'ok', no_pagado: 'atencion', pago_reportado: 'info', por_confirmar: 'apagado' } as const;
+const METODO = { transferencia: 'Transferencia', deposito: 'Depósito', efectivo: 'Efectivo' } as const;
 
 export default async function PaginaMenudeo({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const { perfil } = await exigirSocio();
@@ -24,7 +25,7 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
   const desde = fechaOpcional(sp['desde']);
   const hasta = fechaOpcional(sp['hasta']);
   const proveedor = sp['proveedor'] === 'Karen' || sp['proveedor'] === 'Isaac' ? sp['proveedor'] : null;
-  const estadoPago = sp['estado'] === 'pagado' || sp['estado'] === 'no_pagado' || sp['estado'] === 'por_confirmar' ? sp['estado'] : null;
+  const estadoPago = sp['estado'] === 'pagado' || sp['estado'] === 'no_pagado' || sp['estado'] === 'pago_reportado' || sp['estado'] === 'por_confirmar' ? sp['estado'] : null;
   const ds = await dropshippingDeSocio();
   const [m, fondos] = await Promise.all([ds.menudeo(socio, { desde, hasta, proveedor, estadoPago }), ds.fondosEnPoder(socio)]);
   const [d, h] = [desde ?? '-', hasta ?? '-'];
@@ -51,7 +52,7 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
           <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
           <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
           <label className="rtm-etiqueta-campo">Proveedor<select className="rtm-campo" name="proveedor" defaultValue={proveedor ?? ''}><option value="">Todos</option><option>Karen</option><option>Isaac</option></select></label>
-          <label className="rtm-etiqueta-campo">Estado de pago<select className="rtm-campo" name="estado" defaultValue={estadoPago ?? ''}><option value="">Todos</option><option value="pagado">Pagado</option><option value="no_pagado">No pagado</option><option value="por_confirmar">Por confirmar</option></select></label>
+          <label className="rtm-etiqueta-campo">Estado de pago<select className="rtm-campo" name="estado" defaultValue={estadoPago ?? ''}><option value="">Todos</option><option value="pagado">Pagado</option><option value="no_pagado">Pendiente de pago</option><option value="pago_reportado">Pago reportado</option><option value="por_confirmar">Por confirmar</option></select></label>
           <button type="submit" className="rtm-boton" data-testid="menudeo-filtrar">Filtrar</button>
         </form>
       </BarraFiltros>
@@ -63,6 +64,7 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
           { id: 'piezas', etiqueta: 'Piezas', valor: cif('piezas', formatearPiezas(t.piezas)), categoria: 7 },
           { id: 'costo', etiqueta: 'Costo total', valor: cif('costo', formatearMoneda(t.costo_cent)), categoria: 2, nota: 'Lo que se cobra: solo el costo' },
           { id: 'pagado', etiqueta: 'Pagado', valor: cif('pagado', formatearMoneda(t.pagado_cent)), categoria: 3 },
+          { id: 'reportado', etiqueta: 'Pago reportado por confirmar', valor: cif('reportado', formatearMoneda(t.reportado_cent)), categoria: 5, testid: 'menudeo-reportado', nota: `${t.pedidos_reportados} ${t.pedidos_reportados === 1 ? 'pedido' : 'pedidos'} · sigue pendiente hasta que el otro socio confirme` },
           { id: 'pendiente', etiqueta: 'Pendiente de pago', valor: cif('pendiente', formatearMoneda(t.pendiente_cent)), categoria: 4, testid: 'menudeo-pendiente', nota: 'Pedidos a costo confirmados o enviados. No restan a la aportación neta.' },
         ]}
       />
@@ -90,8 +92,23 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
             { id: 'c', titulo: 'Costo total', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (f) => formatearMoneda(f.costo_cent) },
             { id: 'pg', titulo: 'Pagado', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (f) => formatearMoneda(f.pagado_cent) },
             { id: 'pe', titulo: 'Pendiente', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (f) => formatearMoneda(f.pendiente_cent) },
+            { id: 'rp', titulo: 'Pagos reportados', ancho: 'xl', prioridadMovil: 'detalle', celda: (f) => (f.reportes.length === 0 ? '' : (
+              <details data-testid={`reportes-${f.pedido_id}`}>
+                <summary>{f.reportes.length} {f.reportes.length === 1 ? 'pago' : 'pagos'}{f.por_confirmar > 0 ? ` · ${f.por_confirmar} por confirmar` : ''}</summary>
+                <ul className="rtm-lineas-form">
+                  {f.reportes.map((r) => (
+                    <li key={r.id} data-testid={`reporte-${r.id}`}>
+                      {etiquetaFecha(r.fecha_pago)} · {formatearMoneda(r.monto_cent)} · {METODO[r.metodo]}{r.referencia ? ` · ${r.referencia}` : ''} · por {r.reportado_por}{r.canal === 'telegram' ? ' (Telegram)' : ''} ·{' '}
+                      <strong>{r.estado === 'por_confirmar' ? (r.aplicado ? 'Registrado, por confirmar' : 'Por confirmar') : r.estado === 'confirmado' ? `Confirmado por ${r.decidido_por}` : `Rechazado por ${r.decidido_por}: ${r.motivo ?? ''}`}</strong>
+                      {r.evidencia && <> · <VerEvidencia reporteId={r.id} nombre={r.evidencia.nombre} /> <span className="rtm-nota" title={r.evidencia.sha256}>huella {r.evidencia.sha256.slice(0, 10)}</span></>}
+                      {r.estado === 'por_confirmar' && r.reportado_por !== perfil.socio_nombre && <> <DecidirPago reporteId={r.id} /></>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )) },
             { id: 'e', titulo: 'Estado', ancho: 'm', prioridadMovil: 'normal', celda: (f) => <span data-testid={`estado-pago-${f.pedido_id}`}><ChipEstado tono={TONO[f.estado_pago]}>{ESTADO_PAGO[f.estado_pago]}</ChipEstado></span> },
-            { id: 'a', titulo: '', ancho: 'm', prioridadMovil: 'normal', celda: (f) => (f.estado === 'enviado' && f.pendiente_cent > 0n ? <PagarPedidoMenudeo pedidoId={f.pedido_id} folio={f.folio} proveedor={f.proveedor ?? 'el proveedor'} pendienteTexto={formatearMoneda(f.pendiente_cent)} /> : f.estado === 'enviado' ? '' : 'Aún no enviado') },
+            { id: 'a', titulo: '', ancho: 'm', prioridadMovil: 'normal', celda: (f) => (f.estado === 'enviado' && f.pendiente_cent > 0n ? <MarcarPagado pedidoId={f.pedido_id} folio={f.folio} proveedor={f.proveedor ?? 'el proveedor'} pendienteTexto={formatearMoneda(f.pendiente_cent)} pendienteCent={Number(f.pendiente_cent - f.reportado_cent)} /> : f.estado === 'enviado' ? '' : 'Aún no enviado') },
           ]}
         />
       </Tarjeta>
