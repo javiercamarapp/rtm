@@ -26,7 +26,7 @@ export function defsTramas(): string {
 
 function marco(titulo: string, desc: string, alto: number, cuerpo: string): string {
   const id = `s${(titulo.length * 31 + desc.length * 17 + alto) % 99991}`;
-  return `<svg role="img" aria-labelledby="${id}t ${id}d" viewBox="0 0 ${ANCHO} ${alto}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Figtree, sans-serif" font-size="9.5"><title id="${id}t">${esc(titulo)}</title><desc id="${id}d">${esc(desc)}</desc>${cuerpo}</svg>`;
+  return `<svg role="img" aria-labelledby="${id}t ${id}d" viewBox="0 0 ${ANCHO} ${alto}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Geist, sans-serif" font-size="9.5"><title id="${id}t">${esc(titulo)}</title><desc id="${id}d">${esc(desc)}</desc>${cuerpo}</svg>`;
 }
 const texto = (x: number, y: number, t: string, o: { anchor?: 'start' | 'middle' | 'end'; peso?: number; fill?: string; size?: number } = {}) => `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${o.anchor ?? 'start'}" font-weight="${o.peso ?? 400}" fill="${o.fill ?? NEGRO}"${o.size ? ` font-size="${o.size}"` : ''}>${esc(t)}</text>`;
 const rect = (x: number, y: number, w: number, h: number, fill: string, stroke?: string, sw = 1) => `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0, w).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" fill="${fill}"${stroke ? ` stroke="${stroke}" stroke-width="${sw}"` : ''}/>`;

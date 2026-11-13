@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { altaUsuario, conDb, correoUnico, enlaceConfirmacion, ipFalsa } from '../e2e/ayudas';
 
 const SALIDA = join(__dirname, '../../docs/capturas', process.env.E4_SALIDA ?? 'rediseno-etapa4');
-const BASE = 'http://127.0.0.1:3104';
+const BASE = process.env.E4_BASE ?? 'http://127.0.0.1:3104';
 const PERFILES = [{ nombre: '1440', ancho: 1440, alto: 900, movil: false }, { nombre: '1280', ancho: 1280, alto: 800, movil: false }, { nombre: '390', ancho: 390, alto: 844, movil: true }];
 const TEMAS = ['claro', 'oscuro'] as const;
 

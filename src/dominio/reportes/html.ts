@@ -1,5 +1,5 @@
 // Plantilla HTML del reporte (spec 16, 3.2): Carta 612 x 792 pt, margenes de 48, blanco y negro con grises, sin fondos oscuros ni cajas decorativas.
-// Titulares y cifra heroe en EB Garamond; cuerpo y tablas en Figtree con cifras tabulares; folios y huellas en JetBrains Mono.
+// Geist en todo (titulares, cifra heroe, cuerpo y tablas con cifras tabulares); folios y huellas en Geist Mono.
 // Una funcion pura: el HTML es lo que imprime Chromium. Las fuentes llegan como CSS (@font-face con rutas locales) desde la infraestructura.
 import { celdaATexto, type PaginaModelo, type ReporteModelo } from './paginas';
 import { defsTramas, esc } from './svg';
@@ -14,15 +14,15 @@ export const CSS_BASE = `
 :root{--rep-g0:rgb(255 255 255);--rep-g1:rgb(222 222 222);--rep-g2:rgb(160 160 160);--rep-g3:rgb(96 96 96);--rep-g4:rgb(26 26 26)}
 *{box-sizing:border-box}
 @page{size:Letter;margin:0}
-html,body{margin:0;padding:0;background:var(--rep-g0);color:var(--rep-g4);font-family:Figtree,"Helvetica Neue",Arial,sans-serif;font-size:9pt;line-height:1.35;font-variant-numeric:tabular-nums}
+html,body{margin:0;padding:0;background:var(--rep-g0);color:var(--rep-g4);font-family:Geist,"Helvetica Neue",Arial,sans-serif;font-size:9pt;line-height:1.35;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 .pagina{position:relative;width:612pt;height:792pt;padding:48pt;overflow:hidden;page-break-after:always;break-after:page;display:flex;flex-direction:column;background:var(--rep-g0)}
 .pagina:last-child{page-break-after:auto;break-after:auto}
 .cab{display:flex;justify-content:space-between;align-items:baseline;border-bottom:0.75pt solid var(--rep-g4);padding-bottom:4pt;margin-bottom:10pt;font-size:8.5pt}
 .cab .estado{font-weight:700;letter-spacing:0.04em}
 .banda{border:1pt solid var(--rep-g4);padding:3pt 6pt;margin-bottom:8pt;font-weight:600;font-size:8.5pt;background:url(#rep-rayado-fino)}
-h1{font-family:"EB Garamond",Georgia,serif;font-weight:400;font-size:19pt;line-height:1.15;margin:0 0 8pt 0;font-variant-numeric:lining-nums}
+h1{font-weight:600;font-size:17pt;line-height:1.15;letter-spacing:-0.02em;margin:0 0 8pt 0}
 .heroe{margin:2pt 0 8pt 0}
-.heroe .cifra{font-family:"EB Garamond",Georgia,serif;font-size:44pt;line-height:1;font-weight:400;font-variant-numeric:lining-nums}
+.heroe .cifra{font-size:40pt;line-height:1;font-weight:500;letter-spacing:-0.025em}
 .heroe .det{font-size:8.5pt;color:var(--rep-g3)}
 .apoyo{display:grid;grid-template-columns:repeat(4,1fr);gap:8pt;border-top:0.5pt solid var(--rep-g2);border-bottom:0.5pt solid var(--rep-g2);padding:6pt 0;margin-bottom:8pt}
 .apoyo .e{font-size:8pt;color:var(--rep-g3)}.apoyo .v{font-size:13pt;font-weight:600}.apoyo .c{font-size:8pt;color:var(--rep-g3)}
@@ -39,8 +39,8 @@ td.n,th.n{text-align:right}
 .impl{border-top:0.75pt solid var(--rep-g4);padding-top:5pt;margin-top:6pt}
 .impl p{margin:0 0 2pt 0}.impl b{font-weight:700}
 .proc{font-size:8pt;color:var(--rep-g3);border-top:0.4pt solid var(--rep-g2);margin-top:6pt;padding-top:3pt}
-.folio{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:8pt;display:flex;justify-content:space-between}
-.marca{position:absolute;left:0;right:0;top:330pt;text-align:center;font-family:"EB Garamond",Georgia,serif;font-size:96pt;font-weight:400;letter-spacing:0.1em;color:var(--rep-g1);transform:rotate(-24deg);pointer-events:none;z-index:0;opacity:0.55}
+.folio{font-family:"Geist Mono",ui-monospace,monospace;font-size:8pt;display:flex;justify-content:space-between}
+.marca{position:absolute;left:0;right:0;top:330pt;text-align:center;font-size:96pt;font-weight:600;letter-spacing:0.1em;color:var(--rep-g1);transform:rotate(-24deg);pointer-events:none;z-index:0;opacity:0.55}
 .pagina>*:not(.marca){position:relative;z-index:1}
 .anexo .cols{column-count:2;column-gap:14pt}.anexo h2{margin-top:6pt;break-after:avoid}.anexo p{margin:0 0 1pt 0;font-size:7pt;line-height:1.2;break-inside:avoid}
 `;
