@@ -3,9 +3,11 @@
 --   * Devolucion de cliente: Dr 4220 Devoluciones sobre ventas / Cr 1210 Clientes (por pedido). El kardex ya traia Dr 1310 / Cr 5100 (devolucion) y, si viene danada, Dr 5200 / Cr 1310.
 --   * Devolucion a proveedor: Cr 1310 inventario / Dr cuenta del proveedor (misma cifra: el credito es el valor en libros; la diferencia pactada va por ajuste de proveedor).
 --   * Recepcion parcial: Dr 1310 / Cr 1320 por lo contado; al cerrar, Dr 1340 / Cr 1320 por lo que no llego (o al reves si sobro).
+-- Integracion: la migracion de efectivo (20261112400000) renombro la original a lineas_de_evento_base y puso una envoltura; la rama de devoluciones
+-- redefine la BASE vigente (la de 20261113300200, con reinversion) con create or replace sobre _base, asi la envoltura de efectivo sigue intacta. comprobaciones parte de la version vigente (con C23/C24).
 -- Controles: la cuenta 1320 reconoce lo pendiente de compras recibidas en parte, y C14 resta 4220 (el cobrado del pedido ya es neto de devoluciones).
 
-create or replace function contabilidad.lineas_de_evento(p_evento bigint)
+create or replace function contabilidad.lineas_de_evento_base(p_evento bigint)
 returns table (cuenta text, debe_cent bigint, haber_cent bigint, cliente_id bigint, proveedor_id bigint, socio_id bigint, modelo_id bigint, pedido_id bigint, nota text)
 language plpgsql stable security definer set search_path = ''
 as $$
@@ -180,7 +182,7 @@ begin
     -- Libro de los socios (cascada, retiros y pagos).
     union all
     select contabilidad.cta_socio(b.socio_id, case b.ec when 'utilidad_asignada' then 3310 when 'pago_reembolso' then 2310 when 'pago_devolucion_aportacion' then 3210
-                                                      when 'pago_utilidad' then 3310 when 'retiro' then 3210 when 'liquidacion_recibida' then 3310 end),
+                                                      when 'pago_utilidad' then 3310 when 'retiro' then 3210 when 'liquidacion_recibida' then 3310 when 'reinversion' then 3310 end),
            -b.monto_cent, null, null, b.socio_id, null, null, 'Libro del socio: ' || b.ec from lib b
     union all select '3900', b.monto_cent, null, null, b.socio_id, null, null, 'Utilidad asignada' from lib b where b.ec = 'utilidad_asignada'
     union all
@@ -314,6 +316,9 @@ begin
        - coalesce((select sum(monto_cent) from operacion.gasto), 0) + coalesce((select sum(g.monto_cent) from operacion.gasto_anulacion an join operacion.gasto g on g.id = an.gasto_id), 0)
        + coalesce((select sum(case when coalesce(o.tipo, m.tipo) in ('merma', 'ajuste_conteo', 'devolucion') then m.valor_cent else 0 end) from operacion.movimiento_inventario m left join operacion.movimiento_inventario o on o.id = m.reversa_de), 0)
        + coalesce((select sum(c.monto_cent) from operacion.cuenta_proveedor_mov c left join operacion.cuenta_proveedor_mov o on o.id = c.reversa_de where coalesce(o.concepto, c.concepto) = 'ajuste'), 0)
+       -- Sobrante o faltante de caja (cuenta 7200): ajustes de conteo del efectivo que el puente asienta (migracion 8000).
+       + coalesce((select sum(m.monto_cent) from operacion.cuenta_efectivo_mov m join operacion.evento ev on ev.id = m.evento_id left join operacion.cuenta_efectivo_mov o on o.id = m.reversa_de
+                    where coalesce(o.concepto, m.concepto) = 'ajuste_conteo' and ev.tipo in ('movimiento_efectivo', 'movimiento_efectivo_anulado')), 0)
     into v_a;
   codigo := 'C16'; nombre := 'Puente pedidos a libro: utilidad comercial contra utilidad del libro'; bloqueante := false; via_a_nombre := 'Utilidad por pedidos, tomas, gastos y ajustes'; via_a_cent := v_a; via_b_nombre := 'Cuentas 4 a 7 del libro'; via_b_cent := v_res; ok := v_a = v_res; return next;
   -- C17 Omar por el camino de la liquidacion semanal
@@ -346,6 +351,13 @@ begin
                     where pe.estado = 'enviado' and pe.origen = 'karen_via_isaac' and s.movimiento_id is null), 0) into v_a;
   select coalesce(sum(saldo_cent), 0) into v_b from contabilidad.saldos() where codigo = '5110' or codigo ~ '^6';
   codigo := 'C22'; nombre := 'Gastos: mini reporte contra cuentas 5110 y 6xxx'; bloqueante := false; via_a_nombre := 'Gastos, renta y seguros de reenvío'; via_a_cent := v_a; via_b_nombre := 'Cuentas 5110 y 6xxx'; via_b_cent := v_b; ok := v_a = v_b; return next;
+  -- C23 efectivo: caja contable contra efectivo operativo (puente de movimientos de efectivo a asientos, migracion 8000)
+  v_a := operacion.saldo_efectivo();
+  v_b := contabilidad.saldo_deudor('1101') + contabilidad.saldo_deudor('1102');
+  codigo := 'C23'; nombre := 'Efectivo: cuentas de efectivo operativas contra caja contable (1101 y 1102)'; bloqueante := false; via_a_nombre := 'Suma de las cuentas de efectivo'; via_a_cent := v_a; via_b_nombre := 'Cuentas 1101 y 1102 del libro'; via_b_cent := v_b; ok := v_a = v_b; return next;
+  -- C24 cajas por persona: cada caja de efectivo contra su dimension en 1101 (suma de diferencias absolutas; 0 cuando todas cuadran)
+  select coalesce(sum(abs(x.diferencia_cent)), 0)::bigint into v_a from contabilidad.efectivo_por_caja() x;
+  codigo := 'C24'; nombre := 'Cajas por persona: cada caja de efectivo contra su dimensión en 1101'; bloqueante := false; via_a_nombre := 'Suma de diferencias por caja (valor absoluto)'; via_a_cent := v_a; via_b_nombre := 'Cero: cada caja igual a su dimensión del libro'; via_b_cent := 0; ok := v_a = 0; return next;
   -- Identidades de la paridad con el Excel (doc 18)
   v_activo := contabilidad.suma_tipo('A'); v_pasivo := contabilidad.suma_tipo('P'); v_capital := contabilidad.suma_tipo('K'); v_res := contabilidad.resultado();
   codigo := 'CU1'; nombre := 'Identidad I-1: activo igual a pasivo más capital'; bloqueante := true; via_a_nombre := 'Activo'; via_a_cent := v_activo; via_b_nombre := 'Pasivo más capital más resultado'; via_b_cent := v_pasivo + v_capital + v_res; ok := v_activo = v_pasivo + v_capital + v_res; return next;

@@ -53,7 +53,9 @@ begin
   return new;
 end $$;
 
-create or replace function operacion.utilidad_periodo(p_ini date, p_fin date) returns jsonb
+-- Integracion: operacion.utilidad_periodo es hoy la envoltura de paquetes (20261112400200); la base renombrada es utilidad_periodo_sin_paquetes. Se redefine la
+-- BASE para que la envoltura siga sumando el ajuste de paquetes (y conserve las claves devoluciones_cent / devoluciones de esta rama).
+create or replace function operacion.utilidad_periodo_sin_paquetes(p_ini date, p_fin date) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare v_ped bigint; v_prov boolean; v_n int; v_tomas bigint; v_gastos bigint; v_tardios bigint; v_dev bigint; v_dev_n int;
@@ -91,16 +93,18 @@ create function api.explicar_cifra(p_cifra text) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare
-  partes text[] := string_to_array(p_cifra, ':'); v_u jsonb; v_rengs jsonb; v_via2 bigint;
+  partes text[] := string_to_array(p_cifra, ':'); v_u jsonb; v_rengs jsonb; v_via2 bigint; v_paq bigint;
 begin
   if partes[1] = 'cascada' and partes[2] = 'utilidad' then
     perform seguridad.exigir_rol(array['socio']);
     v_u := operacion.utilidad_periodo(partes[3]::date, partes[4]::date);
+    v_paq := coalesce((v_u->>'ajuste_paquetes_cent')::bigint, 0);
     v_rengs := jsonb_build_array(
       jsonb_build_object('concepto', 'Utilidad de los pedidos enviados (' || (v_u->>'pedidos') || ')', 'monto_cent', (v_u->>'utilidad_pedidos_cent')::bigint - (v_u->>'devoluciones_cent')::bigint),
       jsonb_build_object('concepto', 'Devoluciones de clientes (' || (v_u->>'devoluciones') || '): credito menos el costo de lo que regreso a inventario', 'monto_cent', (v_u->>'devoluciones_cent')::bigint),
       jsonb_build_object('concepto', 'Utilidad de las tomas de Omar a su precio', 'monto_cent', (v_u->>'utilidad_tomas_cent')::bigint),
-      jsonb_build_object('concepto', 'Gastos generales de la sociedad (incluidos los pagados por socios)', 'monto_cent', -(v_u->>'gastos_cent')::bigint));
+      jsonb_build_object('concepto', 'Gastos generales de la sociedad (incluidos los pagados por socios)', 'monto_cent', -((v_u->>'gastos_cent')::bigint + v_paq)),
+      jsonb_build_object('concepto', 'Perdidas de paquetes (ajuste de utilidad)', 'monto_cent', v_paq));
     select coalesce(sum((x->>'monto_cent')::bigint), 0)::bigint into v_via2 from jsonb_array_elements(v_rengs) x;
     return jsonb_build_object('cifra', p_cifra, 'titulo', 'Utilidad neta del periodo' || case when (v_u->>'provisional')::boolean then ' (provisional: hay guias sin costo)' else '' end, 'valor', (v_u->>'utilidad_cent')::bigint, 'unidad', 'mxn',
       'comprobacion', jsonb_build_object('via1', 'Funcion de utilidad del periodo', 'via1_valor', (v_u->>'utilidad_cent')::bigint, 'via2', 'Pedidos menos devoluciones, mas tomas, menos gastos', 'via2_valor', v_via2, 'cuadra', (v_u->>'utilidad_cent')::bigint = v_via2),
