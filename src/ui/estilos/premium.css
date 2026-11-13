@@ -400,7 +400,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
   /* La insignia de estado ocupa el ancho de su texto (antes su fondo quedaba mas angosto que el texto) */
   .rtm-dt-caja[data-tarjeta-movil] .rtm-chip-estado { align-self: flex-start; width: max-content; max-width: 100%; height: auto; min-height: var(--rtm-h-chip-estado); padding-block: 2px; white-space: normal; line-height: 1.25; }
   /* Las cifras de una tarjeta nunca se parten en dos renglones (ni a media cifra ni en el signo); el resto del texto si envuelve. */
-  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-num], .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal'], .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda .rtm-cifra { white-space: nowrap; overflow-wrap: normal; font-variant-numeric: tabular-nums; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-num], .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda .rtm-cifra { white-space: nowrap; overflow-wrap: normal; font-variant-numeric: tabular-nums; }
   /* Acciones: toman el renglon completo de la tarjeta y sus botones envuelven dentro de el. */
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:has(> .rtm-acciones-fila) { grid-column: 1 / -1; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-acciones-fila { width: 100%; }
