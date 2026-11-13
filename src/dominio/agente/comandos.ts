@@ -2,6 +2,7 @@
 // de modo que resolucion de alias, calculo, eco y deshacer son identicos con o sin IA.
 import { normalizar } from '../catalogo/normalizar';
 import { centavosDesdeTexto } from '../dinero';
+import { nombreSeguro } from './entrada';
 import {
   TIPOS_GASTO,
   type ILineaCompraTexto,
@@ -416,7 +417,7 @@ export function parsearComando(texto: string): ResultadoComando | null {
       return { ok: true, tipo: 'intencion', intencion: { tipo: 'conteo', lineas, fuente_cita: cita } };
     }
     case 'cliente':
-      return resto.length < 2 ? fallo('cliente') : { ok: true, tipo: 'intencion', intencion: { tipo: 'cliente_alta', nombre: resto.slice(0, 60), fuente_cita: cita } };
+      return resto.length < 2 ? fallo('cliente') : { ok: true, tipo: 'intencion', intencion: { tipo: 'cliente_alta', nombre: nombreSeguro(resto), fuente_cita: cita } };
     case 'precio': {
       const [cliente, modelo, importe] = partes;
       const c = importe === undefined ? null : monto(importe);
