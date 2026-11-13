@@ -1,0 +1,8 @@
+{
+  "modelos": {
+    "sint a 10k": { "marca": "Sint", "modelo": "Sint A 10K", "puffs": 10000 },
+    "sint a 10000": { "marca": "Sint", "modelo": "Sint A 10K", "puffs": 10000 },
+    "sint b 20k": { "marca": "Sint", "modelo": "Sint B 20K", "puffs": 20000 },
+    "sint c 30k": { "marca": "Sint", "modelo": "Sint C 30K", "puffs": 30000 }
+  }
+}

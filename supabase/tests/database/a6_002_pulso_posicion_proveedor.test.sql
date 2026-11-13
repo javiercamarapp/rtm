@@ -1,0 +1,22 @@
+-- pgTAP a6_002: "Por pagar a Isaac" (api.pulso) y api.proveedor_cuenta.posicion_cent muestran la POSICION COMPLETA del Mayor (2110), no solo la cuenta corriente. Datos sinteticos.
+begin;
+select no_plan();
+insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('pos.jav@example.test', 'socio', 'Javier', true);
+insert into auth.users (id, instance_id, aud, role, email) values ('77777777-7777-7777-7777-7777777777f2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pos.jav@example.test');
+select set_config('request.jwt.claim.sub', '77777777-7777-7777-7777-7777777777f2', true);
+select catalogo.asegurar_modelo('POS Marca', 'POS Modelo', 10000, 'ambas');
+select catalogo.asegurar_sku('POS Modelo', 'Uva');
+select catalogo.fijar_costo('pos-c1', 'Isaac', 'POS Modelo', 5000, '2020-01-01', 'prueba');
+select catalogo.asegurar_cliente('POS Cliente', 'Javier');
+select is(api.pulso()->'por_pagar_isaac_cent', 'null'::jsonb, 'sin movimientos: Sin dato');
+select operacion.crear_pedido('pos-p1', (select id from catalogo.cliente where nombre_canonico = 'POS Cliente'), '[{"modelo":"POS Modelo","sabor":"Uva","piezas":30,"precio_cent":9000}]'::jsonb, 'isaac_directo', null, 0, 0, 0, negocio.hoy());
+select operacion.confirmar_pedido('pos-p1-c', (select id from operacion.pedido order by id desc limit 1));
+select operacion.enviar_pedido('pos-p1-e', (select id from operacion.pedido order by id desc limit 1), null, null, null, true);
+set constraints all immediate;
+select is((api.proveedor_cuenta('Isaac')->>'saldo_cent')::bigint, 0::bigint, 'la cuenta corriente no incluye el costo del pedido directo enviado');
+select is((api.proveedor_cuenta('Isaac')->>'posicion_cent')::bigint, -150000::bigint, 'la posicion completa si: se debe el costo (30 x 50.00)');
+select is((api.pulso()->>'por_pagar_isaac_cent')::bigint, 150000::bigint, 'el pulso muestra la posicion completa');
+select is((api.pulso()->>'por_pagar_isaac_cent')::bigint, contabilidad.saldo('2110'), 'y es el saldo del Mayor 2110');
+select is((api.proveedor_cuenta('Karen')->>'posicion_cent')::bigint, 0::bigint, 'Karen sin movimientos: posicion cero');
+select * from finish();
+rollback;

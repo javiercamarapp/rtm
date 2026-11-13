@@ -1,0 +1,20 @@
+{
+  "meta": { "fuente": "SINTETICO", "proveedor": "Isaac" },
+  "excluidos": [],
+  "pedidos": [
+    { "bloque": "A", "tipo_propuesto": "venta_interna_a_costo (Angelo, menudeo)", "pedido_numero": 1, "fecha": "2026-11-12", "monto_conocido": {},
+      "renglones": [ { "marca": "Sint", "modelo": "D 25K", "sabor": "Uva", "cantidad": 10, "costo_unitario_lista": 200 }, { "marca": "Sint", "modelo": "D 25K", "sabor": "Mango", "cantidad": 10, "costo_unitario_lista": 200 } ],
+      "destinatario_protegido": null, "pagos_a_cuenta_isaac": [], "clave_identidad": "Isaac|-|angelo|2026-11-12|1" },
+    { "bloque": "B", "tipo_propuesto": "dropshipping a cliente", "pedido_numero": 2, "fecha": "2026-11-12", "precio_cliente": 5000, "monto_conocido": { "pago_a_cuenta_isaac": 5000 },
+      "renglones": [ { "marca": "Sint", "modelo": "E 15K", "sabor": "Uva", "cantidad": 20, "costo_unitario_lista": 200 } ],
+      "destinatario_protegido": { "nombre": "Destino Sintetico Dos", "calle": "Avenida Ficticia", "numero": "45", "cp": "97100", "municipio": "Municipio Ejemplo", "estado": "Estado Ejemplo", "celular": "9990002222" },
+      "pagos_a_cuenta_isaac": [ { "monto": 5000, "fecha": "2026-11-12" } ], "clave_identidad": "Isaac|-|cliente-sintetico-uno|2026-11-12|2" },
+    { "bloque": "E", "tipo_propuesto": "mercancia pedida por recibir (no inventario hasta que llegue)", "pedido_numero": 3, "fecha": "2026-11-12", "fecha_llegada_esperada": "2026-11-17", "monto_conocido": {},
+      "renglones": [ { "marca": "Sint", "modelo": "F 50K", "sabor": "Uva", "cantidad": 100, "costo_unitario_lista": 90 } ],
+      "destinatario_protegido": null, "pagos_a_cuenta_isaac": [], "clave_identidad": "Isaac|-|sociedad|2026-11-12|3" },
+    { "bloque": "I", "tipo_propuesto": "credito (venta a credito, 10% simple)", "pedido_numero": 4, "fecha": "2026-11-12",
+      "monto_conocido": { "precio_pactado": 5500, "base": 5000, "interes_10pct": 500 },
+      "renglones": [ { "marca": "Sint", "modelo": "E 15K", "sabor": "Mango", "cantidad": 20, "costo_unitario_lista": 200 } ],
+      "destinatario_protegido": null, "pagos_a_cuenta_isaac": [], "clave_identidad": "Isaac|-|cliente-sintetico-tres|2026-11-12|4" }
+  ]
+}

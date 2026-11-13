@@ -41,7 +41,10 @@
     "capturas:apertura": "node scripts/capturas/capturas-apertura.mjs --restaurar-real",
     "capturas:integracion-db": "node scripts/capturas/capturas-integracion-db.mjs --restaurar-real",
     "agente:registrar": "node scripts/agente/registrar-miembros.mjs",
-    "latido": "node scripts/latido-local.mjs"
+    "latido": "node scripts/latido-local.mjs",
+    "cargador": "node scripts/cargador/cargar.mjs",
+    "cargador:cuadre": "node scripts/cargador/cuadre.mjs",
+    "cargador:prueba": "node scripts/cargador/prueba-sintetica.mjs"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
