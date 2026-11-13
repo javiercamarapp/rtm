@@ -308,6 +308,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-dt-cabecera .rtm-dt-celda { white-space: normal; overflow-wrap: normal; hyphens: none; line-height: 1.2; padding-top: 4px; padding-bottom: 4px; vertical-align: bottom; }
 .rtm-dt-cabecera .rtm-dt-celda[data-num] { white-space: normal; }
 .rtm-dt-trunc { display: inline-block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+.rtm-dt-trunc > .rtm-celda-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rtm-dt-trunc[data-trunc='s'] { max-width: 120px; } .rtm-dt-trunc[data-trunc='m'] { max-width: 200px; }
 .rtm-dt-celda[data-num] .rtm-dt-trunc { text-align: right; }
 
