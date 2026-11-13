@@ -74,7 +74,8 @@ describe('si falta un dato, pregunta (aclarar); nunca supone', () => {
     const e = escenario([unaAccion(reembolso('javier', 100_000, null)), unaAccion({ tipo: 'pago', cliente_texto: 'Cliente Norte', monto_centavos: 700_000, cuenta_destino_texto: null, pedido_folio: null, fuente_cita: 'c' }), unaAccion(gasto(30_000, 'sociedad'))], ESTRICTO);
     await e.socio('angelo', 'reembolso a Javier 1000');
     expect(e.ultimoGrupo().texto).toContain('transferencia o en efectivo');
-    expect(e.ultimoGrupo().botones).toBeUndefined();
+    // El dato faltante se pide con botones (estado de conversacion en tokens con expiracion): nada se registra todavia.
+    expect(e.ultimoGrupo().botones).toBeDefined();
     await e.socio('angelo', 'Cliente Norte pago 7000');
     expect(e.ultimoGrupo().texto).toContain('a que cuenta entro');
     await e.socio('angelo', 'gaste 300 de guia');

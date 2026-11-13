@@ -141,7 +141,130 @@ export interface ITomaOmar {
   fuente_cita: string;
 }
 
+/** Estado de un pedido que mueve el socio desde el chat. */
+export interface IPedidoEnvio {
+  tipo: 'pedido_envio';
+  pedido_folio: string | null;
+  estado: 'enviado' | 'entregado';
+  paqueteria_texto: string | null;
+  guia_texto: string | null;
+  fuente_cita: string;
+}
+
+export interface IPedidoCancelar {
+  tipo: 'pedido_cancelar';
+  pedido_folio: string | null;
+  motivo: string | null;
+  fuente_cita: string;
+}
+
+export interface ICompraRecepcion {
+  tipo: 'compra_recepcion';
+  compra_folio: string | null;
+  /** Vacio = recepcion total; con renglones = parcial (solo lo dictado). */
+  lineas: ILineaCompraTexto[];
+  fuente_cita: string;
+}
+
+export interface ICompraEstado {
+  tipo: 'compra_estado';
+  compra_folio: string | null;
+  estado: 'enviada' | 'llego_merida';
+  fuente_cita: string;
+}
+
+export interface ICompraAprobar {
+  tipo: 'compra_aprobar';
+  compra_folio: string | null;
+  fuente_cita: string;
+}
+
+/** Cargo de un servicio (OpenRouter, Vercel...). El monto en pesos lo calcula la base: USD por tipo de cambio. */
+export interface IGastoServicio {
+  tipo: 'gasto_servicio';
+  servicio_texto: string;
+  monto_usd_centavos: number | null;
+  monto_mxn_centavos: number | null;
+  tipo_cambio_micro: number | null;
+  pagado_por: QuienPaga;
+  fuente_cita: string;
+}
+
+export interface IMerma {
+  tipo: 'merma';
+  modelo_texto: string;
+  sabor_texto: string | null;
+  piezas: number;
+  motivo: string | null;
+  fuente_cita: string;
+}
+
+export interface IConteo {
+  tipo: 'conteo';
+  lineas: ILineaCompraTexto[];
+  fuente_cita: string;
+}
+
+export interface IClienteAlta {
+  tipo: 'cliente_alta';
+  nombre: string;
+  fuente_cita: string;
+}
+
+export interface IClientePrecio {
+  tipo: 'cliente_precio';
+  cliente_texto: string;
+  modelo_texto: string;
+  precio_centavos: number;
+  fuente_cita: string;
+}
+
+export interface IActaPropuesta {
+  tipo: 'acta_propuesta';
+  /** Mes (AAAA-MM) del corte; null = el mes anterior. */
+  mes: string | null;
+  retira_angelo_centavos: number | null;
+  retira_javier_centavos: number | null;
+  reinvierte_angelo_centavos: number | null;
+  reinvierte_javier_centavos: number | null;
+  fuente_cita: string;
+}
+
+export interface IActaFirma {
+  tipo: 'acta_firma';
+  acta_folio: string | null;
+  fuente_cita: string;
+}
+
+export interface IRenglonHistorico {
+  tipo: 'gasto' | 'cobro' | 'aportacion' | 'reembolso' | 'retiro';
+  /** AAAA-MM-DD, pasada y explicita. */
+  fecha: string;
+  monto_centavos: number;
+  socio: SocioNombre | null;
+  cliente_texto: string | null;
+  cuenta_texto: string | null;
+  concepto: string | null;
+  intencion: 'capital' | 'reembolso' | null;
+  via: ViaPago | null;
+}
+
+export interface ILoteHistorico {
+  tipo: 'lote_historico';
+  etiqueta: string | null;
+  renglones: IRenglonHistorico[];
+  fuente_cita: string;
+}
+
 export const TIPOS_CONSULTA = [
+  'cuadra',
+  'balance',
+  'diario',
+  'cobertura',
+  'reporte',
+  'compras',
+  'pedidos',
+  'saldos_socios',
   'inventario',
   'saldo',
   'saldo_proveedor',
@@ -199,6 +322,19 @@ export type Intencion =
   | ICompra
   | IOrdenCompra
   | ITomaOmar
+  | IPedidoEnvio
+  | IPedidoCancelar
+  | ICompraRecepcion
+  | ICompraEstado
+  | ICompraAprobar
+  | IGastoServicio
+  | IMerma
+  | IConteo
+  | IClienteAlta
+  | IClientePrecio
+  | IActaPropuesta
+  | IActaFirma
+  | ILoteHistorico
   | IConsulta
   | IDeshacer
   | IAclarar
@@ -216,21 +352,10 @@ export interface RespuestaExtractor {
 export const MAX_ACCIONES = 6;
 export const MAX_LINEAS = 30;
 
-/** Intenciones que escriben (todo lo demas es lectura o meta). */
+/** Intenciones que escriben (todo lo demas es lectura o meta). Derivado del catalogo declarativo. */
 export const INTENCIONES_ESCRITURA: readonly TipoIntencion[] = [
-  'pedido',
-  'pago',
-  'pago_proveedor',
-  'gasto',
-  'aportacion',
-  'reembolso_socio',
-  'retiro_utilidad',
-  'devolucion',
-  'paquete_perdido',
-  'compra',
-  'orden_compra',
-  'toma_omar',
-  'deshacer',
+  'pedido', 'pago', 'pago_proveedor', 'gasto', 'aportacion', 'reembolso_socio', 'retiro_utilidad', 'devolucion', 'paquete_perdido', 'compra', 'orden_compra', 'toma_omar', 'deshacer',
+  'pedido_envio', 'pedido_cancelar', 'compra_recepcion', 'compra_estado', 'compra_aprobar', 'gasto_servicio', 'merma', 'conteo', 'cliente_alta', 'cliente_precio', 'acta_propuesta', 'acta_firma', 'lote_historico',
 ];
 
 /** Escrituras que mueven dinero o cuentas: se muestran en un resumen y exigen confirmacion explicita ANTES de registrarse. La toma de Omar ya exige la autorizacion de un socio; deshacer tiene su propio flujo. */

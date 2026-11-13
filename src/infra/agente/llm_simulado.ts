@@ -79,6 +79,11 @@ function lineasPedido(cuerpo: string): Array<{ modelo: string; piezas: number }>
   return salida.length > 0 ? salida : porComas;
 }
 
+function partirSabor(t: string): { modelo_texto: string; sabor_texto: string | null } {
+  const i = t.indexOf('/');
+  return i > 0 ? { modelo_texto: t.slice(0, i).trim(), sabor_texto: t.slice(i + 1).trim() || null } : { modelo_texto: t, sabor_texto: null };
+}
+
 const NINGUNA: Intencion = { tipo: 'ninguna' };
 
 /** Interpretacion determinista de frases tipicas. No es un modelo: solo sirve para ensayar conversaciones sin gastar. */
@@ -167,6 +172,27 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
     return respuesta([{ tipo: 'paquete_perdido', pedido_folio: folio ? folio[0].toUpperCase().replace(/^P(\d)/, 'P-$1') : null, cliente_texto: null, incidente: /danado/.test(s) ? 'danado' : 'perdido', detalle: null, fuente_cita: cita }]);
   }
 
+  const folio = (pref: string): string | null => {
+    const f = new RegExp(`\\b${pref}-?(\\d{1,6})\\b`, 'i').exec(s);
+    return f ? `${pref.toUpperCase()}-${f[1]!.padStart(4, '0')}` : null;
+  };
+  const sinCons = { modelo_texto: null, sabor_texto: null, sujeto_texto: null, folio: null } as const;
+  if (autor !== 'omar') {
+    if (/(se envio|enviado|envie)\b.*\bp-?\d/.test(s) || /^(envie|enviamos) el pedido/.test(s)) return respuesta([{ tipo: 'pedido_envio', pedido_folio: folio('p'), estado: 'enviado', paqueteria_texto: null, guia_texto: null, fuente_cita: cita }]);
+    if (/(entregado|se entrego)\b.*\bp-?\d/.test(s)) return respuesta([{ tipo: 'pedido_envio', pedido_folio: folio('p'), estado: 'entregado', paqueteria_texto: null, guia_texto: null, fuente_cita: cita }]);
+    if ((m = /^cancela(?:r)? el pedido\s+p-?\d+\s*(?:porque|por|motivo)?\s*(.*)$/.exec(s))) return respuesta([{ tipo: 'pedido_cancelar', pedido_folio: folio('p'), motivo: m[1] ? m[1].slice(0, 100) : null, fuente_cita: cita }]);
+    if (/^(recibi|llego)\b.*\bc-?\d/.test(s)) return respuesta([{ tipo: 'compra_recepcion', compra_folio: folio('c'), lineas: [], fuente_cita: cita }]);
+    if (/^aprueba(?:n)?\b.*\bc-?\d/.test(s)) return respuesta([{ tipo: 'compra_aprobar', compra_folio: folio('c'), fuente_cita: cita }]);
+    if ((m = new RegExp(`^pague\\s+${NUM}\\s*(?:usd|dolares)\\s+de\\s+(openrouter|vercel|supabase)`, 'i').exec(s))) {
+      const monto = aCentavos(m[1]!);
+      if (monto !== null) return respuesta([{ tipo: 'gasto_servicio', servicio_texto: m[2]!, monto_usd_centavos: monto, monto_mxn_centavos: null, tipo_cambio_micro: null, pagado_por: autor, fuente_cita: cita }]);
+    }
+    if (/^(cuadra|cuadran las cuentas|las cuentas cuadran)\??$/.test(n)) return respuesta([{ tipo: 'consulta', consulta: 'cuadra', ...sinCons, periodo: null }]);
+    if (/^(que falta|pendientes|que falta por hacer)/.test(n)) return respuesta([{ tipo: 'consulta', consulta: 'pendientes', ...sinCons, periodo: null }]);
+    if (/^(reporte|dame el reporte)/.test(n)) return respuesta([{ tipo: 'consulta', consulta: 'reporte', ...sinCons, periodo: /mes/.test(n) ? 'mes' : 'semana' }]);
+    if (/^(saldo de los socios|saldos de socios|como van los socios)/.test(n)) return respuesta([{ tipo: 'consulta', consulta: 'saldos_socios', ...sinCons, periodo: null }]);
+  }
+
   // Consultas de los socios
   if (/estado de cuenta/.test(n) && (m = /(angelo|javier)/.exec(s))) {
     return respuesta([{ tipo: 'consulta', consulta: 'estado_cuenta_socio', modelo_texto: null, sabor_texto: null, sujeto_texto: m[1]!, folio: null, periodo: null }]);
@@ -183,7 +209,7 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
   if ((m = /^(?:pidele|pide)\s+a\s+(karen|vapemate|isaac)\s+(.+)$/i.exec(s))) {
     const ls = lineasDe(m[2]!);
     if (ls.length > 0) {
-      return respuesta([{ tipo: 'orden_compra', proveedor_texto: m[1]!, lineas: ls.map((l) => ({ modelo_texto: l.modelo, sabor_texto: null, piezas: l.piezas })), aplicar_saldo: /saldo/.test(n), fuente_cita: cita }]);
+      return respuesta([{ tipo: 'orden_compra', proveedor_texto: m[1]!, lineas: ls.map((l) => ({ ...partirSabor(l.modelo), piezas: l.piezas })), aplicar_saldo: /saldo/.test(n), fuente_cita: cita }]);
     }
   }
 
@@ -216,7 +242,7 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
           tipo: 'pedido',
           cliente_texto: m[1]!.trim(),
           destino_texto: null,
-          lineas: ls.map((l) => ({ modelo_texto: l.modelo, sabor_texto: null, piezas: l.piezas, precio_texto: null, fuente_cita: cita })),
+          lineas: ls.map((l) => ({ ...partirSabor(l.modelo), piezas: l.piezas, precio_texto: null, fuente_cita: cita })),
           envio_cobrado_centavos: null,
           fuente_cita: cita,
         },

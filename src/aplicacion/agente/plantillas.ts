@@ -5,7 +5,8 @@ import { VENTANA_DESHACER_MIN } from '@/dominio/agente/deshacer';
 import { RegistroCifras } from '@/dominio/agente/cifras';
 import type { Intencion } from '@/dominio/agente/intenciones';
 import type { CifraServidor, Miembro, Persona } from '@/dominio/agente/tipos';
-import type { RespuestaConsulta, ResultadoEjecutado } from './puertos';
+import type { Reversa } from '@/dominio/agente/catalogo_intenciones';
+import type { RespuestaConsulta, ResultadoEjecutado, ResultadoSimulacion } from './puertos';
 
 export interface MensajeListo {
   texto: string;
@@ -81,7 +82,10 @@ export function consulta(res: RespuestaConsulta): MensajeListo {
 }
 
 export function ayuda(): MensajeListo {
-  return { texto: `Comandos: ${LISTA_COMANDOS}. Tambien puedes escribir el pedido o el pago con tus palabras.`, registro: new RegistroCifras() };
+  return {
+    texto: `Comandos: ${LISTA_COMANDOS}. Tambien puedes escribir con tus palabras (pedidos, cobros, compras, gastos, mermas, conteos, clientes, actas). Todo movimiento muestra un resumen y NO se registra hasta que un socio pulse Confirmar; /deshacer revierte lo que tiene reversa; /pendientes dice que falta por hacer. El bot nunca escribe a clientes y nunca calcula dinero.`,
+    registro: new RegistroCifras(),
+  };
 }
 
 export function avisoModoSinIa(): MensajeListo {
@@ -159,6 +163,21 @@ export function faltaDato(dato: string): MensajeListo {
   return { texto: `Falta un dato antes de registrar: ${dato}. No registre nada; mandalo de nuevo con ese dato.`, registro: new RegistroCifras() };
 }
 
+export function faltaDatoConOpciones(dato: string): MensajeListo {
+  return { texto: `Falta un dato antes de registrar: ${dato}. Elige una opcion; no registre nada todavia.`, registro: new RegistroCifras() };
+}
+
+const TEXTO_REVERSA: Readonly<Record<Reversa, string>> = {
+  directa: 'Se puede deshacer despues con /deshacer.',
+  software: 'NO tiene deshacer directo por Telegram: si hay error, se corrige desde el software.',
+  ninguna: 'NO se puede deshacer por Telegram: queda registrado y solo se corrige desde el software con un movimiento nuevo.',
+};
+
+/** Segunda confirmacion de las acciones reforzadas: dice antes si hay o no deshacer. */
+export function refuerzo(tipo: string, reversa: Reversa): MensajeListo {
+  return { texto: `Confirmacion reforzada (${tipo.replace(/_/g, ' ')}). ${TEXTO_REVERSA[reversa]} ¿Seguro que lo registro?`, registro: new RegistroCifras() };
+}
+
 const TITULO_RESUMEN: Readonly<Partial<Record<Intencion['tipo'], string>>> = {
   pedido: 'Pedido de cliente',
   pago: 'Cobro a cliente',
@@ -170,7 +189,20 @@ const TITULO_RESUMEN: Readonly<Partial<Record<Intencion['tipo'], string>>> = {
   devolucion: 'Devolucion de un cliente',
   paquete_perdido: 'Paquete perdido o danado',
   compra: 'Compra a proveedor',
-  orden_compra: 'Orden de compra',
+  orden_compra: 'Orden de compra (borrador que los socios aprueban)',
+  pedido_envio: 'Cambio de estado de un pedido',
+  pedido_cancelar: 'Cancelacion de un pedido',
+  compra_recepcion: 'Recepcion de una compra',
+  compra_estado: 'Paquete de una compra',
+  compra_aprobar: 'Aprobacion de una orden de compra',
+  gasto_servicio: 'Cargo de un servicio del sistema',
+  merma: 'Merma de inventario',
+  conteo: 'Conteo fisico de inventario',
+  cliente_alta: 'Alta de cliente',
+  cliente_precio: 'Precio de un cliente',
+  acta_propuesta: 'Propuesta de acta de corte',
+  acta_firma: 'Firma del acta de corte',
+  lote_historico: 'Lote de movimientos historicos (fecha pasada)',
 };
 
 export interface DatosResumen {
@@ -180,6 +212,12 @@ export interface DatosResumen {
   /** Nombre de catalogo de cada linea, en el orden de la intencion. */
   lineas: readonly string[];
   horas: number;
+  /** Efecto calculado por el servidor al simular (null si el negocio no simula). */
+  efecto?: Extract<ResultadoSimulacion, { tipo: 'simulado' }> | null;
+  reversa?: Reversa;
+  reforzada?: boolean;
+  modelo?: string | null;
+  clientesLote?: Record<string, string> | null;
 }
 
 const NOMBRE_SOCIO: Readonly<Record<'angelo' | 'javier', string>> = { angelo: 'Angelo', javier: 'Javier' };
@@ -233,9 +271,63 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
     case 'pedido':
       l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, ...lineasDe(i.lineas));
       break;
+    case 'pedido_envio':
+      l.push(`Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, `Nuevo estado: ${i.estado}`);
+      if (i.guia_texto !== null) l.push(`Guia: ${r.citaUsuario(i.guia_texto)}`);
+      break;
+    case 'pedido_cancelar':
+      l.push(`Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, `Motivo: ${r.citaUsuario(i.motivo ?? '')}`);
+      break;
+    case 'compra_aprobar':
+      l.push(`Compra: ${r.citaUsuario(i.compra_folio ?? '')}`);
+      break;
+    case 'compra_estado':
+      l.push(`Compra: ${r.citaUsuario(i.compra_folio ?? '')}`, `Estado: ${i.estado === 'enviada' ? 'enviada (en trayecto)' : 'llego a Merida'}`);
+      break;
+    case 'compra_recepcion':
+      l.push(`Compra: ${r.citaUsuario(i.compra_folio ?? '')}`, ...(i.lineas.length === 0 ? ['Recepcion TOTAL de lo pedido'] : ['Recepcion PARCIAL:', ...lineasDe(i.lineas)]));
+      break;
+    case 'gasto_servicio':
+      l.push(`Servicio: ${r.citaUsuario(i.servicio_texto)}`, ...(i.monto_usd_centavos !== null ? [`Cargo en dolares: ${r.pesos(BigInt(i.monto_usd_centavos))} USD`] : [monto(i.monto_mxn_centavos ?? 0)]), `Lo pago: ${nombreQuien(i.pagado_por)} (queda como reembolso pendiente a ese socio)`);
+      if (i.tipo_cambio_micro !== null) l.push(`Tipo de cambio dicho: ${r.citaUsuario(String(i.tipo_cambio_micro / 1_000_000))}`);
+      break;
+    case 'merma':
+      l.push(`Modelo: ${r.servidor(d.lineas[0] ?? 'modelo')}`, `Sabor: ${r.citaUsuario(i.sabor_texto ?? '')}`, `Piezas: ${r.piezas(i.piezas)}`, `Motivo: ${r.citaUsuario(i.motivo ?? '')}`);
+      break;
+    case 'conteo':
+      l.push('Piezas contadas (el sistema ajusta la existencia a este conteo):', ...lineasDe(i.lineas));
+      break;
+    case 'cliente_alta':
+      l.push(`Nombre: ${r.citaUsuario(i.nombre)}`, 'Sin telefonos: los contactos viven aparte.');
+      break;
+    case 'cliente_precio':
+      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, `Modelo: ${r.servidor(d.modelo ?? i.modelo_texto)}`, `Precio nuevo: ${r.pesos(BigInt(i.precio_centavos))}`);
+      break;
+    case 'acta_propuesta':
+      l.push(`Periodo: ${r.citaUsuario(i.mes ?? 'el mes anterior')}`);
+      for (const [k, v] of Object.entries(i)) if (k.endsWith('_centavos') && typeof v === 'number') l.push(`${k.startsWith('retira') ? 'Retira' : 'Reinvierte'} ${k.includes('angelo') ? 'Angelo' : 'Javier'}: ${r.pesos(BigInt(v))}`);
+      l.push('Las cifras del acta las calcula la base. Despues la firma CADA socio, personalmente, desde su Telegram.');
+      break;
+    case 'acta_firma':
+      l.push(`Acta: ${r.citaUsuario(i.acta_folio ?? 'la pendiente de tu firma')}`, 'Firmas con tu propio Telegram; el bot nunca firma por ti.');
+      break;
+    case 'lote_historico':
+      l.push(`Lote: ${r.citaUsuario(i.etiqueta ?? 'sin etiqueta')} (${r.config(i.renglones.length)} renglones, todos con fecha pasada)`);
+      i.renglones.forEach((x, n) => {
+        const quien = x.tipo === 'cobro' ? `${r.servidor(d.clientesLote?.[String(n)] ?? x.cliente_texto ?? 'cliente')} a ${r.citaUsuario(x.cuenta_texto ?? '')}` : x.socio === 'angelo' ? 'Angelo' : 'Javier';
+        l.push(`- ${r.citaUsuario(x.fecha)} ${x.tipo} ${quien} ${r.pesos(BigInt(x.monto_centavos))}${x.concepto ? ` (${r.citaUsuario(x.concepto)})` : ''}`);
+      });
+      break;
     default:
       break;
   }
+  if (d.efecto) {
+    if (d.efecto.lineas.length > 0) l.push('Efecto calculado por el sistema:', ...listar(r, d.efecto.lineas));
+    for (const a of d.efecto.advertencias) l.push(`Aviso: ${r.servidor(a)}`);
+    l.push(d.efecto.cuadra ? 'Cuadre por dos vias despues de registrar: cuadra (debe = haber y saldos de socios = efectivo repartido).' : `Cuadre por dos vias despues de registrar: NO cuadra (${r.servidor(d.efecto.rojas.join('; '))}).`);
+  }
+  if (d.reversa !== undefined) l.push(TEXTO_REVERSA[d.reversa]);
+  if (d.reforzada) l.push('Pedire una segunda confirmacion antes de registrar.');
   l.push(`Confirma con el boton o cancela. La tarjeta caduca en ${r.config(d.horas)} horas.`);
   return { texto: l.join('\n'), registro: r };
 }

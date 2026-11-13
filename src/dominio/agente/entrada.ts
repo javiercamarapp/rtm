@@ -45,6 +45,8 @@ const PALABRAS_DE_NEGOCIO = new Set([
   'aporte', 'aportacion', 'puse', 'toma', 'tome', 'tomo', 'ayuda', 'pideme', 'pidele', 'pide', 'orden', 'anticipo', 'abono',
   'deposito', 'transferencia', 'guia', 'uber', 'envio',
   'utilidad', 'cartera', 'estado', 'reembolso', 'reembolsa', 'retiro', 'retire', 'saque', 'capital', 'devolucion', 'devolvio', 'paquete', 'perdio', 'extravio', 'danado', 'cobro',
+  'enviado', 'entregado', 'cancela', 'cancelar', 'recibi', 'recibir', 'recepcion', 'merma', 'conteo', 'cliente', 'precio', 'acta', 'firmar', 'firma', 'cuadra', 'cuadran', 'balance', 'diario',
+  'cobertura', 'reporte', 'llego', 'aprobar', 'aprueba', 'servicio', 'openrouter', 'vercel', 'lote', 'historico', 'cuentas', 'socios', 'faltan', 'falta',
 ]);
 
 /**

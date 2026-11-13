@@ -6,7 +6,7 @@ import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type { FuenteMensaje, Persona } from '@/dominio/agente/tipos';
 
 /** Cambia con cualquier edicion del prompt o del esquema: forma parte de la clave de la corrida guardada. */
-export const VERSION_PROMPT = 'r2-2026-11-13.1';
+export const VERSION_PROMPT = 'r3-2026-11-13.1';
 
 export const MAX_TOKENS_SALIDA_R1 = 700;
 
@@ -32,7 +32,14 @@ export const SISTEMA_R1 = [
   '    paquete_perdido (perdido o danado, folio del pedido) y consultas: estado_cuenta_socio (sujeto angelo o javier), utilidad (periodo hoy, semana o mes),',
   '    cartera (cuanto debe cada cliente), inventario, saldo, saldo_proveedor.',
   '12. Nunca sumes, restes ni deduzcas un monto: si el socio no dijo la cifra exacta, intencion "aclarar". "Lo que le debo" o "todo" no es una cifra.',
-  '13. Apertura, saldos historicos, fechas pasadas y reinversion de utilidades no se registran por aqui: intencion "aclarar" diciendo que se hace en el software.',
+  '13. Reinversion de utilidades solo dentro de acta_propuesta (reinvierte_*), nunca como movimiento suelto.',
+  '14. Mas intenciones de los socios: pedido (renglones modelo, sabor y piezas; precio_texto SOLO si el mensaje trae un precio), pedido_envio (enviado o entregado, folio P-),',
+  '    pedido_cancelar (folio y motivo), compra y orden_compra (proveedor, renglones), compra_aprobar, compra_estado (enviada o llego_merida), compra_recepcion (renglones vacios = total),',
+  '    gasto_servicio (servicio, monto en dolares O en pesos, nunca los dos; el tipo de cambio solo si lo dicen), merma (modelo, sabor, piezas, motivo), conteo (piezas contadas por modelo y sabor),',
+  '    cliente_alta (nombre), cliente_precio (cliente, modelo, precio), acta_propuesta (mes AAAA-MM o null; retira/reinvierte por socio solo si lo dicen), acta_firma,',
+  '    lote_historico (movimientos con fecha pasada EXPLICITA en AAAA-MM-DD: gasto, cobro, aportacion, reembolso o retiro). Si falta la fecha de un renglon historico, intencion "aclarar".',
+  '15. Consultas nuevas: cuadra, balance, diario, cobertura, reporte (periodo), compras, pedidos, saldos_socios, pendientes. Nunca sumes ni compares cifras tu mismo.',
+  '16. Nunca escribas a clientes ni a terceros: todo se responde en el grupo de los socios. Los telefonos y correos llegan ocultos y no se usan.',
 ].join('\n');
 
 function puntuar(texto: string, e: EntradaCatalogo): number {

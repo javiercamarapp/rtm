@@ -9,7 +9,8 @@
 import { cifrasDeMonto, cifrasDePiezas, cifrasSinProcedencia, valoresDeTexto, type CifraExtraida } from '@/dominio/agente/cifras';
 import { parsearComando } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN, evaluarDeshacer } from '@/dominio/agente/deshacer';
-import { debeProcesarConIa, detectarInyeccion, sanitizar } from '@/dominio/agente/entrada';
+import { debeProcesarConIa, detectarInyeccion, redactarContactos, sanitizar } from '@/dominio/agente/entrada';
+import { CATALOGO_INTENCIONES, confirmacionDe } from '@/dominio/agente/catalogo_intenciones';
 import { esEscritura, exigeConfirmacion, type Intencion, type RespuestaExtractor } from '@/dominio/agente/intenciones';
 import { cadenaParaRol, peorCasoTokens } from '@/dominio/agente/modelos';
 import { permisoParaIntencion } from '@/dominio/agente/permisos';
@@ -32,7 +33,9 @@ import type {
   BotonEnLinea,
   CatalogoAgente,
   ClienteLlm,
+  ContextoEjecucion,
   EnviadorTelegram,
+  ResultadoSimulacion,
   NegocioAgente,
   RespuestaLlm,
 } from './puertos';
@@ -50,6 +53,10 @@ export interface ConfigAgente {
    * si falta un dato (cuenta, quien pago, via, pedido) se pregunta en vez de suponerlo. En false conserva el comportamiento anterior (eco + Deshacer).
    */
   confirmarMovimientos: boolean;
+  /** Produccion: un renglon sin sabor se pregunta (la base exige sku). En simulacion sin base se deja en false. */
+  exigirSabor: boolean;
+  /** Limite de frecuencia por chat: mensajes procesados por minuto (0 = sin limite). */
+  limiteMensajesPorMinuto: number;
 }
 
 export const CONFIG_POR_OMISION: ConfigAgente = {
@@ -59,6 +66,8 @@ export const CONFIG_POR_OMISION: ConfigAgente = {
   ventanaDeshacerMin: VENTANA_DESHACER_MIN,
   maxOpciones: 4,
   confirmarMovimientos: true,
+  exigirSabor: false,
+  limiteMensajesPorMinuto: 20,
 };
 
 export interface DependenciasAgente {
@@ -93,6 +102,8 @@ interface EstadoAccion {
   /** Un socio ya pulso Confirmar en el resumen del movimiento (distinto de `confirmado`, que contesta preguntas del negocio). */
   vistoBueno: boolean;
   confirmadoPor: Persona | null;
+  /** Confirmacion reforzada (acciones que no se deshacen por Telegram): el segundo "si, estoy seguro". */
+  refuerzo: boolean;
   cita: string;
 }
 
@@ -140,7 +151,25 @@ function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
       salida.push(cifrasDeMonto('monto', a.monto_centavos));
       break;
     case 'devolucion':
+    case 'compra_recepcion':
+    case 'conteo':
       a.lineas.forEach((l, i) => salida.push(cifrasDePiezas(`lineas.${i}.piezas`, l.piezas)));
+      break;
+    case 'merma':
+      salida.push(cifrasDePiezas('piezas', a.piezas));
+      break;
+    case 'gasto_servicio':
+      if (a.monto_usd_centavos !== null) salida.push(cifrasDeMonto('monto_usd', a.monto_usd_centavos));
+      if (a.monto_mxn_centavos !== null) salida.push(cifrasDeMonto('monto_mxn', a.monto_mxn_centavos));
+      break;
+    case 'cliente_precio':
+      salida.push(cifrasDeMonto('precio', a.precio_centavos));
+      break;
+    case 'acta_propuesta':
+      for (const [k, v] of Object.entries(a)) if (k.endsWith('_centavos') && typeof v === 'number') salida.push(cifrasDeMonto(k, v));
+      break;
+    case 'lote_historico':
+      a.renglones.forEach((r, i) => salida.push(cifrasDeMonto(`renglones.${i}.monto`, r.monto_centavos)));
       break;
     case 'compra':
     case 'orden_compra':
@@ -180,9 +209,44 @@ export function datoFaltante(a: Intencion): string | null {
       return a.pedido_folio === null ? 'de que pedido es la devolucion (folio)' : null;
     case 'paquete_perdido':
       return a.pedido_folio === null ? 'de que pedido es el paquete (folio)' : null;
+    case 'pedido_envio':
+      return a.pedido_folio === null ? 'el folio del pedido (por ejemplo P-0001)' : null;
+    case 'pedido_cancelar':
+      return a.pedido_folio === null ? 'el folio del pedido (por ejemplo P-0001)' : a.motivo === null ? 'el motivo de la cancelacion' : null;
+    case 'compra_aprobar':
+    case 'compra_estado':
+    case 'compra_recepcion':
+      return a.compra_folio === null ? 'el folio de la compra (por ejemplo C-0001)' : null;
+    case 'merma':
+      return a.motivo === null ? 'el motivo de la merma' : null;
+    case 'gasto_servicio':
+      return a.monto_usd_centavos === null && a.monto_mxn_centavos === null ? 'el monto del cargo (en dolares o en pesos)' : a.pagado_por === 'sociedad' ? 'quien pago el servicio, Angelo o Javier' : null;
+    case 'lote_historico':
+      return a.renglones.some((r) => (r.tipo !== 'cobro' && r.socio === null) || (r.tipo === 'cobro' && (r.cliente_texto === null || r.cuenta_texto === null)) || ((r.tipo === 'reembolso' || r.tipo === 'retiro') && r.via === null))
+        ? 'en cada renglon: socio (o cliente y cuenta en un cobro) y via en reembolsos y retiros'
+        : null;
     default:
       return null;
   }
+}
+
+interface OpcionFaltante {
+  texto: string;
+  parche: (a: Intencion) => Intencion;
+}
+
+/** Datos que se piden con botones (estado de conversacion en el token, con expiracion). El resto se pide por texto. */
+export function opcionesFaltante(a: Intencion): OpcionFaltante[] | null {
+  if (a.tipo === 'pago' && a.cuenta_destino_texto === null) {
+    return ['Angelo', 'Javier', 'Isaac', 'Karen', 'Efectivo'].map((c) => ({ texto: c, parche: (x) => (x.tipo === 'pago' ? { ...x, cuenta_destino_texto: c } : x) }));
+  }
+  if ((a.tipo === 'gasto' || a.tipo === 'gasto_servicio') && a.pagado_por === 'sociedad') {
+    return (['angelo', 'javier'] as const).map((q) => ({ texto: q === 'angelo' ? 'Angelo' : 'Javier', parche: (x) => (x.tipo === 'gasto' || x.tipo === 'gasto_servicio' ? { ...x, pagado_por: q } : x) }));
+  }
+  if ((a.tipo === 'reembolso_socio' || a.tipo === 'retiro_utilidad') && a.via === null) {
+    return (['transferencia', 'efectivo'] as const).map((v) => ({ texto: v === 'efectivo' ? 'Efectivo' : 'Transferencia', parche: (x) => (x.tipo === 'reembolso_socio' || x.tipo === 'retiro_utilidad' ? { ...x, via: v } : x) }));
+  }
+  return null;
 }
 
 export class AgenteTelegram {
@@ -257,6 +321,14 @@ export class AgenteTelegram {
     const autor = await this.autorizar(msg, miembro, chats);
     if (!autor) return { estado: 'ignorado', motivo: 'no_autorizado' };
 
+    if (this.cfg.limiteMensajesPorMinuto > 0 && this.d.almacen.mensajesRecientes) {
+      const n = await this.d.almacen.mensajesRecientes(msg.chat.id, 60);
+      if (n >= this.cfg.limiteMensajesPorMinuto) {
+        await this.d.almacen.registrarEvento({ tipo: 'limite_frecuencia', miembro: autor.telegramUserId, detalle: 'chat_con_demasiados_mensajes' });
+        await this.responder(autor, chats, P.textoSimple('Demasiados mensajes seguidos. Espera un minuto antes de seguir.'));
+        return { estado: 'ignorado', motivo: 'limite_frecuencia' };
+      }
+    }
     if (!(await this.d.almacen.reclamarMensaje(msg.chat.id, msg.message_id))) {
       await this.d.almacen.registrarEvento({ tipo: 'mensaje_duplicado', miembro: autor.telegramUserId, detalle: esEdicion ? 'edicion' : 'reenvio' });
       if (esEdicion) {
@@ -475,7 +547,8 @@ export class AgenteTelegram {
         confirmado: false,
         vistoBueno: false,
         confirmadoPor: null,
-        cita: ctx.texto.slice(0, 120),
+        refuerzo: false,
+        cita: redactarContactos(ctx.texto).slice(0, 120),
       };
       await this.resolverYEjecutar(estado, ctx.chats);
       hechas++;
@@ -484,7 +557,7 @@ export class AgenteTelegram {
   }
 
   private async resolverYEjecutar(estado: EstadoAccion, chats: ChatsRegistrados): Promise<void> {
-    const salida = await resolverAccion(estado.intencion, estado.autor, this.d.catalogo, estado.overrides);
+    const salida = await resolverAccion(estado.intencion, estado.autor, this.d.catalogo, estado.overrides, this.cfg.exigirSabor);
     if (!salida.ok) {
       await this.preguntar(estado, salida.pregunta, chats);
       return;
@@ -514,6 +587,14 @@ export class AgenteTelegram {
 
     if (this.cfg.confirmarMovimientos && exigeConfirmacion(intencion.tipo) && !estado.vistoBueno) {
       await this.pedirConfirmacion(estado, a, chats);
+      return;
+    }
+    if (this.cfg.confirmarMovimientos && exigeConfirmacion(intencion.tipo) && confirmacionDe(intencion.tipo) === 'reforzada' && !estado.refuerzo) {
+      if (intencion.tipo === 'acta_firma' && estado.confirmadoPor !== estado.autor.persona) {
+        await this.responder(estado.autor, chats, P.rechazo('La firma del acta es personal: la da quien la pide, desde su propio Telegram. No firme nada.'));
+        return;
+      }
+      await this.pedirRefuerzo(estado, chats);
       return;
     }
 
@@ -557,8 +638,41 @@ export class AgenteTelegram {
   private async pedirConfirmacion(estado: EstadoAccion, a: AccionResuelta, chats: ChatsRegistrados): Promise<void> {
     const falta = datoFaltante(a.intencion);
     if (falta !== null) {
-      await this.responder(estado.autor, chats, P.faltaDato(falta));
+      const opciones = opcionesFaltante(a.intencion);
+      if (opciones === null) {
+        await this.responder(estado.autor, chats, P.faltaDato(falta));
+        return;
+      }
+      // Estado de conversacion: las opciones viajan en tokens de un solo uso con expiracion; al elegir una se completa la accion y sigue el resumen.
+      const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
+      const exclusivo = `falta:${estado.claveIdem}`;
+      const botones: BotonEnLinea[][] = [];
+      for (const o of opciones) {
+        botones.push([await this.boton1(o.texto, 'completar', ['socio'], chats.grupoSocios, caduca, exclusivo, { ...estado, intencion: o.parche(a.intencion) } satisfies EstadoAccion)]);
+      }
+      botones.push([await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null)]);
+      await this.com.aGrupo(chats, P.faltaDatoConOpciones(falta), { botones });
       return;
+    }
+    if (a.intencion.tipo === 'acta_firma' && estado.confirmadoPor !== null && estado.confirmadoPor !== estado.autor.persona) {
+      await this.responder(estado.autor, chats, P.rechazo('La firma del acta es personal: la da quien la pide, desde su propio Telegram. No firme nada.'));
+      return;
+    }
+    const ctx: ContextoEjecucion = { autor: estado.autor, claveIdem: estado.claveIdem, origen: estado.origen, ahora: this.d.reloj(), confirmado: estado.confirmado };
+    let efecto: Extract<ResultadoSimulacion, { tipo: 'simulado' }> | null = null;
+    if (this.d.negocio.simular) {
+      const sim = await this.d.negocio.simular(a, ctx);
+      if (sim.tipo === 'rechazado') {
+        await this.responder(estado.autor, chats, P.rechazo(sim.texto));
+        return;
+      }
+      if (sim.tipo === 'pregunta') {
+        const si = await this.boton1('Si, continuar', 'confirmar_accion', ['socio'], chats.grupoSocios, this.mas(this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, { ...estado, confirmado: true } satisfies EstadoAccion);
+        const no = await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, this.mas(this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, null);
+        await this.com.aGrupo(chats, P.preguntaNegocio(sim.texto, sim.cifras), { botones: [[si, no]] });
+        return;
+      }
+      efecto = sim;
     }
     const [clientes, modelos] = await Promise.all([this.d.catalogo.clientes(), this.d.catalogo.modelos()]);
     const nombreDe = (lista: readonly { id: string; nombre: string }[], id: string | null): string | null => (id === null ? null : (lista.find((x) => x.id === id)?.nombre ?? null));
@@ -568,7 +682,33 @@ export class AgenteTelegram {
     const exclusivo = `res:${estado.claveIdem}`;
     const si = await this.boton1('Confirmar', 'confirmar_resumen', ['socio'], chats.grupoSocios, caduca, exclusivo, { ...estado, vistoBueno: true } satisfies EstadoAccion);
     const no = await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null);
-    await this.com.aGrupo(chats, P.resumenConfirmacion(a.intencion, { autor: estado.autor, cliente: nombreDe(clientes, a.resoluciones.clienteId), proveedor: a.resoluciones.proveedorId, lineas, horas }), { botones: [[si, no]] });
+    const clientesLote = a.resoluciones.clientesLote;
+    await this.com.aGrupo(
+      chats,
+      P.resumenConfirmacion(a.intencion, {
+        autor: estado.autor,
+        cliente: nombreDe(clientes, a.resoluciones.clienteId),
+        proveedor: a.resoluciones.proveedorId,
+        lineas,
+        horas,
+        efecto,
+        reversa: CATALOGO_INTENCIONES[a.intencion.tipo].reversa,
+        reforzada: confirmacionDe(a.intencion.tipo) === 'reforzada',
+        modelo: nombreDe(modelos, a.resoluciones.modeloId),
+        clientesLote: clientesLote === undefined ? null : Object.fromEntries(Object.entries(clientesLote).map(([k, v]) => [k, nombreDe(clientes, v) ?? 'cliente'])),
+      }),
+      { botones: [[si, no]] },
+    );
+  }
+
+  /** Segundo paso de las acciones que no se deshacen por Telegram: dice con todas sus letras que es irreversible y pide otro si. */
+  private async pedirRefuerzo(estado: EstadoAccion, chats: ChatsRegistrados): Promise<void> {
+    const reversa = CATALOGO_INTENCIONES[estado.intencion.tipo].reversa;
+    const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
+    const exclusivo = `ref:${estado.claveIdem}`;
+    const si = await this.boton1('Si, estoy seguro', 'confirmar_refuerzo', ['socio'], chats.grupoSocios, caduca, exclusivo, { ...estado, refuerzo: true } satisfies EstadoAccion);
+    const no = await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null);
+    await this.com.aGrupo(chats, P.refuerzo(estado.intencion.tipo, reversa), { botones: [[si, no]] });
   }
 
   // ------------------------------------------------------------------ preguntas de aclaracion
@@ -676,6 +816,18 @@ export class AgenteTelegram {
         const e = payload as EstadoAccion;
         await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple(`Confirmado por ${P.nombrePersona(miembro.persona)}. Registrando.`));
         await this.resolverYEjecutar({ ...e, vistoBueno: true, confirmadoPor: miembro.persona }, chats);
+        return;
+      }
+      case 'confirmar_refuerzo': {
+        const e = payload as EstadoAccion;
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple(`Confirmado de nuevo por ${P.nombrePersona(miembro.persona)}. Registrando.`));
+        await this.resolverYEjecutar({ ...e, refuerzo: true, confirmadoPor: miembro.persona }, chats);
+        return;
+      }
+      case 'completar': {
+        const e = payload as EstadoAccion;
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Dato completado.'));
+        await this.resolverYEjecutar(e, chats);
         return;
       }
       case 'confirmar_accion': {

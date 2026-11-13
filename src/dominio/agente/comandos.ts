@@ -5,6 +5,7 @@ import { centavosDesdeTexto } from '../dinero';
 import {
   TIPOS_GASTO,
   type ILineaCompraTexto,
+  type ILoteHistorico,
   type Intencion,
   type LineaPedidoTexto,
   type QuienPaga,
@@ -35,13 +36,35 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
   pendientes: '/pendientes',
   deshacer: '/deshacer [folio]',
   explicar: '/explicar folio',
+  enviado: '/enviado P-0001 [guia]',
+  entregado: '/entregado P-0001',
+  cancelar: '/cancelar P-0001 | motivo',
+  aprobar: '/aprobar C-0001',
+  enviada: '/enviada C-0001',
+  llego: '/llego C-0001',
+  recibir: '/recibir C-0001 [| modelo/sabor 5 | ...]  (sin renglones = recepcion total)',
+  servicio: '/servicio openrouter 20usd javier [tc 18.50]  o  /servicio vercel 500 javier',
+  merma: '/merma modelo/sabor 3 | motivo',
+  conteo: '/conteo modelo/sabor 12 | modelo/sabor 4',
+  cliente: '/cliente Nombre del cliente',
+  precio: '/precio Cliente | modelo | 250',
+  acta: '/acta [AAAA-MM] [retira angelo 1000] [reinvierte javier 500]',
+  firmaracta: '/firmaracta [A-0001]',
+  lote: '/lote etiqueta  (una linea por movimiento: 2026-10-03 gasto javier 500 uber | 2026-10-04 cobro Cliente 7000 efectivo)',
+  cuadra: '/cuadra',
+  balance: '/balance',
+  diario: '/diario',
+  cobertura: '/cobertura [modelo]',
+  reporte: '/reporte [semana|mes|hoy]',
+  compras: '/compras',
+  pedidos: '/pedidos',
   sinia: '/sinia',
   conia: '/conia',
   ayuda: '/ayuda',
 };
 
 export const LISTA_COMANDOS =
-  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes';
+  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes, /enviado, /entregado, /cancelar, /aprobar, /enviada, /llego, /recibir, /servicio, /merma, /conteo, /cliente, /precio, /acta, /firmaracta, /lote, /cuadra, /balance, /diario, /cobertura, /reporte, /compras, /pedidos, /socios';
 
 export type ResultadoComando =
   | { ok: true; tipo: 'intencion'; intencion: Intencion }
@@ -108,6 +131,55 @@ function consulta(consulta: Extract<Intencion, { tipo: 'consulta' }>['consulta']
     tipo: 'intencion',
     intencion: { tipo: 'consulta', consulta, modelo_texto: null, sabor_texto: null, sujeto_texto: null, folio: null, periodo: null, ...extra },
   };
+}
+
+/** "jupiter/uva" -> modelo y sabor. Sin "/" el sabor queda null (el agente pregunta). */
+function modeloSabor(texto: string): { modelo_texto: string; sabor_texto: string | null } {
+  const i = texto.indexOf('/');
+  if (i <= 0 || i === texto.length - 1) return { modelo_texto: texto.trim(), sabor_texto: null };
+  return { modelo_texto: texto.slice(0, i).trim(), sabor_texto: texto.slice(i + 1).trim() };
+}
+
+function lineaDe(seg: string, maxPiezas = PIEZAS_MAX, minPiezas = PIEZAS_MIN): ILineaCompraTexto | null {
+  const l = parsearLinea(seg);
+  if (!l || l.piezas > maxPiezas || l.piezas < minPiezas) return null;
+  return { ...modeloSabor(l.modelo), piezas: l.piezas };
+}
+
+const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Una linea de lote historico: "2026-10-03 gasto javier 500 uber" | "2026-10-04 cobro Cliente Norte 7000 efectivo" | "aportacion javier 1000 [capital]" | "reembolso|retiro javier 500 [efectivo|transferencia]". */
+export function parsearRenglonHistorico(linea: string): ILoteHistorico['renglones'][number] | null {
+  const t = linea.trim().split(/\s+/);
+  const [fecha, tipoT, ...resto] = t;
+  if (!fecha || !FECHA.test(fecha) || !tipoT) return null;
+  const tipo = normalizar(tipoT);
+  const base = { fecha, socio: null, cliente_texto: null, cuenta_texto: null, concepto: null, intencion: null, via: null } as const;
+  if (tipo === 'gasto' || tipo === 'aportacion' || tipo === 'reembolso' || tipo === 'retiro') {
+    const s = resto[0] === undefined ? null : socio(resto[0]);
+    const c = resto[1] === undefined ? null : monto(resto[1]);
+    if (s === null || c === null) return null;
+    const extra = resto.slice(2).join(' ');
+    const n = normalizar(extra);
+    return {
+      ...base,
+      tipo,
+      socio: s,
+      monto_centavos: c,
+      concepto: tipo === 'gasto' && extra !== '' ? extra.slice(0, 100) : null,
+      intencion: tipo === 'aportacion' && n.includes('capital') ? 'capital' : null,
+      via: tipo === 'reembolso' || tipo === 'retiro' ? (n.includes('transferencia') ? 'transferencia' : n.includes('efectivo') ? 'efectivo' : null) : null,
+    };
+  }
+  if (tipo === 'cobro') {
+    // cobro <cliente...> <monto> [cuenta]
+    const i = resto.findIndex((x) => monto(x) !== null);
+    if (i <= 0) return null;
+    const c = monto(resto[i]!);
+    if (c === null) return null;
+    return { ...base, tipo: 'cobro', monto_centavos: c, cliente_texto: resto.slice(0, i).join(' '), cuenta_texto: resto[i + 1] ?? null };
+  }
+  return null;
 }
 
 /** Interpreta un mensaje que empieza con "/". Devuelve null si no es un comando. */
@@ -279,6 +351,122 @@ export function parsearComando(texto: string): ResultadoComando | null {
         lineas.push({ modelo_texto: l.modelo, sabor_texto: null, piezas: l.piezas });
       }
       return { ok: true, tipo: 'intencion', intencion: { tipo: 'toma_omar', lineas, fuente_cita: cita } };
+    }
+    case 'enviado':
+    case 'entregado': {
+      const [folio, guia] = resto.split(/\s+/);
+      if (!folio) return fallo(nombre);
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pedido_envio', pedido_folio: folio.toUpperCase(), estado: nombre, paqueteria_texto: null, guia_texto: guia ?? null, fuente_cita: cita } };
+    }
+    case 'cancelar': {
+      const [folio, motivo] = partes;
+      if (!folio) return fallo('cancelar');
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pedido_cancelar', pedido_folio: folio.toUpperCase(), motivo: motivo ?? null, fuente_cita: cita } };
+    }
+    case 'aprobar':
+      return resto === '' ? fallo('aprobar') : { ok: true, tipo: 'intencion', intencion: { tipo: 'compra_aprobar', compra_folio: resto.toUpperCase(), fuente_cita: cita } };
+    case 'enviada':
+    case 'llego':
+      return resto === '' ? fallo(nombre) : { ok: true, tipo: 'intencion', intencion: { tipo: 'compra_estado', compra_folio: resto.toUpperCase(), estado: nombre === 'enviada' ? 'enviada' : 'llego_merida', fuente_cita: cita } };
+    case 'recibir': {
+      const [folio, ...segs] = partes;
+      if (!folio) return fallo('recibir');
+      const lineas: ILineaCompraTexto[] = [];
+      for (const seg of segs) {
+        const l = lineaDe(seg);
+        if (!l) return fallo('recibir');
+        lineas.push(l);
+      }
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'compra_recepcion', compra_folio: folio.toUpperCase(), lineas, fuente_cita: cita } };
+    }
+    case 'servicio': {
+      const t = resto.split(/\s+/);
+      const [servicio, importe, quien, ...extra] = t;
+      const usd = importe === undefined ? null : /^(.+?)\s*usd$/i.exec(importe);
+      const c = importe === undefined ? null : monto(usd ? usd[1]! : importe);
+      const q = quien === undefined ? null : quienPaga(quien);
+      if (!servicio || c === null || q === null || q === 'sociedad') return fallo('servicio');
+      let tc: number | null = null;
+      if (extra[0] && normalizar(extra[0]) === 'tc' && extra[1]) {
+        const m = /^\d+(\.\d{1,6})?$/.exec(extra[1]);
+        if (!m) return fallo('servicio');
+        const [e, d = ''] = extra[1].split('.');
+        tc = Number(e) * 1_000_000 + Number(d.padEnd(6, '0'));
+      }
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'gasto_servicio', servicio_texto: servicio, monto_usd_centavos: usd ? c : null, monto_mxn_centavos: usd ? null : c, tipo_cambio_micro: usd ? tc : null, pagado_por: q, fuente_cita: cita } };
+    }
+    case 'merma': {
+      const [item, motivo] = partes;
+      const l = item === undefined ? null : lineaDe(item);
+      if (!l) return fallo('merma');
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'merma', modelo_texto: l.modelo_texto, sabor_texto: l.sabor_texto, piezas: l.piezas, motivo: motivo ?? null, fuente_cita: cita } };
+    }
+    case 'conteo': {
+      if (partes.length === 0) return fallo('conteo');
+      const lineas: ILineaCompraTexto[] = [];
+      for (const seg of partes) {
+        const l = lineaDe(seg, 5000, 0);
+        if (!l) return fallo('conteo');
+        lineas.push(l);
+      }
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'conteo', lineas, fuente_cita: cita } };
+    }
+    case 'cliente':
+      return resto.length < 2 ? fallo('cliente') : { ok: true, tipo: 'intencion', intencion: { tipo: 'cliente_alta', nombre: resto.slice(0, 60), fuente_cita: cita } };
+    case 'precio': {
+      const [cliente, modelo, importe] = partes;
+      const c = importe === undefined ? null : monto(importe);
+      if (!cliente || !modelo || c === null) return fallo('precio');
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'cliente_precio', cliente_texto: cliente, modelo_texto: modelo, precio_centavos: c, fuente_cita: cita } };
+    }
+    case 'acta': {
+      const t = resto.split(/\s+/).filter((x) => x !== '');
+      let mes: string | null = null;
+      const d = { retira_angelo_centavos: null as number | null, retira_javier_centavos: null as number | null, reinvierte_angelo_centavos: null as number | null, reinvierte_javier_centavos: null as number | null };
+      for (let i = 0; i < t.length; i++) {
+        if (/^\d{4}-\d{2}$/.test(t[i]!)) { mes = t[i]!; continue; }
+        const verbo = normalizar(t[i]!);
+        const s = t[i + 1] === undefined ? null : socio(t[i + 1]!);
+        const c = t[i + 2] === undefined ? null : monto(t[i + 2]!);
+        if ((verbo === 'retira' || verbo === 'reinvierte') && s !== null && c !== null) {
+          d[`${verbo}_${s}_centavos` as keyof typeof d] = c;
+          i += 2;
+          continue;
+        }
+        return fallo('acta');
+      }
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'acta_propuesta', mes, ...d, fuente_cita: cita } };
+    }
+    case 'firmaracta':
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'acta_firma', acta_folio: resto === '' ? null : resto.toUpperCase(), fuente_cita: cita } };
+    case 'lote': {
+      const lineasTxt = (m[2] ?? '').split('\n').map((x) => x.trim()).filter((x) => x !== '');
+      const [cabecera, ...cuerpo] = lineasTxt;
+      const etiqueta = cabecera !== undefined && !FECHA.test(cabecera.split(/\s+/)[0] ?? '') ? cabecera.slice(0, 60) : null;
+      const filas = etiqueta === null && cabecera !== undefined ? [cabecera, ...cuerpo] : cuerpo;
+      const renglones: ILoteHistorico['renglones'] = [];
+      for (const f of filas) {
+        const r = parsearRenglonHistorico(f);
+        if (!r) return { ok: false, error: 'formato', uso: `${USO_COMANDOS.lote!} (no entendi la linea: ${f.slice(0, 60)})` };
+        renglones.push(r);
+      }
+      if (renglones.length === 0 || renglones.length > 60) return fallo('lote');
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'lote_historico', etiqueta, renglones, fuente_cita: limpio.slice(0, 120) } };
+    }
+    case 'cuadra':
+    case 'balance':
+    case 'diario':
+    case 'compras':
+    case 'pedidos':
+      return consulta(nombre);
+    case 'socios':
+      return consulta('saldos_socios');
+    case 'cobertura':
+      return consulta('cobertura', { modelo_texto: resto === '' ? null : resto });
+    case 'reporte': {
+      const p = normalizar(resto);
+      if (p === '') return consulta('reporte', { periodo: 'semana' });
+      return p === 'hoy' || p === 'semana' || p === 'mes' ? consulta('reporte', { periodo: p }) : fallo('reporte');
     }
     default:
       return { ok: false, error: 'comando_desconocido', uso: LISTA_COMANDOS };

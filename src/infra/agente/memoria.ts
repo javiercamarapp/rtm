@@ -46,6 +46,9 @@ export class AlmacenAgenteMemoria implements AlmacenAgente {
     return true;
   }
 
+  /** Doble de pruebas: la memoria no lleva reloj de frecuencia; las pruebas lo reemplazan. */
+  mensajesRecientes?: (chatId: number, segundos: number) => Promise<number>;
+
   async reclamarMensaje(chatId: number, messageId: number): Promise<boolean> {
     const k = `${chatId}:${messageId}`;
     if (this.mensajes.has(k)) return false;

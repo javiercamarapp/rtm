@@ -28,6 +28,7 @@ export interface EventoAgente {
     | 'modo_sin_ia'
     | 'omar_fuera_de_alcance'
     | 'respuesta_bloqueada'
+    | 'limite_frecuencia'
     | 'error_llm'
     | 'validacion_fallida';
   miembro: number | null;
@@ -49,6 +50,8 @@ export interface AlmacenAgente {
   corrida(clave: string): Promise<unknown | null>;
   guardarCorrida(clave: string, resultado: unknown): Promise<void>;
   contarNoProcesado(): Promise<void>;
+  /** Mensajes reclamados en ese chat en los ultimos `segundos` (limite de frecuencia). */
+  mensajesRecientes?(chatId: number, segundos: number): Promise<number>;
   registrarEvento(evento: EventoAgente): Promise<void>;
 }
 
@@ -147,6 +150,8 @@ export type AccionBoton =
   | 'aclarar'
   | 'confirmar_accion'
   | 'confirmar_resumen'
+  | 'confirmar_refuerzo'
+  | 'completar'
   | 'cancelar'
   | 'otro';
 
@@ -195,6 +200,8 @@ export interface Resoluciones {
   lineas: Array<{ modeloId: string; saborId: string | null }>;
   /** Para consultas: id de modelo ya resuelto. */
   modeloId: string | null;
+  /** Lote historico: cliente resuelto por posicion de renglon. */
+  clientesLote?: Record<string, string>;
 }
 
 export interface AccionResuelta {
@@ -264,7 +271,15 @@ export interface TomaCaducada {
   lineas: CifraServidor[];
 }
 
+/** Efecto que calcula el servidor al simular una escritura (se revierte siempre). */
+export type ResultadoSimulacion =
+  | { tipo: 'simulado'; lineas: CifraServidor[]; advertencias: string[]; cuadra: boolean; rojas: string[] }
+  | { tipo: 'pregunta'; motivo: MotivoPreguntaNegocio; texto: string; cifras: CifraServidor[] }
+  | { tipo: 'rechazado'; codigo: string; texto: string };
+
 export interface NegocioAgente {
+  /** Opcional: el negocio simulado de las pruebas unitarias no lo implementa. */
+  simular?(a: AccionResuelta, ctx: ContextoEjecucion): Promise<ResultadoSimulacion>;
   ejecutar(a: AccionResuelta, ctx: ContextoEjecucion): Promise<ResultadoNegocio>;
   consultar(c: IConsulta, r: Resoluciones, autor: Miembro, ahora: Date): Promise<RespuestaConsulta>;
   /** Ultimo hecho aplicado por el autor, o el folio dado. */

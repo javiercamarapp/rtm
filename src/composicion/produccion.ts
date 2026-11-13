@@ -68,7 +68,7 @@ export function crearAgenteProduccion(d: DepsProduccion): AgenteTelegram {
   if (!tg) throw new Error('Telegram no esta configurado (falta TELEGRAM_BOT_TOKEN)');
   return new AgenteTelegram({
     almacen: new AlmacenAgenteDb(d.sql), presupuesto: new AlmacenPresupuestoDb(d.sql), llm: llmDe(d), telegram: tg, tokens: new AlmacenTokensDb(d.sql),
-    catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d),
+    catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d), config: { exigirSabor: true },
   });
 }
 
