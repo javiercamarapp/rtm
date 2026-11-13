@@ -239,10 +239,52 @@ test('el pedido a costo para un socio no genera utilidad y suma a las piezas mov
   await expect(page.getByText('10.00 % x 1 sem. (simple)').first()).toBeVisible();
   await capturar(page, 'por-cobrar', testInfo);
 
+  // Pedidos menudeo de Angelo: el pedido a costo enviado esta pendiente de pago; se paga y sale de pendientes
+  await page.goto('/menudeo?socio=Angelo');
+  await expect(page.getByTestId('menudeo-pendiente')).toContainText('$2,678.70');
+  const idCosto = Number((await conDb((c) => c.query("select p.id from operacion.pedido p join operacion.pedido_ds d on d.pedido_id = p.id where d.tipo_venta = 'socio_a_costo' order by p.id desc limit 1"))).rows[0].id);
+  await expect(page.getByTestId(`estado-pago-${idCosto}`)).toContainText('No pagado');
+  await page.getByTestId(`renglones-${idCosto}`).locator('summary').click();
+  await expect(page.getByTestId(`renglones-${idCosto}`)).toContainText('Fresa');
+  await expect(page.getByTestId(`renglones-${idCosto}`)).toContainText('$89.29');
+  await capturar(page, 'menudeo-pendiente', testInfo);
+  await page.goto('/');
+  await expect(page.getByTestId('inicio-pedidos-Angelo')).toContainText('$2,678.70');
+  await expect(page.getByTestId('inicio-fondos-Angelo')).toContainText('Sin fondos pendientes de entregar');
+  await expect(page.getByTestId('inicio-pedidos-Javier')).toContainText('Sin pedidos pendientes');
+  await page.goto('/menudeo?socio=Angelo');
+  await page.getByTestId(`pagar-menudeo-${idCosto}`).click();
+  await page.getByTestId('menudeo-via').selectOption('proveedor');
+  await page.getByTestId('confirmar').click();
+  await expect(page.getByTestId(`estado-pago-${idCosto}`)).toContainText('Pagado');
+  await expect(page.getByTestId('menudeo-pendiente')).toContainText('$0.00');
+  await page.goto('/');
+  await expect(page.getByTestId('inicio-pedidos-Angelo')).toContainText('Sin pedidos pendientes');
+
+  // Fondos de la sociedad cobrados en la cuenta de Angelo (renglon aparte; si restan de su aportacion neta)
+  await conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    await c.query("select operacion.registrar_pago($1,'Angelo',3547500,(select id from catalogo.cliente where nombre_canonico = $2),null,false,'anticipo')", [`e2eds:fondos:${SUFIJO}`, CLIENTE]);
+    await c.query('commit');
+  });
+  await page.goto('/');
+  await expect(page.getByTestId('inicio-fondos-Angelo')).toContainText('$35,475.00');
+  await expect(page.getByTestId('inicio-pedidos-Angelo')).toContainText('Sin pedidos pendientes');
+  await page.goto('/menudeo?socio=Angelo');
+  await expect(page.getByTestId('fondos-pendiente')).toContainText('$35,475.00');
+  await expect(page.getByText(CLIENTE).first()).toBeVisible();
+  await expect(page.getByText('Cobro en su cuenta').first()).toBeVisible();
+  await capturar(page, 'menudeo-fondos', testInfo);
+  await page.goto('/');
+  await capturar(page, 'inicio-pendientes', testInfo);
+
   // Cuenta de socios: aportacion neta sin lenguaje de deuda
   await page.goto('/socios');
   await expect(page.getByText('Aportación neta y diferencia a igualar')).toBeVisible();
   await expect(page.getByTestId('aportacion-neta-Javier')).toBeVisible();
+  // aportado 3,000.00 (su pago como reembolso del primer recorrido) menos 35,475.00 de fondos cobrados en su cuenta; el pedido a costo no resta
+  await expect(page.getByTestId('aportacion-neta-Angelo')).toContainText('32,475.00');
   await capturar(page, 'socios-aportacion-neta', testInfo);
 });
 

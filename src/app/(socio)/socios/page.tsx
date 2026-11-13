@@ -124,7 +124,7 @@ export default async function PaginaSocios() {
           filas={c.socios}
           totales={{ etiqueta: 'Total', celdas: { n: m(suma(c.socios.map((s) => s.neto_cent)), true), a: m(suma(c.socios.map((s) => s.aportado_cent))), r: m(reemb), k: m(cap), f: m(fondos) } }}
           columnas={[
-            { id: 's', titulo: 'Socio', ancho: 'l', celda: (s) => <CeldaPersona nombre={s.socio} href={`/socios/${s.socio}`} testid={`estado-${s.socio}`} subtitulo={s.neto_cent > 0n ? 'La sociedad le debe' : s.neto_cent < 0n ? 'Él debe' : 'En paz'} /> },
+            { id: 's', titulo: 'Socio', ancho: 'l', celda: (s) => <CeldaPersona nombre={s.socio} href={`/socios/${s.socio}`} testid={`estado-${s.socio}`} subtitulo={s.neto_cent > 0n ? 'La sociedad le debe' : s.neto_cent < 0n ? 'Fondos de la sociedad en su poder' : 'En paz'} /> },
             { id: 'a', titulo: 'Aportado', numerica: true, ancho: 'm', secundaria: true, celda: (s) => m(s.aportado_cent) },
             { id: 'n', titulo: 'Posición neta', numerica: true, ancho: 'm', celda: (s) => <CifraComprobada texto={m(s.neto_cent, true)} cifra={`socio:neto:${s.socio}`} comprobacion="cuadra" /> },
             { id: 'r', titulo: 'Reembolsos pendientes', numerica: true, ancho: 'm', secundaria: true, celda: (s) => m(s.reembolso_pendiente_cent) },

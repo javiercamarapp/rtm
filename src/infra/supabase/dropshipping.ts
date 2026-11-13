@@ -46,6 +46,9 @@ export function lectorDropshippingSupabase(): LectorDropshipping {
     aportacionNeta: () => llamar('socios_aportacion_neta'),
     orden: (id, completo) => llamar('ds_orden_proveedor', { p_pedido: id, p_completo: completo }),
     revelar: async (id, campo, motivo) => (await llamar<{ valor: string }>('ds_destinatario_revelar', { p_pedido: id, p_campo: campo, p_motivo: motivo })).valor,
-    explicar: async (cifra) => aExplicacion(await llamar<ExplicacionCruda>(cifra.startsWith('dsu:') ? 'ds_explicar_utilidad' : 'ds_explicar', { p_cifra: cifra })),
+    menudeo: (socio, f) => llamar('ds_menudeo', { p_socio: socio, p_desde: f.desde ?? null, p_hasta: f.hasta ?? null, p_proveedor: f.proveedor ?? null, p_estado: f.estadoPago ?? null }),
+    menudeoPendientes: () => llamar('ds_menudeo_pendientes'),
+    fondosEnPoder: (socio) => llamar('ds_fondos_en_poder', { p_socio: socio }),
+    explicar: async (cifra) => aExplicacion(await llamar<ExplicacionCruda>(cifra.startsWith('dsu:') ? 'ds_explicar_utilidad' : cifra.startsWith('dsm:') ? 'ds_explicar_menudeo' : 'ds_explicar', { p_cifra: cifra })),
   };
 }

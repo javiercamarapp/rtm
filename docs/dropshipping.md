@@ -32,12 +32,21 @@ Un retiro real solo existe por acta (por socio y por mes), no por pedido.
 
 Ingreso = costo, utilidad 0; no admite envío cobrado, descuento ni crédito; sin cuenta por cobrar si se paga directo al proveedor. Cuentan en "Piezas movidas a proveedores" (total, por proveedor, por socio y por mes).
 
+### Pedidos menudeo (pedidos a costo de un socio) y fondos en poder
+
+- Un pedido a costo NO resta a la valuación ni a la aportación neta del socio, esté pagado o pendiente: el libro lo registra como venta a costo contra cuenta por cobrar y cuenta por pagar al proveedor, y la valuación menos deudas no cambia. Lo prueba `034_dropshipping_menudeo.test.sql` (pendiente, enviado, pagado directo al proveedor y abono a la sociedad: v03 y aportación neta idénticas, sin aportación ni reembolso nuevos).
+- SOLO resta lo cobrado en la cuenta del socio (fondos de la sociedad en su poder), mostrado en un renglón aparte, pendiente de entregar, con detalle (fecha, folio del cobro, cliente y pedidos a los que se aplicó) y totales distintos a los de los pedidos a costo.
+- Página `/menudeo` (por socio, mismo funcionamiento para Angelo y Javier): fecha, renglones (marca, modelo, sabor, cantidad y costo unitario), piezas, costo total, proveedor, Pagado / No pagado con monto pagado y pendiente, filtros por periodo, proveedor y estado, totales y Explicar (`dsm:`). Registrar pago: directo al proveedor con su dinero (como cliente) o abono a la sociedad; se aplica a ESE pedido. Pagarlo como "aportación" del socio (reembolso o capital) se rechaza: crearía un reembolso a su favor por su propia compra.
+- Inicio: bloque "Pedidos pendientes de pago" por socio con dos renglones (pedidos a costo pendientes de pago, y fondos pendientes de entregar) y "Sin pedidos pendientes" cuando no hay. Lenguaje: "pendiente de pago" y "pendiente de entregar", sin "deuda" (contrato `test/contratos/dropshipping_lenguaje.test.ts`).
+- Cuentan como pendientes los pedidos a costo confirmados y enviados; un borrador se muestra "Por confirmar" sin monto pendiente.
+
 ## Migraciones y GRANT a `authenticated`
 
 - `20261113400000_dropshipping_modelo.sql`: tablas, esquema `entrega`, vistas internas. Sin GRANT (todo revocado a public, anon y authenticated).
 - `20261113400100_dropshipping_funciones.sql`: escrituras `api.ds_crear_pedido`, `api.ds_capturar_destinatario`, `api.ds_registrar_folio`, `api.ds_pagar_proveedor`; lecturas `api.ds_interes`, `api.ds_catalogo`, `api.ds_pedidos`, `api.ds_desglose`, `api.ds_resumen`, `api.ds_ficha`, `api.ds_destinatario`, `api.ds_destinatario_revelar`, `api.ds_orden_proveedor`, `api.ds_cuenta_proveedor`, `api.ds_por_cobrar`, `api.ds_explicar`.
 - `20261113400200_dropshipping_utilidad.sql`: `api.ds_utilidad`, `api.ds_reporte_mensual`, `api.ds_explicar_utilidad`, `api.ds_conciliacion`.
 - `20261113400300_dropshipping_aportacion_neta.sql`: `api.socios_aportacion_neta`.
+- `20261113400400_dropshipping_menudeo.sql`: `api.ds_menudeo`, `api.ds_menudeo_pendientes`, `api.ds_fondos_en_poder`, `api.ds_explicar_menudeo` y la escritura `api.ds_pagar_pedido_menudeo`.
 Todas las `api.*` listadas tienen `grant execute ... to authenticated` y exigen rol `socio` dentro; ninguna otra función ni tabla tiene GRANT. No se hace DROP de ningún objeto existente.
 
 ## Interfaz

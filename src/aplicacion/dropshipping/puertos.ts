@@ -1,6 +1,6 @@
 import type { Explicacion } from '@/dominio/catalogo/tipos';
 import type {
-  AportacionNeta, CatalogoDs, ConciliacionPeriodo, CuentaProveedorDs, Destinatario, DimensionDesglose, FichaDs, FilaDesglose, FilaDs, FilaPorCobrar, OrdenProveedor, OrigenSurtido, ReporteMensual,
+  AportacionNeta, CatalogoDs, FondosEnPoder, Menudeo, PendientesSocio, ConciliacionPeriodo, CuentaProveedorDs, Destinatario, DimensionDesglose, FichaDs, FilaDesglose, FilaDs, FilaPorCobrar, OrdenProveedor, OrigenSurtido, ReporteMensual,
   ResumenDs, UtilidadDs,
 } from '@/dominio/dropshipping/tipos';
 
@@ -26,5 +26,10 @@ export interface LectorDropshipping {
   orden(pedidoId: number, completo: boolean): Promise<OrdenProveedor>;
   /** Boton "Revelar": telefono o correo completos; queda auditado. */
   revelar(pedidoId: number, campo: 'telefono' | 'correo', motivo: string): Promise<string>;
+  /** Pedidos a costo de un socio para su menudeo: renglones, pagado y pendiente de pago. NO restan a su valuacion ni a su aportacion neta. */
+  menudeo(socio: string, f: { desde?: string | null; hasta?: string | null; proveedor?: string | null; estadoPago?: string | null }): Promise<Menudeo>;
+  /** Dos renglones por socio: pedidos a costo pendientes de pago y fondos de la sociedad cobrados en su cuenta pendientes de entregar. */
+  menudeoPendientes(): Promise<PendientesSocio[]>;
+  fondosEnPoder(socio: string): Promise<FondosEnPoder>;
   explicar(cifra: string): Promise<Explicacion>;
 }

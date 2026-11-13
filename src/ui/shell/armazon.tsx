@@ -17,6 +17,7 @@ const SECCIONES = [
   { href: '/', etiqueta: 'Inicio', icono: <IconoInicio /> },
   { href: '/pedidos', etiqueta: 'Pedidos y notas', icono: <IconoPedidos /> },
   { href: '/dropshipping', etiqueta: 'Dropshipping', icono: <IconoDropshipping /> },
+  { href: '/menudeo', etiqueta: 'Pedidos menudeo', icono: <IconoClientes /> },
   { href: '/paquetes/por-hacer', etiqueta: 'Paquetes por hacer', icono: <IconoPaquete /> },
   { href: '/paquetes/en-trayecto', etiqueta: 'Paquetes en trayecto', icono: <IconoTrayecto /> },
   { href: '/cuentas-por-cobrar', etiqueta: 'Cuentas por cobrar', icono: <IconoCobrar /> },

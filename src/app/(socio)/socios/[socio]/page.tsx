@@ -27,9 +27,9 @@ export default async function PaginaEstadoSocio({ params }: { params: Promise<{ 
   const [e, eOtro] = await Promise.all([lector.socioCuenta(socio), lector.socioCuenta(otro)]);
   const d = desglosarSocio(e);
   const suma2 = e.neto_cent + eOtro.neto_cent;
-  const palabra = e.neto_cent > 0n ? 'La sociedad le debe' : e.neto_cent < 0n ? 'Debe a la sociedad' : 'En paz';
+  const palabra = e.neto_cent > 0n ? 'La sociedad le debe' : e.neto_cent < 0n ? 'Fondos de la sociedad en su poder' : 'En paz';
   const mov = [...e.movimientos].sort((a, b) => (a.fecha_neg === b.fecha_neg ? a.id - b.id : a.fecha_neg < b.fecha_neg ? -1 : 1));
-  const puntos = mov.map((x) => ({ id: `${x.tipo}-${x.id}`, etiqueta: etiquetaFecha(x.fecha_neg), valor: Math.abs(Number(x.saldo_cent)), texto: `${m(x.saldo_cent, true)} · ${x.saldo_cent > 0n ? 'la sociedad le debe' : x.saldo_cent < 0n ? 'debe a la sociedad' : 'en paz'}`, detalle: x.concepto }));
+  const puntos = mov.map((x) => ({ id: `${x.tipo}-${x.id}`, etiqueta: etiquetaFecha(x.fecha_neg), valor: Math.abs(Number(x.saldo_cent)), texto: `${m(x.saldo_cent, true)} · ${x.saldo_cent > 0n ? 'la sociedad le debe' : x.saldo_cent < 0n ? 'fondos de la sociedad en su poder' : 'en paz'}`, detalle: x.concepto }));
   const flujo = [
     { id: 'ap', etiqueta: 'Aportaciones de capital', c: e.aportaciones_capital_cent },
     { id: 'ga', etiqueta: 'Gastos pagados', c: e.gastos_pagados_cent },
@@ -59,7 +59,7 @@ export default async function PaginaEstadoSocio({ params }: { params: Promise<{ 
           { id: 'ap', etiqueta: 'Aportaciones de capital', valor: m(e.aportaciones_capital_cent), categoria: 1, nota: `Por devolver ${m(e.aportacion_pendiente_cent)}` },
           { id: 'ga', etiqueta: 'Gastos pagados', valor: m(e.gastos_pagados_cent), categoria: 6, nota: `Reembolso pendiente ${m(e.reembolso_pendiente_cent)}` },
           { id: 'fo', etiqueta: 'Fondos en su poder', valor: <CifraComprobada texto={m(e.fondos_cent)} cifra={`socio:fondos:${socio}`} comprobacion="cuadra" />, categoria: 4, nota: e.dias_fondos === null ? 'Sin fondos pendientes' : `${e.dias_fondos} días sin entregar` },
-          { id: 'fa', etiqueta: 'Faltantes asignados', valor: <CifraComprobada texto={m(e.faltantes_cent)} cifra={`socio:diferencia:${socio}`} comprobacion="cuadra" />, categoria: 7, nota: `Debe en total ${m(e.debe_cent)}` },
+          { id: 'fa', etiqueta: 'Faltantes asignados', valor: <CifraComprobada texto={m(e.faltantes_cent)} cifra={`socio:diferencia:${socio}`} comprobacion="cuadra" />, categoria: 7, nota: `Pendiente de entregar en total ${m(e.debe_cent)}` },
         ]}
       />
       <FilaRatios

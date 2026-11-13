@@ -54,7 +54,7 @@ export const ACCIONES_OPERACION = [
   'apertura_crear', 'apertura_fijar_corte', 'apertura_resolucion', 'apertura_agregar', 'apertura_quitar', 'apertura_firmar', 'apertura_retirar_firma', 'apertura_reversar', 'apertura_descartar',
   'mov_importar', 'mov_clasificar', 'mov_conciliar', 'mov_marcar',
   // Dropshipping
-  'ds_crear_pedido', 'ds_capturar_destinatario', 'ds_registrar_folio', 'ds_pagar_proveedor',
+  'ds_crear_pedido', 'ds_capturar_destinatario', 'ds_registrar_folio', 'ds_pagar_proveedor', 'ds_pagar_pedido_menudeo',
 ] as const;
 export type AccionOperacion = (typeof ACCIONES_OPERACION)[number];
 

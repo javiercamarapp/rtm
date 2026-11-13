@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { inventarioDeSocio, notificacionesDeSocio } from '@/composicion/inventario';
 import { operacionDeSocio } from '@/composicion/operacion';
+import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { fechaNeg } from '@/dominio/calendario';
 import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { URGENCIA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
@@ -28,12 +29,13 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   const n = semanasDe(sp.semanas);
   const op = await operacionDeSocio();
   const lector = await notificacionesDeSocio();
-  const [pulso, turno, inv, cxc, pedidos] = await Promise.all([
+  const [pulso, turno, inv, cxc, pedidos, pendientesMenudeo] = await Promise.all([
     lector.pulso().catch(() => null),
     lector.tuTurno().catch(() => ({ items: [] })),
     (await inventarioDeSocio()).completo().catch(() => null),
     op.cuentasPorCobrar().catch(() => null),
     op.pedidos().catch(() => null),
+    dropshippingDeSocio().then((d) => d.menudeoPendientes()).catch(() => null),
   ]);
   const hoy = fechaNeg(new Date());
   const semanas = ultimasSemanas(hoy, n);
@@ -124,6 +126,22 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
       />
       {cxc && cxc.pagos_sin_identificar.length > 0 && (
         <Aviso tono="atencion" titulo="Hay pagos sin identificar." acciones={<Link className="rtm-boton rtm-boton-chico" href="/cuentas-por-cobrar">Asignarlos</Link>}>{cxc.pagos_sin_identificar.length} {cxc.pagos_sin_identificar.length === 1 ? 'pago espera' : 'pagos esperan'} un cliente antes de aplicarse.</Aviso>
+      )}
+
+      {pendientesMenudeo && (
+        <Tarjeta titulo="Pedidos pendientes de pago" descripcion="Por socio, en dos renglones separados: los pedidos a costo no restan a la aportación neta; los fondos cobrados en su cuenta sí">
+          <div className="rtm-a1-cuerpo" data-testid="inicio-menudeo">
+            {pendientesMenudeo.map((x) => (
+              <div key={x.socio} data-testid={`inicio-menudeo-${x.socio}`}>
+                <p className="rtm-a1-subtitulo">{x.socio}</p>
+                <ul className="rtm-lineas-form">
+                  <li data-testid={`inicio-pedidos-${x.socio}`}>{x.pedidos > 0 ? <>Pedidos a costo pendientes de pago: <strong>{formatearMoneda(x.pendiente_cent)}</strong> en {x.pedidos} {x.pedidos === 1 ? 'pedido' : 'pedidos'} · <Link href={`/menudeo?socio=${x.socio}`}>Ver pedidos menudeo</Link></> : <>Sin pedidos pendientes · <Link href={`/menudeo?socio=${x.socio}`}>Ver pedidos menudeo</Link></>}</li>
+                  <li data-testid={`inicio-fondos-${x.socio}`}>{x.fondos_pendiente_cent > 0n ? <>Fondos de la sociedad cobrados en su cuenta, pendientes de entregar: <strong>{formatearMoneda(x.fondos_pendiente_cent)}</strong> en {x.fondos_cobros} {x.fondos_cobros === 1 ? 'cobro' : 'cobros'} · <Link href={`/menudeo?socio=${x.socio}`}>Ver detalle</Link></> : <>Sin fondos pendientes de entregar</>}</li>
+                </ul>
+              </div>
+            ))}
+          </div>
+        </Tarjeta>
       )}
 
       <Rejilla dividir="8-4">
