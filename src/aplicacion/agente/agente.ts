@@ -376,6 +376,10 @@ export class AgenteTelegram {
     // Reclamo unico ANTES de cualquier IA: el mismo update (reintento de Telegram) se aplica una sola vez.
     if (!(await this.d.almacen.reclamarUpdate(update.update_id))) {
       await this.d.almacen.registrarEvento({ tipo: 'update_duplicado', miembro: null, detalle: 'update_id repetido' });
+      // Un boton reenviado por Telegram tampoco queda en silencio: aviso corto, sin registrar nada.
+      if (update.callback_query) {
+        try { await this.d.telegram.responderCallback(update.callback_query.id, 'Esa tarjeta ya se usó o caducó.', true); } catch { /* el aviso es cortesia */ }
+      }
       return { estado: 'duplicado', motivo: 'update' };
     }
     try {
@@ -1169,9 +1173,9 @@ export class AgenteTelegram {
       const textos: Record<typeof res.estado, string> = {
         no_autorizado: 'Esta tarjeta es de los socios.',
         chat_distinto: 'Esta tarjeta no es de este chat.',
-        caducado: 'Esta tarjeta caduco.',
-        usado: 'Esta tarjeta ya se uso.',
-        invalido: 'Tarjeta invalida.',
+        caducado: 'Esa tarjeta ya se usó o caducó.',
+        usado: 'Esa tarjeta ya se usó o caducó.',
+        invalido: 'Esa tarjeta ya se usó o caducó.',
       };
       await this.d.telegram.responderCallback(cb.id, textos[res.estado], true);
       if (res.estado === 'no_autorizado') {

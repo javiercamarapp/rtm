@@ -420,7 +420,7 @@ export function tarjetaPagoReportado(e: { folio: string; reportadoPor: string; m
   const r = new RegistroCifras();
   const l = [`Pago reportado por ${r.servidor(NOMBRE_PERSONA(e.reportadoPor))} del pedido ${r.folio(e.folio)}${e.monto === null ? '' : `: ${r.pesos(e.monto)}`}.`];
   l.push(e.aplicado
-    ? `Se aplicó con comprobante${e.conComprobante ? ' (guardado solo como huella)' : ''}. Puedes rechazarlo si no corresponde.`
+    ? `Pago aplicado con comprobante; puedes rechazarlo${e.conComprobante ? ' (el comprobante se guardó solo como huella)' : ''}.`
     : 'Todavía NO está aplicado: el pedido sigue pendiente de pago hasta que lo confirmes. Confirma si ya lo recibiste o recházalo.');
   if (e.pendiente !== null) l.push(`Pendiente de pago del pedido: ${r.pesos(e.pendiente)}`);
   return { texto: l.join('\n'), registro: r };

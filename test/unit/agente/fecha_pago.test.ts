@@ -38,9 +38,21 @@ describe('interpretarFechaPago (futuro)', () => {
       expect(interpretarFechaPago(t, MARTES)).toEqual({ tipo: 'ok', fecha: '2026-11-20', hora: null });
     }
   });
-  it('un dia de numero ya pasado este mes cae al mes siguiente; sin anio, al siguiente', () => {
+  it('solo el numero de dia ("el 5") pasa al mes siguiente; una fecha con mes y ya pasada NO se corre en silencio al anio siguiente', () => {
     expect(interpretarFechaPago('el 5', MARTES)).toEqual({ tipo: 'ok', fecha: '2026-12-05', hora: null });
-    expect(interpretarFechaPago('5 de noviembre', MARTES)).toEqual({ tipo: 'ok', fecha: '2027-11-05', hora: null });
+    expect(interpretarFechaPago('5 de noviembre', MARTES)).toEqual({ tipo: 'pasada', fecha: '2026-11-05' });
+    expect(interpretarFechaPago('5/11', MARTES)).toEqual({ tipo: 'pasada', fecha: '2026-11-05' });
+    expect(interpretarFechaPago('5 de noviembre de 2027', MARTES)).toEqual({ tipo: 'ok', fecha: '2027-11-05', hora: null });
+  });
+  it('dia de la semana con numero: viernes 20 respeta el 20; si no coincide con el dia nombrado se pide aclaracion', () => {
+    expect(interpretarFechaPago('viernes 20', VIERNES)).toEqual({ tipo: 'ok', fecha: '2026-11-20', hora: null });
+    expect(interpretarFechaPago('el viernes 20 a las 17:00', VIERNES)).toEqual({ tipo: 'ok', fecha: '2026-11-20', hora: '17:00' });
+    expect(interpretarFechaPago('viernes 21', VIERNES)).toEqual({ tipo: 'no_entendi' });
+    expect(interpretarFechaPago('lunes 20', MARTES)).toEqual({ tipo: 'no_entendi' });
+  });
+  it('anios ambiguos o absurdos no se aceptan: 15/11/2, 15/11/26, 2099, 2031', () => {
+    for (const t of ['15/11/2', '15/11/26', '15/11/2099', '20 de noviembre de 2031', '2099-01-01', '2031-11-20']) expect(interpretarFechaPago(t, MARTES), t).toEqual({ tipo: 'no_entendi' });
+    expect(interpretarFechaPago('20/11/2026', MARTES)).toEqual({ tipo: 'ok', fecha: '2026-11-20', hora: null });
   });
   it('"el viernes" siendo viernes es ambiguo (hoy u ocho dias despues); con "proximo" ya no', () => {
     const r = interpretarFechaPago('el viernes', VIERNES);
@@ -71,6 +83,7 @@ describe('interpretarFechaPago (pasado, para la fecha de un pago)', () => {
     expect(interpretarFechaPago('ayer', MARTES, { direccion: 'pasado' })).toEqual({ tipo: 'ok', fecha: '2026-11-09', hora: null });
     expect(interpretarFechaPago('el viernes', MARTES, { direccion: 'pasado' })).toEqual({ tipo: 'ok', fecha: '2026-11-06', hora: null });
     expect(interpretarFechaPago('9/11', MARTES, { direccion: 'pasado' })).toEqual({ tipo: 'ok', fecha: '2026-11-09', hora: null });
+    expect(interpretarFechaPago('20 de diciembre', MARTES, { direccion: 'pasado' })).toEqual({ tipo: 'futura', fecha: '2026-12-20' });
   });
   it('una fecha futura se rechaza', () => {
     expect(interpretarFechaPago('mañana', MARTES, { direccion: 'pasado' })).toEqual({ tipo: 'futura', fecha: '2026-11-11' });

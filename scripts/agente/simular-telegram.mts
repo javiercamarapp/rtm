@@ -2,6 +2,7 @@
 // con la cabecera del secreto de PRUEBA. El cliente de Telegram es el real pero su fetch es un doble que registra y nunca sale a api.telegram.org;
 // el extractor de IA es el simulado determinista. Escribe en la base local (usa una base de desarrollo; nada de nube).
 //   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:64322/postgres npx tsx scripts/agente/simular-telegram.mts scripts/agente/guion-telegram.txt
+// OJO: scripts/agente/guion-menudeo.txt NO es para este script: es para scripts/agente/simulador.mts (en memoria, con el reloj manual y los comandos foto, envio y latido).
 // Guion: "angelo> texto" escribe en el grupo; "boton javier: Confirmar" pulsa un boton del ultimo mensaje; "# ..." comentario.
 import { readFileSync } from 'node:fs';
 import pg from 'pg';

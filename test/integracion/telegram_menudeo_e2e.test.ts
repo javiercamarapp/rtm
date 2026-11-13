@@ -302,7 +302,7 @@ describe('pago_pedido_menudeo y recordatorios', () => {
     const total = Number((await q<{ s: string }>('select sum(l.piezas_pedidas::bigint * l.precio_cent)::text as s from operacion.pedido_linea l where l.pedido_id = $1', [f2.id]))[0]!.s);
     expect(await pendiente(f2.folio)).toBe(total - 10_000);
     const tarjeta = sala.con('Pago reportado por Angelo');
-    expect(tarjeta.texto).toContain('Se aplicó con comprobante');
+    expect(tarjeta.texto).toContain('Pago aplicado con comprobante; puedes rechazarlo');
     expect(tarjeta.botones.flat().map((b) => b.texto)).toEqual(['Rechazar']);
     expect((await q<{ reporte_id: string | null }>('select reporte_id::text from agente.evidencia_tg'))[0]!.reporte_id).not.toBeNull();
     expect(await cuenta('entrega.evidencia_pago')).toBe(0); // el bot no guarda ni lee imagenes
@@ -327,6 +327,30 @@ describe('pago_pedido_menudeo y recordatorios', () => {
     const ult = (await q<{ f: string; h: string; m: string }>('select fecha_compromiso::text as f, hora_compromiso::text as h, motivo as m from operacion.ds_pedido_compromiso where pedido_id = $1 order by id desc limit 1', [p3.id]))[0]!;
     expect(ult).toMatchObject({ f: '2026-11-30', h: '10:00:00' });
     expect(ult.m).toContain('Reprogramado desde Telegram');
+  });
+
+  it('borde: por_vencer y vence_hoy en la MISMA hora de reloj no se duplican; el segundo sale en la hora siguiente (verificacion independiente, f5)', async () => {
+    sala.ahora = new Date();
+    await sala.escribir('angelo', '/pedidomenudeo mm modelo/uva 2 | cuando 27 de noviembre a las 5:30 de la tarde');
+    await sala.pulsar('angelo', sala.ultimo().botones.flat().find((b) => b.texto === '5:30 p.m.' || b.texto.includes('17:30'))?.texto ?? 'Confirmar');
+    if (sala.ultimo().texto.includes('Resumen para confirmar')) await sala.pulsar('angelo', 'Confirmar');
+    const f5 = (await pedidos()).at(-1)!.folio;
+    await enviar(f5);
+    await q("update seguridad.interruptor set activo = true where clave = 'telegram_envio'");
+    const cuentaF5 = () => sala.enviados.filter((m) => m.texto.includes('Recordatorio de pago') && m.texto.includes(f5)).length;
+    const latido = async (t: string) => {
+      sala.ahora = new Date(t);
+      const antes = cuentaF5();
+      await crearAgenteProduccion(sala.deps()).enviarRecordatoriosMenudeo();
+      return cuentaF5() - antes;
+    };
+    // vence el 27-nov 17:30 de Merida = 23:30Z
+    expect(await latido('2026-11-27T23:10:00Z')).toBe(1); // por_vencer
+    expect(await latido('2026-11-27T23:40:00Z')).toBe(0); // vence_hoy en la misma hora de reloj: NO se duplica
+    expect(await latido('2026-11-27T23:55:00Z')).toBe(0);
+    expect(await latido('2026-11-28T00:05:00Z')).toBe(1); // en la hora siguiente si sale
+    expect(await latido('2026-11-28T00:20:00Z')).toBe(0);
+    expect(sala.ultimo().texto).toContain('vence hoy');
   });
 
   it('Javier no avisa pagos de los pedidos de Angelo', async () => {

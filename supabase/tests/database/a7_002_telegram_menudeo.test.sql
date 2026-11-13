@@ -154,9 +154,10 @@ select is(agente.espera_tomar(-100800, 5800001, now() + interval '2 hours'), nul
 
 -- ------------------------------------------------------------------ interruptor y recordatorios
 select is(agente.envio_activo(), false, 'telegram_envio nace apagado');
+select is(agente.recordatorio_reclamar((select (j ->> 'pedido_id')::bigint from _p1), 'por_vencer', now()) ->> 'reclamado', 'false', 'con el interruptor apagado el reclamo devuelve false (defensa en profundidad)');
+select is((select count(*)::int from operacion.ds_recordatorio_log), 0, '... y no registra nada');
 update seguridad.interruptor set activo = true where clave = 'telegram_envio';
 select is(agente.envio_activo(), true, '... y se lee encendido');
-update seguridad.interruptor set activo = false where clave = 'telegram_envio';
 create temp table _v as select operacion.ds_vence_en(negocio.hoy() + 2, '10:00') as vence;
 create function pg_temp.rec(p_ahora timestamptz) returns jsonb language sql as $$ select agente.recordatorios_menudeo($1) -> 'recordatorios' $$;
 create function pg_temp.tipo(p bigint, p_ahora timestamptz) returns text language sql as $$ select x ->> 'tipo' from jsonb_array_elements(pg_temp.rec($2)) x where (x ->> 'pedido_id')::bigint = $1 $$;
@@ -169,6 +170,18 @@ select is(agente.recordatorio_reclamar((select (j ->> 'pedido_id')::bigint from 
 select is((select count(*)::int from operacion.ds_recordatorio_log where pedido_id = (select (j ->> 'pedido_id')::bigint from _p1)), 1, 'una sola fila en el registro');
 select is(agente.recordatorio_reclamar((select (j ->> 'pedido_id')::bigint from _p1), 'vencido', (select vence from _v) - interval '20 hours') ->> 'reclamado', 'false', 'un tipo que no toca no se reclama');
 select is(pg_temp.tipo((select (j ->> 'pedido_id')::bigint from _p1), (select vence from _v) - interval '19 hours'), null, 'ya avisado: no se repite');
+-- Borde: por_vencer y vence_hoy en la MISMA hora de reloj (la ventana unica es pedido+hora): el segundo aviso NO se duplica, se reclama en la hora siguiente.
+create temp table _p3 as select agente.ejecutar_ext('mt:p9', 'pedido_menudeo', pg_temp.pedido_args(negocio.hoy() + 2, '10:30')) as j;
+select set_config('rtm.canal', 'importacion', true);
+select operacion.enviar_pedido('mt-e9', (select (j ->> 'pedido_id')::bigint from _p3), null, null, null, true);
+select set_config('rtm.canal', '', true);
+create temp table _v3 as select operacion.ds_vence_en(negocio.hoy() + 2, '10:30') as vence;
+select is(agente.recordatorio_reclamar((select (j ->> 'pedido_id')::bigint from _p3), 'por_vencer', (select vence from _v3) - interval '20 minutes') ->> 'reclamado', 'true', 'por_vencer a las :10 se reclama');
+select is(pg_temp.tipo((select (j ->> 'pedido_id')::bigint from _p3), (select vence from _v3) + interval '10 minutes'), 'vence_hoy', 'a las :40 ya toca vence_hoy');
+select is(agente.recordatorio_reclamar((select (j ->> 'pedido_id')::bigint from _p3), 'vence_hoy', (select vence from _v3) + interval '10 minutes') ->> 'reclamado', 'false', 'pero en la misma hora de reloj NO se reclama (evita el aviso duplicado)');
+select is((select count(*)::int from operacion.ds_recordatorio_log where pedido_id = (select (j ->> 'pedido_id')::bigint from _p3)), 1, '... una sola fila');
+select is(agente.recordatorio_reclamar((select (j ->> 'pedido_id')::bigint from _p3), 'vence_hoy', (select vence from _v3) + interval '70 minutes') ->> 'reclamado', 'true', 'en la hora siguiente si se reclama');
+
 -- vence hoy y vencido periodico, con el compromiso historico de otro pedido
 insert into operacion.ds_pedido_compromiso (pedido_id, fecha_compromiso, comprometido_por, tipo, motivo, evento_id)
   select (select (j ->> 'pedido_id')::bigint from _p2), negocio.hoy() - 3, (select id from catalogo.socio where nombre = 'Angelo'), 'reprogramacion', 'compromiso historico sintetico', (select evento_id from operacion.pedido where id = (select (j ->> 'pedido_id')::bigint from _p2));

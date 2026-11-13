@@ -39,6 +39,12 @@ function fechaValida(a: number, m: number, d: number): FechaNeg | null {
   return f.getUTCFullYear() === a && f.getUTCMonth() === m - 1 && f.getUTCDate() === d ? `${a}-${p2(m)}-${p2(d)}` : null;
 }
 
+/** Un anio escrito debe ser el actual o el siguiente: lo demas (2099, 2031...) es un error de dedo y no se acepta. */
+function anioRazonable(a: number, hoy: FechaNeg): boolean {
+  const actual = Number(hoy.slice(0, 4));
+  return a >= actual - 1 && a <= actual + 1;
+}
+
 const partes = (f: FechaNeg): { a: number; m: number; d: number } => ({ a: Number(f.slice(0, 4)), m: Number(f.slice(5, 7)), d: Number(f.slice(8, 10)) });
 
 /** Instante (UTC) del final del dia o de la hora indicada, en hora de Merida. */
@@ -63,10 +69,9 @@ function porDiaDelMes(dia: number, hoy: FechaNeg, dir: 'futuro' | 'pasado'): Fec
 
 function porDiaYMes(dia: number, mes: number, anio: number | null, hoy: FechaNeg, dir: 'futuro' | 'pasado'): FechaNeg | null {
   const { a } = partes(hoy);
-  if (anio !== null) return fechaValida(anio, mes, dia);
-  const esteAnio = fechaValida(a, mes, dia);
-  if (dir === 'futuro') return esteAnio !== null && esteAnio >= hoy ? esteAnio : fechaValida(a + 1, mes, dia);
-  return esteAnio !== null && esteAnio <= hoy ? esteAnio : fechaValida(a - 1, mes, dia);
+  if (anio !== null) return anioRazonable(anio, hoy) ? fechaValida(anio, mes, dia) : null;
+  // Sin anio: SIEMPRE el actual. Una fecha que ya paso (o, en un pago, que aun no llega) no se corre en silencio a otro anio: el llamador la rechaza como pasada o futura.
+  return fechaValida(a, mes, dia);
 }
 
 interface DiaDetectado {
@@ -75,6 +80,8 @@ interface DiaDetectado {
   ambiguo?: FechaNeg[];
   /** Texto restante sin la parte del dia (para buscar la hora). */
   resto: string;
+  /** El texto trae un dia numerico que no concuerda con el dia de la semana nombrado. */
+  conflicto?: boolean;
 }
 
 function detectarDia(t: string, hoy: FechaNeg, dir: 'futuro' | 'pasado'): DiaDetectado {
@@ -87,12 +94,10 @@ function detectarDia(t: string, hoy: FechaNeg, dir: 'futuro' | 'pasado'): DiaDet
 
   // Formatos numericos de fecha primero (para que sus numeros no se lean como hora).
   let m = quitar(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
-  if (m) return { fecha: fechaValida(Number(m[1]), Number(m[2]), Number(m[3])), resto };
-  m = quitar(/\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b/);
-  if (m) {
-    const anio = m[3] === undefined ? null : m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
-    return { fecha: porDiaYMes(Number(m[1]), Number(m[2]), anio, hoy, dir), resto };
-  }
+  if (m) return { fecha: anioRazonable(Number(m[1]), hoy) ? fechaValida(Number(m[1]), Number(m[2]), Number(m[3])) : null, resto };
+  // dd/mm o dd/mm/aaaa. Un anio de 1 o 2 digitos ("15/11/2", "15/11/26") es ambiguo y no se acepta: se pide con cuatro digitos.
+  m = quitar(/(?<![\d/.-])(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{4}))?(?![/.-]?\d)/);
+  if (m) return { fecha: porDiaYMes(Number(m[1]), Number(m[2]), m[3] === undefined ? null : Number(m[3]), hoy, dir), resto };
   // "15 de noviembre [de 2026]" | "15 nov"
   const meses = [...MESES, ...Object.keys(MESES_CORTOS)].join('|');
   m = quitar(new RegExp(`\\b(\\d{1,2})\\s*(?:de\\s+)?(${meses})\\b\\.?(?:\\s+(?:de\\s+)?(\\d{4}))?`));
@@ -121,6 +126,13 @@ function detectarDia(t: string, hoy: FechaNeg, dir: 'futuro' | 'pasado'): DiaDet
   if (m) {
     const dow = DIAS.indexOf(m[1] as (typeof DIAS)[number]);
     const hoyDow = diaSemanaLunes0(hoy);
+    // "viernes 20": el numero suelto es el dia del mes y debe caer en ese dia de la semana; si no coincide, no se adivina (se pide aclaracion).
+    const sinHora = resto.replace(/\ba\s+las?\s+\d{1,2}(?::\d{2})?/g, ' ').replace(/\d{1,2}:\d{2}/g, ' ').replace(/\d{1,2}\s*(?:am|pm|h|hrs|horas)\b/g, ' ');
+    const suelto = /(?<![\d:])(\d{1,2})(?![\d:])/.exec(sinHora);
+    if (suelto) {
+      const f = porDiaDelMes(Number(suelto[1]), hoy, dir);
+      return f !== null && diaSemanaLunes0(f) === dow ? { fecha: f, resto } : { fecha: null, resto, conflicto: true };
+    }
     const forzadoSiguiente = /proximo/.test(m[0]) || m[2] !== undefined;
     if (dir === 'pasado') {
       const atras = (hoyDow - dow + 7) % 7;

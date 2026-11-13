@@ -306,7 +306,7 @@ describe('pago_pedido_menudeo', () => {
     await pulsar(e, 'angelo', conBotones(e, 'Resumen para confirmar'), 'Confirmar');
     expect(e.negocio.menudeo.pendiente(e.negocio.menudeo.pedidos[0]!)).toBe(40_000n);
     const tarjeta = conBotones(e, 'Pago reportado por Angelo');
-    expect(tarjeta.texto).toContain('Se aplicó con comprobante');
+    expect(tarjeta.texto).toContain('Pago aplicado con comprobante; puedes rechazarlo');
     expect(tarjeta.botones!.flat().map((b) => b.texto)).toEqual(['Rechazar']);
     await pulsar(e, 'javier', tarjeta, 'Rechazar');
     expect(e.negocio.menudeo.pendiente(e.negocio.menudeo.pedidos[0]!)).toBe(60_000n);
@@ -514,6 +514,38 @@ describe('recordatorios del latido', () => {
     const r = await e.agente.enviarRecordatoriosMenudeo();
     expect(r.estado).toBe('ok');
     expect(e.almacen.eventos.some((x) => x.tipo === 'recordatorio_error')).toBe(true);
+  });
+});
+
+describe('botones ya usados o caducados', () => {
+  it('un boton usado, caducado o reenviado responde un aviso corto y no registra nada', async () => {
+    const e = escenario([], ESTRICTO);
+    await e.socio('angelo', '/pedidomenudeo elux/sandia 10 | cuando el viernes');
+    const resumen = conBotones(e, 'Resumen para confirmar');
+    await pulsar(e, 'angelo', resumen, 'Confirmar');
+    const n = e.telegram.callbacks.length;
+    await pulsar(e, 'angelo', resumen, 'Confirmar'); // ya usado
+    expect(e.telegram.callbacks.at(-1)).toEqual({ callbackId: expect.any(String), texto: 'Esa tarjeta ya se usó o caducó.', alerta: true });
+    expect(e.negocio.menudeo.pedidos).toHaveLength(1);
+    await e.socio('angelo', '/pedidomenudeo elux/sandia 5 | cuando el viernes');
+    const r2 = conBotones(e, 'Resumen para confirmar');
+    e.reloj.avanzarHoras(25); // caduca
+    await pulsar(e, 'angelo', r2, 'Confirmar');
+    expect(e.telegram.callbacks.at(-1)!.texto).toBe('Esa tarjeta ya se usó o caducó.');
+    expect(e.negocio.menudeo.pedidos).toHaveLength(1);
+    expect(e.telegram.callbacks.length).toBeGreaterThan(n);
+  });
+  it('el mismo update de un boton reenviado por Telegram tambien recibe el aviso', async () => {
+    const e = escenario([], ESTRICTO);
+    await e.socio('angelo', '/pedidomenudeo elux/sandia 10 | cuando el viernes');
+    const resumen = conBotones(e, 'Resumen para confirmar');
+    const [f, c] = boton(resumen, 'Confirmar');
+    const { updateBoton } = await import('@/infra/agente/updates');
+    const u = updateBoton(e.contador, { de: IDS.angelo, chat: IDS.grupoSocios, messageId: resumen.messageId, data: resumen.botones![f]![c]!.callbackData, updateId: 9999 });
+    await e.agente.procesarUpdate(u);
+    await e.agente.procesarUpdate(u);
+    expect(e.telegram.callbacks.at(-1)!.texto).toBe('Esa tarjeta ya se usó o caducó.');
+    expect(e.negocio.menudeo.pedidos).toHaveLength(1);
   });
 });
 
