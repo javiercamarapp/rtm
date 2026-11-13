@@ -151,7 +151,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       </Rejilla>
 
       {pedidosSocio.length > 0 && (
-        <Tarjeta plana titulo={`Pedidos de ${socioMenudeo} (a su cuenta, no son deuda de la empresa)`} descripcion={`Pedidos a costo de ${socioMenudeo} con ${proveedor}: el libro los suma al total con el proveedor; lo pendiente lo reembolsa él`} acciones={<Link className="rtm-boton" href={`/menudeo?proveedor=${proveedor}`} data-testid="ir-menudeo">Pedidos menudeo de {socioMenudeo}</Link>}>
+        <Tarjeta plana titulo={`Pedidos de ${socioMenudeo} (a su cuenta, no son deuda de la empresa)`} descripcion={`Pedidos a costo de ${socioMenudeo} con ${proveedor}: el libro los suma al total con el proveedor; lo pendiente lo reembolsa él`}>
           <DataTable
             etiqueta={`Pedidos de ${socioMenudeo} con ${proveedor}`}
             densidad="densa" plana pegajosa primeraFija
@@ -169,6 +169,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             ]}
           />
           <Pie><span data-testid="pedidos-socio-linea">{pos.conciliacionLibro}.</span></Pie>
+          <div className="a3-pie-tarjeta"><Link className="rtm-boton" href={`/menudeo?proveedor=${proveedor}`} data-testid="ir-menudeo">Pedidos menudeo de {socioMenudeo}</Link></div>
         </Tarjeta>
       )}
 
