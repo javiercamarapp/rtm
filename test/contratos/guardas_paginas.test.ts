@@ -22,7 +22,7 @@ describe('zona de socio', () => {
   it('los route handlers entregan documentos solo tras exigir socio', () => {
     const rutas = todos.filter((f) => /[\\/]route\.ts$/.test(f));
     expect(rutas.length).toBeGreaterThan(0);
-    for (const f of rutas) expect(readFileSync(f, 'utf8'), f).toMatch(/documentoDeNota|exigirSocio/);
+    for (const f of rutas) expect(readFileSync(f, 'utf8'), f).toMatch(/documentoDeNota|documentoDeDevolucion|exigirSocio/);
   });
   it('las acciones del servidor llaman a la composicion, que exige socio', () => {
     const acciones = todos.filter((f) => readFileSync(f, 'utf8').startsWith("'use server'"));

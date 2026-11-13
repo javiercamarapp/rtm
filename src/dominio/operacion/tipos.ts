@@ -2,7 +2,7 @@
 export type Cent = bigint;
 export type EstadoPedido = 'borrador' | 'confirmado' | 'enviado' | 'cancelado' | 'anulado';
 export type Origen = 'bodega_omar' | 'karen_directo' | 'karen_via_isaac' | 'isaac_directo' | 'castores';
-export type EstadoCompra = 'borrador' | 'confirmada' | 'enviada' | 'en_trayecto' | 'llego_merida' | 'recibida' | 'cerrada' | 'anulada';
+export type EstadoCompra = 'borrador' | 'confirmada' | 'enviada' | 'en_trayecto' | 'llego_merida' | 'recibida_parcial' | 'recibida' | 'cerrada' | 'anulada';
 
 export interface PedidoResumen {
   id: number; folio: string; fecha_neg: string; cliente_id: number; cliente: string; duenio: 'Angelo' | 'Javier'; origen: Origen; estado: EstadoPedido;
@@ -65,7 +65,7 @@ export interface CompraDetalle {
   llegada_estimada: string | null; enviada_fecha: string | null; recibida_fecha: string | null; nota: string | null;
   proveedor: { id: number; nombre: 'Isaac' | 'Karen'; modalidad: 'semanal_viernes' | 'prepago_total' }; saldo_proveedor_cent: Cent;
   lineas: { id: number; sku_id: number; modelo: string; sabor: string; pagadas: number; facturadas: number; recibidas: number | null; costo_unit_cent: Cent; costo_lista_cent: Cent | null; motivo_costo: string | null;
-            lote: { costo_puesto_cent: Cent; valor_entrada_cent: Cent; guia_cent: Cent; seguro_cent: Cent } | null }[];
+            lote: { costo_puesto_cent: Cent; valor_entrada_cent: Cent; guia_cent: Cent; seguro_cent: Cent; llegadas?: number } | null }[];
   recepciones: { sabor: string; modelo: string; piezas: number; contado_at: string }[];
   guias: { id: number; paqueteria: string; numero: string; fecha_neg: string }[];
   diferencias: { id: number; tipo: 'faltante' | 'sobrante'; piezas: number; valor_cent: Cent; modelo: string; responsable: string | null; responsable_tipo: 'sociedad' | 'socio' | 'proveedor' }[];
@@ -234,3 +234,35 @@ export interface IncidentePaquete {
 }
 export interface PaquetesIncidentes { incidentes: IncidentePaquete[] }
 export interface SalidaLineaIncidente { linea_id: number; sku_id: number; modelo: string; sabor: string; surtidas: number; reportadas: number }
+/** Recepcion de una compra por llegadas: lo facturado, lo contado y lo pendiente por renglon, y cada llegada con el valor que entro al inventario. */
+export interface RecepcionCompra {
+  compra_id: number; folio: string; estado: EstadoCompra;
+  lineas: { linea_id: number; sku_id: number; modelo: string; sabor: string; facturadas: number; recibidas: number; pendientes: number; puesto_cent: Cent; entrada_cent: Cent }[];
+  llegadas: { n: number; contado_at: string; piezas: number; valor_cent: Cent }[];
+}
+
+export interface DevolucionClienteResumen { id: number; folio: string; fecha_neg: string; pedido_id: number; pedido: string; cliente: string; piezas: number; monto_cent: Cent; costo_cent: Cent; liberado_cent: Cent; motivo: string; anulada: boolean }
+export interface DevolucionProveedorResumen { id: number; folio: string; fecha_neg: string; proveedor: string; compra: string | null; piezas: number; valor_cent: Cent; motivo: string; anulada: boolean }
+export interface DevolucionesLista { clientes: DevolucionClienteResumen[]; proveedores: DevolucionProveedorResumen[]; credito_clientes_cent: Cent; credito_proveedores_cent: Cent }
+
+/** Lo que se puede devolver de un pedido, por renglon y sabor, y las devoluciones ya hechas. */
+export interface PedidoDevoluciones {
+  pedido_id: number; folio: string; puede: boolean; motivo_no: string | null; devuelto_cent: Cent;
+  /** Cifras del pedido netas de devoluciones vigentes (calculadas en la base); null si el pedido no tiene hoja interna. */
+  cascada_neta: { total_cent: Cent; costo_cent: Cent; costo_regresado_cent: Cent; merma_cent: Cent; utilidad_cent: Cent } | null;
+  renglones: { linea_id: number; sku_id: number; modelo: string; sabor: string; surtidas: number; devueltas: number; disponibles_devolver: number; precio_cent: Cent }[];
+  devoluciones: { id: number; folio: string; fecha_neg: string; piezas: number; monto_cent: Cent; liberado_cent: Cent; motivo: string; anulada: boolean; pdf: boolean }[];
+}
+export interface CatalogoDevolucionProveedor {
+  skus: { sku_id: number; marca: string; modelo: string; sabor: string; disponible: number; costo_prom_cent: Cent }[];
+  compras: { id: number; folio: string; proveedor: string; estado: EstadoCompra }[];
+}
+/** Lo que se imprime en la nota de credito (cliente) o en la devolucion al proveedor. */
+export interface FuenteDevolucion {
+  tipo: 'cliente' | 'proveedor'; id: number; folio: string; emitida_at: string; texto: string;
+  snapshot: {
+    folio: string; fecha: string; cliente?: string; proveedor?: string; pedido?: string; nota?: string; compra?: string | null; motivo: string; piezas_total: number;
+    lineas: { modelo: string; sabor: string; piezas: number; precio_cent?: Cent; total_cent?: Cent; valor_cent?: Cent; destino?: 'inventario' | 'merma' }[];
+    total_cent?: Cent; total_nota_cent?: Cent; liberado_cent?: Cent; valor_cent?: Cent; saldo_antes_cent: Cent; saldo_despues_cent: Cent;
+  };
+}
