@@ -25,7 +25,7 @@ export function leerCifraCapital(cifra: string): CifraCapital | null {
 const suma = (xs: readonly bigint[]) => xs.reduce((a, x) => a + x, 0n);
 const n = (c: bigint) => Number(c);
 const detalle = (r: readonly RenglonDetalle[]): Explicacion['renglones'] =>
-  r.map((x) => ({ concepto: [x.concepto, x.origen ?? x.motivo, x.cliente ? `cliente ${x.cliente}` : null].filter(Boolean).join(' · '), montoCent: x.monto_cent, saldoCent: null, hora: null, fechaNeg: x.fecha, evento: x.fuente, canal: null, autor: null, mensajeOrigen: null }));
+  r.map((x) => ({ concepto: [x.motivo ?? x.concepto, x.origen, x.cliente ? `cliente ${x.cliente}` : null].filter(Boolean).join(' · '), montoCent: x.monto_cent, saldoCent: null, hora: null, fechaNeg: x.fecha, evento: x.fuente, canal: null, autor: null, mensajeOrigen: null }));
 
 function base(cifra: string, titulo: string, valor: bigint | null, fuente: string, comp: { via1: string; v1: bigint; via2: string; v2: bigint; tol?: bigint } | null, renglones: Explicacion['renglones']): Explicacion {
   return {

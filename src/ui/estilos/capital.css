@@ -11,3 +11,4 @@
 .rtm-capital-tabla-alterna th:first-child { text-align: left; font-weight: 500; }
 .rtm-capital-nota { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); margin: 0; }
 .rtm-capital-igualar { display: block; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
+.rtm-capital-comp .rtm-cifra { white-space: normal; text-align: left; }

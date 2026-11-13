@@ -7,6 +7,16 @@ import { periodoNoviembre } from '../../fixtures/reportes/capital';
 
 const conCapital = () => armarPaquete({ ...insumosMensualDorado(), capital: { mes: periodoNoviembre(), acumulado: periodoNoviembre() } });
 
+describe('rep.insumos_mensual entrega el renglon utilidadNeta (subtotal)', () => {
+  it('no duplica res.utilidadNeta (con datos reales el mensual no se podia armar)', () => {
+    const m = insumosMensualDorado();
+    const r = m.resultados[0]!;
+    const conRenglon = { ...m, resultados: [...m.resultados, { ...r, id: 'utilidadNeta', etiqueta: 'Utilidad neta', cuenta: '', subtotal: true, montoCent: m.utilidadNetaCent }] };
+    expect(() => armarPaquete(conRenglon)).not.toThrow();
+    expect(cifraDe(armarPaquete(conRenglon), 'res.utilidadNeta')!.comprobacion.igual).toBe(true);
+  });
+});
+
 describe('capital por socio en el reporte mensual', () => {
   it('sin capital el reporte no cambia (12 paginas)', () => {
     expect(construirReporte(armarPaquete(insumosMensualDorado())).paginas).toHaveLength(12);

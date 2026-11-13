@@ -469,7 +469,8 @@ function armarMensual(ins: InsumosMensual, L: LibroCifras, base: { periodo: stri
   const viaRenglones = sumaBig(ins.resultados.filter((r) => !r.subtotal).map((r) => BigInt(r.signo) * r.montoCent));
   L.agregar('res.utilidadNeta', 'Utilidad neta', ins.utilidadNetaCent, 'cent', { ...base, clase: 'Calculado', fuente: 'estado de resultados', n: ins.resultados.length, via2: viaRenglones });
   if (ventas > 0n) L.agregar('res.margenNeto', 'Margen neto', bp(ins.utilidadNetaCent, ventas), 'bp', { ...base, clase: 'Calculado', fuente: 'utilidad neta / ventas', n: ins.resultados.length });
-  for (const r of ins.resultados) L.agregar(`res.${r.id}`, r.etiqueta, r.montoCent, 'cent', { ...base, clase: 'Calculado', fuente: `cuenta ${r.cuenta}`, n: 1 });
+  // rep.insumos_mensual entrega tambien el renglon `utilidadNeta` (subtotal): ya existe como res.utilidadNeta con su segunda via, no se duplica.
+  for (const r of ins.resultados.filter((x) => !L.tiene(`res.${x.id}`))) L.agregar(`res.${r.id}`, r.etiqueta, r.montoCent, 'cent', { ...base, clase: 'Calculado', fuente: `cuenta ${r.cuenta}`, n: 1 });
   const cascada: PasoCascada[] = ins.resultados.map((r) => ({ id: r.id, etiqueta: r.etiqueta, montoCent: r.montoCent, subtotal: r.subtotal, signo: r.signo }));
   tablas.resultados = {
     id: 'resultados',

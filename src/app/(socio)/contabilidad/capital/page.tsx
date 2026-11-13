@@ -35,13 +35,13 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
   const filasAcum: FilaTabla[] = a.socios.map((f) => ({ clave: `acum-${f.socio}`, mes: 'acum', periodo: a, f }));
   const columnas = () => [
     { id: 's', titulo: 'Socio', ancho: 'm' as const, celda: (x: FilaTabla) => etiquetaSocio(x.f.socio, mio) },
-    { id: 'a', titulo: 'Aportaciones de capital', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.aportaciones_capital_cent, x.mes, 'aportaciones', x.f.socio) },
-    { id: 'u', titulo: 'Utilidad generada', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_generada_cent, x.mes, 'utilidad', x.f.socio) },
-    { id: 'r', titulo: 'Utilidad reinvertida', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_reinvertida_cent, x.mes, 'reinvertida', x.f.socio) },
-    { id: 't', titulo: 'Utilidad retirada', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_retirada_cent, x.mes, 'retirada', x.f.socio) },
+    { id: 'a', titulo: 'Aportaciones de capital', etiquetaMovil: 'Capital', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.aportaciones_capital_cent, x.mes, 'aportaciones', x.f.socio) },
+    { id: 'u', titulo: 'Utilidad generada', etiquetaMovil: 'Utilidad', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_generada_cent, x.mes, 'utilidad', x.f.socio) },
+    { id: 'r', titulo: 'Utilidad reinvertida', etiquetaMovil: 'Reinvertida', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_reinvertida_cent, x.mes, 'reinvertida', x.f.socio) },
+    { id: 't', titulo: 'Utilidad retirada', etiquetaMovil: 'Retirada', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_retirada_cent, x.mes, 'retirada', x.f.socio) },
     { id: 'p', titulo: '% en libros', numerica: true, ancho: 's' as const, secundaria: true, etiquetaMovil: 'En libros', celda: (x: FilaTabla) => pct(x.f.pct_valuacion_bp, x.mes, x.f.socio) },
-    { id: 'q', titulo: '% de aportaciones', numerica: true, ancho: 's' as const, secundaria: true, etiquetaMovil: 'De aportaciones', celda: (x: FilaTabla) => (sd || x.f.pct_capital_bp === null ? <SinDato /> : pctBp(x.f.pct_capital_bp)) },
-    { id: 'v', titulo: 'Valuación al cierre', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.valuacion_cent, x.mes, 'valuacion', x.f.socio) },
+    { id: 'q', titulo: '% de aportaciones', numerica: true, ancho: 's' as const, secundaria: true, etiquetaMovil: 'Aportac.', celda: (x: FilaTabla) => (sd || x.f.pct_capital_bp === null ? <SinDato /> : pctBp(x.f.pct_capital_bp)) },
+    { id: 'v', titulo: 'Valuación al cierre', etiquetaMovil: 'Valuación', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.valuacion_cent, x.mes, 'valuacion', x.f.socio) },
   ];
   const subtotales = (mes: string, p: PeriodoCapital) => ({
     a: cifra(p.total.aportaciones_capital_cent, mes, 'aportaciones', 'total'), u: cifra(p.total.utilidad_generada_cent, mes, 'utilidad', 'total'),
@@ -96,9 +96,9 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
                 <DataTable etiqueta="Participación por socio" clave={(x) => x.f.socio} filas={a.socios.map((f) => ({ f }))} densidad="densa" plana
                   columnas={[
                     { id: 's', titulo: 'Socio', celda: (x) => etiquetaSocio(x.f.socio, mio) },
-                    { id: 'l', titulo: 'En libros', numerica: true, celda: (x) => pct(x.f.pct_valuacion_bp, 'acum', x.f.socio) },
-                    { id: 'c', titulo: 'De aportaciones de capital', numerica: true, celda: (x) => pctBp(x.f.pct_capital_bp) ?? <SinDato /> },
-                    { id: 'n', titulo: 'Retenida en el periodo', numerica: true, celda: (x) => m(x.f.utilidad_retenida_cent) },
+                    { id: 'l', titulo: 'En libros', etiquetaMovil: 'En libros', numerica: true, celda: (x) => pct(x.f.pct_valuacion_bp, 'acum', x.f.socio) },
+                    { id: 'c', titulo: 'De aportaciones de capital', etiquetaMovil: 'Aportac.', numerica: true, celda: (x) => pctBp(x.f.pct_capital_bp) ?? <SinDato /> },
+                    { id: 'n', titulo: 'Retenida en el periodo', etiquetaMovil: 'Retenida', numerica: true, celda: (x) => m(x.f.utilidad_retenida_cent) },
                   ]} />
                 <p className="rtm-capital-nota">Sin retirar y reinvirtiendo, la utilidad retenida sube la participación en libros por encima de la de aportaciones. La utilidad se reparte 50/50; el capital aportado no da más utilidad.</p>
               </Tarjeta>
@@ -115,7 +115,7 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
               <p className="rtm-capital-nota">Reinvertida = acta de corte más lo respaldado por utilidad en saldo a favor con proveedores (calculado: lo que excede la utilidad es anticipo, no utilidad{a.anticipo_proveedor_cent > 0n ? `; hoy ${m(a.anticipo_proveedor_cent)}` : ''}).</p>
             </Tarjeta>
 
-            <Rejilla dividir="6-6" alinear="inicio">
+            <Rejilla dividir="8-4" alinear="inicio">
               <Tarjeta plana className="rtm-a2-tabla" titulo="Fondos de la sociedad en poder de socios" descripcion={`Al ${fecha(fin.fin)}: cada renglón con su motivo`}>
                 {hayFondos ? (
                   <DataTable etiqueta="Fondos de la sociedad en poder de socios" clave={(x) => x.clave} filas={fondosFilas} densidad="densa" plana
@@ -152,7 +152,7 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
             <Tarjeta titulo="Comprobaciones" descripcion={`Al ${fecha(a.fin)}: cada cifra contra el Estado de resultados, el Balance y el Libro`}>
               <DataTable etiqueta="Comprobaciones de capital" clave={(x) => x.id} filas={a.comprobaciones} densidad="densa" plana
                 columnas={[
-                  { id: 'i', titulo: 'Identidad', ancho: 'xl', truncar: 'l', celda: (x) => <CifraComprobada texto={`${x.id}: ${x.nombre}`} cifra={id('acum', 'comp', x.id)} comprobacion={x.ok ? 'cuadra' : 'no_cuadra'} /> },
+                  { id: 'i', titulo: 'Identidad', ancho: 'xl', celda: (x) => <span className="rtm-capital-comp"><CifraComprobada texto={`${x.id}: ${x.nombre}`} cifra={id('acum', 'comp', x.id)} comprobacion={x.ok ? 'cuadra' : 'no_cuadra'} /></span> },
                   { id: 'e', titulo: 'Resultado', ancho: 's', celda: (x) => <EstadoTexto tono={x.ok ? 'ok' : 'malo'}>{x.ok ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
                 ]} />
             </Tarjeta>
