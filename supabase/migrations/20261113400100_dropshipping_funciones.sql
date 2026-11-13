@@ -220,6 +220,10 @@ begin
     select * into pe from operacion.pedido where id = p_pedido;
     if pe.estado in ('cancelado', 'anulado') then raise exception 'el pedido ya no esta vigente' using errcode = 'P0428'; end if;
   end if;
+  -- Un pedido a costo para un socio lo paga el socio como cliente (directo al proveedor o a la sociedad): pagarlo "con su dinero" como aportacion crearia un reembolso a su favor por su propia compra.
+  if p_pedido is not null and pd.tipo_venta = 'socio_a_costo' and p_fuente in ('socio_propio', 'socio_capital', 'socio_fondos') then
+    raise exception 'un pedido a costo para un socio se paga como cliente: usa el pago directo al proveedor o el abono a la sociedad' using errcode = '22023';
+  end if;
   if p_fuente = 'sociedad' then
     v_r := operacion.registrar_pago_proveedor_sociedad(p_clave_idem || ':p', p_proveedor, p_monto_cent, v_fecha, p_nota);
     v_mov := (v_r->>'movimiento_id')::bigint;
@@ -229,7 +233,8 @@ begin
     select id into v_mov from operacion.cuenta_proveedor_mov where proveedor_id = v_prov and concepto = 'pago_socio' order by id desc limit 1;
   else
     if p_cliente_id is null then raise exception 'indica el cliente que pago al proveedor' using errcode = '23502'; end if;
-    v_r := operacion.registrar_pago(p_clave_idem || ':p', p_proveedor, p_monto_cent, p_cliente_id, null, true, 'abono', v_fecha, null, p_nota);
+    -- Con pedido indicado el pago se aplica a ESE pedido (no por orden de antiguedad a otros del mismo cliente).
+    v_r := operacion.registrar_pago(p_clave_idem || ':p', p_proveedor, p_monto_cent, p_cliente_id, case when p_pedido is not null then jsonb_build_array(jsonb_build_object('pedido_id', p_pedido, 'monto_cent', p_monto_cent)) end, true, 'abono', v_fecha, null, p_nota);
     select m.id into v_mov from operacion.cuenta_proveedor_mov m where m.pago_id = (v_r->>'pago_id')::bigint and m.concepto = 'pago_cliente_redirigido';
   end if;
   if p_pedido is not null and v_mov is not null then
