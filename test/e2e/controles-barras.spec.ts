@@ -47,6 +47,14 @@ async function abrirSesion(browser: Browser, base: string) {
   await p0.waitForURL(`${base}/socios`);
   const estado = await entrada.storageState();
   await entrada.close();
+  // Un reporte ya preparado (otra semana que la de integracion-db): sin filas, /reportes no muestra la tabla de historial y no habria tarjetas que medir.
+  const rep = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() }, storageState: estado });
+  const pr = await rep.newPage();
+  await pr.goto(`${base}/reportes`);
+  await pr.getByTestId('reporte-inicio').fill('2026-10-26');
+  await pr.getByTestId('reporte-preparar').click();
+  await expect(pr.getByTestId('reporte-mensaje')).toBeVisible({ timeout: 150_000 });
+  await rep.close();
   return { estado, cliente, modelo };
 }
 
