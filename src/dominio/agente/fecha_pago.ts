@@ -67,7 +67,7 @@ function porDiaDelMes(dia: number, hoy: FechaNeg, dir: 'futuro' | 'pasado'): Fec
   return esteMes !== null && esteMes <= hoy ? esteMes : (otroMes(-1) ?? otroMes(-2));
 }
 
-function porDiaYMes(dia: number, mes: number, anio: number | null, hoy: FechaNeg, dir: 'futuro' | 'pasado'): FechaNeg | null {
+function porDiaYMes(dia: number, mes: number, anio: number | null, hoy: FechaNeg): FechaNeg | null {
   const { a } = partes(hoy);
   if (anio !== null) return anioRazonable(anio, hoy) ? fechaValida(anio, mes, dia) : null;
   // Sin anio: SIEMPRE el actual. Una fecha que ya paso (o, en un pago, que aun no llega) no se corre en silencio a otro anio: el llamador la rechaza como pasada o futura.
@@ -97,7 +97,7 @@ function detectarDia(t: string, hoy: FechaNeg, dir: 'futuro' | 'pasado'): DiaDet
   if (m) return { fecha: anioRazonable(Number(m[1]), hoy) ? fechaValida(Number(m[1]), Number(m[2]), Number(m[3])) : null, resto };
   // dd/mm o dd/mm/aaaa. Un anio de 1 o 2 digitos ("15/11/2", "15/11/26") es ambiguo y no se acepta: se pide con cuatro digitos.
   m = quitar(/(?<![\d/.-])(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{4}))?(?![/.-]?\d)/);
-  if (m) return { fecha: porDiaYMes(Number(m[1]), Number(m[2]), m[3] === undefined ? null : Number(m[3]), hoy, dir), resto };
+  if (m) return { fecha: porDiaYMes(Number(m[1]), Number(m[2]), m[3] === undefined ? null : Number(m[3]), hoy), resto };
   // "15 de noviembre [de 2026]" | "15 nov"
   const meses = [...MESES, ...Object.keys(MESES_CORTOS)].join('|');
   m = quitar(new RegExp(`\\b(\\d{1,2})\\s*(?:de\\s+)?(${meses})\\b\\.?(?:\\s+(?:de\\s+)?(\\d{4}))?`));
@@ -105,7 +105,7 @@ function detectarDia(t: string, hoy: FechaNeg, dir: 'futuro' | 'pasado'): DiaDet
     const nombre = m[2]!;
     const idx = MESES.indexOf(nombre as (typeof MESES)[number]);
     const mes = idx >= 0 ? idx + 1 : MESES_CORTOS[nombre]!;
-    return { fecha: porDiaYMes(Number(m[1]), mes, m[3] === undefined ? null : Number(m[3]), hoy, dir), resto };
+    return { fecha: porDiaYMes(Number(m[1]), mes, m[3] === undefined ? null : Number(m[3]), hoy), resto };
   }
   // "el 15" | "el dia 15"
   m = quitar(/\bel\s+(?:dia\s+)?(\d{1,2})\b(?!\s*(?::|h\b|hrs\b|horas\b|am\b|pm\b))/);
