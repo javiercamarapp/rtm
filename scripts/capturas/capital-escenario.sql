@@ -3,10 +3,10 @@
 -- reinversion parcial por acta y en el proveedor, un retiro, 35,475.00 de fondos de la sociedad en poder de un socio, Karen con deuda, Isaac con saldo a favor y 62,161.91 por clasificar.
 begin;
 update catalogo.config set vigente_desde = '2020-01-01' where vigente_desde > '2020-01-01';
-insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('demo.capital.angelo@demo-capital.test', 'socio', 'Angelo', true), ('demo.capital.javier@demo-capital.test', 'socio', 'Javier', true);
+insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('demo.capital.angelo@prueba.invalid', 'socio', 'Angelo', true), ('demo.capital.javier@prueba.invalid', 'socio', 'Javier', true);
 insert into auth.users (id, instance_id, aud, role, email) values
-  ('77777777-7777-7777-7777-7777777777c1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'demo.capital.angelo@demo-capital.test'),
-  ('77777777-7777-7777-7777-7777777777c2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'demo.capital.javier@demo-capital.test');
+  ('77777777-7777-7777-7777-7777777777c1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'demo.capital.angelo@prueba.invalid'),
+  ('77777777-7777-7777-7777-7777777777c2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'demo.capital.javier@prueba.invalid');
 create function pg_temp.como(p text) returns void language sql as
   $$ select set_config('request.jwt.claim.sub', case $1 when 'Angelo' then '77777777-7777-7777-7777-7777777777c1' else '77777777-7777-7777-7777-7777777777c2' end, true) $$;
 select pg_temp.como('Angelo');

@@ -1,6 +1,7 @@
 // Grafica sobria de capital: por mes, tres columnas (aportaciones de capital acumuladas, utilidad generada acumulada y valuacion al cierre) del total de los socios.
 // Blanco y negro: se distinguen por tinta y trama, no solo por color. La tabla alterna trae los mismos datos en texto. Todo viene calculado por la base.
 import { formatearMoneda } from '@/dominio/formato';
+import { DataTable } from '@/ui/componentes/data-table';
 
 export interface PuntoCapital { id: string; etiqueta: string; aportaciones: bigint; utilidad: bigint; valuacion: bigint }
 
@@ -30,7 +31,7 @@ export function GraficaCapital({ puntos, titulo, descripcion, pie }: { puntos: r
       <figcaption className="rtm-capital-titulo">{titulo}</figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={descripcion} className="rtm-capital-svg">
         <defs>
-          <pattern id="cap-rayas" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--rtm-surface, #fff)" /><rect width="2.5" height="6" fill="var(--rtm-ink)" /></pattern>
+          <pattern id="cap-rayas" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--rtm-surface)" /><rect width="2.5" height="6" fill="var(--rtm-ink)" /></pattern>
         </defs>
         {marcas.map((m) => (
           <g key={String(m)}><line x1={MI} x2={W - 4} y1={y(m)} y2={y(m)} stroke="var(--rtm-line)" strokeWidth="1" /><text x={MI - 6} y={y(m) + 4} textAnchor="end" className="rtm-capital-eje">{compacto(m)}</text></g>
@@ -55,10 +56,15 @@ export function GraficaCapital({ puntos, titulo, descripcion, pie }: { puntos: r
       </ul>
       <details className="rtm-capital-tabla-alterna">
         <summary>Ver como tabla</summary>
-        <table>
-          <thead><tr><th scope="col">Mes</th><th scope="col">Aportaciones de capital</th><th scope="col">Utilidad generada</th><th scope="col">Valuación</th></tr></thead>
-          <tbody>{puntos.map((p) => <tr key={p.id}><th scope="row">{p.etiqueta}</th><td>{formatearMoneda(p.aportaciones)}</td><td>{formatearMoneda(p.utilidad)}</td><td>{formatearMoneda(p.valuacion)}</td></tr>)}</tbody>
-        </table>
+        <DataTable
+          etiqueta="Aportaciones, utilidad y valuación por mes" clave={(p) => p.id} filas={[...puntos]} densidad="densa" plana
+          columnas={[
+            { id: 'm', titulo: 'Mes', celda: (p) => p.etiqueta },
+            { id: 'a', titulo: 'Aportaciones de capital', numerica: true, etiquetaMovil: 'Capital', celda: (p) => formatearMoneda(p.aportaciones) },
+            { id: 'u', titulo: 'Utilidad generada', numerica: true, etiquetaMovil: 'Utilidad', celda: (p) => formatearMoneda(p.utilidad) },
+            { id: 'v', titulo: 'Valuación', numerica: true, celda: (p) => formatearMoneda(p.valuacion) },
+          ]}
+        />
       </details>
       <p className="rtm-nota">{pie}</p>
     </figure>
