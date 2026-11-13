@@ -39,7 +39,9 @@ try {
   const neta = await j('select api.socios_aportacion_neta() as r');
   const saldo = (arr, cod) => Number(arr.find((x) => x.codigo === cod)?.monto_cent ?? 0);
   const utilidadLibro = saldo(balance.capital, '4-7');
-  const ingresos = er.lineas.filter((l) => l.tipo === 'I').reduce((s, l) => s + Number(l.monto_cent), 0);
+  // Descuentos (4210) y devoluciones sobre ventas (4220) son cuentas de contra-ingreso: el estado de resultados las muestra en positivo y restan de los ingresos.
+  const CONTRA_INGRESO = new Set(['4210', '4220']);
+  const ingresos = er.lineas.filter((l) => l.tipo === 'I').reduce((s, l) => s + (CONTRA_INGRESO.has(l.codigo) ? -Number(l.monto_cent) : Number(l.monto_cent)), 0);
   const egresos = er.lineas.filter((l) => l.tipo === 'C' || l.tipo === 'G').reduce((s, l) => s + Number(l.monto_cent), 0);
 
   // ---------- Via 2: auxiliares ----------

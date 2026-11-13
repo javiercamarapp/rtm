@@ -48,6 +48,12 @@ export function lectorOperacionSupabase(): LectorOperacion {
     cascadaProyeccion: (i, f) => leer('cascada_proyeccion', { p_ini: i, p_fin: f }),
     cierresReparto: async () => (await leer<CierreReparto[]>('cierres_reparto')).map((c) => ({ ...c, decisiones: decisionesABigint(c.decisiones) })),
     omarCuenta: (s) => leer('omar_cuenta', { p_semana_ini: s }),
+    compraRecepcion: (id) => leer('compra_recepcion', { p_compra: id }),
+    devoluciones: () => leer('devoluciones_lista'),
+    pedidoDevoluciones: (id) => leer('pedido_devoluciones', { p_pedido: id }),
+    catalogoDevolucionProveedor: () => leer('devolucion_proveedor_catalogo'),
+    devolucionFuente: (t, id) => leer('devolucion_fuente', { p_tipo: t, p_id: id }),
+    devolucionDocumento: (t, id) => leer('devolucion_documento', { p_tipo: t, p_id: id }),
     textoCobro: (id) => leer('texto_cobro', { p_cliente: id }),
   };
 }
@@ -65,6 +71,12 @@ export function escritorOperacionSupabase(): EscritorOperacion {
       const sb = await crearClienteServidor();
       const hex = `\\x${Buffer.from(bytes).toString('hex')}`;
       const { error } = await sb.rpc('guardar_documento_nota', { p_nota: notaId, p_variante: variante, p_sha256: sha256, p_contenido: hex });
+      if (error) throw new ErrorDeNegocio(error.message, error.code ?? null);
+    },
+    async guardarDocumentoDevolucion(tipo, id, sha256, bytes) {
+      const sb = await crearClienteServidor();
+      const hex = `\\x${Buffer.from(bytes).toString('hex')}`;
+      const { error } = await sb.rpc('guardar_documento_devolucion', { p_tipo: tipo, p_devolucion: id, p_variante: 'pdf', p_sha256: sha256, p_contenido: hex });
       if (error) throw new ErrorDeNegocio(error.message, error.code ?? null);
     },
   };
