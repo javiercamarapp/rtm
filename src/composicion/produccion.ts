@@ -18,6 +18,7 @@ import { enviadorTelegramDeLotes } from '@/infra/notificaciones/telegram_lotes';
 import { llamadaProveedoresServidor } from '@/infra/postgres/proveedores';
 import { sqlServidor, type Sql } from '@/infra/postgres/servidor';
 import { secretoValido } from '@/infra/agente/telegram_webhook';
+export { leerCuerpoAcotado } from '@/infra/agente/telegram_webhook';
 import { appUrl } from '@/config/env';
 
 /** La URL de la app es opcional para los avisos: sin ella los textos no llevan enlace. */
@@ -75,7 +76,7 @@ export function crearAgenteProduccion(d: DepsProduccion): AgenteTelegram {
 }
 
 /** Webhook: secreto en tiempo constante, 200 siempre salvo secreto invalido, reclamo por update_id dentro del agente. Sin secreto configurado rechaza todo. */
-export async function procesarWebhook(d: DepsProduccion, cabeceraSecreto: string | null, cuerpo: string): Promise<RespuestaWebhook> {
+export async function procesarWebhook(d: DepsProduccion, cabeceraSecreto: string | null, cuerpo: string | (() => Promise<string | null>)): Promise<RespuestaWebhook> {
   const secreto = configPrivada(d.entorno).TELEGRAM_WEBHOOK_SECRET ?? '';
   return manejarWebhook({
     cabeceraSecreto, secretoEsperado: secreto, cuerpo,
@@ -156,7 +157,7 @@ export async function ejecutarLatidoProduccion(d: DepsProduccion): Promise<Resum
 
 // ---------------------------------------------------------------- entradas de las rutas HTTP (las rutas de app no importan infra)
 
-export function webhookTelegram(cabeceraSecreto: string | null, cuerpo: string): Promise<RespuestaWebhook> {
+export function webhookTelegram(cabeceraSecreto: string | null, cuerpo: string | (() => Promise<string | null>)): Promise<RespuestaWebhook> {
   return procesarWebhook({ sql: sqlServidor, urlApp: urlAppOpcional() }, cabeceraSecreto, cuerpo);
 }
 
