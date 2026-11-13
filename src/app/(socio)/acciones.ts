@@ -3,6 +3,8 @@
 import { cerrarSesionYSalir } from '@/composicion/acceso';
 import { escritorDeSocio, lectorDeSocio } from '@/composicion/catalogo';
 import { operacionDeSocio } from '@/composicion/operacion';
+import { capitalDeSocio } from '@/composicion/capital';
+import { explicarCapital, leerCifraCapital } from '@/dominio/capital/explicar';
 import { CIFRA_CUADRE_SOCIOS, explicarCuadreSocios } from '@/dominio/operacion/cuadre';
 import { escritorNotificacionesDeSocio, notificacionesDeSocio } from '@/composicion/inventario';
 import type { Disponibilidad, Explicacion } from '@/dominio/catalogo/tipos';
@@ -14,6 +16,14 @@ export async function salir(): Promise<void> {
 
 /** "Explicar este numero": cada accion exige sesion de socio antes de tocar la base. */
 export async function explicarCifra(cifra: string): Promise<Explicacion> {
+  if (cifra.startsWith('capital:')) {
+    const c = leerCifraCapital(cifra);
+    if (!c) throw new Error('cifra no explicable');
+    const { datos, mio } = await capitalDeSocio(c.desde, c.hasta);
+    const e = explicarCapital(datos, cifra, mio);
+    if (!e) throw new Error('cifra no explicable');
+    return e;
+  }
   if (!/^(existencia:modelo:\d+|margen:\d+:\d+|pedido:(total|saldo):\d+|proveedor:saldo:\d+|socio:(deuda|fondos|diferencia):(Angelo|Javier)|socio:neto:(Angelo|Javier)|socios:diferencia|socios:cuadre|cxc:total|proveedor:falta:(Isaac|Karen):\d{4}-\d{2}-\d{2}:(sociedad|todo)|omar:neto:\d{4}-\d{2}-\d{2}|cascada:utilidad:\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}|cascada:resultado:(Angelo|Javier):\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}:\d+|conta:efectivo|conta:saldo:\d{4}(:\d{4}-\d{2}-\d{2})?|conta:(v0[1-6]|l0[12])(:\d{4}-\d{2}-\d{2})?|conta:utilidad:\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}(:(bruta|contribucion|neta))?|inventario:valor|cobertura:modelo:\d+)$/.test(cifra)) throw new Error('cifra no explicable');
   if (cifra === CIFRA_CUADRE_SOCIOS) return explicarCuadreSocios(await (await operacionDeSocio()).cuentaSocios());
   return (await lectorDeSocio()).explicar(cifra);

@@ -104,5 +104,7 @@ export interface Explicacion {
   precioCent: bigint | null;
   costos: { proveedor: string; costoCent: bigint; desde: string; supuesto: boolean; fuente: string; margenCent: bigint; cuadra: boolean }[];
   /** Cifras de dinero (F2): los renglones que forman la cifra, con saldo corrido cuando es un libro. */
+  /** De donde sale la cifra (una frase); opcional. */
+  fuente?: string;
   renglones: { concepto: string; montoCent: bigint; saldoCent: bigint | null; hora: string | null; fechaNeg: string | null; evento: string | null; canal: string | null; autor: string | null; mensajeOrigen: string | null }[];
 }

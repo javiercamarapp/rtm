@@ -77,6 +77,7 @@ function Contenido({ d }: { d: Explicacion }) {
     <div className="rtm-cajon-cuerpo">
       <h2 id="cajon-titulo" className="rtm-cajon-titulo">{d.titulo}</h2>
       {d.valor !== null && <p className="rtm-cajon-cifra rtm-num">{fmt(d.valor)}</p>}
+      {d.fuente && <p className="rtm-nota" data-testid="explicar-fuente">{d.fuente}</p>}
       {d.comprobacion && (
         <section className="rtm-cajon-bloque" aria-label="Comprobación por dos vías">
           <h3>Comprobación por dos vías</h3>
