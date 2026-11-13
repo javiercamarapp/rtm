@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import { writeFileSync } from 'node:fs';
 import { leerFuentes, leerAlias } from './fuentes.mjs';
 import { construirPlan, resumenPlan, LOTES } from './plan.mjs';
-import { conectar, uuidsSocios, crearContexto, ejecutarPaso, estadoBase, prerrequisitos } from './db.mjs';
+import { conectar, uuidsSocios, crearContexto, ejecutarPaso, estadoBase, prerrequisitos, hayPersonaBodega, MENSAJE_PERSONA_BODEGA } from './db.mjs';
 
 const { values: a } = parseArgs({
   options: {
@@ -76,14 +76,14 @@ try {
   if (a['verificar-estado']) {
     // Solo lectura: ningun INSERT, UPDATE ni llamada a funciones de escritura.
     const pre = await prerrequisitos(client, plan);
-    for (const i of pre.items) console.log(`  [${i.ok ? 'OK ' : 'FALTA'}] ${i.texto}`);
+    for (const i of pre.items) console.log(`  [${i.ok ? 'OK ' : i.aviso ? 'AVISO' : 'FALTA'}] ${i.texto}`);
     console.log(`  Catalogo: ${pre.modelosNuevos} de ${pre.modelosPlan} modelos del plan no existen todavia (se crean en el lote 1).`);
     console.log(pre.ok ? 'Verificacion de solo lectura: la base esta lista para la carga.' : 'Verificacion de solo lectura: HAY PRERREQUISITOS SIN CUMPLIR; no cargar.');
     await client.end();
     process.exit(pre.ok ? 0 : 1);
   }
   const pre = await prerrequisitos(client, plan);
-  const faltan = pre.items.filter((i) => !i.ok && !(a['forzar-no-vacia'] && i.id === 'vacia')).map((i) => i.texto);
+  const faltan = pre.items.filter((i) => !i.ok && !i.aviso && !(a['forzar-no-vacia'] && i.id === 'vacia')).map((i) => i.texto);
   if (faltan.length) throw new Error(`prerrequisitos sin cumplir: ${faltan.join(' | ')}`);
   const socios = await uuidsSocios(client);
   const ctx = crearContexto();
@@ -93,6 +93,7 @@ try {
   for (const p of previos) await ejecutarPaso(client, p, ctx, { socios, llave, exigirSinCambio: true });
   let nuevos = 0, iguales = 0;
   for (const p of seleccion) {
+    if (p.lote >= 5 && !(await hayPersonaBodega(client))) throw new Error(MENSAJE_PERSONA_BODEGA);
     const t0 = Date.now();
     const res = await ejecutarPaso(client, p, ctx, { socios, llave });
     if (res.cambio) nuevos += 1; else iguales += 1;

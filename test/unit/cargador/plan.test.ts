@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { leerFuentes } from '../../../scripts/cargador/fuentes.mjs';
+import { leerFuentes, normalizarFuentes } from '../../../scripts/cargador/fuentes.mjs';
 import { construirPlan, costosCatalogo, valoresRenglones } from '../../../scripts/cargador/plan.mjs';
 import { sumaRenglones } from '../../../scripts/cargador/lib.mjs';
 
@@ -102,5 +102,31 @@ describe('cargador: solo funciones del sistema, nada directo a las tablas', () =
   });
   it('el cuadre corre en una transaccion de solo lectura', () => {
     expect(codigo.find(([f]) => f === 'cuadre.mjs')![1]).toContain("begin read only");
+  });
+});
+
+describe('cargador: clientes unificados y casi duplicados', () => {
+  const asientos = JSON.parse(readFileSync(join(DIR, 'asientos.json'), 'utf8'));
+  const isaac = JSON.parse(readFileSync(join(DIR, 'pedidos-isaac.json'), 'utf8'));
+  it('avisa de clientes con nombre casi igual sin imprimir nombres', () => {
+    const a = JSON.parse(JSON.stringify(asientos));
+    a.asientos[2].clave_identidad = 'Karen|F101|cliente-sintetico-dos|2026-11-12|3';
+    a.asientos[0].clave_identidad = 'Karen|F100|sintetico-dos|2026-10-15|1';
+    const d = normalizarFuentes({ asientos: a, isaac, alias });
+    const aviso = d.advertencias.find((w: string) => w.includes('casi igual'));
+    expect(aviso).toBeTruthy();
+    expect(aviso).not.toMatch(/sintetico/);
+  });
+  it('el alias de clientes une dos escrituras del mismo cliente sin cambiar la clave de identidad', () => {
+    const a = JSON.parse(JSON.stringify(asientos));
+    a.asientos[0].clave_identidad = 'Karen|F100|cliente-x|2026-10-15|1';
+    a.asientos[1].clave_identidad = 'Karen|F100|x|2026-10-16|2';
+    const d: any = normalizarFuentes({ asientos: a, isaac, alias: { ...alias, clientes: { 'cliente-x': 'x' }, nombres: { x: 'XX' } } });
+    expect(d.clientes.get('x')).toMatchObject({ nombre: 'XX' });
+    expect(d.clientes.has('cliente-x')).toBe(false);
+    const p = d.pedidos.find((q: { numero: string }) => q.numero === 's1')!;
+    expect(p.id).toBe('Karen|F100|cliente-x|2026-10-15|1');
+    expect(p.cliente).toBe('x');
+    expect(p.cobros).toHaveLength(1);
   });
 });

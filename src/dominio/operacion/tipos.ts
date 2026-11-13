@@ -74,6 +74,8 @@ export interface CompraDetalle {
 }
 export interface CuentaProveedor {
   id: number; proveedor: 'Isaac' | 'Karen'; modalidad: 'semanal_viernes' | 'prepago_total'; saldo_cent: Cent; etiqueta: 'A favor' | 'Se debe' | 'Saldo cero'; puente_cent: Cent;
+  /** Posicion completa con el proveedor segun el Mayor (cuenta 2110 o 2120): incluye el costo de los pedidos directos enviados. Positivo = a favor de la sociedad, negativo = se debe. */
+  posicion_cent: Cent;
   movimientos: (EventoInfo & { id: number; fecha_neg: string; concepto: string; monto_cent: Cent; saldo_corrido_cent: Cent; compra: string | null; pago: string | null; cliente: string | null; cuenta_origen: string | null; nota: string | null })[];
 }
 export interface CatalogoCompra { modalidad: 'semanal_viernes' | 'prepago_total'; saldo_cent: Cent; seguro_reenvio_cent: Cent; skus: { sku_id: number; modelo: string; marca: string; sabor: string; costo_cent: Cent | null }[] }

@@ -8,7 +8,7 @@ import { Pulso } from '@/ui/shell/pulso';
 
 const vacio: EntradasPulso = { isaac: null, cxc: null, socios: null, existencia: null };
 const mov = { evento: 'e', canal: 'web', hora: '2026-11-10T10:00:00Z', mensaje_origen: null, autor: null, id: 1, fecha_neg: '2026-11-10', concepto: 'x', monto_cent: 1n, saldo_corrido_cent: 1n, compra: null, pago: null, cliente: null, cuenta_origen: null, nota: null };
-const isaac = (saldo: bigint, movimientos: unknown[] = [mov]) => ({ id: 7, proveedor: 'Isaac', modalidad: 'semanal_viernes', saldo_cent: saldo, etiqueta: 'Se debe', puente_cent: 0n, movimientos }) as unknown as CuentaProveedor;
+const isaac = (posicion: bigint, movimientos: unknown[] = [mov], saldo = 0n) => ({ id: 7, proveedor: 'Isaac', modalidad: 'semanal_viernes', saldo_cent: saldo, posicion_cent: posicion, etiqueta: 'Se debe', puente_cent: 0n, movimientos }) as unknown as CuentaProveedor;
 const cxc = (total: bigint, filas = 1) => ({ hoy: '2026-11-11', filas: new Array(filas).fill({}), total_cent: total, saldos_a_favor: [], pagos_sin_identificar: [] }) as unknown as CuentasPorCobrar;
 const socios = (d: bigint, hayMovs = true) => ({ hoy: '2026-11-11', costo_cent: hayMovs ? 100n : 0n, javier_debe_a_angelo_cent: d, movimientos: hayMovs ? [{}] : [] }) as unknown as CuentaSocios;
 const bodega = (piezas: (number | null)[]): Existencia => ({ modelos: piezas.map((p, i) => ({ modeloId: i, marca: 'm', modelo: `m${i}`, estado: 'disponible', piezas: p, valorCent: null, costoPromCent: null, ultimoMovimiento: null })), sabores: [] });
@@ -33,14 +33,18 @@ describe('armarPulso', () => {
   it('Isaac: saldo negativo se muestra como lo que se debe, con su cifra explicable', () => {
     const c = armarPulso({ ...vacio, isaac: isaac(-123450n) }).chips[0]!;
     expect(c.texto).toBe('$1,234.50');
-    expect(c.detalle).toBe('en su cuenta: se debe');
-    expect(c.cifra).toBe('proveedor:saldo:7');
+    expect(c.detalle).toBe('posición completa: se debe');
+    expect(c.cifra).toBe('conta:saldo:2110');
+  });
+  it('Isaac: la cifra es la posicion completa (Mayor), no el saldo de la cuenta corriente', () => {
+    const c = armarPulso({ ...vacio, isaac: isaac(-29440309n, [mov], -206809n) }).chips[0]!;
+    expect(c.texto).toBe('$294,403.09');
   });
   it('Isaac: saldo a favor y saldo cero reales', () => {
-    expect(armarPulso({ ...vacio, isaac: isaac(5000n) }).chips[0]!.detalle).toBe('en su cuenta: a favor');
+    expect(armarPulso({ ...vacio, isaac: isaac(5000n) }).chips[0]!.detalle).toBe('posición completa: a favor');
     const cero = armarPulso({ ...vacio, isaac: isaac(0n) }).chips[0]!;
     expect(cero.texto).toBe('$0.00');
-    expect(cero.detalle).toBe('en su cuenta: saldo cero');
+    expect(cero.detalle).toBe('posición completa: saldo cero');
   });
   it('por cobrar, entre socios y bodega con cifra real', () => {
     const p = armarPulso({ isaac: null, cxc: cxc(980000n), socios: socios(-250000n), existencia: bodega([10, null, 5]) });

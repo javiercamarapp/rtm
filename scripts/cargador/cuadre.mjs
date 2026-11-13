@@ -83,25 +83,23 @@ try {
 
   // ---------- Comparacion con el objetivo ----------
   if (objetivo) {
-    const clasifica = (o, s, { ajuste = 0, tol = 0 } = {}) => {
+    // Unica diferencia admitida: redondeo del costo promedio movil (centavos) en inventario, activo y utilidad. La renta de bodega es regla acordada: va en el objetivo.
+    const clasifica = (o, s, { tol = 0 } = {}) => {
       const d = s - o;
       if (d === 0) return { estado: 'igual', dif: 0 };
-      const resid = d - ajuste;
-      if (Math.abs(resid) <= tol && ajuste !== 0) return { estado: 'explicada', dif: d, causa: `renta de bodega ${fmt(Math.abs(ajuste))} y redondeo ${fmt(Math.abs(resid))}` };
-      if (ajuste === 0 && Math.abs(d) <= tol) return { estado: 'explicada', dif: d, causa: 'redondeo del costo promedio movil' };
-      if (Math.abs(resid) === 0) return { estado: 'explicada', dif: d, causa: `renta de bodega ${fmt(Math.abs(ajuste))}` };
+      if (Math.abs(d) <= tol) return { estado: 'explicada', dif: d, causa: 'redondeo del costo promedio movil (centavos)' };
       return { estado: 'DIFERENCIA', dif: d };
     };
     const cmp = (concepto, o, s, opt) => { if (o == null) return; const r = clasifica(o, s, opt); filas.push({ concepto, objetivo: o, sistema: s, ...r }); if (r.estado === 'DIFERENCIA') rojas.push(`objetivo: ${concepto}`); };
     const socio = (nombre) => cap.acumulado.socios.find((x) => x.socio === nombre);
     const netaSocio = (nombre) => neta.socios.find((x) => x.socio === nombre);
-    cmp('Utilidad neta conocida', objetivo.utilidad_neta, utilidadLibro, { ajuste: -renta, tol: TOL_REDONDEO });
-    for (const s of ['Javier', 'Angelo']) cmp(`Utilidad de ${s} (50 %)`, objetivo.utilidad_por_socio?.[s], socio(s).utilidad_generada_cent, { ajuste: -Math.round(renta / 2), tol: TOL_REDONDEO });
+    cmp('Utilidad neta conocida', objetivo.utilidad_neta, utilidadLibro, { tol: TOL_REDONDEO });
+    for (const s of ['Javier', 'Angelo']) cmp(`Utilidad de ${s} (50 %)`, objetivo.utilidad_por_socio?.[s], socio(s).utilidad_generada_cent, { tol: TOL_REDONDEO });
     cmp('Capital aportado', objetivo.capital, saldo(balance.capital, '3110') + saldo(balance.capital, '3120'));
     for (const s of ['Javier', 'Angelo']) cmp(`Aportacion neta de ${s}`, objetivo.aportacion_neta?.[s], netaSocio(s).aportacion_neta_cent);
     cmp('Diferencia a igualar (aportaciones netas)', objetivo.diferencia_a_igualar, Math.max(...neta.socios.map((x) => x.diferencia_a_igualar_cent)));
     if (objetivo.le_toca_aportar) filas.push({ concepto: 'Le toca aportar el siguiente pago', objetivo: objetivo.le_toca_aportar, sistema: neta.le_toca_aportar, estado: objetivo.le_toca_aportar === neta.le_toca_aportar ? 'igual' : 'DIFERENCIA' });
-    for (const s of ['Javier', 'Angelo']) cmp(`Valuacion personal de ${s}`, objetivo.valuacion_personal?.[s], socio(s).valuacion_cent, { ajuste: -Math.round(renta / 2), tol: TOL_REDONDEO });
+    for (const s of ['Javier', 'Angelo']) cmp(`Valuacion personal de ${s}`, objetivo.valuacion_personal?.[s], socio(s).valuacion_cent, { tol: TOL_REDONDEO });
     cmp('Saldo con Karen (por pagarle)', objetivo.saldo_karen_por_pagar, -posKaren);
     cmp('Saldo con Isaac (por pagarle, incluye el pedido a costo del socio)', objetivo.saldo_isaac_por_pagar, -posIsaac);
     cmp('Por cobrar a clientes (Karen e inventario + Isaac)', objetivo.por_cobrar_clientes, cxcKaren + cxcIsaac);
@@ -118,7 +116,9 @@ try {
       const m = cap.meses.find((x) => x.mes === mes);
       cmp(`Utilidad del mes ${mes}`, v, m ? Number(m.periodo.total.utilidad_generada_cent) : 0, { tol: 0 });
     }
-    if (objetivo.pasivo_total != null) cmp('Pasivo total', objetivo.pasivo_total, balance.total_pasivo_cent, { ajuste: renta });
+    cmp('Pasivo total (incluye la renta de bodega por pagar a Omar)', objetivo.pasivo_total, balance.total_pasivo_cent);
+    cmp('Renta de bodega devengada (regla acordada: por pieza enviada desde la bodega)', objetivo.renta_bodega, renta);
+    cmp('Pasivo con Omar (2210)', objetivo.pasivo_omar, saldo(balance.pasivo, '2210'));
   } else {
     push('Utilidad neta (libro)', null, utilidadLibro);
   }

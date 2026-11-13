@@ -27,6 +27,10 @@ Catalogo: `catalogo.asegurar_modelo`, `asegurar_sku`, `fijar_costo`, `asegurar_c
 
 No hizo falta ninguna otra funcion: el cobro con fecha pasada (`p_fecha`), "mercancia pedida por recibir" (orden de compra confirmada y sin recibir: mercancia en transito 1320 contra la cuenta del proveedor), la baja de piezas regaladas (merma) y el alta de inventario (compra recibida) ya existian. Lista de GRANT nuevos: ninguno.
 
+### Clientes unificados y casi duplicados
+
+El alias `clientes` (`{"<nombre en la fuente>": "<nombre unico>"}`) une dos escrituras del mismo cliente y `nombres` fija el nombre visible; la clave de identidad de cada documento no cambia. Al normalizar, el cargador avisa (sin nombres, solo los documentos donde aparecen) de clientes con nombre casi igual (tokens contenidos o distancia de edicion de 2 o menos) para que el dueno confirme si son el mismo.
+
 ## Archivos de entrada (carpeta privada, permisos 700)
 
 | Archivo | Contenido |
@@ -65,14 +69,14 @@ Via 1 (libro): `operacion.cuadre_socios` (Libro conciliado), comprobaciones C1 a
 
 ### Diferencias conocidas entre el mapeo y el sistema (con su causa)
 
-1. Renta de bodega. Cada pieza enviada desde la bodega devenga la renta por pieza (`renta_por_pieza_cent`) a favor de Omar: es regla del sistema, el mapeo no la contempla. Baja la utilidad (50/50 entre los socios, y la valuacion personal de cada uno) y sube el pasivo con Omar lo mismo. El activo total no cambia. Decision del dueno: aceptarla (es la regla vigente) o cerrar la vigencia de esa configuracion a cero para las fechas de la carga ANTES de cargar (fila nueva en `catalogo.config`); el cargador no la toca.
-2. Redondeo del costo promedio movil (centavos): el kardex fija el valor por pieza en centavos; difiere unos centavos del costo puesto exacto del mapeo en el inventario, el activo total y la utilidad.
+1. Renta de bodega: es REGLA ACORDADA del negocio (2 pesos por pieza enviada desde la bodega, a favor de Omar) y se devenga. Baja la utilidad y sube el pasivo con Omar lo mismo; el activo total no cambia. Las cifras objetivo ya la incluyen (utilidad, valuaciones personales, pasivo, y su propia linea de renta devengada), asi que el cuadre las da por buenas.
+2. Redondeo del costo promedio movil (unos centavos, documentado): el kardex fija el valor por pieza en centavos; difiere unos centavos del costo puesto exacto del mapeo en el inventario, el activo total y la utilidad.
 3. Cuentas por cobrar a clientes: el libro (cuenta 1210) incluye el pedido a costo del socio, pendiente de pago; el mapeo lo muestra aparte. La suma coincide.
 4. Utilidad reinvertida y anticipo con Karen: el sistema cuenta como reinvertida solo la de pedidos de dropshipping depositados en su cuenta (el excedente por encima del costo, topado por la utilidad) y como anticipo solo cuando la posicion neta con el proveedor es a favor; el mapeo clasifica ademas la utilidad de una venta de inventario cobrada a Karen y el capital depositado. No cambia ninguna cifra del cuadre: es clasificacion.
 
 ## Supuestos del mapeo que el dueno debe confirmar
 
-- Modelos: el modelo "50K" de las ventas de inventario y de la compra se cargo como el modelo economico (costo menor) y el "50K" del pedido de dropshipping con costo mayor como otro modelo; son dos productos distintos con el mismo nombre en la fuente. Dos nombres de cliente casi iguales (por ejemplo la misma ciudad abreviada) se cargaron como clientes distintos.
+- Modelos: el modelo "50K" de las ventas de inventario y de la compra se cargo como el modelo economico (costo menor) y el "50K" del pedido de dropshipping con costo mayor como otro modelo; son dos productos distintos con el mismo nombre en la fuente.
 - El pedido parcialmente pagado toma la fecha de su primer abono.
 - Los faltantes de la compra de inventario se reflejan como saldo a favor con el proveedor (la compra se cargo por lo recibido); el sistema no los muestra como una diferencia de recepcion.
 - La disputa con Karen por un pedido no se registra como pasivo: el pedido se carga al costo correcto y la diferencia queda anotada.
@@ -83,7 +87,11 @@ Via 1 (libro): `operacion.cuadre_socios` (Libro conciliado), comprobaciones C1 a
 
 - Cada evento carga avisos (paquete enviado, orden confirmada, pedido enviado aceptando avisos). Con `telegram_envio` o `correo_envio` encendidos se enviarian decenas de mensajes al grupo: el cargador exige esos interruptores apagados (prerrequisito verificado en solo lectura).
 - Los pedidos se envian "aceptando avisos" (no hay tabulador de precios para estos clientes): quedan avisos abiertos por pedido. Se limpian en la pantalla de avisos o se resuelven al fijar precios.
-- El chip "Por pagar a Isaac" del encabezado muestra el saldo de la cuenta corriente (pagos y ordenes), no la posicion completa con los pedidos directos enviados; la pantalla de Proveedores y el libro si muestran la posicion completa ("Falta por saldar"). Conviene unificar el rotulo.
+- El chip "Por pagar a Isaac" (Inicio y barra) mostraba solo la cuenta corriente; la migracion `20261113600100` lo cambia a la posicion completa del Mayor (2110), la misma de Proveedores ("Falta por saldar") y Capital por socio, con su ayuda y su cifra explicable (`conta:saldo:2110`).
+
+## Persona de bodega (la elige el dueno)
+
+Las ventas de inventario de Merida (lote 5) exigen una persona de bodega configurada: el cliente que presta la bodega. El cargador NO la decide. Si falta en el destino, carga los lotes 1 a 4 y se detiene antes del lote 5 con un mensaje claro (la verificacion de solo lectura la marca como AVISO). Para configurarla: en la web, Clientes, ficha del cliente elegido por el dueno, "Marcar como persona de bodega" (`api.registrar_persona_bodega`; solo se puede una). Despues, `--lote 5`. En una base local de prueba, `semilla-local.sql` crea una persona sintetica.
 
 ## Procedimiento de produccion
 
@@ -97,7 +105,7 @@ Script: `sh scripts/cargador/produccion.sh <paso>` (sin secretos; lo corre el du
 6. `6-idempotencia`: segunda corrida completa: `0 pasos aplicados`.
 7. `reversa`: restaurar el respaldo previo (`docs/DESPLIEGUE.md`, Respaldos y restauracion). Los hechos son de solo insercion: no se borran. Un error descubierto despues de operar se corrige con las funciones del sistema (anular, ajuste de proveedor, asiento manual con motivo), no restaurando.
 
-Prerrequisito de despliegue: la migracion `20261113600000` debe estar aplicada en produccion antes de cargar; aplicarla es el flujo de despliegue autorizado del dueno (puede provocar un build: decirlo antes). El cargador se niega a escribir si no esta.
+Prerrequisito de despliegue: las migraciones `20261113600000` (fecha de carga) y `20261113600100` (Por pagar a Isaac con la posicion completa del Mayor; lecturas, sin DROP ni GRANT nuevo) deben estar aplicadas en produccion antes de cargar; aplicarla es el flujo de despliegue autorizado del dueno (puede provocar un build: decirlo antes). El cargador se niega a escribir si no esta.
 
 Costos: la carga no toca Vercel ni GitHub; su unico efecto externo es la base de produccion. Builds provocados por esta rama: 0.
 

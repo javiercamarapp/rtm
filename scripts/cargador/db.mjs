@@ -89,8 +89,13 @@ export async function prerrequisitos(client, plan) {
     { ok: interruptores.length === 0, texto: `interruptores de envio apagados (la carga genera avisos; con Telegram o correo encendidos se enviarian)${interruptores.length ? `: ENCENDIDOS ${interruptores.join(', ')}` : ''}` },
     { ok: ['Angelo', 'Javier'].every((s) => socios.includes(s)), texto: 'los dos socios tienen usuario activo' },
     { ok: ['Karen', 'Isaac'].every((s) => provs.includes(s)), texto: 'existen los proveedores Karen e Isaac' },
-    { ok: !necesitaBodega || bodega > 0, texto: 'hay persona de bodega configurada (las ventas desde Merida la exigen)' },
+    { id: 'bodega', ok: !necesitaBodega || bodega > 0, aviso: true, texto: 'hay persona de bodega configurada (las ventas desde Merida, lote 5, la exigen; la elige el dueno: Clientes > ficha del cliente > Marcar como persona de bodega). Sin ella el cargador carga los lotes 1 a 4 y se detiene antes del 5' },
     { id: 'vacia', ok: (est.pedidos === 0 && est.asientos === 0) || est.operacionesCarga > 0, texto: 'sin pedidos ni asientos ajenos a esta carga (0 pedidos, 0 asientos, o ya cargada por este cargador)' },
   ];
-  return { est, items, modelosNuevos: faltantes, modelosPlan: modelosPlan.length, ok: items.every((i) => i.ok) };
+  return { est, items, modelosNuevos: faltantes, modelosPlan: modelosPlan.length, ok: items.every((i) => i.ok || i.aviso) };
+}
+
+export const MENSAJE_PERSONA_BODEGA = 'falta configurar la PERSONA DE BODEGA (el cliente que presta la bodega; la elige el dueno, el cargador no la decide). En la web: Clientes > ficha del cliente elegido > "Marcar como persona de bodega" (api.registrar_persona_bodega). Despues corre de nuevo (o con --lote 5). Los lotes anteriores ya quedaron cargados.';
+export async function hayPersonaBodega(client) {
+  return Number((await client.query('select count(*) n from catalogo.persona_bodega')).rows[0].n) > 0;
 }

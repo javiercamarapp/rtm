@@ -64,7 +64,7 @@ function destinatario(d) {
 }
 
 const socioDe = (texto) => SOCIOS.find((s) => norm(texto).startsWith(norm(s))) ?? null;
-const slugDe = (clave) => String(clave).split('|')[2];
+const slugCrudo = (clave) => String(clave).split('|')[2];
 
 /**
  * Devuelve el dominio: { clientes, pedidos, cobros, capital, compras, bajas, advertencias }.
@@ -72,6 +72,8 @@ const slugDe = (clave) => String(clave).split('|')[2];
  */
 export function normalizarFuentes({ asientos, isaac, alias }) {
   const adv = [];
+  // Clientes que son el mismo aunque la fuente los escriba distinto: alias.clientes = { "<slug>": "<slug unico>" }; alias.nombres = { "<slug unico>": "Nombre visible" }. La clave de identidad no cambia.
+  const slugDe = (clave) => alias.clientes?.[slugCrudo(clave)] ?? slugCrudo(clave);
   const clientes = new Map();
   const pedidos = [];
   const cobros = [];
@@ -79,7 +81,7 @@ export function normalizarFuentes({ asientos, isaac, alias }) {
   const compras = [];
   const bajas = [];
   const cliente = (slug) => {
-    if (!clientes.has(slug)) clientes.set(slug, { slug, nombre: nombreDeSlug(slug) });
+    if (!clientes.has(slug)) clientes.set(slug, { slug, nombre: alias.nombres?.[slug] ?? nombreDeSlug(slug) });
     return slug;
   };
 
@@ -172,9 +174,35 @@ export function normalizarFuentes({ asientos, isaac, alias }) {
     }
   }
 
+  casiDuplicados({ clientes, pedidos, cobros, adv });
   asignarCobros({ pedidos, cobros, adv });
   asignarFechasYCreditos({ pedidos, cobros });
   return { clientes, pedidos, cobros, capital, compras, bajas, advertencias: adv };
+}
+
+/** Distancia de edicion corta (para detectar nombres casi iguales). */
+function distancia(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...new Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j += 1) d[0][j] = j;
+  for (let i = 1; i <= a.length; i += 1) for (let j = 1; j <= b.length; j += 1) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+
+/** Avisa de clientes con nombre casi igual (tokens contenidos o distancia de edicion <= 2). Sin nombres: solo los documentos donde aparecen. */
+function casiDuplicados({ clientes, pedidos, cobros, adv }) {
+  const docs = new Map();
+  for (const x of [...pedidos, ...cobros]) docs.set(x.cliente, [...(docs.get(x.cliente) ?? []), x.numero]);
+  const slugs = [...clientes.keys()];
+  for (let i = 0; i < slugs.length; i += 1) {
+    for (let j = i + 1; j < slugs.length; j += 1) {
+      const a = slugs[i], b = slugs[j];
+      const ta = new Set(a.split('-')), tb = new Set(b.split('-'));
+      const contenido = (x, y) => x.size >= 2 && [...x].every((t) => y.has(t));
+      if (contenido(ta, tb) || contenido(tb, ta) || (Math.min(a.length, b.length) >= 5 && distancia(a, b) <= 2)) {
+        adv.push(`clientes con nombre casi igual (revisar si son el mismo): documentos ${[...new Set(docs.get(a) ?? [])].join(',')} y ${[...new Set(docs.get(b) ?? [])].join(',')}`);
+      }
+    }
+  }
 }
 
 const slugFecha = (clave) => String(clave).split('|')[3];
