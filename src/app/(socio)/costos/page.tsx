@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { costosDeSocio } from '@/composicion/costos';
 import { fechaNeg } from '@/dominio/calendario';
-import { ETIQUETA_COSTO, pesosDeExactoE6, textoMicro, textoPct } from '@/dominio/costos/entrada';
+import { pesosDeExactoE6, textoMicro, textoPct } from '@/dominio/costos/entrada';
 import { formatearMoneda, etiquetaFecha } from '@/dominio/formato';
 import { PIE_DE_MARCAS } from '@/dominio/marcas';
 import { DataTable } from '@/ui/componentes/data-table';
@@ -12,6 +12,8 @@ import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import { LogoMarca } from '@/ui/marcas/logo-marca';
 import { AnularCargo, FormularioReembolso, FormularioTipoCambio } from './acciones-costos';
 import { FormularioCargo } from './formulario-cargo';
+import { ListaServicios } from './lista-servicios';
+import '@/ui/estilos/costos.css';
 
 export const metadata: Metadata = { title: 'Costos de mantenimiento del sistema' };
 
@@ -62,23 +64,8 @@ export default async function PaginaCostos({ searchParams }: { searchParams: Pro
       {faltan && <Aviso tono="atencion">Hay datos faltantes: {resumen.faltantes.map((f) => `${f.servicio} (${f.motivo})`).join(', ')}. El total dice "al menos" y el servicio queda en "Sin dato".</Aviso>}
       <p className="rtm-nota">Tipo de cambio de referencia: {tc ? `${textoMicro(BigInt(tc.tc_micro), 4)} del ${etiquetaFecha(tc.fecha)} (${tc.fuente === 'manual' ? 'capturado' : 'Banxico, FIX'})` : 'Sin dato: captúralo abajo antes de registrar un cargo en dólares.'}</p>
 
-      <Tarjeta titulo="Por servicio" descripcion="Lo atribuido a cada servicio este mes">
-        <ul className="rtm-tarjetas" data-testid="costos-servicios">
-          {resumen.servicios.map((s) => (
-            <li key={s.slug} className="rtm-tarjeta-costo" data-testid={`servicio-${s.slug}`}>
-              <header><LogoMarca slug={s.logo_slug} nombre={s.servicio} alto={22} /><span className="rtm-nota">{s.fase === 'construccion' ? 'Construcción' : s.opcional ? 'Opcional' : 'Mantenimiento'}</span></header>
-              <span className="rtm-nota">{s.servicio}</span>
-              {s.cargos === 0 ? <span className="rtm-sin-dato">Sin cargos este mes</span> : (
-                <>
-                  <span className="rtm-cifra-grande">{dinero(s.redondeado_cent)}</span>
-                  <span className="rtm-nota">exacto {pesosDeExactoE6(BigInt(s.exacto_e6))}{s.usd_micro ? ` · USD ${textoMicro(BigInt(s.usd_micro))}` : ''}</span>
-                  {s.como_seria_cent !== null && s.como_deberia_cent !== null && <span className="rtm-nota">Como sería {dinero(s.como_seria_cent)} · como debería ser {dinero(s.como_deberia_cent)}</span>}
-                  <span className="rtm-nota">{ETIQUETA_COSTO[s.ultima_etiqueta ?? ''] ?? ''} · {s.ultimo_estado === 'confirmado' ? 'Confirmado' : 'Provisional'}</span>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+      <Tarjeta titulo="Por servicio" descripcion="Lo atribuido a cada servicio este mes. Elige uno para ver sus cargos y registrar uno nuevo.">
+        <ListaServicios servicios={servicios} resumen={resumen.servicios} mes={mes} incluir={incluir} />
       </Tarjeta>
 
       <Tarjeta plana titulo="Cargos" descripcion={`${cargos.length} en el mes`}>
