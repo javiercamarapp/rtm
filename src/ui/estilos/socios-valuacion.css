@@ -1,0 +1,37 @@
+/* Cuenta de socios por valuacion y tarjeta TU VALUACION del Inicio. Solo tokens; sin colores literales ni degradados. */
+.sv-par { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--rtm-ritmo, 12px); }
+@media (max-width: 900px) { .sv-par { grid-template-columns: minmax(0, 1fr); } }
+.sv-tarjeta { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sv-etiqueta { margin: 0; font-size: var(--rtm-t-pequeno); letter-spacing: 0.06em; text-transform: uppercase; color: var(--rtm-ink-3); font-weight: var(--rtm-peso-medio); }
+.sv-heroe { margin: 0; font-size: var(--rtm-t-cifra-grande); font-weight: var(--rtm-peso-fuerte); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1.1; color: var(--rtm-ink); }
+.sv-socio { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.sv-socio h3 { margin: 0; font-size: var(--rtm-t-cuerpo); font-weight: var(--rtm-peso-medio); }
+.sv-rubros { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.sv-rubros > li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: var(--rtm-borde); font-size: var(--rtm-t-cuerpo); }
+.sv-rubros > li:first-child { border-top: 0; }
+.sv-rubros small { display: block; color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); }
+.sv-rubros .sv-resta .rtm-num, .sv-rubros .sv-resta .rtm-cifra { color: var(--rtm-ink-2); }
+.sv-rubros .sv-total { font-weight: var(--rtm-peso-fuerte); border-top: 1px solid var(--rtm-line-strong); }
+.sv-barra { display: flex; height: 8px; border-radius: var(--rtm-r-pildora); overflow: hidden; background: var(--rtm-line); }
+.sv-barra > span { display: block; height: 100%; transform-origin: left center; animation: sv-crece 600ms ease-out both; }
+.sv-barra > span[data-k='capital'] { background: var(--rtm-d-azul-marino); }
+.sv-barra > span[data-k='utilidad'] { background: var(--rtm-d-verde-azulado); }
+@media (prefers-reduced-motion: reduce) { .sv-barra > span { animation: none; } }
+@keyframes sv-crece { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.sv-leyenda { display: flex; gap: 12px; flex-wrap: wrap; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
+.sv-leyenda i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: baseline; }
+.sv-leyenda i[data-k='capital'] { background: var(--rtm-d-azul-marino); }
+.sv-leyenda i[data-k='utilidad'] { background: var(--rtm-d-verde-azulado); }
+.sv-frase { margin: 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink); line-height: 1.45; }
+.sv-explica { margin: 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); line-height: 1.45; }
+.sv-alerta { margin: 0; padding: 8px 12px; border: 1px solid var(--rtm-bad); border-radius: var(--rtm-r-2); color: var(--rtm-ink); font-size: var(--rtm-t-cuerpo); }
+.sv-cuadra { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.sv-cuadra > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 8px 0; border-top: var(--rtm-borde); align-items: start; }
+.sv-cuadra > li:first-child { border-top: 0; }
+.sv-cuadra .sv-cuentas { grid-column: 1 / -1; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); font-variant-numeric: tabular-nums; }
+.sv-detalle summary { cursor: pointer; font-weight: var(--rtm-peso-medio); }
+.sv-detalle[open] summary { margin-bottom: 8px; }
+/* Tarjeta del Inicio */
+.sv-inicio { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; min-width: 0; }
+.sv-inicio .sv-linea { margin: 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink); font-weight: var(--rtm-peso-medio); }
+.sv-inicio .sv-accion { margin: 0; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }

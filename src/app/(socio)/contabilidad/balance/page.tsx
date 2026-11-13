@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { capitalDeSocio } from '@/composicion/capital';
-import { etiquetaSocio } from '@/dominio/capital/etiquetas';
-import { idCifraCapital } from '@/dominio/capital/explicar';
+import { valuacionDeSocios } from '@/composicion/valuacion-socios';
+import { filasCapitalPorSocio } from '@/dominio/socios/balance';
 import { contabilidadDeSocio } from '@/composicion/contabilidad';
 import { fechaNeg, sumarDias } from '@/dominio/calendario';
 import { esFecha } from '@/dominio/contabilidad/rangos';
@@ -29,7 +28,7 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
   const hasta = esFecha(q.hasta) ? q.hasta : hoy;
   const previo = sumarDias(hasta, -7);
   const lector = await contabilidadDeSocio();
-  const [b, p, cap] = await Promise.all([lector.balance(hasta), lector.balance(previo).catch(() => null), capitalDeSocio(null, hasta).catch(() => null)]);
+  const [b, p, val] = await Promise.all([lector.balance(hasta), lector.balance(previo).catch(() => null), valuacionDeSocios(hasta).catch(() => null)]);
   const hayPrev = p !== null && p.con_movimientos;
   const dato = b.con_movimientos;
   const pasivoMasCapital = b.total_pasivo_cent + b.total_capital_cent;
@@ -113,23 +112,20 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
             {tabla('pasivo', 'Pasivo', b.total_pasivo_cent, hayPrev ? p!.total_pasivo_cent : null, b.total_activo_cent, 'balance-pasivo', false)}
             {tabla('capital', 'Capital', b.total_capital_cent, hayPrev ? p!.total_capital_cent : null, b.total_activo_cent, 'balance-capital', false)}
           </Rejilla>
-          {cap && cap.datos.acumulado.hay_movimientos && (
-            <Tarjeta plana titulo="Capital por socio al corte" descripcion={`Del primer movimiento al ${etiquetaFecha(hasta)}: aportaciones, utilidad y valuación de cada socio`} acciones={<Link className="rtm-boton" href={`/contabilidad/capital?hasta=${hasta}`}>Ver por mes</Link>}>
+          {val && val.cuenta.hay_movimientos && (
+            <Tarjeta plana titulo="Capital contable por socio" descripcion={`Al ${etiquetaFecha(hasta)}: cada socio con su capital aportado, sus utilidades acumuladas (siempre 50 % y 50 %) y sus retiros`} acciones={<Link className="rtm-boton" href="/socios">Cuenta de socios</Link>}>
               <div data-testid="balance-capital-socios">
                 <DataTable
-                  etiqueta="Capital por socio" densidad="densa" plana clave={(f) => f.socio} filas={cap.datos.acumulado.socios}
-                  totales={{ etiqueta: 'Total de los socios', celdas: { a: m(cap.datos.acumulado.total.aportaciones_capital_cent), u: m(cap.datos.acumulado.total.utilidad_generada_cent), t: m(cap.datos.acumulado.total.utilidad_retirada_cent), v: m(cap.datos.acumulado.total.valuacion_cent) } }}
+                  etiqueta="Capital contable por socio" densidad="densa" plana clave={(f) => f.clave} filas={filasCapitalPorSocio(val.cuenta, val.yo)}
                   columnas={[
-                    { id: 's', titulo: 'Socio', ancho: 'm', celda: (f) => etiquetaSocio(f.socio, cap.mio) },
-                    { id: 'a', titulo: 'Aportaciones de capital', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.aportaciones_capital_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'aportaciones', sujeto: f.socio })} /> },
-                    { id: 'u', titulo: 'Utilidad generada', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.utilidad_generada_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'utilidad', sujeto: f.socio })} /> },
-                    { id: 't', titulo: 'Utilidad retirada', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.utilidad_retirada_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'retirada', sujeto: f.socio })} /> },
-                    { id: 'p', titulo: 'Participación', numerica: true, ancho: 's', secundaria: true, celda: () => '50 %' },
-                    { id: 'v', titulo: 'Valuación', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.valuacion_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'valuacion', sujeto: f.socio })} /> },
+                    { id: 'c', titulo: 'Concepto', ancho: 'xl', celda: (f) => <span data-testid={`bcs-${f.clave}`} className={f.nivel === 'rubro' ? undefined : 'a3-ef-subtotal'}>{f.etiqueta}</span> },
+                    { id: 'm', titulo: 'Importe', numerica: true, ancho: 'm', celda: (f) => (f.cifra ? <CifraComprobada texto={m(f.monto_cent, f.nivel === 'rubro' && f.resta)} cifra={f.cifra} comprobacion="cuadra" /> : m(f.monto_cent)) },
                   ]}
                 />
               </div>
-              <div className="a3-pie-tarjeta"><Pie>Las valuaciones personales ({m(cap.datos.acumulado.total.valuacion_cent)}) más los fondos de la sociedad en poder de socios ({m(cap.datos.acumulado.total.fondos_en_poder_cent)}) son el capital contable de este balance ({m(b.total_capital_cent)}): {cap.datos.acumulado.total.valuacion_cent + cap.datos.acumulado.total.fondos_en_poder_cent === b.total_capital_cent ? 'cuadra' : 'no cuadra'}. La participación es 50/50 y se busca que ambos tengan el mismo dinero invertido.</Pie></div>
+              <div className="a3-pie-tarjeta" data-testid="balance-conciliacion-socios">
+                <Pie>Suma por socio {m(val.cuenta.total.subtotal_cent)} = capital contable del libro {m(b.total_capital_cent)}: <Estado tono={val.cuenta.total.subtotal_cent === b.total_capital_cent ? 'ok' : 'malo'}>{val.cuenta.total.subtotal_cent === b.total_capital_cent ? 'Cuadra' : 'No cuadra'}</Estado>. Las valuaciones personales ({m(val.cuenta.total.valuacion_cent)}) más los fondos de la sociedad en poder de socios ({m(val.cuenta.total.fondos_en_poder_cent)}) son ese mismo capital contable.</Pie>
+              </div>
             </Tarjeta>
           )}
           <Rejilla dividir="4-4-4">
