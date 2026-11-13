@@ -50,7 +50,7 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
   precio: '/precio Cliente | modelo | 250',
   acta: '/acta [AAAA-MM] [retira angelo 1000] [reinvierte javier 500]',
   firmaracta: '/firmaracta [A-0001]',
-  lote: '/lote etiqueta  (una linea por movimiento: 2026-10-03 gasto javier 500 uber | 2026-10-04 cobro Cliente 7000 efectivo)',
+  lote: '/lote etiqueta  [total 1500]  (una linea por movimiento: 2026-10-03 gasto javier 500 uber | 2026-10-04 cobro Cliente 7000 efectivo)',
   cuadra: '/cuadra',
   balance: '/balance',
   diario: '/diario',
@@ -245,7 +245,7 @@ export function parsearComando(texto: string): ResultadoComando | null {
         }
         const l = parsearLinea(seg);
         if (!l) return fallo('pedido');
-        lineas.push({ modelo_texto: l.modelo, sabor_texto: null, piezas: l.piezas, precio_texto: null, fuente_cita: seg.slice(0, 120) });
+        lineas.push({ ...modeloSabor(l.modelo), piezas: l.piezas, precio_texto: null, fuente_cita: seg.slice(0, 120) });
       }
       if (lineas.length === 0 || lineas.length > 30) return fallo('pedido');
       return { ok: true, tipo: 'intencion', intencion: { tipo: 'pedido', cliente_texto: cliente, destino_texto: null, lineas, envio_cobrado_centavos: envio, fuente_cita: cita } };
@@ -328,7 +328,7 @@ export function parsearComando(texto: string): ResultadoComando | null {
         }
         const l = parsearLinea(seg);
         if (!l) return fallo(nombre);
-        lineas.push({ modelo_texto: l.modelo, sabor_texto: null, piezas: l.piezas });
+        lineas.push({ ...modeloSabor(l.modelo), piezas: l.piezas });
       }
       if (lineas.length === 0 || lineas.length > 30) return fallo(nombre);
       return nombre === 'oc'
@@ -348,7 +348,7 @@ export function parsearComando(texto: string): ResultadoComando | null {
       for (const seg of partes) {
         const l = parsearLinea(seg);
         if (!l || l.piezas > 200) return fallo('toma');
-        lineas.push({ modelo_texto: l.modelo, sabor_texto: null, piezas: l.piezas });
+        lineas.push({ ...modeloSabor(l.modelo), piezas: l.piezas });
       }
       return { ok: true, tipo: 'intencion', intencion: { tipo: 'toma_omar', lineas, fuente_cita: cita } };
     }
@@ -440,7 +440,13 @@ export function parsearComando(texto: string): ResultadoComando | null {
     case 'firmaracta':
       return { ok: true, tipo: 'intencion', intencion: { tipo: 'acta_firma', acta_folio: resto === '' ? null : resto.toUpperCase(), fuente_cita: cita } };
     case 'lote': {
-      const lineasTxt = (m[2] ?? '').split('\n').map((x) => x.trim()).filter((x) => x !== '');
+      let totalDictado: number | null = null;
+      const lineasTxt = (m[2] ?? '').split('\n').map((x) => x.trim()).filter((x) => x !== '').filter((x) => {
+        const t = /^total\s+(.+)$/i.exec(x);
+        if (!t) return true;
+        totalDictado = monto(t[1]!);
+        return false;
+      });
       const [cabecera, ...cuerpo] = lineasTxt;
       const etiqueta = cabecera !== undefined && !FECHA.test(cabecera.split(/\s+/)[0] ?? '') ? cabecera.slice(0, 60) : null;
       const filas = etiqueta === null && cabecera !== undefined ? [cabecera, ...cuerpo] : cuerpo;
@@ -451,7 +457,7 @@ export function parsearComando(texto: string): ResultadoComando | null {
         renglones.push(r);
       }
       if (renglones.length === 0 || renglones.length > 60) return fallo('lote');
-      return { ok: true, tipo: 'intencion', intencion: { tipo: 'lote_historico', etiqueta, renglones, fuente_cita: limpio.slice(0, 120) } };
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'lote_historico', etiqueta, total_dictado_centavos: totalDictado, renglones, fuente_cita: limpio.slice(0, 120) } };
     }
     case 'cuadra':
     case 'balance':

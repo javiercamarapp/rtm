@@ -27,6 +27,7 @@ import type {
 import { CONSULTAS_EXT } from '@/dominio/agente/catalogo_intenciones';
 import type { IConsulta, Intencion } from '@/dominio/agente/intenciones';
 import { sumarDias } from '@/dominio/calendario';
+import { formatearMoneda } from '@/dominio/formato';
 import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type { AvisoPresupuesto, RolPresupuesto } from '@/dominio/agente/presupuesto';
 import type { CifraServidor, ChatsRegistrados, Miembro, RolMiembro } from '@/dominio/agente/tipos';
@@ -88,6 +89,7 @@ export class CatalogoAgenteDb implements CatalogoAgente {
   constructor(private readonly sql: Sql) {}
   async clientes() { return ((await F(this.sql, 'catalogo_clientes')) as EntradaCatalogo[]) ?? []; }
   async modelos() { return ((await F(this.sql, 'catalogo_modelos')) as EntradaCatalogo[]) ?? []; }
+  async saboresDe(modeloId: string) { return ((await F(this.sql, 'sabores_de', [Number(modeloId)], ['bigint'])) as EntradaCatalogo[]) ?? []; }
   async saboresEnExistencia(modeloId: string) { return ((await F(this.sql, 'sabores_en_existencia', [Number(modeloId)], ['bigint'])) as EntradaCatalogo[]) ?? []; }
 }
 
@@ -222,7 +224,7 @@ function efectoDeSimulacion(e: Record<string, unknown>): CifraServidor[] {
   const salida: CifraServidor[] = [];
   const ls = e.lineas as { etiqueta: string; piezas: number; precio_cent: number; importe_cent: number }[] | undefined;
   for (const l of ls ?? []) {
-    salida.push({ tipo: 'texto', etiqueta: l.etiqueta, texto: `${l.piezas} pz a ${(l.precio_cent / 100).toFixed(2)} = ${(l.importe_cent / 100).toFixed(2)}` });
+    salida.push({ tipo: 'texto', etiqueta: l.etiqueta, texto: `${l.piezas} pz a ${formatearMoneda(BigInt(l.precio_cent))} = ${formatearMoneda(BigInt(l.importe_cent))}` });
   }
   const pesos = (k: string, etiqueta: string) => { if (typeof e[k] === 'number') salida.push({ tipo: 'pesos', etiqueta, centavos: BigInt(e[k] as number) }); };
   pesos('mercancia_cent', 'Mercancia');

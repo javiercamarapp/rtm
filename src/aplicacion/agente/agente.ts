@@ -170,6 +170,7 @@ function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
       break;
     case 'lote_historico':
       a.renglones.forEach((r, i) => salida.push(cifrasDeMonto(`renglones.${i}.monto`, r.monto_centavos)));
+      if (a.total_dictado_centavos !== null) salida.push(cifrasDeMonto('total', a.total_dictado_centavos));
       break;
     case 'compra':
     case 'orden_compra':
@@ -533,6 +534,14 @@ export class AgenteTelegram {
         if (faltan.length > 0) {
           await this.d.almacen.registrarEvento({ tipo: 'cifra_sin_procedencia', miembro: ctx.autor.telegramUserId, detalle: faltan.join(',') });
           await this.responder(ctx.autor, ctx.chats, P.cifraSinProcedencia(ctx.texto.slice(0, 120), faltan));
+          continue;
+        }
+      }
+
+      if (a.tipo === 'lote_historico' && a.total_dictado_centavos !== null) {
+        const suma = a.renglones.reduce((t, r) => t + BigInt(r.monto_centavos), 0n);
+        if (suma !== BigInt(a.total_dictado_centavos)) {
+          await this.responder(ctx.autor, ctx.chats, P.sumaNoCuadra(suma, BigInt(a.total_dictado_centavos)));
           continue;
         }
       }

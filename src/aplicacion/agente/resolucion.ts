@@ -69,6 +69,7 @@ async function modeloYSabor(
   modelos: readonly EntradaCatalogo[],
   overrides: Overrides,
   exigirSabor = false,
+  todosSabores = false,
 ): Promise<{ ok: true; modeloId: string; saborId: string | null } | { ok: false; pregunta: PreguntaAbierta }> {
   const claveModelo = `lineas.${i}.modelo`;
   const previo = overrides[claveModelo];
@@ -85,7 +86,7 @@ async function modeloYSabor(
     if (!exigirSabor) return { ok: true, modeloId, saborId: null };
     const previoS = overrides[claveSabor];
     if (previoS !== undefined) return { ok: true, modeloId, saborId: previoS };
-    const opciones = (await catalogo.saboresEnExistencia(modeloId)).slice(0, 4).map((e) => ({ id: e.id, nombre: e.nombre }));
+    const opciones = (await sabores(catalogo, modeloId, todosSabores)).slice(0, 4).map((e) => ({ id: e.id, nombre: e.nombre }));
     return opciones.length > 0
       ? { ok: false, pregunta: { tipo: 'elegir', clave: claveSabor, campo: 'sabor', textoUsuario: '(sin sabor)', candidatos: opciones } }
       : { ok: false, pregunta: { tipo: 'no_encontrado', clave: claveSabor, campo: 'sabor', textoUsuario: '(sin sabor)', sugerencias: [] } };
@@ -93,7 +94,7 @@ async function modeloYSabor(
 
   const saborPrevio = overrides[claveSabor];
   if (saborPrevio !== undefined) return { ok: true, modeloId, saborId: saborPrevio };
-  const enExistencia = await catalogo.saboresEnExistencia(modeloId);
+  const enExistencia = await sabores(catalogo, modeloId, todosSabores);
   const s = resolverSabor(l.sabor_texto, enExistencia);
   if (s.estado === 'unico') return { ok: true, modeloId, saborId: s.id };
   if (s.estado === 'ninguno' || s.estado === 'vacio') {
@@ -106,6 +107,8 @@ async function modeloYSabor(
   return { ok: false, pregunta: { tipo: 'elegir', clave: claveSabor, campo: 'sabor', textoUsuario: l.sabor_texto, candidatos: s.candidatos } };
 }
 
+const sabores = (c: CatalogoAgente, modeloId: string, todos: boolean) => (todos && c.saboresDe ? c.saboresDe(modeloId) : c.saboresEnExistencia(modeloId));
+
 const VACIAS = (): Resoluciones => ({ clienteId: null, proveedorId: null, lineas: [], modeloId: null });
 
 async function lineas(
@@ -113,11 +116,12 @@ async function lineas(
   catalogo: CatalogoAgente,
   overrides: Overrides,
   exigirSabor = false,
+  todosSabores = false,
 ): Promise<{ ok: true; lineas: Resoluciones['lineas'] } | { ok: false; pregunta: PreguntaAbierta }> {
   const modelos = await catalogo.modelos();
   const salida: Resoluciones['lineas'] = [];
   for (let i = 0; i < ls.length; i++) {
-    const r = await modeloYSabor(i, ls[i]!, catalogo, modelos, overrides, exigirSabor);
+    const r = await modeloYSabor(i, ls[i]!, catalogo, modelos, overrides, exigirSabor, todosSabores);
     if (!r.ok) return r;
     salida.push({ modeloId: r.modeloId, saborId: r.saborId });
   }
@@ -189,7 +193,7 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
     case 'orden_compra': {
       const p = proveedor(intencion.proveedor_texto, overrides);
       if (!p.ok) return p;
-      const ls = await lineas(intencion.lineas, catalogo, overrides, exigirSabor);
+      const ls = await lineas(intencion.lineas, catalogo, overrides, exigirSabor, true);
       if (!ls.ok) return ls;
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, proveedorId: p.id, lineas: ls.lineas } } };
     }
@@ -216,17 +220,17 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
     }
     case 'compra_recepcion': {
       if (intencion.lineas.length === 0) return { ok: true, resuelta: { intencion, resoluciones: res } };
-      const ls = await lineas(intencion.lineas, catalogo, overrides, true);
+      const ls = await lineas(intencion.lineas, catalogo, overrides, true, true);
       if (!ls.ok) return ls;
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, lineas: ls.lineas } } };
     }
     case 'conteo': {
-      const ls = await lineas(intencion.lineas, catalogo, overrides, true);
+      const ls = await lineas(intencion.lineas, catalogo, overrides, true, true);
       if (!ls.ok) return ls;
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, lineas: ls.lineas } } };
     }
     case 'merma': {
-      const ls = await lineas([intencion], catalogo, overrides, true);
+      const ls = await lineas([intencion], catalogo, overrides, true, true);
       if (!ls.ok) return ls;
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, lineas: ls.lineas } } };
     }

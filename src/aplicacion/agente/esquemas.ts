@@ -147,6 +147,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
   z.strictObject({
     tipo: z.literal('lote_historico'),
     etiqueta: textoONulo(60),
+    total_dictado_centavos: monto.nullable(),
     renglones: z
       .array(
         z.strictObject({

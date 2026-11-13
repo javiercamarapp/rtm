@@ -190,6 +190,8 @@ export interface CatalogoAgente {
   modelos(): Promise<EntradaCatalogo[]>;
   /** Sabores EN EXISTENCIA de un modelo. */
   saboresEnExistencia(modeloId: string): Promise<EntradaCatalogo[]>;
+  /** Todos los sabores con sku del modelo (compras, recepciones y conteos). Opcional: sin el, se usan los de existencia. */
+  saboresDe?(modeloId: string): Promise<EntradaCatalogo[]>;
 }
 
 /** Ids resueltos por el codigo para una intencion de escritura. */

@@ -252,6 +252,8 @@ export interface IRenglonHistorico {
 export interface ILoteHistorico {
   tipo: 'lote_historico';
   etiqueta: string | null;
+  /** Si el socio dicta un total, el codigo lo compara con la suma de los renglones; si no cuadra se bloquea. */
+  total_dictado_centavos: number | null;
   renglones: IRenglonHistorico[];
   fuente_cita: string;
 }

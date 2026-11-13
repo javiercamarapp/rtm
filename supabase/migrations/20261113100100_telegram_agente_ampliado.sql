@@ -77,7 +77,7 @@ language plpgsql stable security definer set search_path = ''
 as $$
 declare l jsonb; v_sku bigint; v_sal jsonb := '[]'::jsonb;
 begin
-  if jsonb_typeof(p_lineas) <> 'array' or jsonb_array_length(p_lineas) = 0 then raise exception 'faltan renglones: modelo, sabor y piezas' using errcode = 'P0460'; end if;
+  if coalesce(jsonb_typeof(p_lineas) <> 'array', true) or jsonb_array_length(p_lineas) = 0 then raise exception 'faltan renglones: modelo, sabor y piezas' using errcode = 'P0460'; end if;
   for l in select * from jsonb_array_elements(p_lineas) loop
     select k.id into v_sku from catalogo.sku k where k.modelo_id = (l ->> 'modelo_id')::bigint and k.sabor_id = nullif(l ->> 'sabor_id', '')::bigint;
     if v_sku is null then raise exception 'falta el sabor de un renglon (modelo y sabor del catalogo)' using errcode = 'P0460'; end if;
@@ -218,6 +218,7 @@ begin
     v_res := v_res || jsonb_build_object('folio', v_folio);
 
   elsif p_tipo = 'conteo' then
+    if coalesce(jsonb_typeof(p_args -> 'lineas') <> 'array', true) or jsonb_array_length(p_args -> 'lineas') = 0 then raise exception 'el conteo necesita renglones: modelo, sabor y piezas contadas' using errcode = 'P0460'; end if;
     v_res := operacion.abrir_conteo(p_clave_idem || ':a', 'bodega_omar', 'semanal', now());
     v_conteo := (v_res ->> 'conteo_id')::bigint;
     select coalesce(jsonb_agg(jsonb_build_object('modelo', m.nombre_canonico, 'sabor', sa.nombre_canonico, 'contado', (x ->> 'piezas')::int, 'explicacion_tipo', null)), '[]'::jsonb) into v_recib
@@ -270,7 +271,7 @@ begin
 
   elsif p_tipo = 'lote_historico' then
     -- Cada renglon lleva fecha pasada explicita y su propia clave (clave del lote + posicion): reenviar el lote completo no duplica nada.
-    if jsonb_typeof(p_args -> 'renglones') <> 'array' or jsonb_array_length(p_args -> 'renglones') = 0 then raise exception 'el lote no trae renglones' using errcode = 'P0460'; end if;
+    if coalesce(jsonb_typeof(p_args -> 'renglones') <> 'array', true) or jsonb_array_length(p_args -> 'renglones') = 0 then raise exception 'el lote no trae renglones' using errcode = 'P0460'; end if;
     for r in select * from jsonb_array_elements(p_args -> 'renglones') loop
       n := n + 1;
       v_fecha := (r ->> 'fecha')::date;
@@ -442,6 +443,16 @@ begin
     raise exception 'consulta desconocida' using errcode = '22023';
   end if;
   return coalesce(v_res, jsonb_build_object('titulo', 'Sin datos', 'lineas', '[]'::jsonb));
+end $$;
+
+-- Todos los sabores del modelo con sku (compras, recepciones y conteos: el sabor puede no tener existencia todavia).
+create function agente.sabores_de(p_modelo bigint) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  perform notificacion.exigir_sistema();
+  return coalesce((select jsonb_agg(jsonb_build_object('id', s.id::text, 'nombre', s.nombre_canonico, 'alias', coalesce((select jsonb_agg(a.alias_norm) from catalogo.sabor_alias a where a.sabor_id = s.id), '[]'::jsonb)) order by s.nombre_canonico)
+    from catalogo.sku k join catalogo.sabor s on s.id = k.sabor_id where k.modelo_id = p_modelo), '[]'::jsonb);
 end $$;
 
 -- Limite de frecuencia: mensajes reclamados en ese chat en los ultimos segundos (cuenta filas; no guarda texto).

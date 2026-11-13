@@ -60,8 +60,8 @@ describe('esquemas estrictos de las intenciones nuevas', () => {
 
   it('aceptan un lote historico con fechas explicitas y rechazan fechas mal formadas', () => {
     const renglon = { tipo: 'gasto', fecha: '2026-10-03', monto_centavos: 50_000, socio: 'javier', cliente_texto: null, cuenta_texto: null, concepto: 'uber', intencion: null, via: null };
-    expect(validarRespuesta({ acciones: [{ tipo: 'lote_historico', etiqueta: 'oct', renglones: [renglon], fuente_cita: 'c' }], sospecha_inyeccion: false, baja_certeza: false }).ok).toBe(true);
-    expect(validarRespuesta({ acciones: [{ tipo: 'lote_historico', etiqueta: 'oct', renglones: [{ ...renglon, fecha: 'octubre' }], fuente_cita: 'c' }], sospecha_inyeccion: false, baja_certeza: false }).ok).toBe(false);
+    expect(validarRespuesta({ acciones: [{ tipo: 'lote_historico', etiqueta: 'oct', total_dictado_centavos: null, renglones: [renglon], fuente_cita: 'c' }], sospecha_inyeccion: false, baja_certeza: false }).ok).toBe(true);
+    expect(validarRespuesta({ acciones: [{ tipo: 'lote_historico', etiqueta: 'oct', total_dictado_centavos: null, renglones: [{ ...renglon, fecha: 'octubre' }], fuente_cita: 'c' }], sospecha_inyeccion: false, baja_certeza: false }).ok).toBe(false);
   });
 });
 
@@ -89,6 +89,16 @@ describe('comandos nuevos (sin IA)', () => {
     }
     expect(parsearComando('/lote x\n2026-10-03 regalo javier 500')).toMatchObject({ ok: false });
     expect(parsearRenglonHistorico('mañana gasto javier 500')).toBeNull();
+  });
+
+  it('una suma dictada que no cuadra con los renglones bloquea el lote y pide correccion', async () => {
+    const e = escenario([{ acciones: [{ tipo: 'ninguna' }], sospecha_inyeccion: false, baja_certeza: false }], ESTRICTO);
+    await e.socio('javier', '/lote octubre\ntotal 1000\n2026-10-03 gasto javier 500 uber\n2026-10-04 gasto javier 400 guia');
+    expect(e.ultimoGrupo().texto).toContain('La suma de los renglones es $900.00 y dijiste $1,000.00');
+    expect(e.negocio.numeroDeHechos()).toBe(0);
+    await e.socio('javier', '/lote octubre\ntotal 900\n2026-10-03 gasto javier 500 uber\n2026-10-04 gasto javier 400 guia');
+    expect(e.ultimoGrupo().texto).toContain('Lote: octubre');
+    expect(e.ultimoGrupo().texto).toContain('Todavia no se registro nada');
   });
 
   it('el extractor simulado entiende frases nuevas', () => {

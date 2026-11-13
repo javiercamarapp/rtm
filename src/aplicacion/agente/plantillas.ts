@@ -163,6 +163,12 @@ export function faltaDato(dato: string): MensajeListo {
   return { texto: `Falta un dato antes de registrar: ${dato}. No registre nada; mandalo de nuevo con ese dato.`, registro: new RegistroCifras() };
 }
 
+/** La suma que dicto el socio no cuadra con sus renglones: se bloquea y se pide correccion. Ambas cifras las calcula el codigo, no el modelo. */
+export function sumaNoCuadra(sumaRenglones: bigint, dictado: bigint): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: `La suma de los renglones es ${r.pesos(sumaRenglones)} y dijiste ${r.pesos(dictado)}. No registre nada: corrige el total o los renglones y mandalo de nuevo.`, registro: r };
+}
+
 export function faltaDatoConOpciones(dato: string): MensajeListo {
   return { texto: `Falta un dato antes de registrar: ${dato}. Elige una opcion; no registre nada todavia.`, registro: new RegistroCifras() };
 }
