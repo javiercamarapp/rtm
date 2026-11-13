@@ -90,7 +90,7 @@ describe('parsers de bodega: lista blanca', () => {
 
 describe('cuentas: validacion y casos de uso', () => {
   it('normaliza y valida el correo y el tipo', () => {
-    expect(normalizarCorreo('  A@B.Com ')).toBe('a@b.com');
+    expect(normalizarCorreo('  A@Example.test ')).toBe('a@example.test');
     expect(validarAlta({ correo: 'no', tipo: 'bodega', nombre: '' }, ['bodega']).ok).toBe(false);
     expect(validarAlta({ correo: 'a@example.test', tipo: 'socio', nombre: '' }, ['bodega']).ok).toBe(false);
     const v = validarAlta({ correo: ' A@Example.test ', tipo: 'bodega', nombre: ' Turno ' }, ['bodega']);

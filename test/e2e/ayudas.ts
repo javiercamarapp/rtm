@@ -41,7 +41,7 @@ export function ipFalsa(): string {
   return `10.${Math.floor(Math.random() * 250) + 1}.${Math.floor(Math.random() * 250) + 1}.${Math.floor(Math.random() * 250) + 1}`;
 }
 
-export async function altaUsuario(opts: { correo: string; rol?: 'socio' | 'omar'; socio?: 'Angelo' | 'Javier'; activo?: boolean }): Promise<string> {
+export async function altaUsuario(opts: { correo: string; rol?: 'socio' | 'omar' | 'bodega'; socio?: 'Angelo' | 'Javier'; activo?: boolean }): Promise<string> {
   const rol = opts.rol ?? 'socio';
   const socio = rol === 'socio' ? (opts.socio ?? 'Angelo') : null;
   const activo = opts.activo ?? true;
