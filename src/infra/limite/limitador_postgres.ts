@@ -14,10 +14,18 @@ export function claveDeLimite(pimienta: string, tipo: TipoClave, valor: string):
   return `${tipo}:${huella}`;
 }
 
+// Un arranque en frio contra el pooler puede tardar mas de un intento: UN solo reintento acotado. Cada intento tiene su propio tope de 1.4 s
+// (conexion y consulta) y entre ambos hay 100 ms: el peor caso es 2.9 s en total (<= 3 s) y despues se FALLA CERRADO igual que antes.
+// El segundo intento puede contar dos veces un mismo acceso si el primero llego a la base y solo se perdio la respuesta: el error va hacia el lado
+// restrictivo (cuenta de mas), nunca hacia dejar pasar.
+export const TOPE_INTENTO_MS = 1_400;
+export const PAUSA_REINTENTO_MS = 100;
+export const TOPE_TOTAL_MS = 2 * TOPE_INTENTO_MS + PAUSA_REINTENTO_MS;
+
 let pool: pg.Pool | null = null;
 function obtenerPool(url: string): pg.Pool {
   if (!pool) {
-    pool = new pg.Pool({ connectionString: url, max: 3, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 1_500, query_timeout: 1_500 });
+    pool = new pg.Pool({ connectionString: url, max: 3, idleTimeoutMillis: 10_000, connectionTimeoutMillis: TOPE_INTENTO_MS, query_timeout: TOPE_INTENTO_MS });
     // Un cliente inactivo que se cae no debe tumbar el proceso: el siguiente intento reabre y, si no puede, falla cerrado.
     pool.on('error', () => undefined);
   }
@@ -31,7 +39,14 @@ export function limitadorPostgres(): LimitadorIntentos {
       const clave = claveDeLimite(e.LIMITE_PIMIENTA, tipo, tipo === 'correo' ? valor.trim().toLowerCase() : valor);
       try {
         // Consulta simple con parametros: compatible con el pooler en modo transaccion (sin sentencias preparadas con nombre).
-        const r = await obtenerPool(e.SERVIDOR_DATABASE_URL).query('select seguridad.registrar_intento_login($1::text, $2::int) as n', [clave, tope.ventanaSeg]);
+        const consultar = () => obtenerPool(e.SERVIDOR_DATABASE_URL).query('select seguridad.registrar_intento_login($1::text, $2::int) as n', [clave, tope.ventanaSeg]);
+        let r;
+        try {
+          r = await consultar();
+        } catch {
+          await new Promise<void>((ok) => setTimeout(ok, PAUSA_REINTENTO_MS));
+          r = await consultar(); // si tambien falla, el catch de abajo lo vuelve LimitadorNoDisponible (fail-closed)
+        }
         const n = Number(r.rows[0]?.n);
         if (!Number.isFinite(n)) throw new LimitadorNoDisponible('RESPUESTA_INVALIDA');
         return n > tope.limite;

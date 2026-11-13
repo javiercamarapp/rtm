@@ -1,8 +1,11 @@
 # Limitador de intentos de login: falla CERRADO y procedimiento de emergencia
 
-Decision del dueno (13-nov): si el limitador no puede consultar o registrar el intento (conexion caida, rol `servidor` sin login, contrasena rotada mal, tiempo agotado de 1.5 s, respuesta invalida), el acceso se RECHAZA.
+Decision del dueno (13-nov): si el limitador no puede consultar o registrar el intento (conexion caida, rol `servidor` sin login, contrasena rotada mal, tiempo agotado en dos intentos seguidos, respuesta invalida), el acceso se RECHAZA.
 
 ## Comportamiento
+
+- UN reintento acotado (14-nov): un arranque en frio contra el pooler puede rechazar el primer intento de un usuario legitimo. Cada intento (conexion y consulta) tiene tope de 1.4 s y entre ambos hay 100 ms: peor caso 2.9 s en total (<= 3 s; constantes en `src/infra/limite/limitador_postgres.ts`). Si el segundo intento tambien falla, se falla CERRADO exactamente como antes. Una respuesta invalida no se reintenta. Si el primer intento llego a la base y solo se perdio la respuesta, el acceso cuenta dos veces: el error va hacia el lado restrictivo, nunca hacia dejar pasar.
+- Piso de tiempo: el piso de 1.5 s de /login es un MINIMO (no recorta lo mas lento). Con la base caida la respuesta tarda hasta ~2.9 s mas el resto del flujo, en lugar de ~1.5 s; esa diferencia solo existe cuando el limitador esta caido (no depende del correo ni de lo que envie quien prueba), y la pantalla sigue siendo identica.
 
 - Formulario de /login: no se envia ningun correo y la pantalla es la misma que la de un correo no permitido (tarjeta de «enviado», piso de 1.5 s que cubre tambien la consulta). No hay mensaje ni diferencia de tiempo que delate la falla.
 - Reenvio de enlace caducado: degrada a «no», igual que un correo sin cuenta.
