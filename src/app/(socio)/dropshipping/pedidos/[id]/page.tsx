@@ -94,7 +94,7 @@ export default async function FichaDs({ params }: { params: Promise<{ id: string
               columnas={[
                 { id: 'r', titulo: 'Renglón', ancho: 'xl', prioridadMovil: 'titulo', celda: (r) => `${r.modelo} · ${r.sabor} · ${formatearPiezas(r.piezas)}` },
                 { id: 'c', titulo: 'Catálogo', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (r) => (r.costo_catalogo_cent === null ? 'Sin dato' : formatearMoneda(r.costo_catalogo_cent)) },
-                { id: 'k', titulo: 'Capturado', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (r) => (r.costo_capturado_cent === null ? 'Usa el catálogo' : formatearMoneda(r.costo_capturado_cent)) },
+                { id: 'k', titulo: 'Capturado', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (r) => (r.costo_capturado_cent === null ? <span className="rtm-texto-envuelve">Usa el catálogo</span> : formatearMoneda(r.costo_capturado_cent)) },
                 { id: 'd', titulo: 'Diferencia por pieza', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (r) => (r.diferencia_unit_cent === null || r.diferencia_unit_cent === 0n ? '' : formatearMoneda(r.diferencia_unit_cent, { conSigno: true })) },
                 { id: 'm', titulo: 'Motivo', ancho: 'xl', prioridadMovil: 'detalle', celda: (r) => (r.motivo ? `${r.motivo}${r.evidencia ? ` · evidencia ${r.evidencia.nombre} (huella ${r.evidencia.sha256.slice(0, 10)})` : ''}${r.resolucion ? ` · ${r.resolucion.estado}: ${r.resolucion.nota}` : ''}` : '') },
               ]}

@@ -177,7 +177,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 /* ---- BarList, hallazgos, pasos, linea de tiempo, clave-valor, paginador ---- */
 .rtm-barlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .rtm-barlist-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: baseline; font-size: var(--rtm-t-cuerpo); }
-.rtm-barlist-nombre { font-weight: var(--rtm-peso-medio); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; gap: 8px; align-items: baseline; }
+.rtm-barlist-nombre { font-weight: var(--rtm-peso-medio); min-width: 0; overflow-wrap: anywhere; white-space: normal; display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; }
 .rtm-barlist-nombre a { text-decoration: none; }
 .rtm-barlist-nombre small { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); font-weight: var(--rtm-peso-normal); }
 .rtm-barlist-pct { color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); min-width: 3.2ch; text-align: right; }
@@ -334,6 +334,8 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-dt-mas { position: absolute; z-index: 5; bottom: 8px; display: inline-flex; align-items: center; height: var(--rtm-h-ctl-chico); padding: 0 12px; border: 1px solid var(--rtm-ink); border-radius: var(--rtm-r-pildora); background: var(--rtm-ink); color: var(--rtm-panel); font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-fuerte); cursor: pointer; pointer-events: auto; white-space: nowrap; }
 .rtm-dt-mas::after { content: ''; position: absolute; inset: -8px -4px; }
 .rtm-dt-mas-der { right: 10px; } .rtm-dt-mas-izq { left: 10px; }
+/* Con el boton 'Mas columnas' / 'Atras' visible se reserva su renglon debajo de la tabla: ya no tapa el boton de accion de la ultima fila. */
+.rtm-dt-env:is([data-scroll-der='true'], [data-scroll-izq='true']) .rtm-dt-caja { padding-bottom: calc(var(--rtm-h-ctl-chico) + 16px); }
 .rtm-dt-mas:hover { background: var(--rtm-ink-2); border-color: var(--rtm-ink-2); }
 .rtm-dt-caja:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
 
@@ -405,6 +407,12 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-chip-estado { align-self: flex-start; width: max-content; max-width: 100%; height: auto; min-height: var(--rtm-h-chip-estado); padding-block: 2px; white-space: normal; line-height: 1.25; }
   /* Las cifras de una tarjeta nunca se parten en dos renglones (ni a media cifra ni en el signo); el resto del texto si envuelve. */
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-num], .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda .rtm-cifra { white-space: nowrap; overflow-wrap: normal; font-variant-numeric: tabular-nums; }
+  /* Etiquetas de campo: se parten en los espacios, nunca a media palabra; celdas anchas (l, xl) y con botones toman el renglon completo y sus botones envuelven su texto. */
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda::before { overflow-wrap: normal; word-break: normal; hyphens: manual; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:is([data-mov='normal'], :not([data-mov])):is([data-ancho='l'], [data-ancho='xl'], :has(button, .rtm-boton, .rtm-boton-chico)) { grid-column: 1 / -1; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda :is(.rtm-boton, .rtm-boton-chico) { max-width: 100%; height: auto; min-height: var(--rtm-h-ctl-chico); padding-block: 6px; white-space: normal; text-align: center; line-height: 1.25; }
+  /* Texto (no cifra) dentro de una celda numerica: puede envolver. */
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda .rtm-texto-envuelve { display: inline-block; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
   /* Acciones: toman el renglon completo de la tarjeta y sus botones envuelven dentro de el. */
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:has(> .rtm-acciones-fila) { grid-column: 1 / -1; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-acciones-fila { width: 100%; }

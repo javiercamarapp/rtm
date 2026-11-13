@@ -33,7 +33,7 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
   const filasMes: FilaTabla[] = d.meses.flatMap((x) => x.periodo.socios.map((f) => ({ clave: `${x.mes}-${f.socio}`, mes: x.mes, periodo: x.periodo, f })));
   const filasAcum: FilaTabla[] = a.socios.map((f) => ({ clave: `acum-${f.socio}`, mes: 'acum', periodo: a, f }));
   const columnas = () => [
-    { id: 's', titulo: 'Socio', ancho: 'm' as const, celda: (x: FilaTabla) => etiquetaSocio(x.f.socio, mio) },
+    { id: 's', titulo: 'Socio', ancho: 'm' as const, prioridadMovil: 'titulo' as const, celda: (x: FilaTabla) => etiquetaSocio(x.f.socio, mio) },
     { id: 'a', titulo: 'Aportaciones de capital', etiquetaMovil: 'Capital', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.aportaciones_capital_cent, x.mes, 'aportaciones', x.f.socio) },
     { id: 'u', titulo: 'Utilidad generada', etiquetaMovil: 'Utilidad', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_generada_cent, x.mes, 'utilidad', x.f.socio) },
     { id: 'r', titulo: 'Utilidad reinvertida', etiquetaMovil: 'Reinvertida', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_reinvertida_cent, x.mes, 'reinvertida', x.f.socio) },
@@ -94,7 +94,7 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
                 <p className="rtm-capital-turno" data-testid="turno-aportar">{sd ? null : <CifraComprobada texto={textoTurno(fin.turno_aportar, fin.diferencia_a_igualar_cent, m)} cifra={id(d.meses.at(-1)?.mes ?? 'acum', 'turno', 'total')} />}</p>
                 <DataTable etiqueta="Valuación y participación por socio" clave={(x) => x.socio} filas={fin.socios} densidad="densa" plana
                   columnas={[
-                    { id: 's', titulo: 'Socio', celda: (x) => etiquetaSocio(x.socio, mio) },
+                    { id: 's', titulo: 'Socio', prioridadMovil: 'titulo', celda: (x) => etiquetaSocio(x.socio, mio) },
                     { id: 'p', titulo: 'Participación', numerica: true, celda: () => '50 %' },
                     { id: 'v', titulo: 'Valuación', numerica: true, celda: (x) => cifra(x.valuacion_cent, d.meses.at(-1)?.mes ?? 'acum', 'valuacion', x.socio) },
                     { id: 'i', titulo: 'Valuación si se igualaran las aportaciones (informativa)', etiquetaMovil: 'Si se igualaran', numerica: true, secundaria: true, celda: (x) => m(x.valuacion_si_igualados_cent) },
@@ -120,16 +120,16 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
                 {hayFondos ? (
                   <DataTable etiqueta="Fondos de la sociedad en poder de socios" clave={(x) => x.clave} filas={fondosFilas} densidad="densa" plana
                     columnas={[
-                      { id: 'q', titulo: 'Quién', ancho: 'xl', truncar: 'l', celda: (x) => etiquetaFondos(x.socio, mio) },
+                      { id: 'q', titulo: 'Quién', ancho: 'xl', celda: (x) => etiquetaFondos(x.socio, mio) },
                       { id: 'f', titulo: 'Fecha', ancho: 's', celda: (x) => fecha(x.fecha) },
-                      { id: 'm', titulo: 'Motivo', ancho: 'l', truncar: 'l', celda: (x) => <>{x.motivo}{x.cliente ? ` · ${x.cliente}` : ''}</> },
+                      { id: 'm', titulo: 'Motivo', ancho: 'l', celda: (x) => <>{x.motivo}{x.cliente ? ` · ${x.cliente}` : ''}</> },
                       { id: 'i', titulo: 'Importe', numerica: true, ancho: 'm', celda: (x) => <CifraComprobada texto={m(x.monto_cent)} cifra={id(fin === a ? 'acum' : d.meses.at(-1)!.mes, 'fondos', x.socio)} /> },
                     ]}
                     totales={{ etiqueta: 'Total en poder de socios', celdas: { i: cifra(fin.total.fondos_en_poder_cent, d.meses.at(-1)?.mes ?? 'acum', 'fondos', 'total') } }} />
                 ) : <p className="rtm-capital-nota" data-testid="sin-fondos">Ningún socio tiene fondos de la sociedad en su poder al corte.</p>}
                 <DataTable etiqueta="Aportación neta y diferencia a igualar" clave={(x) => x.socio} filas={fin.socios} densidad="densa" plana
                   columnas={[
-                    { id: 's', titulo: 'Socio', celda: (x) => etiquetaSocio(x.socio, mio) },
+                    { id: 's', titulo: 'Socio', prioridadMovil: 'titulo', celda: (x) => etiquetaSocio(x.socio, mio) },
                     { id: 'a', titulo: 'Aportado', numerica: true, celda: (x) => m(x.aportado_cent) },
                     { id: 'f', titulo: 'Fondos en su poder', numerica: true, celda: (x) => m(x.fondos_en_poder_cent) },
                     { id: 'n', titulo: 'Aportación neta', numerica: true, celda: (x) => <CifraComprobada texto={m(x.aportacion_neta_cent)} cifra={id(d.meses.at(-1)?.mes ?? 'acum', 'neta', x.socio)} /> },
@@ -141,8 +141,8 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
                 <DataTable etiqueta="Cuenta con proveedores" clave={(x) => x.clave} filas={provFilas} densidad="densa" plana
                   vacio={{ titulo: 'Sin movimientos con proveedores', texto: 'Aparecen con la primera compra, pago o cobro redirigido.' }}
                   columnas={[
-                    { id: 'p', titulo: 'Proveedor', ancho: 'l', truncar: 'l', celda: (x) => x.concepto },
-                    { id: 'd', titulo: 'Situación', ancho: 'l', truncar: 'l', celda: (x) => x.detalle },
+                    { id: 'p', titulo: 'Proveedor', ancho: 'l', celda: (x) => x.concepto },
+                    { id: 'd', titulo: 'Situación', ancho: 'l', celda: (x) => x.detalle },
                     { id: 'i', titulo: 'Importe', numerica: true, ancho: 'm', celda: (x) => <CifraComprobada texto={m(x.monto)} cifra={x.cifra} /> },
                   ]} />
                 <p className="rtm-capital-nota">Lo que un socio pagó a un proveedor sin destino confirmado queda «Por clasificar»: no cuenta como inventario, saldo a favor ni utilidad reinvertida hasta clasificarlo.</p>

@@ -27,6 +27,8 @@
 .rtm-nav-item:hover { color: var(--rtm-ink); }
 .rtm-nav-item[aria-current='page'] { color: var(--rtm-ink); }
 .rtm-nav-item svg { width: 16px; height: 16px; flex: none; }
+/* Una sola linea por entrada: el indicador del menu avanza de a una altura fija por entrada. */
+.rtm-nav-item > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rtm-nav-indicador {
   position: absolute; left: 0; right: 0; top: 0; z-index: 0;
   height: var(--rtm-nav); border-radius: var(--rtm-r-2);
