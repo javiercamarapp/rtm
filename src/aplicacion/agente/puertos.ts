@@ -30,7 +30,9 @@ export interface EventoAgente {
     | 'respuesta_bloqueada'
     | 'limite_frecuencia'
     | 'error_llm'
-    | 'validacion_fallida';
+    | 'validacion_fallida'
+    | 'recordatorio_error'
+    | 'menudeo_otro_socio';
   miembro: number | null;
   detalle: string;
 }
@@ -53,7 +55,15 @@ export interface AlmacenAgente {
   /** Mensajes reclamados en ese chat en los ultimos `segundos` (limite de frecuencia). */
   mensajesRecientes?(chatId: number, segundos: number): Promise<number>;
   registrarEvento(evento: EventoAgente): Promise<void>;
+  /** Pregunta abierta a un socio ("¿cuando pagas?"): una a la vez por socio; caduca. */
+  esperaAbrir(e: { chatId: number; telegramUserId: number; tipo: TipoEspera; payload: unknown; caducaEn: Date }): Promise<void>;
+  /** Toma (una sola vez) la pregunta abierta de ese socio en ese chat; null si no hay o caduco. */
+  esperaTomar(chatId: number, telegramUserId: number, ahora: Date): Promise<{ tipo: TipoEspera; payload: unknown } | null>;
+  /** Comprobante (foto o archivo) de un socio: se guarda SOLO su huella y su file_id. El bot no lo descarga ni lo lee; la IA nunca lo ve. */
+  guardarEvidencia(e: { chatId: number; mensajeId: number; telegramUserId: number; fileId: string; fileUniqueId: string }): Promise<{ id: number; huella: string }>;
 }
+
+export type TipoEspera = 'fecha_pago' | 'fecha_reprogramar';
 
 // ---------------------------------------------------------------- presupuesto
 
@@ -153,7 +163,13 @@ export type AccionBoton =
   | 'confirmar_refuerzo'
   | 'completar'
   | 'cancelar'
-  | 'otro';
+  | 'otro'
+  | 'fecha_opcion'
+  | 'confirmar_reprogramar'
+  | 'confirmar_pago'
+  | 'rechazar_pago'
+  | 'recordatorio_pagado'
+  | 'recordatorio_reprogramar';
 
 export interface NuevoToken {
   accion: AccionBoton;
@@ -247,6 +263,8 @@ export interface ResultadoEjecutado {
   ejecutadoEn: Date;
   /** true si la clave de idempotencia ya estaba aplicada: se devuelve el mismo resultado sin duplicar. */
   repetido: boolean;
+  /** Datos estructurados que devolvio la base (ids y banderas para encadenar tarjetas); jamas se imprimen tal cual. */
+  datos?: Record<string, unknown>;
 }
 
 export type ResultadoNegocio =
@@ -307,4 +325,42 @@ export interface NegocioAgente {
   autorizarToma(entrada: { folio: string; socio: Miembro; autorizar: boolean; claveIdem: string }): Promise<ResultadoTomaResuelta>;
   /** Pendientes con mas de `horas` sin decision: pasan a caducadas y liberan su reserva. */
   caducarTomas(ahora: Date, horas: number): Promise<TomaCaducada[]>;
+  /** Comentario de igualacion: lo que la base dice (api.socios_aportacion_neta); el agente solo lo cuenta. */
+  igualacion(): Promise<Igualacion>;
+  /** Socio de menudeo configurado (por omision Angelo). */
+  socioMenudeo(): Promise<'angelo' | 'javier'>;
+  /** Interruptor `telegram_envio`: con el apagado el latido no envia recordatorios. */
+  envioActivo(): Promise<boolean>;
+  /** Lo que toca avisar a esta hora (sin datos personales). */
+  recordatoriosMenudeo(ahora: Date): Promise<RecordatorioMenudeo[]>;
+  /** Reclama el aviso ANTES de enviarlo (idempotente: true solo la primera vez). */
+  reclamarRecordatorio(pedidoId: number, tipo: TipoRecordatorio, ahora: Date): Promise<boolean>;
+  /** "Pagado" o "Reprogramar" como respuesta a un recordatorio (solo el socio de menudeo). */
+  responderRecordatorio(e: { autor: Miembro; claveIdem: string; pedidoId: number; accion: 'pagado' | 'posponer'; fecha?: string; hora?: string | null; motivo?: string }): Promise<ResultadoNegocio>;
+  /** El OTRO socio confirma recibido o rechaza un pago reportado. */
+  decidirPagoMenudeo(e: { autor: Miembro; claveIdem: string; reporteId: number; decision: 'confirmado' | 'rechazado'; motivo?: string }): Promise<ResultadoNegocio>;
+}
+
+export type TipoRecordatorio = 'por_vencer' | 'vence_hoy' | 'vencido';
+
+export interface RecordatorioMenudeo {
+  pedidoId: number;
+  folio: string;
+  socio: string;
+  proveedor: string;
+  pendienteCent: bigint;
+  fechaCompromiso: string | null;
+  horaCompromiso: string | null;
+  diasAtraso: number;
+  tipo: TipoRecordatorio | 'sin_fecha';
+  enviados: number;
+  pagoReportado: boolean;
+}
+
+/** Aportaciones de los socios segun la base: quien lleva mas aportado y a quien le toca el siguiente pago (null = igualadas). */
+export interface Igualacion {
+  igualados: boolean;
+  leTocaAportar: string | null;
+  llevaMas: string | null;
+  diferenciaCent: bigint;
 }

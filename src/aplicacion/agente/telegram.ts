@@ -21,6 +21,8 @@ export interface TgMensaje {
   forward_origin?: unknown;
   has_photo?: boolean;
   has_audio?: boolean;
+  /** Comprobante (foto o archivo): solo ids de Telegram. El agente guarda su huella; no descarga ni lee el archivo. */
+  foto?: { fileId: string; fileUniqueId: string };
 }
 
 export interface TgCallback {

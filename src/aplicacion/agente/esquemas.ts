@@ -168,6 +168,23 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     fuente_cita: cita,
   }),
   z.strictObject({
+    tipo: z.literal('pedido_menudeo'),
+    proveedor_origen: z.enum(['karen_directo', 'karen_via_isaac', 'isaac_directo']).nullable(),
+    lineas: z.array(lineaCompra).min(1).max(MAX_LINEAS),
+    cuando_texto: textoONulo(60),
+    fuente_cita: cita,
+  }),
+  z.strictObject({
+    tipo: z.literal('pago_pedido_menudeo'),
+    pedido_folio: textoONulo(20),
+    monto_centavos: monto.nullable(),
+    referencia: textoONulo(120),
+    fecha_texto: textoONulo(40),
+    metodo: z.enum(['transferencia', 'deposito', 'efectivo']).nullable(),
+    via: z.enum(['proveedor', 'sociedad']).nullable(),
+    fuente_cita: cita,
+  }),
+  z.strictObject({
     tipo: z.literal('consulta'),
     consulta: z.enum(TIPOS_CONSULTA),
     modelo_texto: textoONulo(60),

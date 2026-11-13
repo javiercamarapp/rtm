@@ -6,18 +6,23 @@ import type { IConsulta, Intencion } from '@/dominio/agente/intenciones';
 import { contramovimiento, type HechoAplicado } from '@/dominio/agente/deshacer';
 import { normalizar } from '@/dominio/catalogo/normalizar';
 import type { CifraServidor, Miembro } from '@/dominio/agente/tipos';
+import { formatearFechaPago } from '@/dominio/agente/fecha_pago';
+import { ErrorMenudeoSim, MenudeoSimulado, type PedidoMenudeoSim } from './menudeo_simulado';
 import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type {
   AccionResuelta,
   ContextoEjecucion,
   DependenciasDeFolio,
+  Igualacion,
   NegocioAgente,
+  RecordatorioMenudeo,
   RespuestaConsulta,
   Resoluciones,
   ResultadoDeshacer,
   ResultadoEjecutado,
   ResultadoNegocio,
   ResultadoTomaResuelta,
+  TipoRecordatorio,
   TomaCaducada,
 } from '@/aplicacion/agente/puertos';
 
@@ -129,6 +134,10 @@ export class NegocioSimulado implements NegocioAgente {
   private readonly tomas = new Map<string, Toma>();
   private readonly tomasPorClave = new Map<string, ResultadoTomaResuelta>();
   readonly aplicaciones: string[] = [];
+  /** Menudeo del socio (espejo de operacion.ds_*): pedidos a costo, avisos de pago, decision del otro socio y recordatorios. */
+  readonly menudeo = new MenudeoSimulado();
+  /** Comprobantes de Telegram (solo huella): los cablea la composicion en memoria. Sin cablear, nunca hay comprobante. */
+  evidencia: { pendiente(telegramUserId: number): number | null; usar(id: number): void } | null = null;
 
   constructor(modelos: ModeloFixture[] = FIXTURE_MODELOS, clientes: ClienteFixture[] = FIXTURE_CLIENTES) {
     for (const m of modelos) {
@@ -235,6 +244,13 @@ export class NegocioSimulado implements NegocioAgente {
         return this.ordenCompra(i, a.resoluciones, ctx);
       case 'toma_omar':
         return this.toma(i, a.resoluciones, ctx);
+      case 'pedido_menudeo':
+        return this.pedidoMenudeo(i, a.resoluciones, ctx);
+      case 'pago_pedido_menudeo':
+        return this.pagoPedidoMenudeo(i, ctx);
+      case 'pedido_envio':
+        if (this.menudeo.porFolio(i.pedido_folio)) return this.envioMenudeo(i, ctx);
+        return { tipo: 'rechazado', codigo: 'intencion_no_ejecutable', texto: 'Esa indicacion no se ejecuta aqui.' };
       default:
         return { tipo: 'rechazado', codigo: 'intencion_no_ejecutable', texto: 'Esa indicacion no se ejecuta aqui.' };
     }
@@ -757,6 +773,139 @@ export class NegocioSimulado implements NegocioAgente {
       }
       default:
         return { titulo: 'Consulta no disponible todavia', lineas: [] };
+    }
+  }
+
+
+  // ---- menudeo del socio (espejo de ds_*)
+
+  private pedidoMenudeo(i: Extract<Intencion, { tipo: 'pedido_menudeo' }>, r: Resoluciones, ctx: ContextoEjecucion): ResultadoNegocio {
+    try {
+      this.menudeo.validarCrear(ctx.autor, i.fecha_compromiso ?? null, ctx.ahora);
+      let costo = 0n;
+      let total = 0;
+      for (let k = 0; k < i.lineas.length; k++) {
+        const m = this.modelos.get(r.lineas[k]!.modeloId);
+        if (!m) return { tipo: 'rechazado', codigo: 'modelo_desconocido', texto: 'Modelo desconocido.' };
+        costo += m.costoCent * BigInt(i.lineas[k]!.piezas);
+        total += i.lineas[k]!.piezas;
+      }
+      const proveedor = i.proveedor_origen === 'isaac_directo' ? 'Isaac' : 'Karen';
+      const ref: { p?: PedidoMenudeoSim } = {};
+      const res = this.registrar({
+        serie: 'P',
+        tipo: 'pedido',
+        ctx,
+        titulo: 'Pedido a costo de menudeo creado y confirmado',
+        lineas: [piezas('Piezas', total), pesos('Costo del pedido (lo que se paga al proveedor)', costo), { tipo: 'texto', etiqueta: 'Fecha comprometida de pago', texto: i.fecha_compromiso ? formatearFechaPago(i.fecha_compromiso, i.hora_compromiso ?? null) : 'sin fecha comprometida (queda como alerta)' }],
+        advertencias: ['Cuando el proveedor lo envie marcalo con /enviado; los datos de entrega se capturan en la web, nunca por Telegram.'],
+        detalle: [{ concepto: 'pedido_menudeo', piezas: total, centavos: costo }],
+        revertir: () => { if (ref.p) this.menudeo.cancelar(ref.p); },
+      });
+      const p = (ref.p = this.menudeo.crear({ folio: res.folio, autor: ctx.autor, proveedor, costoCent: costo, fecha: i.fecha_compromiso ?? null, hora: i.hora_compromiso ?? null, ahora: ctx.ahora }));
+      return { ...res, datos: { pedido_id: p.id } };
+    } catch (e) {
+      if (e instanceof ErrorMenudeoSim) return { tipo: 'rechazado', codigo: e.codigo, texto: e.message };
+      throw e;
+    }
+  }
+
+  private envioMenudeo(i: Extract<Intencion, { tipo: 'pedido_envio' }>, ctx: ContextoEjecucion): ResultadoNegocio {
+    const p = this.menudeo.porFolio(i.pedido_folio)!;
+    if (p.estado !== 'confirmado') return { tipo: 'rechazado', codigo: 'P0428', texto: `El pedido ${p.folio} ya esta ${p.estado}.` };
+    this.menudeo.enviar(p);
+    return this.registrar({ serie: 'X', tipo: 'pedido_envio', ctx, titulo: 'Pedido marcado como enviado', lineas: [{ tipo: 'folio', etiqueta: 'Pedido', folio: p.folio }], detalle: [{ concepto: 'pedido_envio', piezas: 0, centavos: 0n }], revertir: () => { p.estado = 'confirmado'; } });
+  }
+
+  private pagoPedidoMenudeo(i: Extract<Intencion, { tipo: 'pago_pedido_menudeo' }>, ctx: ContextoEjecucion): ResultadoNegocio {
+    try {
+      if (i.pedido_folio === null || i.monto_centavos === null) return { tipo: 'rechazado', codigo: 'falta_dato', texto: 'Falta el folio o el monto del pago.' };
+      const comprobante = this.evidencia?.pendiente(ctx.autor.telegramUserId) ?? null;
+      const { reporte, pedido } = this.menudeo.reportarPago({ autor: ctx.autor, folio: i.pedido_folio, montoCent: BigInt(i.monto_centavos), comprobante: comprobante !== null });
+      if (comprobante !== null) this.evidencia!.usar(comprobante);
+      const pend = this.menudeo.pendiente(pedido);
+      const res = this.registrar({
+        serie: 'PG',
+        tipo: 'pago',
+        ctx,
+        titulo: 'Pago de pedido de menudeo avisado',
+        lineas: [pesos('Monto', BigInt(i.monto_centavos)), { tipo: 'texto', etiqueta: 'Estado', texto: reporte.aplicado ? 'Aplicado con comprobante' : 'Pago reportado (falta que el otro socio lo confirme)' }, pesos('Pendiente de pago del pedido', pend)],
+        detalle: [{ concepto: 'pago_pedido_menudeo', piezas: 0, centavos: BigInt(i.monto_centavos) }],
+        revertir: () => { if (reporte.aplicado) pedido.pagadoCent -= reporte.montoCent; reporte.aplicado = false; reporte.decision = 'rechazado'; },
+      });
+      return { ...res, datos: { reporte_id: reporte.id, aplicado: reporte.aplicado, pendiente_cent: Number(pend), comprobante_telegram: comprobante !== null } };
+    } catch (e) {
+      if (e instanceof ErrorMenudeoSim) return { tipo: 'rechazado', codigo: e.codigo, texto: e.message };
+      throw e;
+    }
+  }
+
+  async igualacion(): Promise<Igualacion> {
+    const aportado = (s: 'angelo' | 'javier') => this.capitalDe(s) + this.deudaCon(s) + this.reembolsadoA(s);
+    const a = aportado('angelo');
+    const j = aportado('javier');
+    if (a === j) return { igualados: true, leTocaAportar: null, llevaMas: null, diferenciaCent: 0n };
+    return a > j ? { igualados: false, llevaMas: 'Angelo', leTocaAportar: 'Javier', diferenciaCent: a - j } : { igualados: false, llevaMas: 'Javier', leTocaAportar: 'Angelo', diferenciaCent: j - a };
+  }
+
+  async socioMenudeo(): Promise<'angelo' | 'javier'> {
+    return this.menudeo.socioMenudeo;
+  }
+
+  async envioActivo(): Promise<boolean> {
+    return this.menudeo.envioActivo;
+  }
+
+  async recordatoriosMenudeo(ahora: Date): Promise<RecordatorioMenudeo[]> {
+    return this.menudeo.lista(ahora);
+  }
+
+  async reclamarRecordatorio(pedidoId: number, tipo: TipoRecordatorio, ahora: Date): Promise<boolean> {
+    return this.menudeo.reclamar(pedidoId, tipo, ahora);
+  }
+
+  private resultadoMenudeo(titulo: string, ctx: Date, lineas: CifraServidor[], datos: Record<string, unknown>): ResultadoNegocio {
+    return { tipo: 'ejecutado', folio: '', titulo, lineas, comprobacion: [], saldos: [], advertencias: [], ejecutadoEn: ctx, repetido: false, datos };
+  }
+
+  private readonly porClaveMenudeo = new Map<string, ResultadoNegocio>();
+
+  async responderRecordatorio(e: { autor: Miembro; claveIdem: string; pedidoId: number; accion: 'pagado' | 'posponer'; fecha?: string; hora?: string | null; motivo?: string }): Promise<ResultadoNegocio> {
+    const previo = this.porClaveMenudeo.get(e.claveIdem);
+    if (previo && previo.tipo === 'ejecutado') return { ...previo, repetido: true };
+    try {
+      this.menudeo.exigirSocio(e.autor);
+      const p = this.menudeo.pedidos.find((x) => x.id === e.pedidoId);
+      if (!p) return { tipo: 'rechazado', codigo: 'P0460', texto: 'No encuentro ese pedido.' };
+      let r: ResultadoNegocio;
+      if (e.accion === 'posponer') {
+        this.menudeo.reprogramar({ autor: e.autor, pedido: p, fecha: e.fecha ?? '', hora: e.hora ?? null, motivo: e.motivo ?? null, ahora: new Date() });
+        r = this.resultadoMenudeo('Compromiso de pago reprogramado', new Date(), [], { accion: 'posponer' });
+      } else {
+        const pend = this.menudeo.pendiente(p);
+        if (pend <= 0n) return { tipo: 'rechazado', codigo: 'P0428', texto: 'No hay nada pendiente por reportar.' };
+        const { reporte } = this.menudeo.reportarPago({ autor: e.autor, folio: p.folio, montoCent: pend, comprobante: false });
+        r = this.resultadoMenudeo('Pago de pedido de menudeo avisado', new Date(), [], { accion: 'pagado', reporte_id: reporte.id, aplicado: false, pendiente_cent: Number(this.menudeo.pendiente(p)) });
+      }
+      this.porClaveMenudeo.set(e.claveIdem, r);
+      return r;
+    } catch (err) {
+      if (err instanceof ErrorMenudeoSim) return { tipo: 'rechazado', codigo: err.codigo, texto: err.message };
+      throw err;
+    }
+  }
+
+  async decidirPagoMenudeo(e: { autor: Miembro; claveIdem: string; reporteId: number; decision: 'confirmado' | 'rechazado'; motivo?: string }): Promise<ResultadoNegocio> {
+    const previo = this.porClaveMenudeo.get(e.claveIdem);
+    if (previo && previo.tipo === 'ejecutado') return { ...previo, repetido: true };
+    try {
+      const { pedido } = this.menudeo.decidir(e);
+      const r = this.resultadoMenudeo(e.decision === 'confirmado' ? 'Pago confirmado como recibido' : 'Pago rechazado', new Date(), [], { decision: e.decision, pendiente_cent: Number(this.menudeo.pendiente(pedido)) });
+      this.porClaveMenudeo.set(e.claveIdem, r);
+      return r;
+    } catch (err) {
+      if (err instanceof ErrorMenudeoSim) return { tipo: 'rechazado', codigo: err.codigo, texto: err.message };
+      throw err;
     }
   }
 

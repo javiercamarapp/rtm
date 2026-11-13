@@ -142,7 +142,10 @@ async function propioDelLatido(d: DepsProduccion): Promise<void> {
   await d.sql('select notificacion.latido()');
   const tg = telegramDe(d);
   if (tg) {
-    try { await crearAgenteProduccion({ ...d, telegram: tg }).caducarTomasVencidas(); } catch { /* una toma que no caduca hoy caduca en la siguiente pasada */ }
+    const agente = crearAgenteProduccion({ ...d, telegram: tg });
+    try { await agente.caducarTomasVencidas(); } catch { /* una toma que no caduca hoy caduca en la siguiente pasada */ }
+    // Recordatorios de pago de menudeo al GRUPO de socios: solo con el interruptor `telegram_envio` encendido; cada aviso se reclama en la base antes de enviarse (idempotente).
+    try { await agente.enviarRecordatoriosMenudeo(); } catch { /* el siguiente latido lo reintenta: un aviso no reclamado sigue pendiente */ }
   }
   const tokens = new AlmacenTokensDb(d.sql);
   const enviadores = tg ? { telegram: enviadorTelegramDeLotes(tg, tokens, d.urlApp ?? null, ahoraDe(d)) } : {};

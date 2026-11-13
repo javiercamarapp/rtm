@@ -6,7 +6,7 @@ import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type { FuenteMensaje, Persona } from '@/dominio/agente/tipos';
 
 /** Cambia con cualquier edicion del prompt o del esquema: forma parte de la clave de la corrida guardada. */
-export const VERSION_PROMPT = 'r3-2026-11-13.1';
+export const VERSION_PROMPT = 'r4-2026-11-13.1';
 
 export const MAX_TOKENS_SALIDA_R1 = 700;
 
@@ -40,6 +40,9 @@ export const SISTEMA_R1 = [
   '    lote_historico (movimientos con fecha pasada EXPLICITA en AAAA-MM-DD: gasto, cobro, aportacion, reembolso o retiro). Si falta la fecha de un renglon historico, intencion "aclarar".',
   '15. Consultas nuevas: cuadra, balance, diario, cobertura, reporte (periodo), compras, pedidos, saldos_socios, pendientes. Nunca sumes ni compares cifras tu mismo.',
   '16. Nunca escribas a clientes ni a terceros: todo se responde en el grupo de los socios. Los telefonos y correos llegan ocultos y no se usan.',
+  '17. pedido_menudeo: SOLO cuando el socio dice que es un pedido a costo para su menudeo (Playa del Carmen): renglones modelo, sabor y piezas; proveedor_origen solo si lo dice (karen, isaac), si no null.',
+  '    cuando_texto = la frase con la que dice cuando paga, copiada TAL CUAL ("el viernes", "mañana a las 5"), o null si no la dice. Jamas escribas una fecha: la interpreta el codigo. Nunca pongas destinatario ni telefonos.',
+  '    pago_pedido_menudeo: el socio avisa que pago un pedido a costo (folio P-, monto, referencia o clave de rastreo si la dice, fecha_texto tal cual, metodo transferencia/deposito/efectivo, via proveedor o sociedad); lo que no diga, null.',
 ].join('\n');
 
 function puntuar(texto: string, e: EntradaCatalogo): number {

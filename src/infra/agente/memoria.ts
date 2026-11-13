@@ -25,7 +25,9 @@ import type {
   ResultadoConsumo,
   ResultadoReserva,
   SolicitudReserva,
+  TipoEspera,
 } from '@/aplicacion/agente/puertos';
+import { createHash } from 'node:crypto';
 
 export class AlmacenAgenteMemoria implements AlmacenAgente {
   readonly eventos: EventoAgente[] = [];
@@ -93,6 +95,33 @@ export class AlmacenAgenteMemoria implements AlmacenAgente {
   async registrarEvento(evento: EventoAgente): Promise<void> {
     this.eventos.push(evento);
   }
+
+  /** Preguntas abiertas (una por socio) y comprobantes (solo huella), como en la base. */
+  readonly esperas: Array<{ chatId: number; telegramUserId: number; tipo: TipoEspera; payload: unknown; caducaEn: Date; resuelta: boolean }> = [];
+  readonly evidencias: Array<{ id: number; chatId: number; mensajeId: number; telegramUserId: number; fileId: string; huella: string }> = [];
+
+  async esperaAbrir(e: { chatId: number; telegramUserId: number; tipo: TipoEspera; payload: unknown; caducaEn: Date }): Promise<void> {
+    if (!this.miembros.some((m) => m.telegramUserId === e.telegramUserId && m.rol === 'socio')) throw new Error('solo un socio tiene preguntas abiertas');
+    for (const x of this.esperas) if (x.telegramUserId === e.telegramUserId && !x.resuelta) x.resuelta = true;
+    this.esperas.push({ ...e, resuelta: false });
+  }
+
+  async esperaTomar(chatId: number, telegramUserId: number, ahora: Date): Promise<{ tipo: TipoEspera; payload: unknown } | null> {
+    const abiertas = this.esperas.filter((x) => x.telegramUserId === telegramUserId && x.chatId === chatId && !x.resuelta);
+    const e = abiertas[abiertas.length - 1];
+    if (!e) return null;
+    e.resuelta = true;
+    return ahora.getTime() >= e.caducaEn.getTime() ? null : { tipo: e.tipo, payload: e.payload };
+  }
+
+  async guardarEvidencia(e: { chatId: number; mensajeId: number; telegramUserId: number; fileId: string; fileUniqueId: string }): Promise<{ id: number; huella: string }> {
+    const previa = this.evidencias.find((x) => x.chatId === e.chatId && x.mensajeId === e.mensajeId);
+    if (previa) return { id: previa.id, huella: previa.huella };
+    const huella = createHash('sha256').update(e.fileUniqueId || e.fileId).digest('hex');
+    const id = this.evidencias.length + 1;
+    this.evidencias.push({ id, chatId: e.chatId, mensajeId: e.mensajeId, telegramUserId: e.telegramUserId, fileId: e.fileId, huella });
+    return { id, huella };
+  }
 }
 
 interface Reserva {
@@ -156,7 +185,7 @@ export class AlmacenTokensMemoria implements AlmacenTokens {
     return id;
   }
 
-  async consumir(e: { token: string; rol: RolMiembro; chatId: number; ahora: Date }): Promise<ResultadoConsumo> {
+  async consumir(e: { token: string; rol: RolMiembro; chatId: number; ahora: Date; usuarioId?: number }): Promise<ResultadoConsumo> {
     const t = this.tokens.get(e.token);
     if (!t) return { estado: 'invalido' };
     if (!t.rolesPermitidos.includes(e.rol)) return { estado: 'no_autorizado' }; // no consume

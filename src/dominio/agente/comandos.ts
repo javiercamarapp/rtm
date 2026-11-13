@@ -51,6 +51,8 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
   acta: '/acta [AAAA-MM] [retira angelo 1000] [reinvierte javier 500]',
   firmaracta: '/firmaracta [A-0001]',
   lote: '/lote etiqueta  [total 1500]  (una linea por movimiento: 2026-10-03 gasto javier 500 uber | 2026-10-04 cobro Cliente 7000 efectivo)',
+  pedidomenudeo: '/pedidomenudeo [karen|isaac] | modelo/sabor 24 | modelo/sabor 10 | cuando el viernes 5pm  (o: sin fecha)',
+  pagopedido: '/pagopedido P-0001 | 1000 | [transferencia|deposito|efectivo] | [proveedor|sociedad] | [ref CLAVE] | [ayer]',
   cuadra: '/cuadra',
   balance: '/balance',
   diario: '/diario',
@@ -64,7 +66,7 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
 };
 
 export const LISTA_COMANDOS =
-  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes, /enviado, /entregado, /cancelar, /aprobar, /enviada, /llego, /recibir, /servicio, /merma, /conteo, /cliente, /precio, /acta, /firmaracta, /lote, /cuadra, /balance, /diario, /cobertura, /reporte, /compras, /pedidos, /socios';
+  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes, /enviado, /entregado, /cancelar, /aprobar, /enviada, /llego, /recibir, /servicio, /merma, /conteo, /cliente, /precio, /acta, /firmaracta, /lote, /pedidomenudeo, /pagopedido, /cuadra, /balance, /diario, /cobertura, /reporte, /compras, /pedidos, /socios';
 
 export type ResultadoComando =
   | { ok: true; tipo: 'intencion'; intencion: Intencion }
@@ -458,6 +460,46 @@ export function parsearComando(texto: string): ResultadoComando | null {
       }
       if (renglones.length === 0 || renglones.length > 60) return fallo('lote');
       return { ok: true, tipo: 'intencion', intencion: { tipo: 'lote_historico', etiqueta, total_dictado_centavos: totalDictado, renglones, fuente_cita: limpio.slice(0, 120) } };
+    }
+    case 'pedidomenudeo': {
+      const lineas: ILineaCompraTexto[] = [];
+      let origen: 'karen_directo' | 'karen_via_isaac' | 'isaac_directo' | null = null;
+      let cuando: string | null = null;
+      let sinFecha = false;
+      for (const seg of partes) {
+        const n = normalizar(seg);
+        if (n === 'karen' || n === 'vapemate') { origen = 'karen_directo'; continue; }
+        if (n === 'isaac') { origen = 'isaac_directo'; continue; }
+        if (n === 'karen via isaac') { origen = 'karen_via_isaac'; continue; }
+        if (n === 'sin fecha') { sinFecha = true; continue; }
+        const c = /^(?:cuando|pago|pago el|paga)\s+(.+)$/i.exec(seg);
+        if (c) { cuando = c[1]!.slice(0, 60); continue; }
+        const l = lineaDe(seg);
+        if (!l) return fallo('pedidomenudeo');
+        lineas.push(l);
+      }
+      if (lineas.length === 0 || lineas.length > 30) return fallo('pedidomenudeo');
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pedido_menudeo', proveedor_origen: origen, lineas, cuando_texto: cuando, ...(sinFecha ? { sin_fecha: true } : {}), fuente_cita: cita } };
+    }
+    case 'pagopedido': {
+      const [folio, ...resta] = partes;
+      if (!folio || !/^[a-zA-Z]{1,3}-?\d{1,6}$/.test(folio.trim())) return fallo('pagopedido');
+      let importe: number | null = null;
+      let metodo: 'transferencia' | 'deposito' | 'efectivo' | null = null;
+      let via: 'proveedor' | 'sociedad' | null = null;
+      let referencia: string | null = null;
+      let fechaTexto: string | null = null;
+      for (const seg of resta) {
+        const n = normalizar(seg);
+        if (n === 'transferencia' || n === 'deposito' || n === 'efectivo') { metodo = n; continue; }
+        if (n === 'proveedor' || n === 'sociedad') { via = n; continue; }
+        const r = /^(?:ref|referencia|clave)\s+(.+)$/i.exec(seg);
+        if (r) { referencia = r[1]!.slice(0, 120); continue; }
+        const c = monto(seg);
+        if (importe === null && c !== null) { importe = c; continue; }
+        fechaTexto = seg.slice(0, 40);
+      }
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pago_pedido_menudeo', pedido_folio: folio.toUpperCase().replace(/^([A-Z]+)-?(\d+)$/, '$1-$2'), monto_centavos: importe, referencia, fecha_texto: fechaTexto, metodo, via, fuente_cita: cita } };
     }
     case 'cuadra':
     case 'balance':

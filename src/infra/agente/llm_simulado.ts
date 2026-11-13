@@ -97,6 +97,19 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
 
   if (/^(deshaz|deshacer|anula lo ultimo)/.test(n)) return respuesta([{ tipo: 'deshacer', folio: null }]);
 
+  // Menudeo del socio: "pedido menudeo: 10 jupiter/sandia, 20 elux/mango pago el viernes" y "pague 1,000 del pedido P-0001 ref ABC123 ayer".
+  if ((m = /^pedido (?:de )?menudeo[:,]?\s+(.+)$/i.exec(t))) {
+    const cuerpo = m[1]!;
+    const c = /\b(?:pago|pagare|pagar[eé]|cuando pago)\s+(.+)$/i.exec(cuerpo);
+    const lineas = lineasPedido(c ? cuerpo.slice(0, c.index) : cuerpo);
+    if (lineas.length > 0) {
+      return respuesta([{ tipo: 'pedido_menudeo', proveedor_origen: null, lineas: lineas.map((l) => ({ ...partirSabor(l.modelo), piezas: l.piezas })), cuando_texto: c ? c[1]!.trim().slice(0, 60) : null, fuente_cita: cita }]);
+    }
+  }
+  if ((m = /^pagu[eé] (?:\$?\s*)?(\d[\d.,]*\s*(?:k|mil)?)?\s*(?:del? )?pedido (\w+-?\d+)(?:\s+ref(?:erencia)?\s+(\S+))?(?:\s+(ayer|hoy|antier|\d{1,2}\/\d{1,2}))?$/i.exec(t))) {
+    return respuesta([{ tipo: 'pago_pedido_menudeo', pedido_folio: m[2]!.toUpperCase(), monto_centavos: m[1] ? aCentavos(m[1]) : null, referencia: m[3] ?? null, fecha_texto: m[4] ?? null, metodo: null, via: null, fuente_cita: cita }]);
+  }
+
   if (autor === 'omar' || /^(tome|tomo|toma)\b/.test(n)) {
     m = /^(?:tome|tomo|toma|me lleve)?\s*(.+)$/i.exec(t);
     const ls = lineasDe(m?.[1] ?? t);

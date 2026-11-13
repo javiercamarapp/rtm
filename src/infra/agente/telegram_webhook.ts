@@ -28,6 +28,7 @@ const mensaje = z.object({
   edit_date: z.number().int().optional(),
   forward_origin: z.unknown().optional(),
   photo: z.array(z.unknown()).optional(),
+  document: z.unknown().optional(),
   voice: z.unknown().optional(),
   audio: z.unknown().optional(),
   video_note: z.unknown().optional(),
@@ -54,6 +55,17 @@ function aMensaje(m: z.infer<typeof mensaje>): TgMensaje {
   if (m.edit_date !== undefined) salida.edit_date = m.edit_date;
   if (m.forward_origin !== undefined) salida.forward_origin = m.forward_origin;
   if (m.photo !== undefined) salida.has_photo = true;
+  // Solo los ids (nunca el contenido): la foto mas grande de la lista, o el archivo adjunto.
+  const idsDe = (x: unknown): { fileId: string; fileUniqueId: string } | null => {
+    if (typeof x !== 'object' || x === null) return null;
+    const o = x as { file_id?: unknown; file_unique_id?: unknown };
+    return typeof o.file_id === 'string' && o.file_id.length <= 300 && typeof o.file_unique_id === 'string' && o.file_unique_id.length <= 100 ? { fileId: o.file_id, fileUniqueId: o.file_unique_id } : null;
+  };
+  const foto = (m.photo !== undefined ? idsDe(m.photo[m.photo.length - 1]) : null) ?? (m.document !== undefined ? idsDe(m.document) : null);
+  if (foto) {
+    salida.foto = foto;
+    salida.has_photo = true;
+  }
   if (m.voice !== undefined || m.audio !== undefined || m.video_note !== undefined) salida.has_audio = true;
   return salida;
 }

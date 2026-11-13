@@ -11,7 +11,7 @@ export const IDS = IDS_SIMULADOS;
 export interface Escenario extends AgenteEnMemoria {
   llmGuionado: LlmGuionado;
   /** Un socio escribe en el grupo. */
-  socio(quien: 'angelo' | 'javier', texto: string, extra?: { updateId?: number; messageId?: number; edicion?: boolean; reenviado?: boolean; foto?: boolean }): Promise<ResultadoUpdate>;
+  socio(quien: 'angelo' | 'javier', texto: string, extra?: { updateId?: number; messageId?: number; edicion?: boolean; reenviado?: boolean; foto?: boolean | { fileId: string; fileUniqueId: string } }): Promise<ResultadoUpdate>;
   /** Omar escribe en su chat privado. */
   omar(texto: string): Promise<ResultadoUpdate>;
   /** Pulsa un boton de un mensaje enviado. */

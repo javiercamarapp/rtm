@@ -31,7 +31,8 @@ export interface OpcionesTexto {
   messageId?: number;
   edicion?: boolean;
   reenviado?: boolean;
-  foto?: boolean;
+  /** true = foto sin ids; con ids = comprobante (solo ids, jamas contenido). */
+  foto?: boolean | { fileId: string; fileUniqueId: string };
   audio?: boolean;
 }
 
@@ -45,6 +46,7 @@ export function updateTexto(c: ContadorUpdates, o: OpcionesTexto): UpdateTelegra
     ...(o.texto === '' ? {} : { text: o.texto }),
     ...(o.reenviado ? { forward_origin: { type: 'user' } } : {}),
     ...(o.foto ? { has_photo: true } : {}),
+    ...(typeof o.foto === 'object' ? { foto: o.foto } : {}),
     ...(o.audio ? { has_audio: true } : {}),
     ...(o.edicion ? { edit_date: 1_794_000_100 } : {}),
   };
