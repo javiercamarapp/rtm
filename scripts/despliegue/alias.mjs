@@ -140,13 +140,24 @@ export async function publicarConAlias({ nuevo, urlProd, scope, previo, run, ped
   // 1. La URL unica debe servir /login (si esta protegida por Vercel o no responde, el humo no dice nada util).
   let pagNueva;
   try { pagNueva = await pedirPagina(`https://${hostNuevo}/login`); } catch (e) { return resultado(false, 'url-unica', `no responde la URL unica ${hostNuevo}: ${e?.message ?? e}`); }
-  if (pagNueva.status !== 200) return resultado(false, 'url-unica', `la URL unica ${hostNuevo} respondio ${pagNueva.status} en /login (proteccion de despliegues de Vercel o despliegue no listo); el alias NO se toco`);
-  const marcadorNuevo = extraerMarcador(pagNueva.html);
-  if (!marcadorNuevo.length) return resultado(false, 'url-unica', `la URL unica ${hostNuevo} no trae assets de Next en /login; el alias NO se toco`);
+  // Una URL unica protegida por Vercel (SSO/autenticacion: 301/302/307/308/401/403) no se puede probar desde fuera: no es un fallo del
+  // despliegue. En ese caso se omiten las pruebas previas y se confia en la verificacion posterior (inspect + /login 200 con assets en el
+  // alias + humo en el alias), con restauracion automatica del alias anterior si algo falla. Cualquier otro estado distinto de 200 aborta.
+  const protegida = [301, 302, 307, 308, 401, 403].includes(pagNueva.status);
+  let marcadorNuevo = null;
+  if (protegida) {
+    log(`URL unica ${hostNuevo} protegida por Vercel (HTTP ${pagNueva.status}): se omite el humo previo; se verifica y se restaura si falla`);
+    const info = consultar(hostNuevo);
+    if (!info || (info.estado && info.estado !== 'READY')) return resultado(false, 'url-unica', `el despliegue ${hostNuevo} no esta READY (${info?.estado ?? 'desconocido'}); el alias NO se toco`);
+  } else {
+    if (pagNueva.status !== 200) return resultado(false, 'url-unica', `la URL unica ${hostNuevo} respondio ${pagNueva.status} en /login (despliegue no listo); el alias NO se toco`);
+    marcadorNuevo = extraerMarcador(pagNueva.html);
+    if (!marcadorNuevo.length) return resultado(false, 'url-unica', `la URL unica ${hostNuevo} no trae assets de Next en /login; el alias NO se toco`);
 
-  // 2. Humo contra la URL unica.
-  log(`Humo contra la URL unica ${hostNuevo}`);
-  if (!(await humo(`https://${hostNuevo}`))) return resultado(false, 'humo-url-unica', `el humo fallo contra la URL unica ${hostNuevo}; el alias NO se toco`);
+    // 2. Humo contra la URL unica.
+    log(`Humo contra la URL unica ${hostNuevo}`);
+    if (!(await humo(`https://${hostNuevo}`))) return resultado(false, 'humo-url-unica', `el humo fallo contra la URL unica ${hostNuevo}; el alias NO se toco`);
+  }
 
   // 3. Asignar el alias.
   const infoNuevo = consultar(hostNuevo) ?? { id: null, host: hostNuevo, estado: null };
@@ -174,7 +185,7 @@ export async function publicarConAlias({ nuevo, urlProd, scope, previo, run, ped
     let marcadorAlias = [];
     try { const p = await pedirPagina(`https://${alias}/login`); marcadorAlias = p.status === 200 ? extraerMarcador(p.html) : []; } catch { /* reintenta */ }
     const apunta = mismoDespliegue(actual, infoNuevo);
-    const igual = mismoMarcador(marcadorAlias, marcadorNuevo);
+    const igual = marcadorNuevo ? mismoMarcador(marcadorAlias, marcadorNuevo) : marcadorAlias.length > 0;
     servido = apunta && igual;
     if (!servido) motivo = `${alias} no sirve el despliegue nuevo (inspect ${apunta ? 'coincide' : `apunta a ${actual?.host ?? 'desconocido'}`}; marcador del build ${igual ? 'coincide' : 'distinto o sin respuesta'})`;
   }

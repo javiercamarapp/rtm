@@ -14,7 +14,7 @@ const esquema = z.object({
 export type ConfigPrivada = z.infer<typeof esquema>;
 
 export function configPrivada(entorno: Record<string, string | undefined> = process.env): ConfigPrivada {
-  const limpio = Object.fromEntries(Object.entries(entorno).filter(([k, v]) => k in esquema.shape && typeof v === 'string' && v !== ''));
+  const limpio = Object.fromEntries(Object.entries(entorno).filter(([k, v]) => k in esquema.shape && typeof v === 'string' && v.trim() !== '').map(([k, v]) => [k, (v as string).trim()]));
   const r = esquema.safeParse(limpio);
   if (!r.success) throw new Error(`Configuracion privada invalida (${r.error.issues.map((i) => i.path.join('.')).join(', ')})`);
   return r.data;

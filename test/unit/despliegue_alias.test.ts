@@ -115,11 +115,26 @@ describe('publicarConAlias con comandos simulados', () => {
     expect(sets(s)).toEqual([]);
     expect(s.estado.alias.host).toBe(VIEJO.host);
   });
-  it('URL unica protegida (401): error claro y alias intacto', async () => {
-    const s = simulador({ statusUnica: 401 });
+  it('URL unica protegida (302/401): omite el humo previo, mueve el alias, verifica y hace humo en el alias', async () => {
+    for (const status of [302, 401]) {
+      const s = simulador({ statusUnica: status });
+      const r = await publicarConAlias(s.base);
+      expect(r).toMatchObject({ ok: true, etapa: 'listo' });
+      expect(s.humo.mock.calls.map((c) => hostDe(c[0]))).toEqual(['rtm-nu.vercel.app']);
+      expect(s.estado.alias.host).toBe(hostDe(NUEVO_URL));
+    }
+  });
+  it('URL unica protegida y humo del alias falla: restaura el alias anterior', async () => {
+    const s = simulador({ statusUnica: 302, humoAlias: false });
+    const r = await publicarConAlias(s.base);
+    expect(r).toMatchObject({ ok: false, etapa: 'alias', restaurado: true });
+    expect(s.estado.alias.host).toBe(VIEJO.host);
+  });
+  it('URL unica con otro estado (500): error claro y alias intacto', async () => {
+    const s = simulador({ statusUnica: 500 });
     const r = await publicarConAlias(s.base);
     expect(r).toMatchObject({ ok: false, etapa: 'url-unica' });
-    expect(r.detalle).toContain('401');
+    expect(r.detalle).toContain('500');
     expect(s.humo).not.toHaveBeenCalled();
     expect(sets(s)).toEqual([]);
   });
