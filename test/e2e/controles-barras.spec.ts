@@ -25,6 +25,17 @@ async function abrirSesion(browser: Browser, base: string) {
     return Number(r.rows[0].id);
   });
   const cliente = d.clienteId;
+  // Contactos ILUSTRATIVOS (telefonos 555 y correos example.test): sin ellos /contactos solo muestra el estado vacio y la barra de filtros no existe.
+  await conDb(async (c) => {
+    const contactos = Array.from({ length: 12 }, (_, i) => ({
+      nombre: `Contacto ilustrativo ${i + 1}`, telefonos: [`+5299955${String(60000 + i).slice(-5)}`], correos: i % 4 === 0 ? [`demo${i}@example.test`] : [],
+      colonias: i % 3 ? ['Centro'] : [], origenes: [i % 2 ? { origen: 'meta', anuncio: 'Anuncio ilustrativo 1', formulario: 'Formulario A' } : { origen: 'toocloudy' }],
+    }));
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    await c.query('select contactos.cargar_lote($1, $2::jsonb)', ['e2e-controles', JSON.stringify(contactos)]);
+    await c.query('commit');
+  });
   const correo = correoUnico('ctl');
   await altaUsuario({ correo, socio: 'Javier' });
   const entrada = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
@@ -49,6 +60,7 @@ test('ningun control se monta sobre otro y el alto es uniforme por renglon', asy
     ['pedido-nuevo', '/pedidos/nuevo'], ['inventario-conteo', '/inventario/conteo'], ['mayor', '/contabilidad/mayor'],
   ];
   const fallos: string[] = [];
+  const medidos = new Map<string, number>();
   const hallazgos: HallazgoControles[] = [];
   if (FOTOS) mkdirSync(FOTOS, { recursive: true });
   for (const p of PERFILES) {
@@ -61,14 +73,27 @@ test('ningun control se monta sobre otro y el alto es uniforme por renglon', asy
         if (!resp || resp.status() >= 400) { fallos.push(`${nombre} ${p.nombre} ${tema}: HTTP ${resp?.status()}`); await page.close(); continue; }
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(300);
+        medidos.set(`${nombre} ${p.nombre}`, await page.evaluate((sel) => document.querySelectorAll(sel).length, CONTENEDORES));
         const h = await page.evaluate(medirControles, CONTENEDORES);
         h.push(...(await page.evaluate(medirRecortes)));
         for (const x of h) hallazgos.push({ ...x, contenedor: `${nombre} ${p.nombre} ${tema} ${x.contenedor}` });
-        if (FOTOS) await page.screenshot({ path: join(FOTOS, `${nombre}-${tema}-${p.nombre}.png`), fullPage: true });
+        if (FOTOS) {
+          await page.screenshot({ path: join(FOTOS, `${nombre}-${tema}-${p.nombre}.png`) });
+          // Cada barra de controles (con su tarjeta) por separado: la pagina desplaza dentro de su propio panel y la captura completa no la alcanza.
+          const barras = page.locator(CONTENEDORES);
+          for (let i = 0; i < Math.min(await barras.count(), 4); i++) {
+            const el = barras.nth(i);
+            if (await el.isVisible()) await el.screenshot({ path: join(FOTOS, `barra-${nombre}-${i}-${tema}-${p.nombre}.png`) }).catch(() => undefined);
+          }
+        }
         await page.close();
       }
       await ctx.close();
     }
+  }
+  // Una pagina vacia no tiene barras que medir: estas DEBEN tener al menos una, o la prueba no estaria midiendo nada.
+  for (const [nombre] of [['contactos'], ['clientes'], ['pedidos'], ['cxc'], ['diario'], ['liquidacion'], ['reportes'], ['kardex'], ['libro']] as const) {
+    for (const p of PERFILES) if (!(medidos.get(`${nombre} ${p.nombre}`)! > 0)) fallos.push(`${nombre} ${p.nombre}: sin barras de controles que medir`);
   }
   const texto = hallazgos.map((x) => `${x.tipo.toUpperCase()} ${x.contenedor}: ${x.detalle}`);
   expect([...fallos, ...texto], [...fallos, ...texto].join('\n')).toEqual([]);
