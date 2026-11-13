@@ -140,6 +140,12 @@ async function consulta(c: IConsulta, autor: Miembro, catalogo: CatalogoAgente, 
       res.modeloId = m.id;
     }
   }
+  if (c.consulta === 'saldo_proveedor') {
+    // La cuenta con un proveedor se consulta por su nombre (Isaac, Karen, Vapemate): sin proveedor resuelto la base no sabe de quien se habla.
+    const p = proveedor(c.sujeto_texto ?? '', overrides);
+    if (!p.ok) return p;
+    res.proveedorId = p.id;
+  }
   if (c.sujeto_texto !== null && (c.consulta === 'saldo' || c.consulta === 'precio' || c.consulta === 'pedido') && !KEYWORDS_SUJETO.has(normalizar(c.sujeto_texto))) {
     const k = await cliente(c.sujeto_texto, autor, catalogo, overrides);
     if (!k.ok) return k;

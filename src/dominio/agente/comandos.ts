@@ -208,9 +208,11 @@ export function parsearComando(texto: string): ResultadoComando | null {
       return consulta('inventario', { modelo_texto: resto === '' ? null : resto });
     case 'saldo': {
       if (resto === '') return fallo('saldo');
-      const n = normalizar(resto);
+      // '/saldo con Karen' y '/saldo de Isaac' dicen lo mismo que '/saldo karen': se quita la preposicion antes de buscar al sujeto.
+      const sujeto = resto.replace(/^(?:con|de)\s+/i, '').trim() || resto;
+      const n = normalizar(sujeto);
       const esProveedor = n === 'isaac' || n === 'karen' || n === 'vapemate';
-      return consulta(esProveedor ? 'saldo_proveedor' : 'saldo', { sujeto_texto: resto });
+      return consulta(esProveedor ? 'saldo_proveedor' : 'saldo', { sujeto_texto: sujeto });
     }
     case 'estado': {
       const s = socio(resto);
