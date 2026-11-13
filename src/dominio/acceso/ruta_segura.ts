@@ -3,7 +3,7 @@
 // (tambien codificados), barras invertidas, caracteres de control, `//` y rutas absurdamente largas.
 
 // Secciones propias (agregar aqui las nuevas, p. ej. pago-renta, sin quitar las demas).
-const PROPIA = /^\/(?:(?:pedidos|paquetes|cuentas-por-cobrar|avisos|catalogo|clientes|inventario|proveedores|socios|omar|mi-bodega|bodega|cuentas|devoluciones|contabilidad|movimientos|apertura|reportes|costos|diseno|dropshipping|menudeo)(?:[/?#]|$)|(?:[?#]|$))/;
+const PROPIA = /^\/(?:(?:pedidos|paquetes|cuentas-por-cobrar|avisos|catalogo|clientes|inventario|proveedores|socios|omar|pago-renta|mi-bodega|bodega|cuentas|devoluciones|contabilidad|movimientos|apertura|reportes|costos|diseno|dropshipping|menudeo)(?:[/?#]|$)|(?:[?#]|$))/;
 // eslint-disable-next-line no-control-regex -- detectar caracteres de control es justo el proposito
 const CONTROL = /[\u0000-\u001f\u007f\\]/;
 

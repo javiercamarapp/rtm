@@ -1,0 +1,17 @@
+/* Pago de renta: tarjeta heroe con la cifra por pagar, regla de calculo visible, desglose y estado de muestra. Solo tokens; sin colores literales ni degradados. */
+.pr-heroe { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: center; padding: var(--rtm-pad-tarjeta); border: 1px solid var(--rtm-borde-tarjeta); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
+.pr-heroe-cifra { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pr-heroe-etiqueta { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); text-transform: uppercase; letter-spacing: 0.04em; font-weight: var(--rtm-peso-medio); }
+.pr-heroe-monto { font-size: var(--rtm-t-cifra-grande); font-weight: var(--rtm-peso-fuerte); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1.1; overflow-wrap: anywhere; }
+.pr-heroe-regla { font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); font-variant-numeric: tabular-nums; }
+.pr-heroe-desglose { margin: 0; display: flex; flex-direction: column; }
+.pr-heroe-desglose > div { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 6px 0; border-top: var(--rtm-borde); font-size: var(--rtm-t-cuerpo); }
+.pr-heroe-desglose > div:first-child { border-top: 0; }
+.pr-heroe-desglose dt { color: var(--rtm-ink-3); }
+.pr-heroe-desglose dd { margin: 0; font-weight: var(--rtm-peso-medio); font-variant-numeric: tabular-nums; text-align: right; }
+.pr-heroe-total dt, .pr-heroe-total dd { color: var(--rtm-ink); font-weight: var(--rtm-peso-fuerte); }
+.pr-ideas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.pr-muestra { margin: 12px 0 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); line-height: 1.5; }
+@media (max-width: 767px) {
+  .pr-heroe { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}

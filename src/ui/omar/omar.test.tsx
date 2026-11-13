@@ -36,7 +36,7 @@ describe('armazon de Omar', () => {
     m = montar(<ArmazonOmar accionSalir={async () => {}}><p>hola</p></ArmazonOmar>);
     const hrefs = [...m.cont.querySelectorAll('a')].map((a) => a.getAttribute('href'));
     expect(hrefs.filter((h) => h !== '/mi-bodega' || true).every((h) => h!.startsWith('/mi-bodega'))).toBe(true);
-    expect(SECCIONES_OMAR.map((s) => s.etiqueta)).toEqual(['Mi bodega', 'Mi cuenta', 'Paquetes']);
+    expect(SECCIONES_OMAR.map((s) => s.etiqueta)).toEqual(['Mi bodega', 'Mi cuenta', 'Paquetes', 'Pago renta']);
     expect(m.cont.textContent).not.toMatch(/Dueño|Angelo|Javier|Proveedores|Clientes|Cuenta de socios/);
     expect(await auditar(m.cont)).toEqual([]);
   });
@@ -44,6 +44,7 @@ describe('armazon de Omar', () => {
     expect(seccionActiva('/mi-bodega')).toBe(0);
     expect(seccionActiva('/mi-bodega/cuenta')).toBe(1);
     expect(seccionActiva('/mi-bodega/paquetes')).toBe(2);
+    expect(seccionActiva('/mi-bodega/pago-renta')).toBe(3);
     expect(seccionActiva('/otra')).toBe(-1);
   });
   it('marca aria-current en la seccion de la ruta', () => {

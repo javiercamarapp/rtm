@@ -55,7 +55,10 @@
 .rtm-nav-indicador[data-indice='18'] { transform: translateY(612px); }
 .rtm-nav-indicador[data-indice='19'] { transform: translateY(646px); }
 .rtm-nav-indicador[data-indice='20'] { transform: translateY(680px); }
+/* Reglas de reserva para los indices contiguos que llegan al fusionar ramas que agregan entradas al menu (p. ej. 'Cuentas' de rol-bodega): el menu tiene hoy 22 secciones (indices 0 a 21). 'Pago renta' es el indice 15 y cada entrada nueva corre las siguientes una posicion. */
 .rtm-nav-indicador[data-indice='21'] { transform: translateY(714px); }
+.rtm-nav-indicador[data-indice='22'] { transform: translateY(748px); }
+.rtm-nav-indicador[data-indice='23'] { transform: translateY(782px); }
 .rtm-lateral-pie { margin-top: auto; display: flex; flex-direction: column; gap: var(--rtm-e-2); padding: var(--rtm-e-2); }
 .rtm-lateral-usuario { font-size: 12px; color: var(--rtm-ink-3); overflow-wrap: anywhere; }
 .rtm-lateral-salir { align-self: flex-start; height: 28px; font-size: 12px; padding: 0 var(--rtm-e-3); }

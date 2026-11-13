@@ -29,6 +29,7 @@ const SECCIONES = [
   { href: '/proveedores', etiqueta: 'Proveedores', icono: <IconoProveedores /> },
   { href: '/socios', etiqueta: 'Cuenta de socios', icono: <IconoSocios /> },
   { href: '/omar', etiqueta: 'Cuenta con Omar', icono: <IconoOmar /> },
+  { href: '/pago-renta', etiqueta: 'Pago renta', icono: <IconoOmar /> },
   { href: '/contabilidad', etiqueta: 'Contabilidad', icono: <IconoContabilidad /> },
   { href: '/movimientos', etiqueta: 'Movimientos', icono: <IconoMovimientos /> },
   { href: '/apertura', etiqueta: 'Apertura', icono: <IconoApertura /> },
