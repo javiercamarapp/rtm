@@ -33,14 +33,14 @@ describe('armarPulso', () => {
   it('Isaac: saldo negativo se muestra como lo que se debe, con su cifra explicable', () => {
     const c = armarPulso({ ...vacio, isaac: isaac(-123450n) }).chips[0]!;
     expect(c.texto).toBe('$1,234.50');
-    expect(c.detalle).toBe('se debe');
+    expect(c.detalle).toBe('en su cuenta: se debe');
     expect(c.cifra).toBe('proveedor:saldo:7');
   });
   it('Isaac: saldo a favor y saldo cero reales', () => {
-    expect(armarPulso({ ...vacio, isaac: isaac(5000n) }).chips[0]!.detalle).toBe('a favor');
+    expect(armarPulso({ ...vacio, isaac: isaac(5000n) }).chips[0]!.detalle).toBe('en su cuenta: a favor');
     const cero = armarPulso({ ...vacio, isaac: isaac(0n) }).chips[0]!;
     expect(cero.texto).toBe('$0.00');
-    expect(cero.detalle).toBe('saldo cero');
+    expect(cero.detalle).toBe('en su cuenta: saldo cero');
   });
   it('por cobrar, entre socios y bodega con cifra real', () => {
     const p = armarPulso({ isaac: null, cxc: cxc(980000n), socios: socios(-250000n), existencia: bodega([10, null, 5]) });

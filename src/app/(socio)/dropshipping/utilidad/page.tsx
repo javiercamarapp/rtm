@@ -71,7 +71,7 @@ export default async function PaginaUtilidadDs({ searchParams }: { searchParams:
           ]}
         />
       </Tarjeta>
-      <Tarjeta plana titulo="Reporte mensual por socio" descripcion="Utilidad del mes y acumulada, reinvertida (mes y acumulada), inversión al cierre y participación en la valuación">
+      <Tarjeta plana titulo="Reporte mensual por socio" descripcion="Utilidad del mes y acumulada, reinvertida (mes y acumulada), inversión al cierre y su parte del capital contable (participación × valuación menos deudas; no es la valuación personal de Capital por socio)">
         <DataTable
           etiqueta="Reporte mensual por socio"
           densidad="densa" plana
@@ -89,7 +89,7 @@ export default async function PaginaUtilidadDs({ searchParams }: { searchParams:
             { id: 'rt', titulo: 'Retirado por acta (mes)', numerica: true, ancho: 'm', secundaria: true, prioridadMovil: 'oculta', celda: (r) => formatearMoneda(r.retirado_por_acta_mes_cent) },
             { id: 'ca', titulo: 'Capital declarado', numerica: true, ancho: 'm', secundaria: true, prioridadMovil: 'oculta', celda: (r) => formatearMoneda(r.capital_declarado_cent) },
             { id: 'sg', titulo: 'Sugerido para el acta', numerica: true, ancho: 'm', prioridadMovil: 'oculta', celda: (r) => formatearMoneda(r.sugerido_acta_cent) },
-            { id: 'va', titulo: 'Valuación del socio', numerica: true, ancho: 'm', secundaria: true, prioridadMovil: 'oculta', celda: (r) => (r.valuacion_cent === null ? 'Sin dato' : formatearMoneda(r.valuacion_cent)) },
+            { id: 'va', titulo: 'Parte del capital contable', numerica: true, ancho: 'm', secundaria: true, prioridadMovil: 'oculta', celda: (r) => (r.valuacion_cent === null ? 'Sin dato' : formatearMoneda(r.valuacion_cent)) },
           ]}
         />
       </Tarjeta>
