@@ -76,7 +76,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso, socioMenude
           <ul className="rtm-nav">
             {SECCIONES.map((s, i) => (
               <li key={s.href}>
-                <Link href={s.href} prefetch={'prefetch' in s ? s.prefetch : undefined} className="rtm-nav-item" title={s.href === '/menudeo' ? `${s.etiqueta} ${socioMenudeo}` : undefined} aria-current={i === activo ? 'page' : undefined} onClick={() => setAbierto(false)}>
+                <Link href={s.href} prefetch={'prefetch' in s ? s.prefetch : undefined} className="rtm-nav-item" aria-label={s.href === '/menudeo' ? `${s.etiqueta} ${socioMenudeo}` : undefined} aria-current={i === activo ? 'page' : undefined} onClick={() => setAbierto(false)}>
                   {s.icono}
                   <span>{s.href === '/menudeo' ? `Menudeo ${socioMenudeo}` : s.etiqueta}</span>
                 </Link>
