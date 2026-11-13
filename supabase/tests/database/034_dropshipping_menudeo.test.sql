@@ -109,6 +109,25 @@ select is(pg_temp.neta('Angelo'), (select na from _base) - 250000, '(1) un cobro
 select is(pg_temp.v03(), (select v03 from _base), '(1) y la valuacion neta de la sociedad no cambia por ese cobro');
 select is(pg_temp.fallan(), '', 'Libro conciliado con fondos en poder del socio');
 
+-- Dos renglones SEPARADOS y con totales distintos: pedidos a costo pendientes de pago (no restan) y fondos de la sociedad cobrados en su cuenta (si restan)
+create temp table _pn as select api.ds_menudeo_pendientes() as r;
+select is((select (x->>'fondos_pendiente_cent')::bigint from _pn, jsonb_array_elements(r) x where x->>'socio' = 'Angelo'), 250000::bigint, 'Inicio: fondos de la sociedad pendientes de entregar de Angelo = 2,500.00');
+select is((select (x->>'pendiente_cent')::bigint from _pn, jsonb_array_elements(r) x where x->>'socio' = 'Angelo'), 0::bigint, 'Inicio: sus pedidos a costo pendientes de pago = 0 (todos pagados): totales distintos, renglones separados');
+select is((select (x->>'pendiente_cent')::bigint from _pn, jsonb_array_elements(r) x where x->>'socio' = 'Javier'), (10 * 8929)::bigint, 'Inicio: Javier tiene pedidos a costo pendientes y no tiene fondos en su cuenta');
+select is((select (x->>'fondos_pendiente_cent')::bigint from _pn, jsonb_array_elements(r) x where x->>'socio' = 'Javier'), 0::bigint, 'Javier: sin fondos pendientes de entregar');
+create temp table _fp as select api.ds_fondos_en_poder('Angelo') as r;
+select is((select (r->>'pendiente_cent')::bigint from _fp), 250000::bigint, 'detalle de fondos: pendiente de entregar 2,500.00');
+select is((select r->'movimientos'->0->>'cliente' from _fp), 'A2M Stock Angelo', 'detalle: de que cliente es el cobro');
+select is((select r->'movimientos'->0->>'pago' from _fp) ~ '^PG-', true, 'detalle: folio del cobro');
+select is((select (r->'movimientos'->0->>'fecha_neg')::date from _fp), negocio.hoy(), 'detalle: fecha del cobro');
+select is((select r->'movimientos'->0->>'concepto' from _fp), 'fondos_en_poder', 'detalle: concepto del movimiento');
+select is((api.ds_explicar_menudeo('dsm:Angelo:fondos:-:-')->'comprobacion'->>'cuadra')::boolean, true, 'Explicar fondos pendientes: dos vias cuadran');
+select is((api.ds_explicar_menudeo('dsm:Angelo:fondos:-:-')->>'valor')::bigint, 250000::bigint, 'Explicar fondos: 2,500.00');
+select is(pg_temp.neta('Angelo'), (select na from _base) - (select (r->>'pendiente_cent')::bigint from _fp), 'los fondos pendientes SI restan de la aportacion neta; los pedidos a costo NO');
+select is((select (x->>'pendiente_cent')::bigint from jsonb_array_elements(api.ds_menudeo_pendientes()) x where x->>'socio' = 'Javier') + 0, (10 * 8929)::bigint, 'Javier: el pendiente de pedidos a costo no cambio por el cobro de Angelo');
+select is((api.ds_fondos_en_poder('Javier')->>'pendiente_cent')::bigint, 0::bigint, 'Javier sin fondos');
+select throws_ok($$select api.ds_fondos_en_poder('Nadie')$$, '22023', null, 'socio desconocido');
+
 -- Explicar con dos vias y contador de piezas movidas
 select is((api.ds_explicar_menudeo('dsm:Angelo:costo:-:-')->'comprobacion'->>'cuadra')::boolean, true, 'Explicar costo: cuadra');
 select is((api.ds_explicar_menudeo('dsm:Angelo:piezas:-:-')->'comprobacion'->>'cuadra')::boolean, true, 'Explicar piezas: cuadra');
@@ -122,6 +141,7 @@ select is((select (x->>'piezas')::int from _pm, jsonb_array_elements(r->'por_soc
 select is((select (x->>'piezas')::int from _pm, jsonb_array_elements(r->'por_proveedor') x where x->>'proveedor' = 'Isaac'), 30, 'por proveedor: Isaac 30');
 select is((select (r->'por_mes'->0->>'a_costo_socios')::int from _pm), 90, 'por mes');
 select pg_temp.como('Omar');
+select throws_ok($$select api.ds_fondos_en_poder('Angelo')$$, '42501', null, 'Omar no ve los fondos en poder');
 select throws_ok($$select api.ds_menudeo('Angelo')$$, '42501', null, 'Omar no ve los pedidos de menudeo');
 select throws_ok($$select api.ds_pagar_pedido_menudeo('a2m-o', 1, 'proveedor')$$, '42501', null, 'ni los paga');
 select * from finish();

@@ -51,14 +51,37 @@ begin
   return jsonb_build_object('socio', p_socio, 'totales', v_t, 'filas', v_filas);
 end $$;
 
--- Resumen para el Inicio: monto pendiente de pago de los pedidos a costo de cada socio y cuantos son.
+-- Resumen para el Inicio: DOS renglones separados por socio. (1) Pedidos a costo: monto pendiente de pago y cuantos son (NO restan a su valuacion ni a su aportacion neta).
+-- (2) Fondos de la sociedad cobrados en su cuenta, pendientes de entregar (SI restan a su aportacion neta): saldo de fondos y cuantos cobros lo forman.
 create function api.ds_menudeo_pendientes() returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 begin
   perform seguridad.exigir_rol(array['socio']);
-  return coalesce((select jsonb_agg(jsonb_build_object('socio', s.nombre, 'pedidos', q.n, 'pendiente_cent', q.p) order by s.id)
+  return coalesce((select jsonb_agg(jsonb_build_object('socio', s.nombre, 'pedidos', q.n, 'pendiente_cent', q.p,
+                     'fondos_pendiente_cent', greatest(operacion.saldo_socio(s.id, 'fondos'), 0),
+                     'fondos_cobros', (select count(*) from operacion.cuenta_socio_mov m where m.socio_id = s.id and m.aplica_a = 'fondos' and m.concepto = 'fondos_en_poder' and m.reversa_de is null
+                                         and not exists (select 1 from operacion.cuenta_socio_mov r where r.reversa_de = m.id))) order by s.id)
                    from catalogo.socio s cross join lateral (select count(*) filter (where x.pendiente_cent > 0) as n, coalesce(sum(x.pendiente_cent), 0)::bigint as p from operacion.ds_menudeo_filas(s.nombre, null, null, null, null) x) q), '[]'::jsonb);
+end $$;
+
+-- Detalle de los fondos de la sociedad cobrados en la cuenta del socio: cada cobro (fecha, folio del pago, cliente, pedidos a los que se aplico) y lo ya entregado, con saldo corrido.
+-- Pendiente de entregar = saldo de fondos del socio. Estos fondos SI restan a su aportacion neta; los pedidos a costo no.
+create function api.ds_fondos_en_poder(p_socio text) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_id bigint;
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  select id into v_id from catalogo.socio where nombre = p_socio;
+  if v_id is null then raise exception 'socio desconocido' using errcode = '22023'; end if;
+  return jsonb_build_object('socio', p_socio, 'pendiente_cent', greatest(operacion.saldo_socio(v_id, 'fondos'), 0),
+    'movimientos', coalesce((select jsonb_agg(jsonb_build_object('id', q.id, 'fecha_neg', q.fecha_neg, 'concepto', q.concepto, 'monto_cent', q.monto_cent, 'saldo_corrido_cent', q.corrido,
+                                'pago', q.pago, 'cliente', q.cliente, 'pedidos', q.pedidos, 'nota', q.nota) order by q.id desc)
+      from (select m.id, m.fecha_neg, m.concepto, m.monto_cent, m.nota, sum(m.monto_cent) over (order by m.id)::bigint as corrido, pg.folio as pago, c.nombre_canonico as cliente,
+                   (select coalesce(jsonb_agg(pe.folio order by pe.id), '[]'::jsonb) from operacion.pago_aplicacion pa join operacion.pedido pe on pe.id = pa.pedido_id where pa.pago_id = m.pago_id and pa.monto_cent > 0) as pedidos
+            from operacion.cuenta_socio_mov m left join operacion.pago pg on pg.id = m.pago_id left join catalogo.cliente c on c.id = m.cliente_id
+            where m.socio_id = v_id and m.aplica_a = 'fondos') q), '[]'::jsonb));
 end $$;
 
 -- Pago de un pedido a costo (el socio paga como cliente): 'proveedor' = directo a la cuenta del proveedor con su dinero; 'sociedad' = abono a la sociedad (efectivo de la empresa).
@@ -95,7 +118,17 @@ as $$
 declare p text[] := string_to_array(p_cifra, ':'); v_d date; v_h date; v1 bigint; v2 bigint; v_rengs jsonb; v_tit text; v_unidad text := 'mxn';
 begin
   perform seguridad.exigir_rol(array['socio']);
-  if array_length(p, 1) <> 5 or p[1] <> 'dsm' or p[3] not in ('pendiente', 'pagado', 'costo', 'piezas') or p[2] not in (select nombre from catalogo.socio) then raise exception 'cifra desconocida' using errcode = '22023'; end if;
+  if array_length(p, 1) <> 5 or p[1] <> 'dsm' or p[3] not in ('pendiente', 'pagado', 'costo', 'piezas', 'fondos') or p[2] not in (select nombre from catalogo.socio) then raise exception 'cifra desconocida' using errcode = '22023'; end if;
+  if p[3] = 'fondos' then
+    -- Fondos de la sociedad cobrados en la cuenta del socio, pendientes de entregar. Via 1 = saldo de su cuenta; via 2 = cobros menos entregas, sumados movimiento por movimiento.
+    select greatest(operacion.saldo_socio(s.id, 'fondos'), 0)::bigint, coalesce((select sum(m.monto_cent) from operacion.cuenta_socio_mov m where m.socio_id = s.id and m.aplica_a = 'fondos'), 0)::bigint
+      into v1, v2 from catalogo.socio s where s.nombre = p[2];
+    select coalesce(jsonb_agg(jsonb_build_object('concepto', m.concepto || coalesce(' · ' || pg.folio, '') || coalesce(' · ' || c.nombre_canonico, ''), 'monto_cent', m.monto_cent, 'fecha_neg', m.fecha_neg) order by m.id desc), '[]'::jsonb) into v_rengs
+      from operacion.cuenta_socio_mov m join catalogo.socio s on s.id = m.socio_id left join operacion.pago pg on pg.id = m.pago_id left join catalogo.cliente c on c.id = m.cliente_id where s.nombre = p[2] and m.aplica_a = 'fondos';
+    return jsonb_build_object('cifra', p_cifra, 'titulo', 'Fondos de la sociedad pendientes de entregar (' || p[2] || ')', 'valor', v1, 'unidad', 'mxn',
+      'comprobacion', jsonb_build_object('via1', 'Saldo de fondos de la cuenta del socio', 'via1_valor', v1, 'via2', 'Cobros menos entregas, movimiento por movimiento', 'via2_valor', v2, 'cuadra', v1 = greatest(v2, 0)),
+      'renglones', v_rengs, 'movimientos', '[]'::jsonb);
+  end if;
   v_d := nullif(p[4], '-')::date; v_h := nullif(p[5], '-')::date;
   select coalesce(sum(case p[3] when 'pendiente' then x.pendiente_cent when 'pagado' then x.pagado_cent when 'costo' then x.costo_cent else x.piezas end), 0)::bigint into v1 from operacion.ds_menudeo_filas(p[2], v_d, v_h, null, null) x;
   select coalesce(sum(case p[3] when 'costo' then (case when x.estado = 'enviado' then l.piezas_surtidas else l.piezas_pedidas end) * l.precio_cent when 'piezas' then (case when x.estado = 'enviado' then l.piezas_surtidas else l.piezas_pedidas end)
@@ -123,6 +156,6 @@ language plpgsql security definer set search_path = ''
 as $$ begin perform seguridad.exigir_rol(array['socio']); return operacion.ds_pagar_pedido_menudeo(p_clave_idem => p_clave_idem, p_pedido => p_pedido, p_via => p_via, p_monto_cent => p_monto_cent, p_fecha => p_fecha, p_nota => p_nota); end $$;
 
 revoke execute on function operacion.ds_menudeo_filas(text, date, date, text, text), operacion.ds_menudeo_renglones(bigint, boolean), operacion.ds_pagar_pedido_menudeo(text, bigint, text, bigint, date, text) from public, anon, authenticated;
-revoke execute on function api.ds_menudeo(text, date, date, text, text), api.ds_menudeo_pendientes(), api.ds_explicar_menudeo(text), api.ds_pagar_pedido_menudeo(text, bigint, text, bigint, date, text) from public, anon;
+revoke execute on function api.ds_menudeo(text, date, date, text, text), api.ds_menudeo_pendientes(), api.ds_fondos_en_poder(text), api.ds_explicar_menudeo(text), api.ds_pagar_pedido_menudeo(text, bigint, text, bigint, date, text) from public, anon;
 -- GRANT a authenticated (cada una exige rol socio dentro):
-grant execute on function api.ds_menudeo(text, date, date, text, text), api.ds_menudeo_pendientes(), api.ds_explicar_menudeo(text), api.ds_pagar_pedido_menudeo(text, bigint, text, bigint, date, text) to authenticated;
+grant execute on function api.ds_menudeo(text, date, date, text, text), api.ds_menudeo_pendientes(), api.ds_fondos_en_poder(text), api.ds_explicar_menudeo(text), api.ds_pagar_pedido_menudeo(text, bigint, text, bigint, date, text) to authenticated;
