@@ -79,9 +79,9 @@ create function pg_temp.ids() returns jsonb language sql as $$ select jsonb_buil
 select is((agente.ejecutar('tg:t1', 'toma_omar', pg_temp.ids()) ->> 'estado'), 'pendiente', 'la solicitud de Omar nace pendiente: no mueve kardex ni saldo');
 select is((select count(*)::int from operacion.reserva where origen_tipo = 'toma_omar' and estado = 'activa'), 1, 'con reserva activa');
 select is((agente.ejecutar('tg:t1', 'toma_omar', pg_temp.ids()) ->> 'repetido')::boolean, true, 'el mismo mensaje no duplica la toma');
-select is((agente.resolver_toma('tg:t1a', (select folio from operacion.toma_omar order by id desc limit 1), 'autorizar') ->> 'estado'), 'autorizada', 'un socio autoriza');
-select throws_ok($$ select agente.resolver_toma('tg:t1b', (select folio from operacion.toma_omar order by id desc limit 1), 'rechazar') $$, 'P0428', null, 'la segunda decision ya no aplica');
-select is(agente.resolver_toma('tg:t0', 'T-9999999', 'autorizar') ->> 'estado', 'no_encontrada', 'folio de toma inexistente');
+select is((agente.resolver_toma('tg:t1a', (select folio from operacion.toma_omar order by id desc limit 1), 'autorizar', 'javier', 5000002) ->> 'estado'), 'autorizada', 'un socio autoriza');
+select throws_ok($$ select agente.resolver_toma('tg:t1b', (select folio from operacion.toma_omar order by id desc limit 1), 'rechazar', 'javier', 5000002) $$, 'P0428', null, 'la segunda decision ya no aplica');
+select is(agente.resolver_toma('tg:t0', 'T-9999999', 'autorizar', 'javier', 5000002) ->> 'estado', 'no_encontrada', 'folio de toma inexistente');
 select is(jsonb_array_length(agente.catalogo_modelos()) >= 1, true, 'catalogo de modelos para resolver alias');
 select is((agente.consulta('inventario', (select id from catalogo.modelo where nombre_canonico = 'Ag Modelo 10K')) -> 'lineas' -> 0 ->> 'piezas')::int, 27, 'consulta de existencia: 30 menos 3 de la toma');
 

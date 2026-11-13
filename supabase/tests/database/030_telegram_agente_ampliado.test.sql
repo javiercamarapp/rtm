@@ -93,7 +93,12 @@ select is((agente.ejecutar_ext('tg:pr1', 'cliente_precio', jsonb_build_object('a
 select is((catalogo.precio_vigente((select id from catalogo.cliente where nombre_canonico = 'Tg Cliente Nuevo'), pg_temp.mid(), negocio.hoy())), 24000::bigint, 'el tabulador quedo con el precio');
 
 -- Lote historico: fechas pasadas explicitas, vista previa con cuadre, idempotente por lote
-create function pg_temp.lote() returns jsonb language sql as $$ select jsonb_build_object('autor', 'javier', 'telegram_user_id', 5000002, 'origen', 'lote', 'etiqueta', 'octubre', 'renglones', jsonb_build_array(
+-- El lote historico exige ademas el boton "Si, estoy seguro" consumido por el OTRO socio (aqui Angelo)
+select agente.token_emitir('TokLote01', 'confirmar_refuerzo', array['socio'], -100200, now() + interval '1 day', null, '{"claveIdem":"tg:l1"}');
+select agente.token_consumir('TokLote01', 'socio', -100200, now(), 5000001);
+select agente.token_emitir('TokLote02', 'confirmar_refuerzo', array['socio'], -100200, now() + interval '1 day', null, '{"claveIdem":"tg:l2"}');
+select agente.token_consumir('TokLote02', 'socio', -100200, now(), 5000001);
+create function pg_temp.lote() returns jsonb language sql as $$ select jsonb_build_object('autor', 'javier', 'telegram_user_id', 5000002, 'token_boton', 'TokLote01', 'origen', 'lote', 'etiqueta', 'octubre', 'renglones', jsonb_build_array(
   jsonb_build_object('tipo', 'gasto', 'fecha', (negocio.hoy() - 20)::text, 'monto_cent', 50000, 'socio', 'javier', 'categoria', 'uber', 'concepto', 'uber'),
   jsonb_build_object('tipo', 'aportacion', 'fecha', (negocio.hoy() - 19)::text, 'monto_cent', 100000, 'socio', 'angelo', 'concepto', 'inicio'),
   jsonb_build_object('tipo', 'cobro', 'fecha', (negocio.hoy() - 18)::text, 'monto_cent', 10000, 'cuenta', 'efectivo', 'cliente_id', (select id from catalogo.cliente where nombre_canonico = 'Tg Cliente')))) $$;
@@ -103,7 +108,7 @@ select is((agente.ejecutar_ext('tg:l1', 'lote_historico', pg_temp.lote()) ->> 'r
 select is((agente.ejecutar_ext('tg:l1', 'lote_historico', pg_temp.lote()) ->> 'repetido')::boolean, true, 'reenviar el lote no duplica');
 select is((select count(*)::int from agente.hecho where tipo = 'lote_historico'), 3, 'cada renglon tiene su folio');
 select is((select min(fecha_neg) from operacion.evento where clave_idem like 'tg:l1:%'), negocio.hoy() - 20, 'los movimientos llevan la fecha pasada explicita');
-select throws_ok($$ select agente.ejecutar_ext('tg:l2', 'lote_historico', jsonb_build_object('autor', 'javier', 'telegram_user_id', 5000002, 'origen', 'x', 'renglones', jsonb_build_array(jsonb_build_object('tipo', 'gasto', 'fecha', negocio.hoy()::text, 'monto_cent', 100, 'socio', 'javier')))) $$, 'P0460', null, 'un renglon sin fecha pasada se rechaza');
+select throws_ok($$ select agente.ejecutar_ext('tg:l2', 'lote_historico', jsonb_build_object('autor', 'javier', 'telegram_user_id', 5000002, 'token_boton', 'TokLote02', 'origen', 'x', 'renglones', jsonb_build_array(jsonb_build_object('tipo', 'gasto', 'fecha', negocio.hoy()::text, 'monto_cent', 100, 'socio', 'javier')))) $$, 'P0460', null, 'un renglon sin fecha pasada se rechaza');
 select contabilidad.asentar_pendientes();
 select is((select count(*)::int from contabilidad.comprobaciones() c where not c.ok and c.bloqueante), (select rojas from _base), 'tras todo: el agente no abrio ninguna comprobacion nueva en rojo (dos vias)');
 
