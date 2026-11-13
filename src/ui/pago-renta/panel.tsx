@@ -15,7 +15,7 @@ import { ColumnasPiezas, LineaRentaMes } from './graficas';
 
 const m = (c: bigint, signo = false) => formatearMoneda(c, signo ? { conSigno: true } : {});
 const ETIQUETA_PASO: Record<Paso, string> = { dia: 'Por día', semana: 'Por semana', mes: 'Por mes' };
-const TITULO_PASO: Record<Paso, string> = { dia: 'Piezas enviadas por día (últimos 30 días)', semana: 'Piezas enviadas por semana (últimas 12)', mes: 'Piezas enviadas por mes (últimos 12)' };
+const TITULO_PASO: Record<Paso, string> = { dia: 'Piezas enviadas por día (últimos 30 días)', semana: 'Piezas enviadas por semana (últimas 6)', mes: 'Piezas enviadas por mes (últimos 12)' };
 
 interface Props {
   panel: PanelRenta;
@@ -37,7 +37,9 @@ export function PanelPagoRenta({ panel, modo, paso, ruta, acciones, accionPago }
   const sinNada = e.piezas === 0 && pagos.length === 0;
   const cubetas = agruparPorPeriodo(serie, e.hoy, paso);
   const visibles = desdePrimerMovimiento(cubetas);
-  const conDato = visibles.filter((c) => c.piezas !== 0).length;
+  // La grafica muestra las ultimas 6 semanas (con mas, las etiquetas del eje se pegan en 390 px); la tabla de abajo lleva las 12.
+  const paraGrafica = paso === 'semana' ? visibles.slice(-6) : visibles;
+  const conDato = paraGrafica.filter((c) => c.piezas !== 0).length;
   const acumulado = acumuladoDelMes(serie, e.hoy, proy);
   const observados = acumulado.filter((p) => p.tipo === 'observado').length;
   const quien = socio ? 'a Omar' : 'a ti';
@@ -159,7 +161,7 @@ export function PanelPagoRenta({ panel, modo, paso, ruta, acciones, accionPago }
               titulo={TITULO_PASO[paso]}
               descripcion={`${TITULO_PASO[paso]}. Total de la ventana: ${formatearPiezas(cubetas.reduce((s, c) => s + c.piezas, 0))}.`}
               pie={`Corte: ${etiquetaFecha(e.hoy)} · Fuente: devengos de renta · Periodo en curso con trama`}
-              datos={visibles.map((c) => ({ id: c.id, etiqueta: c.etiqueta, valor: c.piezas, texto: formatearPiezas(c.piezas), parcial: c.parcial, detalle: c.parcial ? 'Periodo en curso' : undefined }))}
+              datos={paraGrafica.map((c) => ({ id: c.id, etiqueta: c.etiqueta, valor: c.piezas, texto: formatearPiezas(c.piezas), parcial: c.parcial, detalle: c.parcial ? 'Periodo en curso' : undefined }))}
             />
           ) : (
             <p className="a3-grafica-vacia"><strong>Pocos datos para hablar de esto</strong>Hay {conDato} {conDato === 1 ? 'periodo' : 'periodos'} con envíos; con dos o más se dibujan las columnas.</p>

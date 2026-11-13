@@ -156,7 +156,7 @@ export function insights(e: EstadoRenta, proy: Proyeccion, est: Estadisticas): I
   if (e.a_favor_cent > 0n) {
     r.push({ id: 'a-favor', etiqueta: 'Anticipo a favor de Omar', frase: `Se pagaron ${m(e.a_favor_cent)} de más; se absorben solos con la renta de los próximos envíos.`, severidad: 'Informa', procedencia: 'observado', cifra: { valor: Number(e.a_favor_cent), tipo: 'moneda' } });
   } else if (e.por_pagar_cent > 0n) {
-    const sinPago = est.ultimoPago === null ? 'Todavía no se ha registrado ningún pago de renta.' : `El último pago fue hace ${est.ultimoPago.hace} ${est.ultimoPago.hace === 1 ? 'día' : 'días'}.`;
+    const sinPago = est.ultimoPago === null ? 'Todavía no se ha registrado ningún pago de renta.' : (est.ultimoPago.hace === 0 ? 'El último pago fue hoy.' : `El último pago fue hace ${est.ultimoPago.hace} ${est.ultimoPago.hace === 1 ? 'día' : 'días'}.`);
     r.push({ id: 'por-pagar', etiqueta: 'Por pagar ahora', frase: `Hay ${m(e.por_pagar_cent)} devengados sin pagar. ${sinPago}`, severidad: est.ultimoPago === null || est.ultimoPago.hace > 30 ? 'Acción' : 'Atención', procedencia: 'observado', cifra: { valor: Number(e.por_pagar_cent), tipo: 'moneda' } });
   } else {
     r.push({ id: 'al-corriente', etiqueta: 'Cuenta al corriente', frase: 'Todo lo devengado está pagado.', severidad: 'Informa', procedencia: 'observado', cifra: { valor: 0, tipo: 'moneda' } });
