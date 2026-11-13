@@ -220,6 +220,14 @@ test('6 cobro: pago parcial y final del pedido, a la caja de un socio', async ()
 });
 
 test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async () => {
+  // Regla del dueno (13-nov): el pago de la sociedad se bloquea sin saldo en su caja. Antes de pagar, Javier deposita 2,000.00 a la caja de la empresa (reembolso).
+  await javier.goto('/socios');
+  await javier.getByTestId('aportacion').click();
+  await javier.getByTestId('campo-p_socio').selectOption('Javier');
+  await javier.getByTestId('campo-p_monto_cent').fill('2000');
+  await javier.getByTestId('campo-p_concepto').fill(`Aportacion demo ${d.sufijo}`);
+  await javier.getByTestId('confirmar').click();
+  await expect(javier.getByText(`Aportacion demo ${d.sufijo}`).first()).toBeVisible();
   const page = angelo;
   await page.goto('/proveedores?p=Isaac');
   await page.getByTestId('pago-sociedad').click();
@@ -258,12 +266,6 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
 test('8 socios: aportacion, gasto de socio y reembolso', async () => {
   const page = javier;
   await page.goto('/socios');
-  await page.getByTestId('aportacion').click();
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
-  await page.getByTestId('campo-p_monto_cent').fill('2000');
-  await page.getByTestId('campo-p_concepto').fill(`Aportacion demo ${d.sufijo}`);
-  await page.getByTestId('confirmar').click();
-  await expect(page.getByText(`Aportacion demo ${d.sufijo}`).first()).toBeVisible();
   await page.getByTestId('gasto-socio').click();
   await page.getByTestId('campo-p_socio').selectOption('Angelo');
   await page.getByTestId('campo-p_monto_cent').fill('400');
@@ -298,7 +300,7 @@ test('9 todo cuadra: comprobaciones, Contabilidad, Cuentas por cobrar, Socios y 
   const total = await consultar<{ n: string }>('select count(*)::text as n from contabilidad.comprobaciones()');
   expect(total[0]!.n).toBe('27');
 
-  // Efectivo: cajas de la apertura (8,000) + aportacion capturada (2,000) - reembolso pagado a Angelo (400) - pago de la sociedad a Isaac (1,000) = 8,600.
+  // Efectivo: cajas de la apertura (8,000) + aportacion capturada (2,000, antes del pago de la sociedad: sin saldo en la caja el pago se bloquea) - reembolso pagado a Angelo (400) - pago de la sociedad a Isaac (1,000) = 8,600.
   // El libro (1101), Caja y liquidez y la Cascada dicen lo mismo; el pago de la sociedad descuenta el efectivo total (no decide de que caja sale).
   const ef = (await consultar<{ e: string; t: string; l: string; lt: string }>(
     "select operacion.saldo_efectivo()::text as e, (operacion.efectivo_sociedad()->>'total_cent') as t, contabilidad.apertura_saldo('1101')::text as l, contabilidad.saldo_deudor('1101')::text as lt"))[0]!;

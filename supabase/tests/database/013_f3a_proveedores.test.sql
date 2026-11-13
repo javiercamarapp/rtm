@@ -128,6 +128,7 @@ select is((select sum((r->>'guia_cent')::bigint)::bigint from jsonb_array_elemen
 select is((operacion.hoja_proveedor('Karen', (select ini from _sem), 'todo')->'comprobaciones'->>'cuadra')::boolean, true, 'la hoja de Karen cuadra');
 select is((operacion.hoja_proveedor('Isaac', (select ini from _sem), 'todo')->'comprobaciones'->>'cuadra')::boolean, true, 'la hoja de Isaac con Karen via Isaac cuadra');
 -- Pago de la sociedad.
+select operacion.registrar_aportacion('f3dep', 'Angelo', 100000, 'deposito a caja para el pago de la sociedad', 'reembolso');
 create temp table _ps0 as select operacion.saldo_proveedor(catalogo.proveedor_id('Karen')) as antes;
 create temp table _ps as select operacion.registrar_pago_proveedor_sociedad('f3ps', 'Karen', 100000) as r;
 select is((select (r->>'saldo_proveedor_cent')::bigint from _ps) - (select antes from _ps0), 100000::bigint, 'el pago de la sociedad sube el saldo a favor con el proveedor');

@@ -50,6 +50,7 @@ select operacion.registrar_pago('a4f-cobro-j', 'Javier', 230000, (select id from
 
 -- El flujo de la demostracion: Javier paga 500.00 a Isaac con los fondos de la sociedad que tiene; la sociedad paga 1,000.00; Javier deposita 2,000.00 (reembolso).
 select operacion.pago_proveedor_de_socio('a4f-pj', 'Isaac', 50000, 'Javier', 'fondos_sociedad', negocio.hoy());
+select operacion.registrar_aportacion('a4f-dep0', 'Javier', 100000, 'deposito a caja para el pago de la sociedad', 'reembolso');
 select operacion.registrar_pago_proveedor_sociedad('a4f-ps', 'Isaac', 100000, negocio.hoy(), 'pago ilustrativo de la sociedad');
 select operacion.registrar_aportacion('a4f-dep', 'Javier', 200000, 'deposito ilustrativo', 'reembolso', negocio.hoy());
 create function pg_temp.fallan() returns text language plpgsql as $$

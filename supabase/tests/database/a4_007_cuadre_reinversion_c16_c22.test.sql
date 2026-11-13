@@ -5,8 +5,7 @@
 --      NOTA DE INTEGRACION: la rama lane/historial-acta corrige lo mismo (20261113200100_conta_reinversion_acta.sql, envoltura de lineas_de_evento). Al integrar hay que dejar UNA sola
 --      redefinicion; esta prueba sirve para las dos.
 --  (B) La senal "Libro conciliado" exige tambien C16 (utilidad comercial contra utilidad del libro) y C22 (gastos): inducidas en rojo, la senal pasa a 'revisar'.
---  (C) FIJA EL COMPORTAMIENTO ACTUAL (NO es una decision tomada): registrar_pago_proveedor_sociedad deja 'Caja de la empresa' en negativo cuando no tiene saldo, mientras otros
---      escritores lo rechazan. Es decision PENDIENTE DEL DUENO (de que caja sale el pago de la sociedad y si se bloquea sin saldo). Si el dueno decide bloquear, esta asercion debe cambiar.
+--  (C) (la antigua asercion "PENDIENTE DEL DUENO" sobre la caja negativa se retiro: el dueno decidio bloquear el pago sin saldo; ver a4_008_pago_sociedad_exige_saldo.)
 begin;
 select no_plan();
 
@@ -84,16 +83,6 @@ select ok((select bool_or(x->>'id' = 'ii-c16' and not (x->>'ok')::boolean) from 
 update operacion.pedido_surtido set costo_valor_cent = costo_valor_cent - 7 where id = (select min(id) from operacion.pedido_surtido);
 set local session_replication_role = origin;
 select is(pg_temp.ids_rojas(), '', 'deshechas las inducciones, conciliado');
-
--- (C) Comportamiento actual: el pago de la sociedad deja la caja de la empresa en negativo (decision pendiente del dueno).
-select operacion.crear_compra('a4r-oc', 'Isaac', '[{"modelo":"A4R Modelo","sabor":"Uva","pagadas":37,"facturadas":37}]'::jsonb, 0, 0, negocio.hoy(), 'bodega', 'sociedad', 'Angelo', 'Angelo');
-select operacion.confirmar_compra('a4r-occ', (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'a4r-oc'));
-select is(operacion.saldo_efectivo((select id from operacion.cuenta_efectivo where nombre = 'Caja de la empresa')), 0::bigint, 'la caja de la empresa parte en cero');
-select lives_ok($$select operacion.registrar_pago_proveedor_sociedad('a4r-soc', 'Isaac', 100000, negocio.hoy(), 'pago sin saldo en caja')$$,
-  'PENDIENTE DEL DUENO: hoy el pago de la sociedad NO se bloquea aunque la caja no tenga saldo');
-select is(operacion.saldo_efectivo((select id from operacion.cuenta_efectivo where nombre = 'Caja de la empresa')), -100000::bigint,
-  'PENDIENTE DEL DUENO: hoy la caja de la empresa queda en negativo (otros escritores rechazan negativos)');
-
 
 select * from finish();
 rollback;
