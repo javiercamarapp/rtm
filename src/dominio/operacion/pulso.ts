@@ -25,14 +25,16 @@ export interface EntradasPulso {
   existencia: Existencia | null;
 }
 
-/** Por pagar a Isaac: POSICION COMPLETA con el proveedor, la del Mayor (cuenta 2110), la misma cifra que 'Falta por saldar' en Proveedores y que Capital por socio. Suma la cuenta corriente (pagos de socios y de clientes, ordenes confirmadas) y el costo de los pedidos directos enviados que aun no se descuenta ahi. Saldo negativo = se debe. Sin movimientos ni posicion no hay dato. */
+/** Por pagar a Isaac: DEUDA DE LA EMPRESA con el proveedor = el total del Mayor (cuenta 2110) menos los pedidos a costo del socio de menudeo que aun no paga (a su cuenta, no son deuda de la empresa; van aparte en el detalle). Misma cifra que 'Deuda de la empresa' en Proveedores. Sin movimientos ni posicion no hay dato. */
 function chipIsaac(c: CuentaProveedor | null): ChipPulso {
   const base: ChipPulso = { clave: 'isaac', etiqueta: 'Por pagar a Isaac', texto: null, cifra: null, href: '/proveedores?p=Isaac', detalle: null };
   if (!c || (c.movimientos.length === 0 && c.posicion_cent === 0n)) return base;
-  const cifra = 'conta:saldo:2110';
-  if (c.posicion_cent < 0n) return { ...base, texto: formatearMoneda(-c.posicion_cent), cifra, href: null, detalle: 'posición completa: se debe' };
-  if (c.posicion_cent > 0n) return { ...base, texto: formatearMoneda(c.posicion_cent), cifra, href: null, detalle: 'posición completa: a favor' };
-  return { ...base, texto: formatearMoneda(0n), cifra, href: null, detalle: 'posición completa: saldo cero' };
+  const cifra = 'proveedor:deuda:Isaac';
+  const emp = c.posicion.posicion_empresa_cent;
+  const aparte = c.posicion.menudeo_pendiente_cent > 0n ? ` · aparte ${formatearMoneda(c.posicion.menudeo_pendiente_cent)} de pedidos del socio` : '';
+  if (emp < 0n) return { ...base, texto: formatearMoneda(-emp), cifra, href: null, detalle: `deuda de la empresa${aparte}` };
+  if (emp > 0n) return { ...base, texto: formatearMoneda(emp), cifra, href: null, detalle: `a favor${aparte}` };
+  return { ...base, texto: formatearMoneda(0n), cifra, href: null, detalle: `saldo cero${aparte}` };
 }
 
 function chipCobrar(c: CuentasPorCobrar | null): ChipPulso {

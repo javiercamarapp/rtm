@@ -12,6 +12,7 @@ export const SECCIONES_OMAR = [
   { href: '/mi-bodega', etiqueta: 'Mi bodega' },
   { href: '/mi-bodega/cuenta', etiqueta: 'Mi cuenta' },
   { href: '/mi-bodega/paquetes', etiqueta: 'Paquetes' },
+  { href: '/mi-bodega/pago-renta', etiqueta: 'Pago renta' },
 ] as const;
 
 /** Seccion activa por ruta: la mas especifica gana ("/mi-bodega/cuenta" no enciende "Mi bodega"). */

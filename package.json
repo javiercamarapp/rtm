@@ -34,6 +34,8 @@
     "respaldo": "node scripts/despliegue/respaldo.mjs",
     "humo": "node scripts/despliegue/humo.mjs",
     "acceso:alta:nube": "node scripts/acceso/alta-usuarios-nube.mjs",
+    "acceso:cuentas": "node scripts/acceso/sincronizar-cuentas.mjs",
+    "acceso:cuentas:nube": "node scripts/acceso/sincronizar-cuentas.mjs --nube",
     "importar:nube": "tsx scripts/importacion/importar.mts --sql-salida",
     "capturas:f3a": "node scripts/capturas/capturas-f3a.mjs --restaurar-real",
     "capturas:f3b": "node scripts/capturas/capturas-f3b.mjs --restaurar-real",

@@ -4,7 +4,7 @@ import { crearClienteServidor } from './cliente-servidor';
 function esPerfil(v: unknown): v is Perfil {
   if (!v || typeof v !== 'object') return false;
   const p = v as Record<string, unknown>;
-  return (p.rol === 'socio' || p.rol === 'omar') && typeof p.activo === 'boolean';
+  return (p.rol === 'socio' || p.rol === 'omar' || p.rol === 'bodega') && typeof p.activo === 'boolean';
 }
 
 export function autenticadorSupabase(): Autenticador {

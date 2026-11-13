@@ -1,0 +1,39 @@
+/* Vista de bodega: blanco y negro, solo tokens, movil primero (390 px) y laptop. Sin bases flex en px: la rejilla de la pagina reparte las columnas. */
+
+.bodega-app { min-height: 100dvh; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
+.bodega-barra {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: var(--rtm-e-3); flex-wrap: wrap;
+  padding: var(--rtm-e-2) max(var(--rtm-e-4), env(safe-area-inset-left)) var(--rtm-e-2) max(var(--rtm-e-4), env(safe-area-inset-right));
+  background: var(--rtm-chrome); border-bottom: 1px solid var(--rtm-line);
+}
+.bodega-barra-marca { display: inline-flex; align-items: center; height: 32px; text-decoration: none; color: var(--rtm-ink); }
+.bodega-nav { display: flex; gap: 2px; margin: 0; padding: 0; list-style: none; min-width: 0; overflow-x: auto; }
+.bodega-nav a {
+  display: inline-flex; align-items: center; height: 32px; padding: 0 var(--rtm-e-3); border-radius: var(--rtm-r-pildora);
+  color: var(--rtm-ink-2); text-decoration: none; font-weight: 500; white-space: nowrap;
+}
+.bodega-nav a[aria-current='page'] { background: var(--rtm-fill-active); color: var(--rtm-ink); font-weight: 600; }
+.bodega-barra-acciones { margin-left: auto; display: flex; align-items: center; gap: var(--rtm-e-2); }
+.bodega-previa { margin: 0; padding: var(--rtm-e-2) var(--rtm-e-4); text-align: center; font-size: 13px; border-bottom: 1px solid var(--rtm-line); background: var(--rtm-surface); color: var(--rtm-ink-2); }
+.bodega-contenido {
+  width: 100%; max-width: 1240px; margin: 0 auto; flex: 1 1 auto; min-width: 0;
+  padding: var(--rtm-e-6) max(var(--rtm-e-4), env(safe-area-inset-left)) var(--rtm-e-8) max(var(--rtm-e-4), env(safe-area-inset-right));
+  display: flex; flex-direction: column; gap: var(--rtm-ritmo);
+}
+.bodega-pie { padding: var(--rtm-e-3) var(--rtm-e-4); text-align: center; font-size: 12px; color: var(--rtm-ink-3); }
+
+.bodega-lista { display: flex; flex-direction: column; gap: var(--rtm-e-3); margin: 0; padding: 0; list-style: none; }
+.bodega-cliente { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-ctl); background: var(--rtm-surface); padding: 10px 12px; display: flex; flex-direction: column; gap: var(--rtm-e-2); min-width: 0; }
+.bodega-cliente-cab { display: flex; justify-content: space-between; align-items: baseline; gap: var(--rtm-e-3); }
+.bodega-cliente-nombre { margin: 0; font-size: 16px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.bodega-cliente-total { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bodega-pedido { border-top: 1px solid var(--rtm-line); padding-top: var(--rtm-e-2); display: flex; flex-direction: column; gap: 6px; }
+.bodega-pedido-cab { display: flex; align-items: center; gap: var(--rtm-e-3); flex-wrap: wrap; }
+.bodega-lineas { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.bodega-lineas li { display: flex; justify-content: space-between; gap: var(--rtm-e-3); font-variant-numeric: tabular-nums; min-width: 0; }
+.bodega-lineas li > span { min-width: 0; overflow-wrap: anywhere; }
+
+@media (pointer: coarse) {
+  .bodega-nav a { min-height: 44px; }
+}

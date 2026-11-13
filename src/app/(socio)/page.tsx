@@ -60,7 +60,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   const indicadores = chipsPulso(pulso);
   const categoriaPulso = { isaac: 5, cobrar: 2, socios: 7, bodega: 8 } as const;
   const notaPulso = {
-    isaac: 'Posición completa con el proveedor',
+    isaac: 'Deuda de la empresa con el proveedor; los pedidos del socio de menudeo van aparte',
     cobrar: cxc ? `${cxc.por_cliente.length} clientes con saldo` : undefined,
     socios: 'Posición neta de cada socio',
     bodega: pulso?.en_bodega ? `${formatearPiezas(pulso.en_bodega.piezas)} · ${inv ? `${inv.totales.modelos_con_existencia} modelos` : 'a costo promedio'}` : undefined,
