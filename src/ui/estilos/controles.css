@@ -45,16 +45,22 @@ textarea.rtm-campo { height: auto; min-height: 72px; padding: 8px var(--rtm-ctl-
 .rtm-barra-filtros-v2 { gap: var(--rtm-ctl-gap); min-height: var(--rtm-ctl-alto); }
 .rtm-barra-filtros-v2 .rtm-chip-v2 { height: var(--rtm-ctl-alto-chico); padding-block: 0; }
 .rtm-filtros-linea { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--rtm-ctl-gap); align-items: end; }
-.rtm-filtros-linea .rtm-etiqueta-campo > .rtm-campo { width: 100%; max-width: none; }
+.rtm-filtros-linea .rtm-etiqueta-campo > .rtm-campo { width: 100%; max-width: none; min-width: 0; }
 .rtm-filtros-linea > .rtm-boton { justify-self: start; }
 .rtm-dt-barra { gap: var(--rtm-ctl-gap); }
+/* Barras de tabla y paginadores: buscador, selector y botones del mismo renglon miden lo mismo (32 px escritorio, 44 px tactil). */
+:is(.rtm-dt-barra, .rtm-paginador) :is(.rtm-boton, .rtm-boton-chico, .rtm-campo, .rtm-dt-busqueda) { height: var(--rtm-ctl-alto); }
+.rtm-paginador-filas .rtm-campo-chico { padding: 0 var(--rtm-ctl-px); padding-right: 28px; }
 @media (max-width: 767px) {
   .rtm-a2-filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
   .rtm-a2-filtros > .rtm-a2-campo:has(> :is(select, input[type='search'])) { grid-column: 1 / -1; }
   .rtm-a2-filtros > :is(.rtm-boton, .rtm-a2-aplicar) { justify-content: center; }
   .rtm-a2-filtros > .rtm-a2-campo > :is(input, select) { width: 100%; max-width: none; }
   .rtm-a2-aplicar { display: inline-flex; }
-  .a3-filtros-form { flex-wrap: nowrap; }
+  /* Filtro de una fila con selector y fechas: el selector ocupa su propio renglon completo, las dos fechas comparten el siguiente y el boton va al pie. */
+  .a3-filtros-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .a3-filtros-form > select.rtm-campo, .a3-filtros-form > .rtm-boton { grid-column: 1 / -1; width: 100%; max-width: none; }
+  .a3-filtros-form > .rtm-campo[type='date'] { width: 100%; }
 }
 
 /* ---- Formularios: rejilla comun. Cada fila reparte el ancho completo; el ancho del campo sigue a su contenido (fecha y monto, una parte;
@@ -68,6 +74,8 @@ textarea.rtm-campo { height: auto; min-height: 72px; padding: 8px var(--rtm-ctl-
 .rtm-form-fila > :has(> textarea) { grid-column: 1 / -1; }
 .rtm-form-fila > :is(.rtm-boton, .rtm-acciones-fila) { align-self: end; justify-self: start; }
 .rtm-campo-ancho { flex-grow: 1; min-width: 0; }
+/* Un campo de texto suelto en un formulario vertical no se estira a todo el tarjetero: 560 px alcanzan para una fuente o un motivo. */
+.rtm-form > .rtm-etiqueta-campo:has(> input.rtm-campo) { max-width: min(100%, 560px); }
 .rtm-error { font-size: var(--rtm-ctl-etq); line-height: 16px; margin: 0; }
 .rtm-acciones-fila { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-ctl-gap); }
 .rtm-form > .rtm-acciones-fila { padding-top: var(--rtm-e-1); }

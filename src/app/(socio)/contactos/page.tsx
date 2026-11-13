@@ -89,8 +89,8 @@ export default async function PaginaContactos({ searchParams }: { searchParams: 
       <Tarjeta titulo="Buscar" descripcion={`${formatearEntero(lista.total)} ${lista.total === 1 ? 'contacto coincide' : 'contactos coinciden'}`} acciones={<Chip href="/contactos">Limpiar</Chip>}>
         <form className="rtm-filtros-linea" method="get" action="/contactos" role="search" aria-label="Buscar contactos">
           <label className="rtm-etiqueta-campo">
-            Nombre, correo o dígitos del teléfono
-            <input className="rtm-campo rtm-campo-ancho" type="search" name="q" defaultValue={filtro.busqueda} maxLength={80} />
+            Nombre, correo o teléfono
+            <input className="rtm-campo rtm-campo-ancho" type="search" name="q" placeholder="Nombre, correo o dígitos" defaultValue={filtro.busqueda} maxLength={80} />
           </label>
           <label className="rtm-etiqueta-campo">
             Origen

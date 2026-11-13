@@ -63,7 +63,7 @@ export function FormularioPrecio({ clienteId, clienteNombre, modelos, hoy, model
       <div className="rtm-form-fila">
         <div className="rtm-campo-ancho">
           <Campo etiqueta="Modelo" control="seleccion" requerido valor={v.modeloId} onCambio={cambia('modeloId')} error={errores.modelo} testid="campo-modelo"
-            opciones={modelos.map((m) => ({ valor: String(m.id), texto: m.actual ? `${m.nombre} (vale ${formatearMoneda(BigInt(m.actual.cent))})` : `${m.nombre} (sin precio)` }))} />
+            opciones={modelos.map((m) => ({ valor: String(m.id), texto: m.actual ? `${m.nombre} · ${formatearMoneda(BigInt(m.actual.cent))}` : `${m.nombre} · sin precio` }))} />
         </div>
         <Campo etiqueta="Precio nuevo por pieza" control="monto" requerido valor={v.precio} onCambio={cambia('precio')} error={errores.precio} placeholder="150.00" testid="campo-precio" />
         <Campo etiqueta="Vale desde" control="fecha" requerido valor={v.desde} onCambio={cambia('desde')} error={errores.desde} testid="campo-desde" />

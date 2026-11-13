@@ -102,7 +102,7 @@ export function FormularioCompra({ proveedor, catalogo, modeloInicial, disponibl
         <h2>Guía y seguro</h2>
         <div className="rtm-form-fila">
           <label className="rtm-etiqueta-campo">Guía<input className="rtm-campo rtm-campo-num" inputMode="decimal" value={guia} onChange={(e) => setGuia(e.target.value)} aria-label="Costo de la guía" /></label>
-          <label className="rtm-etiqueta-campo">Seguro<input className="rtm-campo rtm-campo-num" inputMode="decimal" value={seguro} onChange={(e) => setSeguro(e.target.value)} placeholder={`${textoPesos(catalogo.seguro_reenvio_cent)} por pieza si Isaac reenvía de Karen`} aria-label="Seguro" /></label>
+          <label className="rtm-etiqueta-campo">Seguro<input className="rtm-campo rtm-campo-num" inputMode="decimal" value={seguro} onChange={(e) => setSeguro(e.target.value)} placeholder={`${textoPesos(catalogo.seguro_reenvio_cent)} por pieza`} aria-label="Seguro" /><span className="rtm-nota">Si Isaac reenvía de Karen.</span></label>
           <label className="rtm-etiqueta-campo">Guía pagada por un socio
             <select className="rtm-campo" value={guiaPagadaPor} onChange={(e) => setGuiaPagadaPor(e.target.value)} aria-label="Guía pagada por"><option value="">No (va a la cuenta del proveedor)</option><option>Angelo</option><option>Javier</option></select>
           </label>
