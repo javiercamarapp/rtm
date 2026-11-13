@@ -8,8 +8,9 @@ interface ClienteOpcion { id: number; nombre: string }
 
 /** Registrar el pago de un cliente con su cuenta destino. Sin cliente queda "sin identificar" y no se aplica a ningún pedido. */
 export function FormularioPago({ cuentas, clientes }: { cuentas: string[]; clientes: ClienteOpcion[] }) {
-  const { correr, ocupado, error, limpiarError } = useAccion();
+  const { correr, ocupado, error, codigo, limpiarError } = useAccion();
   const [abierto, setAbierto] = useState(false);
+  const [confirmoExceso, setConfirmoExceso] = useState(false);
   const [cliente, setCliente] = useState('');
   const [cuenta, setCuenta] = useState(cuentas[0] ?? 'Angelo');
   const [monto, setMonto] = useState('');
@@ -19,7 +20,7 @@ export function FormularioPago({ cuentas, clientes }: { cuentas: string[]; clien
     const c = centavosDeTexto(monto);
     if (c === null || c === 0) return setLocal('Escribe el monto, por ejemplo 9000 o 9,000.50.');
     setLocal(null);
-    correr('registrar_pago', { p_cuenta: cuenta, p_monto_cent: c, p_cliente_id: cliente ? Number(cliente) : null, p_tipo: tipo, p_aplicar: tipo !== 'anticipo' }, () => { setAbierto(false); setMonto(''); });
+    correr('registrar_pago', { p_cuenta: cuenta, p_monto_cent: c, p_cliente_id: cliente ? Number(cliente) : null, p_tipo: tipo, p_aplicar: tipo !== 'anticipo', p_confirmo_exceso: confirmoExceso }, () => { setAbierto(false); setMonto(''); setConfirmoExceso(false); });
   };
   return (
     <>
@@ -41,6 +42,12 @@ export function FormularioPago({ cuentas, clientes }: { cuentas: string[]; clien
           </label>
           <p className="rtm-nota">Si eliges la cuenta de Angelo o de Javier, el dinero es de la sociedad: queda como deuda de ese socio hasta que lo entregue. Si eliges Isaac o Karen, sube el saldo a favor de la sociedad con ese proveedor.</p>
           {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
+          {codigo === 'P0429' && (
+            <label className="rtm-casilla" data-testid="pago-confirmo-exceso">
+              <input type="checkbox" checked={confirmoExceso} onChange={(e) => setConfirmoExceso(e.target.checked)} />
+              <span>Confirmo que el excedente es un anticipo a favor del cliente.</span>
+            </label>
+          )}
         </ConfirmDialog>
       )}
     </>

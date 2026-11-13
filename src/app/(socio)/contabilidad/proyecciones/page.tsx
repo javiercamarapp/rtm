@@ -5,7 +5,7 @@ import { serieSemanalDeSocio } from '@/composicion/contabilidad-serie';
 import { diaSemanaLunes0, fechaNeg, sumarDias } from '@/dominio/calendario';
 import { etiquetaFecha } from '@/dominio/formato';
 import type { FlujoInsumo } from '@/dominio/reportes/insumos';
-import { LEYENDA_ESCENARIO, LEYENDA_ESTIMADO, coberturaViernes, diasEntre, escenarioCosto, flujoCaja, promedioMovilExponencial, tendenciaLineal, type Proyeccion } from '@/dominio/reportes/proyecciones';
+import { LEYENDA_ESCENARIO, LEYENDA_ESTIMADO, coberturaViernes, diasEntre, etiquetaCobertura, escenarioCosto, flujoCaja, promedioMovilExponencial, tendenciaLineal, type Proyeccion } from '@/dominio/reportes/proyecciones';
 import { PARAMETROS } from '@/dominio/reportes/parametros';
 import { Aviso } from '@/ui/componentes/controles';
 import { BarList, ListaClaveValor } from '@/ui/componentes/datos';
@@ -96,7 +96,7 @@ export default async function PaginaProyecciones() {
   const MIN = PARAMETROS.minSemanasEma;
   const mayorBarra = [fondos ?? 0n, hastaViernes, porPagarViernes].reduce((a, b) => (b > a ? b : a), 1n);
   const coberturaTexto = cobertura === null ? null : `${(Number(cobertura) / 1000).toFixed(2)} veces`;
-  const coberturaOk = cobertura !== null && cobertura >= PARAMETROS.coberturaViernesVerde;
+  const coberturaEstado = cobertura === null ? null : etiquetaCobertura(cobertura);
 
   return (
     <Pagina ancho="tablero">
@@ -114,7 +114,7 @@ export default async function PaginaProyecciones() {
           { id: 'hist', etiqueta: 'Historia disponible', valor: `${nHist} ${nHist === 1 ? 'semana' : 'semanas'}`, categoria: 1, progreso: { pct: Math.min(100, (nHist / MIN) * 100), meta: 100 }, nota: nHist >= MIN ? 'Muestra mínima alcanzada' : `Faltan ${faltan(MIN)} para estimar` },
           { id: 'cobros', etiqueta: 'Cobros esperados por semana', valor: pCobros.emite ? m(aBig(pCobros.datos.central)) : null, categoria: 2, nota: pCobros.emite ? `Estimado · rango ${m(aBig(pCobros.datos.puntos[0]!.lo))} a ${m(aBig(pCobros.datos.puntos[0]!.hi))}` : razon(pCobros) },
           { id: 'util', etiqueta: 'Utilidad esperada por semana', valor: pUtil.emite ? m(aBig(pUtil.datos.central), true) : null, categoria: 7, nota: pUtil.emite ? `Estimado · rango ${m(aBig(pUtil.datos.puntos[0]!.lo), true)} a ${m(aBig(pUtil.datos.puntos[0]!.hi), true)}` : razon(pUtil) },
-          { id: 'cob', etiqueta: 'Cobertura del viernes', valor: coberturaTexto, categoria: 4, nota: cobertura === null ? (fondos === null ? 'Sin dato de fondos' : 'Nada por pagar el viernes') : <Estado tono={coberturaOk ? 'ok' : 'atencion'}>{coberturaOk ? 'Cubierto' : 'Justo'}</Estado> },
+          { id: 'cob', etiqueta: 'Cobertura del viernes', valor: coberturaTexto, categoria: 4, nota: cobertura === null ? (fondos === null ? 'Sin dato de fondos' : 'Nada por pagar el viernes') : <Estado tono={coberturaEstado!.tono}>{coberturaEstado!.etiqueta}</Estado> },
         ]}
       />
       <FilaRatios

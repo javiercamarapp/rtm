@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { coberturaViernes, diasEntre, escenarioConcentracion, escenarioCosto, escenarioMezcla, escenarioRetrasoCobro, estacionalidad, finDeMesOmar, flujoCaja, LEYENDA_ESTIMADO, noSeEstima, promedioMovilExponencial, proximoPedido, puntoReorden, t90, tendenciaLineal } from '@/dominio/reportes/proyecciones';
+import { coberturaViernes, diasEntre, etiquetaCobertura, escenarioConcentracion, escenarioCosto, escenarioMezcla, escenarioRetrasoCobro, estacionalidad, finDeMesOmar, flujoCaja, LEYENDA_ESTIMADO, noSeEstima, promedioMovilExponencial, proximoPedido, puntoReorden, t90, tendenciaLineal } from '@/dominio/reportes/proyecciones';
 import type { FlujoInsumo } from '@/dominio/reportes/insumos';
 import { PARAMETROS } from '@/dominio/reportes/parametros';
 
@@ -263,6 +263,14 @@ describe('flujo de caja a 4 semanas', () => {
     expect(r.emite && r.datos.saldoMinimoCent <= r.datos.semanas[0]!.saldoCent).toBe(true);
     expect(coberturaViernes(30_000_000n, 24_950_000n, 42_266_800n)).toBe(1300n);
     expect(coberturaViernes(1n, 1n, 0n)).toBeNull();
+  });
+  it('la etiqueta de la cobertura sigue los umbrales documentados: 1.2 cubierto, 1.0 justo, menos de 1.0 insuficiente (0.13 nunca es Justo)', () => {
+    expect(etiquetaCobertura(130n)).toEqual({ etiqueta: 'Insuficiente', tono: 'malo' });
+    expect(etiquetaCobertura(999n).etiqueta).toBe('Insuficiente');
+    expect(etiquetaCobertura(1000n)).toEqual({ etiqueta: 'Justo', tono: 'atencion' });
+    expect(etiquetaCobertura(1199n).etiqueta).toBe('Justo');
+    expect(etiquetaCobertura(1200n)).toEqual({ etiqueta: 'Cubierto', tono: 'ok' });
+    expect(etiquetaCobertura(1300n).etiqueta).toBe('Cubierto');
   });
   it('propiedad: el saldo final es el inicial mas los flujos, para cualquier serie', () => {
     fc.assert(

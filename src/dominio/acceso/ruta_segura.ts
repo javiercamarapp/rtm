@@ -37,3 +37,15 @@ export const DESTINO_BODEGA = '/bodega';
 export function destinoSeguro(valor: string | null | undefined): string {
   return rutaPropiaSegura(valor) ? valor : DESTINO_POR_OMISION;
 }
+
+/**
+ * Zona propia de un rol restringido: una cuenta ACTIVA de Omar o de bodega solo recorre su carpeta. Cualquier otra ruta de pagina (las del socio) se redirige a su inicio
+ * ANTES de renderizar (307 real, no un 200 que se redirige despues en el navegador). Devuelve el destino o null si la ruta es suya, publica o de API.
+ */
+export function redireccionPorRol(rol: string | null | undefined, activo: boolean, ruta: string): string | null {
+  if (!activo || (rol !== 'omar' && rol !== 'bodega')) return null;
+  const propia = rol === 'omar' ? DESTINO_OMAR : DESTINO_BODEGA;
+  if (ruta === propia || ruta.startsWith(`${propia}/`)) return null;
+  if (/^\/(?:login|auth|api|terminos|privacidad)(?:\/|$)/.test(ruta)) return null;
+  return propia;
+}

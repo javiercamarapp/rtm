@@ -348,6 +348,16 @@ export function coberturaViernes(fondosCent: bigint, cobrosEsperadosCent: bigint
   return ((fondosCent + cobrosEsperadosCent) * 1000n) / saldoPorPagarCent;
 }
 
+/**
+ * Etiqueta de la cobertura del viernes (milesimas), con los umbrales documentados en la plantilla I21 y en PARAMETROS:
+ * desde 1.2 veces cubierto; de 1.0 a menos de 1.2 justo; menos de 1.0 insuficiente (no alcanza para liquidar).
+ */
+export function etiquetaCobertura(coberturaMilesimas: bigint): { etiqueta: 'Cubierto' | 'Justo' | 'Insuficiente'; tono: 'ok' | 'atencion' | 'malo' } {
+  if (coberturaMilesimas >= PARAMETROS.coberturaViernesVerde) return { etiqueta: 'Cubierto', tono: 'ok' };
+  if (coberturaMilesimas >= PARAMETROS.coberturaViernesAlerta) return { etiqueta: 'Justo', tono: 'atencion' };
+  return { etiqueta: 'Insuficiente', tono: 'malo' };
+}
+
 // ---------- Fin de mes de Omar ----------
 
 export interface DatosFinMes {
