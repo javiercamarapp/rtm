@@ -100,7 +100,10 @@ select is((select (r->>'falta_por_saldar_cent')::bigint from _l), 4064500::bigin
 select is((select dicho_por_proveedor_cent from operacion.liquidacion_proveedor order by id desc limit 1), 4100000::bigint, 'queda registrado lo que dijo el proveedor');
 select throws_ok($$select operacion.cerrar_liquidacion_proveedor('f3hl2', 'Isaac', '2020-06-01', 'todo')$$, 'P0428', null, 'una semana no se liquida dos veces');
 select throws_ok($$select operacion.registrar_dicho_proveedor('f3hd2', 'Isaac', '2020-06-01', 'todo', 1)$$, 'P0428', null, 'cerrada la semana ya no se concilia');
-select is((operacion.hoja_proveedor('Isaac', '2020-06-08', 'todo')->'totales'->>'saldo_anterior_cent')::bigint, 4064500::bigint, 'la siguiente semana arranca con el saldo anterior de 40,645.00');
+-- El saldo anterior ya no es el de la ultima liquidacion cerrada: es la posicion con el proveedor en el libro (2110) al inicio de la hoja.
+set constraints all immediate;
+select contabilidad.asentar_pendientes();
+select is((operacion.hoja_proveedor('Isaac', '2020-06-08', 'todo')->'totales'->>'saldo_anterior_cent')::bigint, contabilidad.saldo('2110', '2020-06-05'), 'la siguiente semana arranca con el saldo anterior del libro al inicio de la hoja');
 select is((api.liquidaciones_proveedor('Isaac')->0->>'folio'), (select folio from operacion.liquidacion_proveedor order by id desc limit 1), 'la liquidacion aparece en el historial');
 
 -- ---- Orden de compra aplicada en la semana actual y Karen via Isaac -------------------------------------------------------------------------------

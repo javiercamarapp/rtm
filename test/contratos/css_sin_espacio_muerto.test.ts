@@ -22,8 +22,8 @@ describe('css sin espacio muerto', () => {
   });
   it('la unica altura de ventana es la del armazon (100dvh con scroll interno) y el fondo del body', () => {
     const usos = todo.match(/[a-z-]*height:\s*100(d?vh)/g) ?? [];
-    // base.css (body), shell.css (armazon de los socios), componentes.css (confirmacion) y omar.css (armazon de la vista de Omar).
-    expect(usos.length).toBeLessThanOrEqual(4);
+    // base.css (body), shell.css (armazon de los socios), componentes.css (confirmacion) omar.css (armazon de la vista de Omar) y bodega.css (armazon de la vista de bodega).
+    expect(usos.length).toBeLessThanOrEqual(5);
   });
 });
 

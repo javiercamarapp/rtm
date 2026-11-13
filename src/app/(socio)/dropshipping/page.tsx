@@ -28,7 +28,10 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
   const dim = (DIMENSIONES.find((d) => d.clave === sp.dim)?.clave ?? 'semana') as DimensionDesglose;
   const origen = sp.origen === 'dropshipping' || sp.origen === 'inventario_merida' ? (sp.origen as OrigenSurtido) : null;
   const ds = await dropshippingDeSocio();
-  const [r, filas, porSemana] = await Promise.all([ds.resumen(desde, hasta), ds.desglose(dim, desde, hasta, origen), ds.desglose('semana', desde, hasta, 'dropshipping')]);
+  const socioMenudeo = await ds.socioMenudeo();
+  const [r, filas, porSemana, menudeo] = await Promise.all([ds.resumen(desde, hasta), ds.desglose(dim, desde, hasta, origen), ds.desglose('semana', desde, hasta, 'dropshipping'), ds.menudeo(socioMenudeo, {})]);
+  // Pedidos a costo del socio de menudeo ya enviados y pendientes de pago: estan dentro de 'Por pagar a proveedores' del pedido, pero son a su cuenta (no deuda de la empresa).
+  const pendienteSocio = menudeo.filas.filter((f) => f.estado === 'enviado').reduce((a, f) => a + f.pendiente_cent, 0n);
   const rango = `${desde ?? '-'}:${hasta ?? '-'}`.replace(/^-:-$/, '-:-');
   const [d, h] = rango.split(':');
   const cif = (metrica: string, org: string, texto: string | null) => <CifraComprobada texto={texto} cifra={`ds:${metrica}:${org}:${d}:${h}`} comprobacion="cuadra" />;
@@ -69,7 +72,7 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
           { id: 'ds-pedidos', etiqueta: 'Pedidos enviados (dropshipping)', valor: cif('pedidos', 'dropshipping', String(dsCol?.pedidos ?? 0)), categoria: 1, nota: `${formatearPiezas(dsCol?.piezas ?? 0)} · en curso ${r.en_curso.find((e) => e.origen_surtido === 'dropshipping')?.pedidos ?? 0}`, testid: 'kpi-ds-pedidos' },
           { id: 'ds-venta', etiqueta: 'Venta (dropshipping)', valor: cif('venta', 'dropshipping', formatearMoneda(dsCol?.venta_cent ?? 0n)), categoria: 2, nota: `Costo total ${formatearMoneda(dsCol?.costo_cent ?? 0n)}` },
           { id: 'ds-margen', etiqueta: 'Utilidad (dropshipping)', valor: cif('margen', 'dropshipping', formatearMoneda(dsCol?.margen_cent ?? 0n)), categoria: 3, nota: 'Venta menos todo el costo del pedido' },
-          { id: 'ds-karen', etiqueta: 'Por pagar a proveedores', valor: cif('porpagar', 'dropshipping', formatearMoneda(dsCol?.por_pagar_cent ?? 0n)), categoria: 4, nota: karen ? `Posición con Karen: ${formatearMoneda(karen.saldo_cent)}` : undefined },
+          { id: 'ds-karen', etiqueta: 'Por pagar a proveedores', valor: cif('porpagar', 'dropshipping', formatearMoneda(dsCol?.por_pagar_cent ?? 0n)), categoria: 4, nota: [pendienteSocio > 0n ? `Incluye ${formatearMoneda(pendienteSocio)} de pedidos de ${socioMenudeo} pendientes (a su cuenta, no son deuda de la empresa)` : null, karen ? `Total con Karen según el libro: ${formatearMoneda(karen.saldo_cent)}` : null].filter(Boolean).join(' · ') || undefined },
           { id: 'ds-cobrar', etiqueta: 'Por cobrar (dropshipping)', valor: cif('porcobrar', 'dropshipping', formatearMoneda(dsCol?.por_cobrar_cent ?? 0n)), categoria: 6, nota: `Intereses de crédito ${formatearMoneda(dsCol?.intereses_cent ?? 0n)}`, href: '/dropshipping/por-cobrar' },
           { id: 'ds-piezas', etiqueta: 'Piezas movidas a proveedores', valor: cif('piezas', 'dropshipping', formatearPiezas(pm.total)), categoria: 7, nota: `${formatearPiezas(pm.de_clientes)} de clientes · ${formatearPiezas(pm.a_costo_socios)} a costo para socios`, testid: 'kpi-piezas-movidas' },
         ]}
