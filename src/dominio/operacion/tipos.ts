@@ -72,7 +72,11 @@ export interface CompraDetalle {
   partidas_fuera_sociedad: { socio: string; monto_cent: Cent; piezas: number | null; estado: string }[];
   linea_tiempo: EventoInfo[];
 }
-export interface PosicionDetalle { posicion_cent: Cent; se_debe_cent: Cent; a_favor_cent: Cent; cargos_cent: Cent; abonos_cent: Cent; desglose_cuadra: boolean; auxiliar_cent: Cent | null; cuadra_auxiliar: boolean | null }
+export interface PosicionDetalle { posicion_cent: Cent; se_debe_cent: Cent; a_favor_cent: Cent; cargos_cent: Cent; abonos_cent: Cent; desglose_cuadra: boolean; auxiliar_cent: Cent | null; cuadra_auxiliar: boolean | null;
+  /** Pedidos a costo del socio de menudeo ya enviados con este proveedor: a su cuenta, NO son deuda de la empresa (el libro si los suma). */
+  menudeo_pedidos: number; menudeo_costo_cent: Cent; menudeo_pagado_cent: Cent; menudeo_pendiente_cent: Cent; menudeo_vencido_cent: Cent;
+  /** Posicion de la empresa = libro + pedidos del socio pendientes. Positivo = a favor, negativo = se le debe. */
+  posicion_empresa_cent: Cent; deuda_empresa_cent: Cent; a_favor_empresa_cent: Cent }
 export interface CuentaProveedor {
   id: number; proveedor: 'Isaac' | 'Karen'; modalidad: 'semanal_viernes' | 'prepago_total'; saldo_cent: Cent; etiqueta: 'A favor' | 'Se debe' | 'Saldo cero'; puente_cent: Cent;
   /** Posicion completa con el proveedor segun el Mayor (cuenta 2110 o 2120): incluye el costo de los pedidos directos enviados. Positivo = a favor de la sociedad, negativo = se debe. */
@@ -137,7 +141,9 @@ export interface HojaAjuste extends EventoInfo { id: number; fecha_neg: string; 
 export interface HojaProveedor {
   proveedor: 'Isaac' | 'Karen'; modalidad: 'semanal_viernes' | 'prepago_total'; ambito: AmbitoHoja; semana_ini: string; semana_fin: string; desde: string; viernes_cerrado: boolean;
   renglones: HojaRenglon[]; abonos: HojaAbono[]; ajustes: HojaAjuste[]; pagos_por_concepto_cent: Record<string, Cent>;
-  totales: { saldo_anterior_cent: Cent; mercancia_cent: Cent; seguros_cent: Cent; guias_cent: Cent; costo_total_cent: Cent; pagos_cent: Cent; ajustes_cent: Cent; falta_por_saldar_cent: Cent; libro_al_corte_cent: Cent; diferencia_libro_cent: Cent };
+  totales: { saldo_anterior_cent: Cent; mercancia_cent: Cent; seguros_cent: Cent; guias_cent: Cent; costo_total_cent: Cent; pagos_cent: Cent; ajustes_cent: Cent; falta_por_saldar_cent: Cent; libro_al_corte_cent: Cent; diferencia_libro_cent: Cent;
+    /** Pedidos del socio de menudeo pendientes de pago con este proveedor (a su cuenta) y deuda de la empresa = falta por saldar menos eso; menudeo_vigente: la semana es la actual. */
+    menudeo_pendiente_cent: Cent; deuda_empresa_cent: Cent; menudeo_vigente: boolean };
   comprobaciones: {
     renglon_igual_detalle: boolean; renglones_igual_mercancia: boolean; mercancia_independiente_cent: Cent; renglones_igual_seguros: boolean; seguros_independiente_cent: Cent;
     guias_igual_envios: boolean; guias_independiente_cent: Cent; abonos_igual_depositos: boolean; depositos_independiente_cent: Cent; cuadra: boolean;

@@ -23,15 +23,15 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
   const lector = await operacionDeSocio();
   const [c, rec] = await Promise.all([lector.compra(n), lector.compraRecepcion(n)]);
   if (!c) notFound();
-  // Una sola verdad por proveedor: su posicion completa del libro (no solo la cuenta corriente).
-  const posicion = (await lector.cuentaProveedor(c.proveedor.nombre)).posicion_cent;
+  // Una sola verdad por proveedor: la deuda de la EMPRESA segun el libro (sin los pedidos del socio de menudeo pendientes), no solo la cuenta corriente.
+  const posicion = (await lector.cuentaProveedor(c.proveedor.nombre)).posicion.posicion_empresa_cent;
   const enRecepcion = c.estado === 'recibida_parcial';
   const cerrada = c.estado !== 'recibida_parcial';
   const recibible = ['confirmada', 'enviada', 'en_trayecto', 'llego_merida', 'recibida_parcial'].includes(c.estado);
   const catalogo = recibible ? await lector.catalogoCompra(c.proveedor.nombre) : null;
   const sabores: Record<string, SaborOpcion[]> = {};
   for (const s of catalogo?.skus ?? []) (sabores[s.modelo] ??= []).push({ sku_id: s.sku_id, sabor: s.sabor });
-  const palabra = posicion > 0n ? 'A favor' : posicion < 0n ? 'Se le debe' : 'Saldo cero';
+  const palabra = posicion > 0n ? 'A favor' : posicion < 0n ? 'Deuda de la empresa' : 'Saldo cero';
 
   const piezasPag = c.lineas.reduce((a, l) => a + l.pagadas, 0);
   const piezasFac = c.lineas.reduce((a, l) => a + l.facturadas, 0);
@@ -59,7 +59,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
           { id: 'gs', etiqueta: 'Guía y seguro', valor: m(c.guia_cent + c.seguro_cent), categoria: 6, nota: `Guía ${m(c.guia_cent)} · seguro ${m(c.seguro_cent)}` },
           { id: 'tot', etiqueta: 'Total de la orden', valor: m(c.total_cent), categoria: 2, nota: costoPuesto === null ? 'Costo puesto: sin dato hasta recibir' : `${enRecepcion ? 'Ya entró al inventario' : 'Costo puesto'} ${m(costoPuesto)}` },
           { id: 'rec', etiqueta: 'Piezas recibidas', valor: piezasRec === null ? null : formatearPiezas(piezasRec), categoria: 4, nota: `Pagadas ${formatearPiezas(piezasPag)} · facturadas ${formatearPiezas(piezasFac)}` },
-          { id: 'sal', etiqueta: `Cuenta con ${c.proveedor.nombre} (${palabra})`, valor: <CifraComprobada texto={m(posicion < 0n ? -posicion : posicion)} cifra={`proveedor:posicion:${c.proveedor.nombre}`} comprobacion="cuadra" />, categoria: 7 },
+          { id: 'sal', etiqueta: `Cuenta con ${c.proveedor.nombre} (${palabra})`, valor: <CifraComprobada texto={m(posicion < 0n ? -posicion : posicion)} cifra={`proveedor:deuda:${c.proveedor.nombre}`} comprobacion="cuadra" />, categoria: 7 },
         ]}
       />
 

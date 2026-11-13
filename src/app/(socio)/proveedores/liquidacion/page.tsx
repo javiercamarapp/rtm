@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { sumarDias } from '@/dominio/calendario';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
@@ -30,7 +31,7 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
   const [h, cierres] = await Promise.all([lector.hojaProveedor(proveedor, semana, ambito), lector.liquidacionesProveedor(proveedor)]);
   const t = h.totales;
   const c = h.comprobaciones;
-  const hv = armarHojaProveedor(h);
+  const hv = armarHojaProveedor(h, await (await dropshippingDeSocio()).socioMenudeo());
   const hojaCuadra = c.cuadra && hv.cuadraConLibro;
   const enlace = (extra: Record<string, string>) => `/proveedores/liquidacion?${new URLSearchParams({ p: proveedor, semana: h.semana_ini, ambito, ...extra }).toString()}`;
   const guias = h.renglones.filter((r) => r.guia_cent > 0n || r.guia_pendiente);
@@ -96,7 +97,7 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
       />
 
       <Rejilla dividir="6-6">
-        <Tarjeta titulo="De dónde sale lo que falta" descripcion={hv.nota}>
+        <Tarjeta titulo="De dónde sale lo que falta" descripcion={hv.separacion ? `${hv.nota} ${hv.separacion}.` : hv.nota}>
           <Cascada titulo="Cascada de la liquidación" descripcion={`Falta por saldar ${m(t.falta_por_saldar_cent)} desde un saldo anterior de ${m(t.saldo_anterior_cent)}.`} pasos={pasos} unidad="Pesos" />
         </Tarjeta>
         <Tarjeta titulo="Comprobaciones por dos vías" descripcion="Cada cifra se calcula de dos maneras independientes">

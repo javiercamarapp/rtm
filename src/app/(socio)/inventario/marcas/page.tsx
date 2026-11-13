@@ -17,9 +17,9 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   const sp = await searchParams;
   const per = periodo(sp, 30);
   const r0 = await (await datosDeSocio()).resumenMarcas(per.ini, per.fin);
-  // Una sola verdad: la cuenta con cada proveedor es su posicion completa del libro (no solo la cuenta corriente).
+  // Una sola verdad: la cuenta con cada proveedor es la deuda de la empresa segun el libro (sin los pedidos del socio de menudeo pendientes), no solo la cuenta corriente.
   const lector = await operacionDeSocio();
-  const posiciones = new Map(await Promise.all((['Isaac', 'Karen'] as const).map(async (n) => [n, (await lector.cuentaProveedor(n)).posicion_cent] as const)));
+  const posiciones = new Map(await Promise.all((['Isaac', 'Karen'] as const).map(async (n) => [n, (await lector.cuentaProveedor(n)).posicion.posicion_empresa_cent] as const)));
   const r = { ...r0, cuentas_proveedor: r0.cuentas_proveedor.map((c) => { const pos = posiciones.get(c.proveedor as 'Isaac' | 'Karen'); return pos === undefined ? c : { ...c, saldo_cent: pos, etiqueta: pos > 0n ? 'A favor' : pos < 0n ? 'Se debe' : 'Saldo cero' }; }) };
   const total = r.marcas.reduce((a, x) => a + x.valor_cent, 0n);
   const piezas = r.marcas.reduce((a, x) => a + x.piezas, 0);
@@ -40,7 +40,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
         { id: 'v', etiqueta: 'Valor total', valor: sd ? null : m(total), categoria: 2, nota: sd ? undefined : `${pz(piezas)} piezas` },
         { id: 'may', etiqueta: 'Marca de mayor valor', valor: mayor ? mayor.marca : null, categoria: 3, nota: mayor ? `${m(mayor.valor_cent)} · ${pctTexto(partePct(mayor.valor_cent, total)) ?? ''}` : undefined },
         { id: 'cov', etiqueta: 'Marca con menor cobertura', valor: menorCob ? menorCob.marca : null, categoria: 4, nota: menorCob ? textoDias(menorCob.cobertura_media_dias) : undefined },
-        { id: 'deu', etiqueta: 'Deuda con proveedores', valor: r.cuentas_proveedor.length === 0 ? null : m(deuda), categoria: 5, nota: 'Suma de saldos que se deben' },
+        { id: 'deu', etiqueta: 'Deuda con proveedores', valor: r.cuentas_proveedor.length === 0 ? null : m(deuda), categoria: 5, nota: 'Deuda de la empresa; sin pedidos del socio pendientes' },
       ]} />
       {!sd && (
         <Rejilla dividir="4-4-4">
@@ -76,7 +76,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           totales={{ etiqueta: 'Total', celdas: { pz: pz(piezas), v: m(total), en: pz(r.marcas.reduce((a, x) => a + x.entradas, 0)), sl: pz(r.marcas.reduce((a, x) => a + x.salidas, 0)), pc: sd ? null : '100 %' } }}
         />
       </Tarjeta>
-      <Tarjeta plana className="rtm-a2-tabla" titulo="Cuenta con cada proveedor" descripcion="Posición completa con cada proveedor, la misma del libro (positivo = a favor, negativo = se le debe)">
+      <Tarjeta plana className="rtm-a2-tabla" titulo="Cuenta con cada proveedor" descripcion="Deuda de la empresa con cada proveedor según el libro, sin los pedidos del socio de menudeo pendientes (positivo = a favor, negativo = se le debe)">
         <DataTable etiqueta="Cuenta con proveedores" clave={(c) => c.proveedor} filas={r.cuentas_proveedor} densidad="densa" plana
           vacio={{ titulo: 'Sin proveedores', texto: 'No hay cuentas de proveedor.' }}
           columnas={[{ id: 'p', titulo: 'Proveedor', celda: (c) => c.proveedor }, { id: 's', titulo: 'Posición', numerica: true, celda: (c) => m(c.saldo_cent) }, { id: 'e', titulo: 'Estado', celda: (c) => c.etiqueta }]} />

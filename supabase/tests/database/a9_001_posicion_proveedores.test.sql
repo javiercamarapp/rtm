@@ -110,5 +110,47 @@ select is((api.proveedor_hoja('Karen', (select sem from _f))->'totales'->>'falta
 select is((api.proveedor_hoja('Karen', (select sem from _f))->'totales'->>'diferencia_libro_cent')::bigint, 2500::bigint, 'y dice la diferencia contra el libro: 2,500');
 select is((api.proveedor_hoja('Karen', (select sem from _f))->'comprobaciones'->>'libro_igual_hoja')::boolean, false, 'la hoja ya no se declara cuadrada con el libro');
 select is((api.proveedor_hoja('Karen', (select sem from _f))->'comprobaciones'->>'cuadra')::boolean, true, 'las comprobaciones internas de la hoja no cambian');
+
+-- ---------------------------------------------------------------------------
+-- Pedidos a costo del socio de menudeo (Angelo): el libro los suma al proveedor, pero lo pendiente NO es deuda de la empresa.
+-- Isaac: Angelo pide 10 pzas a 50.00 = 500.00 (pendiente de pago). Karen: Angelo pide 20 pzas a 10.00 = 200.00 y lo paga (queda en cero).
+-- ---------------------------------------------------------------------------
+create function pg_temp.como(p text) returns void language sql as
+  $$ select set_config('request.jwt.claim.sub', case $1 when 'Angelo' then '99999999-9999-9999-9999-9999999999a1' else '99999999-9999-9999-9999-9999999999a2' end, true) $$;
+select pg_temp.como('Angelo');
+select catalogo.asegurar_cliente('PQ Stock Angelo', 'Angelo');
+select pg_temp.dia((select sem from _f));
+select operacion.ds_crear_pedido('pq-a1', pg_temp.cli('PQ Stock Angelo'), '[{"modelo":"PQ Modelo","sabor":"Uva","piezas":10}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, (select sem from _f));
+select operacion.confirmar_pedido('pq-a1-c', pg_temp.ped('pq-a1:ped'));
+select operacion.enviar_pedido('pq-a1-e', pg_temp.ped('pq-a1:ped'), null, null, null, true);
+select operacion.ds_crear_pedido('pq-a2', pg_temp.cli('PQ Stock Angelo'), '[{"modelo":"PQ Modelo","sabor":"Uva","piezas":20}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, (select sem from _f));
+select operacion.confirmar_pedido('pq-a2-c', pg_temp.ped('pq-a2:ped'));
+select operacion.enviar_pedido('pq-a2-e', pg_temp.ped('pq-a2:ped'), null, null, null, true);
+select operacion.ds_pagar_pedido_menudeo('pq-a2-p', pg_temp.ped('pq-a2:ped'), 'proveedor');
+select pg_temp.como('Javier');
+set constraints all immediate;
+select contabilidad.asentar_pendientes();
+
+select is((api.proveedor_cuenta('Isaac')->>'posicion_cent')::bigint, -600000::bigint, 'Isaac: el libro suma el pedido de Angelo: total con el proveedor 6,000.00');
+select is((api.proveedor_cuenta('Isaac')->'posicion'->>'menudeo_pendiente_cent')::bigint, 50000::bigint, 'Isaac: pedido de Angelo pendiente de pago 500.00');
+select is((api.proveedor_cuenta('Isaac')->'posicion'->>'deuda_empresa_cent')::bigint, 550000::bigint, 'Isaac: deuda de la empresa 5,500.00 (sin el pedido de Angelo)');
+select is((api.proveedor_cuenta('Isaac')->'posicion'->>'deuda_empresa_cent')::bigint + (api.proveedor_cuenta('Isaac')->'posicion'->>'menudeo_pendiente_cent')::bigint, (api.proveedor_cuenta('Isaac')->'posicion'->>'se_debe_cent')::bigint, 'Isaac: deuda de la empresa + pedidos de Angelo pendientes = total del libro');
+select is((api.proveedor_cuenta('Isaac')->'posicion'->>'cuadra_auxiliar')::boolean, true, 'Isaac: libro y auxiliar siguen cuadrando con el pedido de Angelo');
+select is((api.proveedor_cuenta('Karen')->'posicion'->>'menudeo_pendiente_cent')::bigint, 0::bigint, 'Karen: el pedido de Angelo ya esta pagado, nada pendiente');
+select is((api.proveedor_cuenta('Karen')->'posicion'->>'menudeo_costo_cent')::bigint, 20000::bigint, 'Karen: costo del pedido de Angelo 200.00');
+select is((api.proveedor_cuenta('Karen')->'posicion'->>'menudeo_pagado_cent')::bigint, 20000::bigint, 'Karen: pagado 200.00');
+select is((api.proveedor_cuenta('Karen')->>'posicion_cent')::bigint, -56500::bigint, 'Karen: el total del libro no cambia por un pedido de Angelo ya pagado');
+select is((api.proveedor_cuenta('Karen')->'posicion'->>'deuda_empresa_cent')::bigint, 56500::bigint, 'Karen: deuda de la empresa = total del libro');
+select is((api.pulso()->>'por_pagar_isaac_cent')::bigint, 550000::bigint, 'Inicio: Por pagar a Isaac es la deuda de la empresa');
+select is((api.pulso()->>'por_pagar_isaac_socio_cent')::bigint, 50000::bigint, 'Inicio: aparte, el pedido de Angelo pendiente');
+select is((api.proveedor_hoja('Isaac', (select sem from _f))->'totales'->>'falta_por_saldar_cent')::bigint, 600000::bigint, 'hoja Isaac: falta por saldar = total del libro 6,000.00');
+select is((api.proveedor_hoja('Isaac', (select sem from _f))->'totales'->>'menudeo_pendiente_cent')::bigint, 50000::bigint, 'hoja Isaac: pedido de Angelo pendiente 500.00');
+select is((api.proveedor_hoja('Isaac', (select sem from _f))->'totales'->>'deuda_empresa_cent')::bigint, 550000::bigint, 'hoja Isaac: deuda de la empresa 5,500.00');
+select is((api.proveedor_hoja('Isaac', (select sem from _f))->'comprobaciones'->>'libro_igual_hoja')::boolean, true, 'hoja Isaac: sigue cuadrando con el libro');
+select is(api.explicar_cifra('proveedor:deuda:Isaac')->>'valor', '-550000', 'explicar: deuda de la empresa con Isaac');
+select is((api.explicar_cifra('proveedor:deuda:Isaac')->'comprobacion'->>'cuadra')::boolean, true, 'explicar: la deuda de la empresa cuadra por dos vias');
+select is(api.explicar_cifra('proveedor:posicion:Isaac')->>'valor', '-600000', 'explicar: el total con el proveedor sigue siendo el del libro');
+select is(jsonb_array_length(api.ds_menudeo('Angelo', null, null, 'Isaac')->'filas'), 1, 'el desglose por pedido de Angelo con Isaac trae su pedido');
+select is((api.ds_menudeo('Angelo', null, null, 'Isaac')->'totales'->>'pendiente_cent')::bigint, 50000::bigint, 'y su pendiente coincide con la posicion');
 select * from finish();
 rollback;

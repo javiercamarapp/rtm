@@ -13,7 +13,8 @@
 create function operacion.posicion_proveedor(p_proveedor bigint, p_hasta date default null) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
-declare v_cta text := contabilidad.cta_proveedor(p_proveedor); v_cargos bigint; v_abonos bigint; v_saldo bigint; v_aux bigint; v_pos bigint;
+declare v_cta text := contabilidad.cta_proveedor(p_proveedor); v_cargos bigint; v_abonos bigint; v_saldo bigint; v_aux bigint; v_pos bigint; v_nom text;
+  v_m_n int; v_m_costo bigint; v_m_pag bigint; v_m_pen bigint; v_m_venc bigint; v_emp bigint;
 begin
   select coalesce(sum(l.haber_cent), 0)::bigint, coalesce(sum(l.debe_cent), 0)::bigint into v_cargos, v_abonos
     from contabilidad.asiento_linea l join contabilidad.asiento a on a.id = l.asiento_id
@@ -24,12 +25,21 @@ begin
   v_saldo := contabilidad.saldo(v_cta, p_hasta);
   v_pos := -v_saldo;
   v_aux := case when p_hasta is null then operacion.ds_posicion_proveedor(p_proveedor) end;
+  -- Pedidos a costo de un socio de menudeo (Angelo) ya enviados con este proveedor: el libro los suma a lo que se le debe al proveedor, pero son a cuenta del socio
+  -- (los reembolsa); lo que aun no paga NO es deuda de la empresa. Solo presentacion: el libro no cambia.
+  select nombre into v_nom from catalogo.proveedor where id = p_proveedor;
+  select count(*)::int, coalesce(sum(f.costo_cent), 0)::bigint, coalesce(sum(f.pagado_cent), 0)::bigint, coalesce(sum(f.pendiente_cent), 0)::bigint, coalesce(sum(f.pendiente_cent) filter (where f.vencido), 0)::bigint
+    into v_m_n, v_m_costo, v_m_pag, v_m_pen, v_m_venc
+    from operacion.ds_menudeo_filas(null, null, p_hasta, v_nom, null) f where f.estado = 'enviado';
+  v_emp := v_pos + v_m_pen;
   return jsonb_build_object(
     'posicion_cent', v_pos,
     'se_debe_cent', greatest(-v_pos, 0), 'a_favor_cent', greatest(v_pos, 0),
     'cargos_cent', v_cargos, 'abonos_cent', v_abonos,
     'desglose_cuadra', v_cargos - v_abonos = v_saldo,
-    'auxiliar_cent', v_aux, 'cuadra_auxiliar', case when v_aux is null then null else v_aux = v_pos end);
+    'auxiliar_cent', v_aux, 'cuadra_auxiliar', case when v_aux is null then null else v_aux = v_pos end,
+    'menudeo_pedidos', v_m_n, 'menudeo_costo_cent', v_m_costo, 'menudeo_pagado_cent', v_m_pag, 'menudeo_pendiente_cent', v_m_pen, 'menudeo_vencido_cent', v_m_venc,
+    'posicion_empresa_cent', v_emp, 'deuda_empresa_cent', greatest(-v_emp, 0), 'a_favor_empresa_cent', greatest(v_emp, 0));
 end $$;
 revoke execute on function operacion.posicion_proveedor(bigint, date) from public, anon, authenticated;
 
@@ -65,7 +75,7 @@ declare
   v_prov bigint; v_ini date := operacion.semana_omar_ini(p_semana_ini); v_fin date := operacion.semana_omar_ini(p_semana_ini) + 4; v_desde date := operacion.semana_omar_ini(p_semana_ini) - 2;
   v_origenes text[]; v_seguro bigint; v_rengs jsonb; v_abonos jsonb; v_ajustes jsonb; v_mercancia bigint; v_seguros bigint; v_guias bigint; v_pagos bigint; v_ajus bigint; v_ant bigint;
   v_m2 bigint; v_g2 bigint; v_s2 bigint; v_falta bigint; v_dicho operacion.proveedor_dicho; v_liq operacion.liquidacion_proveedor; v_pagos_conc jsonb; v_conc jsonb; v_dif bigint;
-  v_cuadra_rengs boolean; v_cuadra_abonos boolean; v_pagos2 bigint; v_cta text; v_libro bigint; v_dif_libro bigint;
+  v_cuadra_rengs boolean; v_cuadra_abonos boolean; v_pagos2 bigint; v_cta text; v_libro bigint; v_dif_libro bigint; v_m_pen bigint;
 begin
   if p_ambito not in ('sociedad', 'todo') then raise exception 'ambito invalido' using errcode = '22023'; end if;
   v_prov := catalogo.proveedor_id(p_proveedor);
@@ -165,6 +175,8 @@ begin
   -- Comprobacion contra el libro: el saldo del Mayor al corte de la hoja (viernes) debe ser el mismo; si no, la diferencia se dice.
   v_libro := contabilidad.saldo(v_cta, v_fin);
   v_dif_libro := v_libro - v_falta;
+  -- Pedidos a costo del socio de menudeo ya enviados con este proveedor y aun pendientes de pago (a su cuenta, no deuda de la empresa).
+  select coalesce(sum(f.pendiente_cent), 0)::bigint into v_m_pen from operacion.ds_menudeo_filas(null, null, v_fin, p_proveedor, null) f where f.estado = 'enviado';
 
   select * into v_dicho from operacion.proveedor_dicho where proveedor_id = v_prov and semana_ini = v_ini and ambito = p_ambito order by id desc limit 1;
   select * into v_liq from operacion.liquidacion_proveedor where proveedor_id = v_prov and semana_ini = v_ini and ambito = p_ambito;
@@ -183,7 +195,8 @@ begin
     'renglones', v_rengs, 'abonos', v_abonos, 'ajustes', v_ajustes, 'pagos_por_concepto_cent', v_pagos_conc,
     'totales', jsonb_build_object('saldo_anterior_cent', v_ant, 'mercancia_cent', v_mercancia, 'seguros_cent', v_seguros, 'guias_cent', v_guias, 'costo_total_cent', v_mercancia + v_seguros + v_guias,
                                   'pagos_cent', v_pagos, 'ajustes_cent', v_ajus, 'falta_por_saldar_cent', v_falta,
-                                  'libro_al_corte_cent', v_libro, 'diferencia_libro_cent', v_dif_libro),
+                                  'libro_al_corte_cent', v_libro, 'diferencia_libro_cent', v_dif_libro,
+                                  'menudeo_pendiente_cent', v_m_pen, 'deuda_empresa_cent', greatest(v_falta - v_m_pen, 0), 'menudeo_vigente', negocio.hoy() between v_desde and v_fin + 2),
     'comprobaciones', jsonb_build_object(
       'libro_aplica', p_ambito = 'sociedad', 'libro_igual_hoja', v_dif_libro = 0,
       'renglon_igual_detalle', v_cuadra_rengs,
@@ -207,21 +220,112 @@ as $$
 declare
   partes text[] := string_to_array(p_cifra, ':'); v_prov bigint; v_p jsonb; v_rengs jsonb; v_cc bigint; v_dir bigint;
 begin
-  if partes[1] = 'proveedor' and partes[2] = 'posicion' and partes[3] in ('Isaac', 'Karen') then
+  if partes[1] = 'proveedor' and partes[2] in ('posicion', 'deuda') and partes[3] in ('Isaac', 'Karen') then
     perform seguridad.exigir_rol(array['socio']);
     v_prov := catalogo.proveedor_id(partes[3]);
     v_p := operacion.posicion_proveedor(v_prov);
     v_cc := operacion.saldo_proveedor(v_prov);
     v_dir := v_cc - (v_p->>'posicion_cent')::bigint;
+    if partes[2] = 'posicion' then
+      v_rengs := jsonb_build_array(
+        jsonb_build_object('concepto', 'Cuenta corriente: pagos, abonos, ajustes y ordenes de compra (+ a favor, - se debe)', 'monto_cent', v_cc),
+        jsonb_build_object('concepto', 'Costo de pedidos directos enviados y otros cargos del libro que la cuenta corriente no incluye', 'monto_cent', -v_dir));
+      return jsonb_build_object('cifra', p_cifra, 'titulo', 'Total con ' || partes[3] || ' segun el libro (+ a favor de la sociedad, - se le debe)', 'valor', (v_p->>'posicion_cent')::bigint, 'unidad', 'mxn',
+        'comprobacion', jsonb_build_object('via1', 'Libro: cuenta ' || contabilidad.cta_proveedor(v_prov) || ' (abonos menos cargos)', 'via1_valor', (v_p->>'posicion_cent')::bigint,
+          'via2', 'Auxiliar: cuenta corriente menos el costo de los pedidos directos', 'via2_valor', (v_p->>'auxiliar_cent')::bigint, 'cuadra', coalesce((v_p->>'cuadra_auxiliar')::boolean, false)),
+        'renglones', v_rengs, 'movimientos', '[]'::jsonb);
+    end if;
     v_rengs := jsonb_build_array(
-      jsonb_build_object('concepto', 'Cuenta corriente: pagos, abonos, ajustes y ordenes de compra (+ a favor, - se debe)', 'monto_cent', v_cc),
-      jsonb_build_object('concepto', 'Costo de pedidos directos enviados y otros cargos del libro que la cuenta corriente no incluye', 'monto_cent', -v_dir));
-    return jsonb_build_object('cifra', p_cifra, 'titulo', 'Posicion con ' || partes[3] || ' (+ a favor de la sociedad, - se le debe)', 'valor', (v_p->>'posicion_cent')::bigint, 'unidad', 'mxn',
-      'comprobacion', jsonb_build_object('via1', 'Libro: cuenta ' || contabilidad.cta_proveedor(v_prov) || ' (abonos menos cargos)', 'via1_valor', (v_p->>'posicion_cent')::bigint,
-        'via2', 'Auxiliar: cuenta corriente menos el costo de los pedidos directos', 'via2_valor', (v_p->>'auxiliar_cent')::bigint, 'cuadra', coalesce((v_p->>'cuadra_auxiliar')::boolean, false)),
+      jsonb_build_object('concepto', 'Total con el proveedor segun el libro (+ a favor, - se le debe)', 'monto_cent', (v_p->>'posicion_cent')::bigint),
+      jsonb_build_object('concepto', 'Mas: pedidos de menudeo del socio pendientes de pago (a su cuenta, no son deuda de la empresa)', 'monto_cent', (v_p->>'menudeo_pendiente_cent')::bigint));
+    return jsonb_build_object('cifra', p_cifra, 'titulo', 'Deuda de la empresa con ' || partes[3] || ' (+ a favor de la empresa, - se le debe), sin los pedidos pendientes del socio de menudeo', 'valor', (v_p->>'posicion_empresa_cent')::bigint, 'unidad', 'mxn',
+      'comprobacion', jsonb_build_object('via1', 'Libro mas pedidos del socio pendientes', 'via1_valor', (v_p->>'posicion_empresa_cent')::bigint,
+        'via2', 'Auxiliar mas pedidos del socio pendientes', 'via2_valor', (v_p->>'auxiliar_cent')::bigint + (v_p->>'menudeo_pendiente_cent')::bigint, 'cuadra', coalesce((v_p->>'cuadra_auxiliar')::boolean, false)),
       'renglones', v_rengs, 'movimientos', '[]'::jsonb);
   end if;
   return api.explicar_cifra_antes_posicion_proveedor(p_cifra);
 end $$;
 grant execute on function api.explicar_cifra(text) to authenticated;
 revoke execute on function api.explicar_cifra(text) from public, anon;
+
+-- Telegram: la consulta de la cuenta con un proveedor deja de mostrar solo la cuenta corriente (y con el signo al reves) y da la deuda de la empresa, los pedidos del socio y el total del libro.
+create or replace function agente.consulta(p_tipo text, p_modelo bigint default null, p_sujeto text default null) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare v_res jsonb; v_socio bigint; v_nombre text; v_hoy date := negocio.hoy(); v_ini date; v_u jsonb; v_total bigint;
+begin
+  perform notificacion.exigir_sistema();
+  if p_tipo = 'inventario' then
+    select jsonb_build_object('titulo', 'Existencia', 'lineas', coalesce(jsonb_agg(jsonb_build_object('etiqueta', m.nombre_canonico, 'piezas', e.piezas) order by m.nombre_canonico), '[]'::jsonb)) into v_res
+      from operacion.existencia_modelo e join catalogo.modelo m on m.id = e.modelo_id where e.piezas > 0 and (p_modelo is null or m.id = p_modelo);
+  elsif p_tipo = 'socios' then
+    v_res := jsonb_build_object('titulo', 'Cuenta entre socios', 'lineas', jsonb_build_array(
+      jsonb_build_object('etiqueta', 'Javier le debe a Angelo', 'centavos', (operacion.posicion_socios() ->> 'javier_debe_a_angelo_cent')::bigint)));
+  elsif p_tipo = 'cuenta_cliente' then
+    select jsonb_build_object('titulo', 'Saldo de ' || c.nombre_canonico, 'lineas', jsonb_build_array(jsonb_build_object('etiqueta', 'Por cobrar', 'centavos', operacion.saldo_cliente(c.id)))) into v_res
+      from catalogo.cliente c where c.id = p_modelo;
+  elsif p_tipo = 'proveedor' then
+    -- Posicion completa del libro, separando los pedidos a costo del socio de menudeo que aun no paga (positivo: a favor de la sociedad; negativo: se le debe).
+    select jsonb_build_object('titulo', 'Cuenta con ' || p.nombre, 'lineas', jsonb_build_array(
+             jsonb_build_object('etiqueta', 'Deuda de la empresa (negativo: se le debe)', 'centavos', (operacion.posicion_proveedor(p.id)->>'posicion_empresa_cent')::bigint),
+             jsonb_build_object('etiqueta', 'Pedidos de menudeo del socio pendientes de pago (a su cuenta)', 'centavos', (operacion.posicion_proveedor(p.id)->>'menudeo_pendiente_cent')::bigint),
+             jsonb_build_object('etiqueta', 'Total segun el libro (negativo: se le debe)', 'centavos', (operacion.posicion_proveedor(p.id)->>'posicion_cent')::bigint))) into v_res
+      from catalogo.proveedor p where p.nombre = initcap(p_sujeto);
+  elsif p_tipo = 'estado_socio' then
+    select id, nombre into v_socio, v_nombre from catalogo.socio where nombre = initcap(p_sujeto);
+    if v_socio is null then raise exception 'socio desconocido: dime si es Angelo o Javier' using errcode = '22023'; end if;
+    v_res := jsonb_build_object('titulo', 'Estado de cuenta de ' || v_nombre, 'lineas', jsonb_build_array(
+      jsonb_build_object('etiqueta', 'Posicion neta', 'centavos', operacion.neto_socio(v_socio)),
+      jsonb_build_object('etiqueta', 'Reembolso pendiente', 'centavos', operacion.reembolso_pendiente(v_socio)),
+      jsonb_build_object('etiqueta', 'Aportacion pendiente de devolver', 'centavos', operacion.aportacion_pendiente(v_socio)),
+      jsonb_build_object('etiqueta', 'Capital aportado', 'centavos', operacion.aportado_socio(v_socio, 'capital')),
+      jsonb_build_object('etiqueta', 'Utilidad asignada por distribuir', 'centavos', operacion.utilidad_por_distribuir(v_socio)),
+      jsonb_build_object('etiqueta', 'Lo que debe a la sociedad', 'centavos', operacion.saldo_socio(v_socio))));
+  elsif p_tipo = 'utilidad' then
+    v_ini := case lower(coalesce(p_sujeto, 'mes')) when 'hoy' then v_hoy when 'semana' then v_hoy - 6 else date_trunc('month', v_hoy)::date end;
+    v_u := operacion.utilidad_periodo(v_ini, v_hoy);
+    v_res := jsonb_build_object('titulo', 'Utilidad operativa (' || coalesce(p_sujeto, 'mes') || ')', 'lineas', jsonb_build_array(
+      jsonb_build_object('etiqueta', 'Utilidad de pedidos', 'centavos', (v_u ->> 'utilidad_pedidos_cent')::bigint),
+      jsonb_build_object('etiqueta', 'Utilidad de tomas de Omar', 'centavos', (v_u ->> 'utilidad_tomas_cent')::bigint),
+      jsonb_build_object('etiqueta', 'Gastos generales', 'centavos', (v_u ->> 'gastos_cent')::bigint),
+      jsonb_build_object('etiqueta', 'Utilidad operativa', 'centavos', (v_u ->> 'utilidad_cent')::bigint),
+      jsonb_build_object('etiqueta', 'Nota', 'texto', case when (v_u ->> 'provisional')::boolean then 'Aproximacion operativa y provisional: hay pedidos con costos por confirmar.' else 'Aproximacion operativa; la cifra contable esta en el software.' end)));
+  elsif p_tipo = 'cartera' then
+    select coalesce(sum(s.saldo), 0)::bigint into v_total from (select operacion.saldo_cliente(c.id) + coalesce(operacion.apertura_cxc_cliente(c.id), 0) as saldo from catalogo.cliente c where c.activo) s where s.saldo > 0;
+    v_res := jsonb_build_object('titulo', 'Cuanto debe cada cliente', 'lineas',
+      coalesce((select jsonb_agg(jsonb_build_object('etiqueta', q.nombre, 'centavos', q.saldo) order by q.saldo desc, q.nombre)
+                  from (select c.nombre_canonico as nombre, operacion.saldo_cliente(c.id) + coalesce(operacion.apertura_cxc_cliente(c.id), 0) as saldo from catalogo.cliente c where c.activo) q where q.saldo > 0), '[]'::jsonb)
+      || jsonb_build_array(jsonb_build_object('etiqueta', 'Total por cobrar', 'centavos', v_total)));
+  else
+    raise exception 'consulta desconocida' using errcode = '22023';
+  end if;
+  return coalesce(v_res, jsonb_build_object('titulo', 'Sin datos', 'lineas', '[]'::jsonb));
+end $$;
+
+-- Inicio: Por pagar a Isaac es la deuda de la empresa (sin los pedidos pendientes del socio de menudeo, que van aparte).
+create or replace function api.pulso() returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare
+  v_isaac bigint := catalogo.proveedor_id('Isaac'); v_cxc bigint; v_cxc_ap bigint; v_hay_ap boolean; v_pedidos int; v_neto_a bigint; v_neto_j bigint; v_ia bigint; v_ij bigint; v_val bigint; v_pz bigint; v_mov int; v_socios_hay boolean;
+begin
+  perform seguridad.exigir_rol(array['socio']);
+  select count(*) into v_pedidos from operacion.pedido where estado = 'enviado';
+  select coalesce(sum(greatest(operacion.pedido_saldo(pe.id), 0)), 0) into v_cxc from operacion.pedido pe where pe.estado = 'enviado';
+  select coalesce(sum(greatest(a.saldo_cent, 0)), 0), count(*) > 0 into v_cxc_ap, v_hay_ap from operacion.cxc_apertura() a;
+  select id into v_ia from catalogo.socio where nombre = 'Angelo';
+  select id into v_ij from catalogo.socio where nombre = 'Javier';
+  v_neto_a := operacion.neto_socio(v_ia); v_neto_j := operacion.neto_socio(v_ij);
+  v_socios_hay := exists (select 1 from operacion.aportacion_socio) or exists (select 1 from operacion.cuenta_socio_mov) or exists (select 1 from operacion.compra where estado not in ('borrador', 'anulada'));
+  select coalesce(sum(piezas), 0), coalesce(sum(valor_cent), 0), count(*) into v_pz, v_val, v_mov from operacion.existencia_modelo;
+  return jsonb_build_object(
+    -- Por pagar a Isaac = deuda de la EMPRESA: el total del libro (2110) menos los pedidos a costo del socio de menudeo aun sin pagar (a su cuenta). Aparte, esos pedidos.
+    'por_pagar_isaac_cent', case when exists (select 1 from operacion.cuenta_proveedor_mov where proveedor_id = v_isaac) or exists (select 1 from operacion.compra where proveedor_id = v_isaac and estado not in ('borrador', 'anulada')) or contabilidad.saldo(contabilidad.cta_proveedor(v_isaac)) <> 0
+                                 then (operacion.posicion_proveedor(v_isaac)->>'deuda_empresa_cent')::bigint end,
+    'por_pagar_isaac_socio_cent', (operacion.posicion_proveedor(v_isaac)->>'menudeo_pendiente_cent')::bigint,
+    'por_cobrar_cent', case when v_pedidos > 0 or v_hay_ap then v_cxc + v_cxc_ap end,
+    'entre_socios', case when v_socios_hay then jsonb_build_object(
+        'socio', case when v_neto_a >= v_neto_j then 'Angelo' else 'Javier' end,
+        'diferencia_cent', greatest(v_neto_a, v_neto_j) - least(v_neto_a, v_neto_j)) end,
+    'en_bodega', case when v_mov > 0 then jsonb_build_object('piezas', v_pz, 'valor_cent', v_val) end);
+end $$;
