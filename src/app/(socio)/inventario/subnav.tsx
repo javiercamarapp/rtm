@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Pestanas } from '@/ui/componentes/controles';
 
 const PAGINAS = [
   { href: '/inventario', etiqueta: 'Existencia y cobertura', id: 'existencia' },
@@ -17,14 +17,9 @@ const PAGINAS = [
 export function SubnavInventario() {
   const ruta = usePathname();
   return (
-    <nav className="rtm-subnav" aria-label="Inventario">
-      <ul>
-        {PAGINAS.map((p) => (
-          <li key={p.href}>
-            <Link href={p.href} aria-current={ruta === p.href ? 'page' : undefined} data-testid={`inventario-${p.id}`}>{p.etiqueta}</Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <Pestanas
+      etiquetaAria="Inventario"
+      items={PAGINAS.map((p) => ({ id: p.id, etiqueta: p.etiqueta, href: p.href, activa: ruta === p.href, testid: `inventario-${p.id}` }))}
+    />
   );
 }

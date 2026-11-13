@@ -7,7 +7,6 @@ import { Logo, LogoMarca } from '@/ui/logo/logo';
 import { LoginArtwork } from '@/ui/login/artwork';
 import { respuestaOtp, conPisoDeTiempo } from './respuesta_otp';
 import { BotonLogin } from './boton-login';
-import { fraunces, instrument, plexMono } from './fuentes';
 import './login.css';
 import './login-tokens.css';
 
@@ -33,13 +32,18 @@ export default async function Login({
     'use server';
     const dest = destinoSeguro(String(formData.get('next') ?? '/'));
     // Al exceder el limite por IP se responde el error GENERICO, no «vas muy rapido»: la diferencia le diria a quien prueba correos cuando dejo de contar.
-    if (!(await ipDentroDelLimite())) redirect(`/login?next=${encodeURIComponent(dest)}&error=1`);
     const email = String(formData.get('email') ?? '').trim();
     if (!email) redirect(`/login?next=${encodeURIComponent(dest)}&error=1`);
-    // La respuesta es identica en TEXTO y en TIEMPO para un correo con cuenta y uno sin ella (piso de 1,500 ms). Los topes por correo
-    // y globales viven dentro de `pedirEnlace`: al excederse NO se manda nada y se responde igual que un envio exitoso.
-    const { error } = await conPisoDeTiempo(() => pedirEnlace(email, dest));
-    if (respuestaOtp(error) === 'error') redirect(`/login?next=${encodeURIComponent(dest)}&error=1`);
+    // La respuesta es identica en TEXTO y en TIEMPO para un correo con cuenta y uno sin ella (piso de 1,500 ms, que cubre tambien la consulta del
+    // limite por IP). Los topes por correo y globales viven dentro de `pedirEnlace`: al excederse NO se manda nada y se responde igual que un envio exitoso.
+    // Si el limitador no responde (FALLA CERRADO) tampoco se manda nada y se responde exactamente igual que a un correo no permitido.
+    const salida = await conPisoDeTiempo(async () => {
+      const limiteIp = await ipDentroDelLimite();
+      if (limiteIp === 'excedido') return 'excedido' as const;
+      const { error } = await pedirEnlace(email, dest, limiteIp === 'no_disponible');
+      return respuestaOtp(error);
+    });
+    if (salida !== 'enviado') redirect(`/login?next=${encodeURIComponent(dest)}&error=1`);
     redirect(`/login?next=${encodeURIComponent(dest)}&enviado=1`);
   }
 
@@ -56,7 +60,7 @@ export default async function Login({
   // Dos columnas: a la IZQUIERDA el panel oscuro con el arte animado (`LoginArtwork`) y a la DERECHA el formulario. El panel solo se
   // muestra desde 1024 px; en el telefono la pantalla es solo el formulario. Sin `style=`: retardos de entrada y tamanos viven en login.css.
   return (
-    <main className={`login tema-neutro ${fraunces.variable} ${instrument.variable} ${plexMono.variable}`}>
+    <main className="login tema-neutro">
       {/* ── COLUMNA DEL FORMULARIO ── */}
       <section className="login-column">
         <div className="login-inner">

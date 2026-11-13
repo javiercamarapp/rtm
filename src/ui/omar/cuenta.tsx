@@ -53,7 +53,7 @@ export function BloqueProyeccion({ proyeccion }: { proyeccion: ResultadoProyecci
       <p className="omar-cifra-valor" data-testid="rango-renta">{formatearMoneda(p.minimo_cent)} a {formatearMoneda(p.maximo_cent)}</p>
       <p className="rtm-nota">Ya devengado {formatearMoneda(p.devengado_cent)} más {formatearPiezas(p.por_enviar_piezas)} por enviar a {formatearMoneda(p.tarifa_cent)} cada una. Si no se envían todas, queda cerca del piso.</p>
       <p className="omar-cifra-etiqueta">Tus tomas autorizadas de la semana</p>
-      <p>{formatearMoneda(p.tomas_cent)}</p>
+      <p className="omar-cifra-media">{formatearMoneda(p.tomas_cent)}</p>
       <p className="omar-cifra-etiqueta">Lo que se te debería pagar al corte (neto estimado)</p>
       <p className="omar-cifra-valor" data-testid="neto-estimado">{formatearMoneda(p.neto_estimado_cent, { conSigno: true })}</p>
       <p className="rtm-nota">Con el piso: {formatearMoneda(p.neto_minimo_cent, { conSigno: true })}. Positivo: los socios te pagan. Negativo: tú pagas a los socios. Es una estimación, no un saldo; el cierre del lunes fija la cifra real.</p>

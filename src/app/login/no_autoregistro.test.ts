@@ -23,18 +23,22 @@ describe('/login no se autoregistra ni se queda sin limite', () => {
     for (const f of [PAGINA, LIMITADOR, AUTENTICADOR]) expect(f).not.toMatch(/redis|upstash/i);
   });
 
-  it('con la base caida, login falla ABIERTO (valvula de escape): es la unica via de entrada', () => {
-    expect(LIMITADOR).toMatch(/Falla ABIERTO/);
-    expect(LIMITADOR).toMatch(/if \(!Number\.isFinite\(n\)\) return false/);
-    expect(LIMITADOR).toMatch(/catch \{\s*return false;/);
+  it('con la base caida, login falla CERRADO (decision del dueno, 13-nov): el limitador lanza y nunca devuelve false por un error', () => {
+    expect(LIMITADOR).toMatch(/FALLA CERRADO/);
+    expect(LIMITADOR).not.toMatch(/Falla ABIERTO/);
+    expect(LIMITADOR).toMatch(/if \(!Number\.isFinite\(n\)\) throw new LimitadorNoDisponible/);
+    expect(LIMITADOR).not.toMatch(/catch \{\s*return false;/);
+    expect(LIMITADOR).toMatch(/query_timeout/);
     // Ya no usa la llave anon: se conecta con el rol servidor.
     expect(LIMITADOR).not.toMatch(/ANON_KEY|createClient/);
     expect(LIMITADOR).toMatch(/SERVIDOR_DATABASE_URL/);
   });
 
   it('la decision enviado/error pasa por respuestaOtp y el piso de tiempo', () => {
-    expect(PAGINA).toMatch(/respuestaOtp\(error\) === 'error'/);
-    expect(PAGINA).toMatch(/conPisoDeTiempo\(\(\) => pedirEnlace/);
+    expect(PAGINA).toMatch(/return respuestaOtp\(error\)/);
+    expect(PAGINA).toMatch(/salida !== 'enviado'/);
+    expect(PAGINA).toMatch(/conPisoDeTiempo\(async \(\) =>/);
+    expect(PAGINA).toMatch(/pedirEnlace\(email, dest, limiteIp === 'no_disponible'\)/);
     expect(PAGINA).not.toMatch(/esCorreoSinCuenta/);
     expect(PAGINA).not.toMatch(/otp_disabled/);
   });

@@ -233,10 +233,10 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 /* ---- DataTable v2 (enterprise): densidad, fijados, bloques, grupos, pie de totales, resaltado ---- */
 .rtm-dt-caja { --rtm-fondo-celda: var(--rtm-surface); border-color: var(--rtm-borde-tarjeta); position: relative; }
 .rtm-dt-caja[data-plana] { border: 0; border-radius: 0; }
-.rtm-dt-celda { padding: 0 12px; height: var(--rtm-h-fila); font-size: var(--rtm-t-cuerpo); background: var(--rtm-fondo-celda); }
-.rtm-dt-cabecera .rtm-dt-celda { height: var(--rtm-h-cab-tabla); font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-fuerte); color: var(--rtm-ink-2); background: var(--rtm-tint); border-bottom: 1px solid var(--rtm-line-2); }
-.rtm-dt-caja[data-densidad='densa'] .rtm-dt-celda { height: var(--rtm-h-fila-densa); padding: 0 10px; }
-.rtm-dt-caja[data-densidad='libro'] .rtm-dt-celda { height: var(--rtm-h-fila-libro); padding: 0 8px; font-size: var(--rtm-t-cuerpo); }
+.rtm-dt-celda { padding: 6px 12px; height: var(--rtm-h-fila); font-size: var(--rtm-t-cuerpo); line-height: 1.3; vertical-align: middle; background: var(--rtm-fondo-celda); }
+.rtm-dt-cabecera .rtm-dt-celda { height: var(--rtm-h-cab-tabla); padding-block: 6px; font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-medio); line-height: 1.25; letter-spacing: 0; text-transform: none; vertical-align: middle; color: var(--rtm-th-texto); background: var(--rtm-th-fondo); border-bottom: 1px solid var(--rtm-th-borde); }
+.rtm-dt-caja[data-densidad='densa'] .rtm-dt-celda { height: var(--rtm-h-fila-densa); padding: 4px 10px; }
+.rtm-dt-caja[data-densidad='libro'] .rtm-dt-celda { height: var(--rtm-h-fila-libro); padding: 3px 8px; font-size: var(--rtm-t-cuerpo); }
 .rtm-dt-caja[data-densidad='densa'] .rtm-dt-cabecera .rtm-dt-celda, .rtm-dt-caja[data-densidad='libro'] .rtm-dt-cabecera .rtm-dt-celda { height: 32px; }
 .rtm-dt-fila[hidden] { display: none; }
 .rtm-dt-grupo:last-child .rtm-dt-fila:hover { background: transparent; }
@@ -284,8 +284,8 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-dt-interactiva { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .rtm-dt-barra { display: flex; align-items: center; gap: var(--rtm-e-2); }
 .rtm-dt-barra-espacio { flex: 1; }
-.rtm-dt-busqueda { height: var(--rtm-h-ctl); border-radius: var(--rtm-r-ctl); min-width: 0; width: min(280px, 100%); }
-.rtm-campo-chico { height: var(--rtm-h-ctl-chico); padding: 0 8px; border-radius: var(--rtm-r-ctl); }
+.rtm-dt-busqueda { width: min(280px, 100%); }
+.rtm-campo-chico { height: var(--rtm-ctl-alto-chico); padding: 0 8px; }
 .rtm-paginador-filas { display: inline-flex; align-items: center; gap: 6px; }
 .rtm-tarjeta-v2[data-plana] .rtm-dt-interactiva { gap: 0; }
 .rtm-tarjeta-v2[data-plana] .rtm-dt-barra { padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); }
@@ -309,9 +309,10 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 /* ---- Etapa 3: tablas que caben, indicador de scroll horizontal, tarjeta-fila movil ---- */
 .rtm-dt-env { position: relative; min-width: 0; }
 /* Encabezados en dos lineas (nunca parten una palabra): recortan el ancho de las columnas numericas */
-.rtm-dt-cabecera .rtm-dt-celda { white-space: normal; overflow-wrap: normal; hyphens: none; line-height: 1.2; padding-top: 4px; padding-bottom: 4px; vertical-align: bottom; }
+.rtm-dt-cabecera .rtm-dt-celda { white-space: normal; overflow-wrap: normal; hyphens: none; line-height: 1.25; vertical-align: middle; }
 .rtm-dt-cabecera .rtm-dt-celda[data-num] { white-space: normal; }
 .rtm-dt-trunc { display: inline-block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+.rtm-dt-trunc > .rtm-celda-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rtm-dt-trunc[data-trunc='s'] { max-width: 120px; } .rtm-dt-trunc[data-trunc='m'] { max-width: 200px; }
 .rtm-dt-celda[data-num] .rtm-dt-trunc { text-align: right; }
 
@@ -326,7 +327,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 
 /* Tarjeta-fila movil: <= 767 px, solo en tablas que declaran prioridadMovil */
 @media (max-width: 767px) {
-  .rtm-dt-caja[data-tarjeta-movil] { overflow: visible; border: 0; background: transparent; }
+  .rtm-dt-caja[data-tarjeta-movil] { overflow: visible; max-height: none; border: 0; background: transparent; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt, .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-grupo { display: block; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-cabecera { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-cuerpo { display: flex; flex-direction: column; gap: 8px; }
@@ -364,7 +365,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-dt-bloques .rtm-dt-celda { max-width: 0; overflow: visible; white-space: nowrap; }
 .rtm-dt-grupo-boton { max-width: 100%; min-width: 0; }
 .rtm-dt-grupo-boton > :not(.rtm-dt-flecha) { min-width: 0; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-.rtm-dt-caja[data-densidad='densa'] .rtm-dt-celda { padding: 0 8px; }
+.rtm-dt-caja[data-densidad='densa'] .rtm-dt-celda { padding: 4px 8px; }
 .rtm-dt-fila-grupo .rtm-dt-celda:first-child { max-width: 320px; }
 
 /* BarList en dos columnas (tarjetas de ancho completo) */
@@ -386,6 +387,8 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='detalle'] { grid-column: 1 / -1; color: var(--rtm-ink-2); }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal']::before { content: attr(data-label); display: block; font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal'] { grid-row: 1 / span 2; }
+  /* La insignia de estado ocupa el ancho de su texto (antes su fondo quedaba mas angosto que el texto) */
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-chip-estado { align-self: flex-start; width: max-content; }
 }
 @media (max-width: 767px) {
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:first-child { border-right: 0; }
@@ -420,10 +423,6 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-tarjeta-v2 > .rtm-a1-cuerpo > .rtm-barlist:not([data-columnas='2']) > li { flex: 1 1 auto; max-height: 72px; display: flex; flex-direction: column; justify-content: center; }
 .rtm-tarjeta-v2 > .a3-acciones:last-child { margin-top: auto; }
 
-/* Campos en pantallas tactiles o angostas: 16 px (sin zoom de iOS) y 44 px de alto, tambien en los filtros de A2 y A3 */
-@media (pointer: coarse), (max-width: 767px) {
-  html .a3-filtros-form .rtm-campo, html .rtm-a2-campo > :is(input, select), html .rtm-dt-busqueda, html .rtm-campo-chico { font-size: 16px; min-height: 44px; }
-}
 
 /* Etapa 4: importador, listas de formato y celdas con subtitulo */
 .rtm-lista-formato { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); }
@@ -441,14 +440,9 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-pasos-lista-texto small { color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); }
 @media (max-width: 767px) { .rtm-pasos-lista > li { grid-template-columns: 28px minmax(0, 1fr); } .rtm-pasos-lista-estado { grid-column: 2; } }
 
-/* Filtros en linea de las paginas de lista (contactos) y barra de acciones de seleccion */
-.rtm-filtros-linea { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
-.rtm-filtros-linea .rtm-etiqueta-campo { display: flex; flex-direction: column; gap: 4px; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); min-width: 0; }
-.rtm-filtros-linea .rtm-campo { height: var(--rtm-h-ctl); border-radius: var(--rtm-r-ctl); font-size: var(--rtm-t-cuerpo); }
-.rtm-filtros-linea .rtm-campo-ancho { min-width: min(260px, 100%); flex-grow: 1; }
+/* Barra de acciones de seleccion (contactos). Los filtros en linea viven en controles.css. */
 .rtm-acciones-contactos { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); }
 .rtm-tarjeta-v2[data-plana] > .rtm-paginador { border-top: var(--rtm-borde); }
-@media (pointer: coarse), (max-width: 767px) { html .rtm-filtros-linea .rtm-campo { font-size: 16px; min-height: 44px; } }
 
 /* Ancla de formulario dentro de tarjeta (enlace #cambiar): compensa el encabezado fijo */
 .rtm-ancla { position: relative; }
@@ -486,3 +480,21 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 
 /* Solo las regiones DENTRO de una pagina son transparentes; la region del armazon (barra + panel) debe seguir siendo una columna flex. */
 .rtm-panel .rtm-region { display: contents; }
+.rtm-region-pag { display: contents; }
+@media (max-width: 900px), (pointer: coarse) { .rtm-pestanas a { height: 44px; } }
+
+.rtm-dt-celda[data-ancho='s'] { white-space: nowrap; }
+.rtm-dt-celda .rtm-acciones-fila { flex-wrap: nowrap; }
+@media (max-width: 767px) { .rtm-dt-celda .rtm-acciones-fila { flex-wrap: wrap; } }
+@media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-trunc { max-width: none; white-space: normal; overflow: visible; text-overflow: clip; } }
+@media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:empty { display: none; } }
+@media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:has(> .rtm-dt-trunc:empty) { display: none; } }
+
+/* Contactos a 390 px: nombre y elegir arriba; telefono (con Revelar) y correo a todo el ancho, sin partir palabras */
+@media (max-width: 767px) {
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-label='Elegir'] { grid-column: 3; grid-row: 1; align-items: flex-end; }
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-label='Elegir']::before { display: none; }
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal'] { grid-column: 1 / -1; grid-row: auto; text-align: left; font-size: var(--rtm-t-cuerpo); font-weight: 400; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal']::before { width: 100%; }
+  .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-label='Correo'] { grid-column: 1 / -1; overflow-wrap: anywhere; }
+}

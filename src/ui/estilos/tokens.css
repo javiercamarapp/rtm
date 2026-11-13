@@ -99,6 +99,10 @@
   --rtm-h-chip: 24px; --rtm-h-chip-estado: 22px; --rtm-h-segmento: 24px;
   --rtm-zona-tactil: 44px;
 
+  /* Sistema unico de controles (campos, selectores, fechas, botones y barras de filtro): un solo alto, radio, relleno y tipografia. */
+  --rtm-ctl-alto: 32px; --rtm-ctl-alto-chico: 28px; --rtm-ctl-px: 10px; --rtm-ctl-fs: 13px; --rtm-ctl-etq: 12px; --rtm-ctl-gap: 8px; --rtm-ctl-r: 8px;
+  --rtm-ctl-ancho-fecha: 136px; --rtm-ctl-ancho-sel: 152px; --rtm-ctl-ancho-num: 112px; --rtm-ctl-ancho-busca: 220px;
+
   /* Tablas */
   --rtm-h-fila: 40px; --rtm-h-fila-densa: 32px; --rtm-h-fila-libro: 28px; --rtm-h-cab-tabla: 36px;
 
@@ -174,6 +178,11 @@
   --rtm-sombra-flotante: 0 8px 28px #00000080, 0 1px 3px #00000066;
 
   color-scheme: dark;
+}
+
+/* Pantallas tactiles o angostas: controles de 44 px y 16 px de texto (iOS no hace zoom). */
+@media (pointer: coarse), (max-width: 767px) {
+  :root { --rtm-ctl-alto: 44px; --rtm-ctl-alto-chico: 44px; --rtm-ctl-fs: 16px; --rtm-ctl-ancho-busca: 100%; }
 }
 
 /* Acento. Por omision y con data-acento="neutro": la propia tinta. Con "lila": el lila del tema. */

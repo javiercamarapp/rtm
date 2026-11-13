@@ -2,7 +2,7 @@
 // correo que ESTE navegador pidio (cookie de una hora). Dos frenos: uno cada 5 minutos y el mismo tope por IP del formulario.
 // Si el correo no tiene cuenta, se degrada a "no se reenvio": el oraculo de enumeracion sigue cerrado.
 import { correoExcedeTopes, ipExcedeTope } from './limites';
-import type { DepsAcceso } from './puertos';
+import { LimitadorNoDisponible, type DepsAcceso } from './puertos';
 
 export type ResultadoReenvio = 'reenviado' | 'reciente' | 'no';
 
@@ -14,10 +14,17 @@ export async function reenviarEnlaceCaducado(deps: DepsAcceso, dest: string, ip:
   const correo = await deps.reenvio.correoRecordado();
   if (!correo) return 'no';
   if (await deps.reenvio.hayEspera()) return 'reciente';
-  if (await ipExcedeTope(deps.limitador, ip)) return 'no';
-  // Un intento por ventana de 5 minutos, salga o no el correo.
-  await deps.reenvio.marcarEspera();
-  if (await correoExcedeTopes(deps.limitador, correo)) return 'no';
+  // Falla CERRADO: sin limitador no se manda nada y se degrada a «no», igual que un correo sin cuenta (aviso interno sin datos personales).
+  try {
+    if (await ipExcedeTope(deps.limitador, ip)) return 'no';
+    // Un intento por ventana de 5 minutos, salga o no el correo.
+    await deps.reenvio.marcarEspera();
+    if (await correoExcedeTopes(deps.limitador, correo)) return 'no';
+  } catch (e) {
+    if (!(e instanceof LimitadorNoDisponible)) throw e;
+    deps.rastro.aviso('login.limitador_no_disponible', { puerta: 'reenvio', codigo: e.codigo });
+    return 'no';
+  }
   const { error } = await deps.autenticador.enviarEnlace(correo, urlCallback(deps.urlApp, dest));
   if (error) {
     deps.rastro.aviso('login.reenvio_no_salio', { code: error.code, status: error.status });

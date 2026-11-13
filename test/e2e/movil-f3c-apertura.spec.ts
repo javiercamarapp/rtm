@@ -14,7 +14,7 @@ async function sinScrollHorizontal(page: Page) {
 async function objetivosYFormularios(page: Page) {
   const malos = await page.evaluate(() => {
     const mal: string[] = [];
-    for (const el of document.querySelectorAll<HTMLElement>('main .rtm-boton, main .rtm-dt-celda a, main .rtm-subnav a, main .rtm-filtros-estado a, main select, main input:not([type=checkbox]):not([type=file]), main textarea')) {
+    for (const el of document.querySelectorAll<HTMLElement>('main .rtm-boton, main .rtm-dt-celda a, main .rtm-pestanas a, main .rtm-filtros-estado a, main select, main input:not([type=checkbox]):not([type=file]), main textarea')) {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) continue;
       if (r.height < 43.5) mal.push(`alto ${el.textContent?.trim().slice(0, 30) || el.tagName} ${Math.round(r.width)}x${Math.round(r.height)}`);

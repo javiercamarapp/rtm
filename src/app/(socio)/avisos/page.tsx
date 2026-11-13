@@ -34,7 +34,7 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
   };
   const por = (s: string) => todas.filter((a) => a.severidad === s).length;
   const accion = todas.filter((a) => a.requiere_accion && a.estado === 'abierta');
-  const porTipo = contarPor(todas, (a) => a.entidad_tipo ?? 'otros');
+  const porTipo = contarPor(todas, (a) => (a.entidad_tipo && TIPOS[a.entidad_tipo] ? a.entidad_tipo : 'otros'));
   const porEstado = contarPor(todas, (a) => a.estado);
   const sinTelegram = todas.filter((a) => a.telegram_no_salio).length;
 
@@ -86,14 +86,14 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
           clave={(a) => a.id} filas={filas}
           vacio={{ titulo: pestana === 'sin_leer' ? 'No tienes avisos sin leer' : 'Sin avisos', texto: 'Los avisos aparecen cuando una operación necesita atención: una diferencia de recepción, un paquete por empacar, un pago sin identificar, un conteo con diferencia...' }}
           columnas={[
-            { id: 's', titulo: 'Severidad', ancho: 'm', celda: (a) => <ChipEstado tono={TONO[a.severidad]}>{SEVERIDAD[a.severidad]!.texto}</ChipEstado> },
-            { id: 't', titulo: 'Aviso', ancho: 'xl', celda: (a) => {
+            { id: 's', titulo: 'Severidad', prioridadMovil: 'principal', ancho: 'm', celda: (a) => <ChipEstado tono={TONO[a.severidad]}>{SEVERIDAD[a.severidad]!.texto}</ChipEstado> },
+            { id: 't', titulo: 'Aviso', prioridadMovil: 'titulo', ancho: 'xl', celda: (a) => {
               const d = destinoAviso(a.entidad_tipo, a.entidad_id);
               return <>{d ? <Link href={d}>{a.titulo}</Link> : a.titulo}<br /><span className="rtm-nota">{a.nt}{a.conteo > 1 ? ` · ${a.conteo} veces` : ''}{a.requiere_accion && a.botones.length > 0 ? ` · ${a.botones.join(' / ')}` : ''}{a.telegram_no_salio ? ' · Telegram no salió' : ''}</span></>;
             } },
-            { id: 'h', titulo: 'Cuándo', ancho: 'm', secundaria: true, celda: (a) => etiquetaFechaHora(a.creado_at) },
-            { id: 'e', titulo: 'Estado', ancho: 'm', secundaria: true, celda: (a) => ESTADOS[a.estado] ?? a.estado },
-            { id: 'a', titulo: 'Acción', ancho: 'm', celda: (a) => (a.leida ? <span className="rtm-nota">Leído</span> : <BotonLeido avisoId={a.id} />) },
+            { id: 'h', titulo: 'Cuándo', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (a) => etiquetaFechaHora(a.creado_at) },
+            { id: 'e', titulo: 'Estado', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (a) => ESTADOS[a.estado] ?? a.estado },
+            { id: 'a', titulo: 'Acción', prioridadMovil: 'normal', ancho: 'm', celda: (a) => (a.leida ? <span className="rtm-nota">Leído</span> : <BotonLeido avisoId={a.id} />) },
           ]}
         />
         <Paginador mostrados={filas.length} anterior={pagina > 0 ? enlace(pestana, pagina - 1) : undefined} siguiente={lista.hay_mas ? enlace(pestana, pagina + 1) : undefined} />

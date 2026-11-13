@@ -72,7 +72,7 @@ export async function pdfInventario(s: SnapshotInventario, folio: string, huella
       for (const m of modelos) {
         h.asegurar(16 + 13 * Math.max(m.sabores.length, 1), cabecera);
         const puffs = s.parametros.con_caladas && m.puffs ? ` · ${formatearPiezas(m.puffs).replace(/\s*pz$/, '')} caladas` : '';
-        h.texto(`${m.modelo}${puffs}`, X.modelo, 10, { fuente: f.negrita, ancho: interna ? 280 : 340 });
+        h.texto(`${m.modelo}${puffs}`, X.modelo, 10, { fuente: f.negrita, ancho: interna ? 225 : 340 });
         if (interna) {
           h.texto(String(m.piezas ?? 0), X.pzs, 10, { fuente: f.negrita, derecha: true });
           h.texto(String(piezasDe(m)), X.disp, 10, { fuente: f.negrita, derecha: true });

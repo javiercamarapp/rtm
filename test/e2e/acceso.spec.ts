@@ -1,5 +1,7 @@
 // Las ocho pruebas locales del flujo de acceso con el buzon local (Mailpit), mas las de refuerzo de la especificacion.
 // Contra el Supabase local y un servidor de desarrollo local. Correos ficticios (@example.test).
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { altaUsuario, conDb, contarUsuariosAuth, correoUnico, enlaceDe, esperarMensajes, estado, ipFalsa, mensajesPara } from './ayudas';
 
@@ -97,6 +99,34 @@ test.describe('acceso por enlace magico', () => {
     }
     expect(visto).toBe(true);
     await expect(page.locator('.login-error')).toHaveText('Algo falló. Intenta otra vez.');
+  });
+
+  test('4b. limitador caido (FALLA CERRADO): el acceso se rechaza con la misma respuesta generica que un correo no permitido, sin correo y sin senal', async ({ page }) => {
+    const correo = correoUnico('caido');
+    await altaUsuario({ correo });
+    // Se cae el limitador de verdad: el rol `servidor` pierde el login y se cortan sus sesiones abiertas. Siempre se restaura.
+    await conDb(async (c) => {
+      await c.query('alter role servidor nologin');
+      await c.query(`select pg_terminate_backend(pid) from pg_stat_activity where usename = 'servidor'`);
+    });
+    try {
+      const t0 = Date.now();
+      await pedirEnlace(page, correo);
+      await expect(page.getByText(TARJETA_ENVIADO)).toBeVisible(); // misma tarjeta que un correo no permitido
+      expect(Date.now() - t0).toBeGreaterThanOrEqual(1400);
+      await expect(page.locator('.login-error')).toHaveCount(0);
+      await new Promise((r) => setTimeout(r, 2500));
+      expect(await mensajesPara(correo)).toHaveLength(0); // aunque el correo SI esta permitido, no sale nada
+    } finally {
+      const url = process.env.SERVIDOR_DATABASE_URL ?? /^SERVIDOR_DATABASE_URL=(.+)$/m.exec(readFileSync(join(process.cwd(), '.env.local'), 'utf8'))?.[1] ?? '';
+      const clave = decodeURIComponent(new URL(url).password);
+      await conDb((c) => c.query(`alter role servidor login password '${clave}'`));
+    }
+    // Recuperada la base, el mismo correo vuelve a entrar sin pasos extra (el procedimiento de emergencia es solo reintentar).
+    await conDb((c) => c.query(`delete from seguridad.limite_intento_evento where clave like 'global:%'`));
+    await pedirEnlace(page, correo);
+    await expect(page.getByText(TARJETA_ENVIADO)).toBeVisible();
+    expect(await esperarMensajes(correo, 1, 60_000)).toHaveLength(1);
   });
 
   test('5. enlace caducado: avisa el motivo y manda solo un enlace nuevo al correo de ESTE navegador', async ({ page }) => {

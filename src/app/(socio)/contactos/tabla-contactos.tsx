@@ -81,6 +81,7 @@ export function TablaContactos({ filas, total, filtro }: Props) {
       </div>
       {error && <Aviso tono="error">{error}</Aviso>}
       {aviso && <Aviso tono="info">{aviso}</Aviso>}
+      <div className="rtm-contactos-tabla">
       <DataTable
         etiqueta="Contactos de menudeo"
         densidad="densa" plana pegajosa
@@ -110,6 +111,7 @@ export function TablaContactos({ filas, total, filtro }: Props) {
           { id: 'a', titulo: 'Anuncio', ancho: 'm', truncar: 's', prioridadMovil: 'detalle', celda: (f) => (f.anuncios.length ? f.anuncios.join(', ') : '—') },
         ]}
       />
+      </div>
     </>
   );
 }
