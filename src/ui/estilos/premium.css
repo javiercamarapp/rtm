@@ -527,3 +527,6 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
   .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-mov='principal']::before { width: 100%; }
   .rtm-contactos-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda[data-label='Correo'] { grid-column: 1 / -1; overflow-wrap: anywhere; }
 }
+
+/* Pie de totales en tarjeta movil: la cifra principal no se ancla a la fila 1 (chocaba con la etiqueta "Total", que ocupa toda la fila). */
+@media (max-width: 767px) { .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-pie .rtm-dt-celda[data-mov='principal'] { grid-column: auto; grid-row: auto; text-align: left; font-size: var(--rtm-t-cuerpo); } }

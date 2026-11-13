@@ -19,6 +19,7 @@ import { AVISO_PEDIDO, ESTADO_PEDIDO, ORIGEN } from '../../operacion/etiquetas';
 import { AccionesPedido } from './acciones-pedido';
 import { BotonCopiar } from './boton-copiar';
 import { NotaCliente } from './nota-vista';
+import { AnularDevolucionCliente, DevolverMercancia } from './devolucion-pedido';
 
 export const metadata: Metadata = { title: 'Pedido' };
 
@@ -31,7 +32,7 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
   const n = Number(id);
   if (!Number.isInteger(n) || n <= 0) notFound();
   const lector = await operacionDeSocio();
-  const [p, ctx] = await Promise.all([lector.pedido(n), lector.contextoPagos()]);
+  const [p, ctx, dev] = await Promise.all([lector.pedido(n), lector.contextoPagos(), lector.pedidoDevoluciones(n)]);
   if (!p) notFound();
 
   const notas = p.notas;
@@ -48,6 +49,11 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
   const piezasSurtidas = p.lineas.reduce((a, l) => a + l.piezas_surtidas, 0);
   const interno = (verNota ?? vigente)?.interno ?? null;
   const cas = interno?.cascada ?? null;
+  // Con devoluciones vigentes las cifras salen netas desde la base: la utilidad y el margen se leen sobre lo cobrado neto, no sobre la nota original.
+  const neta = dev && dev.devuelto_cent > 0n && cas ? dev.cascada_neta : null;
+  const costoVista = neta ? neta.costo_cent : cas?.costo_cent ?? null;
+  const utilidadVista = neta ? neta.utilidad_cent : cas?.utilidad_cent ?? null;
+  const totalVista = neta ? neta.total_cent : cas?.total_cent ?? null;
 
   return (
     <Pagina ancho="tablero">
@@ -78,8 +84,9 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
         etiquetaAria="Cifras del pedido"
         celdas={[
           { id: 'venta', etiqueta: enviado || anulado ? 'Total a saldar' : 'Total estimado si sale todo', valor: <CifraComprobada texto={formatearMoneda(enviado || anulado ? p.cobrado_cent : p.estimado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" />, categoria: 1, nota: `${formatearPiezas(piezasPedidas)} pedidas · ${formatearPiezas(piezasSurtidas)} surtidas` },
-          { id: 'costo', etiqueta: 'Costo de las piezas', valor: cas ? formatearMoneda(cas.costo_cent) : null, categoria: 5, nota: cas ? undefined : 'Se calcula al enviar' },
-          { id: 'utilidad', etiqueta: cas?.utilidad_provisional ? 'Utilidad (provisional)' : 'Utilidad', valor: cas ? formatearMoneda(cas.utilidad_cent) : null, categoria: 3, nota: cas && cas.total_cent > 0n ? `Margen ${((aNumero(cas.utilidad_cent) / aNumero(cas.total_cent)) * 100).toFixed(1)} % del total` : cas?.guia_pendiente ? 'Guía por costear' : undefined },
+          { id: 'costo', etiqueta: neta ? 'Costo neto' : 'Costo de las piezas', valor: costoVista !== null ? formatearMoneda(costoVista) : null, categoria: 5, nota: neta ? `Regresaron ${formatearMoneda(neta.costo_regresado_cent)} a inventario${neta.merma_cent > 0n ? ` · merma ${formatearMoneda(neta.merma_cent)}` : ''}` : cas ? undefined : 'Se calcula al enviar' },
+          { id: 'utilidad', etiqueta: cas?.utilidad_provisional ? 'Utilidad (provisional)' : 'Utilidad', valor: utilidadVista !== null ? formatearMoneda(utilidadVista) : null, categoria: 3, nota: utilidadVista !== null && totalVista !== null && totalVista > 0n ? `Margen ${((aNumero(utilidadVista) / aNumero(totalVista)) * 100).toFixed(1)} % ${neta ? 'del total cobrado neto' : 'del total'}` : cas?.guia_pendiente ? 'Guía por costear' : undefined },
+          ...(dev && dev.devuelto_cent > 0n ? [{ id: 'devuelto', etiqueta: 'Devuelto (crédito)', valor: formatearMoneda(-dev.devuelto_cent), categoria: 6 as const, nota: `${dev.devoluciones.filter((x) => !x.anulada).length} devolución(es) vigentes` }] : []),
           { id: 'abonado', etiqueta: 'Abonado', valor: enviado || anulado ? formatearMoneda(p.aplicado_cent) : null, categoria: 2, progreso: enviado && p.cobrado_cent > 0n ? { pct: (aNumero(p.aplicado_cent) / aNumero(p.cobrado_cent)) * 100 } : undefined },
           { id: 'cobro', etiqueta: 'Por cobrar', valor: enviado ? (p.saldo_cent === null ? null : <CifraComprobada texto={formatearMoneda(p.saldo_cent)} cifra={`pedido:saldo:${p.id}`} comprobacion="cuadra" />) : null, categoria: 4, nota: p.saldo_favor_cliente_cent > 0n ? `Saldo a favor del cliente ${formatearMoneda(p.saldo_favor_cliente_cent)}` : undefined },
         ]}
@@ -143,6 +150,32 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
         />
         {p.ajustes.length > 0 && <p className="rtm-nota">Pendiente de surtir: {p.ajustes.map((a) => `${a.piezas} pz de ${a.modelo} ${a.sabor} (${a.tipo === 'entrega_diferida' ? 'entrega diferida' : a.tipo === 'pieza_no_llego' ? 'pieza que no llegó' : a.tipo})`).join('; ')}.</p>}
       </section>
+
+      {enviado && dev && (
+        <section className="rtm-seccion rtm-entra rtm-i-3" aria-label="Devoluciones del pedido" data-testid="seccion-devoluciones">
+          <div className="rtm-acciones-fila">
+            <h2>Devoluciones</h2>
+            {dev.puede ? <DevolverMercancia pedidoId={p.id} folio={p.folio} renglones={dev.renglones} /> : <EstadoTexto tono="neutro">{dev.motivo_no ?? 'No admite devoluciones.'}</EstadoTexto>}
+          </div>
+          {dev.devoluciones.length === 0 ? <p className="rtm-nota">Este pedido no tiene devoluciones. Una devolución baja lo que el cliente debe, regresa las piezas a la bodega y emite una nota de crédito.</p> : (
+            <DataTable
+              etiqueta={`Devoluciones de ${p.folio}`}
+              clave={(d) => d.id}
+              filas={dev.devoluciones}
+              columnas={[
+                { id: 'f', titulo: 'Nota de crédito', celda: (d) => <a href={`/devoluciones/cliente/${d.id}/pdf`} target="_blank" rel="noreferrer">{d.folio}</a> },
+                { id: 'fe', titulo: 'Fecha', celda: (d) => etiquetaFecha(d.fecha_neg) },
+                { id: 'p', titulo: 'Piezas', numerica: true, celda: (d) => formatearPiezas(d.piezas) },
+                { id: 'm', titulo: 'Crédito', numerica: true, celda: (d) => <CifraComprobada texto={formatearMoneda(d.monto_cent)} cifra={`devolucion:cliente:${d.id}`} comprobacion="cuadra" /> },
+                { id: 'l', titulo: 'Pagos liberados', numerica: true, secundaria: true, celda: (d) => formatearMoneda(d.liberado_cent) },
+                { id: 'mo', titulo: 'Motivo', celda: (d) => d.motivo },
+                { id: 'e', titulo: 'Estado', celda: (d) => (d.anulada ? <EstadoTexto tono="atencion">Anulada</EstadoTexto> : <EstadoTexto tono="neutro">Vigente</EstadoTexto>) },
+                { id: 'a', titulo: '', celda: (d) => (d.anulada ? '' : <AnularDevolucionCliente id={d.id} folio={d.folio} />) },
+              ]}
+            />
+          )}
+        </section>
+      )}
 
       {enviado || anulado ? (
         <>

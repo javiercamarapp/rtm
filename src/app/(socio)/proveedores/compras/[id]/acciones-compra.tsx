@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { formatearPiezas } from '@/dominio/formato';
-import type { CompraDetalle } from '@/dominio/operacion/tipos';
+import { armarLlegada } from '@/dominio/operacion/devoluciones';
+import type { CompraDetalle, RecepcionCompra } from '@/dominio/operacion/tipos';
+import { Tarjeta } from '@/ui/componentes/pagina';
 import { BotonAccion, DialogoSimple } from '../../../operacion/dialogo-simple';
 import { useAccion } from '../../../operacion/usar-accion';
 import { FormularioGuia } from '../../../paquetes/en-trayecto/formulario-guia';
@@ -18,6 +20,10 @@ export function AccionesCompra({ compra }: { compra: CompraDetalle }) {
       {e === 'confirmada' && <BotonAccion boton="Marcar enviada" accion="marcar_compra_enviada" args={{ p_compra: compra.id }} testid="oc-enviada" />}
       {(e === 'confirmada' || e === 'enviada' || e === 'en_trayecto') && <FormularioGuia compraId={compra.id} folio={compra.folio} />}
       {(e === 'confirmada' || e === 'enviada' || e === 'en_trayecto') && <BotonAccion boton="Llegó a Mérida" accion="marcar_llego_merida" args={{ p_compra: compra.id }} testid="oc-llego" />}
+      {e === 'recibida_parcial' && (
+        <DialogoSimple boton="Cerrar la recepción" titulo={`Cerrar la recepción de ${compra.folio}`} accion="cerrar_recepcion_compra" args={{ p_compra: compra.id }} motivo="p_motivo" testid="cerrar-recepcion"
+          texto={<p>Lo que no llegó queda como faltante (y lo que sobró como sobrante) en la cuenta puente, con el costo puesto no reconocido; después se asigna a un responsable. Ya no se podrán registrar más llegadas.</p>} />
+      )}
       {e === 'recibida' && <BotonAccion boton="Cerrar orden" accion="cerrar_compra" args={{ p_compra: compra.id }} primario testid="cerrar-oc" />}
       {['borrador', 'confirmada', 'enviada', 'en_trayecto', 'llego_merida'].includes(e) && (
         <DialogoSimple boton="Anular orden" titulo={`Anular ${compra.folio}`} accion="anular_compra" args={{ p_compra: compra.id }} motivo="p_motivo"
@@ -86,5 +92,51 @@ export function AsignarDiferencia({ diferenciaId, actual }: { diferenciaId: numb
       <button type="button" className="rtm-boton rtm-boton-chico" onClick={ir} disabled={ocupado} data-testid={`asignar-${diferenciaId}`}>{ocupado ? 'Guardando' : 'Asignar'}</button>
       {error && <span className="rtm-error" role="alert">{error}</span>}
     </span>
+  );
+}
+
+interface FilaLlegada { linea_id: number; sku_id: number | ''; piezas: string }
+
+/** Llegada parcial: se cuenta lo que llegó hoy por sabor; la orden queda "Recibida en parte" y cada llegada suma al inventario su parte del costo puesto. */
+export function FormularioLlegada({ compra, recepcion, sabores }: { compra: CompraDetalle; recepcion: RecepcionCompra; sabores: Record<string, SaborOpcion[]> }) {
+  const { correr, ocupado, error } = useAccion();
+  const pendientes = recepcion.lineas.filter((l) => l.pendientes > 0 || compra.estado !== 'recibida_parcial');
+  const [filas, setFilas] = useState<FilaLlegada[]>(pendientes.map((l) => ({ linea_id: l.linea_id, sku_id: l.sku_id, piezas: '' })));
+  const [local, setLocal] = useState<string | null>(null);
+  const [avisos, setAvisos] = useState<string[]>([]);
+  const cambiar = (i: number, cambios: Partial<FilaLlegada>) => setFilas((f) => f.map((x, j) => (j === i ? { ...x, ...cambios } : x)));
+  const confirmar = () => {
+    const r = armarLlegada(recepcion.lineas, filas.map((f) => ({ linea_id: f.linea_id, sku_id: f.sku_id === '' ? 0 : f.sku_id, piezas: f.piezas })));
+    if (!r.ok) return setLocal(r.error);
+    if (r.valor.some((x) => x.sku_id === 0)) return setLocal('Cada renglón necesita sabor.');
+    setLocal(null); setAvisos(r.avisos ?? []);
+    correr('recibir_compra_parcial', { p_compra: compra.id, p_recibido: r.valor }, () => setFilas((f) => f.map((x) => ({ ...x, piezas: '' }))));
+  };
+  return (
+    <Tarjeta titulo="Registrar una llegada parcial" descripcion="Cuenta lo que llegó hoy por sabor. Suma al inventario solo lo contado, con su parte del costo puesto (mercancía, guía y seguro). Lo que falte se queda pendiente hasta que llegue o hasta cerrar la recepción." className="rtm-llegada-tarjeta">
+      <div id="llegada" aria-label="Registrar una llegada" className="rtm-llegada-cuerpo">
+        {filas.map((f, i) => {
+          const l = recepcion.lineas.find((x) => x.linea_id === f.linea_id)!;
+          return (
+            <div key={i} className="rtm-llegada-fila">
+              <div className="rtm-llegada-renglon">
+                <strong>{l.modelo}</strong>
+                <span>Facturadas {formatearPiezas(l.facturadas)} · llevan {formatearPiezas(l.recibidas)} · faltan {formatearPiezas(l.pendientes)}</span>
+              </div>
+              <label className="rtm-etiqueta-campo">Sabor
+                <select className="rtm-campo" value={f.sku_id} onChange={(e) => cambiar(i, { sku_id: Number(e.target.value) })} aria-label={`Sabor que llegó de ${l.modelo} ${i + 1}`}>
+                  {(sabores[l.modelo] ?? []).map((s) => <option key={s.sku_id} value={s.sku_id}>{s.sabor}</option>)}
+                </select>
+              </label>
+              <label className="rtm-etiqueta-campo">Llegaron<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={f.piezas} onChange={(e) => cambiar(i, { piezas: e.target.value })} aria-label={`Piezas que llegaron de ${l.modelo} ${i + 1}`} /></label>
+              <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setFilas((x) => [...x.slice(0, i + 1), { linea_id: f.linea_id, sku_id: f.sku_id, piezas: '' }, ...x.slice(i + 1)])}>Otro sabor</button>
+            </div>
+          );
+        })}
+        {avisos.map((a) => <p key={a} className="rtm-nota">{a}</p>)}
+        {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
+        <div className="rtm-acciones-fila"><button type="button" className="rtm-boton rtm-boton-primario" onClick={confirmar} disabled={ocupado} data-testid="registrar-llegada">{ocupado ? 'Guardando' : 'Registrar llegada'}</button></div>
+      </div>
+    </Tarjeta>
   );
 }

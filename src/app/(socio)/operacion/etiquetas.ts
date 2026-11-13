@@ -23,6 +23,7 @@ export const ESTADO_COMPRA: Record<EstadoCompra, { texto: string; tono: Tono }> 
   enviada: { texto: 'Enviada', tono: 'atencion' },
   en_trayecto: { texto: 'En trayecto', tono: 'atencion' },
   llego_merida: { texto: 'Llegó a Mérida', tono: 'atencion' },
+  recibida_parcial: { texto: 'Recibida en parte', tono: 'atencion' },
   recibida: { texto: 'Recibida', tono: 'ok' },
   cerrada: { texto: 'Cerrada', tono: 'ok' },
   anulada: { texto: 'Anulada', tono: 'malo' },
@@ -37,7 +38,7 @@ export const ESTADO_CXC: Record<FilaCxc['estado'], { texto: string; tono: Tono }
 export const CUBETA: Record<string, string> = { '0_7': '0 a 7 días', '8_14': '8 a 14 días', '15_30': '15 a 30 días', mas_30: 'Más de 30 días' };
 export const SEVERIDAD: Record<string, { texto: string; tono: Tono }> = { C: { texto: 'Crítica', tono: 'malo' }, I: { texto: 'Importante', tono: 'atencion' }, F: { texto: 'Informativa', tono: 'neutro' } };
 export const CONCEPTO_CUENTA: Record<string, string> = {
-  pago_cliente_redirigido: 'Pago de cliente redirigido', pago_socio: 'Pago de un socio', pago_sociedad: 'Pago de la sociedad', oc_aplicada: 'Orden de compra aplicada', ajuste: 'Ajuste',
+  devolucion_proveedor: 'Devolución al proveedor', pago_cliente_redirigido: 'Pago de cliente redirigido', pago_socio: 'Pago de un socio', pago_sociedad: 'Pago de la sociedad', oc_aplicada: 'Orden de compra aplicada', ajuste: 'Ajuste',
   reclamo_diferencia: 'Reclamo por diferencia de recepción', reversa: 'Reversa', apertura: 'Saldo de apertura',
 };
 export const AVISO_PEDIDO: Record<string, string> = {
