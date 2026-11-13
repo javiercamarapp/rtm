@@ -3,6 +3,7 @@
 import { cerrarSesionYSalir } from '@/composicion/acceso';
 import { escritorDeSocio, lectorDeSocio } from '@/composicion/catalogo';
 import { operacionDeSocio } from '@/composicion/operacion';
+import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { CIFRA_CUADRE_SOCIOS, explicarCuadreSocios } from '@/dominio/operacion/cuadre';
 import { escritorNotificacionesDeSocio, notificacionesDeSocio } from '@/composicion/inventario';
 import type { Disponibilidad, Explicacion } from '@/dominio/catalogo/tipos';
@@ -13,7 +14,11 @@ export async function salir(): Promise<void> {
 }
 
 /** "Explicar este numero": cada accion exige sesion de socio antes de tocar la base. */
+const F = '(?:-|\\d{4}-\\d{2}-\\d{2})';
+const CIFRA_DS = new RegExp(`^(?:ds:(?:pedidos|piezas|venta|costo|margen|porcobrar|porpagar):(?:todos|dropshipping|inventario_merida):${F}:${F}|dsu:(?:utilidad|reinvertida|costo|venta):${F}:${F}|dsu:resultado:\\d{4}-\\d{2}-\\d{2}:\\d{4}-\\d{2}-\\d{2})$`);
+
 export async function explicarCifra(cifra: string): Promise<Explicacion> {
+  if (CIFRA_DS.test(cifra)) return (await dropshippingDeSocio()).explicar(cifra);
   if (!/^(existencia:modelo:\d+|margen:\d+:\d+|pedido:(total|saldo):\d+|proveedor:saldo:\d+|socio:(deuda|fondos|diferencia):(Angelo|Javier)|socio:neto:(Angelo|Javier)|socios:diferencia|socios:cuadre|cxc:total|proveedor:falta:(Isaac|Karen):\d{4}-\d{2}-\d{2}:(sociedad|todo)|omar:neto:\d{4}-\d{2}-\d{2}|cascada:utilidad:\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}|cascada:resultado:(Angelo|Javier):\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}:\d+|conta:efectivo|conta:saldo:\d{4}(:\d{4}-\d{2}-\d{2})?|conta:(v0[1-6]|l0[12])(:\d{4}-\d{2}-\d{2})?|conta:utilidad:\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}(:(bruta|contribucion|neta))?|inventario:valor|cobertura:modelo:\d+)$/.test(cifra)) throw new Error('cifra no explicable');
   if (cifra === CIFRA_CUADRE_SOCIOS) return explicarCuadreSocios(await (await operacionDeSocio()).cuentaSocios());
   return (await lectorDeSocio()).explicar(cifra);

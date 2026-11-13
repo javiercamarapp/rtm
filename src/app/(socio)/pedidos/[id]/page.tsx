@@ -13,6 +13,7 @@ import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pag
 import { Cascada } from '@/ui/graficas';
 import '@/ui/estilos/paginas-a1.css';
 import { aNumero } from '@/dominio/tablero/agregados';
+import { origenSurtido } from '@/dominio/dropshipping/calculos';
 import { etiquetaHoy } from '../../contexto';
 import { AVISO_PEDIDO, ESTADO_PEDIDO, ORIGEN } from '../../operacion/etiquetas';
 import { AccionesPedido } from './acciones-pedido';
@@ -54,6 +55,7 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
         migaja={{ href: '/pedidos', texto: 'Volver a pedidos' }}
         eyebrow={`Pedido ${p.folio} · ${etiquetaHoy()}`}
         titulo={`${p.cliente.nombre} · ${p.folio}`}
+        acciones={origenSurtido(p.origen) === 'dropshipping' ? <Link className="rtm-boton" href={`/dropshipping/pedidos/${p.id}`} data-testid="ir-ficha-ds">Ficha de dropshipping</Link> : undefined}
         descripcion={`${ORIGEN[p.origen]} · creado el ${etiquetaFecha(p.fecha_neg)}${p.fecha_envio ? ` · enviado el ${etiquetaFecha(p.fecha_envio)}` : ''}. Nada se descuenta ni devenga renta antes de marcarlo enviado.`}
       />
       <div className="rtm-a1-etiquetas" aria-label="Estado del pedido">
