@@ -266,11 +266,13 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
 test('8 socios: aportacion, gasto de socio y reembolso', async () => {
   const page = javier;
   await page.goto('/socios');
+  await page.waitForLoadState('networkidle');
   await page.getByTestId('gasto-socio').click();
   await page.getByTestId('campo-p_socio').selectOption('Angelo');
   await page.getByTestId('campo-p_monto_cent').fill('400');
   await page.getByTestId('campo-p_categoria').fill(`envio demo ${d.sufijo}`);
   await page.getByTestId('confirmar').click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.reload();
   await cap(page, 'socios-tras-gasto');
   await page.getByTestId('pago-a-socio').click();
@@ -278,6 +280,7 @@ test('8 socios: aportacion, gasto de socio y reembolso', async () => {
   await page.getByTestId('campo-p_monto_cent').fill('400');
   await page.getByTestId('campo-p_tipo').selectOption('reembolso');
   await page.getByTestId('confirmar').click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.reload();
   await cap(page, 'socios-tras-reembolso');
 });
