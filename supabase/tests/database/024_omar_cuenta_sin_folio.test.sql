@@ -1,6 +1,8 @@
 -- pgTAP: omar.v_mi_cuenta no expone el folio del pedido en la renta (agrupada por dia); las reversas netean; las tomas y los pagos no cambian.
 begin;
 select no_plan();
+-- Reloj de negocio (zona de negocio, la que usan las reversas), leido una vez como superusuario: authenticated no puede llamar a negocio.hoy().
+select set_config('t24.hoy', negocio.hoy()::text, true);
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('t24.socio@example.test', 'socio', 'Javier', true), ('t24.omar@example.test', 'omar', null, true), ('t24.off@example.test', 'omar', null, false);
 insert into auth.users (id, instance_id, aud, role, email) values
@@ -20,29 +22,29 @@ select catalogo.asegurar_modelo('T24 Marca', 'T24 Modelo A 30K', 30000, 'ambas')
 select catalogo.asegurar_sku('T24 Modelo A 30K', 'Mango'); select catalogo.asegurar_sku('T24 Modelo B 30K', 'Uva');
 select catalogo.fijar_costo('t24ka', 'Isaac', 'T24 Modelo A 30K', 10000, '2020-01-01', 'prueba'); select catalogo.fijar_costo('t24kb', 'Isaac', 'T24 Modelo B 30K', 10000, '2020-01-01', 'prueba');
 select catalogo.fijar_precio('t24pa', 'T24 Cliente', 'T24 Modelo A 30K', 15000, '2020-01-01', 'chat'); select catalogo.fijar_precio('t24pb', 'T24 Cliente', 'T24 Modelo B 30K', 15000, '2020-01-01', 'chat');
-select operacion.registrar_movimiento('t24m1', 'T24 Modelo A 30K', 'Mango', 'bodega_omar', 'entrada_compra', 500, 5000000, current_date - 1);
-select operacion.registrar_movimiento('t24m2', 'T24 Modelo B 30K', 'Uva', 'bodega_omar', 'entrada_compra', 500, 5000000, current_date - 1);
+select operacion.registrar_movimiento('t24m1', 'T24 Modelo A 30K', 'Mango', 'bodega_omar', 'entrada_compra', 500, 5000000, current_setting('t24.hoy')::date - 1);
+select operacion.registrar_movimiento('t24m2', 'T24 Modelo B 30K', 'Uva', 'bodega_omar', 'entrada_compra', 500, 5000000, current_setting('t24.hoy')::date - 1);
 create function pg_temp.pid(p text) returns bigint language sql as $$ select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = $1 $$;
 
--- Fechas relativas a hoy (ayer y hoy) para que la prueba no dependa del dia en que se corre.
+-- Fechas relativas al dia de negocio (ayer y hoy; la misma zona que usan las reversas, no current_date en UTC) para que la prueba no dependa del dia en que se corre.
 -- Dos pedidos distintos el mismo dia (50 pz y 30 pz, modelos distintos) y uno de otro dia.
-select operacion.crear_pedido('t24a', (select id from catalogo.cliente where nombre_canonico = 'T24 Cliente'), '[{"modelo":"T24 Modelo A 30K","sabor":"Mango","piezas":50}]'::jsonb, 'bodega_omar', null, 0, 0, 0, current_date - 1);
-select operacion.confirmar_pedido('t24ac', pg_temp.pid('t24a')); select operacion.enviar_pedido('t24as', pg_temp.pid('t24a'), null, null, current_date - 1, true);
-select operacion.crear_pedido('t24b', (select id from catalogo.cliente where nombre_canonico = 'T24 Cliente'), '[{"modelo":"T24 Modelo B 30K","sabor":"Uva","piezas":30}]'::jsonb, 'bodega_omar', null, 0, 0, 0, current_date - 1);
-select operacion.confirmar_pedido('t24bc', pg_temp.pid('t24b')); select operacion.enviar_pedido('t24bs', pg_temp.pid('t24b'), null, null, current_date - 1, true);
-select operacion.crear_pedido('t24c', (select id from catalogo.cliente where nombre_canonico = 'T24 Cliente'), '[{"modelo":"T24 Modelo A 30K","sabor":"Mango","piezas":20}]'::jsonb, 'bodega_omar', null, 0, 0, 0, current_date);
-select operacion.confirmar_pedido('t24cc', pg_temp.pid('t24c')); select operacion.enviar_pedido('t24cs', pg_temp.pid('t24c'), null, null, current_date, true);
-select operacion.registrar_toma_omar('t24t1', '{"modelo":"T24 Modelo A 30K","sabor":"Mango"}'::jsonb, 2, 15000, current_date);
-select operacion.registrar_pago_omar('t24pg', 5000, 'de_omar', 'Javier', 'efectivo', current_date);
+select operacion.crear_pedido('t24a', (select id from catalogo.cliente where nombre_canonico = 'T24 Cliente'), '[{"modelo":"T24 Modelo A 30K","sabor":"Mango","piezas":50}]'::jsonb, 'bodega_omar', null, 0, 0, 0, current_setting('t24.hoy')::date - 1);
+select operacion.confirmar_pedido('t24ac', pg_temp.pid('t24a')); select operacion.enviar_pedido('t24as', pg_temp.pid('t24a'), null, null, current_setting('t24.hoy')::date - 1, true);
+select operacion.crear_pedido('t24b', (select id from catalogo.cliente where nombre_canonico = 'T24 Cliente'), '[{"modelo":"T24 Modelo B 30K","sabor":"Uva","piezas":30}]'::jsonb, 'bodega_omar', null, 0, 0, 0, current_setting('t24.hoy')::date - 1);
+select operacion.confirmar_pedido('t24bc', pg_temp.pid('t24b')); select operacion.enviar_pedido('t24bs', pg_temp.pid('t24b'), null, null, current_setting('t24.hoy')::date - 1, true);
+select operacion.crear_pedido('t24c', (select id from catalogo.cliente where nombre_canonico = 'T24 Cliente'), '[{"modelo":"T24 Modelo A 30K","sabor":"Mango","piezas":20}]'::jsonb, 'bodega_omar', null, 0, 0, 0, current_setting('t24.hoy')::date);
+select operacion.confirmar_pedido('t24cc', pg_temp.pid('t24c')); select operacion.enviar_pedido('t24cs', pg_temp.pid('t24c'), null, null, current_setting('t24.hoy')::date, true);
+select operacion.registrar_toma_omar('t24t1', '{"modelo":"T24 Modelo A 30K","sabor":"Mango"}'::jsonb, 2, 15000, current_setting('t24.hoy')::date);
+select operacion.registrar_pago_omar('t24pg', 5000, 'de_omar', 'Javier', 'efectivo', current_setting('t24.hoy')::date);
 
 select set_config('request.jwt.claim.sub', 'd2400000-0000-0000-0000-000000000002', true);
 set local role authenticated;
-select is((select count(*)::int from omar.v_mi_cuenta where concepto = 'renta' and fecha between current_date - 7 and current_date + 7), 2, 'renta agrupada por dia: dos dias, aunque hubo tres pedidos');
-select is((select piezas from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_date - 1), 80, 'el primer dia suma 50 + 30 piezas');
-select is((select importe from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_date - 1), 16000::bigint, 'y 160.00 de renta');
-select is((select tarifa from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_date - 1), 200::bigint, 'tarifa de 2.00 por pieza');
-select is((select modelo from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_date - 1), null, 'la renta no trae modelo');
-select is((select referencia from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_date - 1), 'R-' || to_char(current_date - 1, 'YYYYMMDD'), 'referencia derivada de la fecha, no del pedido');
+select is((select count(*)::int from omar.v_mi_cuenta where concepto = 'renta' and fecha between current_setting('t24.hoy')::date - 7 and current_setting('t24.hoy')::date + 7), 2, 'renta agrupada por dia: dos dias, aunque hubo tres pedidos');
+select is((select piezas from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_setting('t24.hoy')::date - 1), 80, 'el primer dia suma 50 + 30 piezas');
+select is((select importe from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_setting('t24.hoy')::date - 1), 16000::bigint, 'y 160.00 de renta');
+select is((select tarifa from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_setting('t24.hoy')::date - 1), 200::bigint, 'tarifa de 2.00 por pieza');
+select is((select modelo from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_setting('t24.hoy')::date - 1), null, 'la renta no trae modelo');
+select is((select referencia from omar.v_mi_cuenta where concepto = 'renta' and fecha = current_setting('t24.hoy')::date - 1), 'R-' || to_char(current_setting('t24.hoy')::date - 1, 'YYYYMMDD'), 'referencia derivada de la fecha, no del pedido');
 select is((select count(*)::int from omar.v_mi_cuenta where concepto = 'renta' and referencia ~ '^P-[0-9]'), 0, 'ninguna renta lleva folio de pedido');
 select is((select count(*)::int from omar.v_mi_cuenta where referencia ~ '^P-[0-9]'), 0, 'ni ninguna otra fila');
 select is((select count(*)::int from omar.v_mi_cuenta where concepto = 'toma' and importe = -30000), 1, 'la toma: 2 x 150.00 en negativo');
