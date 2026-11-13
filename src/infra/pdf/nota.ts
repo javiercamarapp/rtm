@@ -58,11 +58,20 @@ export async function nuevoDocumento(titulo: string, emitidaAt: string): Promise
   return { pdf, f: { cuerpo, negrita, marca } };
 }
 
-/** Quita lo que la fuente no puede dibujar (por ejemplo emojis) en lugar de fallar al generar. */
-function limpio(fuente: PDFFont, t: string): string {
+/** Simbolos que Geist (subconjunto latino) no trae y su equivalente en texto: se sustituyen ANTES de caer en el signo '?'. */
+const EQUIVALENTE_TEXTO: Readonly<Record<string, string>> = {
+  '✓': 'OK', '✔': 'OK', '✗': 'X', '✘': 'X', '≥': '>=', '≤': '<=', '≠': '!=', '→': '->', '←': '<-', '↔': '<->', '★': '*', '☆': '*', '●': '-', '▪': '-', '‣': '-', '−': '-',
+};
+
+/** Convierte lo que la fuente no puede dibujar: primero a su equivalente en texto (✓ -> OK, >= <= ->), y lo que no tenga equivalente (por ejemplo emojis) a '?', en lugar de fallar al generar. */
+export function limpio(fuente: PDFFont, t: string): string {
   const juego = new Set(fuente.getCharacterSet());
   let s = '';
-  for (const ch of t) s += juego.has(ch.codePointAt(0)!) ? ch : '?';
+  for (const ch of t) {
+    if (juego.has(ch.codePointAt(0)!)) { s += ch; continue; }
+    const eq = EQUIVALENTE_TEXTO[ch];
+    s += eq !== undefined && [...eq].every((c) => juego.has(c.codePointAt(0)!)) ? eq : '?';
+  }
   return s;
 }
 

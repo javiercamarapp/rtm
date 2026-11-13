@@ -15,6 +15,9 @@
   --crema: var(--rtm-tint);
   /* Decision del dueno (13-nov): el login habla con Geist, la misma tipografia que la app por dentro (src/ui/tipografia.ts).
      Esta hoja se importa despues de login.css, asi que estas variables sustituyen a las de Fraunces / Instrument Sans / IBM Plex Mono sin tocar login.css. */
+  /* Las cadenas con Fraunces, Instrument Sans (login.css:16-17) e IBM Plex Mono (artwork.tsx:33) NO se limpian a proposito: ambos archivos son copia byte a byte del
+     original de Likida y la prueba de paridad (test/contratos/paridad_likida.test.ts) fija su huella y su lista cerrada de cambios. Estan muertas: estas variables
+     las sustituyen y ninguna de esas fuentes se carga ya (document.fonts.load de una familia sin @font-face resuelve vacio, sin red). */
   --serif-marca: var(--rtm-fuente-ui);
   --sans-marca: var(--rtm-fuente-ui);
   --font-mono: var(--rtm-fuente-mono);

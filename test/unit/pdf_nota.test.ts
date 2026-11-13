@@ -1,7 +1,7 @@
 // Motor de PDF con huella estable (G11) y texto de WhatsApp (G1). Las cifras salen del documento del dueno (nota de Villa: 13,590.00 y 62 piezas),
 // no del codigo. Los datos del cliente son ILUSTRATIVOS.
 import { describe, expect, it } from 'vitest';
-import { pdfHojaInterna, pdfNotaCliente, huella } from '@/infra/pdf/nota';
+import { pdfHojaInterna, pdfNotaCliente, huella, limpio, nuevoDocumento } from '@/infra/pdf/nota';
 import { textoNota } from '@/dominio/nota/texto';
 import type { NotaFuente } from '@/dominio/operacion/tipos';
 
@@ -89,6 +89,24 @@ describe('PDF de la nota para el cliente (G11)', () => {
     const t = await textoDe(bytes);
     expect(t).toMatch(/Página 1 de [2-9]/);
     expect(t).toContain('Modelo de prueba 70');
+  });
+});
+
+describe('simbolos que Geist no trae', () => {
+  it('✓ ≥ → ★ salen como texto, no como signos de interrogacion', async () => {
+    const { f } = await nuevoDocumento('prueba', '2026-11-10T18:00:00.000Z');
+    expect(limpio(f.cuerpo, 'Listo ✓ cobrado ≥ 50 piezas → bodega ★ prioridad')).toBe('Listo OK cobrado >= 50 piezas -> bodega * prioridad');
+    expect(limpio(f.cuerpo, 'Sandía, niño, año — 5 × 2 ± 1')).toBe('Sandía, niño, año — 5 × 2 ± 1');
+  });
+  it('lo que no tiene equivalente (emoji) sigue sin romper la generacion', async () => {
+    const { f } = await nuevoDocumento('prueba', '2026-11-10T18:00:00.000Z');
+    expect(limpio(f.cuerpo, 'A😀B')).toBe('A?B');
+  });
+  it('una nota con esos simbolos en su motivo llega al PDF como texto', async () => {
+    const bytes = await pdfNotaCliente({ ...villa(), datos_pago_texto: 'Pago ≥ acordado ✓ → cuenta ★' });
+    const t = await textoDe(bytes);
+    expect(t).not.toContain('?');
+    expect(t).toContain('Pago >= acordado OK -> cuenta *');
   });
 });
 

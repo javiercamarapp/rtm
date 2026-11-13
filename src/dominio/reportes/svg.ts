@@ -46,7 +46,8 @@ interface ItemFlotante {
 function flotante(titulo: string, desc: string, items: readonly ItemFlotante[]): string {
   const fila = 22;
   const alto = 30 + items.length * fila;
-  const izq = 150;
+  // Margen izquierdo a la medida de la etiqueta mas larga (aprox. 5.7 pt por caracter a 11 pt, en negrita un poco mas): una etiqueta larga ya no se corta a la izquierda.
+  const izq = Math.min(240, Math.max(150, Math.ceil(items.reduce((m, it) => Math.max(m, it.etiqueta.length * (it.total ? 6.1 : 5.7)), 0)) + 14));
   const der = 70;
   // acumulados
   let acc = 0n;

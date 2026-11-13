@@ -158,3 +158,14 @@ describe('candado: un PDF a la vez', () => {
     expect(r.map((x) => x.status)).toEqual(['rejected', 'fulfilled', 'fulfilled']);
   });
 });
+
+describe('etiquetas de la cascada', () => {
+  it('la etiqueta mas larga (Costos de mantenimiento del sistema) cabe a la izquierda de la barra, sin salirse del lienzo', () => {
+    const s = svg.svgCascada(g.cascada);
+    const etiquetas = [...s.matchAll(/<text x="([\d.]+)"[^>]*text-anchor="end"[^>]*>([^<]*)<\/text>/g)];
+    const larga = etiquetas.find((m) => m[2]!.includes('Costos de mantenimiento del sistema'));
+    expect(larga).toBeDefined();
+    // ancho estimado a 11 pt (Geist ~5.7 pt por caracter): el inicio del texto no puede ser negativo.
+    expect(Number(larga![1]) - larga![2]!.length * 5.7).toBeGreaterThanOrEqual(0);
+  });
+});
