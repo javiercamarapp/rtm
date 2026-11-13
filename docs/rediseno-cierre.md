@@ -46,6 +46,7 @@ Entorno: copia limpia del arbol (git archive de HEAD mas los cambios) en el scra
 - `npx vitest run --maxWorkers=4 --testTimeout=90000`: 112 archivos pasan; 1713 pruebas pasan y 2 son fallos esperados.
 - `npm run test:integracion`: 3 archivos, 18 de 18.
 - pgTAP (`supabase test db`, base recien reseteada): 46 archivos, 2206 pruebas, `Result: PASS`. Antes fallaba `024_omar_cuenta_sin_folio` por fechas fijas; ahora usa el dia de negocio (`negocio.hoy()`, leido una vez como superusuario porque `authenticated` no puede llamarlo). Un primer arreglo con `current_date` fallo cuando el reloj UTC de la base paso la medianoche (13 nov UTC contra 12 nov de negocio): por eso se usa `negocio.hoy()`. Verificado precisamente en ese desfase. Advertencia: correr pgTAP despues de `test:integracion` sin resetear la base da fallos por datos residuales de esas pruebas; resetear antes.
+- Reproducibilidad: con `E2E_PUERTO` distinto de 3100 hay que alinear `site_url` (Supabase local, `supabase/config.toml` o su equivalente) y `NEXT_PUBLIC_APP_URL` con ese mismo puerto; si no, `acceso.spec.ts` falla porque el enlace del correo apunta a otro origen.
 - Playwright completo (`E2E_PUERTO=3126`, base recien reseteada, build de produccion): 113 passed, 2 skipped, 0 failed, 9.1 min; incluye `acceso.spec.ts`.
 - Rama: main (f3c9d4a, c01adcc, 5633549) fusionado en 86b285c sin conflictos; `scripts/despliegue/desplegar.mjs` conserva `--incluir-todo` (`git diff main HEAD -- scripts/despliegue` vacio).
 
