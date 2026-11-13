@@ -410,7 +410,7 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
   /* Etiquetas de campo: se parten en los espacios, nunca a media palabra; celdas anchas (l, xl) y con botones toman el renglon completo y sus botones envuelven su texto. */
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda::before { overflow-wrap: normal; word-break: normal; hyphens: manual; }
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda:is([data-mov='normal'], :not([data-mov])):is([data-ancho='l'], [data-ancho='xl'], :has(button, .rtm-boton, .rtm-boton-chico)) { grid-column: 1 / -1; }
-  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda :is(.rtm-boton, .rtm-boton-chico) { max-width: 100%; height: auto; min-height: var(--rtm-h-ctl-chico); padding-block: 6px; white-space: normal; text-align: center; line-height: 1.25; }
+  .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda :is(.rtm-boton, .rtm-boton-chico) { max-width: 100%; height: auto; min-height: 44px; padding-block: 6px; white-space: normal; text-align: center; line-height: 1.25; }
   /* Texto (no cifra) dentro de una celda numerica: puede envolver. */
   .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda .rtm-texto-envuelve { display: inline-block; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
   /* Acciones: toman el renglon completo de la tarjeta y sus botones envuelven dentro de el. */
