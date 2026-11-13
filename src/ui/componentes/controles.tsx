@@ -42,7 +42,7 @@ export function Segmentado({ etiquetaAria, opciones, tamano = 'normal' }: { etiq
 /** Pestanas de seccion (maximo 6) con subrayado de 2 px y contador. Sustituye al subnav. */
 export function Pestanas({ etiquetaAria, items }: { etiquetaAria: string; items: { id: string; etiqueta: string; href: string; activa: boolean; contador?: number; testid?: string }[] }) {
   return (
-    <nav className="rtm-pestanas" aria-label={etiquetaAria}>
+    <nav className="rtm-pestanas" data-desliza="767" aria-label={etiquetaAria}>
       <ul>
         {items.map((i) => (
           <li key={i.id}>

@@ -24,7 +24,7 @@ select.rtm-campo, .rtm-a2-campo > select {
   background-image: linear-gradient(45deg, transparent 50%, var(--rtm-ink-2) 50%), linear-gradient(135deg, var(--rtm-ink-2) 50%, transparent 50%);
   background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
 }
-.rtm-a2-campo > select { max-width: 260px; }
+.rtm-a2-campo > select { max-width: min(100%, 360px); }
 textarea.rtm-campo { height: auto; min-height: 72px; padding: 8px var(--rtm-ctl-px); line-height: 1.4; resize: vertical; }
 .rtm-campo:hover:not(:disabled), .rtm-a2-campo > :is(input, select):hover { border-color: var(--rtm-ink-3); }
 .rtm-campo:disabled, .rtm-a2-campo > :is(input, select):disabled { background-color: var(--rtm-tint); border-style: solid; color: var(--rtm-ink-3); }

@@ -66,7 +66,7 @@ export default async function PaginaDiario({ searchParams }: { searchParams: Pro
       {d.asientos.length === 0 ? (
         <DataTable etiqueta="Asientos del diario" clave={() => 0} filas={[]} columnas={[]} vacio={{ titulo: 'Sin asientos', texto: 'Cada compra, pedido enviado, pago, gasto o toma de Omar generará su asiento en el momento de guardarse.' }} />
       ) : (
-        <Rejilla dividir="8-4">
+        <Rejilla dividir="8-4" alinear="inicio">
           <div className="a3-pila">
             {d.asientos.map((a) => (
               <div key={a.id} data-testid={`asiento-${a.folio}`}>

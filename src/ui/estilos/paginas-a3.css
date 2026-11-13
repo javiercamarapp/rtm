@@ -47,8 +47,7 @@
 .a3-pila { display: flex; flex-direction: column; gap: var(--rtm-ritmo); min-width: 0; }
 
 /* Barra de filtros dentro de una tarjeta plana: con el mismo relleno que el resto de la tarjeta. */
-.a3-barra { padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); overflow-x: auto; }
-.a3-barra .rtm-barra-filtros-v2 { min-width: max-content; }
+.a3-barra { padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); }
 
 /* Subtitulo de bloque dentro de una tarjeta. */
 .a3-sub { margin: 8px 0 0; font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-fuerte); letter-spacing: var(--rtm-trk-eyebrow); text-transform: uppercase; color: var(--rtm-ink-3); }
