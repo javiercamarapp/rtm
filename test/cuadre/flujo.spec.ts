@@ -235,23 +235,22 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
   await expect.poll(async () => (await consultar<{ s: string }>("select operacion.saldo_proveedor(catalogo.proveedor_id('Isaac'))::text as s"))[0]!.s).toBe('-650000');
   await page.reload();
   await cap(page, 'isaac-tras-pagos');
-  // Cada socio registra lo que pago de su bolsillo a Isaac (dinero propio): 2,900.00 cada uno = los 5,800.00 del costo que no pusieron los socios.
-  // Es dinero de los socios, no de la caja de la sociedad: el efectivo (8,600) no cambia. Regla del dueno: dinero propio = REEMBOLSO (cuenta por pagar al socio);
-  // solo es capital si el socio lo declara con la casilla (aqui NO se marca: el flujo debe quedar como reembolso y cuadrar igual).
-  for (const socio of ['Angelo', 'Javier']) {
+  // Cada socio registra lo que pago de su bolsillo a Isaac (dinero propio), con montos distintos y SIN buscar que nada "cuadre": la salud de Socios es el libro conciliado,
+  // no que los socios pongan todo el costo. Es dinero de los socios, no de la caja de la sociedad: el efectivo (8,600) no cambia. Regla del dueno: dinero propio = REEMBOLSO
+  // (cuenta por pagar al socio); solo es capital si el socio lo declara con la casilla (aqui NO se marca).
+  for (const [socio, monto] of [['Angelo', '1234.56'], ['Javier', '2345.67']] as const) {
     await page.getByTestId('pago-socio').click();
     await page.getByLabel('Socio que pagó').selectOption(socio);
-    await page.getByLabel(/Monto/).fill('2900');
+    await page.getByLabel(/Monto/).fill(monto);
     await page.getByLabel('Con qué dinero').selectOption('dinero_propio');
     await expect(page.getByTestId('declara-capital')).not.toBeChecked();
     await page.getByTestId('confirmar').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   }
-  await expect.poll(async () => (await consultar<{ s: string }>("select operacion.saldo_proveedor(catalogo.proveedor_id('Isaac'))::text as s"))[0]!.s).toBe('-70000');
-  // Clasificacion: los 2 x 2,900.00 son reembolso (cuenta por pagar al socio), no capital; la apertura declaro el capital aparte.
+  await expect.poll(async () => (await consultar<{ s: string }>("select operacion.saldo_proveedor(catalogo.proveedor_id('Isaac'))::text as s"))[0]!.s).toBe('-291977');
   const pagosPropios = await consultar<{ clasificacion: string; n: string; total: string }>("select clasificacion, count(*)::text as n, sum(monto_cent)::text as total from operacion.aportacion_socio where ref_tipo = 'cuenta_proveedor' group by clasificacion");
   expect(pagosPropios.find((r) => r.clasificacion === 'capital')).toBeUndefined();
-  expect(pagosPropios.find((r) => r.clasificacion === 'reembolsable')).toMatchObject({ n: '2', total: '580000' });
+  expect(pagosPropios.find((r) => r.clasificacion === 'reembolsable')).toMatchObject({ n: '2', total: '358023' });
   await page.reload();
   await cap(page, 'isaac-tras-pagos-de-socios');
 });
@@ -317,14 +316,22 @@ test('9 todo cuadra: comprobaciones, Contabilidad, Cuentas por cobrar, Socios y 
   await expect(page.getByTestId('comprobacion-CA2')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Todo cuadra' })).toBeVisible();
 
-  // Socios: la compra a Isaac costo 5,250.00 y los socios pusieron entre los dos 5,800.00 de bolsillo y guia (netos de lo que tienen de la sociedad):
-  // lo que NO pusieron los socios llega a cero, el aviso desaparece y la identidad por dos vias cuadra con via 1 = via 2.
+  // Socios: la senal es "Libro conciliado" (identidades del libro). Todavia se debe a Isaac (apertura y compra), asi que dice "pendiente de pago al proveedor"; la diferencia por la
+  // compra (via 1 y via 2) es informativa y NO tiene que coincidir. El desglose del costo explica de donde salio cada centavo.
   await page.goto('/socios');
-  await expect(page.locator('main:not(.rtm-documento)')).not.toContainText('Parte del costo no la pusieron los socios');
-  await cap(page, 'final-socios-cuadra');
-  const cs = (await consultar<{ c: string; f: string; v1: string; v2: string }>("select (x->>'cuadra') as c, (x->>'financiado_por_sociedad_cent') as f, (x->>'via1_cent') as v1, (x->>'via2_cent') as v2 from (select operacion.cuenta_socios() as x) q"))[0]!;
-  expect(cs.c).toBe('true');
-  expect(cs.f).toBe('0');
-  expect(cs.v1).toBe(cs.v2);
+  const principal = page.locator('main:not(.rtm-documento)');
+  await expect(principal).toContainText('Libro conciliado');
+  await expect(principal).toContainText('Pendiente de pago al proveedor');
+  await expect(principal).not.toContainText('Revisar el libro');
+  await expect(principal).not.toContainText('No cuadra');
+  await page.getByTestId('libro-socios').getByRole('button').click();
+  await expect(page.getByRole('dialog')).toContainText('Identidades que se cumplen');
+  await cap(page, 'final-socios-libro-conciliado');
+  await page.keyboard.press('Escape');
+  const cs = (await consultar<{ lc: string; estado: string; otros: string; costo: string; suma: string }>(
+    "select (x->'cuadre'->>'libro_conciliado') as lc, (x->'cuadre'->>'estado') as estado, (x->>'otros_cent') as otros, (x->>'costo_cent') as costo, ((x->>'directo_socios_cent')::bigint + (x->>'pagado_por_sociedad_cent')::bigint + (x->>'pagado_con_fondos_cent')::bigint + (x->>'pendiente_proveedor_cent')::bigint + (x->>'otros_cent')::bigint)::text as suma from (select operacion.cuenta_socios() as x) q"))[0]!;
+  expect(cs.lc).toBe('true');
+  expect(cs.estado).toBe('pendiente_proveedor');
+  expect(cs.suma).toBe(cs.costo);
   expect((await consultar<{ n: string }>('select seguridad.verificar_cadena_auditoria()::text as n'))[0]!.n).toBe('true');
 });

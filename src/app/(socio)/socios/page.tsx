@@ -23,6 +23,8 @@ export default async function PaginaSocios() {
   const d = c.javier_debe_a_angelo_cent;
   const parejo = d === 0n;
   const quien = d > 0n ? 'Javier debe a Angelo' : 'Angelo debe a Javier';
+  const q = c.cuadre;
+  const tonoLibro = q.libro_conciliado ? (q.estado === 'pendiente_proveedor' ? 'neutro' : 'ok') : 'atencion';
   const total = c.angelo.aportado_cent + c.javier.aportado_cent;
   const maxNeto = c.socios.reduce((a, s) => (abs(s.neto_cent) > a ? abs(s.neto_cent) : a), 0n);
   const filasAportado = (['angelo', 'javier'] as const).map((k) => {
@@ -42,26 +44,29 @@ export default async function PaginaSocios() {
       <EncabezadoPagina
         eyebrow="Cuentas de socios"
         titulo="Cuenta de socios"
-        descripcion={parejo ? 'La cuenta entre socios está pareja: cada uno puso la mitad del costo.' : `${quien} ${m(abs(d))} por la compra · costo ${m(c.costo_cent)}, mitad ${m(c.mitad_cent)}`}
+        descripcion={parejo ? 'Diferencia por la compra: parejo con lo que cada socio puso de su dinero.' : `Diferencia por la compra (informativa): ${quien} ${m(abs(d))} · costo ${m(c.costo_cent)}, mitad ${m(c.mitad_cent)}`}
         acciones={<div className="a3-acciones"><AccionesSocios /></div>}
       />
-      {c.financiado_por_sociedad_cent !== 0n && <Aviso tono="atencion" titulo="Parte del costo no la pusieron los socios.">{m(c.financiado_por_sociedad_cent)} lo pagó la sociedad o sigue a crédito con el proveedor. La diferencia entre las dos vías es exactamente esa cifra; baja cuando un socio paga con su dinero (Proveedores, registrar pago de un socio) y solo llega a cero si los socios ponen entre los dos todo el costo.</Aviso>}
+      {!q.libro_conciliado && <Aviso tono="atencion" titulo="Revisar el libro: una identidad contable no se cumple.">{q.fallas} de {q.verificaciones.length} verificaciones no coinciden. Abre «Explicar este número» en el indicador Libro para ver cuáles y con qué cifras; el detalle está en Contabilidad, Comprobaciones.</Aviso>}
+      {q.pendiente_proveedor_cent > 0n && <Aviso tono="atencion" titulo="Pendiente de pago al proveedor.">{m(q.pendiente_proveedor_cent)} se debe todavía a proveedores. No es una falla del libro: baja cuando la sociedad paga desde su caja o un socio paga con su dinero (Proveedores, registrar pago de un socio).</Aviso>}
+      {c.otros_cent === 0n && c.costo_cent > 0n && <Aviso tono="info" titulo="Cómo se pagó el costo de la compra.">Costo {m(c.costo_cent)} = dinero propio de los socios {m(c.directo_socios_cent)} + caja de la sociedad {m(c.pagado_por_sociedad_cent)} + fondos de la sociedad que tenía un socio {m(c.pagado_con_fondos_cent)} + pendiente con proveedores {m(c.pendiente_proveedor_cent)}. La diferencia por la compra solo compara lo que cada socio puso de su dinero; un depósito a la caja sin gastar no cuenta como puesto para la compra.</Aviso>}
 
       <KpiLinea
         etiquetaAria="Indicadores de la cuenta de socios"
         celdas={[
-          { id: 'dif', etiqueta: 'Diferencia por la compra', testid: 'diferencia-socios', valor: <CifraComprobada texto={m(d, true)} cifra="socios:diferencia" comprobacion={c.cuadra ? 'cuadra' : 'no_cuadra'} />, categoria: 4, nota: <>{parejo ? 'En paz' : quien} · <Estado tono={c.cuadra ? 'ok' : 'atencion'}>{c.cuadra ? 'Cuadra por dos vías' : 'No cuadra'}</Estado></> },
+          { id: 'libro', etiqueta: 'Libro', testid: 'libro-socios', valor: <CifraComprobada texto={q.libro_conciliado ? 'Conciliado' : `${q.fallas} por revisar`} cifra="socios:cuadre" comprobacion={q.libro_conciliado ? 'cuadra' : 'no_cuadra'} />, categoria: 3, nota: <Estado tono={tonoLibro}>{q.etiqueta}</Estado> },
+          { id: 'dif', etiqueta: 'Diferencia por la compra', testid: 'diferencia-socios', valor: <CifraComprobada texto={m(d, true)} cifra="socios:diferencia" comprobacion="sin_comprobar" />, categoria: 4, nota: <>{parejo ? 'En paz' : quien} · informativa</> },
           { id: 'costo', etiqueta: 'Costo de la compra', valor: m(c.costo_cent), categoria: 1, nota: `Mitad por socio ${m(c.mitad_cent)}` },
-          { id: 'angelo', etiqueta: 'Puso Angelo', valor: m(c.angelo.aportado_cent), categoria: 2, progreso: c.costo_cent > 0n ? { pct: pct(c.angelo.aportado_cent, c.costo_cent) ?? 0, meta: 50 } : undefined, nota: `${pct(c.angelo.aportado_cent, c.costo_cent)?.toFixed(1) ?? 'Sin dato'} % del costo` },
-          { id: 'javier', etiqueta: 'Puso Javier', valor: m(c.javier.aportado_cent), categoria: 7, progreso: c.costo_cent > 0n ? { pct: pct(c.javier.aportado_cent, c.costo_cent) ?? 0, meta: 50 } : undefined, nota: `${pct(c.javier.aportado_cent, c.costo_cent)?.toFixed(1) ?? 'Sin dato'} % del costo` },
+          { id: 'angelo', etiqueta: 'Puso Angelo para la compra', valor: m(c.angelo.aportado_cent), categoria: 2, progreso: c.costo_cent > 0n ? { pct: pct(c.angelo.aportado_cent, c.costo_cent) ?? 0, meta: 50 } : undefined, nota: `${pct(c.angelo.aportado_cent, c.costo_cent)?.toFixed(1) ?? 'Sin dato'} % del costo` },
+          { id: 'javier', etiqueta: 'Puso Javier para la compra', valor: m(c.javier.aportado_cent), categoria: 7, progreso: c.costo_cent > 0n ? { pct: pct(c.javier.aportado_cent, c.costo_cent) ?? 0, meta: 50 } : undefined, nota: `${pct(c.javier.aportado_cent, c.costo_cent)?.toFixed(1) ?? 'Sin dato'} % del costo` },
           { id: 'fondos', etiqueta: 'Fondos de la sociedad en poder de socios', valor: m(fondos), categoria: 6, nota: c.socios.some((s) => s.alerta_fondos) ? 'Hay fondos sin entregar con alerta' : 'Sin alertas de entrega' },
         ]}
       />
       <FilaRatios
         etiqueta="Pendientes con los socios"
         items={[
-          { etiqueta: 'Vía 1 (Angelo − mitad del costo)', valor: m(c.via1_cent, true) },
-          { etiqueta: 'Vía 2 ((Angelo − Javier) ÷ 2)', valor: m(c.via2_cent, true) },
+          { etiqueta: 'Vía 1 informativa (Angelo − mitad del costo)', valor: m(c.via1_cent, true) },
+          { etiqueta: 'Vía 2 informativa ((Angelo − Javier) ÷ 2)', valor: m(c.via2_cent, true) },
           { etiqueta: 'Reembolsos pendientes', valor: m(reemb) },
           { etiqueta: 'Capital por devolver', valor: m(cap) },
           { etiqueta: 'Total puesto por los dos', valor: total > 0n ? m(total) : null },
@@ -70,7 +75,7 @@ export default async function PaginaSocios() {
       />
 
       <Rejilla dividir="6-6">
-        <Tarjeta titulo="Aportado, puesto y fuera de la sociedad" descripcion="Lo que cada socio puso, por tipo" acciones={<Estado tono={c.cuadra ? 'ok' : 'atencion'}>{c.cuadra ? 'Cuadra' : 'No cuadra'}</Estado>}>
+        <Tarjeta titulo="Aportado, puesto y fuera de la sociedad" descripcion="Lo que cada socio puso, por tipo" acciones={<Estado tono={tonoLibro}>{q.etiqueta}</Estado>}>
           {hayAportes ? (
             <AntiguedadSaldos tramos={['Capital', 'Reembolsable', 'Fuera de la sociedad']} titulo="Lo que puso cada socio" descripcion={`Angelo puso ${m(c.angelo.aportado_cent)} y Javier ${m(c.javier.aportado_cent)}, separado por capital, reembolsable y fuera de la sociedad.`} procedencia="observado" pie={`Corte: ${etiquetaFecha(c.hoy)} · Fuente: libro de la cuenta de socios`} filas={filasAportado} />
           ) : <p className="a3-grafica-vacia"><strong>Nadie ha puesto dinero</strong>Las aportaciones y gastos pagados por un socio aparecerán aquí.</p>}
