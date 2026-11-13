@@ -101,6 +101,7 @@ export const fmt = (cent) => (cent / 100).toLocaleString('es-MX', { minimumFract
  * (el total no es multiplo del maximo comun divisor de las cantidades), parte el renglon mas grande en dos del mismo SKU (q-1 y 1): el sistema admite varios renglones del mismo SKU.
  * Devuelve [{ indice, piezas, precio, costo }] (indice = renglon de origen; precio y costo = null si no se pide).
  */
+/** @param {{ precioTotal?: number | null, costoTotal?: number | null, cantidades: number[] }} args */
 export function repartirExacto({ precioTotal = null, costoTotal = null, cantidades }) {
   const partes = cantidades.map((q, i) => ({ indice: i, piezas: q }));
   for (let intento = 0; intento < 16; intento += 1) {

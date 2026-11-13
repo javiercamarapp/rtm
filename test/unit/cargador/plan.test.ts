@@ -7,14 +7,13 @@ import { sumaRenglones } from '../../../scripts/cargador/lib.mjs';
 
 const DIR = join(process.cwd(), 'test/fixtures/cargador');
 const alias = JSON.parse(readFileSync(join(DIR, 'alias-modelos.json'), 'utf8'));
-type Dominio = ReturnType<typeof leerFuentes>;
-const dom = (): Dominio => leerFuentes(DIR);
+const dom = (): any => leerFuentes(DIR);
 
 describe('cargador: fuentes sinteticas', () => {
   it('normaliza pedidos, compras, capital, cobros y bajas', () => {
     const d = dom();
-    expect(d.pedidos.map((p) => p.numero)).toEqual(expect.arrayContaining(['s1', 's3', 's7', 's9', 'I1', 'I2', 'I4']));
-    expect(d.compras.map((c) => [c.numero, c.estado])).toEqual([['s6', 'recibida'], ['I3', 'por_recibir']]);
+    expect(d.pedidos.map((p: any) => p.numero)).toEqual(expect.arrayContaining(['s1', 's3', 's7', 's9', 'I1', 'I2', 'I4']));
+    expect(d.compras.map((c: any) => [c.numero, c.estado])).toEqual([['s6', 'recibida'], ['I3', 'por_recibir']]);
     expect(d.capital).toHaveLength(1);
     expect(d.capital[0]).toMatchObject({ socio: 'Javier', proveedor: 'Isaac', montoCent: 1000050, fecha: null });
     expect(d.bajas).toHaveLength(2);
@@ -22,35 +21,35 @@ describe('cargador: fuentes sinteticas', () => {
   });
 
   it('une renglones del mismo modelo y sabor y aplica los alias de modelo', () => {
-    const p = dom().pedidos.find((x) => x.numero === 's1')!;
+    const p = dom().pedidos.find((x: any) => x.numero === 's1')!;
     expect(p.lineas.map((l: { modelo: string }) => l.modelo)).toEqual(['Sint A 10K', 'Sint A 10K', 'Sint B 20K']);
     expect(p.lineas.reduce((s: number, l: { piezas: number }) => s + l.piezas, 0)).toBe(40);
   });
 
   it('el pedido toma la fecha de su primer abono si es anterior y el credito cubre el saldo con su fecha de pago', () => {
     const d = dom();
-    const s3 = d.pedidos.find((p) => p.numero === 's3')!;
+    const s3 = d.pedidos.find((p: any) => p.numero === 's3')!;
     expect(s3.fecha).toBe('2026-11-05');
     expect(s3.envioCent).toBe(30000);
     expect(s3.saldoCent).toBe(420000 - 100000);
     expect(s3.credito).toEqual({ fechaPago: '2026-11-16' });
-    const s1 = d.pedidos.find((p) => p.numero === 's1')!;
+    const s1 = d.pedidos.find((p: any) => p.numero === 's1')!;
     expect(s1.credito).toBeNull();
     expect(s1.cobros).toHaveLength(1);
   });
 
   it('la venta de inventario a credito lleva interes y su abono a cuenta del socio; el pedido a costo no tiene credito', () => {
     const d = dom();
-    const s7 = d.pedidos.find((p) => p.numero === 's7')!;
+    const s7 = d.pedidos.find((p: any) => p.numero === 's7')!;
     expect(s7).toMatchObject({ origen: 'inventario', interesCent: 40000, ventaCent: 440000 });
     expect(s7.cobros[0]).toMatchObject({ via: 'socio', socio: 'Angelo', montoCent: 100000 });
     expect(s7.credito).toEqual({ fechaPago: '2026-11-20' });
-    const a = d.pedidos.find((p) => p.numero === 's9')!;
+    const a = d.pedidos.find((p: any) => p.numero === 's9')!;
     expect(a).toMatchObject({ tipo: 'socio_a_costo', socio: 'Angelo', credito: null, saldoCent: 0 });
   });
 
   it('un pedido de Isaac sin pago con fecha pendiente toma la fecha por omision', () => {
-    const i4 = dom().pedidos.find((p) => p.numero === 'I4')!;
+    const i4 = dom().pedidos.find((p: any) => p.numero === 'I4')!;
     expect(i4).toMatchObject({ interesCent: 50000, ventaCent: 550000 });
     expect(i4.credito).toEqual({ fechaPago: '2026-11-20' });
   });
@@ -76,7 +75,7 @@ describe('cargador: plan', () => {
   it('reparte venta y costo por renglon con totales exactos, partiendo un renglon si el total no se puede repartir de otra forma', () => {
     const d = dom();
     const cat = new Map(costosCatalogo(d, alias).map((x: { proveedor: string; modelo: string }) => [`${x.proveedor}|${x.modelo}`, x]));
-    const s3 = d.pedidos.find((p) => p.numero === 's3')!;
+    const s3 = d.pedidos.find((p: any) => p.numero === 's3')!;
     const v = valoresRenglones(s3, cat);
     const q = v.renglones.map((r: { piezas: number }) => r.piezas);
     expect(sumaRenglones(q, v.renglones.map((r: { precio: number }) => r.precio))).toBe(s3.ventaCent - s3.envioCent);

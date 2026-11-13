@@ -167,10 +167,12 @@ export function construirPlan(dominio, alias, opciones = {}) {
         } else {
           const credito = p.credito ? { fecha_pago: p.credito.fechaPago, modo: 'fijo', interes_cent: p.interesCent } : null;
           const cr = (await db.q('select api.ds_crear_pedido($1,$2,$3::jsonb,$4,$5::jsonb,$6::jsonb,$7,$8,$9,$10,0,$11::date,$12,null,null,null) as r', [
-            k(p.id, 'pedido'), cli, JSON.stringify(lineasSql), p.origen === 'Isaac' ? 'isaac_directo' : 'karen_directo', o.conDestinatarios && p.dest ? JSON.stringify(p.dest) : null, credito ? JSON.stringify(credito) : null,
+            k(p.id, 'pedido'), cli, JSON.stringify(lineasSql), p.origen === 'Isaac' ? 'isaac_directo' : 'karen_directo', null, credito ? JSON.stringify(credito) : null,
             p.tipo, p.socio, p.folio, p.envioCent, p.fecha, 'Carga historica',
           ])).rows[0].r;
           pedidoId = cr.pedido_id;
+          // El destinatario va en su propio paso idempotente (cifrado en reposo): correr con o sin --con-destinatarios no cambia la clave del pedido.
+          if (o.conDestinatarios && p.dest) await db.q('select api.ds_capturar_destinatario($1,$2,$3::jsonb)', [k(p.id, 'destinatario'), pedidoId, JSON.stringify(p.dest)]);
           if (p.tipo !== 'socio_a_costo' && v.renglones.every((r) => r.costo != null)) {
             // Los renglones se insertaron en el orden del arreglo: el id ascendente corresponde al indice.
             const lin = (await db.q('select l.id from operacion.pedido_linea l where l.pedido_id = $1 order by l.id', [pedidoId])).rows;

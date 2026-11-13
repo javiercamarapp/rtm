@@ -82,11 +82,15 @@ export async function prerrequisitos(client, plan) {
   const modelosPlan = plan.pasos.filter((p) => p.tipo === 'catalogo.modelo').map((p) => p.id);
   const existentes = new Set((await q('select nombre_canonico from catalogo.modelo')).map((x) => x.nombre_canonico.toLowerCase()));
   const faltantes = modelosPlan.filter((m) => !existentes.has(m.toLowerCase())).length;
+  const fechaDeCarga = (await q("select pg_get_functiondef('negocio.hoy()'::regprocedure) ~ 'rtm.fecha_negocio' as ok"))[0].ok;
+  const interruptores = (await q("select clave, activo from seguridad.interruptor where clave in ('telegram_envio', 'correo_envio') and activo")).map((x) => x.clave);
   const items = [
+    { ok: fechaDeCarga, texto: 'migracion 20261113600000 aplicada (negocio.hoy respeta la fecha de carga; sin ella los eventos quedarian con la fecha del dia de la carga)' },
+    { ok: interruptores.length === 0, texto: `interruptores de envio apagados (la carga genera avisos; con Telegram o correo encendidos se enviarian)${interruptores.length ? `: ENCENDIDOS ${interruptores.join(', ')}` : ''}` },
     { ok: ['Angelo', 'Javier'].every((s) => socios.includes(s)), texto: 'los dos socios tienen usuario activo' },
     { ok: ['Karen', 'Isaac'].every((s) => provs.includes(s)), texto: 'existen los proveedores Karen e Isaac' },
     { ok: !necesitaBodega || bodega > 0, texto: 'hay persona de bodega configurada (las ventas desde Merida la exigen)' },
-    { ok: (est.pedidos === 0 && est.asientos === 0) || est.operacionesCarga > 0, texto: 'sin pedidos ni asientos ajenos a esta carga (0 pedidos, 0 asientos, o ya cargada por este cargador)' },
+    { id: 'vacia', ok: (est.pedidos === 0 && est.asientos === 0) || est.operacionesCarga > 0, texto: 'sin pedidos ni asientos ajenos a esta carga (0 pedidos, 0 asientos, o ya cargada por este cargador)' },
   ];
   return { est, items, modelosNuevos: faltantes, modelosPlan: modelosPlan.length, ok: items.every((i) => i.ok) };
 }
