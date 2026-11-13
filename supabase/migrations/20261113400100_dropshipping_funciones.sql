@@ -80,6 +80,10 @@ begin
   if p_tipo_venta = 'socio_a_costo' then
     select id into v_socio from catalogo.socio where nombre = p_socio;
     if v_socio is null then raise exception 'la venta de un socio a costo exige indicar el socio' using errcode = '22023'; end if;
+    -- Pedido a costo para un socio: ingreso = costo, utilidad 0. Sin envio cobrado, descuento ni credito (cualquiera de ellos crearia utilidad o cuenta por cobrar por interes).
+    if coalesce(p_envio_cent, 0) <> 0 or coalesce(p_descuento_cent, 0) <> 0 or p_credito is not null then
+      raise exception 'el pedido a costo para un socio no lleva envio cobrado, descuento ni credito: no genera utilidad' using errcode = '22023';
+    end if;
   elsif p_socio is not null then raise exception 'el socio solo aplica a la venta a costo' using errcode = '22023';
   end if;
   if nullif(btrim(p_folio_externo), '') is not null and exists (select 1 from operacion.pedido_ds d where d.proveedor_id = v_prov and d.folio_externo_norm = regexp_replace(lower(btrim(p_folio_externo)), '\s+', '', 'g')) then
@@ -242,6 +246,26 @@ begin
   return v_res;
 end $$;
 
+-- Piezas movidas a los proveedores (dropshipping enviado): total, de clientes y a costo para socios; por proveedor, por socio y por mes. Un pedido a costo para un socio cuenta aqui
+-- aunque no genere utilidad: sirve para saber cuantas piezas se mueven en total con cada proveedor.
+create function operacion.ds_piezas_movidas(p_desde date, p_hasta date) returns jsonb
+language sql stable security definer set search_path = ''
+as $$
+  with b as (
+    select v.*, (select s.nombre from catalogo.socio s where s.id = v.socio_venta_id) as socio_venta
+    from operacion.v_ds_pedido v where v.origen_surtido = 'dropshipping' and v.estado = 'enviado' and (p_desde is null or v.fecha_envio >= p_desde) and (p_hasta is null or v.fecha_envio <= p_hasta))
+  select jsonb_build_object(
+    'total', coalesce((select sum(piezas_surtidas) from b), 0), 'de_clientes', coalesce((select sum(piezas_surtidas) from b where tipo_venta = 'cliente'), 0),
+    'a_costo_socios', coalesce((select sum(piezas_surtidas) from b where tipo_venta = 'socio_a_costo'), 0),
+    'en_curso', coalesce((select sum(v.piezas_pedidas) from operacion.v_ds_pedido v where v.origen_surtido = 'dropshipping' and v.estado in ('borrador', 'confirmado')), 0),
+    'por_proveedor', coalesce((select jsonb_agg(jsonb_build_object('proveedor', q.proveedor, 'piezas', q.pz, 'de_clientes', q.cl, 'a_costo_socios', q.ac, 'pedidos', q.n) order by q.proveedor)
+                               from (select proveedor, sum(piezas_surtidas) pz, sum(piezas_surtidas) filter (where tipo_venta = 'cliente') cl, sum(piezas_surtidas) filter (where tipo_venta = 'socio_a_costo') ac, count(*) n from b group by proveedor) q), '[]'::jsonb),
+    'por_socio', coalesce((select jsonb_agg(jsonb_build_object('socio', q.socio_venta, 'piezas', q.pz, 'pedidos', q.n, 'costo_cent', q.costo) order by q.socio_venta)
+                           from (select socio_venta, sum(piezas_surtidas) pz, count(*) n, sum(venta_cent) costo from b where tipo_venta = 'socio_a_costo' group by socio_venta) q), '[]'::jsonb),
+    'por_mes', coalesce((select jsonb_agg(jsonb_build_object('mes', q.mes, 'piezas', q.pz, 'a_costo_socios', q.ac) order by q.mes)
+                         from (select to_char(fecha_envio, 'YYYY-MM') mes, sum(piezas_surtidas) pz, coalesce(sum(piezas_surtidas) filter (where tipo_venta = 'socio_a_costo'), 0) ac from b group by 1) q), '[]'::jsonb))
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Lecturas (rol socio)
 -- ---------------------------------------------------------------------------
@@ -283,7 +307,7 @@ as $$
 $$;
 
 create function api.ds_pedidos(p_origen_surtido text default null, p_proveedor text default null, p_estado text default null, p_cliente_id bigint default null, p_desde date default null,
-                               p_hasta date default null, p_busqueda text default null) returns jsonb
+                               p_hasta date default null, p_busqueda text default null, p_tipo_venta text default null) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare v_b text := nullif(btrim(p_busqueda), '');
@@ -295,6 +319,7 @@ begin
     where (p_origen_surtido is null or v.origen_surtido = p_origen_surtido)
       and (p_proveedor is null or v.proveedor = p_proveedor)
       and (p_estado is null or v.estado = p_estado)
+      and (p_tipo_venta is null or v.tipo_venta = p_tipo_venta)
       and (p_cliente_id is null or v.cliente_id = p_cliente_id)
       and (p_desde is null or v.fecha_neg >= p_desde) and (p_hasta is null or v.fecha_neg <= p_hasta)
       and (v_b is null or v.folio ilike '%' || v_b || '%' or coalesce(v.folio_externo, '') ilike '%' || v_b || '%' or catalogo.normalizar(v.cliente) like '%' || catalogo.normalizar(v_b) || '%')
@@ -353,6 +378,7 @@ begin
     'en_curso', coalesce((select jsonb_agg(jsonb_build_object('origen_surtido', q.origen_surtido, 'pedidos', q.n, 'piezas', q.pz, 'venta_estimada_cent', q.venta, 'costo_estimado_cent', q.costo))
                           from (select v.origen_surtido, count(*) n, sum(v.piezas_pedidas) pz, sum(v.venta_cent) venta, sum(v.costo_cent) costo from operacion.v_ds_pedido v where v.estado in ('borrador', 'confirmado') group by 1) q), '[]'::jsonb),
     'proveedores', coalesce((select jsonb_agg(jsonb_build_object('proveedor', p.nombre, 'saldo_cent', operacion.ds_posicion_proveedor(p.id)) order by p.nombre) from catalogo.proveedor p), '[]'::jsonb),
+    'piezas_movidas', operacion.ds_piezas_movidas(p_desde, p_hasta),
     'sin_folio_externo', (select count(*) from operacion.v_ds_pedido v where v.origen_surtido = 'dropshipping' and v.estado in ('confirmado', 'enviado') and v.folio_externo is null));
 end $$;
 
@@ -516,12 +542,12 @@ begin
 end $$;
 
 revoke execute on function operacion.texto_orden_proveedor(text, jsonb, jsonb), operacion.ds_grupos_pedido(bigint), operacion.ds_fila(operacion.v_ds_pedido), operacion.interes_credito(bigint, int, int, text),
-  operacion.origen_surtido(text), operacion.ds_posicion_proveedor(bigint), operacion.ds_crear_pedido(text, bigint, jsonb, text, jsonb, jsonb, text, text, text, bigint, bigint, date, text, text), operacion.ds_capturar_destinatario(text, bigint, jsonb),
+  operacion.origen_surtido(text), operacion.ds_posicion_proveedor(bigint), operacion.ds_piezas_movidas(date, date), operacion.ds_crear_pedido(text, bigint, jsonb, text, jsonb, jsonb, text, text, text, bigint, bigint, date, text, text), operacion.ds_capturar_destinatario(text, bigint, jsonb),
   operacion.ds_registrar_folio(text, bigint, text), operacion.ds_pagar_proveedor(text, text, bigint, text, text, bigint, bigint, date, text),
   entrega.mascara_telefono(text), entrega.mascara_correo(text), entrega.normalizar(jsonb) from public, anon, authenticated;
 
-revoke execute on function api.ds_interes(bigint, int, int, text), api.ds_catalogo(bigint, text), api.ds_pedidos(text, text, text, bigint, date, date, text), api.ds_desglose(text, date, date, text), api.ds_resumen(date, date),
+revoke execute on function api.ds_interes(bigint, int, int, text), api.ds_catalogo(bigint, text), api.ds_pedidos(text, text, text, bigint, date, date, text, text), api.ds_desglose(text, date, date, text), api.ds_resumen(date, date),
   api.ds_ficha(bigint), api.ds_destinatario(bigint), api.ds_destinatario_revelar(bigint, text, text), api.ds_orden_proveedor(bigint, boolean), api.ds_cuenta_proveedor(text), api.ds_por_cobrar(), api.ds_explicar(text) from public, anon;
 -- GRANT a authenticated (cada funcion exige rol socio dentro; Omar, anon y los canales de sistema no pasan):
-grant execute on function api.ds_interes(bigint, int, int, text), api.ds_catalogo(bigint, text), api.ds_pedidos(text, text, text, bigint, date, date, text), api.ds_desglose(text, date, date, text), api.ds_resumen(date, date),
+grant execute on function api.ds_interes(bigint, int, int, text), api.ds_catalogo(bigint, text), api.ds_pedidos(text, text, text, bigint, date, date, text, text), api.ds_desglose(text, date, date, text), api.ds_resumen(date, date),
   api.ds_ficha(bigint), api.ds_destinatario(bigint), api.ds_destinatario_revelar(bigint, text, text), api.ds_orden_proveedor(bigint, boolean), api.ds_cuenta_proveedor(text), api.ds_por_cobrar(), api.ds_explicar(text) to authenticated;

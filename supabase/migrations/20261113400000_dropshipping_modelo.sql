@@ -197,7 +197,7 @@ select pe.id as pedido_id, pe.folio, pe.fecha_neg, pe.fecha_envio, pe.estado, pe
        (select coalesce(sum(l.piezas_surtidas), 0) from operacion.pedido_linea l where l.pedido_id = pe.id)::int as piezas_surtidas,
        (pe.estado = 'enviado') as real,
        case when pe.estado = 'enviado' then operacion.pedido_cobrado(pe.id)
-            else (select coalesce(sum(l.piezas_pedidas * l.precio_cent), 0) from operacion.pedido_linea l where l.pedido_id = pe.id) + pe.envio_cent + pe.recargo_cent - pe.descuento_cent end as venta_cent,
+            else (select coalesce(sum(l.piezas_pedidas * l.precio_cent), 0) from operacion.pedido_linea l where l.pedido_id = pe.id) + pe.envio_cent + pe.recargo_cent - pe.descuento_cent end::bigint as venta_cent,
        case when pe.estado = 'enviado' then (select coalesce(sum(s.costo_valor_cent), 0) from operacion.pedido_surtido s join operacion.pedido_linea l on l.id = s.pedido_linea_id where l.pedido_id = pe.id)
             else (select coalesce(sum(l.piezas_pedidas * coalesce(operacion.costo_ref_pedido(pe.origen, l.modelo_id, pe.fecha_neg), 0)), 0) from operacion.pedido_linea l where l.pedido_id = pe.id) end::bigint as costo_cent,
        -- Seguro de reenvio que se debe a Isaac cuando Karen manda via Isaac (no es costo de mercancia de Karen).
