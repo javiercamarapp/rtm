@@ -25,9 +25,11 @@ interface Props {
   ruta: string;
   /** Boton para registrar un pago (solo socio). */
   acciones?: ReactNode;
+  /** Accion por fila del historial (solo socio): la pagina la arma porque es un componente de cliente de la zona del socio. */
+  accionPago?: (folio: string, monto: string) => ReactNode;
 }
 
-export function PanelPagoRenta({ panel, modo, paso, ruta, acciones }: Props) {
+export function PanelPagoRenta({ panel, modo, paso, ruta, acciones, accionPago }: Props) {
   const { estado: e, proyeccion: proy, serie, pagos } = panel;
   const socio = modo === 'socio';
   const est = estadisticas(serie, pagos, e);
@@ -65,10 +67,11 @@ export function PanelPagoRenta({ panel, modo, paso, ruta, acciones }: Props) {
     { id: 'fecha', titulo: 'Fecha', celda: (p: PagoRenta) => etiquetaFecha(p.fecha), prioridadMovil: 'titulo' as const },
     { id: 'monto', titulo: 'Monto', numerica: true, celda: (p: PagoRenta) => m(p.monto_cent), prioridadMovil: 'principal' as const },
     { id: 'via', titulo: 'Vía', celda: (p: PagoRenta) => (p.via === 'efectivo' ? 'Efectivo' : 'Transferencia'), prioridadMovil: 'normal' as const },
-    { id: 'folio', titulo: 'Folio', celda: (p: PagoRenta) => p.folio, prioridadMovil: 'normal' as const },
+    { id: 'folio', titulo: 'Folio', celda: (p: PagoRenta) => (p.es_reversa ? `${p.folio} · reversa de ${p.reversa_de_folio ?? 'un pago'}` : p.anulado ? `${p.folio} · anulado` : p.folio), prioridadMovil: 'normal' as const },
     ...(socio ? [
       { id: 'socio', titulo: 'Pagó', celda: (p: PagoRenta) => p.socio ?? 'Sin dato', prioridadMovil: 'normal' as const },
-      { id: 'nota', titulo: 'Nota o comprobante', celda: (p: PagoRenta) => [p.nota, p.comprobante].filter(Boolean).join(' · ') || 'Sin nota', prioridadMovil: 'detalle' as const },
+      { id: 'nota', titulo: 'Nota o comprobante', celda: (p: PagoRenta) => [p.es_reversa ? p.motivo_reversa : p.nota, p.comprobante].filter(Boolean).join(' · ') || 'Sin nota', prioridadMovil: 'detalle' as const },
+      { id: 'acciones', titulo: 'Acciones', celda: (p: PagoRenta) => (p.es_reversa || p.anulado ? null : accionPago?.(p.folio, m(p.monto_cent)) ?? null), prioridadMovil: 'detalle' as const },
     ] : []),
   ];
 
@@ -100,7 +103,7 @@ export function PanelPagoRenta({ panel, modo, paso, ruta, acciones }: Props) {
         etiquetaAria="Indicadores de la renta"
         celdas={[
           { id: 'mes', testid: 'renta-mes', etiqueta: 'Renta del mes', valor: m(est.mes.renta_cent), categoria: 1, nota: `${formatearPiezas(est.mes.piezas)} enviadas · quedan ${est.diasRestantes} ${est.diasRestantes === 1 ? 'día' : 'días'} del mes` },
-          { id: 'ritmo', etiqueta: 'Ritmo diario', valor: est.ritmo7 === null ? null : `${est.ritmo7.toFixed(1)} pz`, categoria: 2, nota: est.ritmo7 === null ? 'Faltan días de historia' : `Últimos 7 días cerrados · ${(est.ritmoSemanal ?? 0).toFixed(0)} pz por semana` },
+          { id: 'ritmo', etiqueta: 'Ritmo diario · 7 días', valor: est.ritmo7 === null ? null : `${est.ritmo7.toFixed(1)} pz`, categoria: 2, nota: est.ritmo7 === null ? 'Faltan días de historia' : `Últimos 7 días cerrados. La proyección usa ${proy.emitida ? `${proy.muestra.dias_ventana} días: ${proy.ritmo_diario_pz.toFixed(1)} pz por día` : 'hasta 28 días cerrados'}` },
           { id: 'mejor', etiqueta: 'Mejor día', valor: est.mejorDia ? formatearPiezas(est.mejorDia.piezas) : null, categoria: 4, nota: est.mejorDia ? etiquetaFecha(est.mejorDia.fecha) : 'Sin envíos' },
           { id: 'mes-ant', etiqueta: 'Contra el mes anterior', valor: est.mesAnterior && est.mesAnterior.variacionPct !== null ? `${est.mesAnterior.variacionPct >= 0 ? '+' : '−'}${Math.abs(est.mesAnterior.variacionPct)} %` : null, categoria: 6, nota: est.mesAnterior ? `Al mismo día: ${formatearPiezas(est.mesAnterior.piezas)} el mes anterior` : 'Sin mes anterior comparable' },
           { id: 'corte', testid: 'renta-corte', etiqueta: 'Pago al corte · Estimado', valor: proy.emitida ? m(proy.pago_al_corte_cent.central) : null, categoria: 7, nota: proy.emitida ? `Rango ${m(proy.pago_al_corte_cent.bajo)} a ${m(proy.pago_al_corte_cent.alto)}` : 'Sin muestra suficiente para estimar' },
@@ -156,7 +159,7 @@ export function PanelPagoRenta({ panel, modo, paso, ruta, acciones }: Props) {
               titulo={TITULO_PASO[paso]}
               descripcion={`${TITULO_PASO[paso]}. Total de la ventana: ${formatearPiezas(cubetas.reduce((s, c) => s + c.piezas, 0))}.`}
               pie={`Corte: ${etiquetaFecha(e.hoy)} · Fuente: devengos de renta · Periodo en curso con trama`}
-              datos={visibles.map((c) => ({ id: c.id, etiqueta: c.etiqueta, valor: c.piezas, texto: formatearPiezas(c.piezas), parcial: c.parcial, detalle: `Renta ${m(c.renta_cent)}` }))}
+              datos={visibles.map((c) => ({ id: c.id, etiqueta: c.etiqueta, valor: c.piezas, texto: formatearPiezas(c.piezas), parcial: c.parcial, detalle: c.parcial ? 'Periodo en curso' : undefined }))}
             />
           ) : (
             <p className="a3-grafica-vacia"><strong>Pocos datos para hablar de esto</strong>Hay {conDato} {conDato === 1 ? 'periodo' : 'periodos'} con envíos; con dos o más se dibujan las columnas.</p>

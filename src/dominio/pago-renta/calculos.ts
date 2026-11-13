@@ -14,7 +14,6 @@ export const diasEntre = (a: string, b: string): number => Math.round((Date.pars
 const primeroDeMes = (f: string): string => `${f.slice(0, 8)}01`;
 const mesAnteriorIni = (f: string): string => primeroDeMes(sumarDias(primeroDeMes(f), -1));
 const corta = (f: string): string => `${Number(f.slice(8, 10))} ${MESES[Number(f.slice(5, 7)) - 1]}`;
-const etiquetaMes = (f: string): string => `${MESES[Number(f.slice(5, 7)) - 1]} ${f.slice(2, 4)}`;
 
 /** "480 piezas x $2.00 = $960.00". Si la tarifa cambio durante el periodo, la regla no explica el devengado y se dice. */
 export function reglaDeCalculo(e: Pick<EstadoRenta, 'piezas' | 'tarifa_cent' | 'devengado_cent' | 'regla_exacta'>): string {
@@ -52,7 +51,7 @@ export function agruparPorPeriodo(serie: readonly DiaRenta[], hoy: string, paso:
     for (const d of serie) if (d.fecha >= ini && d.fecha <= fin) { piezas += d.piezas; renta += d.renta_cent; }
     return {
       id: ini, ini, fin, piezas, renta_cent: renta, parcial: fin > hoy,
-      etiqueta: paso === 'mes' ? etiquetaMes(ini) : corta(ini),
+      etiqueta: paso === 'mes' ? MESES[Number(ini.slice(5, 7)) - 1]! : `${Number(ini.slice(8, 10))}/${Number(ini.slice(5, 7))}`,
     };
   });
 }
@@ -122,31 +121,23 @@ export function estadisticas(serie: readonly DiaRenta[], pagos: readonly PagoRen
 
 export interface PuntoAcumulado { id: string; etiqueta: string; valor: number; texto: string; tipo: 'observado' | 'estimado'; bajo?: number; alto?: number }
 
-/** Renta acumulada del mes dia por dia (observado) y, si la base emitio proyeccion, 4 puntos estimados hasta el corte con banda que se abre con la raiz del tiempo. */
+/** Renta acumulada del mes dia por dia (observado) y, si la base emitio proyeccion, UN punto estimado al corte con el rango que entrega la base. Todo importe sale de la base:
+ *  el acumulado de cada dia (`acum_mes_cent`) y el central, bajo y alto de `mes_renta_cent`; aqui solo se arrastra el ultimo valor de los dias sin movimiento. */
 export function acumuladoDelMes(serie: readonly DiaRenta[], hoy: string, proy: Proyeccion): PuntoAcumulado[] {
   const mesIni = primeroDeMes(hoy);
   const n = diasEntre(mesIni, hoy) + 1;
+  const porDia = new Map<string, bigint>();
+  for (const d of serie) if (d.fecha >= mesIni && d.fecha <= hoy) porDia.set(d.fecha, d.acum_mes_cent);
   const puntos: PuntoAcumulado[] = [];
   let acum = 0n;
   for (let i = 0; i < n; i++) {
     const f = sumarDias(mesIni, i);
-    for (const d of serie) if (d.fecha === f) acum += d.renta_cent;
+    acum = porDia.get(f) ?? acum;
     puntos.push({ id: f, etiqueta: corta(f), valor: Number(acum), texto: formatearMoneda(acum), tipo: 'observado' });
   }
   if (!proy.emitida || proy.dias_restantes <= 0) return puntos;
-  const medioAncho = Number(proy.restante_renta_cent.alto - proy.restante_renta_cent.bajo) / 2;
-  const pasos = Math.min(4, proy.dias_restantes);
-  for (let k = 1; k <= pasos; k++) {
-    const frac = k / pasos;
-    const dia = Math.round(proy.dias_restantes * frac);
-    const f = sumarDias(hoy, dia);
-    const central = acum + BigInt(Math.round(Number(proy.restante_renta_cent.central) * (dia / proy.dias_restantes)));
-    const ancho = medioAncho * Math.sqrt(dia / proy.dias_restantes);
-    puntos.push({
-      id: `est-${f}`, etiqueta: corta(f), valor: Number(central), texto: formatearMoneda(central), tipo: 'estimado',
-      bajo: Math.max(Number(acum), Number(central) - ancho), alto: Number(central) + ancho,
-    });
-  }
+  const r = proy.mes_renta_cent;
+  puntos.push({ id: `est-${proy.fecha_corte}`, etiqueta: corta(proy.fecha_corte), valor: Number(r.central), texto: formatearMoneda(r.central), tipo: 'estimado', bajo: Number(r.bajo), alto: Number(r.alto) });
   return puntos;
 }
 
@@ -173,7 +164,7 @@ export function insights(e: EstadoRenta, proy: Proyeccion, est: Estadisticas): I
   if (proy.emitida) {
     r.push({
       id: 'pago-corte', etiqueta: 'Pronóstico al corte',
-      frase: `Si sigue este ritmo (${proy.ritmo_diario_pz.toFixed(1)} piezas por día), pagarás ${m(proy.pago_al_corte_cent.central)} el ${fechaLarga(proy.fecha_corte)} (rango ${m(proy.pago_al_corte_cent.bajo)} a ${m(proy.pago_al_corte_cent.alto)}).`,
+      frase: `Si sigue el ritmo de los últimos ${proy.muestra.dias_ventana} días (${proy.ritmo_diario_pz.toFixed(1)} pz por día), pagarás ${m(proy.pago_al_corte_cent.central)} el ${fechaLarga(proy.fecha_corte)} (rango ${m(proy.pago_al_corte_cent.bajo)} a ${m(proy.pago_al_corte_cent.alto)}).`,
       severidad: 'Informa', procedencia: 'estimado', cifra: { valor: Number(proy.pago_al_corte_cent.central), tipo: 'moneda' },
     });
   } else {
@@ -187,7 +178,7 @@ export function insights(e: EstadoRenta, proy: Proyeccion, est: Estadisticas): I
   }
   if (est.mesAnterior && est.mesAnterior.variacionPct !== null) {
     const v = est.mesAnterior.variacionPct;
-    r.push({ id: 'mes-anterior', etiqueta: 'Contra el mes anterior', frase: `Este mes lleva ${formatearPiezas(est.mes.piezas)} piezas; el mes anterior al mismo día llevaba ${formatearPiezas(est.mesAnterior.piezas)} (${v >= 0 ? '+' : '−'}${Math.abs(v)} %).`, severidad: 'Informa', procedencia: 'observado', cifra: { valor: est.mes.piezas, tipo: 'piezas' } });
+    r.push({ id: 'mes-anterior', etiqueta: 'Contra el mes anterior', frase: `Este mes lleva ${formatearPiezas(est.mes.piezas)}; el mes anterior al mismo día llevaba ${formatearPiezas(est.mesAnterior.piezas)} (${v >= 0 ? '+' : '−'}${Math.abs(v)} %).`, severidad: 'Informa', procedencia: 'observado', cifra: { valor: est.mes.piezas, tipo: 'piezas' } });
   }
   return r;
 }

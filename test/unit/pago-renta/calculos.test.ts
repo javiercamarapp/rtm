@@ -3,10 +3,15 @@ import { acumuladoDelMes, agruparPorPeriodo, desdePrimerMovimiento, diasEntre, e
 import type { DiaRenta, EstadoRenta, Proyeccion } from '@/dominio/pago-renta/tipos';
 
 // Marzo de 2027: del 1 al 10 se envian 40 y 56 piezas alternados (480 en total) a 2.00 la pieza.
-const serie: DiaRenta[] = Array.from({ length: 10 }, (_, i) => {
-  const piezas = i % 2 === 0 ? 40 : 56;
-  return { fecha: `2027-03-${String(i + 1).padStart(2, '0')}`, piezas, renta_cent: BigInt(piezas * 200) };
-});
+const serie: DiaRenta[] = [];
+{
+  let acum = 0n;
+  for (let i = 0; i < 10; i++) {
+    const piezas = i % 2 === 0 ? 40 : 56;
+    acum += BigInt(piezas * 200);
+    serie.push({ fecha: `2027-03-${String(i + 1).padStart(2, '0')}`, piezas, renta_cent: BigInt(piezas * 200), acum_mes_cent: acum });
+  }
+}
 const estado: EstadoRenta = {
   hoy: '2027-03-11', tarifa_cent: 200n, piezas: 480, devengado_cent: 96000n, compensado_tomas_cent: 0n, pagado_cent: 40000n, saldo_cent: 56000n, por_pagar_cent: 56000n, a_favor_cent: 0n,
   regla_exacta: true, primer_envio: '2027-03-01', ultimo_envio: '2027-03-10', mes_ini: '2027-03-01', mes_piezas: 480, mes_devengado_cent: 96000n,
@@ -26,6 +31,12 @@ describe('regla de calculo', () => {
 });
 
 describe('agrupar por periodo', () => {
+  it('B5: etiquetas cortas para que no se peguen a 390 px (dia/mes numerico, mes de tres letras)', () => {
+    expect(agruparPorPeriodo(serie, '2027-03-11', 'dia').at(-1)!.etiqueta).toBe('11/3');
+    expect(agruparPorPeriodo(serie, '2027-03-11', 'semana').at(-1)!.etiqueta).toBe('8/3');
+    expect(agruparPorPeriodo(serie, '2027-03-11', 'mes').at(-1)!.etiqueta).toBe('mar');
+    for (const p of ['dia', 'semana', 'mes'] as const) for (const c of agruparPorPeriodo(serie, '2027-03-11', p)) expect(c.etiqueta.length).toBeLessThanOrEqual(5);
+  });
   it('dias: 30 cubetas contiguas que terminan hoy, con ceros', () => {
     const c = agruparPorPeriodo(serie, '2027-03-11', 'dia');
     expect(c).toHaveLength(30);
@@ -71,7 +82,7 @@ describe('estadisticas', () => {
   });
   it('sin mes anterior no hay comparacion', () => expect(estadisticas(serie, [], estado).mesAnterior).toBeNull());
   it('compara contra el mismo tramo del mes anterior', () => {
-    const feb: DiaRenta[] = [{ fecha: '2027-02-03', piezas: 100, renta_cent: 20000n }, { fecha: '2027-02-20', piezas: 900, renta_cent: 180000n }];
+    const feb: DiaRenta[] = [{ fecha: '2027-02-03', piezas: 100, renta_cent: 20000n, acum_mes_cent: 20000n }, { fecha: '2027-02-20', piezas: 900, renta_cent: 180000n, acum_mes_cent: 200000n }];
     const e = estadisticas([...feb, ...serie], [], { hoy: '2027-03-11', primer_envio: '2027-02-03' });
     // Al 11 de febrero solo hay 100 piezas; marzo lleva 480: +380 %.
     expect(e.mesAnterior).toEqual({ piezas: 100, hasta: '2027-02-11', variacionPct: 380 });
@@ -79,13 +90,13 @@ describe('estadisticas', () => {
   it('tendencia: sin 14 dias de historia no se emite', () => expect(estadisticas(serie, [], estado).tendencia).toBeNull());
   it('tendencia con 20 dias de historia', () => {
     const s: DiaRenta[] = [];
-    for (let i = 0; i < 20; i++) s.push({ fecha: `2027-03-${String(i + 1).padStart(2, '0')}`, piezas: i < 13 ? 10 : 20, renta_cent: 0n });
+    for (let i = 0; i < 20; i++) s.push({ fecha: `2027-03-${String(i + 1).padStart(2, '0')}`, piezas: i < 13 ? 10 : 20, renta_cent: 0n, acum_mes_cent: 0n });
     // Hoy 21: ultimos 7 cerrados (14 al 20) = 140; los 7 anteriores (7 al 13) = 70 -> +100 %.
     const e = estadisticas(s, [], { hoy: '2027-03-21', primer_envio: '2027-03-01' });
     expect(e.tendencia).toEqual({ sentido: 'sube', cambioPct: 100 });
   });
   it('ultimo pago y dias desde entonces', () => {
-    const e = estadisticas(serie, [{ folio: 'PO-0001', fecha: '2027-03-06', monto_cent: 1n, via: 'efectivo' }], estado);
+    const e = estadisticas(serie, [{ folio: 'PO-0001', fecha: '2027-03-06', monto_cent: 1n, via: 'efectivo', es_reversa: false, anulado: false }], estado);
     expect(e.ultimoPago).toEqual({ fecha: '2027-03-06', hace: 5 });
   });
 });
@@ -95,26 +106,36 @@ describe('dias entre', () => {
 });
 
 describe('acumulado del mes con banda', () => {
-  it('observado: el ultimo punto es lo devengado del mes', () => {
-    const p = acumuladoDelMes(serie, '2027-03-11', { etiqueta: 'Estimado', emitida: false, motivo: 'muestra_chica', muestra: proy.muestra });
-    expect(p).toHaveLength(11);
+  it('observado: usa el acumulado que entrega la base y arrastra los dias sin envio', () => {
+    const p = acumuladoDelMes(serie, '2027-03-12', { etiqueta: 'Estimado', emitida: false, motivo: 'muestra_chica', muestra: proy.muestra });
+    expect(p).toHaveLength(12);
     expect(p.every((x) => x.tipo === 'observado')).toBe(true);
-    expect(p.at(-1)!.valor).toBe(96000);
     expect(p[0]!.valor).toBe(8000);
+    expect(p[9]!.valor).toBe(96000);
+    expect(p[11]!.valor).toBe(96000); // 11 y 12 de marzo sin envio: se arrastra
   });
-  it('con proyeccion agrega 4 puntos estimados que terminan en el central del corte, con banda', () => {
+  it('NO suma dinero en el navegador: el punto se toma tal cual de acum_mes_cent', () => {
+    const raros: DiaRenta[] = [{ fecha: '2027-03-01', piezas: 1, renta_cent: 200n, acum_mes_cent: 777n }, { fecha: '2027-03-02', piezas: 1, renta_cent: 200n, acum_mes_cent: 888n }];
+    const p = acumuladoDelMes(raros, '2027-03-02', { etiqueta: 'Estimado', emitida: false, motivo: 'muestra_chica', muestra: proy.muestra });
+    expect(p.map((x) => x.valor)).toEqual([777, 888]);
+  });
+  it('con proyeccion agrega UN solo punto estimado, con el central, bajo y alto de la base (sin interpolar)', () => {
     const p = acumuladoDelMes(serie, '2027-03-11', proy);
     const est = p.filter((x) => x.tipo === 'estimado');
-    expect(est).toHaveLength(4);
-    expect(est.at(-1)!.valor).toBe(96000 + 192000);
-    expect(est.at(-1)!.bajo).toBeCloseTo(96000 + 192000 - 9600, 6);
-    expect(est.at(-1)!.alto).toBeCloseTo(96000 + 192000 + 9600, 6);
-    expect(est[0]!.alto! - est[0]!.bajo!).toBeLessThan(est.at(-1)!.alto! - est.at(-1)!.bajo!);
+    expect(est).toHaveLength(1);
+    expect(est[0]).toMatchObject({ valor: 288000, bajo: 278400, alto: 297600, etiqueta: '31 mar' });
+    expect(est[0]!.texto).toBe('$2,880.00');
   });
 });
 
 describe('insights', () => {
-  const est = estadisticas(serie, [{ folio: 'PO-0001', fecha: '2027-03-06', monto_cent: 40000n, via: 'efectivo' }], estado);
+  const est = estadisticas(serie, [{ folio: 'PO-0001', fecha: '2027-03-06', monto_cent: 40000n, via: 'efectivo', es_reversa: false, anulado: false }], estado);
+  it('B5: la frase del mes no repite la unidad ("558 pz piezas")', () => {
+    const e2 = estadisticas([...Array.from({ length: 12 }, (_, i) => ({ fecha: `2027-02-${String(i + 1).padStart(2, '0')}`, piezas: 50, renta_cent: 10000n, acum_mes_cent: 10000n })), ...serie], [], { hoy: '2027-03-11', primer_envio: '2027-02-01' });
+    const f = insights(estado, proy, e2).find((x) => x.id === 'mes-anterior')!.frase;
+    expect(f).not.toMatch(/pz piezas/);
+    expect(f).toContain('480 pz;');
+  });
   it('por pagar, con el pronostico al corte y el rango', () => {
     const r = insights(estado, proy, est);
     expect(r.find((x) => x.id === 'por-pagar')!.frase).toContain('$560.00');
@@ -122,6 +143,7 @@ describe('insights', () => {
     expect(corte.procedencia).toBe('estimado');
     expect(corte.frase).toContain('$2,480.00');
     expect(corte.frase).toContain('31 de marzo');
+    expect(corte.frase).toContain('últimos 10 días');
   });
   it('sin muestra no hay pronostico: dice que falta', () => {
     const r = insights(estado, { etiqueta: 'Estimado', emitida: false, motivo: 'muestra_chica', muestra: { dias_ventana: 3, dias_con_envio: 3, piezas: 120, dias_requeridos: 5, piezas_requeridas: 40 } }, est);

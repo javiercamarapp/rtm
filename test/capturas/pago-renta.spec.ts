@@ -165,7 +165,30 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
   await expect.poll(async () => Number((await conDb((c) => c.query("select (operacion.renta_estado(negocio.hoy())->>'a_favor_cent')::bigint as x"))).rows[0]!.x), { timeout: 20_000 }).toBeGreaterThan(0);
   await page.reload({ waitUntil: 'networkidle' });
   await expect(page.getByText('Anticipo.')).toBeVisible();
-  await page.screenshot({ path: join(SALIDA, '1440-claro-4-anticipo.png'), fullPage: true });
+  await page.screenshot({ path: join(SALIDA, '1440-claro-4-anticipo-completa.png'), fullPage: true });
+  await capturar('4-anticipo', [['socio', '/pago-renta', 'socio']]);
+  // Reversa: el anticipo se registro por error. Motivo obligatorio, confirmacion en dialogo y el por pagar vuelve exacto.
+  const folioAnticipo = String((await conDb((c) => c.query("select folio from operacion.pago_omar where reversa_de is null and sentido = 'a_omar' order by id desc limit 1"))).rows[0]!['folio']);
+  await page.getByTestId(`anular-${folioAnticipo}`).click();
+  await page.getByTestId('confirmar').click();
+  await expect(page.getByText('Falta: motivo (obligatorio).')).toBeVisible();
+  await page.getByLabel('Motivo (obligatorio)').fill('Captura duplicada por error');
+  await page.screenshot({ path: join(SALIDA, '1440-claro-5-formulario-anular.png') });
+  await page.getByTestId('confirmar').click();
+  await expect.poll(async () => Number((await conDb((c) => c.query("select (operacion.renta_estado(negocio.hoy())->>'saldo_cent')::bigint as x"))).rows[0]!.x), { timeout: 20_000 }).toBe(debe - 40000);
+  await page.reload({ waitUntil: 'networkidle' });
+  await expect(page.getByText(/reversa de/).first()).toBeVisible();
+  await expect(page.getByText(/pz piezas/)).toHaveCount(0);
+  await expect(page.getByText('Ritmo diario · 7 días')).toBeVisible();
+  await page.screenshot({ path: join(SALIDA, '1440-claro-5-reversa-completa.png'), fullPage: true });
+  await capturar('5-reversa', [['socio', '/pago-renta', 'socio'], ['omar', '/mi-bodega/pago-renta', 'omar']]);
+  // Formulario de pago a 390 px.
+  const movil = await browser.newContext({ storageState: sSocio, viewport: { width: 390, height: 900 }, isMobile: true, hasTouch: true, extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
+  const pm = await movil.newPage();
+  await pm.goto(`${BASE}/pago-renta`, { waitUntil: 'networkidle' });
+  await pm.getByTestId('pago-renta').click();
+  await pm.screenshot({ path: join(SALIDA, '390-claro-4-formulario-pago.png') });
+  await movil.close();
   await ctx.close();
 
   // 5. Vista de Omar: solo lo suyo, solo lectura.
@@ -174,7 +197,7 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
   await po.goto(`${BASE}/mi-bodega/pago-renta`, { waitUntil: 'networkidle' });
   await expect(po.getByTestId('renta-heroe')).toBeVisible();
   const texto = await po.locator('main').innerText();
-  for (const prohibido of ['Angelo', 'Javier', 'Abono', 'SPEI', 'Registrar pago', 'Contabilidad', 'margen', 'costo']) expect(texto, `Omar no debe ver "${prohibido}"`).not.toContain(prohibido);
+  for (const prohibido of ['Angelo', 'Javier', 'Abono', 'SPEI', 'Registrar pago', 'Captura duplicada', 'Anular', 'Contabilidad', 'margen', 'costo']) expect(texto, `Omar no debe ver "${prohibido}"`).not.toContain(prohibido);
   await expect(po.getByTestId('pago-renta')).toHaveCount(0);
   const r = await po.goto(`${BASE}/pago-renta`);
   await po.waitForURL((u) => !u.pathname.startsWith('/pago-renta'), { timeout: 20_000 });

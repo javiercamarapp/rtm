@@ -22,7 +22,8 @@ export interface EstadoRenta {
   mes_devengado_cent: bigint;
 }
 
-export interface DiaRenta { fecha: string; piezas: number; renta_cent: bigint }
+/** `acum_mes_cent`: renta acumulada del mes hasta ese dia, calculada en la base. */
+export interface DiaRenta { fecha: string; piezas: number; renta_cent: bigint; acum_mes_cent: bigint }
 
 export interface PagoRenta {
   folio: string;
@@ -34,6 +35,11 @@ export interface PagoRenta {
   nota?: string | null;
   comprobante?: string | null;
   exceso_cent?: bigint;
+  /** Fila de reversa (monto negativo) y su original anulado. */
+  es_reversa: boolean;
+  anulado: boolean;
+  motivo_reversa?: string | null;
+  reversa_de_folio?: string | null;
 }
 
 export interface MuestraProyeccion { dias_ventana: number; dias_con_envio: number; piezas: number; dias_requeridos: number; piezas_requeridas: number }
