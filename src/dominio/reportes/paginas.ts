@@ -323,6 +323,25 @@ function paginaSocios(a: Ayuda): PaginaModelo {
 
 // ---------- paginas mensuales ----------
 
+/** Capital por socio: valuacion, aportaciones, utilidad generada, reinvertida y retirada, fondos de la sociedad en poder de cada socio y cuenta con proveedores. Solo sale si hay movimientos. */
+function paginaCapital(a: Ayuda): PaginaModelo {
+  const t = a.p.tablas;
+  return {
+    id: 'capital',
+    titular: a.T(`Los socios suman ${M('cap.valuacion')} de valuación; en el mes se generaron ${M('cap.utilidad')} de utilidad y se retiraron ${M('cap.retirada')}.`),
+    heroe: { valor: a.fmt('cap.valuacion'), etiqueta: 'valuación de los socios', detalle: a.T(`${M('cap.reinvertida')} reinvertidos en el mes`), clase: 'Calculado' as Clase },
+    apoyo: [],
+    hallazgos: [],
+    acciones: [],
+    graficas: [],
+    tablas: [t.capital, t.capitalAcum, t.aportacionNeta, t.fondos, t.proveedores].filter((x): x is NonNullable<typeof x> => x !== undefined),
+    notas: ['La participación es siempre 50/50: la utilidad se reparte por mitades y aportar más no da más participación; el capital solo sube con lo que cada socio declara como inversión o reinversión.', 'Se busca que ambos tengan el mismo dinero invertido y que reinviertan lo mismo cada mes.', 'La utilidad reinvertida cuenta hasta donde la respalda la utilidad calculada; el resto es anticipo al proveedor, no utilidad.'],
+    implicacion: 'Sin retirar y reinvirtiendo, la utilidad retenida sube la valuación de cada socio; la participación sigue siendo 50/50.',
+    siguiente: 'Aportar el siguiente pago el socio con menos aportación neta, clasificar lo pagado a proveedores y revisar los fondos en poder de un socio.',
+    procedencia: procedencia(a, 'libro contable, estado de resultados y balance', null, [], 'Calculado'),
+  };
+}
+
 function paginaEstado(a: Ayuda): PaginaModelo {
   const t = a.tiene('res.utilidadNeta');
   return {
@@ -359,6 +378,9 @@ function paginaMes(a: Ayuda, id: string, titular: string, heroeId: string | null
   };
 }
 
+/** Tope de lineas de 'Pocos datos' en el anexo: con mucho historial sin muestra la lista desbordaba la pagina y el PDF no pasaba la verificacion. */
+const MAX_POCOS_DATOS = 12;
+
 export function construirReporte(p: Paquete): ReporteModelo {
   const a = crearAyuda(p);
   const g = p.graficas;
@@ -370,6 +392,7 @@ export function construirReporte(p: Paquete): ReporteModelo {
   } else {
     const r = paginaResumen(a, true);
     paginas.push(r, paginaEstado(a));
+    if (p.tablas.capital && a.tiene('cap.valuacion')) paginas.push(paginaCapital(a));
     paginas.push({ ...paginaUtilidad(a), id: 'puente' });
     paginas.push({ ...paginaClientes(a), id: 'clientes', graficas: [...(g.pareto ? [{ titulo: 'Pareto de clientes', svg: svg.svgPareto(g.pareto.items, g.pareto.totalCent) }] : []), ...(g.bump ? [{ titulo: 'Posición de clientes por semana', svg: svg.svgBump(g.bump) }] : [])] });
     paginas.push(
@@ -387,7 +410,7 @@ export function construirReporte(p: Paquete): ReporteModelo {
     { titulo: 'Comprobaciones', lineas: p.comprobaciones.map((c) => `${c.id}  ${c.nombre}: ${c.ok ? 'cuadra' : 'no cuadra'}`) },
     { titulo: 'Insights: umbrales vigentes (config)', lineas: anexoUmbrales().map((u) => `${u.id}  ${u.nombre}. Umbral: ${u.umbral}. Muestra: ${u.muestra}.`) },
     { titulo: 'Parámetros de proyección (config)', lineas: [`Promedio móvil exponencial: alfa ${PARAMETROS.alfaEma}, ventana ${PARAMETROS.ventanaEma} semanas, mínimo ${PARAMETROS.minSemanasEma}.`, `Rango empírico al ochenta por ciento: z ${PARAMETROS.z80}.`, `Tendencia: de ${PARAMETROS.tendencia.minSemanas} a ${PARAMETROS.tendencia.maxSemanas} semanas, t mínimo ${PARAMETROS.tendencia.tMinimo}, horizonte máximo ${PARAMETROS.tendencia.horizonteMax} semanas.`, `Punto de reorden: z ${PARAMETROS.reorden.z}, revisión ${PARAMETROS.reorden.revisionDias} días.`] },
-    ...(p.insights.pocosDatos.length ? [{ titulo: 'Pocos datos', lineas: p.insights.pocosDatos.map((x) => x.frase) }] : []),
+    ...(p.insights.pocosDatos.length ? [{ titulo: 'Pocos datos', lineas: [...p.insights.pocosDatos.slice(0, MAX_POCOS_DATOS).map((x) => x.frase), ...(p.insights.pocosDatos.length > MAX_POCOS_DATOS ? [`Y ${p.insights.pocosDatos.length - MAX_POCOS_DATOS} mas con muestra insuficiente (no se listan para que el anexo quepa en una pagina).`] : [])] }] : []),
   ];
   return { folio: p.periodo.folio, tipo: p.tipo, encabezado: `RTM · Reporte ${p.tipo} · ${p.periodo.etiqueta}`, estado, sale: p.estado.sale, preliminar: p.estado.etiquetas.includes('PRELIMINAR'), huella: p.huella, paginas, anexo };
 }

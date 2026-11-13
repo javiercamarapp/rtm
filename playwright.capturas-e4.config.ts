@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Capturas y metricas de la etapa 4 contra el servidor de desarrollo propio (puerto 3104) y el Supabase local propio.
+// Capturas y metricas de la etapa 4 contra el servidor propio (E4_BASE; por omision desarrollo en el puerto 3104, pero para entregables usar un build de produccion: el de desarrollo pinta el indicador 'N Issue' en la captura) y el Supabase local propio.
+const BASE = process.env.E4_BASE ?? 'http://127.0.0.1:3104';
+
 export default defineConfig({
   testDir: 'test/capturas',
   testMatch: /e4\.spec\.ts/,
@@ -9,7 +11,7 @@ export default defineConfig({
   workers: 1,
   timeout: 1_800_000,
   reporter: [['list']],
-  use: { baseURL: 'http://127.0.0.1:3104' },
+  use: { baseURL: BASE },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: { command: 'npx next dev -p 3104', url: 'http://127.0.0.1:3104/api/health', reuseExistingServer: true, timeout: 240_000 },
+  webServer: { command: 'npx next dev -p 3104', url: `${BASE}/api/health`, reuseExistingServer: true, timeout: 240_000 },
 });

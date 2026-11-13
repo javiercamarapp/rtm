@@ -45,11 +45,15 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
   const cuenta = (e: FilaCxc['estado']) => todas.filter((f) => f.estado === e).length;
   const porVencer = porEstado('por_vencer');
   const alCorriente = porEstado('al_corriente');
-  const sinPlazo = porEstado('sin_plazo');
+  // Los saldos de la apertura no traen plazo acordado: cuentan como "sin plazo" (no se inventa un vencimiento) y envejecen desde la fecha del adeudo.
+  const aperturaConSaldo = d.apertura.filter((x) => x.saldo_cent > 0n);
+  const saldoApertura = suma(aperturaConSaldo.map((x) => x.saldo_cent));
+  const sinPlazo = porEstado('sin_plazo') + saldoApertura;
+  const nSinPlazo = cuenta('sin_plazo') + aperturaConSaldo.length;
   const pctVencido = pct(d.vencido_cent, d.total_cent);
   const recargoAplicado = suma(todas.map((f) => f.recargo_cent));
   const recargoSugerido = suma(todas.filter((f) => f.saldo_cent > 0n).map((f) => f.recargo_sugerido_cent));
-  const ponderado = d.total_cent > 0n ? Number(suma(todas.map((f) => f.saldo_cent * BigInt(f.dias)))) / Number(d.total_cent) : null;
+  const ponderado = d.total_cent > 0n ? Number(suma([...todas.map((f) => f.saldo_cent * BigInt(f.dias)), ...aperturaConSaldo.map((x) => x.saldo_cent * BigInt(x.dias))])) / Number(d.total_cent) : null;
   const top3 = pct(suma(d.por_cliente.slice(0, 3).map((c) => c.saldo_cent)), d.total_cent);
   const fondosSocios = suma(d.socios.map((s) => s.fondos_cent));
   const deudaSocios = suma(d.socios.map((s) => s.deuda_cent));
@@ -70,6 +74,14 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
     e.total += f.saldo_cent;
     porCliente.set(f.cliente_id, e);
   }
+  // Los saldos de la apertura tambien envejecen (desde la fecha del adeudo): entran al mismo cuadro.
+  for (const a of d.apertura.filter((x) => x.saldo_cent > 0n)) {
+    const cubeta = a.dias <= 7 ? '0_7' : a.dias <= 14 ? '8_14' : a.dias <= 30 ? '15_30' : 'mas_30';
+    const e = porCliente.get(a.cliente_id) ?? { cliente: a.cliente, v: { '0_7': 0n, '8_14': 0n, '15_30': 0n, mas_30: 0n }, total: 0n };
+    e.v[cubeta] += a.saldo_cent;
+    e.total += a.saldo_cent;
+    porCliente.set(a.cliente_id, e);
+  }
   const filasAnt = [...porCliente.entries()].sort((a, b) => (a[1].total > b[1].total ? -1 : 1)).slice(0, 8).map(([id, e]) => ({
     id: String(id), etiqueta: e.cliente, valores: CUBETAS.map((k) => Number(e.v[k])), textos: CUBETAS.map((k) => m(e.v[k])), total: m(e.total),
   }));
@@ -89,8 +101,8 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
     { id: 'al', etiqueta: 'Al corriente', c: alCorriente, n: cuenta('al_corriente') },
     { id: 'pv', etiqueta: 'Por vencer', c: porVencer, n: cuenta('por_vencer') },
     { id: 've', etiqueta: 'Vencido', c: d.vencido_cent, n: cuenta('vencido'), tono: 'malo' as const },
-    { id: 'sp', etiqueta: 'Sin plazo acordado', c: sinPlazo, n: cuenta('sin_plazo') },
-  ].map((e) => ({ id: e.id, etiqueta: e.etiqueta, texto: m(e.c), pct: pct(e.c, d.total_cent), nota: `${e.n} ${e.n === 1 ? 'pedido' : 'pedidos'}`, tono: e.tono }));
+    { id: 'sp', etiqueta: 'Sin plazo acordado', c: sinPlazo, n: nSinPlazo },
+  ].map((e) => ({ id: e.id, etiqueta: e.etiqueta, texto: m(e.c), pct: pct(e.c, d.total_cent), nota: `${e.n} ${e.n === 1 ? 'partida' : 'partidas'}`, tono: e.tono }));
 
   const maxFondos = suma(d.socios.map((s) => (s.deuda_cent > s.fondos_cent ? s.deuda_cent : s.fondos_cent)));
   const barrasSocios = d.socios.map((s) => ({
@@ -124,9 +136,9 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
       <KpiLinea
         etiquetaAria="Indicadores de cuentas por cobrar"
         celdas={[
-          { id: 'total', etiqueta: 'Total por cobrar', valor: <CifraComprobada texto={m(d.total_cent)} cifra="cxc:total" comprobacion="cuadra" />, categoria: 2, partes: d.total_cent > 0n ? partesAnt : undefined, nota: d.total_cent > 0n ? `${todas.length} pedidos · tramo más viejo con saldo: ${CUBETA[maxAnt]}` : 'Sin saldos' },
-          { id: 'vencido', etiqueta: 'Vencido', valor: m(d.vencido_cent), categoria: 4, progreso: pctVencido === null ? undefined : { pct: pctVencido }, nota: `${pctTexto(pctVencido)} del total · ${cuenta('vencido')} pedidos` },
-          { id: 'por-vencer', etiqueta: 'Por vencer', valor: m(porVencer), categoria: 6, nota: `${cuenta('por_vencer')} pedidos · al corriente ${m(alCorriente)}` },
+          { id: 'total', etiqueta: 'Total por cobrar', valor: <CifraComprobada texto={m(d.total_cent)} cifra="cxc:total" comprobacion="cuadra" />, categoria: 2, partes: d.total_cent > 0n ? partesAnt : undefined, nota: d.total_cent > 0n ? `${todas.length} pedidos${aperturaConSaldo.length > 0 ? ` y ${aperturaConSaldo.length} ${aperturaConSaldo.length === 1 ? 'saldo inicial' : 'saldos iniciales'}` : ''} · tramo más viejo con saldo: ${CUBETA[maxAnt]}` : 'Sin saldos' },
+          { id: 'vencido', etiqueta: 'Vencido', valor: m(d.vencido_cent), categoria: 4, progreso: pctVencido === null ? undefined : { pct: pctVencido }, nota: `${pctTexto(pctVencido)} del total · ${cuenta('vencido')} pedidos${aperturaConSaldo.length > 0 ? ' · los saldos iniciales no tienen plazo' : ''}` },
+          { id: 'por-vencer', etiqueta: 'Por vencer', valor: m(porVencer), categoria: 6, nota: `${cuenta('por_vencer')} pedidos · al corriente ${m(alCorriente)} · sin plazo ${m(sinPlazo)}` },
           { id: 'clientes', etiqueta: 'Clientes con saldo', valor: String(d.por_cliente.length), categoria: 1, nota: top3 === null ? 'Sin concentración' : `Los 3 mayores concentran ${pctTexto(top3)}` },
           { id: 'favor', etiqueta: 'Saldos a favor', valor: String(d.saldos_a_favor.length), categoria: 7, nota: d.saldos_a_favor.length > 0 ? `${m(favorTotal)} que no es cobranza` : 'Ningún cliente pagó de más' },
         ]}
@@ -137,18 +149,18 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
           { etiqueta: 'Antigüedad media (ponderada por saldo)', valor: ponderado === null ? null : `${ponderado.toFixed(1)} días` },
           { etiqueta: 'Recargo aplicado', valor: m(recargoAplicado) },
           { etiqueta: `Recargo sugerido (${d.recargo_bp / 100} %)`, valor: m(recargoSugerido) },
-          { etiqueta: 'Sin plazo acordado', valor: `${m(sinPlazo)} · ${cuenta('sin_plazo')}` },
+          { etiqueta: 'Sin plazo acordado', valor: `${m(sinPlazo)} · ${nSinPlazo}` },
           { etiqueta: 'Pagos sin identificar', valor: `${m(sinIdTotal)} · ${d.pagos_sin_identificar.length}` },
           { etiqueta: 'Fondos de la sociedad en poder de socios', valor: m(fondosSocios) },
         ]}
       />
 
       <Rejilla dividir="6-6">
-        <Tarjeta titulo="Antigüedad de saldos por cliente" descripcion="Cuánto debe cada cliente y desde hace cuántos días (desde el envío)">
+        <Tarjeta titulo="Antigüedad de saldos por cliente" descripcion="Cuánto debe cada cliente y desde hace cuántos días (desde el envío o la fecha del adeudo inicial)">
           {filasAnt.length > 0 ? (
-            <AntiguedadSaldos titulo="Saldo por cliente y tramo de antigüedad" descripcion={`Saldo por cobrar de los ${filasAnt.length} clientes con mayor saldo, por tramo de antigüedad.`} procedencia="observado" pie={`Corte: ${etiquetaFecha(d.hoy)} · Fuente: pedidos enviados y pagos aplicados`} filas={filasAnt} />
+            <AntiguedadSaldos titulo="Saldo por cliente y tramo de antigüedad" descripcion={`Saldo por cobrar de los ${filasAnt.length} clientes con mayor saldo, por tramo de antigüedad.`} procedencia="observado" pie={`Corte: ${etiquetaFecha(d.hoy)} · Fuente: pedidos enviados, saldos de apertura y pagos aplicados`} filas={filasAnt} />
           ) : (
-            <p className="a3-grafica-vacia"><strong>Sin saldos que mostrar</strong>Cuando un pedido enviado quede sin saldar, aparecerá aquí por cliente y por tramo.</p>
+            <p className="a3-grafica-vacia"><strong>Sin saldos que mostrar</strong>Cuando un pedido enviado o un saldo de apertura quede sin saldar, aparecerá aquí por cliente y por tramo.</p>
           )}
         </Tarjeta>
         <Tarjeta titulo="Concentración por cliente" descripcion="Parte del saldo total y acumulado de los 8 mayores">

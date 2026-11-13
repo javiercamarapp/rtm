@@ -3,8 +3,10 @@
 import { LISTA_COMANDOS } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN } from '@/dominio/agente/deshacer';
 import { RegistroCifras } from '@/dominio/agente/cifras';
+import type { Intencion } from '@/dominio/agente/intenciones';
 import type { CifraServidor, Miembro, Persona } from '@/dominio/agente/tipos';
-import type { RespuestaConsulta, ResultadoEjecutado } from './puertos';
+import type { Reversa } from '@/dominio/agente/catalogo_intenciones';
+import type { RespuestaConsulta, ResultadoEjecutado, ResultadoSimulacion } from './puertos';
 
 export interface MensajeListo {
   texto: string;
@@ -21,9 +23,10 @@ function listar(r: RegistroCifras, cifras: readonly CifraServidor[]): string[] {
   return cifras.map((c) => `- ${r.servidor(c.etiqueta)}: ${r.cifra(c)}`);
 }
 
-export function ecoEjecutado(res: ResultadoEjecutado, autor: Miembro): MensajeListo {
+export function ecoEjecutado(res: ResultadoEjecutado, autor: Miembro, confirmadoPor: Persona | null = null): MensajeListo {
   const r = new RegistroCifras();
-  const partes: string[] = [`Registrado ${r.folio(res.folio)} por ${nombrePersona(autor.persona)}`, r.servidor(res.titulo), ...listar(r, res.lineas)];
+  const quien = confirmadoPor !== null && confirmadoPor !== autor.persona ? `${nombrePersona(autor.persona)}, confirmado por ${nombrePersona(confirmadoPor)}` : nombrePersona(autor.persona);
+  const partes: string[] = [`Registrado ${r.folio(res.folio)} por ${quien}`, r.servidor(res.titulo), ...listar(r, res.lineas)];
   if (res.comprobacion.length > 0) partes.push('Comprobacion:', ...listar(r, res.comprobacion));
   if (res.saldos.length > 0) partes.push('Saldo resultante:', ...listar(r, res.saldos));
   for (const a of res.advertencias) partes.push(`Aviso: ${r.servidor(a)}`);
@@ -79,7 +82,10 @@ export function consulta(res: RespuestaConsulta): MensajeListo {
 }
 
 export function ayuda(): MensajeListo {
-  return { texto: `Comandos: ${LISTA_COMANDOS}. Tambien puedes escribir el pedido o el pago con tus palabras.`, registro: new RegistroCifras() };
+  return {
+    texto: `Comandos: ${LISTA_COMANDOS}. Tambien puedes escribir con tus palabras (pedidos, cobros, compras, gastos, mermas, conteos, clientes, actas). Todo movimiento muestra un resumen y NO se registra hasta que un socio pulse Confirmar; /deshacer revierte lo que tiene reversa; /pendientes dice que falta por hacer. El bot nunca escribe a clientes y nunca calcula dinero.`,
+    registro: new RegistroCifras(),
+  };
 }
 
 export function avisoModoSinIa(): MensajeListo {
@@ -150,4 +156,192 @@ export function cifraSinProcedencia(cita: string, campos: readonly string[]): Me
 export function tomaCaducadaGrupo(folio: string): MensajeListo {
   const r = new RegistroCifras();
   return { texto: `La toma ${r.folio(folio)} caduco sin autorizacion y se libero la reserva.`, registro: r };
+}
+
+/** Pregunta por un dato que falta. Solo texto del servidor: sin cifras ni nombres del modelo. */
+export function faltaDato(dato: string): MensajeListo {
+  return { texto: `Falta un dato antes de registrar: ${dato}. No registre nada; mandalo de nuevo con ese dato.`, registro: new RegistroCifras() };
+}
+
+/** La suma que dicto el socio no cuadra con sus renglones: se bloquea y se pide correccion. Ambas cifras las calcula el codigo, no el modelo. */
+export function sumaNoCuadra(sumaRenglones: bigint, dictado: bigint): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: `La suma de los renglones es ${r.pesos(sumaRenglones)} y dijiste ${r.pesos(dictado)}. No registre nada: corrige el total o los renglones y mandalo de nuevo.`, registro: r };
+}
+
+export function faltaDatoConOpciones(dato: string): MensajeListo {
+  return { texto: `Falta un dato antes de registrar: ${dato}. Elige una opcion; no registre nada todavia.`, registro: new RegistroCifras() };
+}
+
+const TEXTO_REVERSA: Readonly<Record<Reversa, string>> = {
+  directa: 'Se puede deshacer despues con /deshacer.',
+  software: 'NO tiene deshacer directo por Telegram: si hay error, se corrige desde el software.',
+  ninguna: 'NO se puede deshacer por Telegram: queda registrado y solo se corrige desde el software con un movimiento nuevo.',
+};
+
+/** Segunda confirmacion de las acciones reforzadas: dice antes si hay o no deshacer. */
+export function refuerzo(tipo: string, reversa: Reversa): MensajeListo {
+  return { texto: `Confirmacion reforzada (${tipo.replace(/_/g, ' ')}). ${TEXTO_REVERSA[reversa]} ¿Seguro que lo registro?`, registro: new RegistroCifras() };
+}
+
+const TITULO_RESUMEN: Readonly<Partial<Record<Intencion['tipo'], string>>> = {
+  pedido: 'Pedido de cliente',
+  pago: 'Cobro a cliente',
+  pago_proveedor: 'Pago a proveedor',
+  gasto: 'Gasto',
+  aportacion: 'Aportacion de un socio',
+  reembolso_socio: 'Reembolso a un socio',
+  retiro_utilidad: 'Retiro de utilidad',
+  devolucion: 'Devolucion de un cliente',
+  paquete_perdido: 'Paquete perdido o danado',
+  compra: 'Compra a proveedor',
+  orden_compra: 'Orden de compra (borrador que los socios aprueban)',
+  pedido_envio: 'Cambio de estado de un pedido',
+  pedido_cancelar: 'Cancelacion de un pedido',
+  compra_recepcion: 'Recepcion de una compra',
+  compra_estado: 'Paquete de una compra',
+  compra_aprobar: 'Aprobacion de una orden de compra',
+  gasto_servicio: 'Cargo de un servicio del sistema',
+  merma: 'Merma de inventario',
+  conteo: 'Conteo fisico de inventario',
+  cliente_alta: 'Alta de cliente',
+  cliente_precio: 'Precio de un cliente',
+  acta_propuesta: 'Propuesta de acta de corte',
+  acta_firma: 'Firma del acta de corte',
+  lote_historico: 'Lote de movimientos historicos (fecha pasada)',
+};
+
+export interface DatosResumen {
+  autor: Miembro;
+  cliente: string | null;
+  proveedor: string | null;
+  /** Nombre de catalogo de cada linea, en el orden de la intencion. */
+  lineas: readonly string[];
+  horas: number;
+  /** Efecto calculado por el servidor al simular (null si el negocio no simula). */
+  efecto?: Extract<ResultadoSimulacion, { tipo: 'simulado' }> | null;
+  reversa?: Reversa;
+  reforzada?: boolean;
+  modelo?: string | null;
+  clientesLote?: Record<string, string> | null;
+}
+
+const NOMBRE_SOCIO: Readonly<Record<'angelo' | 'javier', string>> = { angelo: 'Angelo', javier: 'Javier' };
+const nombreProveedor = (p: string | null): string => (p === 'karen' ? 'Karen' : p === 'isaac' ? 'Isaac' : 'el proveedor');
+const nombreQuien = (q: 'angelo' | 'javier' | 'sociedad'): string => (q === 'sociedad' ? 'la sociedad' : NOMBRE_SOCIO[q]);
+
+/**
+ * Resumen previo a registrar un movimiento. NO calcula nada: cada importe y cada cantidad es la que el socio escribio (el codigo ya
+ * verifico que aparece en su mensaje) y el resto son nombres del catalogo. El total y los saldos los entrega el servidor DESPUES de registrar.
+ */
+export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo {
+  const r = new RegistroCifras();
+  const l: string[] = [`Resumen para confirmar. Todavia no se registro nada. Lo pidio ${nombrePersona(d.autor.persona)}.`, `Movimiento: ${TITULO_RESUMEN[i.tipo] ?? i.tipo}`];
+  const monto = (c: number) => `Monto: ${r.pesos(BigInt(c))}`;
+  const lineasDe = (ls: readonly { piezas: number }[]) => ls.map((x, n) => `- ${r.servidor(d.lineas[n] ?? 'modelo')}: ${r.piezas(x.piezas)} piezas`);
+  switch (i.tipo) {
+    case 'pago':
+      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, monto(i.monto_centavos), `Cuenta donde entro: ${r.citaUsuario(i.cuenta_destino_texto ?? '')}`);
+      if (i.pedido_folio !== null) l.push(`Pedido: ${r.citaUsuario(i.pedido_folio)}`);
+      break;
+    case 'pago_proveedor':
+      l.push(`Proveedor: ${nombreProveedor(d.proveedor)}`, monto(i.monto_centavos), `Lo pago: ${nombreQuien(i.pagado_por)}`);
+      if (d.cliente !== null) l.push(`Por cuenta del cliente: ${r.servidor(d.cliente)}`);
+      else if (i.pagado_por !== 'sociedad') {
+        l.push(i.intencion === 'capital'
+          ? `Declaracion del socio: capital, con sus palabras ("${r.citaUsuario(i.fuente_cita)}"). Si no es lo que quisiste decir, cancela.`
+          : 'Declaracion del socio: ninguna de capital (por omision es reembolso). Abajo se muestra como lo registrara el sistema.');
+      }
+      break;
+    case 'gasto':
+      l.push(`Concepto: ${i.gasto}`, monto(i.monto_centavos), `Lo pago: ${nombreQuien(i.pagado_por)} (queda como reembolso pendiente a ese socio)`);
+      if (i.descripcion !== null) l.push(`Nota: ${r.citaUsuario(i.descripcion)}`);
+      break;
+    case 'aportacion':
+      l.push(`Socio: ${NOMBRE_SOCIO[i.socio]}`, monto(i.monto_centavos), i.intencion === 'capital' ? 'Declaracion del socio: capital (inversion), con sus palabras' : 'Declaracion del socio: ninguna de capital (por omision es reembolso)');
+      if (i.motivo !== null) l.push(`Motivo: ${r.citaUsuario(i.motivo)}`);
+      break;
+    case 'reembolso_socio':
+      l.push(`Socio que recibe: ${NOMBRE_SOCIO[i.socio]}`, monto(i.monto_centavos), `Via: ${i.via ?? ''}`);
+      break;
+    case 'retiro_utilidad':
+      l.push(`Socio que retira: ${NOMBRE_SOCIO[i.socio]}`, monto(i.monto_centavos), `Via: ${i.via ?? ''}`, 'La base rechaza el retiro si excede la utilidad ya asignada.');
+      break;
+    case 'devolucion':
+      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, `Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, ...lineasDe(i.lineas), `Destino de las piezas: ${i.destino ?? 'el que defina el servidor'}`);
+      if (i.motivo !== null) l.push(`Motivo: ${r.citaUsuario(i.motivo)}`);
+      break;
+    case 'paquete_perdido':
+      l.push(`Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, `Incidente: ${i.incidente === 'perdido' ? 'perdido' : 'danado'}`);
+      if (i.detalle !== null) l.push(`Detalle: ${r.citaUsuario(i.detalle)}`);
+      break;
+    case 'compra':
+    case 'orden_compra':
+      l.push(`Proveedor: ${nombreProveedor(d.proveedor)}`, ...lineasDe(i.lineas));
+      break;
+    case 'pedido':
+      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, ...lineasDe(i.lineas));
+      break;
+    case 'pedido_envio':
+      l.push(`Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, `Nuevo estado: ${i.estado}`);
+      if (i.guia_texto !== null) l.push(`Guia: ${r.citaUsuario(i.guia_texto)}`);
+      break;
+    case 'pedido_cancelar':
+      l.push(`Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, `Motivo: ${r.citaUsuario(i.motivo ?? '')}`);
+      break;
+    case 'compra_aprobar':
+      l.push(`Compra: ${r.citaUsuario(i.compra_folio ?? '')}`);
+      break;
+    case 'compra_estado':
+      l.push(`Compra: ${r.citaUsuario(i.compra_folio ?? '')}`, `Estado: ${i.estado === 'enviada' ? 'enviada (en trayecto)' : 'llego a Merida'}`);
+      break;
+    case 'compra_recepcion':
+      l.push(`Compra: ${r.citaUsuario(i.compra_folio ?? '')}`, ...(i.lineas.length === 0 ? ['Recepcion TOTAL de lo pedido'] : ['Recepcion PARCIAL:', ...lineasDe(i.lineas)]));
+      break;
+    case 'gasto_servicio':
+      l.push(`Servicio: ${r.citaUsuario(i.servicio_texto)}`, ...(i.monto_usd_centavos !== null ? [`Cargo en dolares: ${r.pesos(BigInt(i.monto_usd_centavos))} USD`] : [monto(i.monto_mxn_centavos ?? 0)]), `Lo pago: ${nombreQuien(i.pagado_por)} (queda como reembolso pendiente a ese socio)`);
+      if (i.tipo_cambio_micro !== null) l.push(`Tipo de cambio dicho: ${r.citaUsuario(String(i.tipo_cambio_micro / 1_000_000))}`);
+      break;
+    case 'merma':
+      l.push(`Modelo: ${r.servidor(d.lineas[0] ?? 'modelo')}`, `Sabor: ${r.citaUsuario(i.sabor_texto ?? '')}`, `Piezas: ${r.piezas(i.piezas)}`, `Motivo: ${r.citaUsuario(i.motivo ?? '')}`);
+      break;
+    case 'conteo':
+      l.push('Piezas contadas (el sistema ajusta la existencia a este conteo):', ...lineasDe(i.lineas));
+      break;
+    case 'cliente_alta':
+      l.push(`Nombre: ${r.citaUsuario(i.nombre)}`, 'Sin telefonos: los contactos viven aparte.');
+      break;
+    case 'cliente_precio':
+      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, `Modelo: ${r.servidor(d.modelo ?? i.modelo_texto)}`, `Precio nuevo: ${r.pesos(BigInt(i.precio_centavos))}`);
+      break;
+    case 'acta_propuesta':
+      l.push(`Periodo: ${r.citaUsuario(i.mes ?? 'el mes anterior')}`);
+      for (const [k, v] of Object.entries(i)) if (k.endsWith('_centavos') && typeof v === 'number') l.push(`${k.startsWith('retira') ? 'Retira' : 'Reinvierte'} ${k.includes('angelo') ? 'Angelo' : 'Javier'}: ${r.pesos(BigInt(v))}`);
+      l.push('Las cifras del acta las calcula la base. Despues la firma CADA socio, personalmente, desde su Telegram.');
+      break;
+    case 'acta_firma':
+      l.push(`Acta: ${r.citaUsuario(i.acta_folio ?? 'la pendiente de tu firma')}`, 'Firmas con tu propio Telegram; el bot nunca firma por ti.');
+      break;
+    case 'lote_historico':
+      l.push(`Lote: ${r.citaUsuario(i.etiqueta ?? 'sin etiqueta')} (${r.config(i.renglones.length)} renglones, todos con fecha pasada)`);
+      i.renglones.forEach((x, n) => {
+        const quien = x.tipo === 'cobro' ? `${r.servidor(d.clientesLote?.[String(n)] ?? x.cliente_texto ?? 'cliente')} a ${r.citaUsuario(x.cuenta_texto ?? '')}` : x.socio === 'angelo' ? 'Angelo' : 'Javier';
+        const decl = x.tipo === 'aportacion' ? (x.intencion === 'capital' ? ' [declaro capital]' : ' [sin declarar capital: reembolso]') : '';
+        l.push(`- ${r.citaUsuario(x.fecha)} ${x.tipo} ${quien} ${r.pesos(BigInt(x.monto_centavos))}${x.concepto ? ` (${r.citaUsuario(x.concepto)})` : ''}${decl}`);
+      });
+      break;
+    default:
+      break;
+  }
+  if (d.efecto) {
+    if (d.efecto.lineas.length > 0) l.push('Efecto calculado por el sistema:', ...listar(r, d.efecto.lineas));
+    // Lo que la base registraria (leido de sus filas, no de una plantilla).
+    for (const c of d.efecto.clasificaciones ?? []) l.push(`El sistema lo registrara como ${c.clasificacion === 'capital' ? 'CAPITAL' : 'reembolso (cuenta por pagar al socio)'}: ${r.pesos(BigInt(c.montoCent))} de ${r.servidor(c.socio)}`);
+    for (const a of d.efecto.advertencias) l.push(`Aviso: ${r.servidor(a)}`);
+    l.push(d.efecto.cuadra ? 'Cuadre por dos vias despues de registrar: cuadra (debe = haber y saldos de socios = efectivo repartido).' : `Cuadre por dos vias despues de registrar: NO cuadra (${r.servidor(d.efecto.rojas.join('; '))}).`);
+  }
+  if (d.reversa !== undefined) l.push(TEXTO_REVERSA[d.reversa]);
+  if (d.reforzada) l.push('Pedire una segunda confirmacion antes de registrar.');
+  l.push(`Confirma con el boton o cancela. La tarjeta caduca en ${r.config(d.horas)} horas.`);
+  return { texto: l.join('\n'), registro: r };
 }

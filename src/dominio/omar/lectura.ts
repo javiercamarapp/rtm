@@ -63,7 +63,7 @@ export function parsearLiquidaciones(v: unknown): LiquidacionOmar[] {
   })).sort((a, b) => b.semana_ini.localeCompare(a.semana_ini));
 }
 
-const ESTADOS_PAQUETE: readonly EstadoPaquete[] = ['por_empacar', 'empacado', 'en_trayecto', 'llego'];
+const ESTADOS_PAQUETE: readonly EstadoPaquete[] = ['por_empacar', 'empacado', 'en_trayecto', 'llego', 'incidente'];
 export function parsearPaquetes(v: unknown): PaqueteOmar[] {
   return lista(v).map((f, i) => ({
     consecutivo: f.consecutivo === undefined ? i + 1 : entero(f.consecutivo),

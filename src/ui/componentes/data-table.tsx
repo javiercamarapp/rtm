@@ -159,7 +159,7 @@ export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo
   }
 
   const caja = (
-    <div className="rtm-dt-caja" data-estado={estado} data-densidad={densidad} data-plana={plana || undefined} data-pegajosa={pegajosa || undefined} data-primera-fija={primeraFija || undefined} data-tarjeta-movil={tarjetaMovil || undefined} aria-busy={cargando || undefined}>
+    <div className="rtm-dt-caja" data-desliza="99999" data-estado={estado} data-densidad={densidad} data-plana={plana || undefined} data-pegajosa={pegajosa || undefined} data-primera-fija={primeraFija || undefined} data-tarjeta-movil={tarjetaMovil || undefined} aria-busy={cargando || undefined}>
       <div className="rtm-dt" role="table" aria-label={etiqueta} aria-rowcount={cargando ? undefined : filas.length + 1}>
         <div className="rtm-dt-grupo" role="rowgroup">
           {hayBloques && (

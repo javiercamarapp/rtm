@@ -1,5 +1,6 @@
 // Insumos del paquete de cifras: lo que la base (via puertos) entrega al motor. Todo dinero en centavos bigint;
 // piezas enteras. El motor no lee la base ni el reloj: recibe esto y devuelve un paquete inmutable.
+import type { PeriodoCapital } from '../capital/tipos';
 import type { ResultadoComprobacion } from './tipos';
 
 export interface LineaPedido {
@@ -213,8 +214,16 @@ export interface CostosSistemaInsumo {
   readonly pendienteCent: bigint;
 }
 
+/** Capital por socio (rep.capital_mensual): el mes y el acumulado desde el primer movimiento. Ausente si aun no hay movimientos. */
+export interface CapitalInsumo {
+  readonly mes: PeriodoCapital;
+  readonly acumulado: PeriodoCapital;
+}
+
 export interface InsumosMensual extends InsumosSemanal {
   readonly mes: string;
+  /** Tabla de capital por socio del mes (valuacion, aportaciones, utilidad, fondos en poder y proveedores). */
+  readonly capital?: CapitalInsumo;
   readonly mesAnterior: readonly PedidoInsumo[];
   readonly resultados: readonly RenglonResultados[];
   readonly utilidadNetaCent: bigint;

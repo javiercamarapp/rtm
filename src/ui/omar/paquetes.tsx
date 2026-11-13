@@ -9,6 +9,7 @@ const ESTADO: Record<PaqueteOmar['estado'], { texto: string; tono: 'ok' | 'atenc
   empacado: { texto: 'Empacado', tono: 'ok' },
   en_trayecto: { texto: 'En trayecto', tono: 'neutro' },
   llego: { texto: 'Llegó a Mérida', tono: 'atencion' },
+  incidente: { texto: 'Reportado perdido o dañado', tono: 'atencion' },
 };
 
 function Tarjeta({ p }: { p: PaqueteOmar }) {
@@ -23,7 +24,7 @@ function Tarjeta({ p }: { p: PaqueteOmar }) {
         {p.renglones.map((r) => <li key={`${r.modelo}|${r.sabor}`}><span>{r.modelo} · {r.sabor}</span><span>{formatearPiezas(r.piezas)}</span></li>)}
       </ul>
       {p.tipo === 'salida' && p.horas !== null && <span className="rtm-nota">Pendiente desde hace {p.horas} h</span>}
-      {p.tipo === 'entrada' && p.llegada_estimada && <span className="rtm-nota">Llegada estimada: {etiquetaFecha(p.llegada_estimada)}</span>}
+      {p.tipo === 'entrada' && p.estado !== 'incidente' && p.llegada_estimada && <span className="rtm-nota">Llegada estimada: {etiquetaFecha(p.llegada_estimada)}</span>}
     </li>
   );
 }

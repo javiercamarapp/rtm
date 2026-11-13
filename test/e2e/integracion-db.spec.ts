@@ -1,7 +1,7 @@
 // Integracion con base de datos en laptop 1440 (Chromium): Costos del sistema, Inventario actual de proveedores (lista para cliente y orden de compra a Karen), Reportes
 // (preparar, historial, vista previa y PDF con sesion) y la puerta cerrada del webhook y de las tareas. Datos ILUSTRATIVOS que crea la propia prueba.
 import { expect, test } from '@playwright/test';
-import { altaUsuario, conDb, correoUnico, entrarComo, ipFalsa } from './ayudas';
+import { altaUsuario, conDb, correoUnico, entrarComo, ipFalsa, sembrarCuentasE2E } from './ayudas';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
@@ -31,12 +31,22 @@ async function sembrarProveedores(canonicoId: string | null, horasAtras: number)
 }
 
 test('costos: un cargo de Supabase se calcula, se registra como gasto de la sociedad, se explica, se reembolsa en parte y se anula con reversa', async ({ page }) => {
+  // El reembolso sale de la Caja de la empresa y la base lo bloquea sin saldo (decision 12): la prueba deposita lo que necesita en vez de depender del efectivo que dejen otras specs.
+  await conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    await c.query("select operacion.registrar_aportacion($1, 'Angelo', 1000000, 'deposito a caja para la prueba', 'reembolso')", [`e2eidb:dep:${Date.now().toString(36)}`]);
+    await c.query('commit');
+  });
   await entrarComo(page, await altaYCorreo('cos'), '/costos');
   await expect(page.getByTestId('costos-resumen')).toBeVisible();
   await expect(page.getByTestId('servicio-supabase')).toContainText('Sin cargos este mes');
   await expect(page.getByTestId('pie-marcas')).toContainText('Vercel, the Vercel design');
-  // El logo oficial es un <img> por tema con el archivo sin alterar.
-  await expect(page.getByTestId('servicio-supabase').locator('img.rtm-marca-claro')).toHaveAttribute('src', '/marcas/supabase/negro.svg');
+  // La lista usa casilla fija con monograma; el logo oficial (un <img> por tema, archivo sin alterar) esta en la ficha del servicio, que abre la fila.
+  await page.getByTestId('servicio-supabase').getByRole('link').click();
+  await expect(page.getByTestId('servicio-logo').locator('img.rtm-marca-claro')).toHaveAttribute('src', '/marcas/supabase/negro.svg');
+  await page.goBack();
+  await expect(page.getByTestId('costos-resumen')).toBeVisible();
   const antes = await page.getByTestId('costos-operar').innerText();
 
   await page.getByTestId('cargo-servicio').selectOption({ label: 'Supabase' });
@@ -144,13 +154,16 @@ test('inventario de proveedores: estado de la lectura, lista para cliente sin pr
 
 test('reportes: se prepara un semanal, aparece en el historial como version 1, abre su vista previa y su PDF con la sesion', async ({ page }) => {
   test.setTimeout(180_000);
+  // Independiente de otras specs: siembra sus propios pedidos, cobros y movimientos (sufijo propio) en vez de depender del efectivo que dejen otras.
+  await sembrarCuentasE2E();
   await entrarComo(page, await altaYCorreo('rep'), '/reportes');
   await page.getByTestId('reporte-inicio').fill('2026-11-02');
   await page.getByTestId('reporte-preparar').click();
   await expect(page.getByTestId('reporte-mensaje')).toContainText(/Reporte preparado|no sale/, { timeout: 150_000 });
   const enlace = page.getByTestId('reporte-semanal:2026-11-02-1');
   await expect(enlace).toBeVisible();
-  const fila = page.getByRole('row').filter({ hasText: 'Semanal 2026-11-02' });
+  // Localizador especifico: pueden existir otras filas 'Semanal 2026-11-02' (otras versiones o specs); se toma la fila de la version 1 que se acaba de ver.
+  const fila = page.getByRole('row').filter({ hasText: 'Semanal 2026-11-02' }).filter({ has: page.getByTestId('reporte-semanal:2026-11-02-1') });
   await expect(fila).toContainText(/Preliminar|Parcial|Definitivo|Borrador/);
   await enlace.click();
   await expect(page.getByTestId('marco-reporte')).toBeVisible();

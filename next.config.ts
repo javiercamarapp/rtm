@@ -28,7 +28,13 @@ const encabezadosSeguridad = [
 
 const config: NextConfig = {
   async headers() {
-    return [{ source: '/:path*', headers: encabezadosSeguridad }];
+    // La vista previa de un reporte (/reportes/:clave/:version/html) se enmarca desde el propio sitio: su ruta fija su propia CSP y
+    // X-Frame-Options SAMEORIGIN; el resto de encabezados de seguridad se conservan. Todo lo demas sigue en DENY.
+    const marcoPropio = '/reportes/:clave/:version/html';
+    return [
+      { source: '/((?!reportes/[^/]+/[^/]+/html$).*)', headers: encabezadosSeguridad },
+      { source: marcoPropio, headers: encabezadosSeguridad.filter((h) => h.key !== 'Content-Security-Policy' && h.key !== 'X-Frame-Options') },
+    ];
   },
   reactStrictMode: true,
   poweredByHeader: false,
@@ -38,6 +44,8 @@ const config: NextConfig = {
   // Sin fuentes por red: todas las tipografias son archivos locales (src/fuentes).
   agentRules: false,
   serverExternalPackages: ['pg'],
+  // Evidencia de pago (imagen o PDF de hasta 2 MB en base64) viaja en una accion de servidor.
+  experimental: { serverActions: { bodySizeLimit: '4mb' } },
 };
 
 export default config;

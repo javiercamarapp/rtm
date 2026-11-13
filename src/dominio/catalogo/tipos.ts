@@ -94,7 +94,7 @@ export interface Existencia { modelos: ExistenciaModelo[]; sabores: ExistenciaSa
 export interface Explicacion {
   cifra: string;
   titulo: string;
-  unidad: 'pz' | 'mxn';
+  unidad: 'pz' | 'mxn' | 'ident';
   valor: number | null;
   comprobacion: { via1: string; via1Valor: number; via2: string; via2Valor: number; cuadra: boolean } | null;
   movimientos: {
@@ -104,5 +104,7 @@ export interface Explicacion {
   precioCent: bigint | null;
   costos: { proveedor: string; costoCent: bigint; desde: string; supuesto: boolean; fuente: string; margenCent: bigint; cuadra: boolean }[];
   /** Cifras de dinero (F2): los renglones que forman la cifra, con saldo corrido cuando es un libro. */
+  /** De donde sale la cifra (una frase); opcional. */
+  fuente?: string;
   renglones: { concepto: string; montoCent: bigint; saldoCent: bigint | null; hora: string | null; fechaNeg: string | null; evento: string | null; canal: string | null; autor: string | null; mensajeOrigen: string | null }[];
 }

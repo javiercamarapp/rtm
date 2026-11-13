@@ -1,7 +1,7 @@
 import type {
   AmbitoHoja, CascadaProyeccion, CierreReparto, CuentaSocios, EstadoCuentaSocio, HojaProveedor, LiquidacionProveedor, OmarCuenta,
   CatalogoCompra, CatalogoPedido, CompraDetalle, CompraResumen, ContextoPagos, CuentaProveedor, CuentasPorCobrar, CxcCliente, DocumentoGuardado, EstadoSocio, ListaAvisos,
-  NotaFuente, PaqueteEnTransito, PaquetesPorHacer, UmbralesPaquetes, PedidoDetalle, PedidoResumen,
+  NotaFuente, PaqueteEnTransito, PaquetesIncidentes, SalidaLineaIncidente, PaquetesPorHacer, UmbralesPaquetes, PedidoDetalle, PedidoResumen,
 } from '@/dominio/operacion/tipos';
 
 /** Lo que la web lee de pedidos, compras, pagos, paquetes y avisos. Cada lectura es una funcion de la base; la interfaz no calcula dinero. */
@@ -14,6 +14,8 @@ export interface LectorOperacion {
   porHacer(): Promise<PaquetesPorHacer>;
   enTransito(): Promise<PaqueteEnTransito[]>;
   umbralesPaquetes(): Promise<UmbralesPaquetes>;
+  incidentesPaquetes(): Promise<PaquetesIncidentes>;
+  salidaLineasIncidente(pedidoId: number): Promise<SalidaLineaIncidente[]>;
   compras(proveedor?: string): Promise<CompraResumen[]>;
   compra(id: number): Promise<CompraDetalle | null>;
   cuentaProveedor(proveedor: string): Promise<CuentaProveedor>;
@@ -39,8 +41,11 @@ export interface LectorOperacion {
 export const ACCIONES_OPERACION = [
   'crear_compra', 'confirmar_compra', 'marcar_compra_enviada', 'registrar_guia_compra', 'marcar_llego_merida', 'recibir_compra', 'asignar_diferencia', 'cerrar_compra', 'anular_compra',
   'crear_pedido', 'confirmar_pedido', 'cancelar_pedido', 'marcar_empacado', 'enviar_pedido', 'anular_pedido', 'emitir_correccion', 'acordar_plazo', 'marcar_entregado', 'fijar_costo_guia',
+  'registrar_persona_bodega',
   'registrar_pago', 'aplicar_pago', 'pago_aplicar_apertura', 'identificar_pago', 'anular_pago', 'pago_proveedor_de_socio', 'registrar_entrega_socio',
   'registrar_toma_omar', 'resolver_toma_omar', 'cerrar_liquidacion_omar', 'registrar_pago_omar', 'aviso_marcar_leido',
+  // Carril paquete-perdido
+  'reportar_paquete_salida', 'reportar_paquete_entrada', 'resolver_paquete_incidente',
   // F3a
   'registrar_aportacion', 'registrar_gasto_socio', 'registrar_pago_a_socio', 'registrar_liquidacion_entre_socios', 'anular_movimiento_socio', 'proponer_cierre_reparto', 'firmar_cierre_reparto', 'anular_cierre_reparto',
   // Integracion: costos del sistema
@@ -52,6 +57,8 @@ export const ACCIONES_OPERACION = [
   // F3c: apertura y zona Movimientos
   'apertura_crear', 'apertura_fijar_corte', 'apertura_resolucion', 'apertura_agregar', 'apertura_quitar', 'apertura_firmar', 'apertura_retirar_firma', 'apertura_reversar', 'apertura_descartar',
   'mov_importar', 'mov_clasificar', 'mov_conciliar', 'mov_marcar',
+  // Dropshipping
+  'ds_crear_pedido', 'ds_capturar_destinatario', 'ds_registrar_folio', 'ds_pagar_proveedor', 'ds_pagar_pedido_menudeo', 'ds_reportar_pago_menudeo', 'ds_decidir_pago_menudeo', 'ds_capturar_costo', 'ds_resolver_diferencia', 'ds_reprogramar_compromiso',
 ] as const;
 export type AccionOperacion = (typeof ACCIONES_OPERACION)[number];
 

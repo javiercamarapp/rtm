@@ -5,8 +5,8 @@
 .rtm-dt { display: table; width: 100%; border-collapse: collapse; }
 .rtm-dt-grupo { display: table-row-group; }
 .rtm-dt-fila { display: table-row; }
-.rtm-dt-celda { display: table-cell; padding: 0 var(--rtm-e-4); height: var(--rtm-fila); vertical-align: middle; border-top: 1px solid var(--rtm-line); font-size: var(--rtm-cuerpo); }
-.rtm-dt-cabecera .rtm-dt-celda { border-top: 0; height: 32px; font-size: 12px; font-weight: 600; color: var(--rtm-th-texto); background: var(--rtm-th-fondo); border-bottom: 1px solid var(--rtm-th-borde); white-space: nowrap; }
+.rtm-dt-celda { display: table-cell; padding: 6px var(--rtm-e-4); height: var(--rtm-fila); vertical-align: middle; border-top: 1px solid var(--rtm-line); font-size: var(--rtm-cuerpo); }
+.rtm-dt-cabecera .rtm-dt-celda { border-top: 0; white-space: nowrap; }
 .rtm-dt-celda[data-num] { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rtm-dt-grupo:last-child .rtm-dt-fila:hover { background: var(--rtm-tint); }
 .rtm-dt-celda a { text-decoration: none; font-weight: 600; }
@@ -30,8 +30,10 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
 .rtm-seccion { display: flex; flex-direction: column; gap: var(--rtm-e-3); }
 .rtm-seccion > h2 { margin: 0; font-size: 16px; font-weight: 600; }
 .rtm-barra-filtros { display: flex; gap: var(--rtm-e-2); flex-wrap: wrap; align-items: center; }
-.rtm-campo { height: var(--rtm-fila); padding: 0 var(--rtm-e-3); border: 1px solid var(--rtm-campo-borde); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); color: var(--rtm-ink); font: inherit; min-width: 0; }
-.rtm-chip-filtro { display: inline-flex; align-items: center; height: 28px; padding: 0 var(--rtm-e-3); border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); font-size: 12px; text-decoration: none; color: var(--rtm-ink-2); }
+.rtm-a2-campo > :is(input, select),
+.rtm-dt-busqueda,
+.rtm-campo { box-sizing: border-box; height: var(--rtm-ctl-alto); padding: 0 var(--rtm-ctl-px); border: 1px solid var(--rtm-campo-borde); border-radius: var(--rtm-ctl-r); background-color: var(--rtm-surface); color: var(--rtm-ink); font: inherit; font-size: var(--rtm-ctl-fs); line-height: 1.2; letter-spacing: 0; text-transform: none; min-width: 0; max-width: 100%; }
+.rtm-chip-filtro { display: inline-flex; align-items: center; height: var(--rtm-ctl-alto-chico); padding: 0 var(--rtm-e-3); border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); font-size: 12px; text-decoration: none; color: var(--rtm-ink-2); }
 .rtm-chip-filtro[aria-current='true'] { background: var(--rtm-fill-active); color: var(--rtm-ink); font-weight: 600; }
 .rtm-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--rtm-e-3); }
 .rtm-kpi { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-4); display: flex; flex-direction: column; gap: 2px; }
@@ -101,12 +103,12 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
   .rtm-barra-fila { grid-template-columns: minmax(0, 1fr) 84px; }
   .rtm-barra-fila .rtm-barra-svg { grid-column: 1 / -1; grid-row: 2; }
   .rtm-dt-celda[data-secundaria] { display: none; }
-  .rtm-dt-celda { padding: 0 var(--rtm-e-3); height: 44px; }
+  .rtm-dt-celda { padding: 6px var(--rtm-e-3); height: 44px; }
   .rtm-campo, .rtm-cifra { font-size: 16px; }
   .rtm-cajon-cifra { font-size: 28px; line-height: 32px; }
 }
 
-.rtm-boton-chico { height: 28px; padding: 0 var(--rtm-e-3); font-size: 12px; }
+.rtm-boton-chico { height: var(--rtm-ctl-alto-chico); padding: 0 var(--rtm-e-3); font-size: var(--rtm-t-pequeno); }
 
 
 /* ---- /auth/confirm (plan alterno del enlace magico) ---- */
@@ -138,5 +140,6 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
 .rtm-campo::placeholder { color: var(--rtm-ink-3); opacity: 1; }
 .rtm-campo:focus-visible { border-color: var(--rtm-ink); outline: 2px solid var(--rtm-ink); outline-offset: 1px; }
 .rtm-campo[aria-invalid='true'] { border-color: var(--rtm-bad); border-width: 2px; }
-.rtm-campo:disabled, .rtm-boton:disabled, .rtm-chip-filtro[aria-disabled='true'] { opacity: 0.6; cursor: not-allowed; }
+.rtm-campo:disabled, .rtm-boton:disabled, .rtm-chip-filtro[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
 .rtm-campo:disabled { background: var(--rtm-tint); border-style: dashed; }
+.rtm-nowrap { white-space: nowrap; }

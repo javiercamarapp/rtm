@@ -107,6 +107,8 @@ export interface CifraExtraida {
   campo: string;
   /** Centesimas: piezas x 100; monto_centavos tal cual. */
   valor: bigint;
+  /** true en montos de dinero: si el mensaje solo lo explica con un formato ambiguo ("1.250") se pide aclarar en vez de aceptarlo. */
+  esDinero?: boolean;
 }
 
 /** Devuelve los campos cuya cifra NO aparece en el mensaje fuente. Lista vacia = todo con procedencia. */
@@ -120,7 +122,24 @@ export function cifrasDePiezas(campo: string, piezas: number): CifraExtraida {
 }
 
 export function cifrasDeMonto(campo: string, centavos: number): CifraExtraida {
-  return { campo, valor: BigInt(centavos) };
+  return { campo, valor: BigInt(centavos), esDinero: true };
+}
+
+/**
+ * BAJO-1: un monto que el modelo extrajo solo se explica en el mensaje con numeros de formato ambiguo ("1.250", "1.250,50", "1,5").
+ * Si OTRO numero claro del mensaje (o palabras) lo explica, no hay ambiguedad. Sirve a TODAS las intenciones con dinero, no solo al precio de un pedido.
+ */
+export function esMontoAmbiguo(fuente: string, valor: bigint): boolean {
+  const t = sinAcentos(fuente.toLowerCase());
+  if (numerosEnPalabras(t).includes(valor)) return false;
+  const explican = [...t.matchAll(/(\d[\d.,]*)(?:\s*(?:k|mil|millones|millon)\b)?/g)]
+    .map((m) => m[0])
+    .filter((tok) => valoresDeTexto(tok).has(valor));
+  return explican.length > 0 && explican.every((tok) => {
+    const num = /\d[\d.,]*/.exec(tok)![0];
+    const p = parsearPrecio(num);
+    return !p.ok && p.motivo === 'ambiguo';
+  });
 }
 
 /** Normaliza un grupo de digitos para comparar: sin separadores y sin ceros a la izquierda. */
@@ -196,4 +215,31 @@ export class RegistroCifras {
     if (ajenas.length > 0) throw new ErrorCifraAjena(ajenas);
     return texto;
   }
+}
+
+export type PrecioDictado = { ok: true; centavos: number } | { ok: false; motivo: 'ambiguo' | 'ilegible' };
+
+/**
+ * Un precio dictado ("250", "$1,250.50", "1250.5") a centavos exactos, con la convencion de Mexico: coma = miles, punto = decimales.
+ * Los formatos que cambian de significado segun la convencion ("1.250", "1.250,50", "1,5") NO se adivinan: devuelven `ambiguo` y el agente pide aclarar.
+ * (valoresDeTexto acepta ambas lecturas para comprobar procedencia; aqui hace falta UNA sola, porque el numero se escribe en la base.)
+ */
+export function parsearPrecio(texto: string): PrecioDictado {
+  const t = sinAcentos(texto.toLowerCase()).replace(/\b(mxn|pesos|peso|mn)\b/g, ' ');
+  const nums = [...t.matchAll(/\d[\d.,]*/g)].map((m) => m[0].replace(/[.,]+$/, ''));
+  if (nums.length === 0) {
+    // Solo palabras ("doscientos cincuenta"): vale si hay una unica lectura.
+    const v = [...valoresDeTexto(t)];
+    return v.length === 1 && v[0]! > 0n && v[0]! <= BigInt(Number.MAX_SAFE_INTEGER) ? { ok: true, centavos: Number(v[0]!) } : { ok: false, motivo: 'ilegible' };
+  }
+  if (nums.length > 1) return { ok: false, motivo: 'ambiguo' };
+  const n = nums[0]!;
+  const mult = /\d\s*(k|mil)\b/.test(t) ? 1000n : 1n;
+  let centavos: bigint | null = null;
+  if (/^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(n)) centavos = aCentesimas(n.replace(/,/g, '').split('.')[0]!, n.split('.')[1] ?? '');
+  else if (/^\d+(\.\d{1,2})?$/.test(n)) centavos = aCentesimas(n.split('.')[0]!, n.split('.')[1] ?? '');
+  else if (/^\d+$/.test(n)) centavos = aCentesimas(n, '');
+  if (centavos === null) return { ok: false, motivo: 'ambiguo' }; // 1.250 | 1.250,50 | 1,5 | 12,50,3 ...
+  const total = centavos * mult;
+  return total > 0n && total <= BigInt(Number.MAX_SAFE_INTEGER) ? { ok: true, centavos: Number(total) } : { ok: false, motivo: 'ilegible' };
 }

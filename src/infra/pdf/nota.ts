@@ -1,5 +1,5 @@
 // Motor de PDF minimo con HUELLA ESTABLE: mismo contenido => mismos bytes => mismo sha256. Carta, una sola tinta (negro sobre blanco), linea fina de 0.5 pt,
-// cifras alineadas a la derecha. Fuentes incrustadas (Figtree y EB Garamond, archivos locales). Sin fechas del reloj, sin azar: el PDF se genera UNA vez y se guarda.
+// cifras alineadas a la derecha. Fuentes incrustadas (Geist, la misma tipografia de la interfaz; archivos locales, SIL OFL 1.1 permite incrustarla), con cifras tabulares (tnum). Sin fechas del reloj, sin azar: el PDF se genera UNA vez y se guarda.
 // La nota del cliente NO contiene costos, utilidad ni margen; la hoja interna es solo para socios.
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -50,17 +50,28 @@ export async function nuevoDocumento(titulo: string, emitidaAt: string): Promise
   pdf.setCreator('RTM');
   pdf.setTitle(titulo);
   pdf.setAuthor('RTM');
-  const cuerpo = await pdf.embedFont(archivoFuente('figtree-latin-400-normal.woff'), { subset: true });
-  const negrita = await pdf.embedFont(archivoFuente('figtree-latin-600-normal.woff'), { subset: true });
-  const marca = await pdf.embedFont(archivoFuente('eb-garamond-latin-400-normal.woff'), { subset: true });
+  // Geist trae cifras proporcionales por omision: `tnum` las vuelve tabulares para que las columnas de dinero alineen digito con digito.
+  const features = { tnum: true };
+  const cuerpo = await pdf.embedFont(archivoFuente('geist-latin-400-normal.woff'), { subset: true, features });
+  const negrita = await pdf.embedFont(archivoFuente('geist-latin-600-normal.woff'), { subset: true, features });
+  const marca = await pdf.embedFont(archivoFuente('geist-latin-400-normal.woff'), { subset: true, features });
   return { pdf, f: { cuerpo, negrita, marca } };
 }
 
-/** Quita lo que la fuente no puede dibujar (por ejemplo emojis) en lugar de fallar al generar. */
-function limpio(fuente: PDFFont, t: string): string {
+/** Simbolos que Geist (subconjunto latino) no trae y su equivalente en texto: se sustituyen ANTES de caer en el signo '?'. */
+const EQUIVALENTE_TEXTO: Readonly<Record<string, string>> = {
+  '✓': 'OK', '✔': 'OK', '✗': 'X', '✘': 'X', '≥': '>=', '≤': '<=', '≠': '!=', '→': '->', '←': '<-', '↔': '<->', '★': '*', '☆': '*', '●': '-', '▪': '-', '‣': '-', '−': '-',
+};
+
+/** Convierte lo que la fuente no puede dibujar: primero a su equivalente en texto (✓ -> OK, >= <= ->), y lo que no tenga equivalente (por ejemplo emojis) a '?', en lugar de fallar al generar. */
+export function limpio(fuente: PDFFont, t: string): string {
   const juego = new Set(fuente.getCharacterSet());
   let s = '';
-  for (const ch of t) s += juego.has(ch.codePointAt(0)!) ? ch : '?';
+  for (const ch of t) {
+    if (juego.has(ch.codePointAt(0)!)) { s += ch; continue; }
+    const eq = EQUIVALENTE_TEXTO[ch];
+    s += eq !== undefined && [...eq].every((c) => juego.has(c.codePointAt(0)!)) ? eq : '?';
+  }
   return s;
 }
 
@@ -184,7 +195,7 @@ export async function pdfNotaCliente(n: NotaFuente): Promise<Uint8Array> {
 
     h.asegurar(120);
     const fila = (etiqueta: string, valor: string, fuerte = false) => {
-      h.texto(etiqueta, X.precio - 64, fuerte ? 12 : 10, { fuente: fuerte ? f.negrita : f.cuerpo });
+      h.texto(etiqueta, X.precio - 120, fuerte ? 12 : 10, { fuente: fuerte ? f.negrita : f.cuerpo });
       h.texto(valor, X.total, fuerte ? 12 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, derecha: true });
       h.bajar(fuerte ? 18 : 14);
     };
@@ -193,7 +204,7 @@ export async function pdfNotaCliente(n: NotaFuente): Promise<Uint8Array> {
     if (c.envio_cent > 0n) fila('Envío', formatearMoneda(c.envio_cent));
     if (c.recargo_cent > 0n) fila('Recargo', formatearMoneda(c.recargo_cent));
     if (c.descuento_cent > 0n) fila('Descuento', `-${formatearMoneda(c.descuento_cent)}`);
-    h.linea(0.5, X.precio - 64, X.total);
+    h.linea(0.5, X.precio - 120, X.total);
     h.bajar(14);
     fila('Total a saldar', formatearMoneda(c.total_cent), true);
 

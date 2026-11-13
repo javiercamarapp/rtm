@@ -25,19 +25,19 @@ export interface EntradasPulso {
   existencia: Existencia | null;
 }
 
-/** Por pagar a Isaac: saldo negativo = se debe. Sin movimientos en la cuenta no hay dato. */
+/** Por pagar a Isaac: saldo de LA CUENTA de Isaac (movimientos de proveedor, incluidos los pagos de socios); 'Capital por socio' muestra el Mayor (2110) y separa como 'Por clasificar' lo pagado por un socio sin destino confirmado, por eso el rotulo dice 'en su cuenta'. Saldo negativo = se debe. Sin movimientos en la cuenta no hay dato. */
 function chipIsaac(c: CuentaProveedor | null): ChipPulso {
   const base: ChipPulso = { clave: 'isaac', etiqueta: 'Por pagar a Isaac', texto: null, cifra: null, href: '/proveedores?p=Isaac', detalle: null };
   if (!c || c.movimientos.length === 0) return base;
   const cifra = `proveedor:saldo:${c.id}`;
-  if (c.saldo_cent < 0n) return { ...base, texto: formatearMoneda(-c.saldo_cent), cifra, href: null, detalle: 'se debe' };
-  if (c.saldo_cent > 0n) return { ...base, texto: formatearMoneda(c.saldo_cent), cifra, href: null, detalle: 'a favor' };
-  return { ...base, texto: formatearMoneda(0n), cifra, href: null, detalle: 'saldo cero' };
+  if (c.saldo_cent < 0n) return { ...base, texto: formatearMoneda(-c.saldo_cent), cifra, href: null, detalle: 'en su cuenta: se debe' };
+  if (c.saldo_cent > 0n) return { ...base, texto: formatearMoneda(c.saldo_cent), cifra, href: null, detalle: 'en su cuenta: a favor' };
+  return { ...base, texto: formatearMoneda(0n), cifra, href: null, detalle: 'en su cuenta: saldo cero' };
 }
 
 function chipCobrar(c: CuentasPorCobrar | null): ChipPulso {
   const base: ChipPulso = { clave: 'cobrar', etiqueta: 'Por cobrar', texto: null, cifra: null, href: '/cuentas-por-cobrar', detalle: null };
-  if (!c || (c.filas.length === 0 && c.saldos_a_favor.length === 0 && c.pagos_sin_identificar.length === 0)) return base;
+  if (!c || (c.filas.length === 0 && (c.apertura?.length ?? 0) === 0 && c.saldos_a_favor.length === 0 && c.pagos_sin_identificar.length === 0)) return base;
   return { ...base, texto: formatearMoneda(c.total_cent), cifra: 'cxc:total', href: null };
 }
 

@@ -9,8 +9,8 @@ export function FiltrosUrl({ etiquetaAria, children, restablecer }: { etiquetaAr
     <form ref={f} className="rtm-a2-filtros" method="get" role="group" aria-label={etiquetaAria}
       onChange={(e) => { if ((e.target as HTMLElement).dataset.noauto === undefined) f.current?.requestSubmit(); }}>
       {children}
-      <button type="submit" className="rtm-boton rtm-boton-chico rtm-a2-aplicar">Aplicar</button>
-      <a className="rtm-boton rtm-boton-chico" href={restablecer}>Restablecer</a>
+      <button type="submit" className="rtm-boton rtm-a2-aplicar">Aplicar</button>
+      <a className="rtm-boton" href={restablecer}>Restablecer</a>
     </form>
   );
 }

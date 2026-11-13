@@ -44,6 +44,9 @@ const PALABRAS_DE_NEGOCIO = new Set([
   'dame', 'dime', 'cuanto', 'cuantos', 'cuantas', 'saldo', 'stock', 'inventario', 'deshacer', 'deshaz', 'resumen', 'pendientes',
   'aporte', 'aportacion', 'puse', 'toma', 'tome', 'tomo', 'ayuda', 'pideme', 'pidele', 'pide', 'orden', 'anticipo', 'abono',
   'deposito', 'transferencia', 'guia', 'uber', 'envio',
+  'utilidad', 'cartera', 'estado', 'reembolso', 'reembolsa', 'retiro', 'retire', 'saque', 'capital', 'devolucion', 'devolvio', 'paquete', 'perdio', 'extravio', 'danado', 'cobro',
+  'enviado', 'entregado', 'cancela', 'cancelar', 'recibi', 'recibir', 'recepcion', 'merma', 'conteo', 'cliente', 'precio', 'acta', 'firmar', 'firma', 'cuadra', 'cuadran', 'balance', 'diario',
+  'cobertura', 'reporte', 'llego', 'aprobar', 'aprueba', 'servicio', 'openrouter', 'vercel', 'lote', 'historico', 'cuentas', 'socios', 'faltan', 'falta',
 ]);
 
 /**
@@ -70,5 +73,15 @@ export function envolverMensaje(autor: Persona, fuente: FuenteMensaje, texto: st
 export function redactarContactos(texto: string): string {
   return texto
     .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g, '[correo oculto]')
-    .replace(/\+?\d(?:[\s.-]?\d){9,14}/g, (m) => (m.replace(/\D/g, '').length >= 10 ? '[telefono oculto]' : m));
+    // Telefonos con parentesis y separadores de 1 a 3 caracteres: (999) 123-4567, 999 - 123 - 4567, (999)1234567, +52 999 123 4567. La coma NO es separador (1,250.50 es un monto).
+    .replace(/\+?\(?\d(?:[\s().-]{0,3}\d){9,14}\)?/g, (m) => (m.replace(/\D/g, '').length >= 10 && !/\d\.\d{2}\s+\d/.test(m) ? '[telefono oculto]' : m));
+}
+
+/**
+ * Decision del dueno (11 y 13-nov): el dinero que un socio pone o paga es REEMBOLSO; es capital SOLO si el socio lo declara con sus palabras
+ * (capital, invertir, reinvertir, meter mas lana). Se evalua sobre el mensaje original, nunca sobre lo que dice el modelo.
+ */
+export function declaraCapitalExpreso(texto: string): boolean {
+  const t = texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return /\b(capital|inversion|invert\w*|inviert\w*|reinvert\w*|reinviert\w*)\b/.test(t) || /\bmet(?:o|i|er)\s+mas\s+(?:lana|dinero|plata|feria)\b/.test(t);
 }

@@ -16,7 +16,7 @@ select is((api.cuentas_por_cobrar() -> 'filas') = (api.cuentas_por_cobrar() -> '
 select matches(pg_get_functiondef('api.cuentas_por_cobrar()'::regprocedure), 'pedido_id.*::bigint\), ''\[\]''', 'el orden se desempata por pedido_id');
 
 -- Aportacion por Telegram: sin declarar capital es un reembolso (adenda 32).
-select matches(pg_get_functiondef('agente.ejecutar(text,text,jsonb)'::regprocedure), 'else ''reembolso'' end', 'agente.ejecutar pasa reembolso por omision y capital solo si se declara');
+select matches(pg_get_functiondef('agente._ejecutar_base(text,text,jsonb)'::regprocedure), 'else ''reembolso'' end', 'agente.ejecutar (base, tras la puerta que verifica al autor) pasa reembolso por omision y capital solo si se declara');
 
 select * from finish();
 rollback;

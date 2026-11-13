@@ -18,6 +18,7 @@ import { enviadorTelegramDeLotes } from '@/infra/notificaciones/telegram_lotes';
 import { llamadaProveedoresServidor } from '@/infra/postgres/proveedores';
 import { sqlServidor, type Sql } from '@/infra/postgres/servidor';
 import { secretoValido } from '@/infra/agente/telegram_webhook';
+export { leerCuerpoAcotado } from '@/infra/agente/telegram_webhook';
 import { appUrl } from '@/config/env';
 
 /** La URL de la app es opcional para los avisos: sin ella los textos no llevan enlace. */
@@ -42,6 +43,8 @@ export interface DepsProduccion {
   lectorProveedor?: PuertoLecturaProveedor;
   renderizador?: (fecha14: string) => import('@/aplicacion/reportes/puertos').RenderizadorPdf;
   urlApp?: string | null;
+  /** Ajustes del agente (por ejemplo el limite de frecuencia en las pruebas). */
+  configAgente?: Partial<import('@/aplicacion/agente/agente').ConfigAgente>;
   entorno?: Record<string, string | undefined>;
 }
 
@@ -68,12 +71,12 @@ export function crearAgenteProduccion(d: DepsProduccion): AgenteTelegram {
   if (!tg) throw new Error('Telegram no esta configurado (falta TELEGRAM_BOT_TOKEN)');
   return new AgenteTelegram({
     almacen: new AlmacenAgenteDb(d.sql), presupuesto: new AlmacenPresupuestoDb(d.sql), llm: llmDe(d), telegram: tg, tokens: new AlmacenTokensDb(d.sql),
-    catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d),
+    catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d), config: { exigirSabor: true, ...d.configAgente },
   });
 }
 
 /** Webhook: secreto en tiempo constante, 200 siempre salvo secreto invalido, reclamo por update_id dentro del agente. Sin secreto configurado rechaza todo. */
-export async function procesarWebhook(d: DepsProduccion, cabeceraSecreto: string | null, cuerpo: string): Promise<RespuestaWebhook> {
+export async function procesarWebhook(d: DepsProduccion, cabeceraSecreto: string | null, cuerpo: string | (() => Promise<string | null>)): Promise<RespuestaWebhook> {
   const secreto = configPrivada(d.entorno).TELEGRAM_WEBHOOK_SECRET ?? '';
   return manejarWebhook({
     cabeceraSecreto, secretoEsperado: secreto, cuerpo,
@@ -154,7 +157,7 @@ export async function ejecutarLatidoProduccion(d: DepsProduccion): Promise<Resum
 
 // ---------------------------------------------------------------- entradas de las rutas HTTP (las rutas de app no importan infra)
 
-export function webhookTelegram(cabeceraSecreto: string | null, cuerpo: string): Promise<RespuestaWebhook> {
+export function webhookTelegram(cabeceraSecreto: string | null, cuerpo: string | (() => Promise<string | null>)): Promise<RespuestaWebhook> {
   return procesarWebhook({ sql: sqlServidor, urlApp: urlAppOpcional() }, cabeceraSecreto, cuerpo);
 }
 

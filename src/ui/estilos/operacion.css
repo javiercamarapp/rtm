@@ -4,14 +4,7 @@
 .rtm-segmentado a, .rtm-segmentado button { display: inline-flex; align-items: center; height: 30px; padding: 0 var(--rtm-e-4); border: 0; border-radius: var(--rtm-r-pildora); background: transparent; color: var(--rtm-ink-2); text-decoration: none; font-size: 13px; font-weight: 500; cursor: pointer; }
 .rtm-segmentado [aria-current='true'] { background: var(--rtm-fill-active); color: var(--rtm-ink); font-weight: 600; }
 
-.rtm-form { display: flex; flex-direction: column; gap: var(--rtm-e-5); max-width: 880px; }
-.rtm-form-fila { display: flex; gap: var(--rtm-e-3); flex-wrap: wrap; align-items: flex-end; }
-.rtm-etiqueta-campo { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--rtm-ink-3); min-width: 0; }
-.rtm-etiqueta-campo > .rtm-campo, .rtm-etiqueta-campo > select { color: var(--rtm-ink); font-size: var(--rtm-cuerpo); }
-.rtm-campo-ancho { min-width: min(220px, 100%); flex-grow: 1; }
-.rtm-campo-num { width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
-select.rtm-campo { appearance: none; padding-right: var(--rtm-e-6); }
-textarea.rtm-campo { height: auto; padding: var(--rtm-e-3); border-radius: var(--rtm-r-3); min-height: 72px; }
+/* Formularios: rejilla, etiquetas, campos y avisos viven en controles.css (un solo sistema). */
 .rtm-aviso { border: 1px solid var(--rtm-line-2); border-left: 3px solid var(--rtm-line-strong); border-radius: var(--rtm-r-2); background: var(--rtm-surface); padding: var(--rtm-e-3) var(--rtm-e-4); display: flex; flex-direction: column; gap: 2px; }
 .rtm-aviso strong { font-size: 13px; }
 .rtm-aviso p { margin: 0; color: var(--rtm-ink-2); font-size: 13px; }
@@ -225,3 +218,10 @@ details.rtm-explicar-linea p { margin: var(--rtm-e-1) 0; font-size: 13px; font-v
 .rtm-lista-sabores li { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); padding: 2px var(--rtm-e-3); font-size: 13px; background: var(--rtm-surface); }
 .rtm-lista-sabores li[data-agotado='true'] { color: var(--rtm-ink-3); text-decoration: line-through; }
 .rtm-reportes-marco { width: 100%; min-height: 70vh; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
+
+/* Las subpaginas (Contabilidad tiene 11, la apertura 11) se cortaban a 1440 px: en pantalla ancha la tira se acomoda en dos renglones en vez de desplazarse. */
+@media (min-width: 900px) {
+  .rtm-subnav { overflow-x: visible; }
+  .rtm-subnav ul { flex-wrap: wrap; min-width: 0; }
+  .rtm-subnav a { min-height: 36px; padding: 0 var(--rtm-e-2); white-space: nowrap; }
+}

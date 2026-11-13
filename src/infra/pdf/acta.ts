@@ -21,8 +21,9 @@ export async function pdfActaCorte(c: CierreReparto): Promise<Uint8Array> {
     h.bajar(24);
     const fila = (t: string, v: string, fuerte = false) => {
       h.asegurar(16);
-      h.texto(t, M, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo });
-      h.texto(v, M + 300, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, derecha: true });
+      // Importes a la derecha del renglon (misma esquina que el encabezado); la etiqueta se corta antes de pisarlos.
+      h.texto(t, M, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, ancho: UTIL - 118 });
+      h.texto(v, M + UTIL, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, derecha: true, ancho: 300 });
       h.bajar(14);
     };
     if (c.tipo === 'contra') {
@@ -62,7 +63,7 @@ export async function pdfActaCorte(c: CierreReparto): Promise<Uint8Array> {
       h.texto(`${x.socio} — firmada el ${etiquetaFecha(x.firmado_at.slice(0, 10))}`, M, 10);
       h.bajar(14);
     }
-    h.texto('Documento inmutable: una correccion solo se hace con una contra-acta firmada por los dos.', M, 8, { ancho: UTIL });
+    h.texto('Documento inmutable: una corrección solo se hace con una contra-acta firmada por los dos.', M, 8, { ancho: UTIL });
     pie(f, h, `${c.folio} · acta`);
     return pdf.save({ useObjectStreams: false });
   });

@@ -49,7 +49,7 @@ export interface LiquidacionOmar {
 }
 
 export type TipoPaquete = 'salida' | 'entrada';
-export type EstadoPaquete = 'por_empacar' | 'empacado' | 'en_trayecto' | 'llego';
+export type EstadoPaquete = 'por_empacar' | 'empacado' | 'en_trayecto' | 'llego' | 'incidente';
 
 /** Paquete que debe preparar (salida) o recibir (entrada). Sin cliente, sin proveedor, sin folio de pedido ni de compra. */
 export interface PaqueteOmar {

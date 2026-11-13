@@ -7,6 +7,7 @@ const PAGINAS = [
   { href: '/contabilidad', etiqueta: 'Valuación' },
   { href: '/contabilidad/valuacion', etiqueta: 'Valuación al detalle' },
   { href: '/contabilidad/valuacion/historial', etiqueta: 'Historial de valuación' },
+  { href: '/contabilidad/capital', etiqueta: 'Capital por socio' },
   { href: '/contabilidad/caja', etiqueta: 'Caja y liquidez' },
   { href: '/contabilidad/diario', etiqueta: 'Diario' },
   { href: '/contabilidad/mayor', etiqueta: 'Mayor' },

@@ -24,17 +24,23 @@ describe('armarPulso', () => {
     const p = armarPulso({ isaac: isaac(0n, []), cxc: cxc(0n, 0), socios: socios(0n, false), existencia: bodega([null, null]) });
     expect(p.chips.every((c) => c.texto === null)).toBe(true);
   });
+  it('por cobrar con solo la apertura firmada (sin pedidos) ya tiene dato', () => {
+    const soloApertura = { hoy: '2026-11-11', filas: [], apertura: [{}], total_cent: 750000n, saldos_a_favor: [], pagos_sin_identificar: [] } as unknown as CuentasPorCobrar;
+    const c = armarPulso({ ...vacio, cxc: soloApertura }).chips[1]!;
+    expect(c.texto).toBe('$7,500.00');
+    expect(c.cifra).toBe('cxc:total');
+  });
   it('Isaac: saldo negativo se muestra como lo que se debe, con su cifra explicable', () => {
     const c = armarPulso({ ...vacio, isaac: isaac(-123450n) }).chips[0]!;
     expect(c.texto).toBe('$1,234.50');
-    expect(c.detalle).toBe('se debe');
+    expect(c.detalle).toBe('en su cuenta: se debe');
     expect(c.cifra).toBe('proveedor:saldo:7');
   });
   it('Isaac: saldo a favor y saldo cero reales', () => {
-    expect(armarPulso({ ...vacio, isaac: isaac(5000n) }).chips[0]!.detalle).toBe('a favor');
+    expect(armarPulso({ ...vacio, isaac: isaac(5000n) }).chips[0]!.detalle).toBe('en su cuenta: a favor');
     const cero = armarPulso({ ...vacio, isaac: isaac(0n) }).chips[0]!;
     expect(cero.texto).toBe('$0.00');
-    expect(cero.detalle).toBe('saldo cero');
+    expect(cero.detalle).toBe('en su cuenta: saldo cero');
   });
   it('por cobrar, entre socios y bodega con cifra real', () => {
     const p = armarPulso({ isaac: null, cxc: cxc(980000n), socios: socios(-250000n), existencia: bodega([10, null, 5]) });

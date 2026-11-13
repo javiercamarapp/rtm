@@ -51,7 +51,7 @@ const existencia = z.object({
 }));
 
 const explicacion = z.object({
-  cifra: z.string(), titulo: z.string(), unidad: z.enum(['pz', 'mxn']), valor: z.number().nullable(),
+  cifra: z.string(), titulo: z.string(), unidad: z.enum(['pz', 'mxn', 'ident']), valor: z.number().nullable(),
   comprobacion: z.object({ via1: z.string(), via1_valor: z.number(), via2: z.string(), via2_valor: z.number(), cuadra: z.boolean() }).optional(),
   movimientos: z.array(z.object({ hora: z.string(), fecha_neg: z.string(), tipo: z.string(), sabor: z.string(), ubicacion: z.string(), cantidad: z.number(), saldo: z.number(), valor_cent: cent, evento: z.string(), canal: z.string(), mensaje_origen: z.string().nullable(), autor: z.string().nullable() })),
   precio_cent: centN.optional(),

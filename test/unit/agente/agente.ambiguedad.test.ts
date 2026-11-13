@@ -101,8 +101,8 @@ describe('criterio: "Omar" a secas y "Waka 50" siempre preguntan', () => {
 
   it('proveedor: un nombre que no es Isaac, Karen ni Vapemate no es alias y dos proveedores en una orden se preguntan', async () => {
     const e = escenario([
-      unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Proveedor Ajeno', monto_centavos: 100_000, pagado_por: 'angelo', cliente_texto: null, fuente_cita: 'cita' }),
-      unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Isaac y Karen', monto_centavos: 100_000, pagado_por: 'angelo', cliente_texto: null, fuente_cita: 'cita' }),
+      unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Proveedor Ajeno', monto_centavos: 100_000, pagado_por: 'angelo', cliente_texto: null, intencion: null, fuente_cita: 'cita' }),
+      unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Isaac y Karen', monto_centavos: 100_000, pagado_por: 'angelo', cliente_texto: null, intencion: null, fuente_cita: 'cita' }),
     ]);
     await e.socio('angelo', 'pague 1,000 a Proveedor Ajeno');
     expect(e.ultimoGrupo().texto).toContain('no encontre proveedor');

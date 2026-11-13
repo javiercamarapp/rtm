@@ -9,11 +9,10 @@ interface Cara {
   readonly estilo: 'normal' | 'italic';
 }
 
+// Una sola familia: Geist (la de la interfaz, SIL OFL 1.1, permite incrustarla en documentos) y Geist Mono para folios y huellas.
 const CARAS: readonly Cara[] = [
-  { familia: 'EB Garamond', archivo: 'eb-garamond-latin-400-normal.woff2', peso: '400', estilo: 'normal' },
-  { familia: 'EB Garamond', archivo: 'eb-garamond-latin-400-italic.woff2', peso: '400', estilo: 'italic' },
-  { familia: 'Figtree', archivo: 'figtree-latin-wght-normal.woff2', peso: '300 900', estilo: 'normal' },
-  { familia: 'JetBrains Mono', archivo: 'jetbrains-mono-latin-400-normal.woff2', peso: '400', estilo: 'normal' },
+  { familia: 'Geist', archivo: 'geist-latin-wght-normal.woff2', peso: '100 900', estilo: 'normal' },
+  { familia: 'Geist Mono', archivo: 'geist-mono-latin-wght-normal.woff2', peso: '100 900', estilo: 'normal' },
 ];
 
 export function cargarCssFuentes(dirFuentes: string): string {

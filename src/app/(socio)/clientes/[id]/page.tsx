@@ -12,6 +12,7 @@ import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { etiquetaOrigen } from './origen';
+import { AltaPersonaBodega } from './persona-bodega';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { AreaSerie } from '@/ui/graficas';
 import '@/ui/estilos/paginas-a1.css';
@@ -28,8 +29,11 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
   const n = Number(id);
   if (!Number.isInteger(n) || n <= 0) notFound();
   const op = await operacionDeSocio();
-  const [f, cxc, pedidosTodos] = await Promise.all([(await lectorDeSocio()).ficha(n), op.cxcCliente(n).catch(() => null), op.pedidos().catch(() => null)]);
+  const lector = await lectorDeSocio();
+  const [f, cxc, pedidosTodos, todos] = await Promise.all([lector.ficha(n), op.cxcCliente(n).catch(() => null), op.pedidos().catch(() => null), lector.clientes().catch(() => null)]);
   if (!f) notFound();
+  // Se ofrece solo cuando aún no hay persona de bodega: sin ella un pedido no puede marcarse como enviado.
+  const ofrecerBodega = !f.esBodega && todos !== null && !todos.some((c) => c.esBodega);
 
   const pedidos = (pedidosTodos ?? []).filter((p) => p.cliente_id === f.id).sort((a, b) => b.fecha_neg.localeCompare(a.fecha_neg) || b.id - a.id);
   const activos = pedidos.filter((p) => p.estado !== 'anulado' && p.estado !== 'cancelado');
@@ -57,7 +61,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
         eyebrow={`Ficha de cliente · ${etiquetaHoy()}`}
         titulo={f.nombre}
         descripcion={`${f.tabulador.length} modelos con precio vigente. Un precio de una nota no cambia el tabulador: solo cambia cuando un socio lo indica.`}
-        acciones={<><Link className="rtm-boton rtm-boton-primario" href={`/clientes/${f.id}/precios`} data-testid="editar-precios">Editar precios</Link><Link className="rtm-boton" href={`/clientes/${f.id}/editar`}>Editar cliente</Link><Link className="rtm-boton" href={`/pedidos/nuevo?cliente=${f.id}`}>Nuevo pedido</Link></>}
+        acciones={<><Link className="rtm-boton rtm-boton-primario" href={`/clientes/${f.id}/precios`} data-testid="editar-precios">Editar precios</Link><Link className="rtm-boton" href={`/clientes/${f.id}/editar`}>Editar cliente</Link><Link className="rtm-boton" href={`/pedidos/nuevo?cliente=${f.id}`}>Nuevo pedido</Link>{ofrecerBodega && <AltaPersonaBodega clienteId={f.id} nombre={f.nombre} />}</>}
       />
       <div className="rtm-a1-etiquetas" aria-label="Datos del cliente">
         <Chip>{TIPOS[f.tipo] ?? f.tipo}</Chip>

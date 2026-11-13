@@ -83,14 +83,41 @@ export interface RespuestaWebhook {
   detalle: 'secreto_invalido' | 'ignorado' | 'procesado' | 'error';
 }
 
+/**
+ * Lee el cuerpo de una peticion con tope: rechaza por Content-Length ANTES de leer y corta la lectura al pasar `max` bytes (null = demasiado grande).
+ * Se llama DESPUES de validar el secreto: quien no lo conoce no hace que el servidor lea nada.
+ */
+export async function leerCuerpoAcotado(req: { headers: { get(n: string): string | null }; body: ReadableStream<Uint8Array> | null }, max: number = MAX_CUERPO_BYTES): Promise<string | null> {
+  const declarado = Number(req.headers.get('content-length') ?? '');
+  if (Number.isFinite(declarado) && declarado > max) return null;
+  if (!req.body) return '';
+  const lector = req.body.getReader();
+  const trozos: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await lector.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await lector.cancel().catch(() => undefined);
+      return null;
+    }
+    trozos.push(value);
+  }
+  return Buffer.concat(trozos).toString('utf8');
+}
+
 export async function manejarWebhook(entrada: {
   cabeceraSecreto: string | null;
   secretoEsperado: string;
-  cuerpo: string;
+  /** Texto ya leido, o un lector perezoso que se invoca solo con el secreto valido (B3). null = excede el limite. */
+  cuerpo: string | (() => Promise<string | null>);
   procesar: (u: UpdateTelegram) => Promise<ResultadoUpdate>;
 }): Promise<RespuestaWebhook> {
   if (!secretoValido(entrada.cabeceraSecreto, entrada.secretoEsperado)) return { status: 401, detalle: 'secreto_invalido' };
-  const lectura = leerUpdate(entrada.cuerpo);
+  const cuerpo = typeof entrada.cuerpo === 'function' ? await entrada.cuerpo() : entrada.cuerpo;
+  if (cuerpo === null) return { status: 200, detalle: 'ignorado' };
+  const lectura = leerUpdate(cuerpo);
   if (!lectura.ok) return { status: 200, detalle: 'ignorado' };
   try {
     await entrada.procesar(lectura.update);

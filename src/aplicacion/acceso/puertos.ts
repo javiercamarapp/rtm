@@ -35,8 +35,16 @@ export interface Tope {
   ventanaSeg: number;
 }
 
+/** El limitador no pudo consultar o registrar el intento (conexion, rol sin login, tiempo agotado). Solo lleva un codigo tecnico, nunca datos del intento. */
+export class LimitadorNoDisponible extends Error {
+  constructor(readonly codigo?: string) {
+    super('limitador no disponible');
+    this.name = 'LimitadorNoDisponible';
+  }
+}
+
 export interface LimitadorIntentos {
-  /** Cuenta un intento y dice si ya se paso del tope. Cada llamada cuenta. Falla ABIERTO: es la unica via de entrada. */
+  /** Cuenta un intento y dice si ya se paso del tope. Cada llamada cuenta. Falla CERRADO: si no puede consultar o registrar, lanza `LimitadorNoDisponible` y el intento se rechaza. */
   excede(tipo: TipoClave, valor: string, tope: Tope): Promise<boolean>;
 }
 

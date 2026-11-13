@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
-import { IconoApertura, IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoContactos, IconoInicio, IconoInventario, IconoMenu, IconoMovimientos, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoReportes, IconoCostos, IconoSocios, IconoTrayecto } from '../iconos';
+import { IconoApertura, IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoContactos, IconoDropshipping, IconoInicio, IconoInventario, IconoMenu, IconoMovimientos, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoReportes, IconoCostos, IconoSocios, IconoTrayecto } from '../iconos';
 import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
 import type { ListaCampana } from '@/dominio/notificaciones/tipos';
@@ -16,6 +16,8 @@ import { Pulso } from './pulso';
 const SECCIONES = [
   { href: '/', etiqueta: 'Inicio', icono: <IconoInicio /> },
   { href: '/pedidos', etiqueta: 'Pedidos y notas', icono: <IconoPedidos /> },
+  { href: '/dropshipping', etiqueta: 'Dropshipping', icono: <IconoDropshipping /> },
+  { href: '/menudeo', etiqueta: 'Pedidos menudeo', icono: <IconoClientes /> },
   { href: '/paquetes/por-hacer', etiqueta: 'Paquetes por hacer', icono: <IconoPaquete /> },
   { href: '/paquetes/en-trayecto', etiqueta: 'Paquetes en trayecto', icono: <IconoTrayecto /> },
   { href: '/cuentas-por-cobrar', etiqueta: 'Cuentas por cobrar', icono: <IconoCobrar /> },
@@ -45,12 +47,14 @@ interface Props {
   accionSalir: () => Promise<void>;
   pulso: DatosPulso;
   noLeidas?: number;
+  /** Socio de menudeo: da nombre a la entrada del menu (Pedidos menudeo Angelo). */
+  socioMenudeo?: string;
   cargarCampana?: (filtro: 'todas' | 'sin_leer') => Promise<ListaCampana>;
   marcarLeida?: (id: number) => Promise<void>;
   marcarTodasLeidas?: () => Promise<void>;
 }
 
-export function Armazon({ children, nombreSocio, accionSalir, pulso, noLeidas = 0, cargarCampana, marcarLeida, marcarTodasLeidas }: Props) {
+export function Armazon({ children, nombreSocio, accionSalir, pulso, socioMenudeo = 'Angelo', noLeidas = 0, cargarCampana, marcarLeida, marcarTodasLeidas }: Props) {
   const ruta = usePathname();
   const [abierto, setAbierto] = useState(false);
   const activo = indiceActivo(ruta);
@@ -72,9 +76,9 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso, noLeidas = 
           <ul className="rtm-nav">
             {SECCIONES.map((s, i) => (
               <li key={s.href}>
-                <Link href={s.href} prefetch={'prefetch' in s ? s.prefetch : undefined} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined} onClick={() => setAbierto(false)}>
+                <Link href={s.href} prefetch={'prefetch' in s ? s.prefetch : undefined} className="rtm-nav-item" aria-label={s.href === '/menudeo' ? `${s.etiqueta} ${socioMenudeo}` : undefined} aria-current={i === activo ? 'page' : undefined} onClick={() => setAbierto(false)}>
                   {s.icono}
-                  <span>{s.etiqueta}</span>
+                  <span>{s.href === '/menudeo' ? `Menudeo ${socioMenudeo}` : s.etiqueta}</span>
                 </Link>
               </li>
             ))}
@@ -97,7 +101,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso, noLeidas = 
           <span className="rtm-migas">
             {MARCA.nombre} / <strong>{activo >= 0 ? SECCIONES[activo]!.etiqueta : 'Diseño'}</strong>
           </span>
-          <div className="rtm-pulso">
+          <div className="rtm-pulso" data-desliza="1100">
             <Pulso chips={pulso.chips} />
           </div>
           <div className="rtm-barra-acciones">
@@ -109,7 +113,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso, noLeidas = 
         <main className="rtm-panel" id="contenido">
           <div className="rtm-panel-scroll">
             <div className="rtm-pagina">
-              <div className="rtm-pulso-movil" aria-label="Pulso">
+              <div className="rtm-pulso-movil" data-desliza="767" aria-label="Pulso">
                 <Pulso chips={pulso.chips} />
               </div>
               {children}
