@@ -69,7 +69,9 @@ describe('adenda 21: gastos y aportaciones de socios', () => {
     await e.socio('angelo', 'pague 500 de envio');
     expect(e.ultimoGrupo().texto).toContain('Reembolso pendiente a angelo: $500.00');
     await e.socio('javier', 'puse 1,000 mas de capital');
-    expect(e.ultimoGrupo().texto).toContain('Por devolver a javier: $1,000.00');
+    // El eco del deposito sale primero; despues el bot comenta la igualacion (cifras de la base): Javier lleva mas aportado y le toca aportar a Angelo.
+    expect(e.textosGrupo().some((t) => t.includes('Por devolver a javier: $1,000.00'))).toBe(true);
+    expect(e.ultimoGrupo().texto).toBe('Javier lleva $500.00 más aportado; el siguiente pago le toca a Angelo.');
     expect(e.negocio.deudaCon('angelo')).toBe(50_000n);
     expect(e.negocio.deudaCon('javier')).toBe(100_000n);
   });

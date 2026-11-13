@@ -11,13 +11,15 @@ import { parsearComando } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN, evaluarDeshacer } from '@/dominio/agente/deshacer';
 import { debeProcesarConIa, declaraCapitalExpreso, detectarInyeccion, redactarContactos, sanitizar } from '@/dominio/agente/entrada';
 import { CATALOGO_INTENCIONES, confirmacionDe } from '@/dominio/agente/catalogo_intenciones';
-import { esEscritura, exigeConfirmacion, type Intencion, type RespuestaExtractor, type TipoIntencion } from '@/dominio/agente/intenciones';
+import { esEscritura, exigeConfirmacion, type IPedidoMenudeo, type Intencion, type RespuestaExtractor, type TipoIntencion } from '@/dominio/agente/intenciones';
 import { cadenaParaRol, peorCasoTokens } from '@/dominio/agente/modelos';
 import { permisoParaIntencion } from '@/dominio/agente/permisos';
 import { ALERTA_PORCENTAJE, type AvisoPresupuesto } from '@/dominio/agente/presupuesto';
 import type { Candidato } from '@/dominio/agente/resolutor';
 import type { ChatsRegistrados, FuenteMensaje, Miembro, Persona } from '@/dominio/agente/tipos';
 import { fechaNeg } from '@/dominio/calendario';
+import { dijoSinFecha, interpretarFechaPago, type OpcionFecha } from '@/dominio/agente/fecha_pago';
+import { normalizar } from '@/dominio/catalogo/normalizar';
 import { Comunicador, verificarMensajeOmar } from './comunicador';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
 import * as P from './plantillas';
@@ -37,7 +39,10 @@ import type {
   EnviadorTelegram,
   ResultadoSimulacion,
   NegocioAgente,
+  RecordatorioMenudeo,
+  ResultadoEjecutado,
   RespuestaLlm,
+  TipoEspera,
 } from './puertos';
 import { resolverAccion, type PreguntaAbierta } from './resolucion';
 import type { TgCallback, TgMensaje, UpdateTelegram } from './telegram';
@@ -57,6 +62,10 @@ export interface ConfigAgente {
   exigirSabor: boolean;
   /** Limite de frecuencia por chat: mensajes procesados por minuto (0 = sin limite). */
   limiteMensajesPorMinuto: number;
+  /** Minutos que espera el bot la respuesta de una pregunta abierta ("¿cuando pagas?"). */
+  caducaEsperaMin: number;
+  /** Intentos para entender una fecha antes de soltar la pregunta. */
+  maxIntentosFecha: number;
 }
 
 export const CONFIG_POR_OMISION: ConfigAgente = {
@@ -68,6 +77,8 @@ export const CONFIG_POR_OMISION: ConfigAgente = {
   confirmarMovimientos: true,
   exigirSabor: false,
   limiteMensajesPorMinuto: 20,
+  caducaEsperaMin: 30,
+  maxIntentosFecha: 3,
 };
 
 export interface DependenciasAgente {
@@ -133,6 +144,65 @@ interface PayloadDeshacer {
   claveIdem: string;
 }
 
+interface PayloadPago {
+  reporteId: number;
+  folio: string;
+  reportadoPor: Persona;
+  /** Banderas que devolvio la base (los centavos como texto: el payload viaja como JSON). */
+  datos: { reporte_id: number; aplicado: boolean; pendiente_cent: string | null; comprobante_telegram: boolean };
+  monto: string | null;
+}
+
+interface PayloadFecha {
+  estado: EstadoAccion;
+  base: EstadoAccion;
+  texto: string;
+  intentos: number;
+}
+
+interface PayloadReprogramar {
+  pedidoId: number;
+  folio: string;
+  intentos?: number;
+}
+
+interface PayloadReprogramarConfirma {
+  pedidoId: number;
+  folio: string;
+  fecha: string;
+  hora: string | null;
+  autor: Miembro;
+  base: PayloadReprogramar;
+  texto: string;
+}
+
+type FilaRecordatorio = RecordatorioMenudeo & { tipo: 'por_vencer' | 'vence_hoy' | 'vencido' };
+
+interface PayloadRecordatorio {
+  fila: Omit<FilaRecordatorio, 'pendienteCent'> & { pendienteCent: string };
+}
+
+/** Movimientos que cambian la aportacion neta de un socio: despues de ellos el bot comenta la igualacion. */
+export function esMovimientoDeAportacion(i: Intencion): boolean {
+  switch (i.tipo) {
+    case 'aportacion':
+    case 'reembolso_socio':
+    case 'retiro_utilidad':
+      return true;
+    case 'pago_proveedor':
+      // Dinero propio de un socio que paga a un proveedor (no el de la sociedad ni el pago de un cliente directo al proveedor).
+      return i.pagado_por !== 'sociedad' && i.cliente_texto === null;
+    case 'pago': {
+      const cuenta = normalizar(i.cuenta_destino_texto ?? '');
+      return cuenta === 'angelo' || cuenta === 'javier';
+    }
+    case 'lote_historico':
+      return i.renglones.some((r) => r.tipo === 'aportacion' || r.tipo === 'reembolso' || r.tipo === 'retiro' || (r.tipo === 'cobro' && ['angelo', 'javier'].includes(normalizar(r.cuenta_texto ?? ''))));
+    default:
+      return false;
+  }
+}
+
 interface ContextoMensaje {
   autor: Miembro;
   chats: ChatsRegistrados;
@@ -167,10 +237,14 @@ function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
     case 'devolucion':
     case 'compra_recepcion':
     case 'conteo':
+    case 'pedido_menudeo':
       a.lineas.forEach((l, i) => salida.push(cifrasDePiezas(`lineas.${i}.piezas`, l.piezas)));
       break;
     case 'merma':
       salida.push(cifrasDePiezas('piezas', a.piezas));
+      break;
+    case 'pago_pedido_menudeo':
+      if (a.monto_centavos !== null) salida.push(cifrasDeMonto('monto', a.monto_centavos));
       break;
     case 'gasto_servicio':
       if (a.monto_usd_centavos !== null) salida.push(cifrasDeMonto('monto_usd', a.monto_usd_centavos));
@@ -240,6 +314,8 @@ export function datoFaltante(a: Intencion): string | null {
       return a.motivo === null ? 'el motivo de la merma' : null;
     case 'gasto_servicio':
       return a.monto_usd_centavos === null && a.monto_mxn_centavos === null ? 'el monto del cargo (en dolares o en pesos)' : a.pagado_por === 'sociedad' ? 'quien pago el servicio, Angelo o Javier' : null;
+    case 'pago_pedido_menudeo':
+      return a.pedido_folio === null ? 'el folio del pedido (por ejemplo P-0001)' : a.monto_centavos === null ? 'el monto del pago' : a.via === null ? 'si pagaste directo al proveedor o como abono a la sociedad' : null;
     case 'lote_historico':
       return a.renglones.some((r) => (r.tipo !== 'cobro' && r.socio === null) || (r.tipo === 'cobro' && (r.cliente_texto === null || r.cuenta_texto === null)) || ((r.tipo === 'reembolso' || r.tipo === 'retiro') && r.via === null))
         ? 'en cada renglon: socio (o cliente y cuenta en un cobro) y via en reembolsos y retiros'
@@ -265,6 +341,9 @@ export function opcionesFaltante(a: Intencion): OpcionFaltante[] | null {
   if ((a.tipo === 'reembolso_socio' || a.tipo === 'retiro_utilidad') && a.via === null) {
     return (['transferencia', 'efectivo'] as const).map((v) => ({ texto: v === 'efectivo' ? 'Efectivo' : 'Transferencia', parche: (x) => (x.tipo === 'reembolso_socio' || x.tipo === 'retiro_utilidad' ? { ...x, via: v } : x) }));
   }
+  if (a.tipo === 'pago_pedido_menudeo' && a.pedido_folio !== null && a.monto_centavos !== null && a.via === null) {
+    return ([['proveedor', 'Directo al proveedor'], ['sociedad', 'Abono a la sociedad']] as const).map(([v, texto]) => ({ texto, parche: (x) => (x.tipo === 'pago_pedido_menudeo' ? { ...x, via: v } : x) }));
+  }
   return null;
 }
 
@@ -274,6 +353,12 @@ export function capitalAjeno(a: Intencion, autor: Persona): boolean {
   if (a.tipo === 'pago_proveedor') return a.intencion === 'capital' && a.pagado_por !== 'sociedad' && a.pagado_por !== autor;
   if (a.tipo === 'lote_historico') return a.renglones.some((r) => r.tipo === 'aportacion' && r.intencion === 'capital' && r.socio !== autor);
   return false;
+}
+
+/** La frase aparece en el mensaje del socio (sin acentos ni mayusculas): evita que el modelo invente la fecha o la referencia. */
+export function contieneTexto(fuente: string, frase: string): boolean {
+  const f = normalizar(frase);
+  return f !== '' && normalizar(fuente).includes(f);
 }
 
 export class AgenteTelegram {
@@ -291,6 +376,10 @@ export class AgenteTelegram {
     // Reclamo unico ANTES de cualquier IA: el mismo update (reintento de Telegram) se aplica una sola vez.
     if (!(await this.d.almacen.reclamarUpdate(update.update_id))) {
       await this.d.almacen.registrarEvento({ tipo: 'update_duplicado', miembro: null, detalle: 'update_id repetido' });
+      // Un boton reenviado por Telegram tampoco queda en silencio: aviso corto, sin registrar nada.
+      if (update.callback_query) {
+        try { await this.d.telegram.responderCallback(update.callback_query.id, 'Esa tarjeta ya se usó o caducó.', true); } catch { /* el aviso es cortesia */ }
+      }
       return { estado: 'duplicado', motivo: 'update' };
     }
     try {
@@ -366,8 +455,23 @@ export class AgenteTelegram {
       }
     }
 
+    // Comprobante de un socio (foto o archivo): se guarda SOLO su huella y su file_id como evidencia. El bot no lo descarga ni lo lee y la IA nunca lo ve.
+    let conComprobante = false;
+    if (msg.foto !== undefined && autor.rol === 'socio' && msg.forward_origin === undefined && !esEdicion) {
+      try {
+        await this.d.almacen.guardarEvidencia({ chatId: msg.chat.id, mensajeId: msg.message_id, telegramUserId: autor.telegramUserId, fileId: msg.foto.fileId, fileUniqueId: msg.foto.fileUniqueId });
+        conComprobante = true;
+      } catch {
+        await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: autor.telegramUserId, detalle: 'comprobante_no_guardado' });
+      }
+    }
+
     const texto = sanitizar(msg.text ?? msg.caption ?? '');
     if (texto === '') {
+      if (conComprobante) {
+        await this.responder(autor, chats, P.comprobanteGuardado());
+        return { estado: 'procesado', acciones: 0 };
+      }
       if (msg.has_photo || msg.has_audio) {
         await this.responder(autor, chats, P.textoSimple('Recibi la foto o el audio, pero queda sin leer. Escribe el dato con /pago o /gasto.'));
         return { estado: 'procesado', acciones: 0 };
@@ -382,6 +486,11 @@ export class AgenteTelegram {
       await this.d.almacen.registrarEvento({ tipo: 'sospecha_inyeccion', miembro: autor.telegramUserId, detalle: 'reenviado_comando' });
       await this.responder(autor, chats, P.textoSimple('Los comandos no se ejecutan desde mensajes reenviados. Escribelo tu con tus palabras.'));
       return { estado: 'ignorado', motivo: 'reenviado_comando' };
+    }
+    // Pregunta abierta a este socio ("¿cuando pagas?"): su siguiente mensaje de texto la contesta. La fecha la interpreta el CODIGO, nunca la IA.
+    if (autor.rol === 'socio' && !reenviado && !esEdicion && !texto.startsWith('/')) {
+      const espera = await this.d.almacen.esperaTomar(msg.chat.id, autor.telegramUserId, this.d.reloj());
+      if (espera) return this.responderEspera(espera, texto, autor, chats);
     }
     const cmd = parsearComando(texto);
     if (cmd) {
@@ -570,6 +679,16 @@ export class AgenteTelegram {
         continue;
       }
 
+      // Menudeo: solo el socio de menudeo configurado (por omision Angelo). El autor ya viene verificado por su id de Telegram; la base lo vuelve a exigir.
+      if (a.tipo === 'pedido_menudeo' || a.tipo === 'pago_pedido_menudeo') {
+        const sm = await this.d.negocio.socioMenudeo();
+        if (ctx.autor.persona !== sm) {
+          await this.d.almacen.registrarEvento({ tipo: 'menudeo_otro_socio', miembro: ctx.autor.telegramUserId, detalle: a.tipo });
+          await this.responder(ctx.autor, ctx.chats, P.soloSocioMenudeo(sm));
+          continue;
+        }
+      }
+
       if (ctx.verificarCifras) {
         const faltan = [...cifrasSinProcedencia(ctx.texto, cifrasDeIntencion(a)), ...cifrasDePrecios(a, ctx.texto)];
         if (faltan.length > 0) {
@@ -595,11 +714,25 @@ export class AgenteTelegram {
       }
 
       // El capital se declara con las palabras del socio: si el modelo lo marco pero el mensaje no lo dice, es reembolso (decision del dueno).
-      const declarada = this.capitalSoloSiSeDeclaro(a, ctx);
+      let declarada = this.capitalSoloSiSeDeclaro(a, ctx);
       if (capitalAjeno(declarada, ctx.autor.persona)) {
         await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: 'capital_a_nombre_del_otro' });
         await this.responder(ctx.autor, ctx.chats, P.rechazo('El capital lo declara cada socio por si mismo: que lo registre quien lo pone o lo paga. Si fue un deposito comun, dilo sin declararlo como capital y queda como reembolso.'));
         continue;
+      }
+      // Las frases de fecha vienen del mensaje del socio (si el modelo las invento, se ignoran) y las interpreta el codigo.
+      if (declarada.tipo === 'pedido_menudeo' && declarada.cuando_texto !== null && ctx.verificarCifras && !contieneTexto(ctx.texto, declarada.cuando_texto)) declarada = { ...declarada, cuando_texto: null };
+      if (declarada.tipo === 'pago_pedido_menudeo' && declarada.fecha_texto !== null) {
+        if (ctx.verificarCifras && !contieneTexto(ctx.texto, declarada.fecha_texto)) declarada = { ...declarada, fecha_texto: null };
+        else {
+          const f = interpretarFechaPago(declarada.fecha_texto, this.d.reloj(), { direccion: 'pasado' });
+          if (f.tipo === 'ok') declarada = { ...declarada, fecha_pago: f.fecha };
+          else if (f.tipo === 'ambiguo') declarada = { ...declarada, fecha_pago: f.opciones[0]!.fecha };
+          else {
+            await this.responder(ctx.autor, ctx.chats, P.fechaNoEntendida(f.tipo === 'futura' ? 'futura' : 'no_entendi'));
+            continue;
+          }
+        }
       }
       const estado: EstadoAccion = {
         intencion: declarada,
@@ -648,6 +781,16 @@ export class AgenteTelegram {
     }
     const a = salida.resuelta;
     const intencion = a.intencion;
+
+    // Pedido de menudeo: la fecha comprometida se resuelve ANTES del resumen (frase ya dicha, pregunta o aclaracion con botones), siempre con codigo: la IA no escribe fechas.
+    if (intencion.tipo === 'pedido_menudeo' && !estado.vistoBueno) {
+      const e2 = await this.completarFechaMenudeo(estado, chats);
+      if (e2 === null) return;
+      if (e2 !== estado) {
+        await this.resolverYEjecutar(e2, chats);
+        return;
+      }
+    }
 
     if (intencion.tipo === 'consulta') {
       if (intencion.consulta === 'ayuda') {
@@ -706,6 +849,7 @@ export class AgenteTelegram {
           claveIdem: `${estado.claveIdem}:deshacer`,
         } satisfies PayloadDeshacer);
         await this.com.aGrupo(chats, P.ecoEjecutado(r, estado.autor, estado.confirmadoPor), { botones: [[boton]] });
+        await this.despuesDeEjecutar(intencion, r, estado, chats);
         return;
       }
       case 'pregunta': {
@@ -721,6 +865,166 @@ export class AgenteTelegram {
         await this.responder(estado.autor, chats, P.rechazo(r.texto));
         return;
     }
+  }
+
+  // ------------------------------------------------------------------ despues de registrar: igualacion y tarjetas de menudeo
+
+  private async despuesDeEjecutar(intencion: Intencion, r: ResultadoEjecutado, estado: EstadoAccion, chats: ChatsRegistrados): Promise<void> {
+    if (intencion.tipo === 'pago_pedido_menudeo' && r.datos !== undefined) {
+      try {
+        await this.publicarPagoReportado(r.datos, { folio: intencion.pedido_folio ?? r.folio, reportadoPor: estado.autor.persona, monto: intencion.monto_centavos === null ? null : BigInt(intencion.monto_centavos) }, chats);
+      } catch {
+        await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: estado.autor.telegramUserId, detalle: 'tarjeta_pago_reportado' });
+      }
+    }
+    if (esMovimientoDeAportacion(intencion)) await this.comentarIgualacion(chats);
+  }
+
+  /**
+   * Despues de CUALQUIER aportacion, pago de un socio a un proveedor con dinero propio, reembolso, cobro en cuenta de socio o retiro, el bot comenta en el grupo quien lleva mas
+   * aportado y a quien le toca el siguiente pago ("Aportaciones igualadas" si lo estan). Todo sale de la base (agente.igualacion); si la lectura falla, el movimiento ya registrado no se afecta.
+   */
+  private async comentarIgualacion(chats: ChatsRegistrados): Promise<void> {
+    try {
+      await this.com.aGrupo(chats, P.comentarioIgualacion(await this.d.negocio.igualacion()));
+    } catch {
+      await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: null, detalle: 'igualacion_no_disponible' });
+    }
+  }
+
+  /** Tarjeta para el OTRO socio: confirma recibido o rechaza el pago reportado (botones de un solo uso; nadie confirma lo suyo). */
+  private async publicarPagoReportado(datos: Record<string, unknown>, e: { folio: string; reportadoPor: Persona; monto: bigint | null }, chats: ChatsRegistrados): Promise<void> {
+    if (datos.reporte_id === undefined) return;
+    const reporteId = Number(datos.reporte_id);
+    const aplicado = datos.aplicado === true;
+    const caduca = this.mas(this.cfg.caducaTomaHoras * 3_600_000);
+    const exclusivo = `pago:${reporteId}`;
+    const payload: PayloadPago = { reporteId, folio: e.folio, reportadoPor: e.reportadoPor, datos: { reporte_id: reporteId, aplicado, pendiente_cent: datos.pendiente_cent === undefined ? null : String(datos.pendiente_cent), comprobante_telegram: datos.comprobante_telegram === true }, monto: e.monto === null ? null : e.monto.toString() };
+    const botones: BotonEnLinea[] = [];
+    if (!aplicado) botones.push(await this.boton1('Confirmar recibido', 'confirmar_pago', ['socio'], chats.grupoSocios, caduca, exclusivo, payload));
+    botones.push(await this.boton1('Rechazar', 'rechazar_pago', ['socio'], chats.grupoSocios, caduca, exclusivo, payload));
+    await this.com.aGrupo(chats, P.tarjetaPagoReportado({ folio: e.folio, reportadoPor: e.reportadoPor, monto: e.monto, aplicado, pendiente: datos.pendiente_cent === undefined ? null : BigInt(datos.pendiente_cent as number | string), conComprobante: datos.comprobante_telegram === true }), { botones: [botones] });
+  }
+
+  // ------------------------------------------------------------------ menudeo: fecha comprometida (siempre con codigo)
+
+  private async completarFechaMenudeo(estado: EstadoAccion, chats: ChatsRegistrados): Promise<EstadoAccion | null> {
+    const i = estado.intencion as IPedidoMenudeo;
+    if ((i.fecha_compromiso ?? null) !== null || i.sin_fecha === true) return estado;
+    if (i.cuando_texto === null) {
+      await this.abrirPregunta(estado.autor, 'fecha_pago', { estado, intentos: 0 }, chats, P.preguntaCuandoPagas());
+      return null;
+    }
+    if (dijoSinFecha(i.cuando_texto)) return { ...estado, intencion: { ...i, sin_fecha: true } };
+    return this.aplicarFechaPedido(estado, i.cuando_texto, 0, chats);
+  }
+
+  private async abrirPregunta(autor: Miembro, tipo: TipoEspera, payload: Record<string, unknown>, chats: ChatsRegistrados, mensaje: MensajeListo): Promise<void> {
+    await this.com.aGrupo(chats, mensaje);
+    await this.d.almacen.esperaAbrir({ chatId: chats.grupoSocios, telegramUserId: autor.telegramUserId, tipo, payload, caducaEn: this.mas(this.cfg.caducaEsperaMin * 60_000) });
+  }
+
+  /** Interpreta la frase con codigo. ok = sigue con la fecha; ambiguo = botones; pasada o ilegible = vuelve a preguntar (maximo `maxIntentosFecha` veces). */
+  private async aplicarFechaPedido(estado: EstadoAccion, texto: string, intentos: number, chats: ChatsRegistrados): Promise<EstadoAccion | null> {
+    const i = estado.intencion as IPedidoMenudeo;
+    const r = interpretarFechaPago(texto, this.d.reloj());
+    if (r.tipo === 'ok') return { ...estado, intencion: { ...i, fecha_compromiso: r.fecha, hora_compromiso: r.hora } };
+    if (r.tipo === 'ambiguo') {
+      const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
+      const exclusivo = `fec:${estado.claveIdem}:${intentos}`;
+      const botones: BotonEnLinea[][] = [];
+      for (const o of r.opciones) {
+        botones.push([await this.boton1(P.textoOpcionFecha(o), 'fecha_opcion', ['socio'], chats.grupoSocios, caduca, exclusivo, { estado: { ...estado, intencion: { ...i, fecha_compromiso: o.fecha, hora_compromiso: o.hora } }, base: estado, texto, intentos } satisfies PayloadFecha)]);
+      }
+      botones.push([await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null)]);
+      await this.com.aGrupo(chats, P.fechaAmbigua(r.motivo), { botones });
+      return null;
+    }
+    if (intentos + 1 >= this.cfg.maxIntentosFecha) {
+      await this.responder(estado.autor, chats, P.rechazo('No pude entender la fecha de pago. No registre nada: cuando la tengas, mandalo de nuevo (por ejemplo /pedidomenudeo karen | modelo/sabor 24 | cuando el viernes).'));
+      return null;
+    }
+    await this.abrirPregunta(estado.autor, 'fecha_pago', { estado: { ...estado, intencion: { ...i, cuando_texto: null } }, intentos: intentos + 1 }, chats, P.fechaNoEntendida(r.tipo === 'pasada' ? 'pasada' : 'no_entendi'));
+    return null;
+  }
+
+  /** Respuesta de un socio a una pregunta abierta. */
+  private async responderEspera(espera: { tipo: TipoEspera; payload: unknown }, texto: string, autor: Miembro, chats: ChatsRegistrados): Promise<ResultadoUpdate> {
+    if (espera.tipo === 'fecha_pago') {
+      const p = espera.payload as { estado?: EstadoAccion; intentos?: number };
+      if (!p.estado) return { estado: 'ignorado', motivo: 'espera_invalida' };
+      const i = p.estado.intencion as IPedidoMenudeo;
+      const sig = dijoSinFecha(texto) ? { ...p.estado, intencion: { ...i, sin_fecha: true } } : await this.aplicarFechaPedido(p.estado, texto, p.intentos ?? 0, chats);
+      if (sig) await this.resolverYEjecutar(sig, chats);
+      return { estado: 'procesado', acciones: 1 };
+    }
+    const p = espera.payload as PayloadReprogramar;
+    await this.proponerReprogramacion(autor, p, texto, chats);
+    return { estado: 'procesado', acciones: 1 };
+  }
+
+  /** Reprogramar un compromiso de pago: la fecha la interpreta el codigo y se confirma con botones antes de tocar la base. */
+  private async proponerReprogramacion(autor: Miembro, p: PayloadReprogramar, texto: string, chats: ChatsRegistrados): Promise<void> {
+    const intentos = p.intentos ?? 0;
+    const r = interpretarFechaPago(texto, this.d.reloj());
+    const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
+    const exclusivo = `rep:${p.pedidoId}:${intentos}`;
+    const pedirConfirmar = async (o: OpcionFecha, etiqueta: string): Promise<BotonEnLinea> =>
+      this.boton1(etiqueta, 'confirmar_reprogramar', ['socio'], chats.grupoSocios, caduca, exclusivo, { pedidoId: p.pedidoId, folio: p.folio, fecha: o.fecha, hora: o.hora, autor, base: p, texto } satisfies PayloadReprogramarConfirma);
+    const no = (): Promise<BotonEnLinea> => this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null);
+    if (r.tipo === 'ok') {
+      await this.com.aGrupo(chats, P.confirmarReprogramacion(p.folio, r.fecha, r.hora), { botones: [[await pedirConfirmar(r, 'Sí, reprogramar'), await no()]] });
+      return;
+    }
+    if (r.tipo === 'ambiguo') {
+      const botones: BotonEnLinea[][] = [];
+      for (const o of r.opciones) botones.push([await pedirConfirmar(o, P.textoOpcionFecha(o))]);
+      botones.push([await no()]);
+      await this.com.aGrupo(chats, P.fechaAmbigua(r.motivo), { botones });
+      return;
+    }
+    if (intentos + 1 >= this.cfg.maxIntentosFecha) {
+      await this.responder(autor, chats, P.rechazo('No pude entender la fecha. No reprograme nada: pulsa Reprogramar en el recordatorio cuando la tengas.'));
+      return;
+    }
+    await this.abrirPregunta(autor, 'fecha_reprogramar', { ...p, intentos: intentos + 1 }, chats, P.fechaNoEntendida(r.tipo === 'pasada' ? 'pasada' : 'no_entendi'));
+  }
+
+  // ------------------------------------------------------------------ recordatorios de pago de menudeo (los manda el latido, solo al GRUPO de socios)
+
+  /**
+   * Tarea del latido. Con el interruptor `telegram_envio` APAGADO no envia ni reclama nada (los avisos siguen pendientes para cuando se encienda).
+   * Cada aviso se reclama en la base ANTES de enviarse (idempotente por pedido y hora): dos latidos o un reintento no duplican. Solo se escribe al grupo de los dos socios.
+   */
+  async enviarRecordatoriosMenudeo(): Promise<{ estado: 'omitido' | 'ok'; enviados: number; motivo?: string }> {
+    if (!(await this.d.negocio.envioActivo())) return { estado: 'omitido', enviados: 0, motivo: 'interruptor telegram_envio apagado' };
+    const chats = await this.d.almacen.chats();
+    if (chats.grupoSocios === 0) return { estado: 'omitido', enviados: 0, motivo: 'sin grupo de socios registrado' };
+    const ahora = this.d.reloj();
+    let enviados = 0;
+    for (const f of await this.d.negocio.recordatoriosMenudeo(ahora)) {
+      // Sin fecha: alerta de pantalla, no de chat. Con un pago ya reportado el socio ya hizo su parte: espera al otro.
+      if (f.tipo === 'sin_fecha' || f.pagoReportado) continue;
+      try {
+        if (!(await this.d.negocio.reclamarRecordatorio(f.pedidoId, f.tipo, ahora))) continue;
+        await this.publicarRecordatorio(f as FilaRecordatorio, chats);
+        enviados++;
+      } catch {
+        await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: null, detalle: `pedido=${f.pedidoId} tipo=${f.tipo}`.slice(0, 280) });
+      }
+    }
+    return { estado: 'ok', enviados };
+  }
+
+  private async publicarRecordatorio(f: FilaRecordatorio, chats: ChatsRegistrados): Promise<void> {
+    let botones: BotonEnLinea[][] | undefined;
+    if (f.tipo !== 'por_vencer') {
+      const caduca = this.mas(this.cfg.caducaTomaHoras * 3_600_000);
+      const exclusivo = `rec:${f.pedidoId}:${Math.floor(this.d.reloj().getTime() / 3_600_000)}`;
+      const payload: PayloadRecordatorio = { fila: { ...f, pendienteCent: f.pendienteCent.toString() } };
+      botones = [[await this.boton1('Pagado', 'recordatorio_pagado', ['socio'], chats.grupoSocios, caduca, exclusivo, payload), await this.boton1('Reprogramar', 'recordatorio_reprogramar', ['socio'], chats.grupoSocios, caduca, exclusivo, payload)]];
+    }
+    await this.com.aGrupo(chats, P.recordatorioPago(f), botones ? { botones } : {});
   }
 
   // ------------------------------------------------------------------ resumen y confirmacion explicita
@@ -869,9 +1173,9 @@ export class AgenteTelegram {
       const textos: Record<typeof res.estado, string> = {
         no_autorizado: 'Esta tarjeta es de los socios.',
         chat_distinto: 'Esta tarjeta no es de este chat.',
-        caducado: 'Esta tarjeta caduco.',
-        usado: 'Esta tarjeta ya se uso.',
-        invalido: 'Tarjeta invalida.',
+        caducado: 'Esa tarjeta ya se usó o caducó.',
+        usado: 'Esa tarjeta ya se usó o caducó.',
+        invalido: 'Esa tarjeta ya se usó o caducó.',
       };
       await this.d.telegram.responderCallback(cb.id, textos[res.estado], true);
       if (res.estado === 'no_autorizado') {
@@ -941,6 +1245,82 @@ export class AgenteTelegram {
         const p = payload as PayloadDeshacer;
         await this.com.editar(chats, ctx.chatId, ctx.messageId, P.rechazo(`Deshacer expreso de ${p.folio}`));
         await this.aplicarDeshacer(miembro, chats, p.folio, p.claveIdem);
+        return;
+      }
+      case 'fecha_opcion': {
+        const p = payload as PayloadFecha;
+        // La fecha de un pedido la elige quien lo pidio; si pulsa el otro socio no se registra nada y se vuelven a mostrar las opciones.
+        if (miembro.persona !== p.estado.autor.persona) {
+          await this.d.almacen.registrarEvento({ tipo: 'boton_no_autorizado', miembro: miembro.telegramUserId, detalle: 'fecha_la_elige_el_autor' });
+          await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Esa tarjeta no la puede contestar quien la pulso.'));
+          await this.responder(miembro, chats, P.rechazo(`Lo pidio ${P.nombrePersona(p.estado.autor.persona)}: el elige la fecha. Te muestro las opciones otra vez.`));
+          await this.aplicarFechaPedido(p.base, p.texto, p.intentos, chats);
+          return;
+        }
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Fecha elegida.'));
+        await this.resolverYEjecutar(p.estado, chats);
+        return;
+      }
+      case 'confirmar_reprogramar': {
+        const p = payload as PayloadReprogramarConfirma;
+        const sm = await this.d.negocio.socioMenudeo();
+        if (miembro.persona !== p.autor.persona || miembro.persona !== sm) {
+          await this.d.almacen.registrarEvento({ tipo: 'menudeo_otro_socio', miembro: miembro.telegramUserId, detalle: 'reprogramar' });
+          await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Esa tarjeta no la puede contestar quien la pulso.'));
+          await this.responder(miembro, chats, P.soloSocioMenudeo(sm));
+          await this.proponerReprogramacion(p.autor, p.base, p.texto, chats);
+          return;
+        }
+        const r = await this.d.negocio.responderRecordatorio({ autor: miembro, claveIdem: `tg:cb:${ctx.callbackId}`, pedidoId: p.pedidoId, accion: 'posponer', fecha: p.fecha, hora: p.hora, motivo: 'Reprogramado desde Telegram a peticion del socio de menudeo' });
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, r.tipo === 'ejecutado' ? P.ecoRespuestaRecordatorio({ folio: p.folio, accion: 'posponer', fecha: p.fecha, hora: p.hora }) : P.rechazo(r.tipo === 'rechazado' ? r.texto : 'No pude reprogramar.'));
+        return;
+      }
+      case 'recordatorio_pagado':
+      case 'recordatorio_reprogramar': {
+        const f = (payload as PayloadRecordatorio).fila;
+        const fila: FilaRecordatorio = { ...f, pendienteCent: BigInt(f.pendienteCent) };
+        const sm = await this.d.negocio.socioMenudeo();
+        if (miembro.persona !== sm) {
+          // Solo el socio de menudeo responde por sus pedidos; si pulsa el otro, la tarjeta vuelve.
+          await this.d.almacen.registrarEvento({ tipo: 'menudeo_otro_socio', miembro: miembro.telegramUserId, detalle: accion });
+          await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Esa tarjeta no la puede contestar quien la pulso.'));
+          await this.responder(miembro, chats, P.soloSocioMenudeo(sm));
+          await this.publicarRecordatorio(fila, chats);
+          return;
+        }
+        if (accion === 'recordatorio_reprogramar') {
+          await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Reprogramar: dime la nueva fecha.'));
+          await this.abrirPregunta(miembro, 'fecha_reprogramar', { pedidoId: fila.pedidoId, folio: fila.folio, intentos: 0 } satisfies PayloadReprogramar, chats, P.preguntaCuandoReprogramas(fila.folio));
+          return;
+        }
+        const r = await this.d.negocio.responderRecordatorio({ autor: miembro, claveIdem: `tg:cb:${ctx.callbackId}`, pedidoId: fila.pedidoId, accion: 'pagado' });
+        if (r.tipo !== 'ejecutado') {
+          await this.com.editar(chats, ctx.chatId, ctx.messageId, P.rechazo(r.tipo === 'rechazado' ? r.texto : 'No pude registrar el aviso de pago.'));
+          return;
+        }
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.ecoRespuestaRecordatorio({ folio: fila.folio, accion: 'pagado' }));
+        if (!r.repetido && r.datos !== undefined) await this.publicarPagoReportado(r.datos, { folio: fila.folio, reportadoPor: miembro.persona, monto: null }, chats);
+        return;
+      }
+      case 'confirmar_pago':
+      case 'rechazar_pago': {
+        const p = payload as PayloadPago;
+        // Lo confirma o rechaza el OTRO socio: quien lo reporto no se confirma a si mismo (la base tambien lo exige). Si pulsa el, la tarjeta vuelve.
+        if (miembro.persona === p.reportadoPor) {
+          await this.d.almacen.registrarEvento({ tipo: 'boton_no_autorizado', miembro: miembro.telegramUserId, detalle: 'pago_lo_decide_el_otro_socio' });
+          await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Esa tarjeta no la puede contestar quien la pulso.'));
+          await this.responder(miembro, chats, P.rechazo('Lo reportaste tu: lo confirma o rechaza el otro socio. Le mando la tarjeta otra vez.'));
+          await this.publicarPagoReportado(p.datos, { folio: p.folio, reportadoPor: p.reportadoPor, monto: p.monto === null ? null : BigInt(p.monto) }, chats);
+          return;
+        }
+        const confirmar = accion === 'confirmar_pago';
+        const r = await this.d.negocio.decidirPagoMenudeo({ autor: miembro, claveIdem: `tg:cb:${ctx.callbackId}`, reporteId: p.reporteId, decision: confirmar ? 'confirmado' : 'rechazado', ...(confirmar ? {} : { motivo: 'Rechazado desde Telegram por el otro socio (sin motivo detallado)' }) });
+        if (r.tipo !== 'ejecutado') {
+          await this.com.editar(chats, ctx.chatId, ctx.messageId, P.rechazo(r.tipo === 'rechazado' ? r.texto : 'No pude registrar la decision.'));
+          return;
+        }
+        const pendiente = r.datos?.pendiente_cent === undefined ? null : BigInt(r.datos.pendiente_cent as number | string);
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.ecoDecisionPago({ folio: p.folio, decision: confirmar ? 'confirmado' : 'rechazado', por: miembro.persona, pendiente }));
         return;
       }
       case 'autorizar_toma':

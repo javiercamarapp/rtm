@@ -23,12 +23,17 @@ import type {
   RespuestaConsulta,
   Resoluciones,
   SolicitudReserva,
+  TipoEspera,
+  TipoRecordatorio,
+  RecordatorioMenudeo,
+  Igualacion,
   TomaCaducada,
 } from '@/aplicacion/agente/puertos';
 import { CONSULTAS_EXT } from '@/dominio/agente/catalogo_intenciones';
 import type { IConsulta, Intencion } from '@/dominio/agente/intenciones';
 import { parsearPrecio } from '@/dominio/agente/cifras';
 import { sumarDias } from '@/dominio/calendario';
+import { formatearFechaPago } from '@/dominio/agente/fecha_pago';
 import { formatearMoneda } from '@/dominio/formato';
 import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type { AvisoPresupuesto, RolPresupuesto } from '@/dominio/agente/presupuesto';
@@ -57,6 +62,16 @@ export class AlmacenAgenteDb implements AlmacenAgente {
   async contarNoProcesado() { await F(this.sql, 'contar_no_procesado'); }
   async mensajesRecientes(chatId: number, segundos: number) { return (await F(this.sql, 'mensajes_recientes', [chatId, segundos], ['bigint', 'int'])) as number; }
   async registrarEvento(e: EventoAgente) { await F(this.sql, 'registrar_evento', [e.tipo, e.miembro, e.detalle], ['text', 'bigint', 'text']); }
+  async esperaAbrir(e: { chatId: number; telegramUserId: number; tipo: TipoEspera; payload: unknown; caducaEn: Date }) {
+    await F(this.sql, 'espera_abrir', [e.chatId, e.telegramUserId, e.tipo, JSON.stringify(e.payload ?? {}), e.caducaEn.toISOString()], ['bigint', 'bigint', 'text', 'jsonb', 'timestamptz']);
+  }
+  async esperaTomar(chatId: number, telegramUserId: number, ahora: Date) {
+    return ((await F(this.sql, 'espera_tomar', [chatId, telegramUserId, ahora.toISOString()], ['bigint', 'bigint', 'timestamptz'])) as { tipo: TipoEspera; payload: unknown } | null) ?? null;
+  }
+  async guardarEvidencia(e: { chatId: number; mensajeId: number; telegramUserId: number; fileId: string; fileUniqueId: string }) {
+    const j = (await F(this.sql, 'evidencia_guardar', [e.chatId, e.mensajeId, e.telegramUserId, e.fileId, e.fileUniqueId], ['bigint', 'bigint', 'bigint', 'text', 'text'])) as { id: number; huella: string };
+    return { id: Number(j.id), huella: j.huella };
+  }
 }
 
 export class AlmacenPresupuestoDb implements AlmacenPresupuesto {
@@ -203,6 +218,12 @@ export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string)
         hub: 'ejecutar_ext', tipo: 'lote_historico', titulo: 'Lote histórico registrado',
         args: { ...base, etiqueta: i.etiqueta, renglones: i.renglones.map((r, n) => ({ tipo: r.tipo, fecha: r.fecha, monto_cent: r.monto_centavos, socio: r.socio, cliente_id: a.resoluciones.clientesLote?.[String(n)] ? Number(a.resoluciones.clientesLote[String(n)]) : null, cuenta: r.cuenta_texto, concepto: r.concepto, intencion: r.intencion, via: r.via })) },
       };
+    case 'pedido_menudeo':
+      return { hub: 'ejecutar_ext', tipo: 'pedido_menudeo', titulo: 'Pedido a costo de menudeo creado y confirmado',
+        args: { ...base, lineas: lineasSku(), origen_pedido: i.proveedor_origen ?? 'karen_directo', fecha_compromiso: i.fecha_compromiso ?? null, hora_compromiso: i.hora_compromiso ?? null } };
+    case 'pago_pedido_menudeo':
+      return { hub: 'ejecutar_ext', tipo: 'pago_pedido_menudeo', titulo: 'Pago de pedido de menudeo avisado',
+        args: { ...base, pedido_folio: i.pedido_folio, monto_cent: i.monto_centavos, referencia: i.referencia ?? '', fecha: i.fecha_pago ?? null, metodo: i.metodo ?? 'transferencia', via: i.via ?? 'proveedor' } };
     default:
       return null;
   }
@@ -224,17 +245,27 @@ type ResultadoSql = Record<string, unknown> & { folio?: string; repetido?: boole
 const aClasificaciones = (c: ClasificacionSql[] | undefined): ClasificacionReal[] => (c ?? []).map((x) => ({ clasificacion: x.clasificacion, montoCent: x.monto_cent, socio: x.socio }));
 const nombreClasificacion = (c: string): string => (c === 'capital' ? 'capital' : 'reembolso');
 
+const ESTADO_LEGIBLE: Record<string, string> = {
+  pago_reportado: 'Pago reportado (falta que el otro socio lo confirme)',
+  no_pagado: 'Pendiente de pago',
+  pagado: 'Pagado',
+  confirmado: 'Confirmado',
+};
+
 /** Lineas de la respuesta: solo cifras que devolvio la base. */
 function lineasDeResultado(j: ResultadoSql): CifraServidor[] {
   const salida: CifraServidor[] = [];
   const pesos = (k: string, etiqueta: string) => { if (typeof j[k] === 'number') salida.push({ tipo: 'pesos', etiqueta, centavos: BigInt(j[k] as number) }); };
   pesos('monto_cent', 'Monto');
   pesos('total_cent', 'Total');
+  pesos('costo_estimado_cent', 'Costo del pedido (lo que se paga al proveedor)');
   if (typeof j.piezas === 'number') salida.push({ tipo: 'piezas', etiqueta: 'Piezas', piezas: j.piezas });
   if (typeof j.renglones === 'number') salida.push({ tipo: 'piezas', etiqueta: 'Renglones', piezas: j.renglones });
   if (typeof j.pedido === 'string') salida.push({ tipo: 'folio', etiqueta: 'Pedido', folio: j.pedido });
   if (typeof j.compra === 'string') salida.push({ tipo: 'folio', etiqueta: 'Compra', folio: j.compra });
-  if (typeof j.estado === 'string') salida.push({ tipo: 'texto', etiqueta: 'Estado', texto: j.estado });
+  if (typeof j.estado === 'string') salida.push({ tipo: 'texto', etiqueta: 'Estado', texto: ESTADO_LEGIBLE[j.estado] ?? j.estado });
+  if (typeof j.pendiente_cent === 'number') salida.push({ tipo: 'pesos', etiqueta: 'Pendiente de pago del pedido', centavos: BigInt(j.pendiente_cent) });
+  if (j.comprobante_telegram === true) salida.push({ tipo: 'texto', etiqueta: 'Comprobante', texto: 'adjunto (solo se guarda su huella; no se lee)' });
   if (Array.isArray(j.folios)) salida.push({ tipo: 'texto', etiqueta: 'Folios', texto: (j.folios as string[]).join(', ') });
   // Lo que la base REALMENTE registro (no una plantilla): una linea por aportacion que dejo la operacion.
   for (const c of aClasificaciones(j.clasificaciones)) salida.push({ tipo: 'pesos', etiqueta: `Registrado como ${nombreClasificacion(c.clasificacion)} (${c.socio})`, centavos: BigInt(c.montoCent) });
@@ -252,6 +283,10 @@ function efectoDeSimulacion(e: Record<string, unknown>): CifraServidor[] {
   pesos('envio_cent', 'Envio cobrado');
   pesos('guia_cent', 'Guia');
   pesos('total_cent', 'Total de la compra');
+  pesos('costo_cent', 'Costo total que se paga al proveedor (a costo, sin utilidad)');
+  pesos('pendiente_cent', 'Pendiente de pago tras registrar');
+  if (typeof e.fecha_compromiso === 'string') salida.push({ tipo: 'texto', etiqueta: 'Fecha comprometida de pago (la fija el sistema)', texto: formatearFechaPago(e.fecha_compromiso, typeof e.hora_compromiso === 'string' ? e.hora_compromiso.slice(0, 5) : null) });
+  if (typeof e.estado === 'string') salida.push({ tipo: 'texto', etiqueta: 'Quedaria', texto: e.aplicado === true ? 'aplicado de inmediato (con comprobante; el otro socio aun puede rechazarlo)' : (ESTADO_LEGIBLE[e.estado] ?? e.estado) });
   pesos('monto_cent', 'Monto en pesos (calculado por la base)');
   if (typeof e.usd_cent === 'number') salida.push({ tipo: 'pesos', etiqueta: 'Dolares del cargo', centavos: BigInt(e.usd_cent) });
   if (typeof e.tc_micro === 'number') salida.push({ tipo: 'texto', etiqueta: 'Tipo de cambio usado', texto: (e.tc_micro / 1_000_000).toFixed(4) });
@@ -271,7 +306,9 @@ export class NegocioAgenteDb implements NegocioAgente {
         const ls = lineasDeResultado(j);
         // El monto que el socio dicto (ya validado contra su mensaje) se muestra aunque la funcion de negocio no lo devuelva.
         if (!ls.some((l) => l.etiqueta === 'Monto') && typeof prep.args.monto_cent === 'number') ls.unshift({ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(prep.args.monto_cent) });
-        return { tipo: 'ejecutado', folio: j.folio ?? '', titulo: prep.titulo, lineas: ls, ...eco(j.eco), advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
+        const adv = i.tipo === 'pedido_menudeo' ? ['Cuando el proveedor lo envie marcalo con /enviado; los datos de entrega se capturan en la web, nunca por Telegram.'] : [];
+        if (i.tipo === 'pedido_menudeo') ls.push({ tipo: 'texto', etiqueta: 'Fecha comprometida de pago', texto: i.fecha_compromiso ? formatearFechaPago(i.fecha_compromiso, i.hora_compromiso ?? null) : 'sin fecha comprometida (queda como alerta)' });
+        return { tipo: 'ejecutado', folio: j.folio ?? '', titulo: prep.titulo, lineas: ls, ...eco(j.eco), advertencias: adv, ejecutadoEn: ctx.ahora, repetido: j.repetido === true, datos: j };
       }
       if (i.tipo === 'gasto') {
         const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'gasto', JSON.stringify({ pagado_por: i.pagado_por, monto_cent: i.monto_centavos, categoria: CATEGORIA_GASTO[i.gasto] ?? 'otro', nota: i.descripcion, origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; eco?: Parameters<typeof eco>[0]; repetido?: boolean };
@@ -336,7 +373,9 @@ export class NegocioAgenteDb implements NegocioAgente {
       if (clasificaciones.filter((c) => c.clasificacion === 'capital').length > declarados) {
         return { tipo: 'rechazado', codigo: 'capital_sin_declarar', texto: 'La base registraria este dinero como CAPITAL y el socio no lo declaro como capital (la regla es reembolso por omision). No lo registro: hazlo en el software o declaralo expresamente.' };
       }
-      const lineas = [...efectoDeSimulacion(j.efecto ?? {}), ...lineasDeResultado(j.resultado ?? {}).filter((l) => l.tipo === 'texto' && l.etiqueta === 'Folios' ? false : true), ...eco(j.resultado?.eco).saldos];
+      // En el pago de menudeo el efecto ya dice como quedaria (Quedaria / Pendiente tras registrar): no se repiten las lineas del resultado.
+      const delResultado = lineasDeResultado(j.resultado ?? {}).filter((l) => !(l.tipo === 'texto' && l.etiqueta === 'Folios') && !(prep.tipo === 'pago_pedido_menudeo' && (l.etiqueta === 'Estado' || l.etiqueta === 'Comprobante' || l.etiqueta.startsWith('Pendiente de pago'))));
+      const lineas = [...efectoDeSimulacion({ ...(j.efecto ?? {}), ...(prep.tipo === 'pago_pedido_menudeo' ? { aplicado: j.resultado?.aplicado } : {}) }), ...delResultado, ...eco(j.resultado?.eco).saldos];
       const avisos = Array.isArray(j.efecto?.avisos) ? (j.efecto.avisos as string[]) : [];
       return { tipo: 'simulado', lineas, advertencias: avisos, cuadra: j.cuadra, rojas: (j.comprobaciones_rojas ?? []).map((r) => r.nombre), efectoHash: j.efecto_hash ?? null, clasificaciones };
     } catch (e) {
@@ -403,6 +442,51 @@ export class NegocioAgenteDb implements NegocioAgente {
   async caducarTomas(_ahora: Date, horas: number): Promise<TomaCaducada[]> {
     const j = (await F(this.sql, 'caducar_tomas', [horas], ['int'])) as string[];
     return j.map((folio) => ({ folio, lineas: [] }));
+  }
+
+  // ---- igualacion y menudeo: cada cifra, fecha y estado salen de la base
+
+  async igualacion(): Promise<Igualacion> {
+    const j = (await F(this.sql, 'igualacion')) as { igualados: boolean; le_toca_aportar: string | null; lleva_mas: string | null; diferencia_cent: number };
+    return { igualados: j.igualados, leTocaAportar: j.le_toca_aportar, llevaMas: j.lleva_mas, diferenciaCent: BigInt(j.diferencia_cent) };
+  }
+
+  async socioMenudeo(): Promise<'angelo' | 'javier'> {
+    return ((await F(this.sql, 'socio_menudeo')) as 'angelo' | 'javier' | null) ?? 'angelo';
+  }
+
+  async envioActivo(): Promise<boolean> {
+    return (await F(this.sql, 'envio_activo')) === true;
+  }
+
+  async recordatoriosMenudeo(ahora: Date): Promise<RecordatorioMenudeo[]> {
+    const j = (await F(this.sql, 'recordatorios_menudeo', [ahora.toISOString()], ['timestamptz'])) as { recordatorios: Array<{ pedido_id: number; folio: string; socio: string; proveedor: string; pendiente_cent: number; fecha_compromiso: string | null; hora_compromiso: string | null; dias_atraso: number; tipo: RecordatorioMenudeo['tipo']; enviados: number; pago_reportado: boolean }> };
+    return (j.recordatorios ?? []).map((r) => ({ pedidoId: Number(r.pedido_id), folio: r.folio, socio: r.socio, proveedor: r.proveedor, pendienteCent: BigInt(r.pendiente_cent), fechaCompromiso: r.fecha_compromiso, horaCompromiso: r.hora_compromiso === null ? null : r.hora_compromiso.slice(0, 5), diasAtraso: Number(r.dias_atraso), tipo: r.tipo, enviados: Number(r.enviados), pagoReportado: r.pago_reportado }));
+  }
+
+  async reclamarRecordatorio(pedidoId: number, tipo: TipoRecordatorio, ahora: Date): Promise<boolean> {
+    const j = (await F(this.sql, 'recordatorio_reclamar', [pedidoId, tipo, ahora.toISOString()], ['bigint', 'text', 'timestamptz'])) as { reclamado: boolean };
+    return j.reclamado === true;
+  }
+
+  private async menudeo(tipo: string, args: Record<string, unknown>, claveIdem: string, autor: Miembro, titulo: string, ctx: Date): Promise<ResultadoNegocio> {
+    try {
+      const base = { origen: '', autor: autor.persona, telegram_user_id: autor.telegramUserId };
+      const j = (await F(this.sql, 'ejecutar_ext', [claveIdem, tipo, JSON.stringify({ ...base, ...args })], ['text', 'text', 'jsonb'])) as ResultadoSql;
+      return { tipo: 'ejecutado', folio: j.folio ?? '', titulo, lineas: lineasDeResultado(j), comprobacion: [], saldos: [], advertencias: [], ejecutadoEn: ctx, repetido: j.repetido === true, datos: j };
+    } catch (e) {
+      const cod = (e as { code?: string }).code;
+      if (esErrorDeNegocio(e)) return { tipo: 'rechazado', codigo: cod ?? 'error', texto: (e as Error).message };
+      throw e;
+    }
+  }
+
+  responderRecordatorio(e: { autor: Miembro; claveIdem: string; pedidoId: number; accion: 'pagado' | 'posponer'; fecha?: string; hora?: string | null; motivo?: string }): Promise<ResultadoNegocio> {
+    return this.menudeo('recordatorio_responder', { pedido_id: e.pedidoId, accion: e.accion, fecha: e.fecha ?? null, hora: e.hora ?? null, motivo: e.motivo ?? null }, e.claveIdem, e.autor, e.accion === 'pagado' ? 'Pago de pedido de menudeo avisado' : 'Compromiso de pago reprogramado', new Date());
+  }
+
+  decidirPagoMenudeo(e: { autor: Miembro; claveIdem: string; reporteId: number; decision: 'confirmado' | 'rechazado'; motivo?: string }): Promise<ResultadoNegocio> {
+    return this.menudeo('pago_decidir', { reporte_id: e.reporteId, decision: e.decision, motivo: e.motivo ?? null }, e.claveIdem, e.autor, e.decision === 'confirmado' ? 'Pago confirmado como recibido' : 'Pago rechazado', new Date());
   }
 }
 

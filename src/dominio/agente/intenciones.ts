@@ -263,6 +263,39 @@ export interface ILoteHistorico {
   fuente_cita: string;
 }
 
+/**
+ * Pedido a costo del socio de menudeo (Playa del Carmen). Solo lo acepta el `socio_menudeo` configurado (por omision Angelo) y el autor se verifica en SQL.
+ * El pedido lo crean las funciones ds_* (ds_crear_pedido, tipo socio_a_costo); NUNCA lleva destinatario ni telefonos. La fecha comprometida de pago la interpreta el CODIGO
+ * a partir de `cuando_texto` (la frase tal como la dijo el socio): el modelo no escribe fechas, por eso `fecha_compromiso` y `hora_compromiso` no existen en el esquema del modelo.
+ */
+export interface IPedidoMenudeo {
+  tipo: 'pedido_menudeo';
+  proveedor_origen: 'karen_directo' | 'karen_via_isaac' | 'isaac_directo' | null;
+  lineas: ILineaCompraTexto[];
+  cuando_texto: string | null;
+  /** Calculados por el codigo (fecha_pago.ts), jamas por el modelo. */
+  fecha_compromiso?: string | null;
+  hora_compromiso?: string | null;
+  /** El socio dijo que todavia no hay fecha: el pedido queda "sin fecha comprometida" (alerta). */
+  sin_fecha?: boolean;
+  fuente_cita: string;
+}
+
+/** El socio de menudeo avisa que pago un pedido a costo. El comprobante (foto) se guarda solo como huella; el bot y la IA no lo leen. */
+export interface IPagoPedidoMenudeo {
+  tipo: 'pago_pedido_menudeo';
+  pedido_folio: string | null;
+  monto_centavos: number | null;
+  referencia: string | null;
+  /** Frase de la fecha del pago tal como la dijo el socio ("ayer", "10/11"); la interpreta el codigo. */
+  fecha_texto: string | null;
+  /** Calculada por el codigo. */
+  fecha_pago?: string | null;
+  metodo: 'transferencia' | 'deposito' | 'efectivo' | null;
+  via: 'proveedor' | 'sociedad' | null;
+  fuente_cita: string;
+}
+
 export const TIPOS_CONSULTA = [
   'cuadra',
   'balance',
@@ -342,6 +375,8 @@ export type Intencion =
   | IActaPropuesta
   | IActaFirma
   | ILoteHistorico
+  | IPedidoMenudeo
+  | IPagoPedidoMenudeo
   | IConsulta
   | IDeshacer
   | IAclarar
@@ -362,7 +397,7 @@ export const MAX_LINEAS = 30;
 /** Intenciones que escriben (todo lo demas es lectura o meta). Derivado del catalogo declarativo. */
 export const INTENCIONES_ESCRITURA: readonly TipoIntencion[] = [
   'pedido', 'pago', 'pago_proveedor', 'gasto', 'aportacion', 'reembolso_socio', 'retiro_utilidad', 'devolucion', 'paquete_perdido', 'compra', 'orden_compra', 'toma_omar', 'deshacer',
-  'pedido_envio', 'pedido_cancelar', 'compra_recepcion', 'compra_estado', 'compra_aprobar', 'gasto_servicio', 'merma', 'conteo', 'cliente_alta', 'cliente_precio', 'acta_propuesta', 'acta_firma', 'lote_historico',
+  'pedido_envio', 'pedido_cancelar', 'compra_recepcion', 'compra_estado', 'compra_aprobar', 'gasto_servicio', 'merma', 'conteo', 'cliente_alta', 'cliente_precio', 'acta_propuesta', 'acta_firma', 'lote_historico', 'pedido_menudeo', 'pago_pedido_menudeo',
 ];
 
 /** Escrituras que mueven dinero o cuentas: se muestran en un resumen y exigen confirmacion explicita ANTES de registrarse. La toma de Omar ya exige la autorizacion de un socio; deshacer tiene su propio flujo. */

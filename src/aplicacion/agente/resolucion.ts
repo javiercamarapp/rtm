@@ -261,8 +261,15 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
       }
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, clientesLote: clientes } } };
     }
+    case 'pedido_menudeo': {
+      // Surte el proveedor (dropshipping): se aceptan todos los sabores del modelo, no solo los que hay en la bodega de Merida. El cliente interno de menudeo lo pone la base.
+      const ls = await lineas(intencion.lineas, catalogo, overrides, true, true);
+      if (!ls.ok) return ls;
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, lineas: ls.lineas } } };
+    }
     case 'consulta':
       return consulta(intencion, autor, catalogo, overrides);
+    case 'pago_pedido_menudeo':
     case 'pedido_envio':
     case 'pedido_cancelar':
     case 'compra_aprobar':

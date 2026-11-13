@@ -56,6 +56,12 @@ export function crearAgenteEnMemoria(op: OpcionesAgenteEnMemoria = {}) {
     modelos: negocio.catalogoModelos(),
     sabores: Object.fromEntries(negocio.catalogoModelos().map((m) => [m.id, negocio.saboresDe(m.id)])),
   });
+  // Comprobantes de Telegram (solo huella): el negocio simulado los lee del almacen en memoria, y cada uno se usa una sola vez (como agente._evidencia_pendiente).
+  const usadas = new Set<number>();
+  negocio.evidencia = {
+    pendiente: (uid) => almacen.evidencias.find((e) => e.telegramUserId === uid && !usadas.has(e.id))?.id ?? null,
+    usar: (id) => void usadas.add(id),
+  };
   const agente = new AgenteTelegram({ almacen, presupuesto, llm, telegram, tokens, catalogo, negocio, reloj: reloj.ahora, config: op.config });
   return { agente, almacen, presupuesto, telegram, tokens, llm, catalogo, negocio, reloj, contador: new ContadorUpdates(), ids: IDS_SIMULADOS };
 }

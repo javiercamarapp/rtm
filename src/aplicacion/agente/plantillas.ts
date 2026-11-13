@@ -6,7 +6,8 @@ import { RegistroCifras } from '@/dominio/agente/cifras';
 import type { Intencion } from '@/dominio/agente/intenciones';
 import type { CifraServidor, Miembro, Persona } from '@/dominio/agente/tipos';
 import type { Reversa } from '@/dominio/agente/catalogo_intenciones';
-import type { RespuestaConsulta, ResultadoEjecutado, ResultadoSimulacion } from './puertos';
+import { formatearFechaPago, type OpcionFecha } from '@/dominio/agente/fecha_pago';
+import type { Igualacion, RecordatorioMenudeo, RespuestaConsulta, ResultadoEjecutado, ResultadoSimulacion } from './puertos';
 
 export interface MensajeListo {
   texto: string;
@@ -209,6 +210,8 @@ const TITULO_RESUMEN: Readonly<Partial<Record<Intencion['tipo'], string>>> = {
   acta_propuesta: 'Propuesta de acta de corte',
   acta_firma: 'Firma del acta de corte',
   lote_historico: 'Lote de movimientos historicos (fecha pasada)',
+  pedido_menudeo: 'Pedido a costo de menudeo (para ti, con fecha comprometida de pago)',
+  pago_pedido_menudeo: 'Aviso de pago de un pedido de menudeo',
 };
 
 export interface DatosResumen {
@@ -330,6 +333,17 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
         l.push(`- ${r.citaUsuario(x.fecha)} ${x.tipo} ${quien} ${r.pesos(BigInt(x.monto_centavos))}${x.concepto ? ` (${r.citaUsuario(x.concepto)})` : ''}${decl}`);
       });
       break;
+    case 'pedido_menudeo':
+      l.push(`Proveedor de origen: ${i.proveedor_origen === 'isaac_directo' ? 'Isaac' : i.proveedor_origen === 'karen_via_isaac' ? 'Karen via Isaac' : 'Karen'}`, ...lineasDe(i.lineas));
+      l.push(i.fecha_compromiso ? `Fecha comprometida de pago: ${r.servidor(formatearFechaPago(i.fecha_compromiso, i.hora_compromiso ?? null))}` : 'Fecha comprometida de pago: ninguna (quedara como pedido sin fecha comprometida, con alerta)');
+      l.push('Es un pedido a costo para ti: sin utilidad y sin destinatario. Los datos de entrega se capturan en la web, nunca por Telegram.');
+      break;
+    case 'pago_pedido_menudeo':
+      l.push(`Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, monto(i.monto_centavos ?? 0), `Metodo: ${i.metodo ?? 'transferencia (por omision)'}`, `Se pago: ${i.via === 'sociedad' ? 'abono a la sociedad' : 'directo al proveedor'}`);
+      if (i.referencia !== null) l.push(`Referencia: ${r.citaUsuario(i.referencia)}`);
+      if (i.fecha_pago) l.push(`Fecha del pago: ${r.servidor(formatearFechaPago(i.fecha_pago, null).replace(' (sin hora)', ''))}`);
+      l.push('Si mandaste el comprobante (foto) justo antes, se guarda solo como evidencia (su huella): nadie lo lee. Sin comprobante queda como Pago reportado hasta que el otro socio lo confirme.');
+      break;
     default:
       break;
   }
@@ -344,4 +358,99 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
   if (d.reforzada) l.push('Pedire una segunda confirmacion antes de registrar.');
   l.push(`Confirma con el boton o cancela. La tarjeta caduca en ${r.config(d.horas)} horas.`);
   return { texto: l.join('\n'), registro: r };
+}
+
+// ------------------------------------------------------------------ igualacion de aportaciones (cifras de la base; sin lenguaje de deuda)
+
+/** "Javier lleva $47,921.91 más aportado; el siguiente pago le toca a Angelo." o "Aportaciones igualadas." Los datos son los que entrego la base. */
+export function comentarioIgualacion(ig: Igualacion): MensajeListo {
+  const r = new RegistroCifras();
+  if (ig.igualados || ig.leTocaAportar === null || ig.llevaMas === null) return { texto: 'Aportaciones igualadas.', registro: r };
+  return { texto: `${r.servidor(ig.llevaMas)} lleva ${r.pesos(ig.diferenciaCent)} más aportado; el siguiente pago le toca a ${r.servidor(ig.leTocaAportar)}.`, registro: r };
+}
+
+// ------------------------------------------------------------------ menudeo: fecha comprometida, comprobantes, decision del otro socio y recordatorios
+
+export function preguntaCuandoPagas(): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: r.servidor('¿Cuándo pagas este pedido? Escribe la fecha y la hora, por ejemplo «el viernes», «mañana a las 5 de la tarde» o «20 de noviembre». Si todavía no hay fecha, escribe «sin fecha». (Hora de Mérida.)'), registro: r };
+}
+
+export function preguntaCuandoReprogramas(folio: string): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: `¿Para cuándo reprogramas el pago del pedido ${r.folio(folio)}? ${r.servidor('Escribe la fecha y la hora, por ejemplo «el lunes» o «mañana a las 10 de la mañana». (Hora de Mérida.)')}`, registro: r };
+}
+
+export function fechaNoEntendida(motivo: 'no_entendi' | 'pasada' | 'futura'): MensajeListo {
+  const r = new RegistroCifras();
+  const texto = motivo === 'pasada' ? 'Esa fecha ya pasó. Dime una fecha que todavía no llegue, por ejemplo «el viernes» o «mañana a las 5 de la tarde».'
+    : motivo === 'futura' ? 'La fecha de un pago no puede ser futura. Dime cuándo fue, por ejemplo «ayer» o «10 de noviembre».'
+      : 'No entendí la fecha. Dime por ejemplo «el viernes», «mañana a las 5 de la tarde» o «20 de noviembre».';
+  return { texto: r.servidor(texto), registro: r };
+}
+
+export function fechaAmbigua(motivo: 'am_pm' | 'dia'): MensajeListo {
+  return { texto: motivo === 'am_pm' ? 'La hora puede ser de la mañana o de la tarde. Elige cuál es; no registro nada todavía.' : 'Ese día de la semana es hoy: elige si es hoy o la semana siguiente; no registro nada todavía.', registro: new RegistroCifras() };
+}
+
+export function textoOpcionFecha(o: OpcionFecha): string {
+  return formatearFechaPago(o.fecha, o.hora);
+}
+
+export function soloSocioMenudeo(socio: 'angelo' | 'javier'): MensajeListo {
+  const nombre = NOMBRE[socio];
+  const otro = socio === 'angelo' ? 'Javier' : 'Angelo';
+  return { texto: `Solo ${nombre}, que lleva el menudeo, mete pedidos a costo y avisa sus pagos. ${otro} los supervisa y confirma o rechaza los pagos reportados. No ejecuté nada.`, registro: new RegistroCifras() };
+}
+
+export function comprobanteGuardado(): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: r.servidor('Guardé el comprobante solo como evidencia (su huella; nadie lo lee ni lo ve la IA). Ahora avisa el pago con /pagopedido P-0001 | monto, o escríbelo con tus palabras, y lo asocio (vale 30 minutos).'), registro: r };
+}
+
+export function confirmarReprogramacion(folio: string, fecha: string, hora: string | null): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: `¿Reprogramo el pago del pedido ${r.folio(folio)} para el ${r.servidor(formatearFechaPago(fecha, hora))}? Queda en el historial de reprogramaciones.`, registro: r };
+}
+
+const NOMBRE_PERSONA = (p: string): string => (p === 'angelo' ? 'Angelo' : p === 'javier' ? 'Javier' : p);
+
+/** Tarjeta para el OTRO socio: pago reportado de un pedido de menudeo. Confirma recibido o rechaza con botones. */
+export function tarjetaPagoReportado(e: { folio: string; reportadoPor: string; monto: bigint | null; aplicado: boolean; pendiente: bigint | null; conComprobante: boolean }): MensajeListo {
+  const r = new RegistroCifras();
+  const l = [`Pago reportado por ${r.servidor(NOMBRE_PERSONA(e.reportadoPor))} del pedido ${r.folio(e.folio)}${e.monto === null ? '' : `: ${r.pesos(e.monto)}`}.`];
+  l.push(e.aplicado
+    ? `Pago aplicado con comprobante; puedes rechazarlo${e.conComprobante ? ' (el comprobante se guardó solo como huella)' : ''}.`
+    : 'Todavía NO está aplicado: el pedido sigue pendiente de pago hasta que lo confirmes. Confirma si ya lo recibiste o recházalo.');
+  if (e.pendiente !== null) l.push(`Pendiente de pago del pedido: ${r.pesos(e.pendiente)}`);
+  return { texto: l.join('\n'), registro: r };
+}
+
+export function ecoDecisionPago(e: { folio: string; decision: 'confirmado' | 'rechazado'; por: string; pendiente: bigint | null }): MensajeListo {
+  const r = new RegistroCifras();
+  const l = [`Pago del pedido ${r.folio(e.folio)} ${e.decision === 'confirmado' ? 'confirmado como recibido' : 'rechazado'} por ${r.servidor(NOMBRE_PERSONA(e.por))}.`];
+  if (e.pendiente !== null) l.push(`Pendiente de pago del pedido: ${r.pesos(e.pendiente)}`);
+  return { texto: l.join('\n'), registro: r };
+}
+
+const ETIQUETA_RECORDATORIO: Readonly<Record<'por_vencer' | 'vence_hoy' | 'vencido', string>> = {
+  por_vencer: 'vence pronto',
+  vence_hoy: 'vence hoy',
+  vencido: 'ya venció',
+};
+
+/** Recordatorio de pago al GRUPO de socios (nunca a terceros). Solo folio, socio, proveedor, monto pendiente y fechas: ningun dato de clientes ni de entrega. */
+export function recordatorioPago(f: RecordatorioMenudeo & { tipo: 'por_vencer' | 'vence_hoy' | 'vencido' }): MensajeListo {
+  const r = new RegistroCifras();
+  const l = [`Recordatorio de pago: el pedido ${r.folio(f.folio)} de ${r.servidor(NOMBRE_PERSONA(f.socio.toLowerCase()))} con ${r.servidor(f.proveedor)} ${ETIQUETA_RECORDATORIO[f.tipo]}.`];
+  l.push(`Pendiente de pago: ${r.pesos(f.pendienteCent)}`);
+  if (f.fechaCompromiso !== null) l.push(`Fecha comprometida: ${r.servidor(formatearFechaPago(f.fechaCompromiso, f.horaCompromiso))}`);
+  if (f.tipo === 'vencido' && f.diasAtraso > 0) l.push(`Días de atraso: ${r.config(f.diasAtraso)}`);
+  if (f.tipo !== 'por_vencer') l.push('¿Ya pagaste?');
+  return { texto: l.join('\n'), registro: r };
+}
+
+export function ecoRespuestaRecordatorio(e: { folio: string; accion: 'pagado' | 'posponer'; fecha?: string; hora?: string | null }): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: e.accion === 'pagado' ? `Pago del pedido ${r.folio(e.folio)} reportado: falta que el otro socio lo confirme.` : `Pago del pedido ${r.folio(e.folio)} reprogramado para el ${r.servidor(formatearFechaPago(e.fecha ?? '', e.hora ?? null))}.`, registro: r };
 }

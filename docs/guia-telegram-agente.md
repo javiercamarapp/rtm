@@ -77,6 +77,47 @@ Consultas, sin confirmacion: `/cuadra` (comprobaciones por dos vias), `/socios` 
 
 **Movimientos historicos y apertura**. `/lote` acepta gasto, cobro, aportacion, reembolso y retiro con fecha pasada explicita (AAAA-MM-DD). Muestra la vista previa del servidor con el cuadre por dos vias, pide confirmacion reforzada y escribe cada renglon con su propia clave (reenviar el lote completo no duplica nada). Los saldos iniciales de la sesion de apertura (inventario inicial, cuentas por cobrar, capital) siguen en la sesion de apertura del software, que tiene su propio ensayo y firma de ambos socios; el chat no la sustituye.
 
+### Tercera entrega: igualación de aportaciones, menudeo del socio y recordatorios (decisiones del dueño, 13-nov)
+
+Tres piezas nuevas. Todo se probó con el simulador, con pgTAP y de punta a punta contra la base local con Telegram simulado (fetch falso): nada se envió a Telegram.
+
+**1. Comentario de igualación.** Después de CUALQUIER aportación, pago de un socio a un proveedor con dinero propio, reembolso, cobro en cuenta de socio o retiro registrado por el bot, el bot comenta en el grupo, con datos de la base (nunca calculados por la IA):
+
+- `Javier lleva $47,921.91 más aportado; el siguiente pago le toca a Angelo.` (quien tiene más aportado y a quién le toca el siguiente pago), o
+- `Aportaciones igualadas.` cuando no hay diferencia.
+
+La fuente es `agente.igualacion()` (lectura de solo servidor, sin GRANT a authenticated) que llama a `api.socios_aportacion_neta()`, la misma definición de aportación neta, diferencia a igualar y turno que usa `api.capital_por_mes` (pgTAP a7_001 comprueba que coinciden y reproduce el ejemplo del dueño: 118,161.91 contra 70,240.00, diferencia 47,921.91). No se duplicó lógica. Sin lenguaje de deuda: la diferencia no es una deuda ni un reembolso a favor del otro. Si la lectura falla, el movimiento ya registrado no se afecta y queda un evento. También comenta tras un lote histórico que traiga aportaciones, reembolsos, retiros o cobros en cuenta de socio. No comenta tras un gasto, un cobro en efectivo ni un pago de la sociedad.
+
+**2. Intención `pedido_menudeo`** (solo la acepta el `socio_menudeo` configurado, por omisión Angelo; el autor se verifica por su id de Telegram en TypeScript y otra vez en SQL):
+
+| Qué haces | Mensaje o comando | Qué pasa |
+|---|---|---|
+| Pedido a costo para tu menudeo (Playa del Carmen) | `/pedidomenudeo [karen\|isaac] \| modelo/sabor 24 \| cuando el viernes 5pm` o "pedido menudeo: 10 elux/sandia, pago el viernes" | Si no dices cuándo pagas, el bot pregunta «¿Cuándo pagas este pedido?» y contestas con tus palabras («el viernes», «mañana a las 5 de la tarde», «20 de noviembre», «sin fecha»). El resumen muestra la fecha interpretada y el costo que calcula la base; confirmas tú. |
+
+- La fecha la interpreta el CÓDIGO (`src/dominio/agente/fecha_pago.ts`, hora de Mérida, UTC-6), nunca la IA: el modelo solo copia la frase en `cuando_texto` (y el código exige que esa frase esté en tu mensaje) y su esquema estricto NO tiene campos de fecha. Ante la duda pregunta con botones: una hora sin am/pm («mañana a las 5») ofrece 5:00 y 17:00; «el viernes» siendo viernes ofrece hoy o la semana siguiente; una fecha pasada o ilegible se vuelve a preguntar (3 intentos y suelta la pregunta sin registrar nada). Reglas de fechas: una fecha con mes sin año («5 de noviembre», «5/11») que ya pasó NO se corre en silencio al año siguiente (se rechaza como pasada; solo «el 5» pasa al mes siguiente y el resumen siempre muestra la fecha completa); «viernes 20» respeta el 20 y, si no cae en viernes, se pide aclaración; años de uno o dos dígitos («15/11/2», «15/11/26») o a más de un año («2099») no se entienden. Las opciones las elige quien pidió; si pulsa el otro socio no pasa nada y vuelven las opciones.
+- El pedido lo crean las funciones `ds_*` (`operacion.ds_crear_pedido`, tipo `socio_a_costo`; luego `confirmar_pedido`) y guarda `fecha_compromiso_pago` con su hora y quién la comprometió. El destinatario y los teléfonos NUNCA pasan por la IA ni por Telegram: el esquema no tiene campos para ellos, el esquema `entrega` queda vacío y el bot lo dice («los datos de entrega se capturan en la web»). El cliente interno del pedido es «Menudeo <socio>» (sin teléfonos), lo pone la base; no lo elige la IA.
+- Un pedido sin fecha queda «sin fecha comprometida» (alerta en la web). Se deshace con `/deshacer` mientras no esté enviado; para enviarlo, `/enviado P-0001`.
+- Si el otro socio (Javier) lo manda, el bot responde que solo Angelo mete pedidos a costo y no ejecuta nada (evento `menudeo_otro_socio`); aunque se invoque la puerta SQL directo, falla con `42501`. Omar no puede.
+
+**3. Intención `pago_pedido_menudeo`** (el socio de menudeo avisa que pagó un pedido a costo):
+
+| Qué haces | Mensaje o comando | Qué pasa |
+|---|---|---|
+| Aviso de pago | `/pagopedido P-0001 \| 1000 \| [transferencia\|deposito\|efectivo] \| [proveedor\|sociedad] \| [ref CLAVE] \| [ayer]` o "pagué 1,000 del pedido P-0001 ref ABC ayer" | Pregunta lo que falte (monto, folio; si pagaste directo al proveedor o abono a la sociedad, con botones). Muestra el resumen con el pendiente que calcula la base. |
+| Comprobante | mandar la foto (sola o con el comando en el pie de foto) | Se guarda SOLO como evidencia: su `file_id` y su huella (sha256 del `file_unique_id`) en `agente.evidencia_tg`. El bot no descarga ni lee la imagen, la IA nunca la ve y no se guarda en `entrega.evidencia_pago`. Vale 30 minutos y se liga a un solo pago. |
+
+- Política (la ya definida): **sin comprobante** queda «Pago reportado» y el pedido sigue pendiente hasta que el OTRO socio lo confirme con el botón **Confirmar recibido** (o lo **Rechace**); **con comprobante** basta registrar y se aplica (el bot NO verifica el comprobante: decisión del dueño), y la tarjeta al otro socio dice «Pago aplicado con comprobante; puedes rechazarlo» con el botón **Rechazar**; el otro socio todavía puede **Rechazar** (se anula y el pedido vuelve a pendiente). Quien reportó no se confirma a sí mismo (la tarjeta vuelve; la base también lo exige con `42501`).
+- Una sola decisión por reporte; el rechazo desde el botón guarda el motivo fijo «Rechazado desde Telegram por el otro socio (sin motivo detallado)» (la base exige motivo); un motivo propio se captura en la web.
+- Un monto mayor al pendiente lo rechaza la base y no se registra nada. Doble envío de la misma indicación o doble pulsación: idempotente.
+
+**4. Recordatorios de pago (tarea del latido).** `/api/tareas/latido` (con `TAREAS_SECRETO`) llama, en cada pasada, a `enviarRecordatoriosMenudeo()`:
+
+- Con el interruptor `telegram_envio` **APAGADO** (como nace) no envía NADA ni reclama nada: los avisos siguen pendientes para cuando se encienda.
+- Con el interruptor encendido lee `ds_recordatorios_pago_menudeo(ahora)` y manda al **GRUPO de socios** (nunca a terceros, ni a Omar, ni a clientes): **24 h antes** (aviso informativo), **al vencer** y **cada 24 h** después hasta que se pague o se lleguen a **7 recordatorios** (valores configurables en la web). Al vencer y en los vencidos el mensaje pregunta «¿Ya pagaste?» con botones **Pagado** (reporta el pago pendiente, sin comprobante, y avisa al otro socio con la tarjeta de confirmar) y **Reprogramar** (pregunta la nueva fecha con texto, la interpreta el código y se confirma con un botón; queda en el historial con el motivo «Reprogramado desde Telegram a petición del socio de menudeo»).
+- Solo el socio de menudeo responde esos botones; si pulsa el otro, no pasa nada y la tarjeta vuelve.
+- El mensaje lleva solo folio, socio, proveedor, monto pendiente, fecha y días de atraso: nada de clientes ni de entrega.
+- Idempotencia: cada aviso se RECLAMA en la base antes de enviarse (`agente.recordatorio_reclamar`, que revalida que ese aviso todavía toca y registra el envío con `ds_registrar_recordatorio_menudeo`, único por pedido y hora). Dos latidos simultáneos o un reintento no duplican. Defensa en profundidad: `agente.recordatorio_reclamar` también comprueba en SQL que `telegram_envio` está encendido (si no, `reclamado = false`), y si ya hay un aviso de ese pedido en la misma hora de reloj (la ventana única de la base no distingue tipo) no reclama otro: por ejemplo, `por_vencer` y `vence_hoy` en la misma hora no se duplican y el segundo sale en la hora siguiente. Contrapartida documentada: si Telegram falla justo después de reclamar, ese aviso no se reenvía (queda un evento `recordatorio_error`; los vencidos se repiten al día siguiente). Con un pago ya reportado por confirmar, o sin fecha comprometida, no se manda recordatorio al chat (queda como alerta en la web).
+
 ### Lo que NO hace
 
 - Nunca escribe a clientes ni a terceros: todo va al grupo de los dos socios. No envia correos ni reportes por correo.
@@ -84,6 +125,8 @@ Consultas, sin confirmacion: `/cuadra` (comprobaciones por dos vias), `/socios` 
 - Omar no registra nada por esta via (solo toma piezas y consulta lo suyo); no ve costos ni contactos.
 - Fotos y audios: se avisa que se recibieron pero no se leen (no hay ruta de transcripcion de notas de voz en esta rama); el socio escribe el dato.
 - Devoluciones y paquete perdido: contrato listo, no se registran hasta integrar sus ramas.
+- Los datos de entrega de un pedido de menudeo (destinatario, teléfono) y la lectura del comprobante: nunca por Telegram ni por la IA; se capturan en la web.
+- Un motivo de rechazo propio de un pago reportado y el pago con comprobante en PDF dentro del chat (solo se guarda la huella de lo que mande): se hacen en la web.
 - Apertura (saldos iniciales firmados), cierre de periodos contables y asientos manuales: en el software.
 - No hay reversa directa de envios, recepciones, conteos, altas, precios ni actas: el agente lo dice antes de confirmar.
 
@@ -165,6 +208,14 @@ Rotar token y secreto si alguna vez se pegaron en un chat o en un repo.
 
 **Webhook (B3).** La ruta valida el secreto ANTES de leer el cuerpo, rechaza por `Content-Length` mayor a 1 MB sin leer y corta la lectura al pasar el tope.
 
+## Politicas de la tercera entrega (menudeo, igualacion y recordatorios)
+
+- **Quien manda.** `pedido_menudeo`, `pago_pedido_menudeo` y las respuestas a recordatorios las acepta SOLO el `socio_menudeo` (`agente._exigir_socio_menudeo`, con la misma regla de autor verificado contra `agente.miembro` y `telegram_user_id`). La decisión sobre un pago reportado la toma SOLO el otro socio (`ds_decidir_pago_menudeo`).
+- **Privilegios.** Ninguna función nueva tiene GRANT a `authenticated`: las `agente.*` nuevas (`igualacion`, `socio_menudeo`, `envio_activo`, `espera_abrir`, `espera_tomar`, `evidencia_guardar`, `recordatorios_menudeo`, `recordatorio_reclamar`) son solo del rol `servidor`; los ayudantes `_*` no los ejecuta nadie. Las tablas `agente.tg_espera` y `agente.evidencia_tg` tienen RLS forzada y sin GRANT. Se redefinieron (create or replace, misma firma, sin DROP) `agente.ejecutar_ext` y `agente.simular` (solo enrutan los tipos nuevos y conservan firma del acta, segundo socio del lote y hash del efecto) y `operacion.ds_reportar_pago_menudeo` (un comprobante de Telegram, solo huella, cuenta como evidencia; conserva sus privilegios).
+- **Efecto confirmado.** La vista previa del pedido (costo, fecha comprometida) y del pago (pendiente, estado) lleva hash; si el efecto real cambia entre simular y ejecutar, la base aborta con `P0462`.
+- **Preguntas abiertas.** Una por socio (`agente.tg_espera`), caduca a los 30 minutos, se toma una sola vez y solo la contesta quien la recibió; un mensaje reenviado o un comando no la contestan.
+- **Migraciones aditivas** (prefijo 20261113700000 en adelante): `20261113700000_telegram_igualacion.sql`, `20261113700100_telegram_menudeo_estado.sql`, `20261113700200_telegram_menudeo_puertas.sql` y `20261113700300_telegram_socio_menudeo.sql` y `20261113700400_telegram_reclamar_endurecido.sql` (correcciones de la verificación independiente). Un botón ya usado, caducado o reenviado responde «Esa tarjeta ya se usó o caducó.» sin registrar nada.
+
 ## Verificacion independiente (13-nov, sobre e942121)
 
 - **La tarjeta no supone la clasificacion: la lee de la base.** `agente.simular` y `agente.ejecutar`/`ejecutar_ext` devuelven `clasificaciones` (lo que dejaron, o dejarian, las filas de `operacion.aportacion_socio`: capital o reembolsable, monto y socio). La tarjeta de vista previa dice "El sistema lo registrara como ..." y el eco de resultado "Registrado como ..." con esos datos. Si la base fuera a registrar CAPITAL sin que el socio lo declarara con sus palabras, el agente NO lo registra y lo explica.
@@ -180,6 +231,10 @@ Rotar token y secreto si alguna vez se pegaron en un chat o en un repo.
 
 ## Como se probo
 
+- `supabase/tests/database/a7_001_telegram_igualacion.test.sql` y `a7_002_telegram_menudeo.test.sql` (pgTAP): igualación contra `api.capital_por_mes` con el ejemplo del dueño, pedido de menudeo (autor verificado, solo el socio de menudeo, hash, doble envío, sin destinatario), pago reportado con y sin comprobante, decisión del otro socio, esperas, interruptor, recordatorios (por vencer, vence hoy, vencidos, máximo de 7, reclamo idempotente), respuesta a recordatorios, cuadre de socios y privilegios.
+- `test/unit/agente/fecha_pago.test.ts` y `agente.menudeo.test.ts`: interpretación de fechas en lenguaje natural y cada intención (feliz, faltante, fecha ambigua, otro socio, interruptor apagado, doble envío, recordatorio repetido, Pagado y Reprogramar, comprobante, guardas de cifras).
+- `test/integracion/telegram_menudeo_e2e.test.ts`: lo mismo de punta a punta contra la base local (Telegram con fetch falso; nada sale a api.telegram.org).
+- Simulador del menudeo (EN MEMORIA, no es para `simular-telegram.mts`, que va contra la base local): `npx tsx scripts/agente/simulador.mts scripts/agente/guion-menudeo.txt` (comandos nuevos del guion: `foto <quien>`, `envio on|off`, `latido`).
 - `test/unit/agente/agente.socios.test.ts`: cada intencion nueva, ambiguos, faltantes, duplicados, deshacer, confirmacion negada, cifras inventadas o sumadas por el modelo, Omar y consultas.
 - Simulador local: `npx tsx scripts/agente/simulador.mts scripts/agente/guion-ejemplo.txt` (sin red ni base).
 - `test/unit/agente/agente.ampliado.test.ts`: catalogo declarativo, esquemas, comandos nuevos, confirmacion reforzada, faltantes con botones, firma personal, limite de frecuencia y Omar.
