@@ -399,7 +399,8 @@ begin
   perform notificacion.exigir_sistema();
   if p_tipo = 'cuadra' then
     select jsonb_build_object('titulo', case when bool_and(c.ok or not c.bloqueante) then 'Las cuentas cuadran' else 'Hay comprobaciones en rojo' end,
-      'lineas', coalesce(jsonb_agg(jsonb_build_object('etiqueta', c.nombre || case when c.ok then ' (ok)' else ' (NO cuadra)' end, 'centavos', c.via_a_cent - c.via_b_cent) order by c.codigo), '[]'::jsonb)) into v_res
+      'lineas', coalesce(jsonb_agg(jsonb_build_object('etiqueta', c.nombre || ' (NO cuadra, diferencia)', 'centavos', c.via_a_cent - c.via_b_cent) order by c.codigo) filter (where not c.ok), '[]'::jsonb)
+        || jsonb_build_array(jsonb_build_object('etiqueta', 'Comprobaciones por dos vias en verde', 'texto', count(*) filter (where c.ok) || ' de ' || count(*)))) into v_res
       from contabilidad.comprobaciones() c;
   elsif p_tipo = 'saldos_socios' then
     v_c := operacion.cuenta_socios();
@@ -432,13 +433,13 @@ begin
       from operacion.pedido pe join catalogo.cliente cl on cl.id = pe.cliente_id where pe.estado in ('borrador', 'confirmado', 'enviado')), '[]'::jsonb));
   elsif p_tipo = 'pendientes' then
     v_res := jsonb_build_object('titulo', 'Que falta por hacer', 'lineas', jsonb_build_array(
-      jsonb_build_object('etiqueta', 'Pedidos confirmados por enviar', 'piezas', (select count(*)::int from operacion.pedido where estado = 'confirmado')),
-      jsonb_build_object('etiqueta', 'Pedidos enviados por entregar o cobrar', 'piezas', (select count(*)::int from operacion.pedido where estado = 'enviado' and operacion.pedido_saldo(id) > 0)),
-      jsonb_build_object('etiqueta', 'Compras por recibir', 'piezas', (select count(*)::int from operacion.compra where estado in ('confirmada', 'enviada', 'en_trayecto', 'llego_merida'))),
-      jsonb_build_object('etiqueta', 'Ordenes de compra por aprobar', 'piezas', (select count(*)::int from operacion.compra where estado = 'borrador')),
-      jsonb_build_object('etiqueta', 'Tomas de Omar por autorizar', 'piezas', (select count(*)::int from operacion.toma_omar where estado = 'pendiente')),
-      jsonb_build_object('etiqueta', 'Actas de corte pendientes de firma', 'piezas', (select count(*)::int from operacion.cierre_reparto c
-        where not exists (select 1 from operacion.cierre_reparto_anulacion a where a.cierre_id = c.id) and (select count(*) from operacion.cierre_reparto_firma f where f.cierre_id = c.id) < 2))));
+      jsonb_build_object('etiqueta', 'Pedidos confirmados por enviar', 'texto', (select count(*) from operacion.pedido where estado = 'confirmado')::text),
+      jsonb_build_object('etiqueta', 'Pedidos enviados por entregar o cobrar', 'texto', (select count(*) from operacion.pedido where estado = 'enviado' and operacion.pedido_saldo(id) > 0)::text),
+      jsonb_build_object('etiqueta', 'Compras por recibir', 'texto', (select count(*) from operacion.compra where estado in ('confirmada', 'enviada', 'en_trayecto', 'llego_merida'))::text),
+      jsonb_build_object('etiqueta', 'Ordenes de compra por aprobar', 'texto', (select count(*) from operacion.compra where estado = 'borrador')::text),
+      jsonb_build_object('etiqueta', 'Tomas de Omar por autorizar', 'texto', (select count(*) from operacion.toma_omar where estado = 'pendiente')::text),
+      jsonb_build_object('etiqueta', 'Actas de corte pendientes de firma', 'texto', (select count(*) from operacion.cierre_reparto c
+        where not exists (select 1 from operacion.cierre_reparto_anulacion a where a.cierre_id = c.id) and (select count(*) from operacion.cierre_reparto_firma f where f.cierre_id = c.id) < 2)::text)));
   else
     raise exception 'consulta desconocida' using errcode = '22023';
   end if;

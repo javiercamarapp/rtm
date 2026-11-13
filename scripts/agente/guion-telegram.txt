@@ -1,0 +1,5 @@
+# Guion para simular-telegram.mts contra una base local con catalogo (ver docs/guia-telegram-agente.md). Datos ilustrativos.
+javier> /cuadra
+javier> /pendientes
+angelo> /cliente Cliente de Prueba
+boton javier: Confirmar

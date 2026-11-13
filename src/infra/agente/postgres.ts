@@ -247,7 +247,10 @@ export class NegocioAgenteDb implements NegocioAgente {
       const prep = i.tipo === 'toma_omar' || i.tipo === 'devolucion' || i.tipo === 'paquete_perdido' ? null : preparar(a, ctx, hoyDe(ctx.ahora));
       if (prep) {
         const j = (await F(this.sql, prep.hub, [ctx.claveIdem, prep.tipo, JSON.stringify(prep.args)], ['text', 'text', 'jsonb'])) as ResultadoSql;
-        return { tipo: 'ejecutado', folio: j.folio ?? '', titulo: prep.titulo, lineas: lineasDeResultado(j), ...eco(j.eco), advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
+        const ls = lineasDeResultado(j);
+        // El monto que el socio dicto (ya validado contra su mensaje) se muestra aunque la funcion de negocio no lo devuelva.
+        if (!ls.some((l) => l.etiqueta === 'Monto') && typeof prep.args.monto_cent === 'number') ls.unshift({ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(prep.args.monto_cent) });
+        return { tipo: 'ejecutado', folio: j.folio ?? '', titulo: prep.titulo, lineas: ls, ...eco(j.eco), advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
       }
       if (i.tipo === 'gasto') {
         const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'gasto', JSON.stringify({ pagado_por: i.pagado_por, monto_cent: i.monto_centavos, categoria: CATEGORIA_GASTO[i.gasto] ?? 'otro', nota: i.descripcion, origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; eco?: Parameters<typeof eco>[0]; repetido?: boolean };

@@ -43,12 +43,49 @@ Se puede escribir con tus palabras o con comando (los comandos funcionan aunque 
 
 La utilidad es una aproximacion operativa; la cifra contable esta en el software (Contabilidad).
 
-### Lo que NO se registra por Telegram
+### Segunda entrega: casi todo lo util del sistema desde el chat
 
-- Apertura y saldos historicos, y cualquier fecha pasada: se capturan en la sesion de apertura del software (con revision y firma). El agente contesta que se hace ahi.
-- Reinversion de utilidades: la decide el corte mensual con acta firmada, no un mensaje.
-- Fotos y audios: el agente avisa que los recibio pero no los lee; escribe el dato.
-- Pedidos, compras y ordenes de compra: la base de esta rama todavia no los acepta desde Telegram (se hacen en el software).
+Cada fila es una intencion del catalogo declarativo (`src/dominio/agente/catalogo_intenciones.ts`: intencion, puerta SQL, nivel de confirmacion, quien puede, si tiene reversa). La IA solo clasifica y extrae campos (esquema zod estricto por intencion); jamas genera SQL ni calcula dinero. Antes de pedir confirmacion, el servidor SIMULA la operacion (`agente.simular`, se revierte siempre) y el resumen muestra su efecto real: precios del tabulador, importes, saldos y el cuadre por dos vias. Si la base no aceptaria la operacion, se rechaza en ese momento, antes de escribir.
+
+| Que haces | Mensaje o comando | Confirmacion | Deshacer |
+|---|---|---|---|
+| Crear pedido (precio del tabulador, lo pone el sistema) | `/pedido Cliente \| modelo/sabor 24` o "Cliente: 24 modelo/sabor" | normal | si, mientras no este enviado (se cancela) |
+| Pedido enviado o entregado | `/enviado P-0001 [guia]`, `/entregado P-0001`, "se envio el pedido P-0001" | normal | no directo: se corrige en el software |
+| Cancelar pedido con motivo | `/cancelar P-0001 \| motivo` | reforzada | no |
+| Cobro de nota o pago de cliente | `/pago Cliente \| 7000` o "Cliente pago 7000 en efectivo" | normal | si |
+| Registrar compra (costo de lista del proveedor, lo pone el sistema) | `/compra isaac \| modelo/sabor 50` | normal | si (se anula) |
+| Orden de compra en borrador | `/oc karen \| modelo/sabor 100` y luego `/aprobar C-0001` | normal | si (borrador) |
+| Paquete de compra en trayecto o llego a Merida | `/enviada C-0001`, `/llego C-0001` | normal | no directo |
+| Recepcion total o parcial | `/recibir C-0001` (total) o `/recibir C-0001 \| modelo/sabor 30` (parcial) | normal | no directo |
+| Pago de socio al proveedor | `/pagoprov isaac \| 5000 \| javier` | normal | si |
+| Cargo de servicio con tipo de cambio | `/servicio openrouter 20usd javier [tc 18.50]` o `/servicio vercel 500 javier` o "pague 20 usd de openrouter" | normal | si |
+| Merma con motivo | `/merma modelo/sabor 2 \| caja danada` | normal | si |
+| Conteo fisico (ajusta existencias) | `/conteo modelo/sabor 12 \| modelo/sabor 4` | reforzada | no |
+| Alta de cliente (sin telefonos) | `/cliente Nombre` | normal | no |
+| Precio de un cliente en el tabulador | `/precio Cliente \| modelo \| 250` | normal | no |
+| Propuesta de acta de corte y reinversion | `/acta [AAAA-MM] [retira angelo 1000] [reinvierte javier 500]` | reforzada | no (se anula desde el software) |
+| Firma del acta | `/firmaracta [folio]` | reforzada | no |
+| Movimientos historicos con fecha pasada | `/lote etiqueta` + `total 900` (opcional) + una linea por movimiento | reforzada, con vista previa | si, renglon por renglon por su folio |
+| Reembolso, retiro de utilidad, aportacion, gasto de socio | como en la primera entrega | normal | si |
+| Devolucion de cliente, paquete perdido o danado | `/devolucion`, `/paquete` | contrato listo | espera sus ramas (P0461) |
+
+Consultas, sin confirmacion: `/cuadra` (comprobaciones por dos vias), `/socios` (saldo de cada socio), `/utilidad [hoy|semana|mes]`, `/balance`, `/diario`, `/cobertura [modelo]`, `/stock [modelo]`, `/cartera`, `/compras`, `/pedidos`, `/reporte [hoy|semana|mes]` (el resumen sale en el grupo; no se envia ningun correo), `/pendientes` ("que falta por hacer": pedidos por enviar o cobrar, compras por recibir, ordenes por aprobar, tomas de Omar por autorizar, actas por firmar), `/ayuda`.
+
+**Confirmacion**. Todo movimiento muestra un resumen y no se registra hasta que un socio pulsa Confirmar (caduca en 24 horas). Las acciones reforzadas piden un SEGUNDO si ("Si, estoy seguro") y antes dicen con todas sus letras si hay o no deshacer. Si falta un dato (cuenta, via, quien pago) se pide con botones y despues sigue el resumen; si falta un folio o un motivo se pide por texto. Una suma dictada que no cuadra con los renglones (por ejemplo `total 1000` en un lote que suma 900) bloquea todo y pide correccion; ambas cifras las calcula el codigo. Una cifra que la IA propone y no esta en el mensaje del socio tambien bloquea.
+
+**Autor y firma**. El autor de cada operacion es el socio que escribe (`agente.ejecutar` y `agente.ejecutar_ext` exigen autor). La firma del acta es personal: la da quien la pide, con su propio Telegram; si otro socio pulsa Confirmar no se firma. El bot nunca firma por un socio ni por los dos.
+
+**Movimientos historicos y apertura**. `/lote` acepta gasto, cobro, aportacion, reembolso y retiro con fecha pasada explicita (AAAA-MM-DD). Muestra la vista previa del servidor con el cuadre por dos vias, pide confirmacion reforzada y escribe cada renglon con su propia clave (reenviar el lote completo no duplica nada). Los saldos iniciales de la sesion de apertura (inventario inicial, cuentas por cobrar, capital) siguen en la sesion de apertura del software, que tiene su propio ensayo y firma de ambos socios; el chat no la sustituye.
+
+### Lo que NO hace
+
+- Nunca escribe a clientes ni a terceros: todo va al grupo de los dos socios. No envia correos ni reportes por correo.
+- La IA no ve telefonos ni correos (se ocultan antes del prompt) y nunca calcula dinero.
+- Omar no registra nada por esta via (solo toma piezas y consulta lo suyo); no ve costos ni contactos.
+- Fotos y audios: se avisa que se recibieron pero no se leen (no hay ruta de transcripcion de notas de voz en esta rama); el socio escribe el dato.
+- Devoluciones y paquete perdido: contrato listo, no se registran hasta integrar sus ramas.
+- Apertura (saldos iniciales firmados), cierre de periodos contables y asientos manuales: en el software.
+- No hay reversa directa de envios, recepciones, conteos, altas, precios ni actas: el agente lo dice antes de confirmar.
 
 ## Ejemplo de conversacion
 
@@ -71,7 +108,8 @@ Bot:    De cuanto fue el reembolso?     (no inventa la cifra)
 - Devolucion de cliente: necesita `operacion.registrar_devolucion_cliente` (rama `lane/devolucion-parcial`, migraciones 20261113000100 a 20261113000400).
 - Paquete perdido o danado: necesita `operacion.reportar_paquete_salida` (rama `lane/paquete-perdido`, migracion 20261112400000).
 - Mientras no esten en la base, `agente.ejecutar` responde el codigo P0461 y el bot dice que se hace en el software; no se duplica ninguna de esas funciones. Al integrarlas hay que (1) agregar la llamada en `agente.ejecutar` (resolviendo folio de pedido y lineas) y (2) cambiar `NegocioAgenteDb` para usarla. `agente.capacidades()` ya informa cuales existen. El contrato (intenciones, esquema, comandos, resumen y espejo en el simulador) ya esta probado.
-- La migracion de esta rama es `20261113100000_telegram_agente_socios.sql` (aditiva; posterior a 20261113000400).
+- Migraciones de esta rama (aditivas): `20261113100000_telegram_agente_socios.sql` y `20261113100100_telegram_agente_ampliado.sql` (agente.ejecutar_ext, agente.simular, agente.consulta_ext, deshacer ampliado y actor del canal telegram).
+- Prueba que conectara devolucion y paquete: `test/integracion/telegram_e2e.test.ts` (caso "devolucion y paquete perdido") FALLA a proposito cuando `agente.capacidades()` informe la funcion, para obligar a conectar la llamada en `agente.ejecutar`, en `preparar` de `src/infra/agente/postgres.ts` y a cambiar el contrato a `activa`.
 
 ## Encender el bot real (lo hace Javier; no se imprime ni se inventa ningun secreto)
 
@@ -90,7 +128,28 @@ Todo esto es configuracion privada: nunca va al repo, al chat ni a un mensaje.
 
 Rotar token y secreto si alguna vez se pegaron en un chat o en un repo.
 
+## Decisiones del dueño que NO se inventaron (valores configurables)
+
+- Cuanto de la caja de la sociedad cuenta como puesto por los socios: no se asume. Hoy la base exige efectivo en la caja de la empresa para reembolsar (el chat lo rechaza en la vista previa con ese motivo) y el orden de fondeo es el de las reglas del repo.
+- Dinero propio de un socio que paga a Isaac: reembolso salvo que declare invertir o reinvertir (regla del 11-nov). Por omision es reembolso; capital solo con las palabras "capital" o "invertir". Para cambiarlo, es el parametro `intencion` de `operacion.registrar_aportacion` y la rama de `pago_proveedor_de_socio`; no esta cableado a una configuracion externa todavia.
+- Reserva minima de inventario, tipo de cambio por omision (hoy el ultimo registrado en `costos.tipo_cambio`; si no hay, el agente pregunta).
+
+## Plan de prueba con el bot real (cuando el dueño entregue token, ids y secreto)
+
+1. Registrar miembros y chats sin imprimirlos (`npm run agente:registrar -- --dry-run`, luego sin `--dry-run`), fijar el webhook con `secret_token` y dejar `telegram_envio` apagado.
+2. En el grupo: `/ayuda`, `/cuadra`, `/pendientes`. Debe responder solo a los dos socios; un tercero y Omar en el grupo no reciben respuesta.
+3. Un gasto chico: `/gasto guia 1 javier` -> resumen -> Confirmar (el otro socio) -> folio -> `/deshacer`.
+4. Un pedido de prueba contra un cliente de prueba con precio de tabulador: verificar el importe del resumen contra el tabulador, confirmar, `/enviado`, cobro, `/cuadra` debe decir "Las cuentas cuadran".
+5. Un lote historico de 2 renglones: vista previa, segunda confirmacion, revisar en la web que las fechas son las dictadas; `/deshacer` por folio.
+6. Acta: `/acta`, firma de cada socio con `/firmaracta` desde su propio Telegram; verificar que el segundo socio no puede firmar por el primero.
+7. Mensaje de Omar en privado con un comando de socio: debe quedar bloqueado y avisar al grupo.
+8. Confirmar en el panel de Telegram que ningun mensaje salio a un chat distinto del grupo y del privado de Omar.
+
 ## Como se probo
 
 - `test/unit/agente/agente.socios.test.ts`: cada intencion nueva, ambiguos, faltantes, duplicados, deshacer, confirmacion negada, cifras inventadas o sumadas por el modelo, Omar y consultas.
-- Simulador local: `npx tsx scripts/agente/simulador.mts scripts/agente/guion-ejemplo.txt` (sin red).
+- Simulador local: `npx tsx scripts/agente/simulador.mts scripts/agente/guion-ejemplo.txt` (sin red ni base).
+- `test/unit/agente/agente.ampliado.test.ts`: catalogo declarativo, esquemas, comandos nuevos, confirmacion reforzada, faltantes con botones, firma personal, limite de frecuencia y Omar.
+- `supabase/tests/database/030_telegram_agente_ampliado.test.sql` (pgTAP): cada tipo de `agente.ejecutar_ext`, simulacion que no deja nada, idempotencia, deshacer, consultas, permisos y RLS.
+- `test/integracion/telegram_e2e.test.ts`: extremo a extremo contra la base local con el webhook, Telegram con fetch falso (nunca sale a api.telegram.org) y la IA simulada: dia de operacion completo (compra, recepcion, pedido, envio, cobro, gasto, reembolso) con `cuadra = true` por dos vias, mas un caso por tipo de situacion (faltante, suma que no cuadra, sin permiso, doble envio, confirmacion expirada, miembro no autorizado, secreto invalido).
+- `scripts/agente/simular-telegram.mts`: el mismo camino contra una base LOCAL, con guion (`DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres npx tsx scripts/agente/simular-telegram.mts scripts/agente/guion-telegram.txt`). Se niega a correr si la base no es local.
