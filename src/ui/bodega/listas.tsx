@@ -61,7 +61,7 @@ export function TarjetaCompra({ c }: { c: CompraPorRecibir }) {
   return (
     <li className="bodega-cliente" data-testid="bodega-compra">
       <div className="bodega-cliente-cab">
-        <h3 className="bodega-cliente-nombre">{c.proveedor} <span className="rtm-mono">{c.folio}</span></h3>
+        <h3 className="bodega-cliente-nombre">{c.proveedor || 'Compra'} <span className="rtm-mono">{c.folio}</span></h3>
         <span className="bodega-cliente-total">{formatearPiezas(c.piezas)}</span>
       </div>
       <div className="bodega-pedido-cab">

@@ -1,10 +1,10 @@
 // Rol bodega y pantalla Cuentas de punta a punta. Flujo: un socio da de alta un correo de bodega desde Cuentas (sin correos reales: el acceso se crea con
 // `acceso:cuentas` y el enlace se genera con la API de administracion local), bodega entra a SU vista (hoy a preparar y llegadas) sin ver dinero ni otras pantallas,
 // y el socio lo desactiva y bloquea el acceso. Capturas claro y oscuro en docs/capturas/bodega/. Datos sinteticos con sufijo propio (los hechos de negocio no se borran).
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { altaUsuario, conDb, correoUnico, enlaceConfirmacion, entrarComo, ipFalsa } from './ayudas';
+import { altaUsuario, conDb, correoUnico, enlaceConfirmacion, entrarComo, estado, ipFalsa } from './ayudas';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
@@ -15,6 +15,7 @@ const CLIENTE_B = `Vapes Centro ${SUF}`;
 const MODELO = `Modelo Bodega ${SUF} 50K`;
 const correoBodega = correoUnico('bodega');
 const DIR = 'docs/capturas/bodega';
+const MAILPIT = process.env.MAILPIT ?? estado().MAILPIT_URL;
 
 async function sembrar() {
   await conDb(async (c) => {
@@ -90,11 +91,11 @@ test('el socio da de alta un correo de bodega desde Cuentas y el acceso se crea 
   await expect(page.getByTestId('eco-cuenta')).toContainText('no se duplicó');
   expect((await conDb((c) => c.query('select count(*)::int n from seguridad.correo_permitido where correo = $1', [correoBodega]))).rows[0].n).toBe(1);
   // El script crea el acceso (sin mandar correos).
-  const antes = await fetch(`${process.env.MAILPIT ?? 'http://127.0.0.1:65324'}/api/v1/messages`).then((r) => r.json()).then((j: { total?: number }) => j.total ?? 0);
+  const antes = await fetch(`${MAILPIT}/api/v1/messages`).then((r) => r.json()).then((j: { total?: number }) => j.total ?? 0);
   const salida = execFileSync('node', ['scripts/acceso/sincronizar-cuentas.mjs'], { encoding: 'utf8' });
   expect(salida).toMatch(/acceso\(s\) creado\(s\)/);
   expect(salida).not.toContain('@');
-  const despues = await fetch('http://127.0.0.1:65324/api/v1/messages').then((r) => r.json()).then((j: { total?: number }) => j.total ?? 0);
+  const despues = await fetch(`${MAILPIT}/api/v1/messages`).then((r) => r.json()).then((j: { total?: number }) => j.total ?? 0);
   expect(despues).toBe(antes);
   await page.reload();
   await expect(page.getByTestId('aviso-sin-acceso')).toHaveCount(0);
@@ -135,6 +136,21 @@ for (const tema of ['claro', 'oscuro'] as const) {
     await captura(page, info.project.name, tema, 'llegadas');
   });
 }
+
+test('el script de acceso continua con la siguiente cuenta ante un 400 y reporta solo conteos', async () => {
+  const bueno = correoUnico('sync-ok');
+  const malo = `\u00f1and\u00fa.${SUF.toLowerCase()}@example.test`; // pasa el CHECK de la tabla, pero GoTrue lo rechaza
+  await conDb(async (c) => {
+    await c.query("insert into seguridad.correo_permitido (correo, rol, activo) values ($1,'bodega',true), ($2,'bodega',true) on conflict do nothing", [malo, bueno]);
+  });
+  const r = spawnSync('node', ['scripts/acceso/sincronizar-cuentas.mjs'], { encoding: 'utf8' });
+  expect(r.status).toBe(1);
+  expect(r.stdout + r.stderr).not.toContain('@');
+  expect(r.stderr).toMatch(/1 cuenta\(s\) fallaron/);
+  const n = (await conDb((c) => c.query('select count(*)::int n from auth.users where email = $1', [bueno]))).rows[0].n;
+  expect(n).toBe(1);
+  await conDb((c) => c.query('delete from seguridad.correo_permitido where correo = $1', [malo]));
+});
 
 test('bodega no entra a ninguna otra pantalla ni lee otras funciones por la API', async ({ page, request }) => {
   await entrarComo(page, correoBodega, '/bodega');

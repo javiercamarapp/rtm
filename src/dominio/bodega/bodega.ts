@@ -1,6 +1,9 @@
 // Lo que ve la persona de bodega: que preparar hoy y que llega para guardar. Lista blanca: ningun tipo de este archivo tiene precio, monto, costo,
 // margen, saldo, telefono, direccion, nota ni dueno. Solo cliente (nombre), modelo, sabor, piezas, folio, estado de empaque, zona, proveedor, fechas y guia de entrada.
 
+/** Alcance pedido por el dueno: bodega ve el nombre del proveedor. Ponerla en false lo quita de la web (el parser descarta el dato) sin tocar la base. */
+export const MOSTRAR_PROVEEDOR = true;
+
 export interface LineaBodega {
   modelo: string;
   sabor: string;
@@ -95,7 +98,7 @@ export function parsearLlegadas(v: unknown): Llegadas {
   return {
     fecha: texto(f.fecha),
     compras: lista(f.compras).filter((c) => ESTADOS.includes(texto(c.estado))).map((c) => ({
-      folio: texto(c.folio), proveedor: texto(c.proveedor), estado: texto(c.estado) as CompraPorRecibir['estado'],
+      folio: texto(c.folio), proveedor: MOSTRAR_PROVEEDOR ? texto(c.proveedor) : '', estado: texto(c.estado) as CompraPorRecibir['estado'],
       llegadaEstimada: texto(c.llegada_estimada) || null, enviadaFecha: texto(c.enviada_fecha) || null,
       diasEnCamino: typeof c.dias_en_camino === 'number' ? Math.trunc(c.dias_en_camino) : null, atrasada: c.atrasada === true,
       piezas: entero(c.piezas),

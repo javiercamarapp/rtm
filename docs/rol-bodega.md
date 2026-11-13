@@ -44,6 +44,8 @@ Pendiente de decisión del dueño: automatizar el paso 2 desde el servidor exigi
 - `api.bodega_hoy_a_preparar()`: pedidos `confirmado` que salen de la bodega (el mismo criterio que "Paquetes por hacer": confirmados sin enviar, empacados o no), agrupados por cliente, con folio, estado de empaque, si vienen de días anteriores, zona (Mérida o fuera), piezas por modelo y sabor, lista de surtido total contra existencia y faltantes.
 - `api.bodega_llegadas()`: compras a proveedor con destino bodega en `confirmada`, `enviada`, `en_trayecto` o `llego_merida`: proveedor, fecha esperada, guía de entrada (paquetería y número), piezas por modelo y sabor y total por guardar.
 
+Alcance pedido por el dueño: bodega ve el NOMBRE del cliente, el NOMBRE del proveedor y los folios (de pedido y de compra). Si más adelante no debe ver el proveedor, basta poner `MOSTRAR_PROVEEDOR = false` en `src/dominio/bodega/bodega.ts` (el parser descarta el dato; la pantalla muestra "Compra").
+
 Nunca devuelven precios, montos, costos, márgenes, saldos, cuentas por pagar, teléfonos, direcciones, notas ni dueño del cliente. Además el parser de la web copia solo campos de una lista blanca. Un socio activo puede abrir la misma vista (vista previa, con aviso y regreso a Cuentas); Omar y anónimo no.
 
 ### Acciones: decisión
@@ -66,3 +68,12 @@ La renta por pieza que se devenga a esa persona es entre los socios y la socieda
 - pgTAP `a8_002_bodega_lecturas_y_aislamiento`: contenido de las lecturas, sin llaves ni cifras de dinero; omar y anon rechazados; bodega recibe 42501 en TODA otra función `api.*` y `omar.*` (descubiertas del catálogo, con argumentos nulos), no lee tablas ni vistas de Omar, y solo las dos lecturas admiten el rol bodega.
 - Nota: todos los usuarios comparten el rol de base `authenticated`; por eso el aislamiento por rol se valida dentro de cada función y se prueba con el sondeo, y `has_function_privilege` verifica que anon y PUBLIC no tengan nada.
 - vitest `test/unit/rol_bodega.test.ts` y Playwright `test/e2e/bodega.spec.ts` (`playwright.bodega.config.ts`): flujo completo, REST con la sesión de bodega (403 en el resto), vista previa del socio, Omar fuera, desactivar y reactivar. Capturas en `docs/capturas/bodega/`.
+
+## Endurecimiento (migración 20261114000300)
+
+- El tope de 20 cuentas activas creadas desde la web se aplica también al reactivar.
+- Correo validado como GoTrue: ASCII, un solo `@`, sin espacios, comas ni `<>`, sin puntos dobles ni punto final, parte local de hasta 64.
+- Unicidad por forma canónica (trim, NFKC, minúsculas, sin punto final): el mismo correo con punto final o con variantes Unicode es duplicado. Limitación conocida y aceptada: no se colapsan alias `+tag` ni los puntos de Gmail (una dirección Gmail con puntos es otra cuenta, como ya exige el login).
+- `seguridad.operacion.resultado` no guarda el correo (solo huella, tipo y estado). La auditoría filtra lo que parezca un correo en el motivo y el nombre; la pantalla avisa que el motivo no debe llevar correos.
+- `acceso:cuentas` continúa con la siguiente cuenta si una falla (por ejemplo un 400 de Auth), reporta solo conteos y tipos, termina con código 1, y un 422 solo cuenta como "ya existía" si el usuario realmente está en `auth.users`.
+- pgTAP `a8_003_cuentas_endurecimiento`; vitest en `test/unit/rol_bodega.test.ts`.

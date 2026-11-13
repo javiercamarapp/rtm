@@ -5,7 +5,7 @@ import { cambiarEstado, darDeAlta, ErrorCuentas, type PuertoCuentas } from '@/ap
 import { ACCIONES, ACCIONES_BODEGA, CAPACIDADES, puede, puedeBodega, puedeOmar } from '@/dominio/capacidades';
 import { destinoSeguro, rutaPropiaSegura } from '@/dominio/acceso/ruta_segura';
 import { parsearHoy, parsearLlegadas } from '@/dominio/bodega/bodega';
-import { normalizarCorreo, parsearCuentas, validarAlta } from '@/dominio/cuentas/cuentas';
+import { normalizarCorreo, parsearCuentas, sinCorreos, validarAlta } from '@/dominio/cuentas/cuentas';
 
 describe('capacidades del rol bodega', () => {
   it('bodega no tiene ninguna accion de socio ni de Omar', () => {
@@ -128,5 +128,25 @@ describe('cuentas: validacion y casos de uso', () => {
     const r = await cambiarEstado(p, CLAVE, 'A@Example.test', false, '  ya no trabaja  ');
     expect(r.ok && r.eco).toMatch(/desactivada/);
     expect(visto).toEqual({ activo: false, motivo: 'ya no trabaja' });
+  });
+});
+
+describe('cuentas: correo endurecido (alineado con la base)', () => {
+  it('rechaza lo que GoTrue y la base rechazan', () => {
+    for (const c of ['a b@example.test', 'a,b@example.test', '<a>@example.test', 'a@@example.test', 'ñandú@example.test', 'a@' + 'example', '.a@example.test', 'a..b@example.test', 'a@' + '-example.test', `${'x'.repeat(65)}@example.test`]) {
+      expect(validarAlta({ correo: c, tipo: 'bodega', nombre: '' }, ['bodega']).ok, c).toBe(false);
+    }
+    expect(validarAlta({ correo: 'ok+tag.1@example.test', tipo: 'bodega', nombre: '' }, ['bodega']).ok).toBe(true);
+  });
+  it('la forma canonica unifica punto final, mayusculas y variantes Unicode', () => {
+    expect(normalizarCorreo('B.X@Example.test.')).toBe('b.x@example.test');
+    expect(normalizarCorreo('ｂ.x@example.test')).toBe('b.x@example.test');
+  });
+  it('el motivo pierde lo que parezca un correo antes de salir', async () => {
+    expect(sinCorreos('avisar a persona@example.test ya')).toBe('avisar a [correo omitido] ya');
+    let visto: string | null = null;
+    const p: PuertoCuentas = { listar: async () => ({ tipos: [], cuentas: [] }), alta: async () => ({ estado: 'creada', accesoCreado: true }), cambiarEstado: async (_c, _o, _a, m) => { visto = m; return { estado: 'desactivada' }; } };
+    await cambiarEstado(p, 'web:12345678-1234-1234-1234-123456789abc', 'a@example.test', false, 'llamar a juan@example.test');
+    expect(visto).toBe('llamar a [correo omitido]');
   });
 });

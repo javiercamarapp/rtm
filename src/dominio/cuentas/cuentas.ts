@@ -33,17 +33,24 @@ export interface EntradaAlta {
 }
 export type CampoAlta = 'correo' | 'tipo' | 'nombre';
 
-const CORREO = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// Misma regla que la base (seguridad.correo_valido, alineada con GoTrue): ASCII, un solo @, sin espacios, comas ni <>, sin puntos dobles ni punto final.
+const CORREO = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 
+/** Forma canonica (igual que la base): trim, NFKC, minusculas y sin punto final. */
 export function normalizarCorreo(v: string): string {
-  return v.trim().toLowerCase();
+  return v.trim().normalize('NFKC').toLowerCase().replace(/\.+$/, '');
+}
+
+/** Quita lo que parezca un correo (el motivo no debe llevar datos personales; la base tambien lo filtra al auditar). */
+export function sinCorreos(v: string): string {
+  return v.replace(/\S*@\S*/g, '[correo omitido]').trim();
 }
 
 export function validarAlta(e: EntradaAlta, tiposCreables: readonly string[]): { ok: true; valor: EntradaAlta } | { ok: false; errores: Partial<Record<CampoAlta, string>> } {
   const errores: Partial<Record<CampoAlta, string>> = {};
   const correo = normalizarCorreo(e.correo);
   if (correo === '') errores.correo = 'Escribe el correo.';
-  else if (correo.length > 254 || !CORREO.test(correo)) errores.correo = 'Escribe un correo válido.';
+  else if (correo.length > 254 || !CORREO.test(correo) || /(^\.|\.@|\.\.)/.test(correo)) errores.correo = 'Escribe un correo válido.';
   if (!tiposCreables.includes(e.tipo)) errores.tipo = 'Elige un tipo de cuenta.';
   const nombre = e.nombre.trim();
   if (nombre.length > 60) errores.nombre = 'Usa 60 caracteres o menos.';

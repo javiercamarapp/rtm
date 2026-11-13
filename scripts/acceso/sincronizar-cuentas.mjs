@@ -14,19 +14,31 @@ const nube = process.argv.includes('--nube');
 const PENDIENTES = `select c.correo, c.rol from seguridad.correo_permitido c join seguridad.tipo_cuenta t on t.rol = c.rol
   where t.creable_web and c.activo and not exists (select 1 from auth.users u where lower(u.email) = c.correo) order by c.correo`;
 
-async function crear(base, llave, pendientes) {
+/** `existe(correo)` consulta la base (no la respuesta de la API): un 422 solo cuenta como "ya existia" si el usuario de verdad esta en auth.users. */
+async function crear(base, llave, pendientes, existe) {
   let creados = 0;
+  const fallos = {};
+  const falla = (rol, motivo) => { const k = `${rol}:${motivo}`; fallos[k] = (fallos[k] ?? 0) + 1; };
   for (const p of pendientes) {
-    const r = await fetch(`${base}/auth/v1/admin/users`, {
-      method: 'POST',
-      headers: { apikey: llave, authorization: `Bearer ${llave}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ email: p.correo, email_confirm: true }),
-    });
-    if (r.ok) { creados += 1; console.log(`Acceso creado (${p.rol}).`); }
-    else if (r.status === 422) console.log(`Ya existia (${p.rol}).`);
-    else throw new Error(`el alta de una cuenta ${p.rol} fallo (${r.status})`);
+    try {
+      const r = await fetch(`${base}/auth/v1/admin/users`, {
+        method: 'POST',
+        headers: { apikey: llave, authorization: `Bearer ${llave}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ email: p.correo, email_confirm: true }),
+      });
+      if (r.ok) { creados += 1; console.log(`Acceso creado (${p.rol}).`); }
+      else if (r.status === 422 && (await existe(p.correo))) console.log(`Ya existia (${p.rol}).`);
+      else falla(p.rol, `http_${r.status}`);
+    } catch {
+      falla(p.rol, 'red');
+    }
   }
   console.log(`${creados} acceso(s) creado(s).`);
+  const n = Object.values(fallos).reduce((a, b) => a + b, 0);
+  if (n > 0) {
+    console.error(`${n} cuenta(s) fallaron (sin correos en este informe): ${Object.entries(fallos).map(([k, v]) => `${k} x${v}`).join(', ')}.`);
+    process.exitCode = 1;
+  }
 }
 
 if (!nube) {
@@ -39,7 +51,7 @@ if (!nube) {
     const { rows } = await db.query(PENDIENTES);
     console.log(`${rows.length} cuenta(s) sin acceso creado.`);
     if (seco || rows.length === 0) { if (seco) console.log('--dry-run: no se escribio nada.'); process.exit(0); }
-    await crear(estado.API_URL, estado.SERVICE_ROLE_KEY, rows);
+    await crear(estado.API_URL, estado.SERVICE_ROLE_KEY, rows, async (c) => (await db.query('select 1 from auth.users where lower(email) = $1', [c])).rowCount > 0);
   } finally {
     await db.end();
   }
@@ -58,7 +70,13 @@ if (!nube) {
     const llaves = JSON.parse(execFileSync('supabase', ['projects', 'api-keys', '--project-ref', ref, '-o', 'json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
     const servicio = llaves.find((k) => k.name === 'service_role')?.api_key;
     if (!servicio) throw new Error('no se obtuvo la llave de servicio');
-    await crear(`https://${ref}.supabase.co`, servicio, rows);
+    const lit = (v) => `'${String(v).replace(/'/g, "''")}'`;
+    const existe = async (c) => {
+      writeFileSync(f, `select 1 as x from auth.users where lower(email) = ${lit(c)}`, { mode: 0o600 });
+      const d = JSON.parse(execFileSync('supabase', ['db', 'query', '--linked', '-o', 'json', '-f', f], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
+      return (Array.isArray(d) ? d : (d.rows ?? d.result ?? [])).length > 0;
+    };
+    await crear(`https://${ref}.supabase.co`, servicio, rows, existe);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

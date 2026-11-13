@@ -1,6 +1,6 @@
 // Casos de uso de la pantalla Cuentas. Validan, llaman al puerto (api.cuenta_*) y devuelven un eco en palabras. Los permisos NO se deciden aqui:
 // la funcion SQL exige rol socio, tipo creable y no cambia el tipo de un correo existente; esta capa solo traduce los errores.
-import { normalizarCorreo, validarAlta, type CampoAlta, type EntradaAlta, type ListaCuentas } from '@/dominio/cuentas/cuentas';
+import { normalizarCorreo, sinCorreos, validarAlta, type CampoAlta, type EntradaAlta, type ListaCuentas } from '@/dominio/cuentas/cuentas';
 
 export class ErrorCuentas extends Error {
   constructor(message: string, readonly codigo: string | null) {
@@ -52,7 +52,7 @@ export async function cambiarEstado(p: PuertoCuentas, clave: string, correo: str
   const c = normalizarCorreo(correo);
   if (c === '') return falla('Falta el correo.');
   try {
-    const r = await p.cambiarEstado(clave, c, activo, motivo && motivo.trim() !== '' ? motivo.trim().slice(0, 200) : null);
+    const r = await p.cambiarEstado(clave, c, activo, motivo && motivo.trim() !== '' ? sinCorreos(motivo).slice(0, 200) : null);
     if (r.estado === 'sin_cambio') return { ok: true, eco: 'La cuenta ya estaba así: no hubo cambio.' };
     return { ok: true, eco: r.estado === 'desactivada' ? 'Cuenta desactivada: ya no puede entrar y se cerraron sus sesiones. Se conserva para reactivarla.' : 'Cuenta reactivada.' };
   } catch (e) {
