@@ -31,6 +31,13 @@ async function sembrarProveedores(canonicoId: string | null, horasAtras: number)
 }
 
 test('costos: un cargo de Supabase se calcula, se registra como gasto de la sociedad, se explica, se reembolsa en parte y se anula con reversa', async ({ page }) => {
+  // El reembolso sale de la Caja de la empresa y la base lo bloquea sin saldo (decision 12): la prueba deposita lo que necesita en vez de depender del efectivo que dejen otras specs.
+  await conDb(async (c) => {
+    await c.query('begin');
+    await c.query("select set_config('rtm.canal', 'importacion', true)");
+    await c.query("select operacion.registrar_aportacion($1, 'Angelo', 1000000, 'deposito a caja para la prueba', 'reembolso')", [`e2eidb:dep:${Date.now().toString(36)}`]);
+    await c.query('commit');
+  });
   await entrarComo(page, await altaYCorreo('cos'), '/costos');
   await expect(page.getByTestId('costos-resumen')).toBeVisible();
   await expect(page.getByTestId('servicio-supabase')).toContainText('Sin cargos este mes');
