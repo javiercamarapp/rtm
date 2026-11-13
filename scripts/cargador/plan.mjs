@@ -101,7 +101,10 @@ export function construirPlan(dominio, alias, opciones = {}) {
   for (const c of cat) {
     add({
       lote: 1, tipo: 'catalogo.costo', id: `${c.proveedor}|${c.modelo}`, desc: `costo ${c.proveedor} ${c.modelo} ${fmt(c.cent)}${c.supuesto ? ' (supuesto: promedio por pieza del pedido)' : ''}`, actor: o.actor,
-      run: (db) => db.q('select catalogo.fijar_costo($1,$2,$3,$4,$5::date,$6,$7,$8,$9)', [k(`${c.proveedor}|${c.modelo}`, 'costo'), c.proveedor, c.modelo, c.cent, o.desde, 'carga historica', c.supuesto ? 'Supuesto: promedio por pieza del pedido (el proveedor no desglosa el costo por modelo)' : 'Costo por pieza de la nota del pedido', c.supuesto, true]),
+      run: (db) => db.q(`select case when exists (select 1 from catalogo.costo_proveedor c where c.proveedor_id = catalogo.proveedor_id($2) and c.modelo_id = (select id from catalogo.modelo where nombre_norm = catalogo.normalizar($3))
+                          and c.vigente_hasta is null and c.vigente_desde >= $5::date and c.costo_cent <> $4)
+                  then jsonb_build_object('sin_cambio', true, 'conservado', 'costo de lista vigente mas reciente')
+                  else catalogo.fijar_costo($1,$2,$3,$4,$5::date,$6,$7,$8,$9) end as r`, [k(`${c.proveedor}|${c.modelo}`, 'costo'), c.proveedor, c.modelo, c.cent, o.desde, 'carga historica', c.supuesto ? 'Supuesto: promedio por pieza del pedido (el proveedor no desglosa el costo por modelo)' : 'Costo por pieza de la nota del pedido', c.supuesto, true]),
     });
   }
   for (const c of dominio.clientes.values()) {
@@ -175,11 +178,12 @@ export function construirPlan(dominio, alias, opciones = {}) {
           if (o.conDestinatarios && p.dest) await db.q('select api.ds_capturar_destinatario($1,$2,$3::jsonb)', [k(p.id, 'destinatario'), pedidoId, JSON.stringify(p.dest)]);
           if (p.tipo !== 'socio_a_costo' && v.renglones.every((r) => r.costo != null)) {
             // Los renglones se insertaron en el orden del arreglo: el id ascendente corresponde al indice.
-            const lin = (await db.q('select l.id from operacion.pedido_linea l where l.pedido_id = $1 order by l.id', [pedidoId])).rows;
+            const lin = (await db.q('select l.id, coalesce(l.costo_unit_cent, operacion.costo_ref_pedido(pe.origen, l.modelo_id, pe.fecha_neg)) as costo_unit_cent from operacion.pedido_linea l join operacion.pedido pe on pe.id = l.pedido_id where l.pedido_id = $1 order by l.id', [pedidoId])).rows;
             if (lin.length !== v.renglones.length) throw new Error('los renglones del pedido no corresponden al plan');
             const costos = [];
             v.renglones.forEach((r, i) => {
-              if (r.costo !== r.catalogo) costos.push({ linea_id: lin[i].id, costo_unit_cent: r.costo });
+              // Se compara contra el costo que la base usara para la linea (el fijado, o el de referencia del catalogo a la fecha del pedido), no contra el del plan: si el catalogo ya tenia un costo de lista distinto, se corrige igual.
+              if (Number(lin[i].costo_unit_cent) !== r.costo) costos.push({ linea_id: lin[i].id, costo_unit_cent: r.costo });
             });
             if (costos.length) await db.q('select api.ds_capturar_costo($1,$2,$3::jsonb,$4)', [k(p.id, 'costo'), pedidoId, JSON.stringify(costos), MOTIVO_COSTO]);
           }
