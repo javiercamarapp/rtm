@@ -112,6 +112,10 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 
 .rtm-chip-estado { display: inline-flex; align-items: center; gap: 6px; height: var(--rtm-h-chip-estado); padding: 0 10px; border-radius: var(--rtm-r-pildora); font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-fuerte); background: var(--rtm-tint); color: var(--rtm-ink-2); white-space: nowrap; }
 .rtm-chip-estado > i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+/* En la nota de un indicador el chip puede traer una etiqueta larga ("Libro conciliado · pendiente de pago al proveedor"): se ajusta al ancho de la celda y baja de renglon en vez de desbordar. */
+.rtm-kpi-nota { max-width: 100%; min-width: 0; }
+.rtm-kpi-nota .rtm-chip-estado { height: auto; min-height: var(--rtm-h-chip-estado); max-width: 100%; padding-block: 3px; white-space: normal; text-align: left; line-height: 1.25; align-items: flex-start; border-radius: calc(var(--rtm-h-chip-estado) / 2 + 2px); overflow-wrap: anywhere; }
+.rtm-kpi-nota .rtm-chip-estado > i { margin-top: 5px; }
 .rtm-chip-estado[data-tono='ok'] { background: var(--rtm-tinte-ok); color: var(--rtm-ok); }
 .rtm-chip-estado[data-tono='atencion'] { background: var(--rtm-tinte-warn); color: var(--rtm-warn); }
 .rtm-chip-estado[data-tono='malo'] { background: var(--rtm-tinte-bad); color: var(--rtm-bad); }

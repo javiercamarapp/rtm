@@ -1,5 +1,7 @@
 # Informe del carril cuadrar-cuentas
 
+> **Estado vigente: ver "Ronda 5" al final.** Las rondas 1 a 4 describen el historial; donde mencionan CA1, CA2, "no cuadra" de Socios o que el pago de la sociedad no mueve las cajas, quedaron SUPERADAS en la rama `integra/cuadre-puente` (comprobaciones vigentes: C1..C24 y CU1..CU3; no existe CA1 ni CA2; el pago de la sociedad SI mueve la caja contable por el puente de efectivo; la senal de Socios es "Libro conciliado").
+
 Rama `lane/cuadrar-cuentas` (base `rediseno/premium`). 0 builds de Vercel, 0 despliegues, sin push, sin tocar `~/rtm` ni `~/rtm-deploy`, sin datos reales (catalogo, clientes y cifras ilustrativas creados por la propia prueba). Base local propia: proyecto Supabase `rtm-cuadre` en puertos 583xx y app en el 3190 (el `supabase/config.toml` con esos puertos esta marcado `assume-unchanged` y no se commitea).
 
 ## Que se hizo
@@ -112,3 +114,22 @@ Capturas regeneradas en `docs/capturas/cuadre/` y revisadas a ojo (25 Comprobaci
 - 20261113300000 ya no hace DROP: las funciones de 8 argumentos se renombran a `_v1` (sin acceso) y la nueva de 9 toma el nombre.
 - Rama `integra/cuadre-puente`: una sola via para el efectivo (se conserva la escritura de movimientos del puente; se quitan apertura_efectivo, pagos_sociedad_proveedor, CA1 y CA2).
 - Pruebas: pgTAP a4_004 (escenarios acumulados e inconsistencias inducidas), a4_005, a4_006 sin cifras calibradas; recorrido Playwright sin montos que fuercen el cuadre.
+
+## Ronda 5 (13-nov): verificador independiente sobre `integra/cuadre-puente`
+
+**Estado vigente del cuadre.**
+- Comprobaciones: C1..C24 y CU1..CU3 (27). No hay CA1 ni CA2: el efectivo tiene una sola via (movimientos de efectivo del puente de efectivo, que asientan 1101/1102 por persona).
+- El pago de la sociedad a un proveedor SI mueve la caja: `registrar_pago_proveedor_sociedad` escribe el movimiento de efectivo y el puente lo asienta; C23 y C24 lo comprueban.
+- Definicion de la senal de Socios, "Libro conciliado" (`operacion.cuadre_socios()`): se cumplen (i) auxiliares contra mayor por socio, (ii) partida doble (balanza, ningun asiento descuadrado, ningun movimiento sin asiento, ninguna comprobacion bloqueante en rojo) y en verde C7 (proveedores), C8 (socios), C16 (utilidad comercial contra utilidad del libro), C22 (gastos) y C24 (cajas por persona), y (iii) el efectivo de las cajas es el del libro y la identidad de la Cascada se cumple. C16 y C22 se agregaron porque de esos datos sale la utilidad que se reparte 50/50 (antes /socios decia "Conciliado" con ellas en rojo); en una base vacia dan 0 = 0, sin rojo falso. C9 y C17 quedan fuera a proposito: miden la deuda con Omar (2210 y 1220), no la utilidad; sus devengos y tomas ya entran en C16.
+- `fallas` cuenta identidades distintas en rojo, no causas (una causa puede romper mayor, balanza y una comprobacion a la vez); el renglon resumen de bloqueantes ya no se cuenta y la respuesta trae `fallas_nota`.
+
+**Correcciones.**
+1. (ALTA, defecto previo, tambien en main) Firmar un acta con reinversion fallaba en el COMMIT ("no cuadra: debe 800000 contra haber 900000"): el mapeo de conceptos del libro del socio no incluia `reinversion`. Migracion aditiva `20261113300200_conta_reinversion_libro_socio.sql`: redefine `contabilidad.lineas_de_evento_base` (la version vigente de la rama, la que envuelve el puente) con `when 'reinversion' then 3310`. **Integracion:** la rama `lane/historial-acta` corrige lo mismo con `20261113200100_conta_reinversion_acta.sql` (envoltura de `lineas_de_evento`); al integrar hay que dejar UNA sola de las dos, no duplicar.
+2. (MEDIA) Migracion `20261113300300_cuadre_socios_exige_c16_c22.sql` (create or replace de `cuadre_socios`).
+3. Unidad del explicador: conteos de identidades usan `ident.` (antes `pz`); ya no muestra la tabla de movimientos de piezas.
+4. Indicador Libro: la etiqueta larga "Libro conciliado · pendiente de pago al proveedor" ya no desborda (`premium.css`, chip dentro de `.rtm-kpi-nota` baja de renglon). Capturas 40 a 45 (1440, 1280, 390; claro y oscuro) y asercion de no desborde ni solape en el recorrido.
+5. Captura obsoleta `39-final-socios-cuadra.png` eliminada; el resto se regenero.
+
+**Pruebas nuevas.** pgTAP `a4_007_cuadre_reinversion_c16_c22` (28 afirmaciones): acta con reinversion con `set constraints all immediate` (fuerza el trigger diferido que en una sola transaccion no salta; sin la migracion falla con "debe 420000 contra haber 520000", comprobado), C16 y C22 inducidas en rojo llevan la senal a `revisar`, base vacia sin rojo falso, `fallas` sin inflar.
+
+**Pendiente del dueno (no decidido).** `registrar_pago_proveedor_sociedad` deja "Caja de la empresa" en negativo si no tiene saldo, mientras otros escritores (p. ej. `registrar_gasto_empresa`) lo rechazan. Falta decidir de que caja sale el pago de la sociedad y si se bloquea sin saldo. `a4_007` fija el comportamiento actual con aserciones marcadas "PENDIENTE DEL DUENO"; cambiarlas al decidir. Con caja negativa la Cascada se rechaza ("el efectivo de la caja no puede ser negativo").

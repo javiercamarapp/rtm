@@ -72,7 +72,7 @@ export function ExplicarProvider({ explicar, children }: { explicar: Explicar; c
 }
 
 function Contenido({ d }: { d: Explicacion }) {
-  const fmt = (n: number) => (d.unidad === 'pz' ? formatearPiezas(n) : formatearMoneda(BigInt(n)));
+  const fmt = (n: number) => (d.unidad === 'pz' ? formatearPiezas(n) : d.unidad === 'ident' ? `${n} ident.` : formatearMoneda(BigInt(n)));
   return (
     <div className="rtm-cajon-cuerpo">
       <h2 id="cajon-titulo" className="rtm-cajon-titulo">{d.titulo}</h2>

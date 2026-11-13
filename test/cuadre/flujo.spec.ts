@@ -328,6 +328,29 @@ test('9 todo cuadra: comprobaciones, Contabilidad, Cuentas por cobrar, Socios y 
   await expect(page.getByRole('dialog')).toContainText('Identidades que se cumplen');
   await cap(page, 'final-socios-libro-conciliado');
   await page.keyboard.press('Escape');
+  // El indicador con la etiqueta larga ("Libro conciliado · pendiente de pago al proveedor") no desborda su celda ni se solapa con la vecina: 1440, 1280 y 390 px, claro y oscuro.
+  const celdaLibro = page.getByTestId('libro-socios');
+  for (const ancho of [1440, 1280, 390]) {
+    for (const tema of ['claro', 'oscuro']) {
+      await page.setViewportSize({ width: ancho, height: 900 });
+      await page.evaluate((t) => document.documentElement.setAttribute('data-tema', t), tema);
+      await expect(celdaLibro.locator('.rtm-kpi-nota')).toBeVisible();
+      const c = (await celdaLibro.boundingBox())!;
+      const n = (await celdaLibro.locator('.rtm-kpi-nota').boundingBox())!;
+      expect(n.x).toBeGreaterThanOrEqual(c.x - 1);
+      expect(n.x + n.width).toBeLessThanOrEqual(c.x + c.width + 1);
+      expect(n.y + n.height).toBeLessThanOrEqual(c.y + c.height + 1);
+      const solapes = await page.locator('.rtm-kpi-celda').evaluateAll((els, ref) => els.filter((e) => {
+        const r = e.getBoundingClientRect();
+        const x = ref as { x: number; y: number; width: number; height: number };
+        return !(r.x === x.x && r.y === x.y) && r.x < x.x + x.width - 1 && r.x + r.width > x.x + 1 && r.y < x.y + x.height - 1 && r.y + r.height > x.y + 1;
+      }).length, c);
+      expect(solapes).toBe(0);
+      await cap(page, `final-socios-indicador-${ancho}-${tema}`);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.evaluate(() => document.documentElement.setAttribute('data-tema', 'claro'));
   const cs = (await consultar<{ lc: string; estado: string; otros: string; costo: string; suma: string }>(
     "select (x->'cuadre'->>'libro_conciliado') as lc, (x->'cuadre'->>'estado') as estado, (x->>'otros_cent') as otros, (x->>'costo_cent') as costo, ((x->>'directo_socios_cent')::bigint + (x->>'pagado_por_sociedad_cent')::bigint + (x->>'pagado_con_fondos_cent')::bigint + (x->>'pendiente_proveedor_cent')::bigint + (x->>'otros_cent')::bigint)::text as suma from (select operacion.cuenta_socios() as x) q"))[0]!;
   expect(cs.lc).toBe('true');
