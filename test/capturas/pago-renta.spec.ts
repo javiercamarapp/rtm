@@ -31,11 +31,11 @@ async function ejecutarComo<T>(uid: string, fn: (q: (sql: string, args?: unknown
 }
 
 let n = 0;
-async function enviarDia(q: Parameters<Parameters<typeof ejecutarComo>[1]>[0], fecha: string, piezas: number): Promise<void> {
+async function enviarDia(q: Parameters<Parameters<typeof ejecutarComo>[1]>[0], fecha: string, piezas: number, modelo = 'Demo Nube 25K', sabor = 'Mango'): Promise<void> {
   n += 1;
   const k = `rcap${n}`;
   const cli = (await q("select id from catalogo.cliente where nombre_canonico = 'Demo Cliente Alfa'")).rows[0]!['id'];
-  await q("select operacion.crear_pedido($1, $2, $3::jsonb, 'bodega_omar', null, 0, 0, 0, $4::date)", [`${k}p`, cli, JSON.stringify([{ modelo: 'Demo Nube 25K', sabor: 'Mango', piezas }]), fecha]);
+  await q("select operacion.crear_pedido($1, $2, $3::jsonb, 'bodega_omar', null, 0, 0, 0, $4::date)", [`${k}p`, cli, JSON.stringify([{ modelo, sabor, piezas }]), fecha]);
   const id = (await q("select (resultado->>'pedido_id')::bigint as id from seguridad.operacion where clave = $1", [`${k}p`])).rows[0]!['id'];
   await q('select operacion.confirmar_pedido($1, $2)', [`${k}c`, id]);
   await q('select operacion.enviar_pedido($1, $2, null, null, $3::date, true)', [`${k}s`, id, fecha]);
@@ -51,6 +51,12 @@ async function prepararCatalogo(uid: string): Promise<void> {
     await q("select catalogo.fijar_costo('rcap-c', 'Isaac', 'Demo Nube 25K', 9000, '2026-09-01', 'demo')");
     await q("select catalogo.fijar_precio('rcap-p', 'Demo Cliente Alfa', 'Demo Nube 25K', 17000, '2026-09-01', 'chat')");
     await q("select operacion.registrar_movimiento('rcap-m', 'Demo Nube 25K', 'Mango', 'bodega_omar', 'entrada_compra', 6000, 54000000, '2026-09-28')");
+    // Segundo modelo para la historia: el kardex no admite movimientos retroactivos de un modelo que ya salio despues.
+    await q("select catalogo.asegurar_modelo('Demo Marca Uno', 'Demo Brisa 15K', 15000, 'ambas')");
+    await q("select catalogo.asegurar_sku('Demo Brisa 15K', 'Fresa')");
+    await q("select catalogo.fijar_costo('rcap-c2', 'Isaac', 'Demo Brisa 15K', 6500, '2026-09-01', 'demo')");
+    await q("select catalogo.fijar_precio('rcap-p2', 'Demo Cliente Alfa', 'Demo Brisa 15K', 12500, '2026-09-01', 'chat')");
+    await q("select operacion.registrar_movimiento('rcap-m2', 'Demo Brisa 15K', 'Fresa', 'bodega_omar', 'entrada_compra', 6000, 39000000, '2026-09-28')");
   });
 }
 
@@ -115,9 +121,9 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
       const f = dia(hoy, i);
       if (new Date(`${f}T00:00:00Z`).getUTCDay() === 0) continue;
       const piezas = 38 + ((i * i * 7 + 13) % 29) + (i > -20 ? 6 : 0);
-      await enviarDia(q, f, piezas);
+      await enviarDia(q, f, piezas, 'Demo Brisa 15K', 'Fresa');
     }
-    await enviarDia(q, hoy, 31);
+    await enviarDia(q, hoy, 31, 'Demo Brisa 15K', 'Fresa');
   });
   const total = (await conDb((c) => c.query("select sum(piezas)::int as p, sum(monto_cent)::bigint as m from operacion.renta_devengo"))).rows[0]!;
   expect(Number(total.m)).toBe(Number(total.p) * 200);
@@ -141,7 +147,7 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
   await page.getByLabel('Monto').fill('400');
   await page.getByLabel('Referencia del comprobante (opcional)').fill('SPEI demo 002');
   await page.screenshot({ path: join(SALIDA, '1440-claro-4-formulario-pago.png') });
-  await page.getByRole('button', { name: 'Registrar pago' }).click();
+  await page.getByTestId('confirmar').click();
   await expect.poll(async () => Number((await conDb((c) => c.query("select (operacion.renta_estado(negocio.hoy())->>'por_pagar_cent')::bigint as x"))).rows[0]!.x), { timeout: 20_000 }).toBe(debe - 40000);
   // Exceso sin confirmar: se rechaza con aviso y no deja nada.
   await page.reload({ waitUntil: 'networkidle' });
@@ -149,13 +155,13 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
   await page.getByLabel('Monto').fill('900000');
   await expect(page.getByText('Es más de lo que se debe.')).toBeVisible();
   await page.screenshot({ path: join(SALIDA, '1440-claro-4-formulario-exceso.png') });
-  await page.getByRole('button', { name: 'Registrar pago' }).click();
+  await page.getByTestId('confirmar').click();
   await expect(page.getByText(/mayor que lo que se debe a Omar/)).toBeVisible({ timeout: 20_000 });
   const tras = Number((await conDb((c) => c.query("select count(*)::int as n from operacion.pago_omar where sentido = 'a_omar'"))).rows[0]!.n);
   expect(tras).toBe(3);
   // Confirmado como anticipo: queda a favor de Omar.
   await page.getByLabel('¿Es un anticipo mayor que lo que se debe?').selectOption('si');
-  await page.getByRole('button', { name: 'Registrar pago' }).click();
+  await page.getByTestId('confirmar').click();
   await expect.poll(async () => Number((await conDb((c) => c.query("select (operacion.renta_estado(negocio.hoy())->>'a_favor_cent')::bigint as x"))).rows[0]!.x), { timeout: 20_000 }).toBeGreaterThan(0);
   await page.reload({ waitUntil: 'networkidle' });
   await expect(page.getByText('Anticipo.')).toBeVisible();
@@ -171,14 +177,17 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
   for (const prohibido of ['Angelo', 'Javier', 'Abono', 'SPEI', 'Registrar pago', 'Contabilidad', 'margen', 'costo']) expect(texto, `Omar no debe ver "${prohibido}"`).not.toContain(prohibido);
   await expect(po.getByTestId('pago-renta')).toHaveCount(0);
   const r = await po.goto(`${BASE}/pago-renta`);
-  expect(po.url(), 'Omar no entra a la pagina del socio').not.toContain('/pago-renta');
+  await po.waitForURL((u) => !u.pathname.startsWith('/pago-renta'), { timeout: 20_000 });
+  expect(po.url(), 'Omar vuelve a su zona').toContain('/mi-bodega');
+  await expect(po.getByTestId('renta-heroe')).toHaveCount(0);
   expect(r?.status() ?? 200).toBeLessThan(500);
   await ctxO.close();
   // El socio no entra a la zona de Omar.
   const ctxS = await browser.newContext({ storageState: sSocio, extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
   const ps = await ctxS.newPage();
   await ps.goto(`${BASE}/mi-bodega/pago-renta`);
-  expect(ps.url(), 'un socio no entra a la zona de Omar').not.toContain('/mi-bodega/pago-renta');
+  await ps.waitForURL((u) => !u.pathname.startsWith('/mi-bodega'), { timeout: 20_000 });
+  await expect(ps.getByTestId('renta-heroe')).toHaveCount(0);
   await ctxS.close();
 
   // 6. Estado de resultados: la renta sale como renglon propio.

@@ -44,7 +44,7 @@ export function PanelPagoRenta({ panel, modo, paso, ruta, acciones }: Props) {
   const encabezado = (
     <EncabezadoPagina
       eyebrow={socio ? 'Cuenta con Omar · renta de la bodega' : 'Tu cuenta · renta de la bodega'}
-      titulo={e.por_pagar_cent > 0n ? `${socio ? 'Hay que pagar' : 'Te deben'} ${m(e.por_pagar_cent)} de renta` : e.a_favor_cent > 0n ? `Renta pagada con ${m(e.a_favor_cent)} de anticipo` : 'La renta está al corriente'}
+      titulo={e.piezas === 0 && pagos.length === 0 ? 'Todavía no hay renta devengada' : e.por_pagar_cent > 0n ? `${socio ? 'Hay que pagar' : 'Te deben'} ${m(e.por_pagar_cent)} de renta` : e.a_favor_cent > 0n ? `Renta pagada con ${m(e.a_favor_cent)} de anticipo` : 'La renta está al corriente'}
       descripcion={`Dos pesos por cada pieza enviada desde la bodega, a la fecha del ${etiquetaFecha(e.hoy)}. ${reglaDeCalculo(e)}.`}
       acciones={acciones}
     />
