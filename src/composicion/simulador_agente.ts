@@ -5,6 +5,9 @@
 //   boton <quien> <n>        <quien> pulsa el boton n (desde 1) del ultimo mensaje con botones
 //   reloj +10m | +2h         avanza el reloj
 //   caducar                  corre el cron de tomas vencidas
+//   foto <quien>             un socio manda un comprobante (solo se guarda su huella; nadie lo lee)
+//   envio on | off           interruptor telegram_envio (nace apagado)
+//   latido                   corre la tarea de recordatorios de pago de menudeo (solo envia con el interruptor encendido)
 import { crearAgenteEnMemoria, type AgenteEnMemoria } from './agente';
 import { updateBoton, updateTexto } from '@/infra/agente/updates';
 import type { Enviado } from '@/infra/agente/memoria';
@@ -61,6 +64,14 @@ export async function ejecutarGuion(lineas: readonly string[], h: AgenteEnMemori
     } else if (reloj) {
       if (reloj[2] === 'm') h.reloj.avanzarMin(Number(reloj[1]));
       else h.reloj.avanzarHoras(Number(reloj[1]));
+    } else if (/^foto\s+(angelo|javier)$/.test(linea)) {
+      const quien = /^foto\s+(angelo|javier)$/.exec(linea)![1] as 'angelo' | 'javier';
+      await h.agente.procesarUpdate(updateTexto(h.contador, { de: h.ids[quien], chat: h.ids.grupoSocios, texto: '', foto: { fileId: 'FILE-ID-SIMULADO', fileUniqueId: `UNICO-${h.contador.siguienteMensaje()}` } }));
+    } else if (/^envio\s+(on|off)$/.test(linea)) {
+      h.negocio.menudeo.envioActivo = /on$/.test(linea);
+    } else if (linea === 'latido') {
+      const r = await h.agente.enviarRecordatoriosMenudeo();
+      transcripcion.push(r.estado === 'ok' ? `  (recordatorios enviados: ${r.enviados})` : `  (recordatorios omitidos: ${r.motivo})`);
     } else if (linea === 'caducar') {
       const folios = await h.agente.caducarTomasVencidas();
       transcripcion.push(`  (tomas caducadas: ${folios.length})`);

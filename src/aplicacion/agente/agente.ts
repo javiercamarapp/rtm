@@ -183,7 +183,7 @@ interface PayloadRecordatorio {
 }
 
 /** Movimientos que cambian la aportacion neta de un socio: despues de ellos el bot comenta la igualacion. */
-function esMovimientoDeAportacion(i: Intencion): boolean {
+export function esMovimientoDeAportacion(i: Intencion): boolean {
   switch (i.tipo) {
     case 'aportacion':
     case 'reembolso_socio':
@@ -196,6 +196,8 @@ function esMovimientoDeAportacion(i: Intencion): boolean {
       const cuenta = normalizar(i.cuenta_destino_texto ?? '');
       return cuenta === 'angelo' || cuenta === 'javier';
     }
+    case 'lote_historico':
+      return i.renglones.some((r) => r.tipo === 'aportacion' || r.tipo === 'reembolso' || r.tipo === 'retiro' || (r.tipo === 'cobro' && ['angelo', 'javier'].includes(normalizar(r.cuenta_texto ?? ''))));
     default:
       return false;
   }

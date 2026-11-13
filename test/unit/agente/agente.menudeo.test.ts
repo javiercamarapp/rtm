@@ -5,6 +5,7 @@ import { escenario, IDS, unaAccion, type Escenario } from './ayudas';
 import { respuesta } from '@/infra/agente/llm_simulado';
 import type { Intencion } from '@/dominio/agente/intenciones';
 import type { Enviado } from '@/infra/agente/memoria';
+import type { PeticionLlm } from '@/aplicacion/agente/puertos';
 
 const ESTRICTO = { config: { confirmarMovimientos: true } };
 const pedidoMenudeo = (extra: Partial<Extract<Intencion, { tipo: 'pedido_menudeo' }>> = {}): Intencion => ({
@@ -82,6 +83,25 @@ describe('comentario de igualacion', () => {
     const n = e.grupo().length;
     await e.socio('javier', 'puse 1,000', { updateId: 77, messageId: 77 });
     expect(e.grupo().length).toBe(n);
+  });
+});
+
+describe('que movimientos disparan el comentario de igualacion', () => {
+  it('aportacion, reembolso, retiro, pago de un socio a proveedor, cobro en cuenta de socio y renglones de lote; ninguno mas', async () => {
+    const { esMovimientoDeAportacion } = await import('@/aplicacion/agente/agente');
+    const base = { fuente_cita: 'c' };
+    expect(esMovimientoDeAportacion({ tipo: 'aportacion', socio: 'javier', monto_centavos: 1, motivo: null, intencion: null, ...base })).toBe(true);
+    expect(esMovimientoDeAportacion({ tipo: 'reembolso_socio', socio: 'javier', monto_centavos: 1, via: 'efectivo', ...base })).toBe(true);
+    expect(esMovimientoDeAportacion({ tipo: 'retiro_utilidad', socio: 'javier', monto_centavos: 1, via: 'efectivo', ...base })).toBe(true);
+    expect(esMovimientoDeAportacion({ tipo: 'pago_proveedor', proveedor_texto: 'karen', monto_centavos: 1, pagado_por: 'angelo', cliente_texto: null, intencion: null, ...base })).toBe(true);
+    expect(esMovimientoDeAportacion({ tipo: 'pago_proveedor', proveedor_texto: 'karen', monto_centavos: 1, pagado_por: 'sociedad', cliente_texto: null, intencion: null, ...base })).toBe(false);
+    expect(esMovimientoDeAportacion({ tipo: 'pago_proveedor', proveedor_texto: 'karen', monto_centavos: 1, pagado_por: 'sociedad', cliente_texto: 'norte', intencion: null, ...base })).toBe(false);
+    expect(esMovimientoDeAportacion({ tipo: 'pago', cliente_texto: 'norte', monto_centavos: 1, cuenta_destino_texto: 'Javier', pedido_folio: null, ...base })).toBe(true);
+    expect(esMovimientoDeAportacion({ tipo: 'pago', cliente_texto: 'norte', monto_centavos: 1, cuenta_destino_texto: 'efectivo', pedido_folio: null, ...base })).toBe(false);
+    expect(esMovimientoDeAportacion({ tipo: 'gasto', gasto: 'uber', monto_centavos: 1, pagado_por: 'javier', descripcion: null, ...base })).toBe(false);
+    const renglon = { fecha: '2026-10-01', monto_centavos: 1, socio: 'javier' as const, cliente_texto: null, cuenta_texto: null, concepto: null, intencion: null, via: null };
+    expect(esMovimientoDeAportacion({ tipo: 'lote_historico', etiqueta: null, total_dictado_centavos: null, renglones: [{ ...renglon, tipo: 'aportacion' }], ...base })).toBe(true);
+    expect(esMovimientoDeAportacion({ tipo: 'lote_historico', etiqueta: null, total_dictado_centavos: null, renglones: [{ ...renglon, tipo: 'gasto' }], ...base })).toBe(false);
   });
 });
 
@@ -335,7 +355,7 @@ describe('pago_pedido_menudeo', () => {
   });
   it('con IA: la fecha del pago ("ayer") la interpreta el codigo; una fecha futura se rechaza', async () => {
     const e = escenario([
-      (p) => respuesta([{ tipo: 'pago_pedido_menudeo', pedido_folio: 'P-0001', monto_centavos: 30_000, referencia: 'ABC', fecha_texto: p.usuario.includes('mañana') ? 'mañana' : 'ayer', metodo: null, via: 'proveedor', fuente_cita: 'cita' }]),
+      (p: PeticionLlm) => respuesta([{ tipo: 'pago_pedido_menudeo', pedido_folio: 'P-0001', monto_centavos: 30_000, referencia: 'ABC', fecha_texto: p.usuario.includes('mañana') ? 'mañana' : 'ayer', metodo: null, via: 'proveedor', fuente_cita: 'cita' }]),
     ], ESTRICTO);
     const folio = await enviado(e);
     expect(folio).toBe('P-0001');

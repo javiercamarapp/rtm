@@ -1,0 +1,30 @@
+# Guion del menudeo de Angelo (datos ilustrativos; sin red ni base). Reproducir con:
+#   npx tsx scripts/agente/simulador.mts scripts/agente/guion-menudeo.txt
+# El reloj inicia el martes 10-nov-2026, 12:00 hora de Merida.
+# 1) Pedido a costo para su menudeo: el bot pregunta cuando paga; la fecha la interpreta el CODIGO y se confirma con el resumen.
+angelo> /pedidomenudeo elux/sandia 10
+angelo> el viernes a las 5 de la tarde
+boton angelo 1
+# 2) Javier no puede mandar pedidos de menudeo (solo el socio de menudeo).
+javier> /pedidomenudeo elux/sandia 5 | cuando el viernes
+# 3) El pedido sale; los recordatorios NO se mandan con el interruptor apagado.
+angelo> /enviado P-0001
+boton angelo 1
+reloj +2h
+latido
+reloj +60h
+latido
+# 4) Interruptor encendido: avisa 24 h antes al grupo; un segundo latido no duplica.
+envio on
+latido
+latido
+# 5) Al vencer: "¿Ya pagaste?" con Pagado / Reprogramar.
+reloj +24h
+latido
+boton angelo 1
+# 6) El otro socio confirma el pago reportado con boton (quien reporto no se confirma a si mismo).
+boton angelo 1
+boton javier 1
+# 7) Comentario de igualacion despues de un deposito.
+javier> /aporte javier 1000
+boton javier 1

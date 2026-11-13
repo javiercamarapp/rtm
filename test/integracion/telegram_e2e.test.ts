@@ -180,7 +180,9 @@ describe('dia de operacion capturado por el chat (extremo a extremo)', () => {
     await sala.confirmar('javier');
     await sala.escribir('angelo', 'reembolso a Javier 500 por transferencia');
     await sala.confirmar('javier');
-    expect(sala.ultimo().texto).toContain('Registrado');
+    // Primero el eco del reembolso y despues el comentario de igualacion de aportaciones (cifras de la base).
+    expect(sala.enviados.at(-2)!.texto).toContain('Registrado');
+    expect(sala.ultimo().texto).toMatch(/lleva \$[\d,.]+ más aportado; el siguiente pago le toca a (Angelo|Javier)\.|Aportaciones igualadas\./);
 
     // Cierre del dia: cuadra por dos vias y los hechos tienen autor
     expect(await rojas()).toEqual([]);
@@ -410,7 +412,7 @@ describe('verificacion independiente: lo que dice la tarjeta es lo que registra 
       expect(t).toContain('El sistema lo registrara como reembolso (cuenta por pagar al socio)');
       await sala.confirmar();
       expect((await clasif())[0]!.clasificacion).toBe('reembolsable');
-      expect(sala.ultimo().texto).toContain('Registrado como reembolso');
+      expect(sala.enviados.findLast((m) => m.texto.startsWith('Registrado'))!.texto).toContain('Registrado como reembolso');
     }
     expect(await cuenta('operacion.aportacion_socio')).toBe(esCapital ? antes : antes + 1);
   });

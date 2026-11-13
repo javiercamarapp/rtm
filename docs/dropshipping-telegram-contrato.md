@@ -50,7 +50,7 @@ El agente de IA no calcula dinero: las cifras de cada respuesta salen de `api.ds
 
 ## Intención `pago_pedido_menudeo` (el socio avisa que pagó un pedido a costo)
 
-Estado: SOLO contrato y función SQL; no se integra con la rama de Telegram en esta entrega.
+Estado: integrado en la rama `feat/telegram-ampliacion`. El socio de menudeo avisa el pago por Telegram; el OTRO socio lo confirma o rechaza con botones (decisión del dueño, 13-nov; antes era solo en la web). Con comprobante (foto, solo su huella) basta registrar.
 
 | Campo | Tipo | Notas |
 |---|---|---|
@@ -72,7 +72,7 @@ Estado: SOLO contrato y función SQL; no se integra con la rama de Telegram en e
 
 ## Intención `pedido_menudeo` (pedidos a costo del socio de menudeo, con fecha comprometida y recordatorios)
 
-Estado: SOLO contrato y funciones SQL; el envío real por Telegram lo integra la rama de Telegram después.
+Estado: integrado en la rama `feat/telegram-ampliacion` (ver `docs/guia-telegram-agente.md`, «Tercera entrega»); el envío real sigue apagado hasta que el dueño encienda `telegram_envio`.
 
 **Solo la acepta del `socio_menudeo`** (parámetro de configuración, por omisión Angelo; su menudeo en Playa del Carmen). El agente VERIFICA el autor del mensaje (miembro registrado) antes de llamar a las funciones; si el autor no es el socio de menudeo, responde que solo ese socio mete pedidos a costo y no ejecuta nada. Las funciones lo refuerzan: `ds_crear_pedido` (a costo), `ds_reportar_pago_menudeo`, `ds_reprogramar_compromiso` y `ds_responder_recordatorio_menudeo` fallan con 42501 para otro socio. El otro socio solo supervisa (web) y confirma o rechaza pagos reportados.
 
