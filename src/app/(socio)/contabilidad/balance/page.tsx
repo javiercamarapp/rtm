@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { capitalDeSocio } from '@/composicion/capital';
-import { etiquetaSocio, pctBp } from '@/dominio/capital/etiquetas';
+import { etiquetaSocio } from '@/dominio/capital/etiquetas';
 import { idCifraCapital } from '@/dominio/capital/explicar';
 import { contabilidadDeSocio } from '@/composicion/contabilidad';
 import { fechaNeg, sumarDias } from '@/dominio/calendario';
@@ -124,12 +124,12 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
                     { id: 'a', titulo: 'Aportaciones de capital', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.aportaciones_capital_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'aportaciones', sujeto: f.socio })} /> },
                     { id: 'u', titulo: 'Utilidad generada', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.utilidad_generada_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'utilidad', sujeto: f.socio })} /> },
                     { id: 't', titulo: 'Utilidad retirada', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.utilidad_retirada_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'retirada', sujeto: f.socio })} /> },
-                    { id: 'p', titulo: '% en libros', numerica: true, ancho: 's', secundaria: true, celda: (f) => pctBp(f.pct_valuacion_bp) ?? <span className="rtm-sin-dato">Sin dato</span> },
+                    { id: 'p', titulo: 'Participación', numerica: true, ancho: 's', secundaria: true, celda: () => '50 %' },
                     { id: 'v', titulo: 'Valuación', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.valuacion_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'valuacion', sujeto: f.socio })} /> },
                   ]}
                 />
               </div>
-              <div className="a3-pie-tarjeta"><Pie>La suma de las valuaciones personales es el capital contable de este balance: {m(cap.datos.acumulado.total.valuacion_cent)} contra {m(b.total_capital_cent)} ({cap.datos.acumulado.total.valuacion_cent === b.total_capital_cent ? 'cuadra' : 'no cuadra'}).</Pie></div>
+              <div className="a3-pie-tarjeta"><Pie>Las valuaciones personales ({m(cap.datos.acumulado.total.valuacion_cent)}) más los fondos de la sociedad en poder de socios ({m(cap.datos.acumulado.total.fondos_en_poder_cent)}) son el capital contable de este balance ({m(b.total_capital_cent)}): {cap.datos.acumulado.total.valuacion_cent + cap.datos.acumulado.total.fondos_en_poder_cent === b.total_capital_cent ? 'cuadra' : 'no cuadra'}. La participación es 50/50 y se busca que ambos tengan el mismo dinero invertido.</Pie></div>
             </Tarjeta>
           )}
           <Rejilla dividir="4-4-4">

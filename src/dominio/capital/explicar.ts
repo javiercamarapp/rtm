@@ -2,7 +2,7 @@
 // Identificador: capital:<desde>:<hasta>:<mes|acum>:<campo>:<socio|total>   (mes = AAAA-MM; para proveedores el sujeto es Isaac o Karen; para comprobaciones, K1 a K9).
 import { formatearMoneda } from '../formato';
 import type { Explicacion } from '../catalogo/tipos';
-import { ESTADO_PROVEEDOR, etiquetaFondos, etiquetaMesCapital } from './etiquetas';
+import { ESTADO_PROVEEDOR, NOTA_IGUALACION, etiquetaFondos, etiquetaMesCapital } from './etiquetas';
 import type { CampoCapital, CapitalPorMes, FilaCapitalSocio, NombreSocio, PeriodoCapital, RenglonDetalle } from './tipos';
 import { CAMPOS_CAPITAL } from './tipos';
 
@@ -107,17 +107,30 @@ export function explicarCapital(d: CapitalPorMes, cifra: string, miSocio: Nombre
         { concepto: 'Mayor aportación neta', montoCent: max, saldoCent: null, hora: null, fechaNeg: p.fin, evento: null, canal: null, autor: null, mensajeOrigen: null },
       ]);
     }
-    case 'valuacion':
-    case 'participacion': {
+    case 'valuacion': {
       const v = suma(filas.map((x) => x.valuacion_cent));
-      const ini = suma(filas.map((x) => x.valuacion_inicial_cent));
+      const libro = suma(filas.map((x) => x.valuacion_libro_cent));
+      const ini = suma(filas.map((x) => x.valuacion_libro_inicial_cent));
+      const fondos = suma(filas.map((x) => x.fondos_en_poder_cent));
       const roll = ini + suma(filas.map((x) => x.aportaciones_capital_cent + x.utilidad_generada_cent - x.utilidad_retirada_cent - x.devoluciones_capital_cent));
       const lin = (concepto: string, monto: bigint) => ({ concepto, montoCent: monto, saldoCent: null, hora: null, fechaNeg: p.fin, evento: null, canal: null, autor: null, mensajeOrigen: null });
-      return base(cifra, c.campo === 'valuacion' ? `Valuación ${quien}, al ${p.fin}` : `Participación en libros ${quien}, al ${p.fin}`, v, c.campo === 'valuacion' ? f.valuacion ?? '' : f.participacion ?? '',
-        esTotal ? { via1: 'Suma de valuaciones personales', v1: v, via2: 'Capital contable (Balance)', v2: p.balance.total_capital_cent }
-                : { via1: 'Valuación al cierre', v1: v, via2: 'Inicial + aportaciones + utilidad − retiros', v2: roll, tol: 1n },
-        [lin('Valuación al inicio', ini), lin('Aportaciones de capital', suma(filas.map((x) => x.aportaciones_capital_cent))), lin('Utilidad generada', suma(filas.map((x) => x.utilidad_generada_cent))),
-         lin('Utilidad retirada', -suma(filas.map((x) => x.utilidad_retirada_cent))), lin('Devoluciones de capital', -suma(filas.map((x) => x.devoluciones_capital_cent))), lin('Redondeo y otros', suma(filas.map((x) => x.otros_cent))), lin('Valuación al cierre', v)]);
+      return base(cifra, `Valuación ${quien}, al ${p.fin}`, v, f.valuacion ?? '',
+        esTotal ? { via1: 'Valuaciones personales + fondos en poder', v1: v + fondos, via2: 'Capital contable (Balance)', v2: p.balance.total_capital_cent }
+                : { via1: 'Capital + utilidad antes de fondos', v1: libro, via2: 'Inicial + aportaciones + utilidad − retiros', v2: roll, tol: 1n },
+        [lin('Valuación al inicio (antes de fondos)', ini), lin('Aportaciones de capital', suma(filas.map((x) => x.aportaciones_capital_cent))), lin('Su 50 % de la utilidad generada', suma(filas.map((x) => x.utilidad_generada_cent))),
+         lin('Utilidad retirada', -suma(filas.map((x) => x.utilidad_retirada_cent))), lin('Devoluciones de capital', -suma(filas.map((x) => x.devoluciones_capital_cent))), lin('Redondeo y otros', suma(filas.map((x) => x.otros_cent))),
+         lin('Fondos de la sociedad en su poder', -fondos), lin('Valuación al cierre', v),
+         lin('Informativa: valuación si se igualaran las aportaciones', suma(filas.map((x) => x.valuacion_si_igualados_cent)))]);
+    }
+    case 'turno': {
+      const dif = p.diferencia_a_igualar_cent;
+      const lin = (concepto: string, monto: bigint) => ({ concepto, montoCent: monto, saldoCent: null, hora: null, fechaNeg: p.fin, evento: null, canal: null, autor: null, mensajeOrigen: null });
+      const nets = p.socios.map((x) => x.aportacion_neta_cent);
+      const mx = nets.reduce((a, x) => (x > a ? x : a), nets[0] ?? 0n);
+      const mn = nets.reduce((a, x) => (x < a ? x : a), nets[0] ?? 0n);
+      return base(cifra, p.turno_aportar === null ? 'Igualados: ambos tienen la misma aportación neta' : `Le toca aportar el siguiente pago: ${p.turno_aportar} por ${fm(dif)}`, dif, `${f.turno ?? ''} ${NOTA_IGUALACION}`.trim(),
+        { via1: 'Diferencia a igualar', v1: dif, via2: 'Mayor aportación neta − menor', v2: mx - mn },
+        p.socios.map((x) => lin(`Aportación neta de ${x.socio}${x.le_toca_aportar ? ' (le toca aportar)' : ''}`, x.aportacion_neta_cent)));
     }
     case 'prov':
     case 'clasif': {

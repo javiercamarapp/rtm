@@ -15,7 +15,7 @@ export interface RenglonDetalle {
 
 export interface FilaCapitalSocio {
   socio: NombreSocio;
-  valuacion_inicial_cent: bigint;
+  valuacion_libro_inicial_cent: bigint;
   aportaciones_capital_cent: bigint;
   aportaciones_detalle: RenglonDetalle[];
   utilidad_generada_cent: bigint;
@@ -28,7 +28,15 @@ export interface FilaCapitalSocio {
   devoluciones_capital_cent: bigint;
   utilidad_retenida_cent: bigint;
   otros_cent: bigint;
+  /** Valuacion personal: capital aportado + su 50 % de la utilidad - fondos de la sociedad en su poder. */
   valuacion_cent: bigint;
+  /** La misma antes de restar los fondos en su poder (alimenta K1 y K7). */
+  valuacion_libro_cent: bigint;
+  /** Informativa: su valuacion si pusiera lo que le falta para igualar las aportaciones. */
+  valuacion_si_igualados_cent: bigint;
+  /** Siempre 5000 (50 %): aportar mas no da mas participacion. */
+  participacion_bp: number;
+  le_toca_aportar: boolean;
   fondos_en_poder_cent: bigint;
   fondos_detalle: RenglonDetalle[];
   capital_aportado_acum_cent: bigint;
@@ -36,13 +44,10 @@ export interface FilaCapitalSocio {
   aportado_cent: bigint;
   aportacion_neta_cent: bigint;
   diferencia_a_igualar_cent: bigint;
-  pct_valuacion_bp: number | null;
-  pct_capital_bp: number | null;
-  pct_aportacion_neta_bp: number | null;
 }
 
 export interface TotalCapital {
-  valuacion_inicial_cent: bigint;
+  valuacion_libro_inicial_cent: bigint;
   aportaciones_capital_cent: bigint;
   utilidad_generada_cent: bigint;
   utilidad_reinvertida_acta_cent: bigint;
@@ -53,6 +58,8 @@ export interface TotalCapital {
   utilidad_retenida_cent: bigint;
   otros_cent: bigint;
   valuacion_cent: bigint;
+  valuacion_libro_cent: bigint;
+  valuacion_si_igualados_cent: bigint;
   fondos_en_poder_cent: bigint;
   capital_aportado_acum_cent: bigint;
   aportado_cent: bigint;
@@ -89,6 +96,15 @@ export interface PeriodoCapital {
   parcial: boolean;
   hay_movimientos: boolean;
   socios: FilaCapitalSocio[];
+  /** Socio al que le toca aportar el siguiente pago (el de menor aportacion neta); null = igualados. */
+  turno_aportar: NombreSocio | null;
+  diferencia_a_igualar_cent: bigint;
+  igualados: boolean;
+  capital_contable_neto_cent: bigint;
+  reinversion_igual: boolean;
+  reinversion_acta_angelo_cent: bigint;
+  reinversion_acta_javier_cent: bigint;
+  nota_igualacion: string;
   total: TotalCapital;
   proveedores: ProveedorCapital[];
   anticipo_proveedor_cent: bigint;
@@ -109,5 +125,5 @@ export interface CapitalPorMes {
 }
 
 /** Campos que una cifra del reporte puede explicar (identificador en `capital:<desde>:<hasta>:<mes|acum>:<campo>:<socio|total>`). */
-export const CAMPOS_CAPITAL = ['aportaciones', 'utilidad', 'reinvertida', 'retirada', 'valuacion', 'fondos', 'neta', 'igualar', 'participacion', 'prov', 'clasif', 'comp'] as const;
+export const CAMPOS_CAPITAL = ['aportaciones', 'utilidad', 'reinvertida', 'retirada', 'valuacion', 'fondos', 'neta', 'igualar', 'turno', 'prov', 'clasif', 'comp'] as const;
 export type CampoCapital = (typeof CAMPOS_CAPITAL)[number];

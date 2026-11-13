@@ -12,3 +12,6 @@
 .rtm-capital-nota { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); margin: 0; }
 .rtm-capital-igualar { display: block; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
 .rtm-capital-comp .rtm-cifra { white-space: normal; text-align: left; }
+
+.rtm-capital-turno { margin: 0; font-size: var(--rtm-t-cuerpo); font-weight: 600; color: var(--rtm-ink); }
+.rtm-capital-alerta { border-left: 3px solid var(--rtm-warn); padding-left: 8px; }

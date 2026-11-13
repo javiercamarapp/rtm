@@ -43,9 +43,24 @@ describe('Explicar este numero de capital', () => {
     expect(e.comprobacion).toMatchObject({ via1Valor: 750000, via2Valor: 750000, cuadra: true });
     expect(e.renglones.some((r) => r.concepto.includes('Reinvertida en el proveedor'))).toBe(true);
   });
-  it('valuacion: la suma de los dos es el capital contable', () => {
+  it('valuacion: las personales mas los fondos en poder son el capital contable', () => {
     const e = explicarCapital(D, id('2026-11', 'valuacion', 'total'), null)!;
-    expect(e.comprobacion).toMatchObject({ via1: 'Suma de valuaciones personales', via1Valor: 27453764, via2Valor: 27453764, cuadra: true });
+    expect(e.valor).toBe(23906264);
+    expect(e.comprobacion).toMatchObject({ via1: 'Valuaciones personales + fondos en poder', via1Valor: 27453764, via2Valor: 27453764, cuadra: true });
+  });
+  it('valuacion de un socio: capital + su 50 % de la utilidad - fondos, con la informativa aparte', () => {
+    const e = explicarCapital(D, id('2026-11', 'valuacion', 'Javier'), 'Javier')!;
+    expect(e.valor).toBe(9707037);
+    expect(e.comprobacion?.cuadra).toBe(true);
+    expect(e.renglones.some((r) => r.concepto.startsWith('Fondos de la sociedad en su poder') && r.montoCent === -3547500n)).toBe(true);
+    expect(e.renglones.some((r) => r.concepto.startsWith('Informativa: valuación si se igualaran'))).toBe(true);
+  });
+  it('turno: le toca aportar al de menos aportacion neta, sin lenguaje de deuda', () => {
+    const e = explicarCapital(D, id('2026-11', 'turno', 'total'), null)!;
+    expect(e.titulo).toBe('Le toca aportar el siguiente pago: Angelo por $11,240.00');
+    expect(e.valor).toBe(1124000);
+    expect(e.comprobacion?.cuadra).toBe(true);
+    expect(e.fuente).toContain('no es una deuda');
   });
   it('por clasificar: no se presenta como inventario ni saldo a favor', () => {
     const e = explicarCapital(D, id('2026-10', 'clasif', 'Isaac'), null)!;

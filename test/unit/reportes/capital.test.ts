@@ -30,7 +30,7 @@ describe('capital por socio en el reporte mensual', () => {
   it('cada cifra de capital cuadra por dos vias y la valuacion es el capital contable del Balance', () => {
     const p = conCapital();
     for (const id of ['cap.valuacion', 'cap.utilidad', 'cap.aportaciones', 'cap.reinvertida', 'cap.retirada', 'cap.fondos', 'cap.acumValuacion']) expect(cifraDe(p, id)!.comprobacion.igual, id).toBe(true);
-    expect(cifraDe(p, 'cap.valuacion')!.valor).toBe(27453764n);
+    expect(cifraDe(p, 'cap.valuacion')!.valor).toBe(23906264n);
   });
   it('una valuacion que no es el capital contable bloquea el reporte', () => {
     const n = periodoNoviembre();
@@ -54,6 +54,18 @@ describe('capital por socio en el reporte mensual', () => {
     expect(t).toContain('Saldo a favor');
     const fondos = pg.tablas.find((x) => x.id === 'fondos')!;
     expect(JSON.stringify(fondos, (_k, v) => (typeof v === 'bigint' ? String(v) : v))).not.toMatch(/deb[eo]|adeud|deuda/i);
+  });
+  it('el reporte dice a quien le toca aportar, que la participacion es 50/50 y alerta si la reinversion es distinta', () => {
+    const texto = reporteATexto(construirReporte(conCapital()));
+    expect(texto).toContain('Le toca aportar el siguiente pago: Angelo por $11,240.00');
+    expect(texto).toContain('siempre 50/50');
+    expect(texto).toContain('Reinversión distinta en el acta: Angelo $5,000.00 y Javier $2,000.00');
+    expect(texto).not.toMatch(/% en libros|% de aportaciones/);
+  });
+  it('con reinversion igual el reporte dice igual para los dos', () => {
+    const n = periodoNoviembre();
+    const igual = armarPaquete({ ...insumosMensualDorado(), capital: { mes: { ...n, reinversion_igual: true, reinversion_acta_angelo_cent: 500000n, reinversion_acta_javier_cent: 500000n }, acumulado: n } });
+    expect(reporteATexto(construirReporte(igual))).toContain('Reinvertido este mes: igual para los dos');
   });
   it('el HTML trae la tabla y pasa a PDF con el mismo texto', () => {
     const p = conCapital();

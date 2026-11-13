@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ESTADO_PROVEEDOR, etiquetaFondos, etiquetaMesCapital, etiquetaSocio, pctBp, textoIgualar } from '@/dominio/capital/etiquetas';
+import { ESTADO_PROVEEDOR, NOTA_IGUALACION, etiquetaFondos, etiquetaMesCapital, etiquetaSocio, pctBp, textoIgualar, textoReinversion, textoTurno } from '@/dominio/capital/etiquetas';
 
 describe('etiquetas de capital (decision del dueno, 13-nov)', () => {
   it('el socio con la sesion ve «retirados por ti»', () => {
@@ -30,5 +30,27 @@ describe('etiquetas de capital (decision del dueno, 13-nov)', () => {
     expect(pctBp(null)).toBeNull();
     expect(ESTADO_PROVEEDOR.se_debe).toBe('Se le debe');
     expect(ESTADO_PROVEEDOR.a_favor).toBe('Saldo a favor');
+  });
+
+  it('turno de aportar: el de menos aportacion neta, o Igualados', () => {
+    const f = (c: bigint) => `$${c}`;
+    expect(textoTurno('Javier', 4792191n, f)).toBe('Le toca aportar el siguiente pago: Javier por $4792191');
+    expect(textoTurno(null, 0n, f)).toBe('Igualados');
+    expect(textoTurno('Angelo', 0n, f)).toBe('Igualados');
+    expect(textoTurno('Javier', 1n, f)).not.toMatch(/deb|adeud|deuda/i);
+  });
+  it('la nota dice que aportar mas no da mas participacion y que la diferencia no es deuda', () => {
+    expect(NOTA_IGUALACION).toContain('siempre 50/50');
+    expect(NOTA_IGUALACION).toContain('no da más participación');
+    expect(NOTA_IGUALACION).toContain('no es una deuda ni un reembolso a favor del otro');
+  });
+  it('reinversion del mes: igual para los dos o alerta informativa', () => {
+    const f = (c: bigint) => `$${c}`;
+    expect(textoReinversion(0n, 0n, f)).toBeNull();
+    expect(textoReinversion(500000n, 500000n, f)).toEqual({ igual: true, texto: 'Reinvertido este mes: igual para los dos' });
+    const r = textoReinversion(500000n, 200000n, f)!;
+    expect(r.igual).toBe(false);
+    expect(r.texto).toContain('Angelo $500000');
+    expect(r.texto).toContain('Javier $200000');
   });
 });

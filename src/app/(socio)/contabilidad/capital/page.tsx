@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import '@/ui/estilos/capital.css';
 import { capitalDeSocio } from '@/composicion/capital';
 import { idCifraCapital } from '@/dominio/capital/explicar';
-import { ESTADO_PROVEEDOR, etiquetaFondos, etiquetaMesCapital, etiquetaSocio, pctBp, textoIgualar } from '@/dominio/capital/etiquetas';
+import { ESTADO_PROVEEDOR, NOTA_IGUALACION, etiquetaFondos, etiquetaMesCapital, etiquetaSocio, textoIgualar, textoReinversion, textoTurno } from '@/dominio/capital/etiquetas';
 import type { CampoCapital, FilaCapitalSocio, PeriodoCapital } from '@/dominio/capital/tipos';
 import { formatearMoneda } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
@@ -29,7 +29,6 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
   const m = (c: bigint): string => formatearMoneda(c);
   const id = (mes: string, campo: CampoCapital, sujeto: string) => idCifraCapital({ desde: d.desde, hasta: d.hasta, mes, campo, sujeto });
   const cifra = (c: bigint, mes: string, campo: CampoCapital, sujeto: string, ok?: boolean) => (sd ? <SinDato /> : <CifraComprobada texto={m(c)} cifra={id(mes, campo, sujeto)} comprobacion={ok === undefined ? 'sin_comprobar' : ok ? 'cuadra' : 'no_cuadra'} />);
-  const pct = (bp: number | null, mes: string, sujeto: string) => (sd || bp === null ? <SinDato /> : <CifraComprobada texto={pctBp(bp)} cifra={id(mes, 'participacion', sujeto)} />);
 
   const filasMes: FilaTabla[] = d.meses.flatMap((x) => x.periodo.socios.map((f) => ({ clave: `${x.mes}-${f.socio}`, mes: x.mes, periodo: x.periodo, f })));
   const filasAcum: FilaTabla[] = a.socios.map((f) => ({ clave: `acum-${f.socio}`, mes: 'acum', periodo: a, f }));
@@ -39,8 +38,6 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
     { id: 'u', titulo: 'Utilidad generada', etiquetaMovil: 'Utilidad', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_generada_cent, x.mes, 'utilidad', x.f.socio) },
     { id: 'r', titulo: 'Utilidad reinvertida', etiquetaMovil: 'Reinvertida', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_reinvertida_cent, x.mes, 'reinvertida', x.f.socio) },
     { id: 't', titulo: 'Utilidad retirada', etiquetaMovil: 'Retirada', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.utilidad_retirada_cent, x.mes, 'retirada', x.f.socio) },
-    { id: 'p', titulo: '% en libros', numerica: true, ancho: 's' as const, secundaria: true, etiquetaMovil: 'En libros', celda: (x: FilaTabla) => pct(x.f.pct_valuacion_bp, x.mes, x.f.socio) },
-    { id: 'q', titulo: '% de aportaciones', numerica: true, ancho: 's' as const, secundaria: true, etiquetaMovil: 'Aportac.', celda: (x: FilaTabla) => (sd || x.f.pct_capital_bp === null ? <SinDato /> : pctBp(x.f.pct_capital_bp)) },
     { id: 'v', titulo: 'Valuación al cierre', etiquetaMovil: 'Valuación', numerica: true, ancho: 'm' as const, celda: (x: FilaTabla) => cifra(x.f.valuacion_cent, x.mes, 'valuacion', x.f.socio) },
   ];
   const subtotales = (mes: string, p: PeriodoCapital) => ({
@@ -63,13 +60,14 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
     ...(p.por_clasificar_cent > 0n ? [{ clave: `${p.proveedor}-clasif`, concepto: `${p.proveedor} · Por clasificar`, detalle: 'Pagado por un socio, destino sin confirmar', monto: p.por_clasificar_cent, cifra: id(d.meses.at(-1)?.mes ?? 'acum', 'clasif', p.proveedor) }] : []),
   ]);
   const fallan = a.comprobaciones.filter((x) => !x.ok);
+  const reinversiones = d.meses.flatMap((x) => { const t = textoReinversion(x.periodo.reinversion_acta_angelo_cent, x.periodo.reinversion_acta_javier_cent, m); return t ? [{ mes: x.mes, ...t }] : []; });
 
   return (
     <>
       <SubnavContabilidad />
       <Pagina ancho="tablero">
         <EncabezadoPagina eyebrow="Contabilidad · capital por socio" titulo={sd ? 'Todavía no hay capital que mostrar' : `Valuación de ${m(a.total.valuacion_cent)}`}
-          descripcion="Por mes y por socio: aportaciones de capital, utilidad generada, reinvertida y retirada, fondos de la sociedad en poder de cada socio, valuación y su participación. Cada cifra cuadra contra el Estado de resultados, el Balance y el Libro." />
+          descripcion="Por mes y por socio: aportaciones de capital, utilidad generada, reinvertida y retirada, fondos de la sociedad en poder de cada socio y valuación. La participación es 50/50 y se busca que ambos tengan el mismo dinero invertido. Cada cifra cuadra contra el Estado de resultados, el Balance y el Libro." />
         <FiltrosUrl etiquetaAria="Periodo" restablecer="/contabilidad/capital">
           <Campo etiqueta="Desde"><input type="date" name="desde" defaultValue={desdeP ?? ''} max={hoyNeg()} /></Campo>
           <Campo etiqueta="Hasta"><input type="date" name="hasta" defaultValue={hastaP} max={hoyNeg()} /></Campo>
@@ -79,7 +77,7 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
         ) : (
           <>
             <KpiLinea etiquetaAria="Resumen de capital" celdas={[
-              { id: 'v', etiqueta: 'Valuación total', valor: cifra(a.total.valuacion_cent, 'acum', 'valuacion', 'total', a.comprobaciones.find((x) => x.id === 'K1')?.ok), categoria: 1, nota: 'Capital contable', testid: 'capital-valuacion' },
+              { id: 'v', etiqueta: 'Valuación total', valor: cifra(a.total.valuacion_cent, 'acum', 'valuacion', 'total', a.comprobaciones.find((x) => x.id === 'K1')?.ok), categoria: 1, nota: 'Menos fondos en poder de socios', testid: 'capital-valuacion' },
               { id: 'c', etiqueta: 'Aportaciones de capital', valor: cifra(a.total.aportaciones_capital_cent, 'acum', 'aportaciones', 'total'), categoria: 2, nota: 'Declaradas en el periodo' },
               { id: 'u', etiqueta: 'Utilidad generada', valor: cifra(a.total.utilidad_generada_cent, 'acum', 'utilidad', 'total', a.comprobaciones.find((x) => x.id === 'K3')?.ok), categoria: 3, nota: '50/50 entre socios' },
               { id: 'r', etiqueta: 'Reinvertida', valor: cifra(a.total.utilidad_reinvertida_cent, 'acum', 'reinvertida', 'total'), categoria: 4, nota: 'Acta y proveedor' },
@@ -92,15 +90,17 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
               <Tarjeta titulo="Aportaciones, utilidad y valuación" descripcion="Total de los socios al cierre de cada mes">
                 <GraficaCapital puntos={puntos} titulo="Aportaciones de capital, utilidad generada y valuación" descripcion={`Tres columnas por mes, ${puntos.length} ${puntos.length === 1 ? 'mes' : 'meses'}: aportaciones de capital acumuladas, utilidad generada acumulada y valuación al cierre.`} pie={`Periodo ${fecha(d.desde)} al ${fecha(d.hasta)} · Fuente: libro contable`} />
               </Tarjeta>
-              <Tarjeta titulo="Cómo crece la participación" descripcion="Participación en libros contra participación en aportaciones de capital">
-                <DataTable etiqueta="Participación por socio" clave={(x) => x.f.socio} filas={a.socios.map((f) => ({ f }))} densidad="densa" plana
+              <Tarjeta titulo="Igualación de aportaciones" descripcion="Lo mismo invertido por los dos; participación siempre 50/50">
+                <p className="rtm-capital-turno" data-testid="turno-aportar">{sd ? null : <CifraComprobada texto={textoTurno(fin.turno_aportar, fin.diferencia_a_igualar_cent, m)} cifra={id(d.meses.at(-1)?.mes ?? 'acum', 'turno', 'total')} />}</p>
+                <DataTable etiqueta="Valuación y participación por socio" clave={(x) => x.socio} filas={fin.socios} densidad="densa" plana
                   columnas={[
-                    { id: 's', titulo: 'Socio', celda: (x) => etiquetaSocio(x.f.socio, mio) },
-                    { id: 'l', titulo: 'En libros', etiquetaMovil: 'En libros', numerica: true, celda: (x) => pct(x.f.pct_valuacion_bp, 'acum', x.f.socio) },
-                    { id: 'c', titulo: 'De aportaciones de capital', etiquetaMovil: 'Aportac.', numerica: true, celda: (x) => pctBp(x.f.pct_capital_bp) ?? <SinDato /> },
-                    { id: 'n', titulo: 'Retenida en el periodo', etiquetaMovil: 'Retenida', numerica: true, celda: (x) => m(x.f.utilidad_retenida_cent) },
+                    { id: 's', titulo: 'Socio', celda: (x) => etiquetaSocio(x.socio, mio) },
+                    { id: 'p', titulo: 'Participación', numerica: true, celda: () => '50 %' },
+                    { id: 'v', titulo: 'Valuación', numerica: true, celda: (x) => cifra(x.valuacion_cent, d.meses.at(-1)?.mes ?? 'acum', 'valuacion', x.socio) },
+                    { id: 'i', titulo: 'Valuación si se igualaran las aportaciones (informativa)', etiquetaMovil: 'Si se igualaran', numerica: true, secundaria: true, celda: (x) => m(x.valuacion_si_igualados_cent) },
                   ]} />
-                <p className="rtm-capital-nota">Sin retirar y reinvirtiendo, la utilidad retenida sube la participación en libros por encima de la de aportaciones. La utilidad se reparte 50/50; el capital aportado no da más utilidad.</p>
+                <p className="rtm-capital-nota" data-testid="nota-igualacion">{NOTA_IGUALACION}</p>
+                {reinversiones.map((r) => <p key={r.mes} className={r.igual ? 'rtm-capital-nota' : 'rtm-capital-nota rtm-capital-alerta'} data-testid={r.igual ? 'reinversion-igual' : 'reinversion-desigual'}>{etiquetaMesCapital(r.mes)}: {r.texto}</p>)}
               </Tarjeta>
             </Rejilla>
 

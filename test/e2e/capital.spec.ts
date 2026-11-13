@@ -27,7 +27,7 @@ test('el submenu de Contabilidad trae Capital por socio', async ({ page }) => {
 
 test('Javier ve dos meses, el acumulado y sus fondos en segunda persona', async ({ page }) => {
   await sesion(page, 'Javier');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Valuación de $274,537.64');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Valuación de $239,062.64');
   const mensual = page.getByRole('table', { name: 'Capital por mes y por socio' });
   await expect(mensual).toContainText('octubre 2026');
   await expect(mensual).toContainText('noviembre 2026');
@@ -47,6 +47,11 @@ test('Javier ve dos meses, el acumulado y sus fondos en segunda persona', async 
   await expect(prov).toContainText('Isaac · Por clasificar');
   await expect(prov).toContainText('$62,161.91');
   await expect(page.locator('body')).not.toContainText(/\bdebe\b a la sociedad|adeuda/i);
+  await expect(page.getByTestId('turno-aportar')).toContainText('Le toca aportar el siguiente pago: Angelo por $11,240.00');
+  await expect(page.getByTestId('nota-igualacion')).toContainText('no da más participación');
+  await expect(page.getByTestId('reinversion-desigual')).toContainText('Reinversión distinta en el acta');
+  await expect(page.locator('body')).not.toContainText(/% en libros|% de aportaciones/);
+  await expect(page.getByRole('table', { name: 'Valuación y participación por socio' })).toContainText('50 %');
 });
 
 test('Angelo ve la linea de fondos con el nombre del otro socio', async ({ page }) => {

@@ -30,3 +30,18 @@ export function etiquetaMesCapital(mes: string): string {
 export function pctBp(bp: number | null): string | null {
   return bp === null ? null : `${(bp / 100).toFixed(1)} %`;
 }
+
+/** Turno de aportar: el socio con menos aportacion neta aporta el siguiente pago por la diferencia; sin diferencia, Igualados. Sin lenguaje de deuda. */
+export function textoTurno(turno: NombreSocio | null, diferenciaCent: bigint, formato: (c: bigint) => string): string {
+  return turno === null || diferenciaCent === 0n ? 'Igualados' : `Le toca aportar el siguiente pago: ${turno} por ${formato(diferenciaCent)}`;
+}
+
+export const NOTA_IGUALACION = 'La participación es siempre 50/50. Aportar más no da más participación: la diferencia a igualar no es una deuda ni un reembolso a favor del otro, se resuelve con las siguientes aportaciones del que tiene menos, y así ambos tienen el mismo dinero invertido.';
+
+/** Reinversion del mes: igual para los dos o alerta informativa. null = nadie reinvirtio por acta. */
+export function textoReinversion(angeloCent: bigint, javierCent: bigint, formato: (c: bigint) => string): { igual: boolean; texto: string } | null {
+  if (angeloCent === 0n && javierCent === 0n) return null;
+  return angeloCent === javierCent
+    ? { igual: true, texto: 'Reinvertido este mes: igual para los dos' }
+    : { igual: false, texto: `Reinversión distinta en el acta: Angelo ${formato(angeloCent)} y Javier ${formato(javierCent)}. Se busca reinvertir lo mismo cada mes.` };
+}

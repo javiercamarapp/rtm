@@ -8,10 +8,10 @@ select no_plan();
 update catalogo.config set vigente_desde = '2020-01-01' where vigente_desde > '2020-01-01';
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('cap.ang@example.test', 'socio', 'Angelo', true), ('cap.jav@example.test', 'socio', 'Javier', true);
 insert into auth.users (id, instance_id, aud, role, email) values
-  ('77777777-7777-7777-7777-7777777777c1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'cap.ang@example.test'),
-  ('77777777-7777-7777-7777-7777777777c2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'cap.jav@example.test');
+  ('77777777-7777-7777-7777-7777777777d1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'cap.ang@example.test'),
+  ('77777777-7777-7777-7777-7777777777d2', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'cap.jav@example.test');
 create function pg_temp.como(p text) returns void language sql as
-  $$ select set_config('request.jwt.claim.sub', case $1 when 'Angelo' then '77777777-7777-7777-7777-7777777777c1' else '77777777-7777-7777-7777-7777777777c2' end, true) $$;
+  $$ select set_config('request.jwt.claim.sub', case $1 when 'Angelo' then '77777777-7777-7777-7777-7777777777d1' else '77777777-7777-7777-7777-7777777777d2' end, true) $$;
 create function pg_temp.cap() returns jsonb language sql as $$ select api.capital_por_mes('2026-10-01', '2026-11-30') $$;
 create function pg_temp.fila(p_mes text, p_socio text) returns jsonb language sql as
   $$ select x from jsonb_array_elements(pg_temp.cap()->'meses') m, jsonb_array_elements(m->'periodo'->'socios') x where m->>'mes' = $1 and x->>'socio' = $2 $$;
@@ -69,8 +69,11 @@ select is((pg_temp.fila('2026-10', 'Angelo')->>'utilidad_generada_cent')::bigint
 select is(jsonb_array_length(pg_temp.fila('2026-10', 'Angelo')->'aportaciones_detalle'), 1, 'el detalle de aportaciones trae el movimiento con fecha, concepto y origen');
 select is(pg_temp.fila('2026-10', 'Angelo')->'aportaciones_detalle'->0->>'origen', 'Caja: Caja de la empresa', 'origen: la caja a la que entro el deposito');
 select is(pg_temp.fila('2026-10', 'Angelo')->'aportaciones_detalle'->0->>'fecha', '2026-10-15', 'con su fecha');
-select is((pg_temp.fila('2026-10', 'Angelo')->>'pct_valuacion_bp')::int, 5278, 'octubre: participacion en libros de Angelo 52.78 %');
-select is((pg_temp.fila('2026-10', 'Angelo')->>'pct_capital_bp')::int, (pg_temp.fila('2026-10', 'Angelo')->>'pct_valuacion_bp')::int, 'sin utilidad la participacion en libros es la de las aportaciones');
+select is((pg_temp.fila('2026-10', 'Angelo')->>'participacion_bp')::int, 5000, 'octubre: la participacion es 50/50 aunque Angelo aporto mas');
+select is((pg_temp.fila('2026-10', 'Angelo')->>'valuacion_cent')::bigint, 11816191::bigint, 'octubre: la valuacion personal de Angelo es su capital aportado (sin utilidad ni fondos)');
+select is((pg_temp.fila('2026-10', 'Javier')->>'valuacion_cent')::bigint, 10571500::bigint, 'octubre: la de Javier, su capital aportado');
+select ok(not (pg_temp.fila('2026-10', 'Angelo') ? 'pct_valuacion_bp') and not (pg_temp.fila('2026-10', 'Angelo') ? 'pct_capital_bp'), 'ya no hay porcentajes de valuacion contra aportaciones');
+select is(pg_temp.cap()->'meses'->0->'periodo'->>'turno_aportar', 'Angelo', 'octubre: le toca aportar a Angelo (aportacion neta menor, 118,161.91 contra 167,876.91)');
 
 -- Noviembre: utilidad 53,660.73 repartida 50/50 (regla del Estado de resultados)
 select is((pg_temp.fila('2026-11', 'Angelo')->>'utilidad_generada_cent')::bigint + (pg_temp.fila('2026-11', 'Javier')->>'utilidad_generada_cent')::bigint, 5366073::bigint, 'noviembre: utilidad generada 53,660.73');
@@ -100,10 +103,18 @@ select is((pg_temp.fila('2026-11', 'Javier')->>'diferencia_a_igualar_cent')::big
 select is((pg_temp.fila('2026-11', 'Angelo')->>'diferencia_a_igualar_cent')::bigint, 13440191 - 12316191::bigint, 'Angelo: la diferencia a igualar es lo que le falta para alcanzar la mayor');
 
 -- Valuacion personal y participacion: crece con la utilidad retenida
-select is((pg_temp.cap()->'meses'->1->'periodo'->'total'->>'valuacion_cent')::bigint, 27453764::bigint, 'valuacion total de noviembre: capital 230,876.91 + utilidad 53,660.73 - retiro 3,000.00');
-select is((pg_temp.fila('2026-11', 'Angelo')->>'valuacion_cent')::bigint + (pg_temp.fila('2026-11', 'Javier')->>'valuacion_cent')::bigint, (contabilidad.balance_general('2026-11-30')->>'total_capital_cent')::bigint, 'la suma de las valuaciones personales es el capital contable del Balance');
+select is((pg_temp.cap()->'meses'->1->'periodo'->'total'->>'valuacion_cent')::bigint, 23906264::bigint, 'valuacion total de noviembre: capital contable 274,537.64 menos fondos en poder 35,475.00');
+select is((pg_temp.fila('2026-11', 'Angelo')->>'valuacion_cent')::bigint, 14199227::bigint, 'noviembre: Angelo = capital + su 50 % de la utilidad - retiro (sin fondos en su poder)');
+select is((pg_temp.fila('2026-11', 'Javier')->>'valuacion_cent')::bigint, 9707037::bigint, 'noviembre: Javier = capital + su 50 % de la utilidad - 35,475.00 de fondos en su poder');
+select is((pg_temp.fila('2026-11', 'Angelo')->>'valuacion_cent')::bigint + (pg_temp.fila('2026-11', 'Javier')->>'valuacion_cent')::bigint + (pg_temp.fila('2026-11', 'Angelo')->>'fondos_en_poder_cent')::bigint + (pg_temp.fila('2026-11', 'Javier')->>'fondos_en_poder_cent')::bigint,
+          (contabilidad.balance_general('2026-11-30')->>'total_capital_cent')::bigint, 'la suma de las valuaciones personales mas los fondos en poder es el capital contable del Balance');
 select is((contabilidad.valuacion('2026-11-30')->>'v03_diferencia_cent')::bigint, 27453764::bigint, 'y la valuacion menos deudas de contabilidad.valuacion');
-select ok((pg_temp.fila('2026-11', 'Javier')->>'pct_valuacion_bp')::int > (pg_temp.fila('2026-11', 'Javier')->>'pct_capital_bp')::int, 'Javier: sin retirar su participacion en libros (48.28 %) supera su parte del capital (46.65 %)');
+select is((pg_temp.fila('2026-11', 'Javier')->>'valuacion_si_igualados_cent')::bigint, 9707037::bigint, 'valuacion si se igualaran: el socio adelantado (Javier, diferencia 0) conserva la suya');
+select is((pg_temp.fila('2026-11', 'Angelo')->>'valuacion_si_igualados_cent')::bigint, 14199227::bigint + 1124000, 'valuacion si se igualaran: Angelo sumaria lo que le falta (11,240.00)');
+select is((pg_temp.cap()->'meses'->1->'periodo'->>'reinversion_igual')::boolean, false, 'noviembre: el acta reinvirtio 5,000.00 y 2,000.00: reinversion desigual (alerta informativa)');
+select is((pg_temp.cap()->'meses'->0->'periodo'->>'reinversion_igual')::boolean, true, 'octubre: sin reinversion, igual para los dos');
+select is(pg_temp.cap()->'meses'->1->'periodo'->>'turno_aportar', 'Angelo', 'noviembre: le toca aportar a Angelo por la diferencia a igualar');
+select is((pg_temp.cap()->'meses'->1->'periodo'->>'diferencia_a_igualar_cent')::bigint, 1124000::bigint, 'por 11,240.00');
 select ok(abs((pg_temp.fila('2026-11', 'Angelo')->>'otros_cent')::bigint) <= 1 and abs((pg_temp.fila('2026-11', 'Javier')->>'otros_cent')::bigint) <= 1, 'el unico residuo de la valuacion es el redondeo de un centavo del acta contra el Estado de resultados');
 
 -- Proveedores: Karen se le debe; Isaac saldo a favor; lo pagado por un socio sin destino confirmado, por clasificar
@@ -119,7 +130,7 @@ select is((pg_temp.cap()->'acumulado'->>'por_clasificar_cent')::bigint, 6216191:
 -- Acumulado
 select is((pg_temp.cap()->'acumulado'->'total'->>'utilidad_generada_cent')::bigint, 5366073::bigint, 'acumulado: utilidad generada 53,660.73');
 select is((pg_temp.cap()->'acumulado'->'total'->>'aportaciones_capital_cent')::bigint, 22387691::bigint, 'acumulado: aportaciones declaradas 223,876.91');
-select is((pg_temp.cap()->'acumulado'->'total'->>'valuacion_inicial_cent')::bigint, 0::bigint, 'acumulado: parte de cero');
+select is((pg_temp.cap()->'acumulado'->'total'->>'valuacion_libro_inicial_cent')::bigint, 0::bigint, 'acumulado: parte de cero');
 
 -- Comprobaciones: todas en verde en cada mes y en el acumulado
 select is((select count(*)::int from jsonb_array_elements(pg_temp.cap()->'meses') m, jsonb_array_elements(m->'periodo'->'comprobaciones') c where not (c->>'ok')::boolean), 0, 'ninguna comprobacion K1 a K9 falla en ningun mes');
@@ -129,7 +140,7 @@ select ok((operacion.cuadre_socios()->>'libro_conciliado')::boolean, 'Libro conc
 select is((pg_temp.cap()->'acumulado'->'comprobaciones'->0->>'a_cent')::bigint, (pg_temp.cap()->'acumulado'->'comprobaciones'->0->>'b_cent')::bigint, 'K1 con sus dos lados iguales');
 
 -- Identidad a mano: valuacion final - inicial = aportaciones + utilidad - retiros (+ redondeo)
-select is((pg_temp.cap()->'meses'->1->'periodo'->'total'->>'valuacion_cent')::bigint - (pg_temp.cap()->'meses'->1->'periodo'->'total'->>'valuacion_inicial_cent')::bigint,
+select is((pg_temp.cap()->'meses'->1->'periodo'->'total'->>'valuacion_libro_cent')::bigint - (pg_temp.cap()->'meses'->1->'periodo'->'total'->>'valuacion_libro_inicial_cent')::bigint,
           (pg_temp.cap()->'meses'->1->'periodo'->'total'->>'aportaciones_capital_cent')::bigint + (pg_temp.cap()->'meses'->1->'periodo'->'total'->>'utilidad_generada_cent')::bigint - (pg_temp.cap()->'meses'->1->'periodo'->'total'->>'utilidad_retirada_cent')::bigint - (pg_temp.cap()->'meses'->1->'periodo'->'total'->>'devoluciones_capital_cent')::bigint + (pg_temp.cap()->'meses'->1->'periodo'->'total'->>'otros_cent')::bigint,
           'noviembre: la valuacion crece con la utilidad retenida (identidad a mano)');
 
