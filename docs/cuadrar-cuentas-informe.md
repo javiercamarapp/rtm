@@ -107,3 +107,8 @@ Capturas regeneradas en `docs/capturas/cuadre/` y revisadas a ojo (25 Comprobaci
 
 **Pruebas.** pgTAP nuevo `a4_006_pago_socio_reembolso_por_omision` (49 afirmaciones: omision = reembolso por auto, dinero_propio y el sinonimo aportacion; declaracion = capital; mezcla con fondos de la sociedad; rechazo de declarar capital sin dinero propio; idempotencia y huella; asientos 2310 contra 3110 y cuadre de cada asiento; comprobaciones bloqueantes en verde; Cuenta de socios con via 1 = via 2; parametro en 0, 50 y 100; permisos: anon y un usuario sin rol de socio rechazados, un socio si). Se ajustaron `015_f3b_asientos` y `905_compras_f02_f03` para declarar capital donde la prueba verifica capital, y `a4_005` para verificar reembolso. vitest nuevo `pago-socio.test.tsx` (5 pruebas).
 
+## Ronda 4 (13-nov): verificador independiente, Libro conciliado e integracion con puente-efectivo
+- La senal "Cuadra" de Socios (puesto por Angelo + Javier = costo) no era una identidad contable. Ahora es "Libro conciliado": `operacion.cuadre_socios()` (migracion 20261113300100), definicion en docs/cuadre-socios-definicion.md. Via 1 y via 2 son informativas ("diferencia por la compra"); un deposito a la caja sin gastar ya no cuenta como puesto para la compra; el desglose del costo siempre suma.
+- 20261113300000 ya no hace DROP: las funciones de 8 argumentos se renombran a `_v1` (sin acceso) y la nueva de 9 toma el nombre.
+- Rama `integra/cuadre-puente`: una sola via para el efectivo (se conserva la escritura de movimientos del puente; se quitan apertura_efectivo, pagos_sociedad_proveedor, CA1 y CA2).
+- Pruebas: pgTAP a4_004 (escenarios acumulados e inconsistencias inducidas), a4_005, a4_006 sin cifras calibradas; recorrido Playwright sin montos que fuercen el cuadre.
