@@ -7,6 +7,7 @@ import { capitalDeSocio } from '@/composicion/capital';
 import { explicarCapital, leerCifraCapital } from '@/dominio/capital/explicar';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { CIFRA_CUADRE_SOCIOS, explicarCuadreSocios } from '@/dominio/operacion/cuadre';
+import { historialDeSocio } from '@/composicion/historial';
 import { escritorNotificacionesDeSocio, notificacionesDeSocio } from '@/composicion/inventario';
 import type { Disponibilidad, Explicacion } from '@/dominio/catalogo/tipos';
 import type { ListaCampana } from '@/dominio/notificaciones/tipos';
@@ -29,6 +30,8 @@ export async function explicarCifra(cifra: string): Promise<Explicacion> {
     return e;
   }
   if (CIFRA_DS.test(cifra)) return (await dropshippingDeSocio()).explicar(cifra);
+  // Cifras del historial personal y del acta (funcion propia de la base; no pasa por la cadena de explicar_cifra).
+  if (/^historial:(invertido|retirado|utilidad|valor|cuenta):(Angelo|Javier)$|^historial:parte:\d+:(Angelo|Javier)$/.test(cifra)) return (await historialDeSocio()).explicar(cifra);
   if (!/^(existencia:modelo:\d+|margen:\d+:\d+|pedido:(total|saldo):\d+|proveedor:saldo:\d+|socio:(deuda|fondos|diferencia):(Angelo|Javier)|socio:neto:(Angelo|Javier)|socios:diferencia|socios:cuadre|cxc:total|proveedor:falta:(Isaac|Karen):\d{4}-\d{2}-\d{2}:(sociedad|todo)|omar:neto:\d{4}-\d{2}-\d{2}|cascada:utilidad:\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}|cascada:resultado:(Angelo|Javier):\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}:\d+|conta:efectivo|conta:saldo:\d{4}(:\d{4}-\d{2}-\d{2})?|conta:(v0[1-6]|l0[12])(:\d{4}-\d{2}-\d{2})?|conta:utilidad:\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}(:(bruta|contribucion|neta))?|inventario:valor|cobertura:modelo:\d+|paquete:(valor|absorbe):\d+)$/.test(cifra)) throw new Error('cifra no explicable');
   if (cifra === CIFRA_CUADRE_SOCIOS) return explicarCuadreSocios(await (await operacionDeSocio()).cuentaSocios());
   return (await lectorDeSocio()).explicar(cifra);

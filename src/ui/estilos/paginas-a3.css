@@ -62,3 +62,6 @@
   .a3-diario-lineas .rtm-dt-celda { overflow: hidden; text-overflow: ellipsis; }
 }
 .a3-diario-lineas .rtm-dt-celda[data-num] { font-variant-numeric: tabular-nums; }
+.a3-filtros-form .rtm-campo-num { width: 172px; }
+
+.a3-sin-corte { white-space: nowrap; }
