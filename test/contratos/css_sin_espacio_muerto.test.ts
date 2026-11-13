@@ -47,3 +47,16 @@ describe('responsive', () => {
     expect(leer('operacion.css')).toMatch(/@media \(pointer: coarse\), \(max-width: 767px\) \{[^}]*font-size: 16px/);
   });
 });
+
+describe('indicador del menu lateral', () => {
+  it('cada seccion del armazon tiene su regla data-indice en shell.css (el indice 0 es la posicion base)', () => {
+    const fuente = readFileSync(join(process.cwd(), 'src', 'ui', 'shell', 'armazon.tsx'), 'utf8');
+    const bloque = /const SECCIONES = \[([\s\S]*?)\] as const;/.exec(fuente)?.[1] ?? '';
+    const total = (bloque.match(/href: '/g) ?? []).length;
+    expect(total).toBeGreaterThan(0);
+    const shell = leer('shell.css');
+    for (let i = 1; i < total; i++) {
+      expect(shell, `falta .rtm-nav-indicador[data-indice='${i}']`).toMatch(new RegExp(`\\.rtm-nav-indicador\\[data-indice='${i}'\\]\\s*\\{\\s*transform: translateY\\(${i * 34}px\\)`));
+    }
+  });
+});

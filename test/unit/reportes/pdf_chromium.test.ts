@@ -53,14 +53,14 @@ describe.skipIf(!hayChromium)('PDF real con el Chromium de Playwright', () => {
   const html = renderHtml(modeloSem, { cssFuentes: css });
   let bytes: Uint8Array;
 
-  it('semanal: 7 paginas mas anexo, ninguna con desborde, fuentes incrustadas (Garamond, Figtree y mono)', async () => {
+  it('semanal: 7 paginas mas anexo, ninguna con desborde, fuentes incrustadas (solo Geist y Geist Mono)', async () => {
     const r = await render.renderizar(html);
     bytes = r.bytes;
     expect(r.paginasConDesborde).toEqual([]);
     expect(r.paginas).toBe(8);
-    expect(r.fuentesIncrustadas.some((f) => /Figtree/.test(f))).toBe(true);
-    expect(r.fuentesIncrustadas.some((f) => /EBGaramond/.test(f))).toBe(true);
-    expect(r.fuentesIncrustadas.some((f) => /JetBrainsMono/.test(f))).toBe(true);
+    expect(r.fuentesIncrustadas.some((f) => /Geist-/.test(f))).toBe(true);
+    expect(r.fuentesIncrustadas.some((f) => /GeistMono/.test(f))).toBe(true);
+    expect(r.fuentesIncrustadas.some((f) => /Figtree|Garamond|JetBrains/.test(f))).toBe(false);
     expect(r.fuentesIncrustadas.some((f) => /Helvetica|Arial|Times/.test(f))).toBe(false);
     expect(() => verificarPdf(r, modeloSem.paginas.length + 1)).not.toThrow();
     expect(Buffer.from(r.bytes).subarray(0, 5).toString()).toBe('%PDF-');

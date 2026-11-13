@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { completarAcceso, completarConfirmacion, type SalidaCallback } from '@/aplicacion/acceso/completar_acceso';
 import { correoExcedeTopes, ipExcedeTope } from '@/aplicacion/acceso/limites';
-import type { DepsAcceso, Perfil } from '@/aplicacion/acceso/puertos';
+import { LimitadorNoDisponible, type DepsAcceso, type Perfil } from '@/aplicacion/acceso/puertos';
 import { reenviarEnlaceCaducado, urlCallback } from '@/aplicacion/acceso/reenvio';
 import { DESTINO_OMAR } from '@/dominio/acceso/ruta_segura';
 import { appUrl } from '@/config/env';
@@ -32,17 +32,37 @@ export function ipDeSolicitud(h: Headers): string {
   return ipDeCabeceras(h);
 }
 
-export async function ipDentroDelLimite(): Promise<boolean> {
-  return !(await ipExcedeTope(deps().limitador, await ipActual()));
+export type EstadoLimiteIp = 'dentro' | 'excedido' | 'no_disponible';
+
+/** Limite por IP. FALLA CERRADO: si el limitador no responde devuelve 'no_disponible' (el llamador rechaza con la respuesta generica, sin senal) y deja un aviso interno sin datos personales. */
+export async function ipDentroDelLimite(): Promise<EstadoLimiteIp> {
+  const d = deps();
+  try {
+    return (await ipExcedeTope(d.limitador, await ipActual())) ? 'excedido' : 'dentro';
+  } catch (e) {
+    if (!(e instanceof LimitadorNoDisponible)) throw e;
+    d.rastro.aviso('login.limitador_no_disponible', { puerta: 'ip', codigo: e.codigo });
+    return 'no_disponible';
+  }
 }
 
-/** Enlace magico: respuesta identica para correo con y sin cuenta (el llamador aplica el piso de tiempo). */
-export async function pedirEnlace(correo: string, dest: string) {
+/** Enlace magico: respuesta identica para correo con y sin cuenta (el llamador aplica el piso de tiempo).
+ *  `limitadorCaido`: el limite por IP ya no pudo consultarse; no se manda nada y la respuesta es la misma que la de un correo no permitido. */
+export async function pedirEnlace(correo: string, dest: string, limitadorCaido = false) {
   const d = deps();
   const ip = await ipActual();
   // Deja dicho a quien reenviar si este enlace muere, ANTES de saber si el correo tiene cuenta (anti-oraculo).
   await d.reenvio.guardarCorreo(correo);
-  const sinEnviar = await correoExcedeTopes(d.limitador, correo);
+  let sinEnviar = limitadorCaido;
+  if (!sinEnviar) {
+    try {
+      sinEnviar = await correoExcedeTopes(d.limitador, correo);
+    } catch (e) {
+      if (!(e instanceof LimitadorNoDisponible)) throw e;
+      d.rastro.aviso('login.limitador_no_disponible', { puerta: 'correo', codigo: e.codigo });
+      sinEnviar = true; // FALLA CERRADO
+    }
+  }
   const { error } = sinEnviar ? { error: null } : await d.autenticador.enviarEnlace(correo, urlCallback(d.urlApp, dest));
   if (error) d.rastro.fallo('login_email', 'otp_no_enviado', ip);
   return { error };

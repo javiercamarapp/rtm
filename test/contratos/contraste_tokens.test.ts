@@ -54,6 +54,24 @@ describe('contraste de tokens', () => {
     expect(regla).toContain('var(--rtm-campo-borde)');
     expect(regla).not.toContain('line-2');
   });
+  for (const tema of ['claro', 'oscuro'] as const) {
+    it(`${tema}: encabezado de tabla (th-texto sobre th-fondo) >= 4.5:1 y mas fuerte que el texto secundario`, () => {
+      expect(contraste(valor(tema, 'th-texto'), valor(tema, 'th-fondo'))).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(valor(tema, 'th-texto'), valor(tema, 'th-fondo'))).toBeGreaterThan(contraste(valor(tema, 'ink-2'), valor(tema, 'th-fondo')));
+      expect(contraste(valor(tema, 'th-borde'), valor(tema, 'surface'))).toBeGreaterThan(1.5);
+    });
+  }
+  it('el encabezado de DataTable usa esos tokens, centra en vertical y no recorta (padding simetrico, sin vertical-align inferior)', () => {
+    const premium = readFileSync(join(__dirname, '../../src/ui/estilos/premium.css'), 'utf8');
+    const reglas = premium.match(/\.rtm-dt-cabecera \.rtm-dt-celda \{[^}]*\}/g) ?? [];
+    expect(reglas.length).toBeGreaterThan(0);
+    const toda = reglas.join('\n');
+    expect(toda).toContain('var(--rtm-th-texto)');
+    expect(toda).toContain('var(--rtm-th-fondo)');
+    expect(toda).not.toMatch(/vertical-align:\s*(bottom|top|baseline)/);
+    expect(toda).not.toMatch(/padding-top|padding-bottom/);
+    expect(premium).toMatch(/\.rtm-dt-celda \{ padding: 6px 12px;/);
+  });
   it('placeholder con color de token y foco visible en campos', () => {
     expect(componentes).toMatch(/\.rtm-campo::placeholder \{ color: var\(--rtm-ink-3\); opacity: 1; \}/);
     expect(componentes).toMatch(/\.rtm-campo:focus-visible \{[^}]*outline: 2px solid var\(--rtm-ink\)/);

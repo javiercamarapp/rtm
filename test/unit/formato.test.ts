@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { etiquetaDia, etiquetaRango, formatearMoneda, formatearPiezas, MENOS } from '@/dominio/formato';
 
 describe('formato (modulo unico)', () => {
@@ -20,5 +22,11 @@ describe('formato (modulo unico)', () => {
     expect(etiquetaRango('2026-11-09', '2026-11-15')).toBe('9 a 15 nov');
     expect(etiquetaRango('2026-10-26', '2026-11-01')).toBe('26 oct a 1 nov');
     expect(etiquetaDia('2026-11-10', 1)).toBe('martes 10 nov');
+  });
+  it('ninguna pantalla vuelve a anteponer "$" a una cifra ya formateada (daba "$-100.00" en lugar de "−$100.00")', () => {
+    const recorrer = (d: string): string[] => readdirSync(d).flatMap((n) => { const r = join(d, n); return statSync(r).isDirectory() ? recorrer(r) : /\.tsx?$/.test(n) && !/\.test\./.test(n) ? [r] : []; });
+    const patron = /`\$\$\{formatear(Moneda|PesosCorto)\([^`]*\)\.replace\('\$',/;
+    const culpables = recorrer('src').filter((f) => patron.test(readFileSync(f, 'utf8')));
+    expect(culpables).toEqual([]);
   });
 });

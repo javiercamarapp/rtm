@@ -68,6 +68,6 @@ export class RenderizadorFalso implements RenderizadorPdf {
   async renderizar(html: string): Promise<PdfRenderizado> {
     this.llamadas += 1;
     const paginas = (html.match(/class="pagina/g) ?? []).length;
-    return { bytes: new TextEncoder().encode(`%PDF-falso ${html.length}`), paginas, paginasConDesborde: [], fuentesIncrustadas: ['ABCDEF+Figtree'], ...this.resultado };
+    return { bytes: new TextEncoder().encode(`%PDF-falso ${html.length}`), paginas, paginasConDesborde: [], fuentesIncrustadas: ['ABCDEF+Geist'], ...this.resultado };
   }
 }

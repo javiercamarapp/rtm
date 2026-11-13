@@ -97,7 +97,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso, noLeidas = 
           <span className="rtm-migas">
             {MARCA.nombre} / <strong>{activo >= 0 ? SECCIONES[activo]!.etiqueta : 'Diseño'}</strong>
           </span>
-          <div className="rtm-pulso">
+          <div className="rtm-pulso" data-desliza="1100">
             <Pulso chips={pulso.chips} />
           </div>
           <div className="rtm-barra-acciones">
@@ -109,7 +109,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso, noLeidas = 
         <main className="rtm-panel" id="contenido">
           <div className="rtm-panel-scroll">
             <div className="rtm-pagina">
-              <div className="rtm-pulso-movil" aria-label="Pulso">
+              <div className="rtm-pulso-movil" data-desliza="767" aria-label="Pulso">
                 <Pulso chips={pulso.chips} />
               </div>
               {children}

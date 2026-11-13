@@ -1,0 +1,104 @@
+/* Sistema unico de controles y formularios de RTM. Se carga al final: una sola definicion de alto (32 px; 44 px en tactil o <= 767 px),
+   radio 8, borde 1 px, relleno, tipografia, etiquetas, barras de filtro, rejilla de formularios y botones. Solo tokens, sin colores literales.
+   Los tokens viven en tokens.css (--rtm-ctl-*); la regla base de campo, en componentes.css (.rtm-campo). */
+
+/* ---- Etiquetas: pequenas, una sola tipografia, sin mayusculas ---- */
+.rtm-a2-campo, .rtm-etiqueta-campo, .rtm-conteo-cuando { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: var(--rtm-ctl-etq); font-weight: var(--rtm-peso-medio); line-height: 16px; color: var(--rtm-ink-3); text-transform: none; letter-spacing: 0; }
+.rtm-a2-campo > span { line-height: 16px; }
+.rtm-etiqueta-campo > :is(.rtm-campo, select, input, textarea), .rtm-a2-campo > :is(input, select) { color: var(--rtm-ink); font-weight: var(--rtm-peso-normal); }
+.rtm-etiqueta-campo > .rtm-nota, .rtm-nota-ayuda { font-size: var(--rtm-ctl-etq); font-weight: var(--rtm-peso-normal); line-height: 16px; }
+
+/* ---- Campos: texto, numero, fecha, busqueda, selector ---- */
+.rtm-campo::placeholder, .rtm-a2-campo > input::placeholder { color: var(--rtm-ink-3); opacity: 1; }
+.rtm-a2-campo > :is(input, select):focus-visible, .rtm-dt-busqueda:focus-visible { border-color: var(--rtm-ink); outline: 2px solid var(--rtm-ink); outline-offset: 1px; }
+.rtm-campo-num, .rtm-a2-campo > input[type='number'] { width: var(--rtm-ctl-ancho-num); text-align: right; font-variant-numeric: tabular-nums; }
+:is(.rtm-campo, .rtm-a2-campo > input)[type='date'] { width: var(--rtm-ctl-ancho-fecha); font-variant-numeric: tabular-nums; }
+:is(.rtm-campo, .rtm-a2-campo > input)[type='date']::-webkit-datetime-edit { padding: 0; }
+:is(.rtm-campo, .rtm-a2-campo > input)[type='date']::-webkit-calendar-picker-indicator { margin: 0 0 0 4px; padding: 0; opacity: 0.55; cursor: pointer; }
+:is(.rtm-campo, .rtm-a2-campo > input)[type='date']::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+:is(.rtm-campo, .rtm-a2-campo > input)[type='search'] { -webkit-appearance: none; appearance: none; min-width: var(--rtm-ctl-ancho-busca); }
+:is(.rtm-campo, .rtm-a2-campo > input)[type='search']::-webkit-search-cancel-button { -webkit-appearance: none; }
+/* Selector con flecha propia (chevron en dos lineas, con la tinta del tema) y ancho minimo para mostrar su valor. */
+select.rtm-campo, .rtm-a2-campo > select {
+  -webkit-appearance: none; appearance: none; min-width: var(--rtm-ctl-ancho-sel); padding-right: 28px; text-overflow: ellipsis; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--rtm-ink-2) 50%), linear-gradient(135deg, var(--rtm-ink-2) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+}
+.rtm-a2-campo > select { max-width: min(100%, 360px); }
+textarea.rtm-campo { height: auto; min-height: 72px; padding: 8px var(--rtm-ctl-px); line-height: 1.4; resize: vertical; }
+.rtm-campo:hover:not(:disabled), .rtm-a2-campo > :is(input, select):hover { border-color: var(--rtm-ink-3); }
+.rtm-campo:disabled, .rtm-a2-campo > :is(input, select):disabled { background-color: var(--rtm-tint); border-style: solid; color: var(--rtm-ink-3); }
+.rtm-campo[aria-invalid='true'] { border-width: 1px; box-shadow: 0 0 0 1px var(--rtm-bad); }
+
+/* ---- Botones y chips: mismo alto en el mismo renglon ---- */
+.rtm-boton:disabled { cursor: not-allowed; }
+.rtm-boton-primario:disabled { background: var(--rtm-ink); border-color: var(--rtm-ink); opacity: 0.4; }
+.rtm-boton-chico { border-radius: var(--rtm-ctl-r); }
+.rtm-segmentado { border-radius: var(--rtm-r-pildora); }
+.rtm-seg > a { height: calc(var(--rtm-ctl-alto) - 6px); }
+.rtm-seg[data-tamano='chico'] > a { height: calc(var(--rtm-ctl-alto-chico) - 6px); }
+
+/* ---- Barra de filtros unificada: rejilla flexible con hueco uniforme y todo alineado al pie del renglon ---- */
+.rtm-a2-filtros, .a3-filtros-form, .rtm-a1-buscar, .rtm-form-fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--rtm-ctl-gap); min-width: 0; }
+.rtm-a2-filtros > :is(.rtm-boton, .rtm-boton-chico), .a3-filtros-form > :is(.rtm-boton, .rtm-boton-chico), .rtm-filtros-linea > :is(.rtm-boton, .rtm-boton-chico), .rtm-a1-buscar > .rtm-boton { height: var(--rtm-ctl-alto); font-size: var(--rtm-ctl-fs); padding: 0 var(--rtm-e-3); }
+.a3-filtros-form { align-items: center; }
+.rtm-barra-filtros-v2 { gap: var(--rtm-ctl-gap); min-height: var(--rtm-ctl-alto); }
+.rtm-barra-filtros-v2 .rtm-chip-v2 { height: var(--rtm-ctl-alto-chico); padding-block: 0; }
+.rtm-filtros-linea { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--rtm-ctl-gap); align-items: end; }
+.rtm-filtros-linea .rtm-etiqueta-campo > .rtm-campo { width: 100%; max-width: none; min-width: 0; }
+.rtm-filtros-linea > .rtm-boton { justify-self: start; }
+.rtm-dt-barra { gap: var(--rtm-ctl-gap); }
+/* Barras de tabla y paginadores: buscador, selector y botones del mismo renglon miden lo mismo (32 px escritorio, 44 px tactil). */
+:is(.rtm-dt-barra, .rtm-paginador) :is(.rtm-boton, .rtm-boton-chico, .rtm-campo, .rtm-dt-busqueda) { height: var(--rtm-ctl-alto); }
+.rtm-paginador-filas .rtm-campo-chico { padding: 0 var(--rtm-ctl-px); padding-right: 28px; }
+@media (max-width: 767px) {
+  .rtm-a2-filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
+  .rtm-a2-filtros > .rtm-a2-campo:has(> :is(select, input[type='search'])) { grid-column: 1 / -1; }
+  .rtm-a2-filtros > :is(.rtm-boton, .rtm-a2-aplicar) { justify-content: center; }
+  .rtm-a2-filtros > .rtm-a2-campo > :is(input, select) { width: 100%; max-width: none; }
+  .rtm-a2-aplicar { display: inline-flex; }
+  /* Filtro de una fila con selector y fechas: el selector ocupa su propio renglon completo, las dos fechas comparten el siguiente y el boton va al pie. */
+  .a3-filtros-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .a3-filtros-form > select.rtm-campo, .a3-filtros-form > .rtm-boton { grid-column: 1 / -1; width: 100%; max-width: none; }
+  .a3-filtros-form > .rtm-campo[type='date'] { width: 100%; }
+}
+
+/* ---- Formularios: rejilla comun. Cada fila reparte el ancho completo; el ancho del campo sigue a su contenido (fecha y monto, una parte;
+   selector y texto largo, dos partes; area, fila entera). Etiqueta arriba, ayuda y error debajo, boton primario y secundario al pie. ---- */
+.rtm-form { display: flex; flex-direction: column; gap: var(--rtm-e-3); width: 100%; max-width: none; min-width: 0; }
+.rtm-form-fila { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: var(--rtm-e-3); align-items: start; }
+.rtm-form-fila > * { min-width: 0; }
+.rtm-form-fila .rtm-campo, .rtm-form-fila .rtm-campo[type='date'], .rtm-form-fila .rtm-campo-num { width: 100%; max-width: none; }
+.rtm-form-fila .rtm-campo-num { text-align: left; }
+.rtm-form-fila > :is(.rtm-campo-ancho, :has(> select), :has(> .rtm-campo-ancho)) { grid-column: span 2; }
+.rtm-form-fila > :has(> textarea) { grid-column: 1 / -1; }
+.rtm-form-fila > :is(.rtm-boton, .rtm-acciones-fila) { align-self: end; justify-self: start; }
+.rtm-campo-ancho { flex-grow: 1; min-width: 0; }
+/* Un campo de texto suelto en un formulario vertical no se estira a todo el tarjetero: 560 px alcanzan para una fuente o un motivo. */
+.rtm-form > .rtm-etiqueta-campo:has(> input.rtm-campo) { max-width: min(100%, 560px); }
+.rtm-error { font-size: var(--rtm-ctl-etq); line-height: 16px; margin: 0; }
+.rtm-acciones-fila { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-ctl-gap); }
+.rtm-form > .rtm-acciones-fila { padding-top: var(--rtm-e-1); }
+.rtm-form > .rtm-acciones-fila > .rtm-boton { min-width: 96px; }
+.rtm-form > p[role='status'], .rtm-form > .rtm-error { margin: 0; font-size: var(--rtm-t-cuerpo); }
+.rtm-casilla { font-size: var(--rtm-ctl-fs); min-height: var(--rtm-ctl-alto); }
+.rtm-lineas-form { gap: var(--rtm-ctl-gap); }
+
+/* ---- Avisos de efecto y ecos: nota discreta alineada a la rejilla (sin filete lateral pesado) ---- */
+.rtm-aviso, .rtm-eco { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-ctl-r); background: var(--rtm-tint); }
+.rtm-aviso strong { font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-fuerte); color: var(--rtm-ink-2); }
+.rtm-aviso p, .rtm-eco p { margin: 0; font-size: var(--rtm-t-cuerpo); line-height: 1.4; color: var(--rtm-ink-2); }
+.rtm-eco[data-tono='ok'] { border-color: color-mix(in srgb, var(--rtm-ok) 40%, var(--rtm-line-2)); }
+.rtm-eco[data-tono='error'] { border-color: color-mix(in srgb, var(--rtm-bad) 45%, var(--rtm-line-2)); color: var(--rtm-bad); }
+
+/* ---- Movil: una columna y objetivos de 44 px ---- */
+@media (max-width: 767px) {
+  .rtm-form-fila { grid-template-columns: minmax(0, 1fr); }
+  .rtm-form-fila > * { grid-column: auto !important; }
+  .rtm-form-fila .rtm-campo-num, .rtm-campo-num, :is(.rtm-campo, .rtm-a2-campo > input)[type='date'] { width: 100%; }
+  .rtm-form > .rtm-acciones-fila > .rtm-boton { flex-grow: 1; }
+  select.rtm-campo, .rtm-a2-campo > select { min-width: 0; }
+}
+
+/* Dentro de una tarjeta plana (sin relleno propio) los formularios y notas sueltos conservan el margen de la tarjeta. */
+.rtm-tarjeta-v2[data-plana] > :is(p.rtm-nota, .rtm-form, form) { margin: var(--rtm-e-3) var(--rtm-pad-tarjeta); }

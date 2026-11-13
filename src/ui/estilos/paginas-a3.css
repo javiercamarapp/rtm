@@ -1,11 +1,6 @@
 /* Rediseno etapa 2 (lote A3): cuentas por cobrar, proveedores, socios, Omar y contabilidad. Solo tokens; sin colores literales ni degradados. */
 
 /* Barra de filtros en una linea: chips y formulario compacto. */
-.a3-filtros-form { display: inline-flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
-.a3-filtros-form .rtm-campo { height: var(--rtm-h-ctl); padding-block: 0; min-width: 0; font-size: var(--rtm-t-cuerpo); }
-.a3-filtros-form select.rtm-campo { max-width: 180px; }
-.a3-filtros-form input[type='date'].rtm-campo { width: 138px; }
-.a3-filtros-form .rtm-boton { height: var(--rtm-h-ctl); }
 
 /* Pie de tarjeta: procedencia y notas breves, siempre una linea gris. */
 .a3-pie { margin: 0; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); line-height: 1.4; }
@@ -42,7 +37,6 @@
 
 /* Movil: los formularios de filtro se desplazan dentro de la barra, sin romper la pagina. */
 @media (max-width: 767px) {
-  .a3-filtros-form { flex-wrap: nowrap; }
   .a3-acciones { justify-content: flex-start; }
 }
 
@@ -53,12 +47,18 @@
 .a3-pila { display: flex; flex-direction: column; gap: var(--rtm-ritmo); min-width: 0; }
 
 /* Barra de filtros dentro de una tarjeta plana: con el mismo relleno que el resto de la tarjeta. */
-.a3-barra { padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); overflow-x: auto; }
-.a3-barra .rtm-barra-filtros-v2 { min-width: max-content; }
+.a3-barra { padding: 8px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); }
 
 /* Subtitulo de bloque dentro de una tarjeta. */
 .a3-sub { margin: 8px 0 0; font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-fuerte); letter-spacing: var(--rtm-trk-eyebrow); text-transform: uppercase; color: var(--rtm-ink-3); }
-.a3-filtros-form input[type='date'].rtm-campo { width: 128px; }
-.a3-filtros-form select.rtm-campo { max-width: 150px; }
 
-.a3-filtros-form .rtm-campo-num { width: 172px; }
+
+/* Diario: las lineas de TODOS los asientos comparten la misma rejilla (cuenta, tercero, debe, haber) para que Debe y Haber caigan en la misma vertical
+   de una tarjeta a otra; el ancho de la tabla ya no cambia con el contenido del asiento. Cifras tabulares. */
+@media (min-width: 768px) {
+  .a3-diario-lineas .rtm-dt { table-layout: fixed; width: 100%; }
+  .a3-diario-lineas .rtm-dt-cabecera .rtm-dt-celda:nth-child(2) { width: 28%; }
+  .a3-diario-lineas .rtm-dt-cabecera .rtm-dt-celda:nth-child(n + 3) { width: 132px; }
+  .a3-diario-lineas .rtm-dt-celda { overflow: hidden; text-overflow: ellipsis; }
+}
+.a3-diario-lineas .rtm-dt-celda[data-num] { font-variant-numeric: tabular-nums; }

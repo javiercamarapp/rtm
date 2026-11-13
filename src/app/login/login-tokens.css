@@ -13,10 +13,21 @@
   --bad: var(--rtm-bad);
   --badbg: var(--rtm-tint);
   --crema: var(--rtm-tint);
-  --font-mono: var(--font-jetbrains);
-  --font-mono-id: var(--font-plexmono), 'IBM Plex Mono', ui-monospace, monospace;
+  /* Decision del dueno (13-nov): el login habla con Geist, la misma tipografia que la app por dentro (src/ui/tipografia.ts).
+     Esta hoja se importa despues de login.css, asi que estas variables sustituyen a las de Fraunces / Instrument Sans / IBM Plex Mono sin tocar login.css. */
+  /* Las cadenas con Fraunces, Instrument Sans (login.css:16-17) e IBM Plex Mono (artwork.tsx:33) NO se limpian a proposito: ambos archivos son copia byte a byte del
+     original de Likida y la prueba de paridad (test/contratos/paridad_likida.test.ts) fija su huella y su lista cerrada de cambios. Estan muertas: estas variables
+     las sustituyen y ninguna de esas fuentes se carga ya (document.fonts.load de una familia sin @font-face resuelve vacio, sin red). */
+  --serif-marca: var(--rtm-fuente-ui);
+  --sans-marca: var(--rtm-fuente-ui);
+  --font-mono: var(--rtm-fuente-mono);
+  --font-mono-id: var(--rtm-fuente-mono);
   color-scheme: inherit;
 }
+
+/* Los titulares eran de serifa ligera (peso 400); en Geist llevan peso medio para conservar la jerarquia. */
+.login .login-serif { font-weight: 600; letter-spacing: -0.03em; line-height: 1.08; }
+.login .login-kicker { letter-spacing: 0.02em; }
 
 /* El panel del arte: tinta negra fija, sin importar el tema. */
 .login-visual {

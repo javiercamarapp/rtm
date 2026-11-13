@@ -18,24 +18,26 @@ export default async function PaginaMiCuenta() {
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow={`Tu cuenta · semana ${etiquetaFecha(semana.inicio)} al ${etiquetaFecha(semana.fin)}`} titulo="Lo que te corresponde" descripcion={`Renta por pieza enviada, tus tomas y tus pagos. La semana en curso se liquida el ${etiquetaFecha(semana.corte)}.`} />
       <CifrasCuenta movs={c.movimientos} liqs={c.liquidaciones} semanaIni={semana.inicio} />
-      <Rejilla dividir="6-6" alinear="inicio">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Proyección de tu pago" descripcion="Estimación, no un saldo">
           <BloqueProyeccion proyeccion={c.proyeccion} />
         </Tarjeta>
-        <Tarjeta plana titulo="Renta de esta semana, por día">
-          {movs ? <TablaRentaDia movs={movs} semanaIni={semana.inicio} /> : <Aviso tono="error">No se pudo cargar tu cuenta.</Aviso>}
-        </Tarjeta>
+        <div className="rtm-pila-llena">
+          <Tarjeta plana titulo="Renta de esta semana, por día">
+            {movs ? <TablaRentaDia movs={movs} semanaIni={semana.inicio} /> : <Aviso tono="error">No se pudo cargar tu cuenta.</Aviso>}
+          </Tarjeta>
+          {movs && (
+            <Tarjeta plana titulo="Tus transacciones" descripcion="Tus tomas autorizadas">
+              <TablaTransacciones movs={movs} />
+            </Tarjeta>
+          )}
+          {movs && (
+            <Tarjeta plana titulo="Pagos">
+              <TablaPagos movs={movs} />
+            </Tarjeta>
+          )}
+        </div>
       </Rejilla>
-      {movs && (
-        <Rejilla dividir="6-6" alinear="inicio">
-          <Tarjeta plana titulo="Tus transacciones" descripcion="Tus tomas autorizadas">
-            <TablaTransacciones movs={movs} />
-          </Tarjeta>
-          <Tarjeta plana titulo="Pagos">
-            <TablaPagos movs={movs} />
-          </Tarjeta>
-        </Rejilla>
-      )}
       <Tarjeta
         plana
         titulo="Liquidación semanal"

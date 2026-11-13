@@ -13,9 +13,9 @@ type Modo = 'directa' | 'tasa' | 'participacion' | 'mayor';
 const n = (x: bigint | null): number | null => (x === null ? null : Number(x));
 
 /** Captura de un cargo. El monto se calcula con el mismo codigo del dominio y la base lo recalcula y lo rechaza si no coincide. Vista previa del efecto antes de guardar. */
-export function FormularioCargo({ servicios, mesInicial, hoy, tcDelDia }: { servicios: ServicioVista[]; mesInicial: string; hoy: string; tcDelDia: { fecha: string; tc_micro: number; fuente: string } | null }) {
+export function FormularioCargo({ servicios, mesInicial, hoy, tcDelDia, servicioInicial }: { servicios: ServicioVista[]; mesInicial: string; hoy: string; servicioInicial?: string; tcDelDia: { fecha: string; tc_micro: number; fuente: string } | null }) {
   const { correr, ocupado, error } = useAccion();
-  const [slug, setSlug] = useState(servicios[0]?.slug ?? '');
+  const [slug, setSlug] = useState(servicios.find((x) => x.slug === servicioInicial && x.activo)?.slug ?? servicios[0]?.slug ?? '');
   const [mes, setMes] = useState(mesInicial);
   const [fecha, setFecha] = useState(hoy);
   const [base, setBase] = useState('');

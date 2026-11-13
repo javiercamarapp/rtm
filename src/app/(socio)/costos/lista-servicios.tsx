@@ -1,0 +1,56 @@
+import Link from 'next/link';
+import { ETIQUETA_CATEGORIA, categoriaDe, ordenarServicios } from '@/dominio/costos/lista-servicios';
+import { ETIQUETA_COSTO, pesosDeExactoE6, textoMicro } from '@/dominio/costos/entrada';
+import type { ResumenServicio, ServicioVista } from '@/dominio/costos/vista';
+import { formatearMoneda } from '@/dominio/formato';
+import { IconoServicio } from '@/ui/marcas/icono-servicio';
+import { LogoMarca } from '@/ui/marcas/logo-marca';
+import { MARCAS } from '@/dominio/marcas';
+
+/** El logo oficial reemplaza al nombre solo cuando el servicio ES la marca (Supabase, Vercel, GitHub...); un servicio derivado ('OpenRouter, comision de recarga') conserva su nombre. */
+const conLogoOficial = (slug: string | null, nombre: string) => { const m = slug ? MARCAS[slug] : undefined; return !!m && !!m.claro && !!m.oscuro && m.nombre === nombre; };
+
+const dinero = (c: bigint) => formatearMoneda(c);
+
+/** Lista ordenada de servicios: una fila por servicio con columnas alineadas; cada fila es un enlace a la ficha del servicio (teclado y foco nativos).
+ *  Orden: categoria (Mantenimiento, Opcional, Construccion) y luego alfabetico. Las cifras vienen de la base (costos_resumen) sin recalcularse aqui. */
+export function ListaServicios({ servicios, resumen, mes, incluir }: { servicios: ServicioVista[]; resumen: ResumenServicio[]; mes: string; incluir: boolean }) {
+  const concepto = new Map(servicios.map((s) => [s.slug, s.metodo_atribucion]));
+  const query = new URLSearchParams({ mes, ...(incluir ? { construccion: '1' } : {}) }).toString();
+  return (
+    <ul className="rtm-serv-lista" data-testid="costos-servicios">
+      <li className="rtm-serv-cab" aria-hidden="true">
+        <span />
+        <span>Servicio</span>
+        <span>Categoría</span>
+        <span>Concepto</span>
+        <span className="rtm-serv-importe">Atribuido a RTM</span>
+        <span>Estado</span>
+      </li>
+      {ordenarServicios(resumen).map((s) => (
+        <li key={s.slug} data-testid={`servicio-${s.slug}`}>
+          <Link className="rtm-serv-fila" href={`/costos/${s.slug}?${query}`} aria-label={`${s.servicio}: ver detalle y cargos`}>
+            <IconoServicio slug={s.logo_slug} nombre={s.servicio} logoEnNombre={conLogoOficial(s.logo_slug, s.servicio)} />
+            <span className="rtm-serv-nombre">{conLogoOficial(s.logo_slug, s.servicio) ? <LogoMarca slug={s.logo_slug} nombre={s.servicio} alto={18} /> : s.servicio}</span>
+            <span className="rtm-serv-cat" data-categoria={categoriaDe(s)}>{ETIQUETA_CATEGORIA[categoriaDe(s)]}</span>
+            <span className="rtm-serv-concepto">{concepto.get(s.slug) ?? ''}</span>
+            {s.cargos === 0 ? (
+              <>
+                <span className="rtm-serv-importe"><strong>$0.00</strong></span>
+                <span className="rtm-serv-estado" data-vacio>Sin cargos este mes</span>
+              </>
+            ) : (
+              <>
+                <span className="rtm-serv-importe">
+                  <strong>{dinero(s.redondeado_cent)}</strong>
+                  <small>exacto {pesosDeExactoE6(BigInt(s.exacto_e6))}{s.usd_micro ? ` · USD ${textoMicro(BigInt(s.usd_micro))}` : ''}</small>
+                </span>
+                <span className="rtm-serv-estado">{ETIQUETA_COSTO[s.ultima_etiqueta ?? ''] ?? ''} · {s.ultimo_estado === 'confirmado' ? 'Confirmado' : 'Provisional'}</span>
+              </>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
