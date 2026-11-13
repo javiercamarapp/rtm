@@ -157,7 +157,7 @@ export default async function PaginaSocios() {
         <div className="a3-pie-tarjeta"><Pie>La empresa paga primero: gastos y capital se devuelven antes de repartir la utilidad 50/50.</Pie></div>
       </Tarjeta>
 
-      <Tarjeta titulo="Comprobaciones" descripcion="Detalle técnico del libro y la diferencia por la compra (informativa)">
+      <Tarjeta titulo="Comprobaciones" descripcion="Detalle técnico del libro y la comparación por la compra">
         <details className="sv-detalle" data-testid="comprobaciones">
           <summary>Ver comprobaciones</summary>
           <p className="sv-explica">La diferencia por la compra compara solo lo que cada socio puso de su dinero contra la mitad del costo de la compra; no es lo que alguien debe. Sus dos vías usan fórmulas distintas y pueden no coincidir, por eso no se usa para decir quién debe igualar: eso lo dice la valuación. Un depósito a la caja sin gastar no cuenta como puesto para la compra.</p>

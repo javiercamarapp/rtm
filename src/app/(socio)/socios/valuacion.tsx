@@ -30,7 +30,7 @@ export function TarjetaValuacionSocio({ f, yo }: { f: FilaSocioValuacion; yo: So
         <li className="sv-total"><span>Valuación actual</span><span><CifraComprobada texto={m(f.valuacion_cent)} cifra={`historial:valor:${f.socio}`} comprobacion="cuadra" /></span></li>
       </ul>
       <div role="img" aria-label={`Composición: capital aportado ${pCap.toFixed(0)} %, utilidades acumuladas ${pUt.toFixed(0)} %`}>
-        <div className="sv-barra"><span data-k="capital" style={{ width: `${pCap}%` }} /><span data-k="utilidad" style={{ width: `${pUt}%` }} /></div>
+        <svg className="sv-barra" width="100%" height="8" focusable="false" aria-hidden="true"><rect data-k="capital" x="0" y="0" width={`${pCap}%`} height="8" /><rect data-k="utilidad" x={`${pCap}%`} y="0" width={`${pUt}%`} height="8" /></svg>
         <div className="sv-leyenda"><span><i data-k="capital" />Capital aportado</span><span><i data-k="utilidad" />Utilidades acumuladas</span></div>
       </div>
     </Tarjeta>

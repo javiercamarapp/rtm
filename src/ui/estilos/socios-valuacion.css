@@ -12,12 +12,9 @@
 .sv-rubros small { display: block; color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); }
 .sv-rubros .sv-resta .rtm-num, .sv-rubros .sv-resta .rtm-cifra { color: var(--rtm-ink-2); }
 .sv-rubros .sv-total { font-weight: var(--rtm-peso-fuerte); border-top: 1px solid var(--rtm-line-strong); }
-.sv-barra { display: flex; height: 8px; border-radius: var(--rtm-r-pildora); overflow: hidden; background: var(--rtm-line); }
-.sv-barra > span { display: block; height: 100%; transform-origin: left center; animation: sv-crece 600ms ease-out both; }
-.sv-barra > span[data-k='capital'] { background: var(--rtm-d-azul-marino); }
-.sv-barra > span[data-k='utilidad'] { background: var(--rtm-d-verde-azulado); }
-@media (prefers-reduced-motion: reduce) { .sv-barra > span { animation: none; } }
-@keyframes sv-crece { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.sv-barra { display: block; width: 100%; height: 8px; border-radius: var(--rtm-r-pildora); background: var(--rtm-line); }
+.sv-barra rect[data-k='capital'] { fill: var(--rtm-d-azul-marino); }
+.sv-barra rect[data-k='utilidad'] { fill: var(--rtm-d-verde-azulado); }
 .sv-leyenda { display: flex; gap: 12px; flex-wrap: wrap; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
 .sv-leyenda i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: baseline; }
 .sv-leyenda i[data-k='capital'] { background: var(--rtm-d-azul-marino); }
