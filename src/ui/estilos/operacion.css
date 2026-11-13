@@ -218,3 +218,10 @@ details.rtm-explicar-linea p { margin: var(--rtm-e-1) 0; font-size: 13px; font-v
 .rtm-lista-sabores li { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); padding: 2px var(--rtm-e-3); font-size: 13px; background: var(--rtm-surface); }
 .rtm-lista-sabores li[data-agotado='true'] { color: var(--rtm-ink-3); text-decoration: line-through; }
 .rtm-reportes-marco { width: 100%; min-height: 70vh; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
+
+/* Las subpaginas (Contabilidad tiene 11, la apertura 11) se cortaban a 1440 px: en pantalla ancha la tira se acomoda en dos renglones en vez de desplazarse. */
+@media (min-width: 900px) {
+  .rtm-subnav { overflow-x: visible; }
+  .rtm-subnav ul { flex-wrap: wrap; min-width: 0; }
+  .rtm-subnav a { min-height: 36px; padding: 0 var(--rtm-e-2); white-space: nowrap; }
+}

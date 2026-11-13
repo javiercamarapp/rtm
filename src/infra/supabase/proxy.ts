@@ -4,7 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/config/env';
 
-const PUBLICAS = [/^\/login(?:\/|$)/, /^\/auth\//, /^\/api\/health$/, /^\/api\/telegram\/webhook$/, /^\/api\/tareas\/[a-z0-9-]+$/, /^\/terminos$/, /^\/privacidad$/];
+const PUBLICAS = [/^\/login(?:\/|$)/, /^\/auth\//, /^\/api\/(?:health|salud)$/, /^\/api\/telegram\/webhook$/, /^\/api\/tareas\/[a-z0-9-]+$/, /^\/terminos$/, /^\/privacidad$/];
 
 export async function actualizarSesion(req: NextRequest): Promise<NextResponse> {
   let respuesta = NextResponse.next({ request: req });
@@ -22,6 +22,8 @@ export async function actualizarSesion(req: NextRequest): Promise<NextResponse> 
   const { data } = await sb.auth.getUser();
   const ruta = req.nextUrl.pathname;
   if (!data.user && !PUBLICAS.some((r) => r.test(ruta))) {
+    // Una ruta de API sin sesion no es una pagina: responde 401 en JSON en vez de redirigir a /login (un monitor leia el 307 como caida).
+    if (ruta.startsWith('/api/')) return NextResponse.json({ ok: false, error: 'sin_sesion' }, { status: 401 });
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.search = '';

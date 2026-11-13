@@ -37,7 +37,7 @@ function chipIsaac(c: CuentaProveedor | null): ChipPulso {
 
 function chipCobrar(c: CuentasPorCobrar | null): ChipPulso {
   const base: ChipPulso = { clave: 'cobrar', etiqueta: 'Por cobrar', texto: null, cifra: null, href: '/cuentas-por-cobrar', detalle: null };
-  if (!c || (c.filas.length === 0 && c.saldos_a_favor.length === 0 && c.pagos_sin_identificar.length === 0)) return base;
+  if (!c || (c.filas.length === 0 && (c.apertura?.length ?? 0) === 0 && c.saldos_a_favor.length === 0 && c.pagos_sin_identificar.length === 0)) return base;
   return { ...base, texto: formatearMoneda(c.total_cent), cifra: 'cxc:total', href: null };
 }
 

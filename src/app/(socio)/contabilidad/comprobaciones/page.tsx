@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { contabilidadDeSocio } from '@/composicion/contabilidad';
 import type { Comprobacion } from '@/dominio/contabilidad/tipos';
-import { etiquetaFecha, etiquetaFechaHora, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
@@ -34,7 +35,7 @@ export default async function PaginaComprobaciones() {
       <SubnavContabilidad />
       <EncabezadoPagina
         eyebrow="Contabilidad · comprobaciones"
-        titulo={bloqueantes.length > 0 ? `Un reporte no puede salir: ${bloqueantes.length} ${bloqueantes.length === 1 ? 'comprobación bloqueante falla' : 'comprobaciones bloqueantes fallan'}` : 'Todo cuadra'}
+        titulo={bloqueantes.length > 0 ? `Un reporte no puede salir: ${bloqueantes.length} ${bloqueantes.length === 1 ? 'comprobación bloqueante falla' : 'comprobaciones bloqueantes fallan'}` : fallan.length > 0 ? `${fallan.length} de ${todas.length} comprobaciones no cuadran (ninguna bloquea reportes)` : 'Todo cuadra'}
         descripcion="Cada comprobación calcula la cifra por dos vías independientes y exige igualdad exacta; las bloqueantes impiden aprobar y publicar un periodo."
       />
       {bloqueantes.length > 0 && <Aviso tono="error" titulo="Reporte bloqueado.">{bloqueantes.map((x) => x.codigo).join(', ')} no cuadran.</Aviso>}
@@ -62,7 +63,7 @@ export default async function PaginaComprobaciones() {
             { id: 'n', titulo: 'Comprobación', ancho: 'xl', celda: (x) => <Dos a={x.nombre} b={x.bloqueante ? 'bloqueante' : undefined} /> },
             { id: 'a', titulo: 'Vía A', numerica: true, ancho: 'l', celda: (x) => <Dos a={mostrar(x, x.via_a_cent)} b={x.via_a_nombre} /> },
             { id: 'b', titulo: 'Vía B', numerica: true, ancho: 'l', secundaria: true, celda: (x) => <Dos a={mostrar(x, x.via_b_cent)} b={x.via_b_nombre} /> },
-            { id: 'o', titulo: 'Estado', ancho: 'm', celda: (x) => <Estado tono={x.ok ? 'ok' : x.bloqueante ? 'malo' : 'atencion'}>{x.ok ? 'Cuadra' : 'No cuadra'}</Estado> },
+            { id: 'o', titulo: 'Estado', ancho: 'm', celda: (x) => <><Estado tono={x.ok ? 'ok' : x.bloqueante ? 'malo' : 'atencion'}>{x.ok ? 'Cuadra' : 'No cuadra'}</Estado>{x.codigo === 'C23' && <><br /><span className="rtm-nota">Diferencia: </span><CifraComprobada texto={formatearMoneda(x.via_a_cent - x.via_b_cent)} cifra="conta:efectivo" comprobacion={x.ok ? 'cuadra' : 'no_cuadra'} /></>}</> },
           ]}
         />
       </Tarjeta>

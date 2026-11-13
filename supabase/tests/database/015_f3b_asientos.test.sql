@@ -50,8 +50,8 @@ select is(pg_temp.debe('f3n1c', '3110'), 144000::bigint, 'confirmar: los $1,440.
 select is(pg_temp.haber('f3n1c', '2110'), 14205500::bigint, 'confirmar: Isaac se acredita por la orden y por lo pagado de mas');
 select ok(pg_temp.cuadra('f3n1c'), 'el asiento de confirmar cuadra');
 
-select operacion.pago_proveedor_de_socio('f3p1', 'Isaac', 5600000, 'Javier', 'aportacion');
-select operacion.pago_proveedor_de_socio('f3p2', 'Isaac', 8368000, 'Angelo', 'aportacion');
+select operacion.pago_proveedor_de_socio('f3p1', 'Isaac', 5600000, 'Javier', 'aportacion', p_declara_capital => true);
+select operacion.pago_proveedor_de_socio('f3p2', 'Isaac', 8368000, 'Angelo', 'aportacion', p_declara_capital => true);
 select pg_temp.flush();
 select is(pg_temp.haber('f3p1', '3120'), 5600000::bigint, 'Javier paga 56,000.00 a Isaac: aportacion de capital');
 select is(pg_temp.debe('f3p1', '2110'), 5600000::bigint, 'y baja lo que se debe a Isaac');
@@ -88,8 +88,8 @@ create function pg_temp.d(p_clave text) returns bigint language sql as $$ select
 
 select operacion.crear_compra('f3b1', 'Isaac', '[{"modelo":"F3B Doc18 A","sabor":"Sin sabor","pagadas":1536}]'::jsonb, 237500);
 select operacion.confirmar_compra('f3b1c', (select id from operacion.compra where folio = (select resultado->>'folio' from seguridad.operacion where clave = 'f3b1')));
-select operacion.pago_proveedor_de_socio('f3b1pa', 'Isaac', 8461500, 'Angelo', 'aportacion');
-select operacion.pago_proveedor_de_socio('f3b1pj', 'Isaac', 5600000, 'Javier', 'aportacion');
+select operacion.pago_proveedor_de_socio('f3b1pa', 'Isaac', 8461500, 'Angelo', 'aportacion', p_declara_capital => true);
+select operacion.pago_proveedor_de_socio('f3b1pj', 'Isaac', 5600000, 'Javier', 'aportacion', p_declara_capital => true);
 select operacion.marcar_llego_merida('f3b1m', (select id from operacion.compra where folio = (select resultado->>'folio' from seguridad.operacion where clave = 'f3b1')));
 select operacion.recibir_compra('f3b1r', (select id from operacion.compra where folio = (select resultado->>'folio' from seguridad.operacion where clave = 'f3b1')),
   (select jsonb_build_array(jsonb_build_object('linea_id', cl.id, 'sabor', 'Sin sabor', 'piezas', 1536)) from operacion.compra_linea cl where cl.compra_id = (select id from operacion.compra where folio = (select resultado->>'folio' from seguridad.operacion where clave = 'f3b1'))), now());

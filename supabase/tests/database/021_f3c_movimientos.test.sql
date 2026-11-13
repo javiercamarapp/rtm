@@ -104,10 +104,10 @@ select is((operacion.posicion_socios() ->> 'javier_debe_a_angelo_cent')::bigint,
 select is((api.mov_utilidad() ->> 'deuda_entre_socios_cent')::bigint, 1430750::bigint, 'Quien debe a quien muestra 14,307.50, no la brecha');
 select is((api.mov_utilidad() ->> 'deudor') || '>' || (api.mov_utilidad() ->> 'acreedor'), 'Javier>Angelo', 'de Javier a Angelo');
 select is((api.mov_utilidad() ->> 'posicion_diferencia_cent')::bigint, 2861500::bigint, 'la brecha entre posiciones (la del encabezado) es el doble: 28,615.00');
-select is((operacion.posicion_socios() ->> 'javier_debe_a_angelo_cent')::bigint, (operacion.cuenta_socios() ->> 'via2_cent')::bigint, '(f) coincide con cuenta_socios()');
+select is((operacion.cuenta_socios() ->> 'via2_cent')::bigint, 0::bigint, '(f) la diferencia por la compra de cuenta_socios() solo cuenta lo puesto con dinero propio para la compra: un deposito a la caja sin gastar no la mueve');
 select operacion.registrar_pago('q:pg', 'Angelo', 1000000, (select id from catalogo.cliente where nombre_canonico = 'F3C Mov Cliente'));
 select is((operacion.posicion_socios() ->> 'javier_debe_a_angelo_cent')::bigint, 930750::bigint, '(b) un cobro de 10,000.00 en la cuenta de Angelo deja la posicion en 9,307.50');
-select is((operacion.posicion_socios() ->> 'javier_debe_a_angelo_cent')::bigint, (operacion.cuenta_socios() ->> 'via2_cent')::bigint, '(f) y sigue coincidiendo con cuenta_socios()');
+select is((operacion.cuenta_socios() ->> 'via2_cent')::bigint, -500000::bigint, '(f) los 10,000.00 que Angelo tiene en su poder si cuentan (bajan lo puesto: via 2 = -5,000.00), por eso ya no coincide con la posicion neta');
 
 -- Conciliar contra el estado vigente: anulados, tipos y reclasificacion ------------------------------------------------------------------------------
 select api.mov_importar('m:9', 'pegado', null, null, jsonb_build_array(

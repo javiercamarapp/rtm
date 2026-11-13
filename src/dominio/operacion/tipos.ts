@@ -152,10 +152,23 @@ export interface SocioResumen {
 export interface MovimientoSocios extends EventoInfo {
   orden: number; tipo: 'aportacion' | 'libro'; id: number; socio: string; fecha_neg: string; concepto: string; monto_cent: Cent; clasificacion: string; deshecho: boolean; deshacible: boolean;
 }
-export interface ParteSocio { aportado_cent: Cent; puso_capital_cent: Cent; puso_reembolsable_cent: Cent; fuera_sociedad_cent: Cent; debe_cent: Cent; diferencia_cent: Cent }
+export interface ParteSocio { aportado_cent: Cent; directo_cent: Cent; puso_capital_cent: Cent; puso_reembolsable_cent: Cent; fuera_sociedad_cent: Cent; debe_cent: Cent; diferencia_cent: Cent }
+/** Una verificacion del libro conciliado: dos lados independientes y si coinciden. `unidad` 'n' = conteo (no dinero). */
+export interface VerificacionCuadre {
+  id: string; grupo: 'auxiliares' | 'partida_doble' | 'comprobaciones' | 'efectivo_repartido'; nombre: string; a_nombre: string; a_cent: Cent; b_nombre: string; b_cent: Cent; ok: boolean;
+  unidad?: 'n' | 'mxn' | 'pz'; detalle?: string | null;
+}
+/** Salud de la cuenta de socios: identidades del libro (docs/cuadre-socios-definicion.md). No depende de cuanto puso cada socio para la compra. */
+export interface CuadreSocios {
+  libro_conciliado: boolean; fallas: number; estado: 'conciliado' | 'pendiente_proveedor' | 'revisar'; etiqueta: string; pendiente_proveedor_cent: Cent; verificaciones: VerificacionCuadre[];
+}
 export interface CuentaSocios {
   hoy: string; costo_cent: Cent; mitad_cent: Cent; angelo: ParteSocio; javier: ParteSocio; javier_debe_a_angelo_cent: Cent; via1_cent: Cent; via2_cent: Cent; via2_resto_cent: Cent;
-  financiado_por_sociedad_cent: Cent; cuadra: boolean; partidas_fuera_sociedad: { socio: string; monto_cent: Cent; concepto: string; estado: string; piezas: number | null }[];
+  financiado_por_sociedad_cent: Cent;
+  /** Desglose del costo: dinero propio de los socios + caja de la sociedad + fondos de la sociedad en poder de un socio + pendiente con proveedores + otros. */
+  directo_socios_cent: Cent; pagado_por_sociedad_cent: Cent; pagado_con_fondos_cent: Cent; pendiente_proveedor_cent: Cent; otros_cent: Cent;
+  /** Informativo: las dos vias de la diferencia por la compra coinciden. NO es la salud del libro (esa es `cuadre`). */
+  cuadra: boolean; cuadre: CuadreSocios; partidas_fuera_sociedad: { socio: string; monto_cent: Cent; concepto: string; estado: string; piezas: number | null }[];
   socios: SocioResumen[]; movimientos: MovimientoSocios[];
 }
 export interface MovimientoEstadoSocio extends EventoInfo { tipo: 'aportacion' | 'libro' | 'deuda' | 'apertura'; id: number; fecha_neg: string; concepto: string; efecto_cent: Cent; saldo_cent: Cent; deshacible: boolean }

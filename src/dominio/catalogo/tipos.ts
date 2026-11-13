@@ -94,7 +94,7 @@ export interface Existencia { modelos: ExistenciaModelo[]; sabores: ExistenciaSa
 export interface Explicacion {
   cifra: string;
   titulo: string;
-  unidad: 'pz' | 'mxn';
+  unidad: 'pz' | 'mxn' | 'ident';
   valor: number | null;
   comprobacion: { via1: string; via1Valor: number; via2: string; via2Valor: number; cuadra: boolean } | null;
   movimientos: {
