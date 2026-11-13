@@ -1,4 +1,4 @@
--- pgTAP del lote "cuadrar cuentas": el pago de la sociedad a un proveedor descuenta el efectivo que usa la Cascada, igual que el libro (1101); CA2 lo vigila. Cifras ilustrativas; nada real.
+-- pgTAP del lote "cuadrar cuentas": el pago de la sociedad a un proveedor descuenta el efectivo que usa la Cascada, igual que el libro (1101). Con el puente de efectivo el pago se ESCRIBE como movimiento de la Caja de la empresa (auditable, con reversa); C23 (total) y C24 (por caja) lo vigilan. Cifras ilustrativas; nada real.
 begin;
 select no_plan();
 
@@ -22,24 +22,25 @@ select api.apertura_firmar('a4p:f2', (select id from _s));
 select contabilidad.asentar_pendientes();
 
 select is(operacion.saldo_efectivo(), 800000::bigint, 'antes del pago, el efectivo es el de la apertura (8,000.00)');
-select ok((select ok from contabilidad.comprobaciones() where codigo = 'CA2'), 'CA2 verde antes del pago');
+select ok((select ok from contabilidad.comprobaciones() where codigo = 'C23'), 'C23 verde antes del pago');
 
 create temp table _p as select (operacion.registrar_pago_proveedor_sociedad('a4p:pago', 'Isaac', 100000, negocio.hoy(), 'pago ilustrativo') ->> 'movimiento_id')::bigint as id;
 select contabilidad.asentar_pendientes();
 
-select is(operacion.pagos_sociedad_proveedor(), 100000::bigint, 'el pago de la sociedad a Isaac se suma (1,000.00)');
+select is(operacion.pagado_por_sociedad_a_proveedores(), 100000::bigint, 'el pago de la sociedad a Isaac se suma (1,000.00)');
 select is(operacion.saldo_efectivo(), 700000::bigint, 'el efectivo total de la Cascada descuenta el pago (7,000.00)');
 select is((api.efectivo_sociedad() ->> 'total_cent')::bigint, 700000::bigint, 'Disponible para repartir parte del efectivo ya descontado');
 select is(contabilidad.saldo_deudor('1101'), operacion.saldo_efectivo(), 'el libro (1101) y la Cascada dicen lo mismo despues del pago');
-select ok((select ok from contabilidad.comprobaciones() where codigo = 'CA2'), 'CA2 verde despues del pago');
-select ok(not (select bloqueante from contabilidad.comprobaciones() where codigo = 'CA2'), 'CA2 no es bloqueante');
-select is(operacion.saldo_efectivo((select id from operacion.cuenta_efectivo where nombre = 'Efectivo de Angelo')), 500000::bigint, 'ninguna caja se mueve: la regla de que caja paga sigue siendo del dueno');
+select ok((select ok from contabilidad.comprobaciones() where codigo = 'C23'), 'C23 verde despues del pago');
+select ok((select ok from contabilidad.comprobaciones() where codigo = 'C24'), 'C24 (cajas por persona) verde despues del pago');
+select is((select coalesce(sum(m.monto_cent), 0)::bigint from operacion.cuenta_efectivo_mov m join operacion.cuenta_efectivo c on c.id = m.cuenta_id where c.nombre = 'Caja de la empresa'), -100000::bigint, 'el pago queda escrito como movimiento de la Caja de la empresa (auditable)');
+select is(operacion.saldo_efectivo((select id from operacion.cuenta_efectivo where nombre = 'Efectivo de Angelo')), 500000::bigint, 'las cajas de los socios no se mueven: el pago sale de la Caja de la empresa (parametro; la regla de que caja paga sigue siendo del dueno)');
 
 select operacion.anular_movimiento_proveedor('a4p:anula', (select id from _p), 'prueba de reversa');
 select contabilidad.asentar_pendientes();
-select is(operacion.pagos_sociedad_proveedor(), 0::bigint, 'al deshacer el pago, deja de restar');
+select is(operacion.pagado_por_sociedad_a_proveedores(), 0::bigint, 'al deshacer el pago, deja de restar');
 select is(operacion.saldo_efectivo(), 800000::bigint, 'el efectivo vuelve a 8,000.00');
-select ok((select ok from contabilidad.comprobaciones() where codigo = 'CA2'), 'CA2 verde tras deshacer');
+select ok((select ok from contabilidad.comprobaciones() where codigo = 'C23'), 'C23 verde tras deshacer');
 
 select * from finish();
 rollback;

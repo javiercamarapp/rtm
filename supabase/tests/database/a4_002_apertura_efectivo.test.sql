@@ -29,8 +29,8 @@ select is(operacion.saldo_efectivo((select id from operacion.cuenta_efectivo whe
 select is(operacion.caja_empresa(), 0::bigint, 'la caja de la empresa no recibe efectivo de apertura (la apertura es por persona)');
 select is((api.efectivo_sociedad() ->> 'total_cent')::bigint, 800000::bigint, 'el efectivo de la sociedad (Cascada y Disponible para repartir) incluye el efectivo de apertura');
 select is(contabilidad.apertura_saldo('1101'), operacion.saldo_efectivo(), 'el libro (1101) y las cajas dicen lo mismo');
-select ok((select ok from contabilidad.comprobaciones() where codigo = 'CA1'), 'la comprobacion CA1 (libro contra cajas por la apertura) esta en verde');
-select ok(not (select bloqueante from contabilidad.comprobaciones() where codigo = 'CA1'), 'CA1 no es bloqueante');
+select ok((select ok from contabilidad.comprobaciones() where codigo = 'C23'), 'la comprobacion C23 (libro contra cajas) esta en verde con la apertura');
+select ok((select ok from contabilidad.comprobaciones() where codigo = 'C24'), 'C24 (cada caja por persona contra su dimension del libro) esta en verde');
 
 select pg_temp.como('Angelo');
 select api.apertura_reversar('a4e:r1', (select id from _s), 'prueba de reversa');

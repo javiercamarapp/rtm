@@ -292,7 +292,7 @@ test('9 todo cuadra: comprobaciones, Contabilidad, Cuentas por cobrar, Socios y 
   await cap(page, 'final-reporte-preparado');
   await page.goto('/contabilidad/comprobaciones');
   await expect(page.getByText('comprobación bloqueante falla')).toHaveCount(0);
-  // Sin .catch: si la consulta falla, la prueba falla. Ninguna comprobacion (C1..C22, CU1..CU3, CA1 ni CA2) puede estar en rojo en este recorrido.
+  // Sin .catch: si la consulta falla, la prueba falla. Ninguna comprobacion (C1..C24 y CU1..CU3) puede estar en rojo en este recorrido.
   const rojas = await consultar<{ codigo: string }>('select c.codigo from contabilidad.comprobaciones() c where not c.ok order by 1');
   expect(rojas.map((r) => r.codigo)).toEqual([]);
   const total = await consultar<{ n: string }>('select count(*)::text as n from contabilidad.comprobaciones()');
@@ -313,7 +313,7 @@ test('9 todo cuadra: comprobaciones, Contabilidad, Cuentas por cobrar, Socios y 
   await page.goto('/contabilidad/caja');
   await expect(page.locator('main:not(.rtm-documento)')).toContainText(dinero(ef.lt));
   await page.goto('/contabilidad/comprobaciones');
-  await expect(page.getByTestId('comprobacion-CA2')).toBeVisible();
+  await expect(page.getByTestId('comprobacion-C23')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Todo cuadra' })).toBeVisible();
 
   // Socios: la senal es "Libro conciliado" (identidades del libro). Todavia se debe a Isaac (apertura y compra), asi que dice "pendiente de pago al proveedor"; la diferencia por la
