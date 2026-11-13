@@ -51,7 +51,10 @@ export function lectorDropshippingSupabase(): LectorDropshipping {
     menudeo: (socio, f) => llamar('ds_menudeo', { p_socio: socio, p_desde: f.desde ?? null, p_hasta: f.hasta ?? null, p_proveedor: f.proveedor ?? null, p_estado: f.estadoPago ?? null }),
     menudeoPendientes: () => llamar('ds_menudeo_pendientes'),
     fondosEnPoder: (socio) => llamar('ds_fondos_en_poder', { p_socio: socio }),
+    socioMenudeo: async () => (await llamar<{ socio_menudeo: string }>('ds_menudeo_config')).socio_menudeo,
     evidencia: (id) => llamar('ds_evidencia', { p_reporte: id }),
+    costosPedido: (id) => llamar('ds_costos_pedido', { p_pedido: id }),
+    diferencias: (e) => llamar('ds_diferencias', { p_estado: e ?? null }),
     explicar: async (cifra) => aExplicacion(await llamar<ExplicacionCruda>(cifra.startsWith('dsu:') ? 'ds_explicar_utilidad' : cifra.startsWith('dsm:') ? 'ds_explicar_menudeo' : 'ds_explicar', { p_cifra: cifra })),
   };
 }

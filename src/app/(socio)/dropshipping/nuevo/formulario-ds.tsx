@@ -15,7 +15,7 @@ const pesos = (c: bigint | null) => (c === null ? '' : formatearMoneda(c).replac
 const hoyISO = () => new Date().toISOString().slice(0, 10);
 
 /** Formulario único: renglones (con pegado rápido de sabores), destinatario protegido, vista previa de costo, margen, interés y utilidad, y la orden para copiar. */
-export function FormularioDs({ clienteId, clienteNombre, origen, catalogo }: { clienteId: number; clienteNombre: string; origen: string; catalogo: CatalogoDs }) {
+export function FormularioDs({ clienteId, clienteNombre, origen, catalogo, socioMenudeo, puedeMenudeo }: { clienteId: number; clienteNombre: string; origen: string; catalogo: CatalogoDs; socioMenudeo: string; puedeMenudeo: boolean }) {
   const { correr, ocupado, error } = useAccion();
   const proveedor = origen === 'isaac_directo' ? 'Isaac' : 'Karen';
   const modelos = useMemo(() => {
@@ -24,7 +24,8 @@ export function FormularioDs({ clienteId, clienteNombre, origen, catalogo }: { c
     return [...m.values()];
   }, [catalogo.skus]);
   const [tipo, setTipo] = useState<'cliente' | 'socio_a_costo'>('cliente');
-  const [socio, setSocio] = useState('Angelo');
+  const [fechaCompromiso, setFechaCompromiso] = useState('');
+  const [horaCompromiso, setHoraCompromiso] = useState('');
   const [modeloId, setModeloId] = useState<number | ''>('');
   const [skuId, setSkuId] = useState<number | ''>('');
   const [piezas, setPiezas] = useState('');
@@ -91,7 +92,7 @@ export function FormularioDs({ clienteId, clienteNombre, origen, catalogo }: { c
     setLocal(null);
     const cr = credito && !aCosto ? { ...(fechaPago ? { fecha_pago: fechaPago } : { semanas: Number(semanas || '1') }), tasa_semanal_bp: tasaBp, ...(fijoC !== null ? { interes_cent: fijoC } : {}) } : null;
     correr('ds_crear_pedido', {
-      p_cliente_id: clienteId, p_origen: origen, p_tipo_venta: tipo, p_socio: aCosto ? socio : null, p_folio_externo: folioExt.trim() || null, p_envio_cent: aCosto ? 0 : envioC, p_descuento_cent: aCosto ? 0 : descC,
+      p_cliente_id: clienteId, p_origen: origen, p_tipo_venta: tipo, p_socio: aCosto ? socioMenudeo : null, p_fecha_compromiso: aCosto && fechaCompromiso ? fechaCompromiso : null, p_hora_compromiso: aCosto && fechaCompromiso && horaCompromiso ? horaCompromiso : null, p_folio_externo: folioExt.trim() || null, p_envio_cent: aCosto ? 0 : envioC, p_descuento_cent: aCosto ? 0 : descC,
       p_credito: cr, p_destinatario: tieneDest ? dest : null,
       p_lineas: renglones.map((r) => ({ sku_id: r.sku_id, piezas: r.piezas, ...(aCosto || r.precioCent === null ? {} : { precio_cent: Number(r.precioCent) }) })),
     }, (d) => setCreado({ id: Number(d['pedido_id']), folio: String(d['folio']), costo: BigInt(Number(d['costo_estimado_cent'])), margen: BigInt(Number(d['margen_estimado_cent'])), interes: BigInt(Number(d['interes_cent'])), total: BigInt(Number(d['venta_estimada_cent'])) }));
@@ -115,12 +116,14 @@ export function FormularioDs({ clienteId, clienteNombre, origen, catalogo }: { c
         <div className="rtm-form-fila">
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Quién compra
             <select className="rtm-campo" value={tipo} onChange={(e) => { setTipo(e.target.value as 'cliente' | 'socio_a_costo'); setRenglones([]); setCredito(false); }} data-testid="ds-tipo">
-              <option value="cliente">Cliente (precio de su tabulador)</option><option value="socio_a_costo">Un socio, a costo (no genera utilidad)</option>
+              <option value="cliente">Cliente (precio de su tabulador)</option>{puedeMenudeo && <option value="socio_a_costo">Menudeo de {socioMenudeo}, a costo (no genera utilidad)</option>}
             </select>
           </label>
-          {aCosto && <label className="rtm-etiqueta-campo">Socio<select className="rtm-campo" value={socio} onChange={(e) => setSocio(e.target.value)} data-testid="ds-socio"><option>Angelo</option><option>Javier</option></select></label>}
+          {aCosto && <p className="rtm-etiqueta-campo">Socio<span className="rtm-campo" data-testid="ds-socio">{socioMenudeo}</span></p>}
+          {aCosto && <label className="rtm-etiqueta-campo">Fecha comprometida de pago (opcional)<input className="rtm-campo" type="date" value={fechaCompromiso} onChange={(e) => setFechaCompromiso(e.target.value)} data-testid="ds-fecha-compromiso" /></label>}
+          {aCosto && fechaCompromiso !== '' && <label className="rtm-etiqueta-campo">Hora (opcional)<input className="rtm-campo" type="time" value={horaCompromiso} onChange={(e) => setHoraCompromiso(e.target.value)} data-testid="ds-hora-compromiso" /></label>}
         </div>
-        {aCosto && <p className="rtm-nota">Se cobra solo el costo del proveedor: ingreso igual al costo, utilidad cero, sin cuenta por cobrar si el pago va directo al proveedor. Sirve para llevar la cuenta de las piezas que se mueven.</p>}
+        {aCosto && <p className="rtm-nota">Solo {socioMenudeo} mete pedidos a costo para su menudeo (Playa del Carmen); el otro socio los supervisa. Se cobra solo el costo del proveedor: ingreso igual al costo, utilidad cero. Si no fijas fecha comprometida de pago, el pedido se muestra «sin fecha comprometida» como alerta.</p>}
       </section>
 
       <section className="rtm-seccion" aria-label="Renglones">

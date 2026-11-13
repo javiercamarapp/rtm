@@ -47,12 +47,14 @@ interface Props {
   accionSalir: () => Promise<void>;
   pulso: DatosPulso;
   noLeidas?: number;
+  /** Socio de menudeo: da nombre a la entrada del menu (Pedidos menudeo Angelo). */
+  socioMenudeo?: string;
   cargarCampana?: (filtro: 'todas' | 'sin_leer') => Promise<ListaCampana>;
   marcarLeida?: (id: number) => Promise<void>;
   marcarTodasLeidas?: () => Promise<void>;
 }
 
-export function Armazon({ children, nombreSocio, accionSalir, pulso, noLeidas = 0, cargarCampana, marcarLeida, marcarTodasLeidas }: Props) {
+export function Armazon({ children, nombreSocio, accionSalir, pulso, socioMenudeo = 'Angelo', noLeidas = 0, cargarCampana, marcarLeida, marcarTodasLeidas }: Props) {
   const ruta = usePathname();
   const [abierto, setAbierto] = useState(false);
   const activo = indiceActivo(ruta);
@@ -76,7 +78,7 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso, noLeidas = 
               <li key={s.href}>
                 <Link href={s.href} prefetch={'prefetch' in s ? s.prefetch : undefined} className="rtm-nav-item" aria-current={i === activo ? 'page' : undefined} onClick={() => setAbierto(false)}>
                   {s.icono}
-                  <span>{s.etiqueta}</span>
+                  <span>{s.href === '/menudeo' ? `${s.etiqueta} ${socioMenudeo}` : s.etiqueta}</span>
                 </Link>
               </li>
             ))}

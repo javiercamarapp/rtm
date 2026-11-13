@@ -13,7 +13,7 @@ export interface FilaDs {
   piezas_pedidas: number; piezas_surtidas: number; real: boolean; venta_cent: Cent; costo_cent: Cent; seguro_cent: Cent; margen_cent: Cent; utilidad_cent: Cent | null;
   saldo_cliente_cent: Cent | null; interes_cent: Cent | null; tasa_semanal_bp: number | null; semanas: number | null; fecha_pago_pactada: string | null; modo_interes: ModoInteres | null;
   amortizado_cent: Cent; por_pagar_cent: Cent; avisos: number; tiene_destinatario: boolean;
-  costo_total_cent: Cent; guia_cent: Cent | null; margen_producto_cent: Cent; utilidad_provisional: boolean;
+  costo_total_cent: Cent; guia_cent: Cent | null; margen_producto_cent: Cent; utilidad_provisional: boolean; diferencia_catalogo_cent: Cent;
 }
 
 export interface FilaPorCobrar extends FilaDs { dias_para_vencer: number }
@@ -50,7 +50,7 @@ export interface PiezasMovidas {
   por_mes: { mes: string; piezas: number; a_costo_socios: number }[];
 }
 export interface SocioAportacion { socio: string; aportado_cent: Cent; puso_capital_cent: Cent; puso_reembolsable_cent: Cent; fondos_en_poder_cent: Cent; aportacion_neta_cent: Cent; diferencia_a_igualar_cent: Cent }
-export interface AportacionNeta { mayor_aportacion_neta_cent: Cent; socios: SocioAportacion[]; identidad: { via1_cent: Cent; via2_cent: Cent; cuadra: boolean } }
+export interface AportacionNeta { mayor_aportacion_neta_cent: Cent; le_toca_aportar: string | null; igualados: boolean; socios: SocioAportacion[]; identidad: { via1_cent: Cent; via2_cent: Cent; cuadra: boolean } }
 export interface ConciliacionPeriodo {
   ini: string; fin: string; utilidad_pedidos_cent: Cent; utilidad_dropshipping_cent: Cent; utilidad_inventario_cent: Cent; otros_no_pedido_cent: Cent; utilidad_periodo_cent: Cent; diferencia_cent: Cent; cuadra: boolean; provisional: boolean;
   socios: { socio: string; utilidad_periodo_cent: Cent }[];
@@ -82,7 +82,8 @@ export interface ReporteMensual { meses: { mes: string; utilidad_cent: Cent; rei
 export interface SkuDs { sku_id: number; modelo_id: number; marca: string; modelo: string; sabor: string; estado: string; precio_cent: Cent | null; costo_cent: Cent | null }
 export interface CatalogoDs { interes_defecto_bp: number; envio_default_cent: Cent; skus: SkuDs[] }
 
-export type EstadoPagoMenudeo = 'pagado' | 'no_pagado' | 'pago_reportado' | 'por_confirmar';
+export type EstadoPagoMenudeo = 'pagado' | 'no_pagado' | 'pago_reportado' | 'vencido' | 'por_confirmar';
+export interface CompromisoPago { id: number; tipo: 'inicial' | 'reprogramacion'; fecha_compromiso: string | null; hora_compromiso: string | null; motivo: string | null; comprometido_por: string; canal: string; creado_at: string }
 export interface ReportePagoMenudeo {
   id: number; fecha_pago: string; monto_cent: Cent; metodo: 'transferencia' | 'deposito' | 'efectivo'; referencia: string; via: 'proveedor' | 'sociedad'; canal: string; reportado_por: string;
   aplicado: boolean; estado: 'por_confirmar' | 'confirmado' | 'rechazado'; motivo: string | null; decidido_por: string | null;
@@ -91,11 +92,23 @@ export interface ReportePagoMenudeo {
 export interface RenglonMenudeo { marca: string; modelo: string; sabor: string; piezas: number; costo_unit_cent: Cent; costo_cent: Cent }
 export interface FilaMenudeo {
   pedido_id: number; folio: string; fecha_neg: string; fecha_envio: string | null; estado: string; proveedor: string | null; cliente_id: number; cliente: string; piezas: number;
-  costo_cent: Cent; pagado_cent: Cent; pendiente_cent: Cent; estado_pago: EstadoPagoMenudeo; reportado_cent: Cent; por_confirmar: number; reportes: ReportePagoMenudeo[]; renglones: RenglonMenudeo[];
+  costo_cent: Cent; pagado_cent: Cent; pendiente_cent: Cent; estado_pago: EstadoPagoMenudeo; reportado_cent: Cent; por_confirmar: number; socio: string; fecha_compromiso: string | null; hora_compromiso: string | null; comprometido_por: string | null; vencido: boolean; dias_atraso: number; sin_fecha: boolean; compromisos: CompromisoPago[]; reportes: ReportePagoMenudeo[]; renglones: RenglonMenudeo[];
 }
-export interface Menudeo { socio: string; totales: { pedidos: number; piezas: number; costo_cent: Cent; pagado_cent: Cent; pendiente_cent: Cent; pedidos_pendientes: number; reportado_cent: Cent; pedidos_reportados: number }; filas: FilaMenudeo[] }
-export interface PendientesSocio { socio: string; pedidos: number; pendiente_cent: Cent; reportado_cent: Cent; pedidos_reportados: number; fondos_pendiente_cent: Cent; fondos_cobros: number }
+export interface Menudeo { socio: string; totales: { pedidos: number; piezas: number; costo_cent: Cent; pagado_cent: Cent; pendiente_cent: Cent; pedidos_pendientes: number; reportado_cent: Cent; pedidos_reportados: number; vencidos: number; vencido_cent: Cent; sin_fecha: number }; filas: FilaMenudeo[] }
+export interface PendientesSocio { socio: string; pedidos: number; pendiente_cent: Cent; reportado_cent: Cent; pedidos_reportados: number; vencidos: number; vencido_cent: Cent; sin_fecha: number; fondos_pendiente_cent: Cent; fondos_cobros: number }
 export interface FondosEnPoder {
   socio: string; pendiente_cent: Cent;
   movimientos: { id: number; fecha_neg: string; concepto: string; monto_cent: Cent; saldo_corrido_cent: Cent; pago: string | null; cliente: string | null; pedidos: string[]; nota: string | null }[];
 }
+
+export interface CostoRenglon {
+  linea_id: number; marca: string; modelo: string; sabor: string; piezas: number; costo_catalogo_cent: Cent | null; costo_capturado_cent: Cent | null; diferencia_unit_cent: Cent | null; motivo: string | null;
+  captura_id: number | null; evidencia: { sha256: string; mime: string; nombre: string } | null; resolucion: { estado: string; nota: string } | null;
+}
+export interface CostosPedido { pedido_id: number; diferencia_cent: Cent; renglones: CostoRenglon[] }
+export interface DiferenciaDisputa {
+  captura_id: number; pedido_id: number; folio: string; fecha: string; proveedor: string; modelo: string; sabor: string; piezas: number; costo_catalogo_cent: Cent; costo_capturado_cent: Cent;
+  diferencia_unit_cent: Cent; diferencia_cent: Cent; estado_pedido: string; motivo: string; estado: 'abierta' | 'resuelta' | 'descartada'; resolucion: string | null; capturado_por: string;
+  evidencia: { sha256: string; mime: string; nombre: string } | null;
+}
+export interface Diferencias { filas: DiferenciaDisputa[]; abiertas: number; monto_abierto_cent: Cent }

@@ -115,3 +115,33 @@ export function VerEvidencia({ reporteId, nombre }: { reporteId: number; nombre:
     </span>
   );
 }
+
+/** Fija o reprograma la fecha comprometida de pago (solo el socio de menudeo). Reprogramar exige motivo y queda en el historial. */
+export function ReprogramarCompromiso({ pedidoId, folio, tieneFecha }: { pedidoId: number; folio: string; tieneFecha: boolean }) {
+  const { correr, ocupado, error, limpiarError } = useAccion();
+  const [abierto, setAbierto] = useState(false);
+  const [fecha, setFecha] = useState('');
+  const [hora, setHora] = useState('');
+  const [motivo, setMotivo] = useState('');
+  const [local, setLocal] = useState<string | null>(null);
+  const ir = () => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return setLocal('Elige la fecha comprometida.');
+    if (tieneFecha && motivo.trim().length < 3) return setLocal('Reprogramar exige un motivo.');
+    setLocal(null);
+    correr('ds_reprogramar_compromiso', { p_pedido: pedidoId, p_fecha: fecha, p_hora: hora || null, p_motivo: motivo.trim() || null }, () => { setAbierto(false); setMotivo(''); });
+  };
+  return (
+    <>
+      <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => { limpiarError(); setAbierto(true); }} data-testid={`reprogramar-${pedidoId}`}>{tieneFecha ? 'Reprogramar' : 'Fijar fecha de pago'}</button>
+      {abierto && (
+        <ConfirmDialog abierto titulo={`Fecha comprometida de pago · ${folio}`} confirmar="Guardar fecha" ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
+          <label className="rtm-etiqueta-campo">Fecha comprometida<input className="rtm-campo" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} data-testid="compromiso-fecha" /></label>
+          <label className="rtm-etiqueta-campo">Hora (opcional)<input className="rtm-campo" type="time" value={hora} onChange={(e) => setHora(e.target.value)} data-testid="compromiso-hora" /></label>
+          <label className="rtm-etiqueta-campo">Motivo{tieneFecha ? '' : ' (opcional)'}<input className="rtm-campo" value={motivo} onChange={(e) => setMotivo(e.target.value)} data-testid="compromiso-motivo" /></label>
+          <p className="rtm-nota">Cada cambio queda en el historial con quién lo hizo y su motivo.</p>
+          {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
+        </ConfirmDialog>
+      )}
+    </>
+  );
+}

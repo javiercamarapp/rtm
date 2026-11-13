@@ -12,6 +12,7 @@ import { etiquetaHoy } from '../../contexto';
 import { CONCEPTO_CUENTA, ESTADO_PEDIDO } from '../../operacion/etiquetas';
 import { PestanasDs } from '../comun';
 import { FormularioPagoProveedor } from './formulario-pago';
+import { ResolverDiferencia } from '../pedidos/[id]/costo-pedido';
 import Link from 'next/link';
 
 export const metadata: Metadata = { title: 'Pagos al proveedor' };
@@ -20,7 +21,8 @@ export default async function PaginaPagosDs({ searchParams }: { searchParams: Pr
   const sp = await searchParams;
   const proveedor = sp.proveedor === 'Isaac' ? 'Isaac' : 'Karen';
   const ds = await dropshippingDeSocio();
-  const [c, clientes, resumen] = await Promise.all([ds.cuentaProveedor(proveedor), (await lectorDeSocio()).clientes(), ds.resumen()]);
+  const [c, clientes, resumen, difs] = await Promise.all([ds.cuentaProveedor(proveedor), (await lectorDeSocio()).clientes(), ds.resumen(), ds.diferencias(null)]);
+  const difsProv = difs.filas.filter((d) => d.proveedor === proveedor);
   const pedidosAbiertos = c.pedidos.filter((p) => p.estado === 'confirmado' || p.estado === 'enviado');
   return (
     <Pagina ancho="tablero">
@@ -74,6 +76,25 @@ export default async function PaginaPagosDs({ searchParams }: { searchParams: Pr
             { id: 't', titulo: 'Tipo', ancho: 'l', prioridadMovil: 'normal', celda: (m) => CONCEPTO_CUENTA[m.concepto] ?? m.concepto },
             { id: 'm', titulo: 'Monto', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (m) => formatearMoneda(m.monto_cent) },
             { id: 'a', titulo: 'Amortiza', ancho: 'xl', prioridadMovil: 'detalle', celda: (m) => (m.amortizado.length ? m.amortizado.map((a) => `${a.folio} ${formatearMoneda(a.monto_cent)}`).join(' · ') : 'A cuenta') },
+          ]}
+        />
+      </Tarjeta>
+      <Tarjeta plana titulo="Diferencias en disputa con el proveedor" descripcion={`Costo capturado distinto del catálogo · abiertas ${difs.abiertas} por ${formatearMoneda(difs.monto_abierto_cent, { conSigno: true })}`}>
+        <DataTable
+          etiqueta={`Diferencias con ${proveedor}`}
+          densidad="densa" plana
+          clave={(d) => d.captura_id}
+          filas={difsProv}
+          vacio={{ titulo: `Sin diferencias con ${proveedor}`, texto: 'Aparecen cuando un pedido se captura con un costo distinto del catálogo.' }}
+          columnas={[
+            { id: 'f', titulo: 'Pedido', ancho: 'm', prioridadMovil: 'titulo', celda: (d) => <Link className="rtm-mono" href={`/dropshipping/pedidos/${d.pedido_id}`}>{d.folio}</Link> },
+            { id: 'm', titulo: 'Modelo', ancho: 'xl', prioridadMovil: 'normal', celda: (d) => `${d.modelo} · ${d.sabor} · ${d.piezas} pz` },
+            { id: 'c', titulo: 'Catálogo', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (d) => formatearMoneda(d.costo_catalogo_cent) },
+            { id: 'k', titulo: 'Capturado', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (d) => formatearMoneda(d.costo_capturado_cent) },
+            { id: 'd', titulo: 'Diferencia', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (d) => <span data-testid={`dif-monto-${d.captura_id}`}>{formatearMoneda(d.diferencia_cent, { conSigno: true })}</span> },
+            { id: 'mo', titulo: 'Motivo', ancho: 'xl', prioridadMovil: 'detalle', celda: (d) => d.motivo },
+            { id: 'e', titulo: 'Estado', ancho: 'm', prioridadMovil: 'normal', celda: (d) => <span data-testid={`dif-estado-${d.captura_id}`}>{d.estado === 'abierta' ? 'Abierta' : d.estado === 'resuelta' ? 'Resuelta' : 'Descartada'}</span> },
+            { id: 'a', titulo: '', ancho: 'xl', prioridadMovil: 'normal', celda: (d) => (d.estado === 'abierta' ? <ResolverDiferencia capturaId={d.captura_id} /> : d.resolucion ?? '') },
           ]}
         />
       </Tarjeta>

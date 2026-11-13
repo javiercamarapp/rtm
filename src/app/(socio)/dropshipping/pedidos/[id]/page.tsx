@@ -15,6 +15,7 @@ import { BloqueDestinatario, CapturarDestinatario } from '../../bloque-destinata
 import { ORIGEN_SURTIDO, PestanasDs, TIPO_VENTA } from '../../comun';
 import { PanelOrden } from '../../panel-orden';
 import { PasosPedido, RegistrarFolio } from './acciones-ficha';
+import { CapturarCosto } from './costo-pedido';
 
 export const metadata: Metadata = { title: 'Pedido de dropshipping' };
 const TONO = { borrador: 'apagado', confirmado: 'atencion', enviado: 'ok', cancelado: 'apagado', anulado: 'malo' } as const;
@@ -27,7 +28,7 @@ export default async function FichaDs({ params }: { params: Promise<{ id: string
   if (!f) notFound();
   const esDs = f.es_dropshipping;
   const proveedor = f.proveedor ?? 'Karen';
-  const [dest, orden, util] = esDs ? await Promise.all([ds.destinatario(n), ds.orden(n, false), ds.utilidad(null, null)]) : [null, null, null];
+  const [dest, orden, util, costos] = esDs ? await Promise.all([ds.destinatario(n), ds.orden(n, false), ds.utilidad(null, null), ds.costosPedido(n)]) : [null, null, null, null];
   const u = util?.filas.find((x) => x.pedido_id === n) ?? null;
   const credito = f.tasa_semanal_bp !== null || f.interes_cent !== null;
 
@@ -52,7 +53,7 @@ export default async function FichaDs({ params }: { params: Promise<{ id: string
         celdas={[
           { id: 'piezas', etiqueta: 'Piezas', valor: formatearPiezas(f.real ? f.piezas_surtidas : f.piezas_pedidas), categoria: 1, nota: f.real ? `de ${f.piezas_pedidas} pedidas` : 'pedidas' },
           { id: 'venta', etiqueta: f.real ? 'Venta' : 'Venta estimada', valor: f.real ? <CifraComprobada texto={formatearMoneda(f.venta_cent)} cifra={`pedido:total:${f.pedido_id}`} comprobacion="cuadra" /> : formatearMoneda(f.venta_cent), categoria: 2 },
-          { id: 'costo', etiqueta: f.real ? 'Costo total' : 'Costo estimado', valor: formatearMoneda(f.costo_total_cent), categoria: 4, nota: f.guia_cent ? `Incluye envío del proveedor ${formatearMoneda(f.guia_cent)}` : 'Producto y costos directos' },
+          { id: 'costo', etiqueta: f.real ? 'Costo total' : 'Costo estimado', valor: formatearMoneda(f.costo_total_cent), categoria: 4, nota: f.diferencia_catalogo_cent !== 0n ? `Costo distinto del catálogo: ${formatearMoneda(f.diferencia_catalogo_cent, { conSigno: true })}` : f.guia_cent ? `Incluye envío del proveedor ${formatearMoneda(f.guia_cent)}` : 'Producto y costos directos' },
           { id: 'utilidad', etiqueta: 'Utilidad', valor: formatearMoneda(f.margen_cent), categoria: 3, nota: f.utilidad_provisional ? 'Provisional: falta el costo de la guía' : `Margen del producto ${formatearMoneda(f.margen_producto_cent)}` },
           { id: 'pagar', etiqueta: `Por pagar a ${proveedor}`, valor: esDs ? formatearMoneda(f.por_pagar_cent) : null, categoria: 6, nota: esDs ? `Amortizado ${formatearMoneda(f.amortizado_cent)}` : 'No aplica: sale de Mérida' },
           { id: 'cobrar', etiqueta: 'Por cobrar al cliente', valor: f.saldo_cliente_cent === null ? null : formatearMoneda(f.saldo_cliente_cent), categoria: 7 },
@@ -81,6 +82,27 @@ export default async function FichaDs({ params }: { params: Promise<{ id: string
           </Tarjeta>
         )}
       </Rejilla>
+      {esDs && costos && (
+        <Tarjeta titulo="Costo del proveedor" descripcion="El catálogo es el valor por omisión; un costo distinto queda marcado, con su diferencia y su motivo">
+          <div className="rtm-a1-cuerpo" data-testid="costos-pedido">
+            {costos.diferencia_cent !== 0n && <p><ChipEstado tono="atencion">Costo distinto del catálogo</ChipEstado> <span data-testid="costo-diferencia">{formatearMoneda(costos.diferencia_cent, { conSigno: true })}</span> contra el catálogo</p>}
+            <DataTable
+              etiqueta="Costos por renglón"
+              densidad="densa" plana
+              clave={(r) => r.linea_id}
+              filas={costos.renglones}
+              columnas={[
+                { id: 'r', titulo: 'Renglón', ancho: 'xl', prioridadMovil: 'titulo', celda: (r) => `${r.modelo} · ${r.sabor} · ${formatearPiezas(r.piezas)}` },
+                { id: 'c', titulo: 'Catálogo', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (r) => (r.costo_catalogo_cent === null ? 'Sin dato' : formatearMoneda(r.costo_catalogo_cent)) },
+                { id: 'k', titulo: 'Capturado', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (r) => (r.costo_capturado_cent === null ? 'Usa el catálogo' : formatearMoneda(r.costo_capturado_cent)) },
+                { id: 'd', titulo: 'Diferencia por pieza', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (r) => (r.diferencia_unit_cent === null || r.diferencia_unit_cent === 0n ? '' : formatearMoneda(r.diferencia_unit_cent, { conSigno: true })) },
+                { id: 'm', titulo: 'Motivo', ancho: 'xl', prioridadMovil: 'detalle', celda: (r) => (r.motivo ? `${r.motivo}${r.evidencia ? ` · evidencia ${r.evidencia.nombre} (huella ${r.evidencia.sha256.slice(0, 10)})` : ''}${r.resolucion ? ` · ${r.resolucion.estado}: ${r.resolucion.nota}` : ''}` : '') },
+              ]}
+            />
+            {(f.estado === 'borrador' || f.estado === 'confirmado') ? <CapturarCosto pedidoId={f.pedido_id} renglones={costos.renglones} /> : <p className="rtm-nota">El costo quedó fijo al enviar. Una diferencia que se descubra después se corrige con un ajuste de proveedor.</p>}
+          </div>
+        </Tarjeta>
+      )}
       {esDs && orden && (
         <Tarjeta titulo={`Orden para ${proveedor}`} descripcion="Texto listo para copiar. El sistema no escribe a nadie.">
           <PanelOrden pedidoId={f.pedido_id} proveedor={proveedor} vistaPrevia={orden.texto} faltaDestinatario={orden.falta_destinatario} />

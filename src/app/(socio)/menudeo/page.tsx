@@ -4,59 +4,56 @@ import { exigirSocio } from '@/composicion/acceso';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
-import { BarraFiltros, Chip, ChipEstado, Segmentado } from '@/ui/componentes/controles';
+import { Aviso, BarraFiltros, Chip, ChipEstado } from '@/ui/componentes/controles';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import '@/ui/estilos/paginas-a1.css';
 import { etiquetaHoy } from '../contexto';
 import { fechaOpcional } from '../dropshipping/comun';
-import { DecidirPago, MarcarPagado, VerEvidencia } from './formulario-pago-menudeo';
+import { DecidirPago, MarcarPagado, ReprogramarCompromiso, VerEvidencia } from './formulario-pago-menudeo';
 
 export const metadata: Metadata = { title: 'Pedidos menudeo' };
-const ESTADO_PAGO = { pagado: 'Pagado', no_pagado: 'Pendiente de pago', pago_reportado: 'Pago reportado', por_confirmar: 'Por confirmar' } as const;
-const TONO = { pagado: 'ok', no_pagado: 'atencion', pago_reportado: 'info', por_confirmar: 'apagado' } as const;
+const ESTADO_PAGO = { pagado: 'Pagado', no_pagado: 'Pendiente de pago', pago_reportado: 'Pago reportado', vencido: 'Vencido', por_confirmar: 'Por confirmar' } as const;
+const TONO = { pagado: 'ok', no_pagado: 'atencion', pago_reportado: 'info', vencido: 'malo', por_confirmar: 'apagado' } as const;
 const METODO = { transferencia: 'Transferencia', deposito: 'Depósito', efectivo: 'Efectivo' } as const;
 
 export default async function PaginaMenudeo({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const { perfil } = await exigirSocio();
   const sp = await searchParams;
-  const socio = sp['socio'] === 'Angelo' || sp['socio'] === 'Javier' ? sp['socio'] : perfil.socio_nombre === 'Javier' ? 'Javier' : 'Angelo';
   const desde = fechaOpcional(sp['desde']);
   const hasta = fechaOpcional(sp['hasta']);
   const proveedor = sp['proveedor'] === 'Karen' || sp['proveedor'] === 'Isaac' ? sp['proveedor'] : null;
-  const estadoPago = sp['estado'] === 'pagado' || sp['estado'] === 'no_pagado' || sp['estado'] === 'pago_reportado' || sp['estado'] === 'por_confirmar' ? sp['estado'] : null;
+  const estadoPago = sp['estado'] === 'pagado' || sp['estado'] === 'no_pagado' || sp['estado'] === 'pago_reportado' || sp['estado'] === 'vencido' || sp['estado'] === 'por_confirmar' ? sp['estado'] : null;
   const ds = await dropshippingDeSocio();
+  // Pagina del socio de menudeo (por omision Angelo, su menudeo en Playa del Carmen): el otro socio la ve en modo lectura (confirma o rechaza pagos reportados).
+  const socio = await ds.socioMenudeo();
+  const esMenudeo = perfil.socio_nombre === socio;
   const [m, fondos] = await Promise.all([ds.menudeo(socio, { desde, hasta, proveedor, estadoPago }), ds.fondosEnPoder(socio)]);
   const [d, h] = [desde ?? '-', hasta ?? '-'];
   const cif = (met: string, texto: string) => <CifraComprobada texto={texto} cifra={`dsm:${socio}:${met}:${d}:${h}`} comprobacion="cuadra" />;
-  const enlace = (c: Record<string, string>) => {
-    const q = new URLSearchParams();
-    for (const [k, v] of Object.entries({ ...sp, socio, ...c })) if (v) q.set(k, v);
-    return `/menudeo?${q.toString()}`;
-  };
   const t = m.totales;
   const hayFiltros = Boolean(desde || hasta || proveedor || estadoPago);
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina
-        eyebrow={`Pedidos menudeo · ${etiquetaHoy()}`}
-        titulo={t.pedidos ? `${socio}: ${t.pedidos} ${t.pedidos === 1 ? 'pedido' : 'pedidos'} a costo, ${formatearMoneda(t.pendiente_cent)} pendiente de pago` : `${socio}: sin pedidos a costo todavía`}
-        descripcion="Pedidos que el socio mete a costo para su menudeo. Se cobra solo el costo; no generan utilidad ni restan a su valuación ni a su aportación neta."
-        acciones={<Link className="rtm-boton rtm-boton-primario" href="/dropshipping/nuevo">Nuevo pedido a costo</Link>}
+        eyebrow={`Pedidos menudeo ${socio} · ${etiquetaHoy()}`}
+        titulo={t.pedidos ? `Pedidos menudeo de ${socio}: ${t.pedidos} ${t.pedidos === 1 ? 'pedido' : 'pedidos'}, ${formatearMoneda(t.pendiente_cent)} pendiente de pago` : `Pedidos menudeo de ${socio}: sin pedidos todavía`}
+        descripcion={esMenudeo ? 'Tu menudeo en Playa del Carmen. Se cobra solo el costo; no generan utilidad ni restan a tu valuación ni a tu aportación neta.' : `Solo lectura: supervisas los pedidos de ${socio} (menudeo en Playa del Carmen) y confirmas o rechazas sus pagos reportados.`}
+        acciones={esMenudeo ? <Link className="rtm-boton rtm-boton-primario" href="/dropshipping/nuevo" data-testid="nuevo-pedido-costo">Nuevo pedido a costo</Link> : undefined}
       />
-      <Segmentado etiquetaAria="Socio" tamano="chico" opciones={(['Angelo', 'Javier'] as const).map((s) => ({ valor: s, etiqueta: s, href: enlace({ socio: s }), activa: s === socio, testid: `menudeo-socio-${s}` }))} />
-      <BarraFiltros etiquetaAria="Filtros" extras={hayFiltros ? <Chip href={`/menudeo?socio=${socio}`}>Quitar filtros</Chip> : undefined}>
+      <BarraFiltros etiquetaAria="Filtros" extras={hayFiltros ? <Chip href="/menudeo">Quitar filtros</Chip> : undefined}>
         <form className="rtm-form-fila rtm-ds-filtros" method="get" aria-label="Filtrar pedidos">
-          <input type="hidden" name="socio" value={socio} />
           <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
           <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
           <label className="rtm-etiqueta-campo">Proveedor<select className="rtm-campo" name="proveedor" defaultValue={proveedor ?? ''}><option value="">Todos</option><option>Karen</option><option>Isaac</option></select></label>
-          <label className="rtm-etiqueta-campo">Estado de pago<select className="rtm-campo" name="estado" defaultValue={estadoPago ?? ''}><option value="">Todos</option><option value="pagado">Pagado</option><option value="no_pagado">Pendiente de pago</option><option value="pago_reportado">Pago reportado</option><option value="por_confirmar">Por confirmar</option></select></label>
+          <label className="rtm-etiqueta-campo">Estado de pago<select className="rtm-campo" name="estado" defaultValue={estadoPago ?? ''}><option value="">Todos</option><option value="pagado">Pagado</option><option value="no_pagado">Pendiente de pago</option><option value="pago_reportado">Pago reportado</option><option value="vencido">Vencido</option><option value="por_confirmar">Por confirmar</option></select></label>
           <button type="submit" className="rtm-boton" data-testid="menudeo-filtrar">Filtrar</button>
         </form>
       </BarraFiltros>
 
+      {t.sin_fecha > 0 && <Aviso tono="atencion" titulo="Sin fecha comprometida."><span data-testid="alerta-sin-fecha">{t.sin_fecha} {t.sin_fecha === 1 ? 'pedido' : 'pedidos'} sin fecha comprometida de pago.</span>{esMenudeo ? ' Fíjala en cada pedido.' : ''}</Aviso>}
+      {t.vencidos > 0 && <Aviso tono="error" titulo="Pedidos vencidos."><span data-testid="alerta-vencidos">{t.vencidos} {t.vencidos === 1 ? 'pedido vencido' : 'pedidos vencidos'} por {formatearMoneda(t.vencido_cent)}: pasó la fecha comprometida y siguen pendientes de pago.</span></Aviso>}
       <KpiLinea
         etiquetaAria="Cifras de los pedidos a costo"
         celdas={[
@@ -65,6 +62,7 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
           { id: 'costo', etiqueta: 'Costo total', valor: cif('costo', formatearMoneda(t.costo_cent)), categoria: 2, nota: 'Lo que se cobra: solo el costo' },
           { id: 'pagado', etiqueta: 'Pagado', valor: cif('pagado', formatearMoneda(t.pagado_cent)), categoria: 3 },
           { id: 'reportado', etiqueta: 'Pago reportado por confirmar', valor: cif('reportado', formatearMoneda(t.reportado_cent)), categoria: 5, testid: 'menudeo-reportado', nota: `${t.pedidos_reportados} ${t.pedidos_reportados === 1 ? 'pedido' : 'pedidos'} · sigue pendiente hasta que el otro socio confirme` },
+          { id: 'vencido', etiqueta: 'Vencido', valor: formatearMoneda(t.vencido_cent), categoria: 8, testid: 'menudeo-vencido', nota: `${t.vencidos} ${t.vencidos === 1 ? 'pedido' : 'pedidos'} con compromiso vencido` },
           { id: 'pendiente', etiqueta: 'Pendiente de pago', valor: cif('pendiente', formatearMoneda(t.pendiente_cent)), categoria: 4, testid: 'menudeo-pendiente', nota: 'Pedidos a costo confirmados o enviados. No restan a la aportación neta.' },
         ]}
       />
@@ -92,6 +90,14 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
             { id: 'c', titulo: 'Costo total', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (f) => formatearMoneda(f.costo_cent) },
             { id: 'pg', titulo: 'Pagado', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (f) => formatearMoneda(f.pagado_cent) },
             { id: 'pe', titulo: 'Pendiente', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (f) => formatearMoneda(f.pendiente_cent) },
+            { id: 'cm', titulo: 'Fecha comprometida', ancho: 'l', prioridadMovil: 'normal', celda: (f) => (
+              <span data-testid={`compromiso-${f.pedido_id}`}>
+                {f.fecha_compromiso ? <>{etiquetaFecha(f.fecha_compromiso)}{f.hora_compromiso ? ` ${f.hora_compromiso.slice(0, 5)}` : ''}{f.comprometido_por ? ` · ${f.comprometido_por}` : ''}</> : f.estado === 'borrador' ? '' : <strong>Sin fecha comprometida</strong>}
+                {f.vencido ? <> · <strong data-testid={`atraso-${f.pedido_id}`}>{f.dias_atraso} {f.dias_atraso === 1 ? 'día' : 'días'} de atraso</strong></> : null}
+                {f.compromisos.length > 1 ? <details><summary>{f.compromisos.length - 1} {f.compromisos.length - 1 === 1 ? 'cambio' : 'cambios'}</summary><ul className="rtm-lineas-form">{f.compromisos.map((c) => <li key={c.id}>{c.tipo === 'inicial' ? 'Inicial' : 'Reprogramado'} · {c.fecha_compromiso ? etiquetaFecha(c.fecha_compromiso) : 'sin fecha'} · {c.comprometido_por}{c.motivo ? ` · ${c.motivo}` : ''}</li>)}</ul></details> : null}
+                {esMenudeo && f.estado !== 'borrador' && f.pagado_cent < f.costo_cent ? <> <ReprogramarCompromiso pedidoId={f.pedido_id} folio={f.folio} tieneFecha={f.fecha_compromiso !== null} /></> : null}
+              </span>
+            ) },
             { id: 'rp', titulo: 'Pagos reportados', ancho: 'xl', prioridadMovil: 'detalle', celda: (f) => (f.reportes.length === 0 ? '' : (
               <details data-testid={`reportes-${f.pedido_id}`}>
                 <summary>{f.reportes.length} {f.reportes.length === 1 ? 'pago' : 'pagos'}{f.por_confirmar > 0 ? ` · ${f.por_confirmar} por confirmar` : ''}</summary>
@@ -108,7 +114,7 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
               </details>
             )) },
             { id: 'e', titulo: 'Estado', ancho: 'm', prioridadMovil: 'normal', celda: (f) => <span data-testid={`estado-pago-${f.pedido_id}`}><ChipEstado tono={TONO[f.estado_pago]}>{ESTADO_PAGO[f.estado_pago]}</ChipEstado></span> },
-            { id: 'a', titulo: '', ancho: 'm', prioridadMovil: 'normal', celda: (f) => (f.estado === 'enviado' && f.pendiente_cent > 0n ? <MarcarPagado pedidoId={f.pedido_id} folio={f.folio} proveedor={f.proveedor ?? 'el proveedor'} pendienteTexto={formatearMoneda(f.pendiente_cent)} pendienteCent={Number(f.pendiente_cent - f.reportado_cent)} /> : f.estado === 'enviado' ? '' : 'Aún no enviado') },
+            { id: 'a', titulo: '', ancho: 'm', prioridadMovil: 'normal', celda: (f) => (esMenudeo && f.estado === 'enviado' && f.pendiente_cent > 0n ? <MarcarPagado pedidoId={f.pedido_id} folio={f.folio} proveedor={f.proveedor ?? 'el proveedor'} pendienteTexto={formatearMoneda(f.pendiente_cent)} pendienteCent={Number(f.pendiente_cent - f.reportado_cent)} /> : f.estado === 'enviado' ? '' : 'Aún no enviado') },
           ]}
         />
       </Tarjeta>

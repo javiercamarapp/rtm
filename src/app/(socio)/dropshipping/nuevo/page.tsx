@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { exigirSocio } from '@/composicion/acceso';
 import { lectorDeSocio } from '@/composicion/catalogo';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
@@ -12,11 +13,12 @@ const ORIGENES = ['karen_directo', 'karen_via_isaac', 'isaac_directo'];
 
 export default async function PaginaNuevoDs({ searchParams }: { searchParams: Promise<{ cliente?: string; origen?: string }> }) {
   const sp = await searchParams;
+  const { perfil } = await exigirSocio();
   const origen = ORIGENES.includes(sp.origen ?? '') ? (sp.origen as string) : 'karen_directo';
   const clientes = (await (await lectorDeSocio()).clientes()).filter((c) => c.activo && !c.esBodega);
   const elegido = sp.cliente ? clientes.find((c) => c.id === Number(sp.cliente)) : undefined;
   const ds = await dropshippingDeSocio();
-  const [catalogo, resumen] = await Promise.all([elegido ? ds.catalogo(elegido.id, origen) : Promise.resolve(null), ds.resumen()]);
+  const [catalogo, resumen, socioMenudeo] = await Promise.all([elegido ? ds.catalogo(elegido.id, origen) : Promise.resolve(null), ds.resumen(), ds.socioMenudeo()]);
   return (
     <Pagina ancho="formulario">
       <EncabezadoPagina
@@ -43,7 +45,7 @@ export default async function PaginaNuevoDs({ searchParams }: { searchParams: Pr
           </div>
         </form>
       </Tarjeta>
-      {elegido && catalogo && <FormularioDs key={`${elegido.id}-${origen}`} clienteId={elegido.id} clienteNombre={elegido.nombre} origen={origen} catalogo={catalogo} />}
+      {elegido && catalogo && <FormularioDs key={`${elegido.id}-${origen}`} clienteId={elegido.id} clienteNombre={elegido.nombre} origen={origen} catalogo={catalogo} socioMenudeo={socioMenudeo} puedeMenudeo={perfil.socio_nombre === socioMenudeo} />}
     </Pagina>
   );
 }

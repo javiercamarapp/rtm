@@ -88,7 +88,8 @@ export default async function PaginaSocios() {
       </Rejilla>
 
 
-      <Tarjeta plana titulo="Aportación neta y diferencia a igualar" descripcion="Aportado menos los fondos de la sociedad que cada socio tiene en su poder. Ambos siguen metiendo dinero y aportan por igual.">
+      <Tarjeta plana titulo="Aportación neta y diferencia a igualar" descripcion="Aportado menos los fondos de la sociedad que cada socio tiene en su poder. Ambos siguen metiendo dinero y quedan siempre igualados: quien mete más no gana más participación.">
+        <p className="rtm-nota" data-testid="turno-aportar">{neta.igualados || neta.le_toca_aportar === null ? 'Igualados' : `Le toca aportar el siguiente pago: ${neta.le_toca_aportar}`}. La diferencia a igualar no es reembolso ni cobro: se resuelve con las siguientes aportaciones del que tiene menos.</p>
         <DataTable
           etiqueta="Aportación neta por socio"
           densidad="densa" plana
