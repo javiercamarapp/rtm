@@ -19,7 +19,9 @@ test('un pedido creado desde el chat aparece en la web con el precio del tabulad
     await c.query("select catalogo.fijar_precio($1, $2, $3, 27000, negocio.hoy() - 30, 'chat')", [`tgw:p:${SUF}`, CLIENTE, MODELO]);
     await c.query("select operacion.registrar_movimiento($1, $2, 'Mango', 'bodega_omar', 'entrada_compra', 60, 720000, negocio.hoy() - 3)", [`tgw:m:${SUF}`, MODELO]);
     const ids = (await c.query('select (select id from catalogo.cliente where nombre_canonico = $1) as c, (select id from catalogo.modelo where nombre_canonico = $2) as m, (select id from catalogo.sabor where nombre_canonico = $3) as s', [CLIENTE, MODELO, 'Mango'])).rows[0] as { c: string; m: string; s: string };
-    const r = await c.query("select agente.ejecutar_ext($1, 'pedido_crear', $2::jsonb) as j", [`tgw:pedido:${SUF}`, JSON.stringify({ autor: 'javier', origen: 'e2e web', cliente_id: Number(ids.c), lineas: [{ modelo_id: Number(ids.m), sabor_id: Number(ids.s), piezas: 24 }] })]);
+    // Endurecimiento ALTO-1 (lane telegram-agente): la base exige un remitente verificado y registrado.
+    await c.query("select agente.registrar_miembro(5000099, 'javier')");
+    const r = await c.query("select agente.ejecutar_ext($1, 'pedido_crear', $2::jsonb) as j", [`tgw:pedido:${SUF}`, JSON.stringify({ autor: 'javier', telegram_user_id: 5000099, origen: 'e2e web', cliente_id: Number(ids.c), lineas: [{ modelo_id: Number(ids.m), sabor_id: Number(ids.s), piezas: 24 }] })]);
     return (r.rows[0] as { j: { folio: string } }).j.folio;
   });
   expect(folio).toMatch(/^P-\d+/);
