@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { exigirSocio } from '@/composicion/acceso';
 import { inventarioDeSocio, notificacionesDeSocio } from '@/composicion/inventario';
 import { operacionDeSocio } from '@/composicion/operacion';
+import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { fechaNeg } from '@/dominio/calendario';
 import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { URGENCIA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
@@ -25,15 +27,17 @@ const TONO_HALLAZGO = { C: 'malo', I: 'atencion', F: 'info' } as const;
 
 export default async function Inicio({ searchParams }: { searchParams: Promise<{ semanas?: string }> }) {
   const sp = await searchParams;
+  const { perfil } = await exigirSocio();
   const n = semanasDe(sp.semanas);
   const op = await operacionDeSocio();
   const lector = await notificacionesDeSocio();
-  const [pulso, turno, inv, cxc, pedidos] = await Promise.all([
+  const [pulso, turno, inv, cxc, pedidos, pendientesMenudeo] = await Promise.all([
     lector.pulso().catch(() => null),
     lector.tuTurno().catch(() => ({ items: [] })),
     (await inventarioDeSocio()).completo().catch(() => null),
     op.cuentasPorCobrar().catch(() => null),
     op.pedidos().catch(() => null),
+    dropshippingDeSocio().then(async (d) => ({ pend: await d.menudeoPendientes(), socio: await d.socioMenudeo() })).catch(() => null),
   ]);
   const hoy = fechaNeg(new Date());
   const semanas = ultimasSemanas(hoy, n);
@@ -125,6 +129,26 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
       {cxc && cxc.pagos_sin_identificar.length > 0 && (
         <Aviso tono="atencion" titulo="Hay pagos sin identificar." acciones={<Link className="rtm-boton rtm-boton-chico" href="/cuentas-por-cobrar">Asignarlos</Link>}>{cxc.pagos_sin_identificar.length} {cxc.pagos_sin_identificar.length === 1 ? 'pago espera' : 'pagos esperan'} un cliente antes de aplicarse.</Aviso>
       )}
+
+      {pendientesMenudeo && (() => {
+        const x = pendientesMenudeo.pend.find((q) => q.socio === pendientesMenudeo.socio);
+        if (!x) return null;
+        const propio = perfil.socio_nombre === pendientesMenudeo.socio;
+        const enlace = <Link href="/menudeo">{propio ? 'Ver mis pedidos menudeo' : `Ver pedidos menudeo de ${x.socio}`}</Link>;
+        return (
+          <Tarjeta titulo={propio ? 'Pedidos pendientes de pago' : `Pedidos menudeo de ${x.socio} pendientes`}
+            descripcion={propio ? 'Tus pedidos a costo (menudeo en Playa del Carmen). No restan a tu aportación neta; los fondos cobrados en tu cuenta sí.' : `Solo lectura: supervisas el pago de los pedidos de ${x.socio}. No restan a su aportación neta.`}>
+            <div className="rtm-a1-cuerpo" data-testid={propio ? 'inicio-menudeo-propio' : 'inicio-menudeo-otro'}>
+              <ul className="rtm-lineas-form">
+                <li data-testid={`inicio-pedidos-${x.socio}`}>{x.pedidos > 0 ? <>Pendiente de pago: <strong>{formatearMoneda(x.pendiente_cent)}</strong> en {x.pedidos} {x.pedidos === 1 ? 'pedido' : 'pedidos'} · {enlace}</> : <>Sin pedidos pendientes · {enlace}</>}</li>
+                <li data-testid={`inicio-vencidos-${x.socio}`}>{x.vencidos > 0 ? <><strong>{x.vencidos} {x.vencidos === 1 ? 'vencido' : 'vencidos'}</strong> por {formatearMoneda(x.vencido_cent)}: pasó la fecha comprometida</> : 'Ninguno vencido'}{x.sin_fecha > 0 ? ` · ${x.sin_fecha} sin fecha comprometida` : ''}</li>
+                {x.pedidos_reportados > 0 && <li data-testid={`inicio-reportado-${x.socio}`}>Pago reportado por confirmar: {formatearMoneda(x.reportado_cent)} en {x.pedidos_reportados} {x.pedidos_reportados === 1 ? 'pedido' : 'pedidos'}</li>}
+                <li data-testid={`inicio-fondos-${x.socio}`}>{x.fondos_pendiente_cent > 0n ? <>Fondos de la sociedad cobrados en su cuenta, pendientes de entregar: <strong>{formatearMoneda(x.fondos_pendiente_cent)}</strong> en {x.fondos_cobros} {x.fondos_cobros === 1 ? 'cobro' : 'cobros'}</> : 'Sin fondos pendientes de entregar'}</li>
+              </ul>
+            </div>
+          </Tarjeta>
+        );
+      })()}
 
       <Rejilla dividir="8-4">
         <Tarjeta titulo="Ventas por semana" descripcion={`Lo cobrado de los pedidos enviados, últimas ${n} semanas; la semana en curso va con trama`}>

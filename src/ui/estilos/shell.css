@@ -50,6 +50,8 @@
 .rtm-nav-indicador[data-indice='15'] { transform: translateY(510px); }
 .rtm-nav-indicador[data-indice='16'] { transform: translateY(544px); }
 .rtm-nav-indicador[data-indice='17'] { transform: translateY(578px); }
+.rtm-nav-indicador[data-indice='18'] { transform: translateY(612px); }
+.rtm-nav-indicador[data-indice='19'] { transform: translateY(646px); }
 .rtm-lateral-pie { margin-top: auto; display: flex; flex-direction: column; gap: var(--rtm-e-2); padding: var(--rtm-e-2); }
 .rtm-lateral-usuario { font-size: 12px; color: var(--rtm-ink-3); overflow-wrap: anywhere; }
 .rtm-lateral-salir { align-self: flex-start; height: 28px; font-size: 12px; padding: 0 var(--rtm-e-3); }

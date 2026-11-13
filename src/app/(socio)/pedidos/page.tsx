@@ -4,6 +4,7 @@ import { operacionDeSocio } from '@/composicion/operacion';
 import { fechaNeg } from '@/dominio/calendario';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { EstadoPedido, Origen } from '@/dominio/operacion/tipos';
+import { origenSurtido } from '@/dominio/dropshipping/calculos';
 import { aNumero, contarPor, porcentaje, sumarPorSemana, ultimasSemanas } from '@/dominio/tablero/agregados';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { BarraFiltros, Chip, ChipEstado, CeldaPersona, Segmentado } from '@/ui/componentes/controles';
@@ -25,14 +26,15 @@ const ESTADOS: { clave: string; texto: string }[] = [
 ];
 const TONO: Record<EstadoPedido, 'ok' | 'atencion' | 'malo' | 'apagado'> = { borrador: 'apagado', confirmado: 'atencion', enviado: 'ok', cancelado: 'apagado', anulado: 'malo' };
 
-export default async function PaginaPedidos({ searchParams }: { searchParams: Promise<{ estado?: string; aviso?: string; origen?: string; semanas?: string }> }) {
-  const { estado = '', aviso = '', origen = '', semanas: sem } = await searchParams;
+export default async function PaginaPedidos({ searchParams }: { searchParams: Promise<{ estado?: string; aviso?: string; origen?: string; semanas?: string; surtido?: string }> }) {
+  const { estado = '', aviso = '', origen = '', semanas: sem, surtido: surtidoQ = '' } = await searchParams;
+  const surtido = surtidoQ === 'dropshipping' || surtidoQ === 'inventario_merida' ? surtidoQ : '';
   const n = semanasDe(sem);
   const todos = await (await operacionDeSocio()).pedidos();
   const hoy = fechaNeg(new Date());
-  const filas = todos.filter((p) => (!estado || p.estado === (estado as EstadoPedido)) && (!aviso || p.avisos > 0) && (!origen || p.origen === origen));
+  const filas = todos.filter((p) => (!estado || p.estado === (estado as EstadoPedido)) && (!aviso || p.avisos > 0) && (!origen || p.origen === origen) && (!surtido || origenSurtido(p.origen) === surtido));
   const enlace = (cambios: Record<string, string>) => {
-    const q = new URLSearchParams({ ...(estado ? { estado } : {}), ...(aviso ? { aviso } : {}), ...(origen ? { origen } : {}), ...(sem ? { semanas: sem } : {}), ...cambios });
+    const q = new URLSearchParams({ ...(estado ? { estado } : {}), ...(aviso ? { aviso } : {}), ...(origen ? { origen } : {}), ...(surtido ? { surtido } : {}), ...(sem ? { semanas: sem } : {}), ...cambios });
     for (const [k, v] of [...q.entries()]) if (!v) q.delete(k);
     const s = q.toString();
     return s ? `/pedidos?${s}` : '/pedidos';
@@ -72,7 +74,12 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
           </>
         }
       />
-      <BarraFiltros etiquetaAria="Filtros" extras={estado || aviso || origen ? <Chip href="/pedidos">Quitar filtros</Chip> : undefined}>
+      <BarraFiltros etiquetaAria="Filtros" extras={estado || aviso || origen || surtido ? <Chip href="/pedidos">Quitar filtros</Chip> : undefined}>
+        <Segmentado etiquetaAria="Origen del surtido" tamano="chico" opciones={[
+          { valor: '', etiqueta: `Todos ${todos.length}`, href: enlace({ surtido: '' }), activa: !surtido, testid: 'surtido-todos' },
+          { valor: 'dropshipping', etiqueta: `Dropshipping ${todos.filter((p) => origenSurtido(p.origen) === 'dropshipping').length}`, href: enlace({ surtido: 'dropshipping' }), activa: surtido === 'dropshipping', testid: 'surtido-dropshipping' },
+          { valor: 'inventario_merida', etiqueta: `Inventario en Mérida ${todos.filter((p) => origenSurtido(p.origen) === 'inventario_merida').length}`, href: enlace({ surtido: 'inventario_merida' }), activa: surtido === 'inventario_merida', testid: 'surtido-inventario' },
+        ]} />
         {ESTADOS.map((e) => <Chip key={e.clave} href={enlace({ estado: e.clave })} activo={estado === e.clave}>{`${e.texto} ${cuenta(e.clave)}`}</Chip>)}
         <Chip tono="atencion" href={enlace({ aviso: aviso ? '' : '1' })} activo={aviso === '1'}>Con avisos</Chip>
         {(Object.keys(ORIGEN) as Origen[]).filter((o) => cuentaOrigen.some((c) => c.clave === o)).map((o) => <Chip key={o} href={enlace({ origen: origen === o ? '' : o })} activo={origen === o}>{ORIGEN[o]}</Chip>)}
@@ -109,6 +116,8 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
           <div className="rtm-a1-cuerpo">
             <p className="rtm-a1-subtitulo">Por estado</p>
             <BarList etiquetaAria="Pedidos por estado" items={cuentaEstado.map((c) => ({ id: c.clave, etiqueta: ESTADO_PEDIDO[c.clave as EstadoPedido].texto, texto: String(c.n), pct: porcentaje(c.n, todos.length), tono: c.clave === 'anulado' ? ('malo' as const) : c.clave === 'confirmado' ? ('atencion' as const) : undefined }))} />
+            <p className="rtm-a1-subtitulo">Por origen de surtido</p>
+            <BarList etiquetaAria="Pedidos por origen de surtido" items={(['dropshipping', 'inventario_merida'] as const).map((k) => { const g = todos.filter((p) => origenSurtido(p.origen) === k); const env = g.filter((p) => p.estado === 'enviado'); const util = env.filter((p) => p.utilidad_cent !== null).reduce((a, p) => a + (p.utilidad_cent ?? 0n), 0n); return { id: k, etiqueta: k === 'dropshipping' ? 'Dropshipping' : 'Inventario en Mérida', texto: String(g.length), pct: porcentaje(g.length, todos.length), nota: `${env.length} enviados · cobrado ${formatearMoneda(env.reduce((a, p) => a + p.cobrado_cent, 0n))} · utilidad ${formatearMoneda(util)}` }; })} />
             <p className="rtm-a1-subtitulo">Por origen</p>
             <BarList etiquetaAria="Pedidos por origen" items={cuentaOrigen.map((c) => ({ id: c.clave, etiqueta: ORIGEN[c.clave as Origen], texto: String(c.n), pct: porcentaje(c.n, todos.length) }))} />
           </div>
@@ -129,6 +138,7 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
             { id: 'c', titulo: 'Cliente', prioridadMovil: 'titulo', ancho: 'xl', celda: (p) => <CeldaPersona nombre={p.cliente} href={`/clientes/${p.cliente_id}`} /> },
             { id: 'd', titulo: 'Fecha', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (p) => etiquetaFecha(p.fecha_neg) },
             { id: 'r', titulo: 'Origen', prioridadMovil: 'oculta', ancho: 'l', secundaria: true, celda: (p) => ORIGEN[p.origen] },
+            { id: 'os', titulo: 'Surtido', prioridadMovil: 'normal', ancho: 'l', celda: (p) => <span data-testid={`surtido-${p.id}`}>{origenSurtido(p.origen) === 'dropshipping' ? 'Dropshipping' : 'Inventario en Mérida'}</span> },
             { id: 'z', titulo: 'Piezas', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (p) => (p.estado === 'enviado' || p.estado === 'anulado' ? `${formatearPiezas(p.piezas_surtidas)} de ${p.piezas_pedidas}` : formatearPiezas(p.piezas_pedidas)) },
             { id: 'b', titulo: 'Cobrado', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? <CifraComprobada texto={formatearMoneda(p.cobrado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" /> : <SinDato />) },
             { id: 'u', titulo: 'Utilidad', prioridadMovil: 'normal', numerica: true, ancho: 'm', secundaria: true, celda: (p) => (p.utilidad_cent === null ? <SinDato /> : <>{formatearMoneda(p.utilidad_cent)}{p.utilidad_provisional ? <> <EstadoTexto tono="atencion">provisional</EstadoTexto></> : null}</>) },

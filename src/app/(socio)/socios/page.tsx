@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { etiquetaFecha } from '@/dominio/formato';
 import { operacionDeSocio } from '@/composicion/operacion';
+import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, CeldaPersona } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
@@ -19,7 +20,7 @@ export const metadata: Metadata = { title: 'Cuenta de socios' };
 export default async function PaginaSocios() {
   const { perfil } = await exigirSocio();
   const mio = perfil.socio_nombre === 'Angelo' || perfil.socio_nombre === 'Javier' ? perfil.socio_nombre : null;
-  const c = await (await operacionDeSocio()).cuentaSocios();
+  const [c, neta] = await Promise.all([(await operacionDeSocio()).cuentaSocios(), (await dropshippingDeSocio()).aportacionNeta()]);
   const d = c.javier_debe_a_angelo_cent;
   const parejo = d === 0n;
   const quien = d > 0n ? 'Javier debe a Angelo' : 'Angelo debe a Javier';
@@ -80,11 +81,30 @@ export default async function PaginaSocios() {
             <AntiguedadSaldos tramos={['Capital', 'Reembolsable', 'Fuera de la sociedad']} titulo="Lo que puso cada socio" descripcion={`Angelo puso ${m(c.angelo.aportado_cent)} y Javier ${m(c.javier.aportado_cent)}, separado por capital, reembolsable y fuera de la sociedad.`} procedencia="observado" pie={`Corte: ${etiquetaFecha(c.hoy)} · Fuente: libro de la cuenta de socios`} filas={filasAportado} />
           ) : <p className="a3-grafica-vacia"><strong>Nadie ha puesto dinero</strong>Las aportaciones y gastos pagados por un socio aparecerán aquí.</p>}
         </Tarjeta>
-        <Tarjeta titulo="Posición neta de cada socio" descripcion="Positivo: la sociedad le debe. Negativo: él debe a la sociedad">
-          <BarList etiquetaAria="Posición neta por socio" items={c.socios.map((s) => ({ id: s.socio, etiqueta: s.socio, href: `/socios/${s.socio}`, texto: m(s.neto_cent, true), pct: maxNeto > 0n ? pct(abs(s.neto_cent), maxNeto) : null, nota: s.neto_cent > 0n ? 'La sociedad le debe' : s.neto_cent < 0n ? 'Él debe' : 'En paz', tono: s.neto_cent < 0n ? 'malo' : undefined }))} />
+        <Tarjeta titulo="Posición neta de cada socio" descripcion="Positivo: a su favor. Negativo: tiene fondos de la sociedad en su poder, que reducen su aportación neta">
+          <BarList etiquetaAria="Posición neta por socio" items={c.socios.map((s) => ({ id: s.socio, etiqueta: s.socio, href: `/socios/${s.socio}`, texto: m(s.neto_cent, true), pct: maxNeto > 0n ? pct(abs(s.neto_cent), maxNeto) : null, nota: s.neto_cent > 0n ? 'A su favor' : s.neto_cent < 0n ? 'Fondos de la sociedad en su poder' : 'En paz', tono: s.neto_cent < 0n ? 'atencion' : undefined }))} />
           <BarList etiquetaAria="Fondos de la sociedad en poder de cada socio" items={c.socios.map((s) => ({ id: `f${s.socio}`, etiqueta: `Fondos en poder de ${s.socio}`, texto: m(s.fondos_cent), pct: pct(s.fondos_cent, fondos), nota: s.alerta_fondos ? `${s.dias_fondos} días sin entregar` : undefined, tono: s.alerta_fondos ? 'atencion' : undefined }))} />
         </Tarjeta>
       </Rejilla>
+
+
+      <Tarjeta plana titulo="Aportación neta y diferencia a igualar" descripcion="Aportado menos los fondos de la sociedad que cada socio tiene en su poder. Ambos siguen metiendo dinero y quedan siempre igualados: quien mete más no gana más participación.">
+        <p className="rtm-nota" data-testid="turno-aportar">{neta.igualados || neta.le_toca_aportar === null ? 'Igualados' : `Le toca aportar el siguiente pago: ${neta.le_toca_aportar}`}. La diferencia a igualar no es reembolso ni cobro: se resuelve con las siguientes aportaciones del que tiene menos.</p>
+        <DataTable
+          etiqueta="Aportación neta por socio"
+          densidad="densa" plana
+          clave={(s) => s.socio}
+          filas={neta.socios}
+          vacio={{ titulo: 'Sin aportaciones todavía', texto: 'Aparecen cuando un socio pone dinero.' }}
+          columnas={[
+            { id: 's', titulo: 'Socio', ancho: 'm', prioridadMovil: 'titulo', celda: (s) => s.socio },
+            { id: 'a', titulo: 'Aportado', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (s) => m(s.aportado_cent) },
+            { id: 'f', titulo: 'Fondos de la sociedad en su poder', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (s) => m(s.fondos_en_poder_cent) },
+            { id: 'n', titulo: 'Aportación neta', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (s) => <span data-testid={`aportacion-neta-${s.socio}`}>{m(s.aportacion_neta_cent, true)}</span> },
+            { id: 'd', titulo: 'Diferencia a igualar', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (s) => <span data-testid={`diferencia-igualar-${s.socio}`}>{m(s.diferencia_a_igualar_cent)}</span> },
+          ]}
+        />
+      </Tarjeta>
 
       {c.partidas_fuera_sociedad.length > 0 && (
         <Tarjeta plana titulo="Fuera de la sociedad (aparte)" descripcion="No entra al balance ni se mezcla con lo que un socio debe por un faltante">
@@ -105,7 +125,7 @@ export default async function PaginaSocios() {
           filas={c.socios}
           totales={{ etiqueta: 'Total', celdas: { n: m(suma(c.socios.map((s) => s.neto_cent)), true), a: m(suma(c.socios.map((s) => s.aportado_cent))), r: m(reemb), k: m(cap), f: m(fondos) } }}
           columnas={[
-            { id: 's', titulo: 'Socio', ancho: 'l', celda: (s) => <CeldaPersona nombre={s.socio} href={`/socios/${s.socio}`} testid={`estado-${s.socio}`} subtitulo={s.neto_cent > 0n ? 'La sociedad le debe' : s.neto_cent < 0n ? 'Él debe' : 'En paz'} /> },
+            { id: 's', titulo: 'Socio', ancho: 'l', celda: (s) => <CeldaPersona nombre={s.socio} href={`/socios/${s.socio}`} testid={`estado-${s.socio}`} subtitulo={s.neto_cent > 0n ? 'La sociedad le debe' : s.neto_cent < 0n ? 'Fondos de la sociedad en su poder' : 'En paz'} /> },
             { id: 'a', titulo: 'Aportado', numerica: true, ancho: 'm', secundaria: true, celda: (s) => m(s.aportado_cent) },
             { id: 'n', titulo: 'Posición neta', numerica: true, ancho: 'm', celda: (s) => <CifraComprobada texto={m(s.neto_cent, true)} cifra={`socio:neto:${s.socio}`} comprobacion="cuadra" /> },
             { id: 'r', titulo: 'Reembolsos pendientes', numerica: true, ancho: 'm', secundaria: true, celda: (s) => m(s.reembolso_pendiente_cent) },

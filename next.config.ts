@@ -44,6 +44,8 @@ const config: NextConfig = {
   // Sin fuentes por red: todas las tipografias son archivos locales (src/fuentes).
   agentRules: false,
   serverExternalPackages: ['pg'],
+  // Evidencia de pago (imagen o PDF de hasta 2 MB en base64) viaja en una accion de servidor.
+  experimental: { serverActions: { bodySizeLimit: '4mb' } },
 };
 
 export default config;

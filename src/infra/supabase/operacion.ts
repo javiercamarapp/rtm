@@ -1,6 +1,7 @@
 // Implementa los puertos de operacion con las funciones api.* (sesion del usuario, llave publica; nunca la de servicio).
 import type { AccionOperacion, EscritorOperacion, LectorOperacion } from '@/aplicacion/operacion/puertos';
 import { centavosABigint } from '@/dominio/operacion/json';
+import { cabecerasLlave } from '@/config/llave_destinatario';
 import { crearClienteServidor } from './cliente-servidor';
 
 async function leer<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -52,7 +53,8 @@ export function lectorOperacionSupabase(): LectorOperacion {
 export function escritorOperacionSupabase(): EscritorOperacion {
   return {
     async ejecutar(accion: AccionOperacion, args) {
-      const sb = await crearClienteServidor();
+      // Solo las acciones que escriben el destinatario cifrado reciben la llave.
+      const sb = await crearClienteServidor(accion === 'ds_crear_pedido' || accion === 'ds_capturar_destinatario' ? cabecerasLlave() : undefined);
       const { data, error } = await sb.rpc(accion, args);
       if (error) throw new ErrorDeNegocio(error.message, error.code ?? null);
       return (data ?? {}) as Record<string, unknown>;
