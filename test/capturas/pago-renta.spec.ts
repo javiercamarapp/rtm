@@ -146,6 +146,8 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
   await page.getByTestId('pago-renta').click();
   await page.getByLabel('Monto').fill('400');
   await page.getByLabel('Referencia del comprobante (opcional)').fill('SPEI demo 002');
+  await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
+  await page.waitForTimeout(900);
   await page.screenshot({ path: join(SALIDA, '1440-claro-4-formulario-pago.png') });
   await page.getByTestId('confirmar').click();
   await expect.poll(async () => Number((await conDb((c) => c.query("select (operacion.renta_estado(negocio.hoy())->>'por_pagar_cent')::bigint as x"))).rows[0]!.x), { timeout: 20_000 }).toBe(debe - 40000);
@@ -154,6 +156,8 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
   await page.getByTestId('pago-renta').click();
   await page.getByLabel('Monto').fill('900000');
   await expect(page.getByText('Es más de lo que se debe.')).toBeVisible();
+  await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
+  await page.waitForTimeout(900);
   await page.screenshot({ path: join(SALIDA, '1440-claro-4-formulario-exceso.png') });
   await page.getByTestId('confirmar').click();
   await expect(page.getByText(/mayor que lo que se debe a Omar/)).toBeVisible({ timeout: 20_000 });
@@ -173,6 +177,8 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
   await page.getByTestId('confirmar').click();
   await expect(page.getByText('Falta: motivo (obligatorio).')).toBeVisible();
   await page.getByLabel('Motivo (obligatorio)').fill('Captura duplicada por error');
+  await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
+  await page.waitForTimeout(900);
   await page.screenshot({ path: join(SALIDA, '1440-claro-5-formulario-anular.png') });
   await page.getByTestId('confirmar').click();
   await expect.poll(async () => Number((await conDb((c) => c.query("select (operacion.renta_estado(negocio.hoy())->>'saldo_cent')::bigint as x"))).rows[0]!.x), { timeout: 20_000 }).toBe(debe - 40000);
@@ -187,6 +193,8 @@ test('pago de renta: estados, registro de pagos, vista de Omar y capturas', asyn
   const pm = await movil.newPage();
   await pm.goto(`${BASE}/pago-renta`, { waitUntil: 'networkidle' });
   await pm.getByTestId('pago-renta').click();
+  await pm.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
+  await pm.waitForTimeout(900);
   await pm.screenshot({ path: join(SALIDA, '390-claro-4-formulario-pago.png') });
   await movil.close();
   await ctx.close();
