@@ -16,7 +16,7 @@ export async function cap(page: Page, nombre: string, completa = false): Promise
   await page.screenshot({ path: join(SALIDA, `${String(n).padStart(2, '0')}-${nombre}.png`), fullPage: completa });
 }
 
-export interface Demo { sufijo: string; marca: string; modelo: string; modeloCompleto: string; clienteA: string; clienteB: string }
+export interface Demo { sufijo: string; omar: string; marca: string; modelo: string; modeloCompleto: string; clienteA: string; clienteB: string }
 
 /** Catalogo minimo de demostracion: un modelo con dos sabores, costos de Isaac y Karen, dos clientes con precio. Es el "catalogo ya cargado" de produccion. */
 export async function sembrarCatalogo(): Promise<Demo> {
@@ -31,7 +31,7 @@ export async function sembrarCatalogo(): Promise<Demo> {
     await c.query("select catalogo.asegurar_cliente($1,'Javier')", [clienteA]);
     await c.query("select catalogo.asegurar_cliente($1,'Angelo')", [clienteB]);
     await c.query("select catalogo.asegurar_cliente($1,'Javier')", [`Omar Demo ${sufijo}`]);
-    await c.query('select catalogo.asegurar_persona_bodega($1,$1)', [`Omar Demo ${sufijo}`]);
+    // La persona de bodega NO se da de alta aqui: el recorrido la da de alta desde la pantalla (ficha del cliente > Marcar como persona de bodega).
     await c.query("select catalogo.asegurar_modelo($1,$2,50000,'ambas')", [marca, modelo]);
     for (const s of ['Fresa', 'Uva']) await c.query('select catalogo.asegurar_sku($1,$2)', [modelo, s]);
     await c.query("select catalogo.fijar_costo($1,'Isaac',$2,10000,negocio.hoy() - 60,'demo')", [`cd:ci:${sufijo}`, modelo]);
@@ -39,7 +39,7 @@ export async function sembrarCatalogo(): Promise<Demo> {
     for (const cl of [clienteA, clienteB]) await c.query("select catalogo.fijar_precio($1,$2,$3,15000,negocio.hoy() - 60,'chat')", [`cd:p:${cl}`, cl, modelo]);
     await c.query('commit');
   });
-  return { sufijo, marca, modelo, modeloCompleto: `${marca} ${modelo}`, clienteA, clienteB };
+  return { sufijo, omar: `Omar Demo ${sufijo}`, marca, modelo, modeloCompleto: `${marca} ${modelo}`, clienteA, clienteB };
 }
 
 export async function elegirOpcion(page: Page, testid: string, texto: string): Promise<void> {

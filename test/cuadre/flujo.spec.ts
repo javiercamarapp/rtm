@@ -151,6 +151,19 @@ test('4 compra a Isaac: orden, confirmar, enviada, guia, llego, recepcion', asyn
   await cap(page, 'compra-recibida');
 });
 
+test('4b persona de bodega: se da de alta desde la ficha del cliente (sin ella, Marcar enviado falla)', async () => {
+  const page = angelo;
+  await page.goto('/clientes');
+  await page.getByRole('link', { name: d.omar }).first().click();
+  await page.waitForURL(/\/clientes\/\d+$/);
+  await cap(page, 'persona-bodega-antes');
+  await page.getByTestId('alta-persona-bodega').click();
+  await page.getByTestId('confirmar').click();
+  await expect(page.getByTestId('alta-persona-bodega')).toHaveCount(0);
+  await expect.poll(async () => (await consultar<{ n: string }>('select count(*)::text as n from catalogo.persona_bodega'))[0]!.n).toBe('1');
+  await cap(page, 'persona-bodega-despues');
+});
+
 let pedido = Number(process.env.CUADRE_PEDIDO ?? 0);
 test('5 venta: pedido con nota, empacar, enviar con guia', async () => {
   const page = angelo;
@@ -222,6 +235,19 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
   await expect.poll(async () => (await consultar<{ s: string }>("select operacion.saldo_proveedor(catalogo.proveedor_id('Isaac'))::text as s"))[0]!.s).toBe('-650000');
   await page.reload();
   await cap(page, 'isaac-tras-pagos');
+  // Cada socio registra lo que pago de su bolsillo a Isaac (dinero propio): 2,900.00 cada uno = los 5,800.00 del costo que no pusieron los socios.
+  // Es dinero de los socios, no de la caja de la sociedad: el efectivo (8,600) no cambia.
+  for (const socio of ['Angelo', 'Javier']) {
+    await page.getByTestId('pago-socio').click();
+    await page.getByLabel('Socio que pagó').selectOption(socio);
+    await page.getByLabel(/Monto/).fill('2900');
+    await page.getByLabel('Con qué dinero').selectOption('aportacion');
+    await page.getByTestId('confirmar').click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  }
+  await expect.poll(async () => (await consultar<{ s: string }>("select operacion.saldo_proveedor(catalogo.proveedor_id('Isaac'))::text as s"))[0]!.s).toBe('-70000');
+  await page.reload();
+  await cap(page, 'isaac-tras-pagos-de-socios');
 });
 
 test('8 socios: aportacion, gasto de socio y reembolso', async () => {
@@ -285,11 +311,14 @@ test('9 todo cuadra: comprobaciones, Contabilidad, Cuentas por cobrar, Socios y 
   await expect(page.getByTestId('comprobacion-CA2')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Todo cuadra' })).toBeVisible();
 
-  // Socios: la compra a Isaac fue a credito y la pagaron la sociedad y un socio. Eso es "salio dinero de la sociedad que no pusieron los socios":
-  // el aviso debe aparecer y la identidad por dos vias de la Cuenta de socios dice "No cuadra" (regla de dinero pendiente del dueno, no un defecto de calculo).
+  // Socios: la compra a Isaac costo 5,250.00 y los socios pusieron entre los dos 5,800.00 de bolsillo y guia (netos de lo que tienen de la sociedad):
+  // lo que NO pusieron los socios llega a cero, el aviso desaparece y la identidad por dos vias cuadra con via 1 = via 2.
   await page.goto('/socios');
-  await expect(page.locator('main:not(.rtm-documento)')).toContainText('Parte del costo no la pusieron los socios');
-  const cs = (await consultar<{ c: string }>("select (operacion.cuenta_socios()->>'cuadra') as c"))[0]!;
-  expect(cs.c).toBe('false');
+  await expect(page.locator('main:not(.rtm-documento)')).not.toContainText('Parte del costo no la pusieron los socios');
+  await cap(page, 'final-socios-cuadra');
+  const cs = (await consultar<{ c: string; f: string; v1: string; v2: string }>("select (x->>'cuadra') as c, (x->>'financiado_por_sociedad_cent') as f, (x->>'via1_cent') as v1, (x->>'via2_cent') as v2 from (select operacion.cuenta_socios() as x) q"))[0]!;
+  expect(cs.c).toBe('true');
+  expect(cs.f).toBe('0');
+  expect(cs.v1).toBe(cs.v2);
   expect((await consultar<{ n: string }>('select seguridad.verificar_cadena_auditoria()::text as n'))[0]!.n).toBe('true');
 });
