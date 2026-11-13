@@ -25,6 +25,8 @@ select.rtm-campo, .rtm-a2-campo > select {
   background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
 }
 .rtm-a2-campo > select { max-width: min(100%, 360px); }
+/* El ancho automatico de un selector sin apariencia nativa puede quedar 1 px por debajo del texto de su opcion mas larga (medidas distintas de maquetacion y de texto): holgura de 2 px. */
+@supports (width: calc-size(fit-content, size + 2px)) { .rtm-a2-campo > select { width: calc-size(fit-content, size + 2px); } }
 textarea.rtm-campo { height: auto; min-height: 72px; padding: 8px var(--rtm-ctl-px); line-height: 1.4; resize: vertical; }
 .rtm-campo:hover:not(:disabled), .rtm-a2-campo > :is(input, select):hover { border-color: var(--rtm-ink-3); }
 .rtm-campo:disabled, .rtm-a2-campo > :is(input, select):disabled { background-color: var(--rtm-tint); border-style: solid; color: var(--rtm-ink-3); }

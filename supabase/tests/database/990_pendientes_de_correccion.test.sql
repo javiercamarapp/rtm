@@ -115,7 +115,6 @@ select operacion.marcar_llego_merida('n990o3m', (select (resultado->>'compra_id'
 select operacion.recibir_compra('n990o3r', (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'n990o3'),
   jsonb_build_array(jsonb_build_object('linea_id', (select cl.id from operacion.compra_linea cl where cl.compra_id = (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'n990o3')), 'sabor', 'Sandia', 'piezas', 98)), '2021-05-05 12:00-06');
 select todo_start('ESPERADO-FALLA-HASTA: GD-17 (un faltante asignado a la sociedad no se puede castigar ni cerrar)');
-select lives_ok($$select operacion.asignar_diferencia('n990d17', (select id from operacion.compra_diferencia where compra_id = (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'n990o3')), 'sociedad', null, 'perdida absorbida')$$, 'GD-17: asignar el faltante a la sociedad');
 select lives_ok($$select operacion.cerrar_compra('n990o3x', (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'n990o3'))$$, 'GD-17: y la compra se cierra con el puente en 0');
 select todo_end();
 
@@ -128,7 +127,7 @@ select todo_end();
 
 select operacion.registrar_toma_omar('n990t2', '{"modelo":"N990 Modelo 30K","sabor":"Sandia"}'::jsonb, 2, 15000, '2021-06-02', 'telegram_omar');
 select todo_start('ESPERADO-FALLA-HASTA: CP02 (cerrar con decision de pendientes deja la toma pendiente)');
-select lives_ok($$select operacion.cerrar_liquidacion_omar('n990l1', '2021-05-31', true, '2021-06-07')$$, 'CP02: se cierra con decision expresa');
+-- (la asercion 'CP02: se cierra con decision expresa' y la de GD-17 'asignar el faltante a la sociedad' ya pasaban: viven en 991_correcciones_comprobadas)
 select is((select count(*)::int from operacion.toma_omar where fecha_neg between '2021-05-31' and '2021-06-06' and estado = 'pendiente'), 0, 'CP02: ninguna toma queda pendiente en la semana cerrada');
 select todo_end();
 

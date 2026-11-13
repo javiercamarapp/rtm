@@ -54,7 +54,7 @@ export function MarcarPagado({ pedidoId, folio, proveedor, pendienteTexto, pendi
       <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => { limpiarError(); setAbierto(true); }} data-testid={`marcar-pagado-${pedidoId}`}>Marcar como pagado</button>
       {abierto && (
         <ConfirmDialog abierto titulo={`Pago del pedido ${folio}`} confirmar="Registrar pago" ocupado={ocupado || leyendo} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
-          <p className="rtm-nota">Debes pagar el total del costo. Pendiente de pago: {pendienteTexto}. Un pago parcial deja el saldo pendiente.</p>
+          <p className="rtm-nota">Pago pendiente: el total del costo ({pendienteTexto}). Un pago parcial deja el saldo pendiente.</p>
           <label className="rtm-etiqueta-campo">Cómo se paga
             <select className="rtm-campo" value={via} onChange={(e) => setVia(e.target.value)} data-testid="menudeo-via">
               <option value="proveedor">Pago directo a {proveedor}</option><option value="sociedad">Abono a la sociedad</option>
