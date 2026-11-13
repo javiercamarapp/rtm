@@ -100,6 +100,8 @@ select is((select sum((x->>'margen_cent')::bigint)::bigint from jsonb_array_elem
 select is((select sum(((x->>'venta_cent')::bigint - (x->>'costo_cent')::bigint))::bigint from jsonb_array_elements(api.ds_desglose('origen')) x), (pg_temp.conc()->>'utilidad_pedidos_cent')::bigint, 'desglose por origen: venta - costo = utilidad');
 select is(pg_temp.fallan(), '', 'libro conciliado (C1..C24, CU1..CU3) con compra de inventario, ventas, envios y gastos');
 -- Anticipo al proveedor: un pago de la sociedad por encima de lo que se debe NO es utilidad
+-- Decision 12 (13-nov): el pago de la sociedad exige saldo en la Caja de la empresa; se deposita antes (reembolso al socio, no capital).
+select operacion.registrar_aportacion('pyl-dep', 'Angelo', 1000000, 'deposito a caja', 'reembolso');
 select operacion.ds_pagar_proveedor('pyl-pa', 'Karen', 1000000, 'sociedad', null, null, null);
 create temp table _cp as select api.ds_cuenta_proveedor('Karen') as c;
 select is((select (c->>'anticipo_cent')::bigint from _cp), (select greatest((c->>'saldo_cent')::bigint, 0) from _cp), 'el saldo a favor no respaldado por la utilidad se muestra como ANTICIPO al proveedor');

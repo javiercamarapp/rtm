@@ -162,6 +162,8 @@ select operacion.registrar_pago('ds-b2-cobro', 'Angelo', 104800, pg_temp.cli('DS
 select is(pg_temp.fallan(), '', '(b) libro conciliado: el cobro cayo en la cuenta de un socio (fondos en poder)');
 select is(operacion.saldo_socio((select id from catalogo.socio where nombre = 'Angelo'), 'fondos'), 104800::bigint, '(b) Angelo tiene en su poder 1,048.00 de la sociedad');
 select operacion.ds_pagar_proveedor('ds-b2-p1', 'Karen', 50000, 'socio_fondos', 'Angelo', null, pg_temp.ped('ds-b2:ped'));
+-- Decision 12 (13-nov): el pago de la sociedad exige saldo en la Caja de la empresa; se deposita antes (reembolso al socio, no capital).
+select operacion.registrar_aportacion('ds-b2-dep', 'Angelo', 39290, 'deposito a caja', 'reembolso');
 select operacion.ds_pagar_proveedor('ds-b2-p2', 'Karen', 39290, 'sociedad', null, null, pg_temp.ped('ds-b2:ped'));
 select is(pg_temp.fallan(), '', '(b) libro conciliado tras pagar con fondos del socio y con la sociedad');
 select is((select amortizado_cent from operacion.v_ds_pedido where pedido_id = pg_temp.ped('ds-b2:ped')), 89290::bigint, '(b) las dos amortizaciones suman el costo del pedido (10 x 89.29)');
@@ -172,6 +174,7 @@ select is((select por_pagar_cent from jsonb_to_record(api.ds_ficha(pg_temp.ped('
 -- ---------------------------------------------------------------------------
 select operacion.ds_crear_pedido('ds-c', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Sandia","piezas":100}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Tres'));
 select operacion.confirmar_pedido('ds-c-c', pg_temp.ped('ds-c:ped')); select operacion.enviar_pedido('ds-c-e', pg_temp.ped('ds-c:ped'), null, null, null, true);
+select operacion.registrar_aportacion('ds-c1-dep', 'Angelo', 300000, 'deposito a caja', 'reembolso');
 select operacion.ds_pagar_proveedor('ds-c1', 'Karen', 300000, 'sociedad', null, null, pg_temp.ped('ds-c:ped'));
 select operacion.ds_pagar_proveedor('ds-c2', 'Karen', 200000, 'socio_propio', 'Javier', null, pg_temp.ped('ds-c:ped'));
 select operacion.ds_pagar_proveedor('ds-c3', 'Karen', 100000, 'socio_capital', 'Angelo', null, pg_temp.ped('ds-c:ped'));
@@ -180,6 +183,7 @@ select is((select (por_pagar_cent) from jsonb_to_record(api.ds_ficha(pg_temp.ped
 select is((select clasificacion from operacion.aportacion_socio where concepto like '%Karen%' and monto_cent = 200000), 'reembolsable', '(c) el dinero propio del socio es REEMBOLSO por omision');
 select is((select clasificacion from operacion.aportacion_socio where concepto like '%Karen%' and monto_cent = 100000), 'capital', '(c) y capital solo cuando se declara');
 select is(pg_temp.fallan(), '', '(c) libro conciliado tras amortizaciones y pagos de socios');
+select operacion.registrar_aportacion('ds-c4-dep', 'Angelo', 400000, 'deposito a caja', 'reembolso');
 select operacion.ds_pagar_proveedor('ds-c4', 'Karen', 400000, 'sociedad', null, null, pg_temp.ped('ds-c:ped'));
 select is((select amortizado_cent from operacion.v_ds_pedido where pedido_id = pg_temp.ped('ds-c:ped')), 892900::bigint, '(c) la amortizacion se topa en el costo; el resto queda a cuenta');
 select is((select (r->>'a_cuenta_cent')::bigint from seguridad.operacion o, lateral (select o.resultado as r) q where o.clave = 'ds-c4'), 107100::bigint, '(c) 1,071.00 quedan como saldo a favor a cuenta');
