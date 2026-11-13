@@ -1,4 +1,8 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { capitalDeSocio } from '@/composicion/capital';
+import { etiquetaSocio, pctBp } from '@/dominio/capital/etiquetas';
+import { idCifraCapital } from '@/dominio/capital/explicar';
 import { contabilidadDeSocio } from '@/composicion/contabilidad';
 import { fechaNeg, sumarDias } from '@/dominio/calendario';
 import { esFecha } from '@/dominio/contabilidad/rangos';
@@ -25,7 +29,7 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
   const hasta = esFecha(q.hasta) ? q.hasta : hoy;
   const previo = sumarDias(hasta, -7);
   const lector = await contabilidadDeSocio();
-  const [b, p] = await Promise.all([lector.balance(hasta), lector.balance(previo).catch(() => null)]);
+  const [b, p, cap] = await Promise.all([lector.balance(hasta), lector.balance(previo).catch(() => null), capitalDeSocio(null, hasta).catch(() => null)]);
   const hayPrev = p !== null && p.con_movimientos;
   const dato = b.con_movimientos;
   const pasivoMasCapital = b.total_pasivo_cent + b.total_capital_cent;
@@ -109,6 +113,25 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
             {tabla('pasivo', 'Pasivo', b.total_pasivo_cent, hayPrev ? p!.total_pasivo_cent : null, b.total_activo_cent, 'balance-pasivo', false)}
             {tabla('capital', 'Capital', b.total_capital_cent, hayPrev ? p!.total_capital_cent : null, b.total_activo_cent, 'balance-capital', false)}
           </Rejilla>
+          {cap && cap.datos.acumulado.hay_movimientos && (
+            <Tarjeta plana titulo="Capital por socio al corte" descripcion={`Del primer movimiento al ${etiquetaFecha(hasta)}: aportaciones, utilidad y valuación de cada socio`} acciones={<Link className="rtm-boton" href={`/contabilidad/capital?hasta=${hasta}`}>Ver por mes</Link>}>
+              <div data-testid="balance-capital-socios">
+                <DataTable
+                  etiqueta="Capital por socio" densidad="densa" plana clave={(f) => f.socio} filas={cap.datos.acumulado.socios}
+                  totales={{ etiqueta: 'Total de los socios', celdas: { a: m(cap.datos.acumulado.total.aportaciones_capital_cent), u: m(cap.datos.acumulado.total.utilidad_generada_cent), t: m(cap.datos.acumulado.total.utilidad_retirada_cent), v: m(cap.datos.acumulado.total.valuacion_cent) } }}
+                  columnas={[
+                    { id: 's', titulo: 'Socio', ancho: 'm', celda: (f) => etiquetaSocio(f.socio, cap.mio) },
+                    { id: 'a', titulo: 'Aportaciones de capital', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.aportaciones_capital_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'aportaciones', sujeto: f.socio })} /> },
+                    { id: 'u', titulo: 'Utilidad generada', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.utilidad_generada_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'utilidad', sujeto: f.socio })} /> },
+                    { id: 't', titulo: 'Utilidad retirada', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.utilidad_retirada_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'retirada', sujeto: f.socio })} /> },
+                    { id: 'p', titulo: '% en libros', numerica: true, ancho: 's', secundaria: true, celda: (f) => pctBp(f.pct_valuacion_bp) ?? <span className="rtm-sin-dato">Sin dato</span> },
+                    { id: 'v', titulo: 'Valuación', numerica: true, ancho: 'm', celda: (f) => <CifraComprobada texto={m(f.valuacion_cent)} cifra={idCifraCapital({ desde: cap.datos.desde, hasta: cap.datos.hasta, mes: 'acum', campo: 'valuacion', sujeto: f.socio })} /> },
+                  ]}
+                />
+              </div>
+              <div className="a3-pie-tarjeta"><Pie>La suma de las valuaciones personales es el capital contable de este balance: {m(cap.datos.acumulado.total.valuacion_cent)} contra {m(b.total_capital_cent)} ({cap.datos.acumulado.total.valuacion_cent === b.total_capital_cent ? 'cuadra' : 'no cuadra'}).</Pie></div>
+            </Tarjeta>
+          )}
           <Rejilla dividir="4-4-4">
             <Tarjeta titulo="Mayores partidas del activo"><BarList etiquetaAria="Partidas del activo" items={top('activo').map((r) => ({ id: r.codigo, etiqueta: r.nombre, texto: m(r.monto_cent), pct: pct(r.monto_cent, b.total_activo_cent) }))} /></Tarjeta>
             <Tarjeta titulo="Pasivo y capital"><BarList etiquetaAria="Partidas de pasivo y capital" items={[...top('pasivo'), ...top('capital')].slice(0, 6).map((r) => ({ id: r.codigo, etiqueta: r.nombre, texto: m(r.monto_cent), pct: pct(r.monto_cent, pasivoMasCapital) }))} /></Tarjeta>

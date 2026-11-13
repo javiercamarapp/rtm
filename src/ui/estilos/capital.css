@@ -1,0 +1,13 @@
+/* Capital por mes: grafica sobria y tablas. Solo tokens del sistema; claro y oscuro salen de los mismos tokens. */
+.rtm-capital-grafica { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.rtm-capital-titulo { font-size: var(--rtm-t-cuerpo); font-weight: 600; color: var(--rtm-ink); }
+.rtm-capital-svg { width: 100%; height: auto; max-height: 260px; display: block; }
+.rtm-capital-eje { font-size: 11px; fill: var(--rtm-ink-3); font-variant-numeric: tabular-nums; }
+.rtm-capital-leyenda { display: flex; flex-wrap: wrap; gap: 4px 16px; list-style: none; margin: 0; padding: 0; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
+.rtm-capital-leyenda li { display: inline-flex; align-items: center; gap: 6px; }
+.rtm-capital-tabla-alterna summary { cursor: pointer; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); min-height: 32px; display: flex; align-items: center; }
+.rtm-capital-tabla-alterna table { width: 100%; border-collapse: collapse; font-size: var(--rtm-t-pequeno); font-variant-numeric: tabular-nums; }
+.rtm-capital-tabla-alterna th, .rtm-capital-tabla-alterna td { padding: 4px 8px; border-bottom: 1px solid var(--rtm-line); text-align: right; }
+.rtm-capital-tabla-alterna th:first-child { text-align: left; font-weight: 500; }
+.rtm-capital-nota { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); margin: 0; }
+.rtm-capital-igualar { display: block; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
