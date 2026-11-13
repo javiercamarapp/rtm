@@ -93,8 +93,12 @@ textarea.rtm-campo { height: auto; min-height: 72px; padding: 8px var(--rtm-ctl-
 .rtm-eco[data-tono='ok'] { border-color: color-mix(in srgb, var(--rtm-ok) 40%, var(--rtm-line-2)); }
 .rtm-eco[data-tono='error'] { border-color: color-mix(in srgb, var(--rtm-bad) 45%, var(--rtm-line-2)); color: var(--rtm-bad); }
 
+/* ---- Casillas y opciones: nunca por debajo de 20 px (24 px en movil, objetivo tactil minimo de WCAG 2.2); la etiqueta que las envuelve tambien es clicable ---- */
+body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { width: 20px; height: 20px; min-width: 20px; margin: 0; flex: none; accent-color: var(--rtm-ink); }
+
 /* ---- Movil: una columna y objetivos de 44 px ---- */
 @media (max-width: 767px) {
+  body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { width: 24px; height: 24px; min-width: 24px; }
   .rtm-form-fila { grid-template-columns: minmax(0, 1fr); }
   .rtm-form-fila > * { grid-column: auto !important; }
   .rtm-form-fila .rtm-campo-num, .rtm-campo-num, :is(.rtm-campo, .rtm-a2-campo > input)[type='date'] { width: 100%; }
