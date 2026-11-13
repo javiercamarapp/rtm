@@ -236,16 +236,22 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
   await page.reload();
   await cap(page, 'isaac-tras-pagos');
   // Cada socio registra lo que pago de su bolsillo a Isaac (dinero propio): 2,900.00 cada uno = los 5,800.00 del costo que no pusieron los socios.
-  // Es dinero de los socios, no de la caja de la sociedad: el efectivo (8,600) no cambia.
+  // Es dinero de los socios, no de la caja de la sociedad: el efectivo (8,600) no cambia. Regla del dueno: dinero propio = REEMBOLSO (cuenta por pagar al socio);
+  // solo es capital si el socio lo declara con la casilla (aqui NO se marca: el flujo debe quedar como reembolso y cuadrar igual).
   for (const socio of ['Angelo', 'Javier']) {
     await page.getByTestId('pago-socio').click();
     await page.getByLabel('Socio que pagó').selectOption(socio);
     await page.getByLabel(/Monto/).fill('2900');
-    await page.getByLabel('Con qué dinero').selectOption('aportacion');
+    await page.getByLabel('Con qué dinero').selectOption('dinero_propio');
+    await expect(page.getByTestId('declara-capital')).not.toBeChecked();
     await page.getByTestId('confirmar').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   }
   await expect.poll(async () => (await consultar<{ s: string }>("select operacion.saldo_proveedor(catalogo.proveedor_id('Isaac'))::text as s"))[0]!.s).toBe('-70000');
+  // Clasificacion: los 2 x 2,900.00 son reembolso (cuenta por pagar al socio), no capital; la apertura declaro el capital aparte.
+  const pagosPropios = await consultar<{ clasificacion: string; n: string; total: string }>("select clasificacion, count(*)::text as n, sum(monto_cent)::text as total from operacion.aportacion_socio where ref_tipo = 'cuenta_proveedor' group by clasificacion");
+  expect(pagosPropios.find((r) => r.clasificacion === 'capital')).toBeUndefined();
+  expect(pagosPropios.find((r) => r.clasificacion === 'reembolsable')).toMatchObject({ n: '2', total: '580000' });
   await page.reload();
   await cap(page, 'isaac-tras-pagos-de-socios');
 });

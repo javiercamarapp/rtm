@@ -37,7 +37,7 @@ try {
 
   // Isaac: descuento del proveedor y pago de un socio a su cuenta.
   await q("select operacion.registrar_ajuste_proveedor('demo3:aj1','Isaac',100000,'descuento_proveedor','Descuento ilustrativo por volumen')");
-  await q("select operacion.pago_proveedor_de_socio('demo3:pi1','Isaac',500000,'Javier','aportacion',negocio.hoy(),'Pago ilustrativo de un socio')");
+  await q("select operacion.pago_proveedor_de_socio('demo3:pi1','Isaac',500000,'Javier','dinero_propio',negocio.hoy(),'Pago ilustrativo de un socio')");
 
   // Omar: una toma a su precio y una pendiente de autorizacion.
   await q("select operacion.registrar_toma_omar('demo3:t1',$1::jsonb,2,15000,negocio.hoy())", [JSON.stringify({ modelo: 'Alfa Uno 50K', sabor: 'Fresa helada' })]);

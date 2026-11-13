@@ -38,7 +38,7 @@ try {
   await q("select operacion.recibir_compra('demo2:ocir',$1,$2::jsonb)", [ocI, JSON.stringify(sabores.map((s, i) => ({ linea_id: linea, sabor: s, piezas: cuentas[i] })))]);
   const dif = await id('select id from operacion.compra_diferencia order by id desc limit 1');
   await q("select operacion.asignar_diferencia('demo2:difa',$1,'socio','Angelo','Faltante de la recepcion ilustrativa')", [dif]);
-  await q("select operacion.pago_proveedor_de_socio('demo2:ppi','Isaac',900000,'Javier','aportacion',negocio.hoy(),'Pago ilustrativo de un socio')");
+  await q("select operacion.pago_proveedor_de_socio('demo2:ppi','Isaac',900000,'Javier','dinero_propio',negocio.hoy(),'Pago ilustrativo de un socio')");
 
   await q("select catalogo.asegurar_sku('Alfa Dos 50K','Mango')");
 
