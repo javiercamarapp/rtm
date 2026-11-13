@@ -74,7 +74,7 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
       <EncabezadoPagina
         eyebrow={`Contabilidad · balance general al ${etiquetaFecha(hasta)}`}
         titulo={`Activo igual a pasivo más capital: ${dato ? (b.cuadra ? 'cuadra' : 'no cuadra') : 'sin dato'}`}
-        descripcion="Inventario a costo; los saldos a favor con un proveedor van en el activo, cada proveedor por separado."
+        descripcion="Inventario a costo; los saldos a favor con un proveedor van en el activo, cada proveedor por separado. El libro suma a lo que se debe a Isaac y a Karen el costo de los pedidos a costo del socio de menudeo aún sin pagar; en Proveedores se separan."
         acciones={
           <form action="/contabilidad/balance" method="get" className="a3-filtros-form" aria-label="Corte del balance">
             <input className="rtm-campo" type="date" name="hasta" defaultValue={hasta} aria-label="Corte al" />
