@@ -34,9 +34,17 @@ test('Angelo propone el acta de octubre con retiro y reinversion y la firma', as
   await sesion(page, 'Angelo', '/socios/cascada?ini=2026-10-01&fin=2026-10-31');
   await expect(page.getByTestId('proponer-cierre')).toBeVisible();
   await page.getByTestId('proponer-cierre').click();
+  // La reinversion viene IGUAL para los dos por omision (la sugerencia de la base) y es editable; sin diferencia no hay alerta.
+  const sugA = await page.getByTestId('campo-a_reinvierte').inputValue();
+  const sugJ = await page.getByTestId('campo-j_reinvierte').inputValue();
+  expect(sugA).not.toBe('');
+  expect(sugA).toBe(sugJ);
+  await expect(page.getByTestId('alerta-reinversion-distinta')).toHaveCount(0);
   await page.getByTestId('campo-a_retira').fill('500');
   await page.getByTestId('campo-a_reinvierte').fill('300');
   await page.getByTestId('campo-j_reinvierte').fill('400');
+  // Con montos distintos solo hay una alerta informativa; no bloquea.
+  await expect(page.getByTestId('alerta-reinversion-distinta')).toBeVisible();
   await page.getByTestId('confirmar').click();
   await expect(page.getByRole('dialog')).toBeHidden({ timeout: 30_000 });
   const enlace = page.getByRole('row').filter({ hasText: 'Propuesto: faltan las dos firmas' }).getByRole('link', { name: /^CR-\d+$/ });
@@ -66,6 +74,21 @@ test('Javier firma, el acta se cierra con sello y se descarga el PDF', async ({ 
   expect(pdf.status()).toBe(200);
   expect(pdf.headers()['content-type']).toBe('application/pdf');
   expect((await pdf.body()).subarray(0, 5).toString()).toBe('%PDF-');
+  // Persistido con COMMIT real (cada firma es su propia transaccion): sello presente, asiento cuadrado, Libro conciliado verdadero y valuacion sellada = la de Capital por mes al corte.
+  const v = (await consultar<{ sellos: number; descuadre: string; conciliado: boolean; sa: string; ca: string; sj: string; cj: string }>(
+    `select (select count(*)::int from operacion.acta_sello where cierre_id = $1) as sellos,
+            (select coalesce(sum(l.debe_cent - l.haber_cent), 0)::text from contabilidad.asiento_linea l join contabilidad.asiento a on a.id = l.asiento_id
+              join operacion.cierre_reparto_firma f on f.evento_id = a.evento_id where f.cierre_id = $1) as descuadre,
+            (operacion.cuadre_socios()->>'libro_conciliado')::boolean as conciliado,
+            (select contenido->'valor_participacion_cent'->>'Angelo' from operacion.acta_sello where cierre_id = $1) as sa,
+            (select x->>'valuacion_cent' from jsonb_array_elements(operacion.cap_periodo('2026-10-31', '2026-10-31', false)->'socios') x where x->>'socio' = 'Angelo') as ca,
+            (select contenido->'valor_participacion_cent'->>'Javier' from operacion.acta_sello where cierre_id = $1) as sj,
+            (select x->>'valuacion_cent' from jsonb_array_elements(operacion.cap_periodo('2026-10-31', '2026-10-31', false)->'socios') x where x->>'socio' = 'Javier') as cj`, [actaId]))[0]!;
+  expect(v.sellos).toBe(1);
+  expect(v.descuadre).toBe('0');
+  expect(v.conciliado).toBe(true);
+  expect(v.sa).toBe(v.ca);
+  expect(v.sj).toBe(v.cj);
   // La cifra "Disponible" se explica por dos vias.
   await page.getByRole('row').filter({ hasText: 'Angelo' }).first().getByRole('button', { name: /Explicar este número/ }).click();
   await expect(page.getByTestId('explicar-cajon')).toContainText('Cuadra');
@@ -76,7 +99,8 @@ test('Historial personal: cabecera, ratios, linea de tiempo con el acta nueva, e
   await expect(page.getByRole('heading', { name: 'Historial de Angelo' })).toBeVisible();
   await expect(page.getByTestId('h-invertido')).toContainText('$');
   await expect(page.getByTestId('h-invertido')).toContainText('Aportaciones $40,000.00');
-  await expect(page.getByTestId('h-valor')).toContainText('Estimado');
+  await expect(page.getByTestId('h-valor')).toContainText('Capital aportado');
+  await expect(page.getByTestId('h-neta')).toContainText('$');
   await expect(page.getByRole('region', { name: 'Ratios de rendimiento' }).or(page.getByLabel('Ratios de rendimiento'))).toContainText('ROI');
   const tl = page.getByRole('table', { name: 'Actas de Angelo' });
   await expect(tl.getByRole('row').filter({ hasText: 'Firmada por los dos' })).toHaveCount(3);

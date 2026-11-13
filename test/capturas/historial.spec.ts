@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { altaUsuario, correoUnico, enlaceConfirmacion, ipFalsa } from '../e2e/ayudas';
 
 const SALIDA = join(__dirname, '../../docs/capturas/historial-acta');
-const BASE = 'http://127.0.0.1:3184';
+const BASE = `http://127.0.0.1:${process.env.E2E_PUERTO ?? '3184'}`;
 const PERFILES = [{ nombre: '1440', ancho: 1440, alto: 2200, movil: false }, { nombre: '390', ancho: 390, alto: 3800, movil: true }];
 const TEMAS = ['claro', 'oscuro'] as const;
 
@@ -41,6 +41,19 @@ test('capturas del historial y el acta', async ({ browser }) => {
         await page.screenshot({ path: join(SALIDA, `${p.nombre}-${tema}-${nombre}${ancho > 1 ? '-SCROLLH' : ''}.png`), fullPage: false });
         await page.close();
       }
+      // Formulario de propuesta de acta: reinversion IGUAL por omision y, con montos distintos, la alerta informativa (octubre sin acta: correr ANTES del e2e que la firma).
+      const f = await ctx.newPage();
+      await f.goto(`${BASE}/socios/cascada?ini=2026-10-01&fin=2026-10-31`, { waitUntil: 'networkidle', timeout: 180_000 });
+      if (await f.getByTestId('proponer-cierre').count()) {
+        await f.getByTestId('proponer-cierre').click();
+        await f.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
+        await f.waitForTimeout(300);
+        await f.screenshot({ path: join(SALIDA, `${p.nombre}-${tema}-proponer-acta-igual.png`), fullPage: false });
+        await f.getByTestId('campo-j_reinvierte').fill('1');
+        await f.waitForTimeout(200);
+        await f.screenshot({ path: join(SALIDA, `${p.nombre}-${tema}-proponer-acta-alerta.png`), fullPage: false });
+      }
+      await f.close();
       await ctx.close();
     }
   }

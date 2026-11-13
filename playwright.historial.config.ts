@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Pruebas e2e del Historial y el acta contra `next dev -p 3184` ya levantado y la base local propia (proyecto rtm-lane-hist, puertos 633xx) con la demo sembrada.
+// Pruebas e2e del Historial y el acta contra `next dev -p $E2E_PUERTO` (3184 por omision) ya levantado y la base local propia del worktree con la demo sembrada.
 export default defineConfig({
   testDir: 'test/e2e',
   testMatch: /historial-acta\.spec\.ts/,
@@ -9,6 +9,6 @@ export default defineConfig({
   workers: 1,
   timeout: 240_000,
   reporter: [['list']],
-  use: { baseURL: 'http://127.0.0.1:3184' },
+  use: { baseURL: `http://127.0.0.1:${process.env.E2E_PUERTO ?? '3184'}` },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });
