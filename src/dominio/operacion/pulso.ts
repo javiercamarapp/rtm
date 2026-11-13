@@ -54,7 +54,7 @@ function chipSocios(v: EntradasPulso['valuacion']): ChipPulso {
   const t = tarjetaValuacion(v.cuenta, v.yo, formatearMoneda);
   if (!t) return base;
   const x = formatearMoneda(v.cuenta.comparacion.diferencia_valuacion_cent);
-  const detalle = t.estado === 'igual' ? `igualado con ${t.otro}` : t.estado === 'mas' ? `+${x} contra ${t.otro}` : `-${x} contra ${t.otro}`;
+  const detalle = t.estado === 'igual' ? `igualado con ${t.otro}` : t.estado === 'mas' ? `+${x} vs ${t.otro}` : `-${x} vs ${t.otro}`;
   return { ...base, texto: t.valorTexto, cifra: `historial:valor:${v.yo}`, href: null, detalle };
 }
 

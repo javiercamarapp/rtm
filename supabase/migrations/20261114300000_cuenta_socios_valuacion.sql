@@ -76,8 +76,8 @@ begin
                        'b_nombre', 'Utilidad neta (Estado de resultados)', 'b_cent', coalesce((v_k3 ->> 'b_cent')::bigint, 0), 'ok', coalesce((v_k3 ->> 'ok')::boolean, false)),
     jsonb_build_object('id', 'S5', 'tipo', 'alerta', 'nombre', 'Retiros iguales (siempre nos pagamos lo mismo)', 'a_nombre', 'Retirado por Javier', 'a_cent', coalesce(v_ret_j, 0),
                        'b_nombre', 'Retirado por Angelo', 'b_cent', coalesce(v_ret_a, 0), 'ok', coalesce(v_ret_j, 0) = coalesce(v_ret_a, 0)),
-    jsonb_build_object('id', 'S6', 'tipo', 'identidad', 'nombre', 'Cada valuacion personal es la de la tabla de capital (una sola definicion)', 'a_nombre', 'Capital + utilidades - retirado - fondos', 'a_cent', v_t_val,
-                       'b_nombre', 'Valuacion de Capital por mes', 'b_cent', (v_cap -> 'total' ->> 'valuacion_cent')::bigint, 'ok', v_t_val = (v_cap -> 'total' ->> 'valuacion_cent')::bigint));
+    jsonb_build_object('id', 'S6', 'tipo', 'identidad', 'nombre', 'Cada valuación personal es la de la tabla de capital (una sola definición)', 'a_nombre', 'Capital + utilidades - retirado - fondos', 'a_cent', v_t_val,
+                       'b_nombre', 'Valuación de Capital por mes', 'b_cent', (v_cap -> 'total' ->> 'valuacion_cent')::bigint, 'ok', v_t_val = (v_cap -> 'total' ->> 'valuacion_cent')::bigint));
 
   -- Serie mensual: valuacion de cada socio al cierre de cada mes (misma funcion), con lo retirado acumulado.
   v_m := date_trunc('month', v_primera)::date; v_acum := jsonb_build_object('Angelo', 0, 'Javier', 0);
@@ -121,8 +121,8 @@ begin
     'identidades', v_ident, 'comprobaciones_libro', v_cap -> 'comprobaciones', 'serie', v_serie,
     'proveedores', jsonb_build_object('detalle', v_prov, 'se_debe_cent', v_prov_total, 'a_favor_cent', v_prov_fav, 'pedidos_socio_a_costo_cent', v_socio_costo,
       'deuda_empresa_cent', v_deuda_emp,
-      'nota', 'La posicion con el proveedor incluye los pedidos de Angelo a costo: los reembolsa el socio, no es deuda de la empresa.'),
-    'definicion', 'Valuacion = capital aportado + utilidades acumuladas - retirado - fondos de la sociedad en su poder. Sube con cada utilidad y baja solo cuando se retira.');
+      'nota', 'La posición con el proveedor incluye los pedidos de Angelo a costo: los reembolsa el socio, no es deuda de la empresa.'),
+    'definicion', 'Valuación = capital aportado + utilidades acumuladas - retirado - fondos de la sociedad en su poder. Sube con cada utilidad y baja solo cuando se retira.');
 end $$;
 
 create function api.cuenta_socios_valuacion(p_hasta date default null) returns jsonb

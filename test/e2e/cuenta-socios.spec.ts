@@ -92,10 +92,14 @@ test('capturas 1440 y 390, claro y oscuro', async ({ browser }) => {
         const ctx = await browser.newContext({ viewport: vp, colorScheme: tema === 'oscuro' ? 'dark' : 'light', reducedMotion: 'reduce', extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
         const page = await ctx.newPage();
         await sesion(page, socio, '/');
-        for (const [url, etiqueta] of [['/', 'inicio'], ['/socios', 'socios'], ['/contabilidad/balance', 'balance']] as const) {
+        // El contenido se desplaza dentro del armazon (no la ventana): se captura cada bloque con scroll hasta el.
+        const bloques: [string, string, string][] = [['/', 'inicio', 'inicio-valuacion'], ['/socios', 'socios-valuaciones', 'valuaciones'], ['/socios', 'socios-cuadra', 'panel-cuadra'], ['/socios', 'socios-serie', 'serie-valuacion'], ['/socios', 'socios-proveedores', 'prov-total'], ['/socios', 'socios-comprobaciones', 'comprobaciones'], ['/contabilidad/balance', 'balance-capital', 'balance-capital-socios'], ['/contabilidad/valuacion', 'valuacion-socios', 'valuacion-por-socio']];
+        for (const [url, etiqueta, testid] of bloques) {
           await page.goto(url);
           await page.waitForLoadState('networkidle');
-          await page.screenshot({ path: join(SALIDA, `${socio}-${nombre}-${tema}-${etiqueta}.png`), fullPage: etiqueta !== 'inicio' });
+          await page.getByTestId(testid).first().scrollIntoViewIfNeeded();
+          await page.waitForTimeout(300);
+          await page.screenshot({ path: join(SALIDA, `${socio}-${nombre}-${tema}-${etiqueta}.png`), fullPage: false });
         }
         await ctx.close();
       }

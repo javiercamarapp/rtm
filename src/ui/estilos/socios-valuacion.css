@@ -32,3 +32,7 @@
 .sv-inicio { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; min-width: 0; }
 .sv-inicio .sv-linea { margin: 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink); font-weight: var(--rtm-peso-medio); }
 .sv-inicio .sv-accion { margin: 0; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
+
+.sv-sangria { padding-left: 14px; display: inline-block; }
+.sv-negrita { font-weight: var(--rtm-peso-fuerte); }
+.sv-memo { color: var(--rtm-ink-3); font-style: italic; }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import '@/ui/estilos/socios-valuacion.css';
 import Link from 'next/link';
 import { valuacionDeSocios } from '@/composicion/valuacion-socios';
 import { filasCapitalPorSocio } from '@/dominio/socios/balance';
@@ -118,7 +119,7 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
                 <DataTable
                   etiqueta="Capital contable por socio" densidad="densa" plana clave={(f) => f.clave} filas={filasCapitalPorSocio(val.cuenta, val.yo)}
                   columnas={[
-                    { id: 'c', titulo: 'Concepto', ancho: 'xl', celda: (f) => <span data-testid={`bcs-${f.clave}`} className={f.nivel === 'rubro' ? undefined : 'a3-ef-subtotal'}>{f.etiqueta}</span> },
+                    { id: 'c', titulo: 'Concepto', ancho: 'xl', celda: (f) => <span data-testid={`bcs-${f.clave}`} className={f.nivel === 'rubro' ? 'sv-sangria' : f.nivel === 'memo' ? 'sv-memo' : 'sv-negrita'}>{f.etiqueta}</span> },
                     { id: 'm', titulo: 'Importe', numerica: true, ancho: 'm', celda: (f) => (f.cifra ? <CifraComprobada texto={m(f.monto_cent, f.nivel === 'rubro' && f.resta)} cifra={f.cifra} comprobacion="cuadra" /> : m(f.monto_cent)) },
                   ]}
                 />

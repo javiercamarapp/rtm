@@ -7,7 +7,7 @@ import { Tarjeta } from '@/ui/componentes/pagina';
 import { AreaSerie, Contador } from '@/ui/graficas';
 import { Estado, m, pct } from '../_a3/util';
 
-const quien = (socio: Socio, yo: Socio | null) => (socio === yo ? 'tú' : socio);
+const quien = (socio: Socio, yo: Socio | null) => (socio === yo ? `${socio} (tú)` : socio);
 
 /** Una tarjeta por socio: valuacion actual (cifra heroe animada), dos rubros claros, lo que resta y la composicion. */
 export function TarjetaValuacionSocio({ f, yo }: { f: FilaSocioValuacion; yo: Socio | null }) {
@@ -102,7 +102,7 @@ export function SeccionDeudaProveedores({ c }: { c: CuentaSociosValuacion }) {
       <ul className="sv-rubros">
         {p.detalle.map((d) => (
           <li key={d.proveedor}>
-            <span>Se le debe a {d.proveedor}<small>{d.pedidos_socio_a_costo_cent === null ? 'Posición completa del libro' : `Incluye ${m(d.pedidos_socio_a_costo_cent)} de pedidos de Angelo a costo; deuda de la empresa ${m(d.deuda_empresa_cent ?? 0n)}`}</small></span>
+            <span>Se le debe a {d.proveedor}<small>{d.pedidos_socio_a_costo_cent === null || d.pedidos_socio_a_costo_cent === 0n ? 'Posición completa del libro; toda es deuda de la empresa' : `Incluye ${m(d.pedidos_socio_a_costo_cent)} de pedidos de Angelo a costo; deuda de la empresa ${m(d.deuda_empresa_cent ?? 0n)}`}</small></span>
             <span data-testid={`prov-${d.proveedor}`}>{m(d.se_debe_cent)}</span>
           </li>
         ))}

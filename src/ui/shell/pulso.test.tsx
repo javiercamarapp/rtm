@@ -29,7 +29,7 @@ describe('armarPulso', () => {
   it('Javier ve cuanto tiene de mas', () => {
     const c = armarPulso({ ...vacio, valuacion: { cuenta: cuentaVal, yo: 'Javier' } }).chips[2]!;
     expect(c.texto).toBe('$154,832.30');
-    expect(c.detalle).toBe('+$47,921.91 contra Angelo');
+    expect(c.detalle).toBe('+$47,921.91 vs Angelo');
   });
   it('sin ninguna lectura todo es "Sin dato" y el corte tambien', () => {
     const p = armarPulso(vacio);
@@ -75,7 +75,7 @@ describe('armarPulso', () => {
     expect(p.chips[1]!.cifra).toBe('cxc:total');
     expect(p.chips[2]!.cifra).toBe('historial:valor:Angelo');
     expect(p.chips[2]!.texto).toBe('$106,910.39');
-    expect(p.chips[2]!.detalle).toBe('-$47,921.91 contra Javier');
+    expect(p.chips[2]!.detalle).toBe('-$47,921.91 vs Javier');
     expect(p.chips[3]!.texto).toBe('15 pz');
     expect(p.chips[3]!.cifra).toBeNull();
     expect(p.chips[3]!.href).toBe('/inventario');
