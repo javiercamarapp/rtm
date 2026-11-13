@@ -275,7 +275,8 @@ language sql immutable set search_path = ''
 as $$
   select jsonb_build_object('pedido_id', v.pedido_id, 'folio', v.folio, 'fecha_neg', v.fecha_neg, 'fecha_envio', v.fecha_envio, 'estado', v.estado, 'origen', v.origen, 'origen_surtido', v.origen_surtido,
     'proveedor', v.proveedor, 'folio_externo', v.folio_externo, 'tipo_venta', v.tipo_venta, 'cliente_id', v.cliente_id, 'cliente', v.cliente, 'piezas_pedidas', v.piezas_pedidas, 'piezas_surtidas', v.piezas_surtidas,
-    'real', v.real, 'venta_cent', v.venta_cent, 'costo_cent', v.costo_cent, 'seguro_cent', v.seguro_cent, 'margen_cent', v.venta_cent - v.costo_cent - v.seguro_cent, 'utilidad_cent', v.utilidad_cent,
+    'real', v.real, 'venta_cent', v.venta_cent, 'costo_cent', v.costo_cent, 'seguro_cent', v.seguro_cent, 'costo_total_cent', v.costo_total_cent, 'guia_cent', v.guia_cent,
+    'margen_producto_cent', v.venta_cent - v.costo_cent - v.seguro_cent, 'margen_cent', v.utilidad_total_cent, 'utilidad_cent', v.utilidad_total_cent, 'utilidad_provisional', v.utilidad_provisional,
     'saldo_cliente_cent', v.saldo_cliente_cent, 'interes_cent', v.interes_cent, 'tasa_semanal_bp', v.tasa_semanal_bp, 'semanas', v.semanas, 'fecha_pago_pactada', v.fecha_pago_pactada, 'modo_interes', v.modo_interes,
     'amortizado_cent', v.amortizado_cent, 'por_pagar_cent', case when v.origen_surtido = 'dropshipping' and v.estado = 'enviado' then greatest(v.costo_cent - v.seguro_cent - v.amortizado_cent, 0) else 0 end,
     'avisos', v.avisos, 'tiene_destinatario', v.tiene_destinatario)
@@ -316,7 +317,7 @@ begin
         select case p_dim when 'origen' then v.origen_surtido when 'semana' then to_char(date_trunc('week', v.fecha_envio), 'YYYY-MM-DD') when 'mes' then to_char(v.fecha_envio, 'YYYY-MM') else v.cliente_id::text end as clave,
                min(case p_dim when 'origen' then v.origen_surtido when 'semana' then to_char(date_trunc('week', v.fecha_envio), 'YYYY-MM-DD') when 'mes' then to_char(v.fecha_envio, 'YYYY-MM') else v.cliente end) as etiqueta,
                case p_dim when 'cliente' then -sum(v.venta_cent) else 0 end as orden,
-               count(*)::int as pedidos, sum(v.piezas_surtidas)::int as piezas, sum(v.venta_cent)::bigint as venta, sum(v.costo_cent + v.seguro_cent)::bigint as costo,
+               count(*)::int as pedidos, sum(v.piezas_surtidas)::int as piezas, sum(v.venta_cent)::bigint as venta, sum(v.costo_total_cent)::bigint as costo,
                coalesce(sum(greatest(v.saldo_cliente_cent, 0)), 0)::bigint as cobrar,
                coalesce(sum(case when v.origen_surtido = 'dropshipping' then greatest(v.costo_cent - v.seguro_cent - v.amortizado_cent, 0) else 0 end), 0)::bigint as pagar,
                coalesce(sum(v.interes_cent), 0)::bigint as interes
@@ -345,7 +346,7 @@ begin
     into v_por_origen
   from (values ('dropshipping', 1), ('inventario_merida', 2)) o (k, ord)
   left join (
-    select v.origen_surtido, count(*) as pedidos, sum(v.piezas_surtidas) as piezas, sum(v.venta_cent) as venta, sum(v.costo_cent + v.seguro_cent) as costo, sum(greatest(v.saldo_cliente_cent, 0)) as cobrar,
+    select v.origen_surtido, count(*) as pedidos, sum(v.piezas_surtidas) as piezas, sum(v.venta_cent) as venta, sum(v.costo_total_cent) as costo, sum(greatest(v.saldo_cliente_cent, 0)) as cobrar,
            sum(case when v.origen_surtido = 'dropshipping' then greatest(v.costo_cent - v.seguro_cent - v.amortizado_cent, 0) else 0 end) as pagar, sum(v.interes_cent) as interes
     from operacion.v_ds_pedido v where v.estado = 'enviado' and (p_desde is null or v.fecha_envio >= p_desde) and (p_hasta is null or v.fecha_envio <= p_hasta) group by v.origen_surtido) d on d.origen_surtido = o.k;
   return jsonb_build_object('por_origen', v_por_origen,
@@ -436,6 +437,8 @@ begin
                          'amortizado', coalesce((select jsonb_agg(jsonb_build_object('folio', pe.folio, 'monto_cent', a.monto_cent)) from operacion.ds_amortizacion a join operacion.pedido pe on pe.id = a.pedido_id where a.movimiento_id = m.id), '[]'::jsonb))
                          order by m.id desc)
                        from operacion.cuenta_proveedor_mov m where m.proveedor_id = v_prov and m.concepto in ('pago_sociedad', 'pago_socio', 'pago_cliente_redirigido', 'ajuste', 'reversa')), '[]'::jsonb),
+    'reinvertida_cent', coalesce((select sum(u.reinvertida_cent) from operacion.v_ds_utilidad u join operacion.v_ds_pedido v on v.pedido_id = u.pedido_id where v.proveedor_id = v_prov), 0),
+    'anticipo_cent', greatest(v_saldo, 0) - least(greatest(v_saldo, 0), coalesce((select sum(u.reinvertida_cent) from operacion.v_ds_utilidad u join operacion.v_ds_pedido v on v.pedido_id = u.pedido_id where v.proveedor_id = v_prov), 0)),
     'costo_enviado_cent', coalesce((select sum(v.costo_cent - v.seguro_cent) from operacion.v_ds_pedido v where v.origen_surtido = 'dropshipping' and v.proveedor_id = v_prov and v.estado = 'enviado'), 0),
     'amortizado_cent', coalesce((select sum(v.amortizado_cent) from operacion.v_ds_pedido v where v.origen_surtido = 'dropshipping' and v.proveedor_id = v_prov and v.estado = 'enviado'), 0));
 end $$;
@@ -454,14 +457,14 @@ end $$;
 create function api.ds_explicar(p_cifra text) returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
-declare p text[] := string_to_array(p_cifra, ':'); v_met text; v_org text; v_d date; v_h date; v1 bigint; v2 bigint; v_titulo text; v_rengs jsonb; v_cargos bigint; v_unidad text := 'mxn';
+declare p text[] := string_to_array(p_cifra, ':'); v_met text; v_org text; v_d date; v_h date; v1 bigint; v2 bigint; v_titulo text; v_rengs jsonb; v_cargos bigint; v_extra bigint; v_unidad text := 'mxn';
 begin
   perform seguridad.exigir_rol(array['socio']);
   if array_length(p, 1) <> 5 or p[1] <> 'ds' then raise exception 'cifra desconocida' using errcode = '22023'; end if;
   v_met := p[2]; v_org := case p[3] when 'todos' then null else p[3] end; v_d := nullif(p[4], '-')::date; v_h := nullif(p[5], '-')::date;
   if v_met not in ('pedidos', 'piezas', 'venta', 'costo', 'margen', 'porcobrar', 'porpagar') then raise exception 'cifra desconocida' using errcode = '22023'; end if;
   if v_org is not null and v_org not in ('dropshipping', 'inventario_merida') then raise exception 'cifra desconocida' using errcode = '22023'; end if;
-  select coalesce(sum(case v_met when 'pedidos' then 1 when 'piezas' then v.piezas_surtidas when 'venta' then v.venta_cent when 'costo' then v.costo_cent + v.seguro_cent when 'margen' then v.venta_cent - v.costo_cent - v.seguro_cent
+  select coalesce(sum(case v_met when 'pedidos' then 1 when 'piezas' then v.piezas_surtidas when 'venta' then v.venta_cent when 'costo' then v.costo_total_cent when 'margen' then v.utilidad_total_cent
                                  when 'porcobrar' then greatest(v.saldo_cliente_cent, 0) else case when v.origen_surtido = 'dropshipping' then greatest(v.costo_cent - v.seguro_cent - v.amortizado_cent, 0) else 0 end end), 0)::bigint
     into v1 from operacion.v_ds_pedido v where v.estado = 'enviado' and (v_d is null or v.fecha_envio >= v_d) and (v_h is null or v.fecha_envio <= v_h) and (v_org is null or v.origen_surtido = v_org);
   -- Segunda via: por modelo vendido (mercancia) mas los cargos del pedido (envio, recargo, descuento) y, para costo, el seguro de reenvio.
@@ -470,19 +473,25 @@ begin
   select coalesce(sum(c.monto_cent), 0)::bigint into v_cargos from operacion.pedido_cargo c join operacion.pedido pe on pe.id = c.pedido_id and pe.estado = 'enviado'
     where (v_d is null or pe.fecha_envio >= v_d) and (v_h is null or pe.fecha_envio <= v_h) and (v_org is null or operacion.origen_surtido(pe.origen) = v_org);
   if v_met in ('venta', 'margen') then v2 := v2 + v_cargos; end if;
-  if v_met = 'costo' then v2 := v2 + coalesce((select sum(v.seguro_cent) from operacion.v_ds_pedido v where v.estado = 'enviado' and (v_d is null or v.fecha_envio >= v_d) and (v_h is null or v.fecha_envio <= v_h) and (v_org is null or v.origen_surtido = v_org)), 0); end if;
-  if v_met = 'pedidos' then v2 := (select count(distinct s.pedido_id) from operacion.v_ds_surtido s where (v_d is null or s.fecha_envio >= v_d) and (v_h is null or s.fecha_envio <= v_h) and (v_org is null or s.origen_surtido = v_org)); v_unidad := 'unidades'; end if;
-  if v_met = 'piezas' then v_unidad := 'piezas'; end if;
+  -- Costo total por la segunda via: mercancia por modelo + seguro de reenvio + envio del proveedor (tabla de guias) + renta de bodega (renglones). El margen es venta - costo por esta via.
+  select coalesce(sum(v.seguro_cent), 0)::bigint + coalesce(sum((select coalesce(sum(g.costo_cent), 0) from operacion.guia g where g.pedido_id = v.pedido_id)), 0)::bigint
+         + coalesce(sum((select coalesce(sum(l.renta_cent), 0) from operacion.pedido_linea l where l.pedido_id = v.pedido_id)), 0)::bigint into v_extra
+    from operacion.v_ds_pedido v where v.estado = 'enviado' and (v_d is null or v.fecha_envio >= v_d) and (v_h is null or v.fecha_envio <= v_h) and (v_org is null or v.origen_surtido = v_org);
+  if v_met = 'costo' then v2 := v2 + v_extra; end if;
+  if v_met = 'margen' then v2 := v2 - v_extra; end if;
+  if v_met = 'pedidos' then v2 := (select count(distinct s.pedido_id) from operacion.v_ds_surtido s where (v_d is null or s.fecha_envio >= v_d) and (v_h is null or s.fecha_envio <= v_h) and (v_org is null or s.origen_surtido = v_org)); v_unidad := 'ident'; end if;
+  if v_met = 'piezas' then v_unidad := 'pz'; end if;
   if v_met in ('porcobrar', 'porpagar') then v2 := v1; end if;
   v_titulo := case v_met when 'pedidos' then 'Pedidos enviados' when 'piezas' then 'Piezas surtidas' when 'venta' then 'Venta' when 'costo' then 'Costo de venta' when 'margen' then 'Margen'
                          when 'porcobrar' then 'Por cobrar a clientes' else 'Por pagar al proveedor' end
               || case v_org when 'dropshipping' then ' (dropshipping)' when 'inventario_merida' then ' (inventario en Merida)' else '' end;
-  select coalesce(jsonb_agg(jsonb_build_object('concepto', v.folio || ' · ' || v.cliente, 'monto_cent', case v_met when 'pedidos' then 1 when 'piezas' then v.piezas_surtidas when 'venta' then v.venta_cent when 'costo' then v.costo_cent + v.seguro_cent
-                                                 when 'margen' then v.venta_cent - v.costo_cent - v.seguro_cent when 'porcobrar' then greatest(v.saldo_cliente_cent, 0)
+  select coalesce(jsonb_agg(jsonb_build_object('concepto', v.folio || ' · ' || v.cliente, 'monto_cent', case v_met when 'pedidos' then 1 when 'piezas' then v.piezas_surtidas when 'venta' then v.venta_cent when 'costo' then v.costo_total_cent
+                                                 when 'margen' then v.utilidad_total_cent when 'porcobrar' then greatest(v.saldo_cliente_cent, 0)
                                                  else case when v.origen_surtido = 'dropshipping' then greatest(v.costo_cent - v.seguro_cent - v.amortizado_cent, 0) else 0 end end, 'fecha_neg', v.fecha_envio) order by v.pedido_id desc), '[]'::jsonb)
     into v_rengs from operacion.v_ds_pedido v where v.estado = 'enviado' and (v_d is null or v.fecha_envio >= v_d) and (v_h is null or v.fecha_envio <= v_h) and (v_org is null or v.origen_surtido = v_org);
+  if v_met in ('pedidos', 'piezas') then v_rengs := '[]'::jsonb; end if;
   return jsonb_build_object('cifra', p_cifra, 'titulo', v_titulo, 'valor', v1, 'unidad', v_unidad,
-    'comprobacion', jsonb_build_object('via1', 'Suma por pedido enviado', 'via1_valor', v1, 'via2', case when v_met in ('porcobrar', 'porpagar') then 'Misma suma (saldo por pedido)' else 'Suma por modelo vendido' || case when v_met in ('venta', 'margen') then ' mas cargos del pedido' else '' end end,
+    'comprobacion', jsonb_build_object('via1', 'Suma por pedido enviado', 'via1_valor', v1, 'via2', case when v_met in ('porcobrar', 'porpagar') then 'Misma suma (saldo por pedido)' else 'Suma por modelo vendido' || case when v_met in ('venta', 'margen') then ' mas cargos del pedido' else '' end || case when v_met in ('costo', 'margen') then ', seguro, guias y renta' else '' end end,
                                        'via2_valor', v2, 'cuadra', v1 = v2),
     'renglones', v_rengs, 'movimientos', '[]'::jsonb);
 end $$;

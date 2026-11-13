@@ -187,7 +187,8 @@ end $$;
 -- ---------------------------------------------------------------------------
 -- Vistas internas (sin privilegios para la web; solo las leen las funciones api.ds_* de rol socio)
 -- ---------------------------------------------------------------------------
-create view operacion.v_ds_pedido with (security_barrier = true) as
+-- Base: una fila por pedido (cualquier origen). v_ds_pedido le agrega la utilidad total y el costo total del pedido.
+create view operacion.v_ds_pedido_b with (security_barrier = true) as
 select pe.id as pedido_id, pe.folio, pe.fecha_neg, pe.fecha_envio, pe.estado, pe.origen, operacion.origen_surtido(pe.origen) as origen_surtido,
        case when pe.origen = 'isaac_directo' then 'Isaac' when pe.origen in ('karen_directo', 'karen_via_isaac') then 'Karen' end as proveedor,
        pd.proveedor_id, pd.folio_externo, pd.tipo_venta, pd.socio_id as socio_venta_id,
@@ -202,7 +203,10 @@ select pe.id as pedido_id, pe.folio, pe.fecha_neg, pe.fecha_envio, pe.estado, pe
        -- Seguro de reenvio que se debe a Isaac cuando Karen manda via Isaac (no es costo de mercancia de Karen).
        case when pe.origen = 'karen_via_isaac' then coalesce((catalogo.config_valor('seguro_reenvio_cent', coalesce(pe.fecha_envio, pe.fecha_neg)))::text::bigint, 0)
                                                    * (select coalesce(sum(l.piezas_surtidas), 0) from operacion.pedido_linea l where l.pedido_id = pe.id) else 0 end::bigint as seguro_cent,
-       (select (n.snapshot_interno->'cascada'->>'utilidad_cent')::bigint from operacion.nota n where n.pedido_id = pe.id order by n.id desc limit 1) as utilidad_cent,
+       (nn.c->>'utilidad_cent')::bigint as utilidad_cent,
+       (nn.c->>'guia_cent')::bigint as guia_cent,
+       coalesce((nn.c->>'renta_cent')::bigint, 0) as renta_nota_cent,
+       coalesce((nn.c->>'utilidad_provisional')::boolean, false) as utilidad_provisional,
        case when pe.estado = 'enviado' then operacion.pedido_saldo(pe.id) end as saldo_cliente_cent,
        pe.recargo_cent, pe.plazo_dias,
        cr.tasa_semanal_bp, cr.semanas, cr.fecha_pago_pactada, cr.modo as modo_interes, cr.interes_cent, cr.base_cent as base_credito_cent,
@@ -213,7 +217,17 @@ select pe.id as pedido_id, pe.folio, pe.fecha_neg, pe.fecha_envio, pe.estado, pe
 from operacion.pedido pe
 join catalogo.cliente c on c.id = pe.cliente_id
 left join operacion.pedido_ds pd on pd.pedido_id = pe.id
-left join operacion.pedido_credito cr on cr.pedido_id = pe.id;
+left join operacion.pedido_credito cr on cr.pedido_id = pe.id
+left join lateral (select n.snapshot_interno->'cascada' as c from operacion.nota n where n.pedido_id = pe.id order by n.id desc limit 1) nn on true;
+
+-- UTILIDAD (definicion del dueno, 13-nov): precio de venta (con el envio cobrado al cliente como ingreso) MENOS todo lo que cuesta el pedido: producto, seguro de reenvio,
+-- envio del proveedor (guia) y cualquier costo directo (renta de bodega en pedidos de inventario). Es la misma que sale en la nota interna (cascada) y en el Estado de resultados.
+-- Sin nota (pedido aun no enviado) es un ESTIMADO: venta - costo de referencia - seguro.
+create view operacion.v_ds_pedido with (security_barrier = true) as
+select b.*,
+       coalesce(b.utilidad_cent, b.venta_cent - b.costo_cent - b.seguro_cent)::bigint as utilidad_total_cent,
+       (b.venta_cent - coalesce(b.utilidad_cent, b.venta_cent - b.costo_cent - b.seguro_cent))::bigint as costo_total_cent
+from operacion.v_ds_pedido_b b;
 
 -- Una fila por lo surtido (marca, modelo, sabor): venta de mercancia = piezas x precio del renglon; costo = costo del surtido.
 create view operacion.v_ds_surtido with (security_barrier = true) as
@@ -227,4 +241,4 @@ join catalogo.modelo m on m.id = k.modelo_id
 join catalogo.marca ma on ma.id = m.marca_id
 join catalogo.sabor sa on sa.id = k.sabor_id;
 
-revoke all on operacion.v_ds_pedido, operacion.v_ds_surtido from public, anon, authenticated;
+revoke all on operacion.v_ds_pedido_b, operacion.v_ds_pedido, operacion.v_ds_surtido from public, anon, authenticated;
