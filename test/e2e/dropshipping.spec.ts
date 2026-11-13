@@ -13,6 +13,7 @@ const MARCA = 'E2E DS Marca';
 const MODELO = `E2E DS Modelo ${SUFIJO}`;
 const CLIENTE = `E2E DS Cliente ${SUFIJO}`;
 const CLIENTE_B = `E2E DS Cliente B ${SUFIJO}`;
+const FOLIO = String(70000 + Math.floor(Math.random() * 29999));
 const DIR = 'docs/capturas/dropshipping';
 mkdirSync(DIR, { recursive: true });
 
@@ -45,13 +46,19 @@ async function tema(page: Page, t: 'claro' | 'oscuro') {
   await page.evaluate((x) => { localStorage.setItem('rtm-tema', x); document.documentElement.dataset.tema = x; }, t);
 }
 async function capturar(page: Page, nombre: string, testInfo: { project: { name: string } }) {
+  // La app desplaza dentro de su panel: se alarga la ventana para que la captura muestre la pagina completa.
+  const original = page.viewportSize();
+  if (original) await page.setViewportSize({ width: original.width, height: original.width > 800 ? 2600 : 3600 });
+  await page.waitForTimeout(300);
   for (const t of ['claro', 'oscuro'] as const) {
     await tema(page, t);
     await page.waitForTimeout(250);
     await page.screenshot({ path: `${DIR}/${nombre}-${testInfo.project.name}-${t}.png`, fullPage: true });
   }
   await tema(page, 'claro');
+  if (original) await page.setViewportSize(original);
 }
+const celdasSurtido = (page: Page) => page.$$eval('[data-testid^="surtido-"]', (els) => els.filter((e) => /^surtido-\d+$/.test(e.getAttribute('data-testid') ?? '')).map((e) => e.textContent ?? ''));
 const num = (s: string) => Number(s.replace(/[^0-9.-]/g, ''));
 
 test('captura el pedido, copia la orden, registra el folio de Karen, paga en parcialidades y ve el desglose', async ({ page }, testInfo) => {
@@ -68,7 +75,7 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
   await page.getByTestId('ds-pegado').fill('Fresa 40\nMango 35\nUva 25');
   await page.getByTestId('ds-agregar-pegado').click();
   await expect(page.getByTestId('ds-renglones').locator('li')).toHaveCount(3);
-  await expect(page.getByTestId('prev-piezas')).toHaveText('100');
+  await expect(page.getByTestId('prev-piezas')).toHaveText('100 pz');
   await expect(page.getByTestId('prev-costo')).toHaveText('$8,929.00');
   await expect(page.getByTestId('prev-venta')).toHaveText('$10,480.00');
   await expect(page.getByTestId('prev-margen')).toContainText('$1,551.00');
@@ -108,9 +115,9 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
   await expect(page.getByTestId('telefono-valor')).toHaveText('9990001111');
   const rev = await conDb((c) => c.query("select count(*)::int n from entrega.revelacion where pedido_id = $1 and accion in ('telefono','orden')", [idPedido]));
   expect(Number(rev.rows[0].n)).toBeGreaterThanOrEqual(2);
-  await page.getByTestId('folio-externo-campo').fill('73266');
+  await page.getByTestId('folio-externo-campo').fill(FOLIO);
   await page.getByTestId('folio-externo-guardar').click();
-  await expect(page.getByTestId('ds-folio-ext-etiqueta')).toContainText('73266');
+  await expect(page.getByTestId('ds-folio-ext-etiqueta')).toContainText(FOLIO);
   await page.getByTestId('ds-confirmar').click();
   await expect(page.getByTestId('ds-estado')).toContainText('Confirmado');
   await page.getByTestId('ds-enviado').click();
@@ -119,13 +126,13 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
 
   // Pagos parciales a Karen (amortizaciones)
   await page.goto('/dropshipping/pagos?proveedor=Karen');
-  for (const [fuente, monto] of [['sociedad', '3000'], ['socio_propio', '2000']] as const) {
+  for (const [fuente, monto, socio] of [['socio_propio', '3000', 'Angelo'], ['socio_propio', '2000', 'Javier']] as const) {
     await page.getByTestId('ds-nuevo-pago').click();
     await page.getByTestId('ds-pago-fuente').selectOption(fuente);
-    if (fuente === 'socio_propio') await page.getByTestId('ds-pago-socio').selectOption('Javier');
+    await page.getByTestId('ds-pago-socio').selectOption(socio);
     await page.getByTestId('ds-pago-pedido').selectOption({ index: 1 });
     await page.getByTestId('ds-pago-monto').fill(monto);
-    await page.getByRole('button', { name: 'Registrar pago' }).click();
+    await page.getByTestId('confirmar').click();
     await expect(page.getByTestId('ds-pago-monto')).toHaveCount(0);
   }
   const amort = await conDb((c) => c.query('select coalesce(sum(monto_cent),0)::bigint s from operacion.ds_amortizacion where pedido_id = $1', [idPedido]));
@@ -137,15 +144,15 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
   await page.getByTestId('ds-pago-cliente').selectOption({ label: CLIENTE });
   await page.getByTestId('ds-pago-pedido').selectOption({ index: 1 });
   await page.getByTestId('ds-pago-monto').fill('10480');
-  await page.getByRole('button', { name: 'Registrar pago' }).click();
+  await page.getByTestId('confirmar').click();
   await expect(page.getByTestId('ds-pago-monto')).toHaveCount(0);
   await capturar(page, 'pagos-karen', testInfo);
 
   // Buscar por folio de Karen
   await page.goto('/dropshipping/pedidos');
-  await page.getByTestId('ds-buscar').fill('73266');
+  await page.getByTestId('ds-buscar').fill(FOLIO);
   await page.getByTestId('ds-filtrar').click();
-  await expect(page.getByTestId(`folio-ext-${idPedido}`)).toHaveText('73266');
+  await expect(page.getByTestId(`folio-ext-${idPedido}`)).toHaveText(FOLIO);
   await capturar(page, 'pedidos-ds', testInfo);
 
   // Utilidad: 1,551.00 en total, 775.50 por socio, todo reinvertido; Explicar este numero cuadra
@@ -169,16 +176,19 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
   await page.goto('/pedidos');
   await expect(page.getByTestId(`surtido-${idPedido}`)).toHaveText('Dropshipping');
   await page.getByTestId('surtido-dropshipping').click();
+  await page.waitForURL(/surtido=dropshipping/);
   await expect(page.getByTestId(`surtido-${idPedido}`)).toBeVisible();
-  const filasDs = await page.locator('[data-testid^="surtido-"]').allTextContents();
+  const filasDs = await celdasSurtido(page);
   expect(filasDs.every((t) => t === 'Dropshipping')).toBe(true);
   await page.getByTestId('surtido-inventario').click();
-  const filasInv = await page.locator('[data-testid^="surtido-"]').allTextContents();
+  await page.waitForURL(/surtido=inventario_merida/);
+  const filasInv = await celdasSurtido(page);
   expect(filasInv.length).toBeGreaterThanOrEqual(1);
   expect(filasInv.every((t) => t === 'Inventario en Mérida')).toBe(true);
   await expect(page.getByTestId(`surtido-${idPedido}`)).toHaveCount(0);
   await capturar(page, 'pedidos-filtro-inventario', testInfo);
   await page.getByTestId('surtido-todos').click();
+  await page.waitForURL((u) => !u.searchParams.has('surtido'));
   await capturar(page, 'pedidos-todos', testInfo);
   expect(num('0')).toBe(0);
 });
@@ -219,8 +229,14 @@ test('el pedido a costo para un socio no genera utilidad y suma a las piezas mov
   await page.getByTestId('ds-credito').check();
   await page.getByTestId('ds-crear').click();
   await expect(page.getByTestId('ds-creado')).toBeVisible();
+  await page.getByTestId('ir-ficha').click();
+  await page.waitForURL(/\/dropshipping\/pedidos\/\d+$/);
+  await page.getByTestId('ds-confirmar').click();
+  await expect(page.getByTestId('ds-estado')).toContainText('Confirmado');
   await page.goto('/dropshipping/por-cobrar');
-  await expect(page.getByText('Vence en 7 d').first()).toBeVisible();
+  await expect(page.getByText('Por enviar').first()).toBeVisible();
+  await expect(page.getByText('$104.80').first()).toBeVisible();
+  await expect(page.getByText('10.00 % x 1 sem. (simple)').first()).toBeVisible();
   await capturar(page, 'por-cobrar', testInfo);
 
   // Cuenta de socios: aportacion neta sin lenguaje de deuda

@@ -55,7 +55,7 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
       />
       <PestanasDs activa="resumen" sinFolio={r.sin_folio_externo} />
       <BarraFiltros etiquetaAria="Periodo y origen" extras={desde || hasta || origen ? <Chip href="/dropshipping">Quitar filtros</Chip> : undefined}>
-        <form className="rtm-form-fila" method="get" aria-label="Periodo">
+        <form className="rtm-form-fila rtm-ds-filtros" method="get" aria-label="Periodo">
           <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
           <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
           <button type="submit" className="rtm-boton">Aplicar</button>
@@ -66,7 +66,7 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
       <KpiLinea
         etiquetaAria="Indicadores de dropshipping"
         celdas={[
-          { id: 'ds-pedidos', etiqueta: 'Pedidos enviados (dropshipping)', valor: cif('pedidos', 'dropshipping', String(dsCol?.pedidos ?? 0)), categoria: 1, nota: `${formatearPiezas(dsCol?.piezas ?? 0)} piezas · en curso ${r.en_curso.find((e) => e.origen_surtido === 'dropshipping')?.pedidos ?? 0}`, testid: 'kpi-ds-pedidos' },
+          { id: 'ds-pedidos', etiqueta: 'Pedidos enviados (dropshipping)', valor: cif('pedidos', 'dropshipping', String(dsCol?.pedidos ?? 0)), categoria: 1, nota: `${formatearPiezas(dsCol?.piezas ?? 0)} · en curso ${r.en_curso.find((e) => e.origen_surtido === 'dropshipping')?.pedidos ?? 0}`, testid: 'kpi-ds-pedidos' },
           { id: 'ds-venta', etiqueta: 'Venta (dropshipping)', valor: cif('venta', 'dropshipping', formatearMoneda(dsCol?.venta_cent ?? 0n)), categoria: 2, nota: `Costo total ${formatearMoneda(dsCol?.costo_cent ?? 0n)}` },
           { id: 'ds-margen', etiqueta: 'Utilidad (dropshipping)', valor: cif('margen', 'dropshipping', formatearMoneda(dsCol?.margen_cent ?? 0n)), categoria: 3, nota: 'Venta menos todo el costo del pedido' },
           { id: 'ds-karen', etiqueta: 'Por pagar a proveedores', valor: cif('porpagar', 'dropshipping', formatearMoneda(dsCol?.por_pagar_cent ?? 0n)), categoria: 4, nota: karen ? `Posición con Karen: ${formatearMoneda(karen.saldo_cent)}` : undefined },
@@ -105,9 +105,9 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
         <Tarjeta titulo="Piezas movidas a proveedores" descripcion="Incluye pedidos a costo para socios, que no generan utilidad">
           <div className="rtm-a1-cuerpo">
             <p className="rtm-a1-subtitulo">Por proveedor</p>
-            {pm.por_proveedor.length ? <BarList etiquetaAria="Piezas por proveedor" items={pm.por_proveedor.map((p) => ({ id: p.proveedor, etiqueta: p.proveedor, texto: formatearPiezas(p.piezas), pct: pm.total > 0 ? (p.piezas / pm.total) * 100 : null, nota: `${p.pedidos} pedidos` }))} /> : <p className="rtm-a1-estado-vacio">Sin pedidos de dropshipping todavía.</p>}
+            {pm.por_proveedor.length ? <BarList etiquetaAria="Piezas por proveedor" items={pm.por_proveedor.map((p) => ({ id: p.proveedor, etiqueta: p.proveedor, texto: formatearPiezas(p.piezas), pct: pm.total > 0 ? (p.piezas / pm.total) * 100 : null, nota: `${p.pedidos} ${p.pedidos === 1 ? 'pedido' : 'pedidos'}` }))} /> : <p className="rtm-a1-estado-vacio">Sin pedidos de dropshipping todavía.</p>}
             <p className="rtm-a1-subtitulo">Por socio (a costo)</p>
-            {pm.por_socio.length ? <BarList etiquetaAria="Piezas a costo por socio" items={pm.por_socio.map((s) => ({ id: s.socio, etiqueta: s.socio, texto: formatearPiezas(s.piezas), pct: pm.a_costo_socios > 0 ? (s.piezas / pm.a_costo_socios) * 100 : null, nota: `${s.pedidos} pedidos · cobrado ${formatearMoneda(s.costo_cent)} (solo costo)` }))} /> : <p className="rtm-a1-estado-vacio">Ningún socio ha pedido a costo todavía.</p>}
+            {pm.por_socio.length ? <BarList etiquetaAria="Piezas a costo por socio" items={pm.por_socio.map((s) => ({ id: s.socio, etiqueta: s.socio, texto: formatearPiezas(s.piezas), pct: pm.a_costo_socios > 0 ? (s.piezas / pm.a_costo_socios) * 100 : null, nota: `${s.pedidos} ${s.pedidos === 1 ? 'pedido' : 'pedidos'} · cobrado ${formatearMoneda(s.costo_cent)} (solo costo)` }))} /> : <p className="rtm-a1-estado-vacio">Ningún socio ha pedido a costo todavía.</p>}
           </div>
         </Tarjeta>
       </Rejilla>

@@ -32,7 +32,7 @@ export default async function PaginaUtilidadDs({ searchParams }: { searchParams:
       />
       <PestanasDs activa="utilidad" sinFolio={resumen.sin_folio_externo} />
       <BarraFiltros etiquetaAria="Periodo" extras={desde || hasta ? <Chip href="/dropshipping/utilidad">Quitar filtros</Chip> : undefined}>
-        <form className="rtm-form-fila" method="get" aria-label="Periodo">
+        <form className="rtm-form-fila rtm-ds-filtros" method="get" aria-label="Periodo">
           <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
           <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
           <button type="submit" className="rtm-boton">Aplicar</button>

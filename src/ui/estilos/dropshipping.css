@@ -1,0 +1,12 @@
+/* Dropshipping: filtros en linea (periodo, busqueda) sin romper el sistema unico de controles. */
+.rtm-form-fila.rtm-ds-filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.rtm-form-fila.rtm-ds-filtros > .rtm-etiqueta-campo { flex: 0 1 auto; min-width: 0; }
+.rtm-form-fila.rtm-ds-filtros > .rtm-campo-ancho { flex: 1 1 auto; min-width: 220px; }
+@media (max-width: 767px) { .rtm-form-fila.rtm-ds-filtros > .rtm-etiqueta-campo { flex: 1 1 auto; width: 100%; min-width: 0; } }
+
+/* Datos de ficha (destinatario, vista previa): etiqueta y valor en dos columnas, una columna angosta bajo 480 px. */
+.rtm-ficha-datos { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 6px 16px; margin: 0; }
+.rtm-ficha-datos > div { display: contents; }
+.rtm-ficha-datos dt { color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); }
+.rtm-ficha-datos dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 480px) { .rtm-ficha-datos { grid-template-columns: 1fr; gap: 0; } .rtm-ficha-datos dd { margin-bottom: 8px; } }

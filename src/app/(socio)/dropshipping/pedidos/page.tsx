@@ -56,7 +56,7 @@ export default async function PaginaPedidosDs({ searchParams }: { searchParams: 
         <Segmentado etiquetaAria="Origen" tamano="chico" opciones={[
           { valor: 'dropshipping', etiqueta: 'Dropshipping', href: enlace({ origen: '' }), activa: origen === 'dropshipping' }, { valor: 'inventario_merida', etiqueta: 'Inventario en Mérida', href: enlace({ origen: 'inventario_merida' }), activa: origen === 'inventario_merida' },
           { valor: 'todos', etiqueta: 'Todos', href: enlace({ origen: 'todos' }), activa: origen === null }]} />
-        <form className="rtm-form-fila" method="get" aria-label="Buscar y filtrar">
+        <form className="rtm-form-fila rtm-ds-filtros" method="get" aria-label="Buscar y filtrar">
           <input type="hidden" name="origen" value={sp['origen'] ?? ''} />
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Folio del proveedor, folio o cliente<input className="rtm-campo" type="search" name="q" defaultValue={busqueda ?? ''} data-testid="ds-buscar" placeholder="73266" /></label>
           <label className="rtm-etiqueta-campo">Proveedor<select className="rtm-campo" name="proveedor" defaultValue={proveedor ?? ''}><option value="">Todos</option><option value="Karen">Karen</option><option value="Isaac">Isaac</option></select></label>

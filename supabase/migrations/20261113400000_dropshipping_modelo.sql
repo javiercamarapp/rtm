@@ -47,6 +47,7 @@ begin
   end if;
   return new;
 end $$;
+revoke execute on function operacion.t_pedido_ds() from public, anon, authenticated;
 create trigger pedido_ds_t before update or delete on operacion.pedido_ds for each row execute function operacion.t_pedido_ds();
 create trigger pedido_ds_t_trunc before truncate on operacion.pedido_ds for each statement execute function seguridad.t1_solo_insercion();
 

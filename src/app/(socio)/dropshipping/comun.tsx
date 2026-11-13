@@ -1,4 +1,5 @@
 import { Pestanas } from '@/ui/componentes/controles';
+import '@/ui/estilos/dropshipping.css';
 import type { OrigenSurtido } from '@/dominio/dropshipping/tipos';
 
 export const ORIGEN_SURTIDO: Record<OrigenSurtido, string> = { dropshipping: 'Dropshipping', inventario_merida: 'Inventario en Mérida' };
