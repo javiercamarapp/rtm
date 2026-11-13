@@ -155,6 +155,13 @@ describe('insights', () => {
     expect(r[0]!.id).toBe('a-favor');
     expect(r[0]!.frase).toContain('$40.00');
   });
+  it('con anticipo grande el pronostico dice que quedara a favor, no un pago negativo', () => {
+    const gran = { ...proy, pago_al_corte_cent: { central: -897330n, bajo: -897550n, alto: -897112n } } as Proyeccion;
+    const f = insights({ ...estado, saldo_cent: -898874n, por_pagar_cent: 0n, a_favor_cent: 898874n }, gran, est).find((x) => x.id === 'pago-corte')!;
+    expect(f.frase).toContain('no habrá nada por pagar');
+    expect(f.frase).toContain('$8,973.30');
+    expect(f.frase).not.toContain('−');
+  });
   it('sin ningun pago registrado pide accion', () => {
     const r = insights(estado, proy, estadisticas(serie, [], estado));
     expect(r.find((x) => x.id === 'por-pagar')).toMatchObject({ severidad: 'Acción' });

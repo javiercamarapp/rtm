@@ -162,10 +162,14 @@ export function insights(e: EstadoRenta, proy: Proyeccion, est: Estadisticas): I
     r.push({ id: 'al-corriente', etiqueta: 'Cuenta al corriente', frase: 'Todo lo devengado está pagado.', severidad: 'Informa', procedencia: 'observado', cifra: { valor: 0, tipo: 'moneda' } });
   }
   if (proy.emitida) {
+    const c = proy.pago_al_corte_cent;
+    const ritmo = `el ritmo de los últimos ${proy.muestra.dias_ventana} días (${proy.ritmo_diario_pz.toFixed(1)} pz por día)`;
     r.push({
       id: 'pago-corte', etiqueta: 'Pronóstico al corte',
-      frase: `Si sigue el ritmo de los últimos ${proy.muestra.dias_ventana} días (${proy.ritmo_diario_pz.toFixed(1)} pz por día), pagarás ${m(proy.pago_al_corte_cent.central)} el ${fechaLarga(proy.fecha_corte)} (rango ${m(proy.pago_al_corte_cent.bajo)} a ${m(proy.pago_al_corte_cent.alto)}).`,
-      severidad: 'Informa', procedencia: 'estimado', cifra: { valor: Number(proy.pago_al_corte_cent.central), tipo: 'moneda' },
+      frase: c.central > 0n
+        ? `Si sigue ${ritmo}, pagarás ${m(c.central)} el ${fechaLarga(proy.fecha_corte)} (rango ${m(c.bajo < 0n ? 0n : c.bajo)} a ${m(c.alto < 0n ? 0n : c.alto)}).`
+        : `Si sigue ${ritmo}, el ${fechaLarga(proy.fecha_corte)} no habrá nada por pagar: quedarán ${m(-c.central)} a favor de Omar (anticipo).`,
+      severidad: 'Informa', procedencia: 'estimado', cifra: { valor: Number(c.central > 0n ? c.central : 0n), tipo: 'moneda' },
     });
   } else {
     const mu = proy.muestra;
