@@ -23,7 +23,7 @@ export function filasCapitalPorSocio(c: CuentaSociosValuacion, yo: Socio | null)
     filas.push({ clave: `ret-${nombre}`, etiqueta: `Retiros - ${nombre}`, monto_cent: -f.retirado_cent, nivel: 'rubro', resta: true, cifra: `historial:retirado:${nombre}` });
     filas.push({ clave: `sub-${nombre}`, etiqueta: `Capital contable de ${nombre}${nombre === yo ? ' (tú)' : ''}`, monto_cent: f.subtotal_cent, nivel: 'subtotal', resta: false });
     if (f.fondos_en_poder_cent > 0n) {
-      filas.push({ clave: `fondos-${nombre}`, etiqueta: `Fondos de la sociedad en poder de ${nombre} (memorando, resta)`, monto_cent: -f.fondos_en_poder_cent, nivel: 'memo', resta: true });
+      filas.push({ clave: `fondos-${nombre}`, etiqueta: `Fondos de la sociedad en poder de ${nombre} (memorando, resta)`, monto_cent: -f.fondos_en_poder_cent, nivel: 'memo', resta: true, cifra: `socio:fondos:${nombre}` });
       filas.push({ clave: `val-${nombre}`, etiqueta: `Valuación personal de ${nombre}`, monto_cent: f.valuacion_cent, nivel: 'subtotal', resta: false, cifra: `historial:valor:${nombre}` });
     }
   }

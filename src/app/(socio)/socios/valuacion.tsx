@@ -26,7 +26,7 @@ export function TarjetaValuacionSocio({ f, yo }: { f: FilaSocioValuacion; yo: So
         <li><span>Capital aportado ({propio ? 'lo que invertiste' : 'lo que invirtió'})</span><span data-testid={`capital-${f.socio}`}><CifraComprobada texto={m(f.capital_aportado_cent)} cifra={`historial:invertido:${f.socio}`} comprobacion="cuadra" /></span></li>
         <li><span>Utilidades acumuladas<small>Siempre 50 % y 50 %</small></span><span data-testid={`utilidades-${f.socio}`}><CifraComprobada texto={m(f.utilidades_acumuladas_cent)} cifra={`historial:utilidad:${f.socio}`} comprobacion="cuadra" /></span></li>
         <li className="sv-resta"><span>Retirado ({propio ? 'lo que te has pagado' : 'lo que se ha pagado'})<small>Resta</small></span><span data-testid={`retirado-${f.socio}`}><CifraComprobada texto={m(f.retirado_cent)} cifra={`historial:retirado:${f.socio}`} comprobacion="cuadra" /></span></li>
-        {f.fondos_en_poder_cent > 0n && <li className="sv-resta"><span>Fondos de la sociedad en {ver} poder<small>Resta: dinero de la sociedad que aún no entrega</small></span><span data-testid={`fondos-${f.socio}`}>{m(f.fondos_en_poder_cent)}</span></li>}
+        {f.fondos_en_poder_cent > 0n && <li className="sv-resta"><span>Fondos de la sociedad en {ver} poder<small>Resta: dinero de la sociedad que aún no entrega</small></span><span data-testid={`fondos-${f.socio}`}><CifraComprobada texto={m(f.fondos_en_poder_cent)} cifra={`socio:fondos:${f.socio}`} comprobacion="cuadra" /></span></li>}
         <li className="sv-total"><span>Valuación actual</span><span><CifraComprobada texto={m(f.valuacion_cent)} cifra={`historial:valor:${f.socio}`} comprobacion="cuadra" /></span></li>
       </ul>
       <div role="img" aria-label={`Composición: capital aportado ${pCap.toFixed(0)} %, utilidades acumuladas ${pUt.toFixed(0)} %`}>
@@ -100,7 +100,12 @@ export function SeccionDeudaProveedores({ c }: { c: CuentaSociosValuacion }) {
   return (
     <Tarjeta titulo="Deuda con proveedores" descripcion="Posición completa del libro (cuentas de Isaac y Karen), separada de los pedidos de Angelo a costo">
       <ul className="sv-rubros">
-        {p.detalle.map((d) => fila(`Se le debe a ${d.proveedor}`, m(d.saldo_cent < 0n ? 0n : d.saldo_cent), `prov-${d.proveedor}`))}
+        {p.detalle.map((d) => (
+          <li key={d.proveedor}>
+            <span>Se le debe a {d.proveedor}<small>{d.pedidos_socio_a_costo_cent === null ? 'Posición completa del libro' : `Incluye ${m(d.pedidos_socio_a_costo_cent)} de pedidos de Angelo a costo; deuda de la empresa ${m(d.deuda_empresa_cent ?? 0n)}`}</small></span>
+            <span data-testid={`prov-${d.proveedor}`}>{m(d.se_debe_cent)}</span>
+          </li>
+        ))}
         {fila('Total en cuentas de proveedores', m(p.se_debe_cent), 'prov-total')}
         {p.pedidos_socio_a_costo_cent !== null && fila('Pedidos de Angelo a costo (los paga el socio)', m(p.pedidos_socio_a_costo_cent), 'prov-pedidos-socio')}
         {p.deuda_empresa_cent !== null && <li className="sv-total"><span>Deuda de la empresa</span><span data-testid="prov-empresa">{m(p.deuda_empresa_cent)}</span></li>}

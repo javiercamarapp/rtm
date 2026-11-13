@@ -17,7 +17,7 @@
 --   Retiros: 'siempre nos pagamos lo mismo'. Si los retirados difieren hay alerta y la diferencia a igualar en retiros.
 --   Proveedores: posicion del Mayor (2110 Isaac, 2120 Karen: positivo se debe). Los pedidos de Angelo a costo enviados (socio_a_costo) estan DENTRO de esa cuenta pero los reembolsa el socio:
 --     se muestran aparte ('pedidos del socio a costo') y la deuda de la empresa es el saldo del Mayor menos esa parte.
---     TODO: cuando fix/posicion-proveedores (operacion.posicion_proveedor) llegue a main, tomar el desglose por proveedor de esa funcion; aqui se calcula con SQL propio y solo en total.
+--     El desglose por proveedor sale de operacion.posicion_proveedor (migracion 20261114200000, una sola posicion con el proveedor): se_debe, pedidos del socio a costo y deuda de la empresa.
 
 create function operacion.cuenta_socios_valuacion(p_hasta date default null) returns jsonb
 language plpgsql stable security definer set search_path = ''
@@ -30,7 +30,7 @@ declare
   v_t_cap bigint := 0; v_t_util bigint := 0; v_t_ret bigint := 0; v_t_fondos bigint := 0; v_t_lib bigint := 0; v_t_val bigint := 0;
   v_mayor text; v_menor text; v_vmax bigint; v_vmin bigint; v_x bigint; v_y bigint; v_ret_a bigint; v_ret_j bigint; v_util_a bigint; v_util_j bigint;
   v_bal jsonb; v_ident jsonb; v_k jsonb; v_serie jsonb := '[]'::jsonb; v_m date; v_fin date; v_ini date; v_p jsonb; r jsonb; v_acum jsonb := '{}'::jsonb; v_n int := 0;
-  v_prov jsonb; v_prov_total bigint := 0; v_prov_fav bigint := 0; v_socio_costo bigint := null; v_hay boolean; v_k1 jsonb; v_k3 jsonb; v_cons_neta bigint;
+  v_prov jsonb; v_prov_total bigint := 0; v_prov_fav bigint := 0; v_socio_costo bigint := null; v_deuda_emp bigint := null; v_hay boolean; v_k1 jsonb; v_k3 jsonb; v_cons_neta bigint;
 begin
   select min(a.fecha_contable) into v_primera from contabilidad.asiento a;
   v_primera := least(coalesce(v_primera, v_hasta), v_hasta);
@@ -95,14 +95,18 @@ begin
     v_m := (v_m + interval '1 month')::date; v_n := v_n + 1;
   end loop;
 
-  -- Proveedores: posicion del Mayor y pedidos del socio a costo (dentro de la cuenta, a cargo del socio).
-  select coalesce(jsonb_agg(jsonb_build_object('proveedor', e ->> 'proveedor', 'saldo_cent', (e ->> 'saldo_cent')::bigint) order by e ->> 'proveedor'), '[]'::jsonb),
-         coalesce(sum(greatest((e ->> 'saldo_cent')::bigint, 0)), 0), coalesce(sum(greatest(-(e ->> 'saldo_cent')::bigint, 0)), 0)
-    into v_prov, v_prov_total, v_prov_fav from jsonb_array_elements(v_cap -> 'proveedores') e;
-  if v_hasta >= v_hoy then
-    select coalesce(sum(operacion.pedido_saldo(pe.id)), 0)::bigint into v_socio_costo
-      from operacion.pedido pe join operacion.pedido_ds pd on pd.pedido_id = pe.id where pe.estado = 'enviado' and pd.tipo_venta = 'socio_a_costo';
-  end if;
+  -- Proveedores: operacion.posicion_proveedor (la posicion del Mayor con la separacion de los pedidos del socio a costo). Solo con corte hoy: el auxiliar de pedidos no tiene corte por fecha.
+  select coalesce(jsonb_agg(d order by d ->> 'proveedor'), '[]'::jsonb) into v_prov from (
+    select jsonb_build_object('proveedor', e ->> 'proveedor', 'saldo_cent', (e ->> 'saldo_cent')::bigint,
+             'se_debe_cent', (pp ->> 'se_debe_cent')::bigint, 'a_favor_cent', (pp ->> 'a_favor_cent')::bigint,
+             'pedidos_socio_a_costo_cent', case when v_hasta >= v_hoy then (pp ->> 'menudeo_pendiente_cent')::bigint end,
+             'deuda_empresa_cent', case when v_hasta >= v_hoy then (pp ->> 'deuda_empresa_cent')::bigint end) as d
+      from jsonb_array_elements(v_cap -> 'proveedores') e
+      cross join lateral (select operacion.posicion_proveedor(catalogo.proveedor_id(e ->> 'proveedor'), case when v_hasta >= v_hoy then null else v_hasta end) as pp) l) q;
+  select coalesce(sum((d ->> 'se_debe_cent')::bigint), 0), coalesce(sum((d ->> 'a_favor_cent')::bigint), 0),
+         case when v_hasta >= v_hoy then coalesce(sum((d ->> 'pedidos_socio_a_costo_cent')::bigint), 0) end,
+         case when v_hasta >= v_hoy then coalesce(sum((d ->> 'deuda_empresa_cent')::bigint), 0) end
+    into v_prov_total, v_prov_fav, v_socio_costo, v_deuda_emp from jsonb_array_elements(v_prov) d;
 
   return jsonb_build_object('hasta', v_hasta, 'hoy', v_hoy, 'primera_fecha', v_primera, 'hay_movimientos', v_hay, 'socios', v_socios,
     'total', jsonb_build_object('capital_aportado_cent', v_t_cap, 'utilidades_acumuladas_cent', v_t_util, 'retirado_cent', v_t_ret, 'fondos_en_poder_cent', v_t_fondos, 'subtotal_cent', v_t_lib, 'valuacion_cent', v_t_val),
@@ -116,8 +120,8 @@ begin
       'capital_contable_cent', (v_bal ->> 'total_capital_cent')::bigint, 'cuadra', (v_bal ->> 'cuadra')::boolean),
     'identidades', v_ident, 'comprobaciones_libro', v_cap -> 'comprobaciones', 'serie', v_serie,
     'proveedores', jsonb_build_object('detalle', v_prov, 'se_debe_cent', v_prov_total, 'a_favor_cent', v_prov_fav, 'pedidos_socio_a_costo_cent', v_socio_costo,
-      'deuda_empresa_cent', case when v_socio_costo is null then null else v_prov_total - v_socio_costo end,
-      'nota', 'El saldo del Mayor incluye los pedidos de Angelo a costo: los reembolsa el socio, no es deuda de la empresa.'),
+      'deuda_empresa_cent', v_deuda_emp,
+      'nota', 'La posicion con el proveedor incluye los pedidos de Angelo a costo: los reembolsa el socio, no es deuda de la empresa.'),
     'definicion', 'Valuacion = capital aportado + utilidades acumuladas - retirado - fondos de la sociedad en su poder. Sube con cada utilidad y baja solo cuando se retira.');
 end $$;
 

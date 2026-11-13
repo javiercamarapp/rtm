@@ -102,4 +102,14 @@ test('capturas 1440 y 390, claro y oscuro', async ({ browser }) => {
     }
   }
 });
-// Omar y la bodega: sin acceso a api.cuenta_socios_valuacion (exigir_rol dentro de la funcion); lo comprueba pgTAP a9_002 (throws_ok con sesion de Omar y has_function_privilege).
+
+
+// Omar entra a su vista (/mi-bodega), no al Inicio: con destino '/' la espera de la URL no termina (defecto de la prueba anterior, no un bloqueo del login). Sin sesion de socio no ve la cuenta de socios.
+test('Omar no ve la cuenta de socios', async ({ page }) => {
+  const correo = correoUnico('cs-omar');
+  await altaUsuario({ correo, rol: 'omar', activo: true });
+  await entrarComo(page, correo, '/mi-bodega');
+  await page.goto('/socios');
+  await expect(page.getByTestId('valuaciones')).toHaveCount(0);
+  await expect(page.getByText('Valuación actual')).toHaveCount(0);
+});

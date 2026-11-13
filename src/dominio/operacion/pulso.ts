@@ -1,6 +1,7 @@
 // Pulso de arriba y pie de pagina: cifras reales de las lecturas existentes. Nunca un cero inventado: sin datos, "Sin dato".
 import type { Existencia } from '../catalogo/tipos';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '../formato';
+import { tarjetaValuacion, type CuentaSociosValuacion, type Socio } from '../socios/valuacion';
 import type { CuentaProveedor, CuentaSocios, CuentasPorCobrar } from './tipos';
 
 export interface ChipPulso {
@@ -22,6 +23,8 @@ export interface EntradasPulso {
   isaac: CuentaProveedor | null;
   cxc: CuentasPorCobrar | null;
   socios: CuentaSocios | null;
+  /** Valuacion de los socios (api.cuenta_socios_valuacion) y el socio con sesion: alimenta el chip personal 'Tu valuacion'. */
+  valuacion?: { cuenta: CuentaSociosValuacion; yo: Socio } | null;
   existencia: Existencia | null;
 }
 
@@ -43,10 +46,16 @@ function chipCobrar(c: CuentasPorCobrar | null): ChipPulso {
   return { ...base, texto: formatearMoneda(c.total_cent), cifra: 'cxc:total', href: null };
 }
 
-function chipSocios(s: CuentaSocios | null): ChipPulso {
-  const base: ChipPulso = { clave: 'socios', etiqueta: 'Entre socios', texto: null, cifra: null, href: '/socios', detalle: null };
-  if (!s || (s.movimientos.length === 0 && s.costo_cent === 0n)) return base;
-  return { ...base, texto: formatearMoneda(s.javier_debe_a_angelo_cent, { conSigno: true }), cifra: 'socios:diferencia', href: null };
+/** Tu valuacion (reemplaza a 'Entre socios', que mostraba la diferencia informativa por la compra): la valuacion personal y cuanto mas o menos tiene contra el otro socio.
+ *  Misma fuente que Inicio, Cuenta de socios y Balance (api.cuenta_socios_valuacion). Sin sesion de socio con nombre o sin lectura: "Sin dato". */
+function chipSocios(v: EntradasPulso['valuacion']): ChipPulso {
+  const base: ChipPulso = { clave: 'socios', etiqueta: 'Tu valuación', texto: null, cifra: null, href: '/socios', detalle: null };
+  if (!v || !v.cuenta.hay_movimientos) return base;
+  const t = tarjetaValuacion(v.cuenta, v.yo, formatearMoneda);
+  if (!t) return base;
+  const x = formatearMoneda(v.cuenta.comparacion.diferencia_valuacion_cent);
+  const detalle = t.estado === 'igual' ? `igualado con ${t.otro}` : t.estado === 'mas' ? `+${x} contra ${t.otro}` : `-${x} contra ${t.otro}`;
+  return { ...base, texto: t.valorTexto, cifra: `historial:valor:${v.yo}`, href: null, detalle };
 }
 
 /** En bodega: suma de piezas de los modelos con movimientos. Aun no hay una cifra explicable del total: enlaza al inventario, donde cada modelo si se explica. */
@@ -59,7 +68,7 @@ function chipBodega(e: Existencia | null): ChipPulso {
 }
 
 export function armarPulso(e: EntradasPulso): Pulso {
-  const chips = [chipIsaac(e.isaac), chipCobrar(e.cxc), chipSocios(e.socios), chipBodega(e.existencia)];
+  const chips = [chipIsaac(e.isaac), chipCobrar(e.cxc), chipSocios(e.valuacion), chipBodega(e.existencia)];
   const fecha = e.cxc?.hoy ?? e.socios?.hoy ?? null;
   const hayDatos = chips.some((c) => c.texto !== null);
   return { chips, corte: hayDatos && fecha ? etiquetaFecha(fecha) : null };

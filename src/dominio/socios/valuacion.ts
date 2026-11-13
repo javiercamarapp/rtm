@@ -67,7 +67,7 @@ export interface CuentaSociosValuacion {
   comprobaciones_libro: { id: string; nombre: string; a_nombre: string; a_cent: bigint; b_nombre: string; b_cent: bigint; ok: boolean; unidad?: 'n' }[];
   serie: MesSerie[];
   proveedores: {
-    detalle: { proveedor: string; saldo_cent: bigint }[];
+    detalle: { proveedor: string; saldo_cent: bigint; se_debe_cent: bigint; a_favor_cent: bigint; pedidos_socio_a_costo_cent: bigint | null; deuda_empresa_cent: bigint | null }[];
     se_debe_cent: bigint;
     a_favor_cent: bigint;
     /** null = el corte no es hoy (el auxiliar de pedidos no tiene corte por fecha). */

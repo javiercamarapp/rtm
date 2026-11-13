@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { armarPulso, type EntradasPulso } from '@/dominio/operacion/pulso';
 import type { Existencia } from '@/dominio/catalogo/tipos';
 import type { CuentaProveedor, CuentaSocios, CuentasPorCobrar } from '@/dominio/operacion/tipos';
+import type { CuentaSociosValuacion } from '@/dominio/socios/valuacion';
 import { ExplicarProvider } from '@/ui/componentes/explicar';
 import { Pulso } from '@/ui/shell/pulso';
 
@@ -13,11 +14,27 @@ const cxc = (total: bigint, filas = 1) => ({ hoy: '2026-11-11', filas: new Array
 const socios = (d: bigint, hayMovs = true) => ({ hoy: '2026-11-11', costo_cent: hayMovs ? 100n : 0n, javier_debe_a_angelo_cent: d, movimientos: hayMovs ? [{}] : [] }) as unknown as CuentaSocios;
 const bodega = (piezas: (number | null)[]): Existencia => ({ modelos: piezas.map((p, i) => ({ modeloId: i, marca: 'm', modelo: `m${i}`, estado: 'disponible', piezas: p, valorCent: null, costoPromCent: null, ultimoMovimiento: null })), sabores: [] });
 
+const cuentaVal = {
+  hay_movimientos: true,
+  socios: [{ socio: 'Angelo', valuacion_cent: 10691039n }, { socio: 'Javier', valuacion_cent: 15483230n }],
+  comparacion: { mayor: 'Javier', menor: 'Angelo', igualados: false, diferencia_valuacion_cent: 4792191n, aportar_para_igualar_cent: 4792191n },
+} as unknown as CuentaSociosValuacion;
+
 describe('armarPulso', () => {
+  it('sin valuacion el chip personal dice Sin dato y nunca la diferencia informativa por la compra', () => {
+    const c = armarPulso({ ...vacio, socios: socios(-5758250n) }).chips[2]!;
+    expect(c.texto).toBeNull();
+    expect(c.etiqueta).toBe('Tu valuación');
+  });
+  it('Javier ve cuanto tiene de mas', () => {
+    const c = armarPulso({ ...vacio, valuacion: { cuenta: cuentaVal, yo: 'Javier' } }).chips[2]!;
+    expect(c.texto).toBe('$154,832.30');
+    expect(c.detalle).toBe('+$47,921.91 contra Angelo');
+  });
   it('sin ninguna lectura todo es "Sin dato" y el corte tambien', () => {
     const p = armarPulso(vacio);
     expect(p.chips.map((c) => c.texto)).toEqual([null, null, null, null]);
-    expect(p.chips.map((c) => c.etiqueta)).toEqual(['Por pagar a Isaac', 'Por cobrar', 'Entre socios', 'En bodega']);
+    expect(p.chips.map((c) => c.etiqueta)).toEqual(['Por pagar a Isaac', 'Por cobrar', 'Tu valuación', 'En bodega']);
     expect(p.corte).toBeNull();
   });
   it('cuentas vacias (sin movimientos) siguen siendo Sin dato, no un cero inventado', () => {
@@ -52,12 +69,13 @@ describe('armarPulso', () => {
     expect(cero.texto).toBe('$0.00');
     expect(cero.detalle).toBe('saldo cero');
   });
-  it('por cobrar, entre socios y bodega con cifra real', () => {
-    const p = armarPulso({ isaac: null, cxc: cxc(980000n), socios: socios(-250000n), existencia: bodega([10, null, 5]) });
+  it('por cobrar, tu valuacion y bodega con cifra real', () => {
+    const p = armarPulso({ isaac: null, cxc: cxc(980000n), socios: socios(-250000n), existencia: bodega([10, null, 5]), valuacion: { cuenta: cuentaVal, yo: 'Angelo' } });
     expect(p.chips[1]!.texto).toBe('$9,800.00');
     expect(p.chips[1]!.cifra).toBe('cxc:total');
-    expect(p.chips[2]!.cifra).toBe('socios:diferencia');
-    expect(p.chips[2]!.texto).toContain('2,500.00');
+    expect(p.chips[2]!.cifra).toBe('historial:valor:Angelo');
+    expect(p.chips[2]!.texto).toBe('$106,910.39');
+    expect(p.chips[2]!.detalle).toBe('-$47,921.91 contra Javier');
     expect(p.chips[3]!.texto).toBe('15 pz');
     expect(p.chips[3]!.cifra).toBeNull();
     expect(p.chips[3]!.href).toBe('/inventario');
