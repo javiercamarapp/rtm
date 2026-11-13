@@ -1,0 +1,37 @@
+/* Costos del sistema: lista de servicios (filas alineadas) y ficha individual. Solo tokens var(--rtm-*). */
+.rtm-serv-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--rtm-borde-tarjeta); border-radius: var(--rtm-r-3); overflow: hidden; background: var(--rtm-surface); }
+.rtm-serv-cab, .rtm-serv-fila { display: grid; grid-template-columns: 28px minmax(150px, 1.2fr) 116px minmax(0, 2.2fr) minmax(150px, 0.9fr) 150px; column-gap: var(--rtm-e-3); align-items: center; padding: 0 var(--rtm-pad-tarjeta); }
+.rtm-serv-cab { min-height: var(--rtm-h-cab-tabla); background: var(--rtm-th-fondo); color: var(--rtm-th-texto); border-bottom: 1px solid var(--rtm-th-borde); font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-medio); }
+.rtm-serv-lista > li { border-top: var(--rtm-borde); }
+.rtm-serv-lista > li:first-child { border-top: 0; }
+.rtm-serv-fila { min-height: 48px; padding-block: 6px; color: inherit; text-decoration: none; font-size: var(--rtm-t-cuerpo); }
+.rtm-serv-fila:hover { background: var(--rtm-tint); }
+.rtm-serv-fila:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: -2px; }
+.rtm-serv-icono { width: 28px; height: 28px; display: inline-grid; place-items: center; flex: none; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-2); background: var(--rtm-surface); overflow: hidden; }
+.rtm-serv-icono img { width: 20px; height: 20px; object-fit: contain; display: block; }
+.rtm-serv-monograma { font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-fuerte); color: var(--rtm-ink-2); letter-spacing: 0; }
+.rtm-serv-nombre { font-weight: var(--rtm-peso-fuerte); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtm-serv-concepto { min-width: 0; color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rtm-serv-importe { display: flex; flex-direction: column; align-items: flex-end; text-align: right; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.rtm-serv-importe strong { font-weight: var(--rtm-peso-fuerte); }
+.rtm-serv-importe small { font-size: var(--rtm-t-micro); color: var(--rtm-ink-3); }
+.rtm-serv-cab > .rtm-serv-importe { align-items: flex-end; }
+.rtm-serv-estado { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); min-width: 0; }
+.rtm-serv-estado[data-vacio] { color: var(--rtm-ink-3); }
+.rtm-serv-cat { display: inline-flex; align-items: center; height: var(--rtm-h-chip); padding: 0 8px; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-pildora); font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); white-space: nowrap; justify-self: start; }
+.rtm-serv-cat[data-categoria='construccion'] { color: var(--rtm-d-azul-marino); }
+.rtm-serv-cat[data-categoria='opcional'] { color: var(--rtm-d-lila); }
+.rtm-serv-ficha-cab { display: flex; align-items: center; gap: var(--rtm-e-3); flex-wrap: wrap; }
+.rtm-serv-ficha-cab .rtm-serv-icono { width: 36px; height: 36px; }
+.rtm-serv-ficha-cab .rtm-serv-icono img { width: 24px; height: 24px; }
+.rtm-serv-ficha-cab .rtm-serv-monograma { font-size: var(--rtm-t-cuerpo); }
+@media (max-width: 767px) {
+  .rtm-serv-cab { display: none; }
+  .rtm-serv-fila { grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: 'icono nombre importe' 'icono cat estado'; row-gap: 2px; min-height: 56px; padding-block: 10px; }
+  .rtm-serv-fila > .rtm-serv-icono { grid-area: icono; align-self: start; }
+  .rtm-serv-fila > .rtm-serv-nombre { grid-area: nombre; }
+  .rtm-serv-fila > .rtm-serv-cat { grid-area: cat; }
+  .rtm-serv-fila > .rtm-serv-concepto { display: none; }
+  .rtm-serv-fila > .rtm-serv-importe { grid-area: importe; }
+  .rtm-serv-fila > .rtm-serv-estado { grid-area: estado; text-align: right; }
+}

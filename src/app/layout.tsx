@@ -13,6 +13,7 @@ import '@/ui/estilos/graficas.css';
 import '@/ui/estilos/apertura.css';
 import '@/ui/estilos/premium.css';
 import '@/ui/estilos/omar.css';
+import '@/ui/estilos/controles.css';
 
 export const metadata: Metadata = {
   title: { default: MARCA.nombre, template: `%s · ${MARCA.nombre}` },
