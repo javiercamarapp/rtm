@@ -3,6 +3,7 @@ import { AreaPesos } from '../_a3/graficas-pesos';
 import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
+import { armarHojaProveedor, armarPosicionProveedor } from '@/dominio/operacion/posicion_proveedor';
 import type { EstadoCompra } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Segmentado } from '@/ui/componentes/controles';
@@ -30,7 +31,10 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
   const lector = await operacionDeSocio();
   const [cuenta, compras, hoja, cierres] = await Promise.all([lector.cuentaProveedor(proveedor), lector.compras(proveedor), lector.hojaProveedor(proveedor, null, 'sociedad'), lector.liquidacionesProveedor(proveedor)]);
   const t = hoja.totales;
-  const palabra = cuenta.saldo_cent > 0n ? 'A favor de la sociedad' : cuenta.saldo_cent < 0n ? 'Se le debe al proveedor' : 'Saldo cero';
+  // UNA sola verdad: la posicion con el proveedor del libro (2110 / 2120), la misma de Inicio y Contabilidad.
+  const pos = armarPosicionProveedor(cuenta);
+  const hv = armarHojaProveedor(hoja);
+  const hojaCuadra = hoja.comprobaciones.cuadra && hv.cuadraConLibro;
   const enCamino = compras.filter((c) => EN_CAMINO.includes(c.estado));
   const difAbiertas = suma(compras.map((c) => BigInt(c.diferencias_abiertas)));
   const piezasPagadas = compras.reduce((a, c) => a + c.pagadas, 0);
@@ -44,7 +48,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
 
   // Hoja semanal en cascada: saldo anterior + mercancia + seguros + guias - pagos - ajustes = falta por saldar.
   const pasos = [
-    { id: 'ant', etiqueta: 'Saldo anterior', valor: Number(t.saldo_anterior_cent), tipo: 'inicio' as const, texto: m(t.saldo_anterior_cent) },
+    { id: 'ant', etiqueta: 'Saldo anterior (posición al inicio)', valor: Number(t.saldo_anterior_cent), tipo: 'inicio' as const, texto: m(t.saldo_anterior_cent) },
     { id: 'mer', etiqueta: 'Mercancía', valor: Number(t.mercancia_cent), tipo: 'delta' as const, texto: m(t.mercancia_cent, true) },
     { id: 'seg', etiqueta: 'Seguros', valor: Number(t.seguros_cent), tipo: 'delta' as const, texto: m(t.seguros_cent, true) },
     { id: 'gui', etiqueta: 'Guías', valor: Number(t.guias_cent), tipo: 'delta' as const, texto: m(t.guias_cent, true) },
@@ -71,7 +75,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       <EncabezadoPagina
         eyebrow="Proveedores"
         titulo={`Cuenta con ${proveedor}`}
-        descripcion={`${palabra} · ${m(cuenta.saldo_cent, true)} · falta por saldar ${m(t.falta_por_saldar_cent)} de la semana del ${etiquetaFecha(hoja.semana_ini)} al ${etiquetaFecha(hoja.semana_fin)}`}
+        descripcion={`${pos.titular} · hoja de la semana del ${etiquetaFecha(hoja.semana_ini)} al ${etiquetaFecha(hoja.semana_fin)}`}
         acciones={
           <>
             <Segmentado etiquetaAria="Proveedor" opciones={[{ valor: 'Isaac', etiqueta: 'Isaac', href: '/proveedores?p=Isaac', activa: proveedor === 'Isaac' }, { valor: 'Karen', etiqueta: 'Karen', href: '/proveedores?p=Karen', activa: proveedor === 'Karen' }]} />
@@ -84,7 +88,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       <KpiLinea
         etiquetaAria="Indicadores del proveedor"
         celdas={[
-          { id: 'falta', etiqueta: 'Falta por saldar (semana)', testid: 'falta-por-saldar', valor: <CifraComprobada texto={m(t.falta_por_saldar_cent)} cifra={`proveedor:falta:${proveedor}:${hoja.semana_ini}:${hoja.ambito}`} comprobacion={hoja.comprobaciones.cuadra ? 'cuadra' : 'no_cuadra'} />, categoria: 4, nota: hoja.comprobaciones.cuadra ? 'La hoja cuadra por dos vías' : 'La hoja no cuadra' },
+          { id: 'posicion', etiqueta: `Posición con ${proveedor}`, testid: 'posicion-proveedor', valor: <CifraComprobada texto={pos.monto} cifra={`proveedor:posicion:${proveedor}`} comprobacion={pos.cuadra ? 'cuadra' : 'no_cuadra'} />, categoria: 4, nota: pos.palabra },
           { id: 'costo', etiqueta: 'Costo de la semana con guías', valor: m(t.costo_total_cent), categoria: 1, partes: t.costo_total_cent > 0n ? [{ etiqueta: 'Mercancía', valor: Number(t.mercancia_cent) }, { etiqueta: 'Seguros', valor: Number(t.seguros_cent) }, { etiqueta: 'Guías', valor: Number(t.guias_cent), estado: hoja.guias_pendientes > 0 ? 'parcial' : 'real' }] : undefined, nota: hoja.guias_pendientes > 0 ? `${hoja.guias_pendientes} guías sin costo real` : `${hoja.renglones.length} renglones` },
           { id: 'trayecto', etiqueta: 'Compras en trayecto', valor: String(enCamino.length), categoria: 6, nota: enCamino.length > 0 ? `${m(suma(enCamino.map((c) => c.total_cent)))} por recibir` : 'Nada en camino' },
           { id: 'dif', etiqueta: 'Diferencias de recepción abiertas', valor: String(difAbiertas), categoria: 7, nota: difAbiertas > 0n ? 'Sin responsable asignado' : 'Todas con responsable' },
@@ -93,7 +97,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       <FilaRatios
         etiqueta="Razones de la hoja semanal"
         items={[
-          { etiqueta: 'Saldo anterior', valor: m(t.saldo_anterior_cent, true) },
+          { etiqueta: 'Saldo anterior (inicio de la semana)', valor: hv.saldoAnterior },
           { etiqueta: 'Pagos de la semana', valor: m(t.pagos_cent) },
           { etiqueta: 'Ajustes a favor', valor: m(t.ajustes_cent) },
           { etiqueta: 'Piezas recibidas / pagadas', valor: piezasPagadas > 0 ? `${formatearPiezas(piezasRecibidas)} / ${formatearPiezas(piezasPagadas)}` : null },
@@ -103,20 +107,22 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       />
 
       <Rejilla dividir="6-6">
-        <Tarjeta titulo="Hoja de la semana" descripcion="Del saldo anterior a lo que falta por saldar" acciones={<Estado tono={hoja.comprobaciones.cuadra ? 'ok' : 'malo'}>{hoja.comprobaciones.cuadra ? 'Cuadra' : 'No cuadra'}</Estado>}>
+        <Tarjeta titulo="Hoja de la semana" descripcion="Del saldo anterior a lo que falta por saldar" acciones={<span data-testid="hoja-cuadra"><Estado tono={hojaCuadra ? 'ok' : 'malo'}>{hv.cuadraConLibro ? (hoja.comprobaciones.cuadra ? 'Cuadra' : 'No cuadra') : hv.sello}</Estado></span>}>
           <Cascada titulo="Cascada de la hoja semanal" descripcion={`Saldo anterior ${m(t.saldo_anterior_cent)}, mercancía ${m(t.mercancia_cent)}, seguros ${m(t.seguros_cent)}, guías ${m(t.guias_cent)}, pagos ${m(t.pagos_cent)}, ajustes ${m(t.ajustes_cent)}; falta por saldar ${m(t.falta_por_saldar_cent)}.`} pasos={pasos} unidad="Pesos" />
-          <Pie>Falta por saldar = saldo anterior + costo total con guías − pagos − ajustes. <Link href={`/proveedores/liquidacion?p=${proveedor}`} data-testid="abrir-liquidacion">Abrir hoja y liquidar</Link></Pie>
+          <Pie>Falta por saldar = saldo anterior + costo total con guías − pagos − ajustes. <span data-testid="hoja-nota-libro">{hv.nota}</span> <Link href={`/proveedores/liquidacion?p=${proveedor}`} data-testid="abrir-liquidacion">Abrir hoja y liquidar</Link></Pie>
         </Tarjeta>
-        <Tarjeta titulo={`Saldo de la cuenta con ${proveedor}`} descripcion="Positivo = a favor de la sociedad, negativo = se debe">
-          <p className="a3-cifra"><CifraComprobada texto={m(cuenta.saldo_cent)} cifra={`proveedor:saldo:${cuenta.id}`} comprobacion="cuadra" /></p>
-          <p className="a3-cifra-apoyo" data-testid="etiqueta-saldo"><Estado tono={cuenta.saldo_cent < 0n ? 'atencion' : 'ok'}>{palabra}</Estado><span>{cuenta.modalidad === 'prepago_total' ? 'Prepago total' : 'Liquidación los viernes'}</span></p>
+        <Tarjeta titulo={`Posición con ${proveedor}`} descripcion="Lo que se le debe, o lo que está a favor de la sociedad, según el libro">
+          <p className="a3-cifra" data-testid="posicion-cifra"><CifraComprobada texto={pos.monto} cifra={`proveedor:posicion:${proveedor}`} comprobacion={pos.cuadra ? 'cuadra' : 'no_cuadra'} /></p>
+          <p className="a3-cifra-apoyo" data-testid="etiqueta-saldo"><Estado tono={pos.tono === 'debe' ? 'atencion' : 'ok'}>{pos.palabra}</Estado><span>{cuenta.modalidad === 'prepago_total' ? 'Prepago total' : 'Liquidación los viernes'}</span></p>
+          <p className="a3-pie" data-testid="posicion-desglose">{pos.desglose}</p>
+          {pos.anticipo && <p className="a3-pie" data-testid="posicion-anticipo">{pos.anticipo}</p>}
           <ListaClaveValor items={[
             { k: 'Semana', v: `${etiquetaFecha(hoja.semana_ini)} al ${etiquetaFecha(hoja.semana_fin)}` },
             { k: 'Liquidación', v: cierre ? <Estado tono="ok">Cerrada {cierre.folio}</Estado> : <Estado tono={hoja.viernes_cerrado ? 'atencion' : 'neutro'}>{hoja.viernes_cerrado ? 'Lista para cerrar' : 'Abierta'}</Estado> },
             { k: 'Compras abiertas', v: String(compras.filter((c) => !['recibida', 'cerrada', 'anulada'].includes(c.estado)).length) },
             { k: 'Cuenta puente', v: cuenta.puente_cent === 0n ? 'Sin diferencias por asignar' : m(cuenta.puente_cent) },
           ]} />
-          <Pie>Isaac y Karen nunca se mezclan.</Pie>
+          <Pie>Isaac y Karen nunca se mezclan. La misma cifra aparece en Inicio, Contabilidad y Capital por socio.</Pie>
           <div className="a3-acciones">
             <PagoSocioProveedor proveedor={proveedor} />
             <FormularioAccion boton="Pago de la sociedad" titulo={`Pago de la sociedad a ${proveedor}`} confirmar="Registrar pago" accion="registrar_pago_proveedor_sociedad" testid="pago-sociedad"
@@ -136,12 +142,13 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       </Rejilla>
 
       <Rejilla dividir="6-6">
-        <Tarjeta titulo="Saldo corrido de la cuenta" descripcion="Magnitud del saldo tras cada movimiento; el signo va en el dato">
+        <Tarjeta titulo="Saldo corrido de la cuenta corriente" descripcion="Solo movimientos de cuenta (pagos y compras); no incluye el costo de los pedidos directos. El signo va en el dato">
           {puntosSaldo.length >= 2 ? (
             <AreaPesos titulo="Saldo corrido con el proveedor" descripcion={`Saldo de la cuenta con ${proveedor} tras cada uno de ${puntosSaldo.length} movimientos.`} procedencia="observado" pie={`Fuente: movimientos de la cuenta con ${proveedor}`} puntos={puntosSaldo} />
           ) : (
             <p className="a3-grafica-vacia"><strong>Pocos movimientos</strong>Con dos o más movimientos de la cuenta se dibuja el saldo corrido.</p>
           )}
+          <Pie><span data-testid="reconciliacion-cuenta">{pos.reconciliacion.texto}</span></Pie>
         </Tarjeta>
         <Tarjeta titulo="De dónde salen los pagos y en qué estado van las compras" descripcion="Pagos de la semana por concepto y compras por estado">
           <p className="a3-sub">Pagos de la semana por concepto</p>
@@ -195,7 +202,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
               { id: 'd', titulo: 'Fecha', prioridadMovil: 'normal', ancho: 's', celda: (x) => etiquetaFecha(x.fecha_neg) },
               { id: 'c', titulo: 'Concepto', prioridadMovil: 'titulo', ancho: 'xl', celda: (x) => <Dos a={<>{CONCEPTO_CUENTA[x.concepto] ?? x.concepto}{x.compra ? ` · ${x.compra}` : ''}{x.pago ? ` · ${x.pago}` : ''}</>} b={x.cliente ? `Cliente: ${x.cliente}` : x.nota} /> },
               { id: 'm', titulo: 'Monto', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (x) => m(x.monto_cent, true) },
-              { id: 's', titulo: 'Saldo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (x) => m(x.saldo_corrido_cent, true) },
+              { id: 's', titulo: 'Saldo de la cuenta', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (x) => m(x.saldo_corrido_cent, true) },
               { id: 'q', titulo: 'Quién', prioridadMovil: 'oculta', ancho: 'l', secundaria: true, celda: (x) => <Dos a={x.autor ?? x.canal} b={<span className="rtm-mono">{x.evento}</span>} /> },
             ]}
           />
@@ -244,6 +251,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             ]}
           />
         )}
+        {vista === 'cuenta' && <div className="a3-pie-tarjeta"><Pie>Solo movimientos de cuenta (pagos y compras). {pos.reconciliacion.texto}.</Pie></div>}
         {cierre && vista === 'hoja' && <div className="a3-pie-tarjeta"><Pie>Semana liquidada: {cierre.folio} el {etiquetaFecha(cierre.fecha_cierre)}.</Pie></div>}
       </Tarjeta>
     </Pagina>

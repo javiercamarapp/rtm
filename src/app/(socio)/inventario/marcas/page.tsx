@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { datosDeSocio } from '@/composicion/datos';
+import { operacionDeSocio } from '@/composicion/operacion';
 import { textoDias } from '@/dominio/inventario/cobertura';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
@@ -15,7 +16,11 @@ export const metadata: Metadata = { title: 'Inventario por marca' };
 export default async function Pagina_({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
   const per = periodo(sp, 30);
-  const r = await (await datosDeSocio()).resumenMarcas(per.ini, per.fin);
+  const r0 = await (await datosDeSocio()).resumenMarcas(per.ini, per.fin);
+  // Una sola verdad: la cuenta con cada proveedor es su posicion completa del libro (no solo la cuenta corriente).
+  const lector = await operacionDeSocio();
+  const posiciones = new Map(await Promise.all((['Isaac', 'Karen'] as const).map(async (n) => [n, (await lector.cuentaProveedor(n)).posicion_cent] as const)));
+  const r = { ...r0, cuentas_proveedor: r0.cuentas_proveedor.map((c) => { const pos = posiciones.get(c.proveedor as 'Isaac' | 'Karen'); return pos === undefined ? c : { ...c, saldo_cent: pos, etiqueta: pos > 0n ? 'A favor' : pos < 0n ? 'Se debe' : 'Saldo cero' }; }) };
   const total = r.marcas.reduce((a, x) => a + x.valor_cent, 0n);
   const piezas = r.marcas.reduce((a, x) => a + x.piezas, 0);
   const mayor = r.marcas[0] ?? null;
@@ -71,10 +76,10 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           totales={{ etiqueta: 'Total', celdas: { pz: pz(piezas), v: m(total), en: pz(r.marcas.reduce((a, x) => a + x.entradas, 0)), sl: pz(r.marcas.reduce((a, x) => a + x.salidas, 0)), pc: sd ? null : '100 %' } }}
         />
       </Tarjeta>
-      <Tarjeta plana className="rtm-a2-tabla" titulo="Cuenta con cada proveedor" descripcion="Saldo del libro de proveedores">
+      <Tarjeta plana className="rtm-a2-tabla" titulo="Cuenta con cada proveedor" descripcion="Posición completa con cada proveedor, la misma del libro (positivo = a favor, negativo = se le debe)">
         <DataTable etiqueta="Cuenta con proveedores" clave={(c) => c.proveedor} filas={r.cuentas_proveedor} densidad="densa" plana
           vacio={{ titulo: 'Sin proveedores', texto: 'No hay cuentas de proveedor.' }}
-          columnas={[{ id: 'p', titulo: 'Proveedor', celda: (c) => c.proveedor }, { id: 's', titulo: 'Saldo', numerica: true, celda: (c) => m(c.saldo_cent) }, { id: 'e', titulo: 'Estado', celda: (c) => c.etiqueta }]} />
+          columnas={[{ id: 'p', titulo: 'Proveedor', celda: (c) => c.proveedor }, { id: 's', titulo: 'Posición', numerica: true, celda: (c) => m(c.saldo_cent) }, { id: 'e', titulo: 'Estado', celda: (c) => c.etiqueta }]} />
       </Tarjeta>
       <p className="rtm-a2-nota">Proveedor = el de la lista de costos más reciente de algún modelo de la marca; si no hay lista, «Sin dato». Rotación = salidas del periodo entre las piezas actuales. Cobertura media = promedio de los modelos con cobertura calculable.</p>
     </Pagina>

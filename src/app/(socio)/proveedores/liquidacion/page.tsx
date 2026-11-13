@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { sumarDias } from '@/dominio/calendario';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
+import { armarHojaProveedor } from '@/dominio/operacion/posicion_proveedor';
 import type { AmbitoHoja } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, Segmentado } from '@/ui/componentes/controles';
@@ -29,13 +30,15 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
   const [h, cierres] = await Promise.all([lector.hojaProveedor(proveedor, semana, ambito), lector.liquidacionesProveedor(proveedor)]);
   const t = h.totales;
   const c = h.comprobaciones;
+  const hv = armarHojaProveedor(h);
+  const hojaCuadra = c.cuadra && hv.cuadraConLibro;
   const enlace = (extra: Record<string, string>) => `/proveedores/liquidacion?${new URLSearchParams({ p: proveedor, semana: h.semana_ini, ambito, ...extra }).toString()}`;
   const guias = h.renglones.filter((r) => r.guia_cent > 0n || r.guia_pendiente);
   const cerrada = h.cierre !== null;
   const depositos = h.pagos_por_concepto_cent['pago_cliente_redirigido'] ?? 0n;
   const pagosSocios = (h.pagos_por_concepto_cent['pago_socio'] ?? 0n) + (h.pagos_por_concepto_cent['pago_sociedad'] ?? 0n);
   const pasos = [
-    { id: 'ant', etiqueta: 'Saldo anterior', valor: Number(t.saldo_anterior_cent), tipo: 'inicio' as const, texto: m(t.saldo_anterior_cent) },
+    { id: 'ant', etiqueta: 'Saldo anterior (posición al inicio)', valor: Number(t.saldo_anterior_cent), tipo: 'inicio' as const, texto: m(t.saldo_anterior_cent) },
     { id: 'mer', etiqueta: 'Mercancía', valor: Number(t.mercancia_cent), tipo: 'delta' as const, texto: m(t.mercancia_cent, true) },
     { id: 'seg', etiqueta: 'Seguros', valor: Number(t.seguros_cent), tipo: 'delta' as const, texto: m(t.seguros_cent, true) },
     { id: 'gui', etiqueta: 'Guías', valor: Number(t.guias_cent), tipo: 'delta' as const, texto: m(t.guias_cent, true) },
@@ -49,6 +52,7 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
     [`Suma de seguros = seguros declarados (${m(c.seguros_independiente_cent)})`, c.renglones_igual_seguros],
     [`Suma de guías = envíos (${m(c.guias_independiente_cent)})`, c.guias_igual_envios],
     [`Cada abono = un depósito (${m(c.depositos_independiente_cent)})`, c.abonos_igual_depositos],
+    ...(c.libro_aplica ? ([[`Saldo de la hoja = saldo del libro al corte (${m(t.libro_al_corte_cent, true)})${c.libro_igual_hoja ? '' : `: diferencia ${m(t.diferencia_libro_cent, true)}`}`, c.libro_igual_hoja]] as [string, boolean][]) : []),
   ];
   const totalCosto = t.costo_total_cent;
   const abonosYAjustes = [...h.abonos, ...h.ajustes.map((x) => ({ ...x, cliente: null, pedido: null, cuenta_origen: null }))];
@@ -73,7 +77,7 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
       <KpiLinea
         etiquetaAria="Indicadores de la liquidación"
         celdas={[
-          { id: 'falta', etiqueta: 'Falta por saldar', testid: 'falta-por-saldar', valor: <CifraComprobada texto={m(t.falta_por_saldar_cent)} cifra={`proveedor:falta:${proveedor}:${h.semana_ini}:${ambito}`} comprobacion={c.cuadra ? 'cuadra' : 'no_cuadra'} />, categoria: 4, nota: <span data-testid="comprobacion"><Estado tono={c.cuadra ? 'ok' : 'malo'}>{c.cuadra ? 'Cuadra' : 'No cuadra'}</Estado></span> },
+          { id: 'falta', etiqueta: 'Falta por saldar', testid: 'falta-por-saldar', valor: <CifraComprobada texto={m(t.falta_por_saldar_cent)} cifra={`proveedor:falta:${proveedor}:${h.semana_ini}:${ambito}`} comprobacion={hojaCuadra ? 'cuadra' : 'no_cuadra'} />, categoria: 4, nota: <span data-testid="comprobacion"><Estado tono={hojaCuadra ? 'ok' : 'malo'}>{hojaCuadra ? 'Cuadra' : 'No cuadra'}</Estado></span> },
           { id: 'costo', etiqueta: 'Costo de pedidos y órdenes', valor: m(t.mercancia_cent), categoria: 1, nota: `${h.renglones.length} renglones · con seguros ${m(t.mercancia_cent + t.seguros_cent)}` },
           { id: 'guias', etiqueta: 'Guías y seguros', valor: m(t.guias_cent + t.seguros_cent), categoria: 6, nota: `${guias.length} guías` },
           { id: 'dep', etiqueta: 'Depósitos de clientes', valor: m(depositos), categoria: 2, nota: 'Clientes que pagaron al proveedor' },
@@ -86,13 +90,13 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
           { etiqueta: `Lo que dice ${proveedor}`, valor: h.conciliacion ? <span data-testid="dicho">{m(h.conciliacion.dicho_cent)}</span> : null },
           { etiqueta: 'Nuestra cuenta', valor: h.conciliacion ? m(h.conciliacion.nuestro_cent) : null },
           { etiqueta: 'Diferencia', valor: h.conciliacion ? <span data-testid="diferencia">{m(h.conciliacion.diferencia_cent, true)}</span> : null },
-          { etiqueta: 'Saldo anterior', valor: m(t.saldo_anterior_cent, true) },
+          { etiqueta: 'Saldo anterior (inicio de la semana)', valor: hv.saldoAnterior },
           { etiqueta: 'Ajustes a favor', valor: m(t.ajustes_cent) },
         ]}
       />
 
       <Rejilla dividir="6-6">
-        <Tarjeta titulo="De dónde sale lo que falta" descripcion="Saldo anterior + costo total con guías − pagos − ajustes">
+        <Tarjeta titulo="De dónde sale lo que falta" descripcion={hv.nota}>
           <Cascada titulo="Cascada de la liquidación" descripcion={`Falta por saldar ${m(t.falta_por_saldar_cent)} desde un saldo anterior de ${m(t.saldo_anterior_cent)}.`} pasos={pasos} unidad="Pesos" />
         </Tarjeta>
         <Tarjeta titulo="Comprobaciones por dos vías" descripcion="Cada cifra se calcula de dos maneras independientes">

@@ -6,6 +6,8 @@
 --      (operacion.ds_posicion_proveedor: cuenta corriente menos el costo de los pedidos directos).
 --   2. api.proveedor_cuenta agrega la clave 'posicion' (detalle) y toma posicion_cent de esa funcion.
 --   3. operacion.hoja_proveedor: 'saldo anterior' = posicion del libro al inicio de la hoja; agrega el saldo del libro al corte y la diferencia (si no cuadra se dice).
+--   3b. La fecha de una orden de compra en la hoja es la de su cargo en la cuenta del proveedor (la misma del libro), no la del reloj al confirmar: una carga historica con fecha pasada
+--      ya no cae en la semana de la carga.
 --   4. api.explicar_cifra: 'proveedor:posicion:<Isaac|Karen>'.
 
 create function operacion.posicion_proveedor(p_proveedor bigint, p_hasta date default null) returns jsonb
@@ -102,7 +104,7 @@ begin
       where pe.estado = 'enviado' and pe.fecha_envio between v_desde and v_fin and pe.origen = any (v_origenes) and (p_ambito = 'todo' or pe.es_de_sociedad)
     ) p
     union all
-    select jsonb_build_object('tipo', 'oc', 'id', co.id, 'folio', co.folio, 'fecha', negocio.fecha_neg(co.confirmada_at), 'cliente', null, 'duenio', null, 'es_de_sociedad', co.ambito = 'sociedad', 'origen', 'orden_de_compra',
+    select jsonb_build_object('tipo', 'oc', 'id', co.id, 'folio', co.folio, 'fecha', coalesce((select m.fecha_neg from operacion.cuenta_proveedor_mov m where m.compra_id = co.id and m.concepto = 'oc_aplicada' order by m.id limit 1), negocio.fecha_neg(co.confirmada_at)), 'cliente', null, 'duenio', null, 'es_de_sociedad', co.ambito = 'sociedad', 'origen', 'orden_de_compra',
       'piezas', d.piezas, 'mercancia_cent', co.mercancia_cent, 'seguro_cent', co.seguro_cent, 'guia_cent', case when co.guia_pagada_por_socio_id is null then co.guia_cent else 0 end, 'guia_pendiente', false,
       'costo_cent', co.mercancia_cent + co.seguro_cent + case when co.guia_pagada_por_socio_id is null then co.guia_cent else 0 end, 'detalle', d.detalle, 'detalle_cent', d.detalle_cent, 'cuadra', d.detalle_cent = co.mercancia_cent)
     from operacion.compra co
@@ -112,7 +114,7 @@ begin
       from (select m.nombre_canonico as modelo, sum(cl.piezas_facturadas)::int as facturadas, sum(cl.piezas_facturadas * cl.costo_unit_cent)::bigint as costo
             from operacion.compra_linea cl join catalogo.modelo m on m.id = cl.modelo_id where cl.compra_id = co.id group by m.nombre_canonico) x
     ) d on true
-    where co.proveedor_id = v_prov and co.estado <> 'anulada' and co.confirmada_at is not null and negocio.fecha_neg(co.confirmada_at) between v_desde and v_fin and (p_ambito = 'todo' or co.ambito = 'sociedad')
+    where co.proveedor_id = v_prov and co.estado <> 'anulada' and co.confirmada_at is not null and coalesce((select m.fecha_neg from operacion.cuenta_proveedor_mov m where m.compra_id = co.id and m.concepto = 'oc_aplicada' order by m.id limit 1), negocio.fecha_neg(co.confirmada_at)) between v_desde and v_fin and (p_ambito = 'todo' or co.ambito = 'sociedad')
   ) q;
 
   select coalesce(sum((r->>'mercancia_cent')::bigint), 0), coalesce(sum((r->>'seguro_cent')::bigint), 0), coalesce(sum((r->>'guia_cent')::bigint), 0), coalesce(bool_and((r->>'cuadra')::boolean), true)
@@ -125,15 +127,15 @@ begin
   from operacion.pedido pe join operacion.pedido_linea l on l.pedido_id = pe.id join operacion.pedido_surtido s on s.pedido_linea_id = l.id
   where pe.estado = 'enviado' and pe.fecha_envio between v_desde and v_fin and pe.origen = any (v_origenes) and (p_ambito = 'todo' or pe.es_de_sociedad);
   v_m2 := v_m2 + coalesce((select sum(co.mercancia_cent) from operacion.compra co where co.proveedor_id = v_prov and co.estado <> 'anulada' and co.confirmada_at is not null
-                            and negocio.fecha_neg(co.confirmada_at) between v_desde and v_fin and (p_ambito = 'todo' or co.ambito = 'sociedad')), 0);
+                            and coalesce((select m.fecha_neg from operacion.cuenta_proveedor_mov m where m.compra_id = co.id and m.concepto = 'oc_aplicada' order by m.id limit 1), negocio.fecha_neg(co.confirmada_at)) between v_desde and v_fin and (p_ambito = 'todo' or co.ambito = 'sociedad')), 0);
   v_s2 := v_s2 + coalesce((select sum(co.seguro_cent) from operacion.compra co where co.proveedor_id = v_prov and co.estado <> 'anulada' and co.confirmada_at is not null
-                            and negocio.fecha_neg(co.confirmada_at) between v_desde and v_fin and (p_ambito = 'todo' or co.ambito = 'sociedad')), 0);
+                            and coalesce((select m.fecha_neg from operacion.cuenta_proveedor_mov m where m.compra_id = co.id and m.concepto = 'oc_aplicada' order by m.id limit 1), negocio.fecha_neg(co.confirmada_at)) between v_desde and v_fin and (p_ambito = 'todo' or co.ambito = 'sociedad')), 0);
   select coalesce(sum(gu.costo_cent), 0)::bigint into v_g2
   from operacion.pedido pe join operacion.guia gu on gu.pedido_id = pe.id and gu.sentido = 'salida' and gu.pagada_por_socio_id is null
   where pe.estado = 'enviado' and pe.fecha_envio between v_desde and v_fin and pe.origen = any (v_origenes) and (p_ambito = 'todo' or pe.es_de_sociedad)
     and ((p_proveedor = 'Isaac' and pe.origen in ('isaac_directo', 'karen_via_isaac')) or (p_proveedor = 'Karen' and pe.origen = 'karen_directo'));
   v_g2 := v_g2 + coalesce((select sum(co.guia_cent) from operacion.compra co where co.proveedor_id = v_prov and co.estado <> 'anulada' and co.confirmada_at is not null and co.guia_pagada_por_socio_id is null
-                            and negocio.fecha_neg(co.confirmada_at) between v_desde and v_fin and (p_ambito = 'todo' or co.ambito = 'sociedad')), 0);
+                            and coalesce((select m.fecha_neg from operacion.cuenta_proveedor_mov m where m.compra_id = co.id and m.concepto = 'oc_aplicada' order by m.id limit 1), negocio.fecha_neg(co.confirmada_at)) between v_desde and v_fin and (p_ambito = 'todo' or co.ambito = 'sociedad')), 0);
 
   -- Bloque 2: abonos (cada uno con su cliente aunque el proveedor lo vea sin nombre) y ajustes. Una reversa cuenta con el concepto de lo que deshace.
   select coalesce(jsonb_agg(jsonb_build_object('id', m.id, 'fecha_neg', m.fecha_neg, 'concepto', coalesce(o.concepto, m.concepto), 'monto_cent', m.monto_cent, 'cliente', c.nombre_canonico,
