@@ -16,29 +16,14 @@ select is((select j -> 'clasificaciones' -> 0 ->> 'clasificacion' from _real), (
 select is((select j -> 'clasificaciones' -> 0 ->> 'clasificacion' from _sim), (select j -> 'clasificaciones' -> 0 ->> 'clasificacion' from _real), 'vista previa y resultado coinciden');
 select is((select count(*)::int from operacion.aportacion_socio), 1, 'la vista previa no dejo nada');
 
--- MEDIO-B: la vista previa refleja declara_capital igual que la ejecucion
-create temp table _caps as select to_regprocedure('operacion.pago_proveedor_de_socio(text,text,bigint,text,text,date,text,text,boolean)') is not null as existe;
-select case when (select existe from _caps)
-  then skip('con la funcion de cuadrar-cuentas la declaracion de capital se ejecuta de verdad (la prueba de su efecto contable es de esa rama)', 1)
-  else throws_ok($$ select agente.simular('ejecutar', 'pago_proveedor', '{"proveedor":"karen","monto_cent":10000,"pagado_por":"javier","declara_capital":true,"autor":"javier","telegram_user_id":5000002,"origen":"x"}') $$, 'P0461', null, 'sin la funcion de 9 argumentos la VISTA PREVIA tambien rechaza (antes mostraba capital y la ejecucion daba P0461)') end;
-select case when (select existe from _caps)
-  then skip('con la funcion disponible, ejecutar la declaracion no da P0461', 1)
-  else throws_ok($$ select agente.ejecutar('s:pp1', 'pago_proveedor', '{"proveedor":"karen","monto_cent":10000,"pagado_por":"javier","declara_capital":true,"autor":"javier","telegram_user_id":5000002,"origen":"x"}') $$, 'P0461', null, 'sin la funcion de 9 argumentos la ejecucion rechaza igual') end;
--- Con la funcion (la real o un doble dentro de la transaccion) la vista previa y la ejecucion la usan por el mismo camino
-do $$
-begin
-  if to_regprocedure('operacion.pago_proveedor_de_socio(text,text,bigint,text,text,date,text,text,boolean)') is null then
-    create function operacion.pago_proveedor_de_socio(p_clave_idem text, p_proveedor text, p_monto_cent bigint, p_socio text, p_fuente text, p_fecha date, p_nota text, p_mensaje_origen text, p_declara_capital boolean)
-      returns jsonb language plpgsql as $f$
-    begin
-      perform operacion.crear_evento('pago_proveedor_doble', negocio.hoy(), p_clave_idem, '{}'::jsonb, p_mensaje_origen);
-      return jsonb_build_object('declara_capital', p_declara_capital, 'socio', p_socio, 'monto_cent', p_monto_cent);
-    end $f$;
-    insert into _caps select false;
-  end if;
-end $$;
-select is((agente.simular('ejecutar', 'pago_proveedor', '{"proveedor":"karen","monto_cent":10000,"pagado_por":"javier","declara_capital":true,"autor":"javier","telegram_user_id":5000002,"origen":"x"}') -> 'resultado' is not null), true, 'con la funcion disponible la vista previa de la declaracion de capital funciona');
-select is((agente.ejecutar('s:pp2', 'pago_proveedor', '{"proveedor":"karen","monto_cent":10000,"pagado_por":"javier","declara_capital":true,"autor":"javier","telegram_user_id":5000002,"origen":"meti capital"}') -> 'clasificaciones') is not null, true, 'y la ejecucion tambien (y trae las clasificaciones)');
+-- MEDIO-B: la vista previa refleja declara_capital igual que la ejecucion. Con la funcion REAL de 9 argumentos (lane/cuadrar-cuentas, migracion 20261113300000):
+-- un pago de un socio a un proveedor SIN declaracion es REEMBOLSO y con declaracion EXPRESA es CAPITAL.
+select is(to_regprocedure('operacion.pago_proveedor_de_socio(text,text,bigint,text,text,date,text,text,boolean)') is not null, true, 'la funcion real de 9 argumentos existe (cuadrar-cuentas va antes en la integracion)');
+select is((select j -> 'clasificaciones' -> 0 ->> 'clasificacion' from _real), 'reembolsable', 'sin declarar capital el pago de un socio a un proveedor se registra como REEMBOLSO');
+select is((agente.simular('ejecutar', 'pago_proveedor', '{"proveedor":"karen","monto_cent":10000,"pagado_por":"javier","declara_capital":true,"autor":"javier","telegram_user_id":5000002,"origen":"x"}') -> 'clasificaciones' -> 0 ->> 'clasificacion'), 'capital', 'la vista previa de la declaracion expresa muestra CAPITAL');
+select is((select count(*)::int from operacion.aportacion_socio), 1, 'y la vista previa no dejo nada');
+select is((agente.ejecutar('s:pp2', 'pago_proveedor', '{"proveedor":"karen","monto_cent":10000,"pagado_por":"javier","declara_capital":true,"autor":"javier","telegram_user_id":5000002,"origen":"meti capital"}') -> 'clasificaciones' -> 0 ->> 'clasificacion'), 'capital', 'con declaracion expresa la ejecucion registra CAPITAL (y trae las clasificaciones)');
+select is((select clasificacion from operacion.aportacion_socio order by id desc limit 1), 'capital', 'la fila REAL queda como capital');
 
 -- ------------------------------------------------------------------ BAJO-4: el capital lo declara cada socio por si mismo
 select throws_ok($$ select agente.ejecutar('s:c1', 'aportacion', '{"socio":"angelo","monto_cent":100000,"intencion":"capital","autor":"javier","telegram_user_id":5000002,"origen":"x"}') $$, 'P0460', null, 'Javier no registra capital a nombre de Angelo');
