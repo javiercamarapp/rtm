@@ -138,7 +138,7 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
   }
   const amort = await conDb((c) => c.query('select coalesce(sum(monto_cent),0)::bigint s from operacion.ds_amortizacion where pedido_id = $1', [idPedido]));
   expect(Number(amort.rows[0].s)).toBe(500000);
-  await expect(page.getByText('PG', { exact: false }).or(page.getByText('Pago de un socio'))).toBeVisible();
+  await expect(page.getByText('PG', { exact: false }).or(page.getByText('Pago de un socio')).first()).toBeVisible();
   // el cliente paga directo a la cuenta de Karen: el resto del costo y el excedente (utilidad reinvertida)
   await page.getByTestId('ds-nuevo-pago').click();
   await page.getByTestId('ds-pago-fuente').selectOption('cliente_a_proveedor');

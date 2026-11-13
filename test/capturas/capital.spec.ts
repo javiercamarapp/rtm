@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { altaUsuario, correoUnico, enlaceConfirmacion, ipFalsa } from '../e2e/ayudas';
 
 const SALIDA = join(__dirname, '../../docs/capturas/capital');
-const BASE = 'http://127.0.0.1:3187';
+const BASE = `http://127.0.0.1:${process.env.E2E_PUERTO ?? '3187'}`;
 const PERFILES = [{ nombre: '1440', ancho: 1440, alto: 2300, movil: false }, { nombre: '390', ancho: 390, alto: 4600, movil: true }];
 const TEMAS = ['claro', 'oscuro'] as const;
 const RANGO = 'desde=2026-10-01&hasta=2026-11-30';

@@ -1,7 +1,7 @@
 // Integracion con base de datos en laptop 1440 (Chromium): Costos del sistema, Inventario actual de proveedores (lista para cliente y orden de compra a Karen), Reportes
 // (preparar, historial, vista previa y PDF con sesion) y la puerta cerrada del webhook y de las tareas. Datos ILUSTRATIVOS que crea la propia prueba.
 import { expect, test } from '@playwright/test';
-import { altaUsuario, conDb, correoUnico, entrarComo, ipFalsa } from './ayudas';
+import { altaUsuario, conDb, correoUnico, entrarComo, ipFalsa, sembrarCuentasE2E } from './ayudas';
 
 test.describe.configure({ mode: 'serial' });
 test.use({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
@@ -147,13 +147,16 @@ test('inventario de proveedores: estado de la lectura, lista para cliente sin pr
 
 test('reportes: se prepara un semanal, aparece en el historial como version 1, abre su vista previa y su PDF con la sesion', async ({ page }) => {
   test.setTimeout(180_000);
+  // Independiente de otras specs: siembra sus propios pedidos, cobros y movimientos (sufijo propio) en vez de depender del efectivo que dejen otras.
+  await sembrarCuentasE2E();
   await entrarComo(page, await altaYCorreo('rep'), '/reportes');
   await page.getByTestId('reporte-inicio').fill('2026-11-02');
   await page.getByTestId('reporte-preparar').click();
   await expect(page.getByTestId('reporte-mensaje')).toContainText(/Reporte preparado|no sale/, { timeout: 150_000 });
   const enlace = page.getByTestId('reporte-semanal:2026-11-02-1');
   await expect(enlace).toBeVisible();
-  const fila = page.getByRole('row').filter({ hasText: 'Semanal 2026-11-02' });
+  // Localizador especifico: pueden existir otras filas 'Semanal 2026-11-02' (otras versiones o specs); se toma la fila de la version 1 que se acaba de ver.
+  const fila = page.getByRole('row').filter({ hasText: 'Semanal 2026-11-02' }).filter({ has: page.getByTestId('reporte-semanal:2026-11-02-1') });
   await expect(fila).toContainText(/Preliminar|Parcial|Definitivo|Borrador/);
   await enlace.click();
   await expect(page.getByTestId('marco-reporte')).toBeVisible();
