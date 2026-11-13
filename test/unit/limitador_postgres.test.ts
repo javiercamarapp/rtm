@@ -6,7 +6,7 @@ const consulta = vi.fn();
 vi.mock('pg', () => ({
   default: { Pool: class { query = consulta; on() {} } },
 }));
-vi.mock('@/config/env', () => ({ env: () => ({ LIMITE_PIMIENTA: 'pimienta-de-prueba-123456', SERVIDOR_DATABASE_URL: 'postgresql://x@127.0.0.1:1/x' }) }));
+vi.mock('@/config/env', () => ({ env: () => ({ LIMITE_PIMIENTA: 'p'.repeat(24), SERVIDOR_DATABASE_URL: 'postgresql://127.0.0.1:1/x' }) }));
 
 const { limitadorPostgres } = await import('@/infra/limite/limitador_postgres');
 const tope = { limite: 3, ventanaSeg: 600 };

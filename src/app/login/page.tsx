@@ -7,7 +7,6 @@ import { Logo, LogoMarca } from '@/ui/logo/logo';
 import { LoginArtwork } from '@/ui/login/artwork';
 import { respuestaOtp, conPisoDeTiempo } from './respuesta_otp';
 import { BotonLogin } from './boton-login';
-import { fraunces, instrument, plexMono } from './fuentes';
 import './login.css';
 import './login-tokens.css';
 
@@ -61,7 +60,7 @@ export default async function Login({
   // Dos columnas: a la IZQUIERDA el panel oscuro con el arte animado (`LoginArtwork`) y a la DERECHA el formulario. El panel solo se
   // muestra desde 1024 px; en el telefono la pantalla es solo el formulario. Sin `style=`: retardos de entrada y tamanos viven en login.css.
   return (
-    <main className={`login tema-neutro ${fraunces.variable} ${instrument.variable} ${plexMono.variable}`}>
+    <main className="login tema-neutro">
       {/* ── COLUMNA DEL FORMULARIO ── */}
       <section className="login-column">
         <div className="login-inner">
