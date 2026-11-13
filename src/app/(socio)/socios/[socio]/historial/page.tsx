@@ -15,7 +15,7 @@ import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pag
 import { ColumnasPesos } from '../../../_a3/graficas-pesos';
 import { Dos, Estado, Pie, abs, pct, suma } from '../../../_a3/util';
 import { fechaCorta, mesEtiqueta, semanaEtiqueta } from '../../../_a2/util';
-import { anosDe, bpAPct, conSigno, m, mesesTexto, razon } from '../../../_historial/util';
+import { anosDe, bpAPct, m, mesesTexto, razon } from '../../../_historial/util';
 
 export const metadata: Metadata = { title: 'Historial personal' };
 
