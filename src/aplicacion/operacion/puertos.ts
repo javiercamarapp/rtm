@@ -44,6 +44,8 @@ export const ACCIONES_OPERACION = [
   'registrar_persona_bodega',
   'registrar_pago', 'aplicar_pago', 'pago_aplicar_apertura', 'identificar_pago', 'anular_pago', 'pago_proveedor_de_socio', 'registrar_entrega_socio',
   'registrar_toma_omar', 'resolver_toma_omar', 'cerrar_liquidacion_omar', 'registrar_pago_omar', 'aviso_marcar_leido',
+  // Pago de renta de la bodega de Omar
+  'registrar_pago_renta',
   // Carril paquete-perdido
   'reportar_paquete_salida', 'reportar_paquete_entrada', 'resolver_paquete_incidente',
   // F3a
