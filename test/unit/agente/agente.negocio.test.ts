@@ -15,7 +15,7 @@ describe('adenda 23: cuenta con proveedor y orden de compra (cifras doradas)', (
   it('"Angel mando 30,500 a Karen": sube el saldo a favor y baja la cuenta por cobrar del cliente', async () => {
     const e = escenario([
       unaAccion(pedido('Cliente Norte', [['jupiter', 40]])),
-      unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Karen', monto_centavos: 3_050_000, pagado_por: 'sociedad', cliente_texto: 'Cliente Norte', fuente_cita: 'cita' }),
+      unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Karen', monto_centavos: 3_050_000, pagado_por: 'sociedad', cliente_texto: 'Cliente Norte', intencion: null, fuente_cita: 'cita' }),
     ]);
     await e.socio('angelo', 'Cliente Norte 40 jupiter');
     expect(e.negocio.saldoCliente('c1')).toBe(1_000_000n);
@@ -47,7 +47,7 @@ describe('adenda 23: cuenta con proveedor y orden de compra (cifras doradas)', (
   });
 
   it('"Pague 12,000 a Isaac desde mi cuenta": pago de socio al proveedor', async () => {
-    const e = escenario([unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Isaac', monto_centavos: 1_200_000, pagado_por: 'javier', cliente_texto: null, fuente_cita: 'cita' })]);
+    const e = escenario([unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Isaac', monto_centavos: 1_200_000, pagado_por: 'javier', cliente_texto: null, intencion: null, fuente_cita: 'cita' })]);
     await e.socio('javier', 'pague 12,000 a Isaac desde mi cuenta');
     expect(e.negocio.cuentaCon('isaac')).toBe(1_200_000n);
   });
@@ -84,7 +84,7 @@ describe('preguntas antes de ejecutar (las decide el servidor)', () => {
     expect(q.texto).toContain('Precio dicho: $230.00');
     expect(q.texto).toContain('Precio del tabulador: $250.00');
     expect(e.negocio.numeroDeHechos()).toBe(0);
-    await e.pulsar(IDS.javier, IDS.grupoSocios, q, 0, 0);
+    await e.pulsar(IDS.angelo, IDS.grupoSocios, q, 0, 0);
     expect(e.negocio.numeroDeHechos()).toBe(1);
     const r = await e.pulsar(IDS.angelo, IDS.grupoSocios, q, 0, 0);
     expect(r).toEqual({ estado: 'boton', resultado: 'usado' });

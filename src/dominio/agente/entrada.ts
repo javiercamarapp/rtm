@@ -75,3 +75,12 @@ export function redactarContactos(texto: string): string {
     .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g, '[correo oculto]')
     .replace(/\+?\d(?:[\s.-]?\d){9,14}/g, (m) => (m.replace(/\D/g, '').length >= 10 ? '[telefono oculto]' : m));
 }
+
+/**
+ * Decision del dueno (11 y 13-nov): el dinero que un socio pone o paga es REEMBOLSO; es capital SOLO si el socio lo declara con sus palabras
+ * (capital, invertir, reinvertir, meter mas lana). Se evalua sobre el mensaje original, nunca sobre lo que dice el modelo.
+ */
+export function declaraCapitalExpreso(texto: string): boolean {
+  const t = texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return /\b(capital|inversion|invert\w*|inviert\w*|reinvert\w*|reinviert\w*)\b/.test(t) || /\bmet(?:o|i|er)\s+mas\s+(?:lana|dinero|plata|feria)\b/.test(t);
+}

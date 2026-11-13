@@ -47,6 +47,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     monto_centavos: monto,
     pagado_por: quienPaga,
     cliente_texto: textoONulo(60),
+    intencion: z.enum(['capital', 'reembolso']).nullable(),
     fuente_cita: cita,
   }),
   z.strictObject({

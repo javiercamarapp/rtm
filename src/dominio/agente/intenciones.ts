@@ -41,6 +41,11 @@ export interface IPagoProveedor {
   monto_centavos: number;
   pagado_por: QuienPaga;
   cliente_texto: string | null;
+  /**
+   * Decision del dueno (13-nov): el dinero propio de un socio que paga a un proveedor es REEMBOLSO por omision (null o 'reembolso').
+   * 'capital' SOLO si el socio lo declara expresamente (invierto, reinvierto, meto mas lana); el codigo lo vuelve a verificar contra el mensaje.
+   */
+  intencion?: 'capital' | 'reembolso' | null;
   fuente_cita: string;
 }
 

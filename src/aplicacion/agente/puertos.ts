@@ -180,7 +180,7 @@ export interface AlmacenTokens {
    * Orden de validacion: (1) rol del que pulsa; (2) chat registrado del token; (3) caducidad; (4) un solo uso.
    * Un pulsador no autorizado NO consume el token.
    */
-  consumir(entrada: { token: string; rol: RolMiembro; chatId: number; ahora: Date }): Promise<ResultadoConsumo>;
+  consumir(entrada: { token: string; rol: RolMiembro; chatId: number; ahora: Date; /** Id de Telegram de quien pulsa: la base lo guarda (la firma del acta exige el boton de ese socio). */ usuarioId?: number }): Promise<ResultadoConsumo>;
 }
 
 // ---------------------------------------------------------------- catalogo (solo lectura) y negocio (lo que calcula el servidor)
@@ -219,6 +219,10 @@ export interface ContextoEjecucion {
   ahora: Date;
   /** El socio ya contesto "si" a la pregunta del servidor (precio fuera de tabulador, etc.). */
   confirmado: boolean;
+  /** Hash del efecto que mostro la vista previa: la base aborta si el efecto real ya es otro (precio, tipo de cambio, existencia). */
+  efectoHash?: string | null;
+  /** Boton "Si, estoy seguro" consumido por el autor (la firma del acta lo exige en la base). */
+  tokenBoton?: string | null;
 }
 
 export type MotivoPreguntaNegocio =
@@ -256,6 +260,11 @@ export interface RespuestaConsulta {
   lineas: CifraServidor[];
 }
 
+/**
+ * B1: HOY `dependenciasDe` es un stub que devuelve 0 (NegocioAgenteDb): el agente NO calcula dependencias de un folio. La proteccion real vive en la base:
+ * cada anulacion (operacion.anular_*, cancelar_pedido, reversar_evento) rechaza lo que tiene dependientes con un motivo en espanol, y agente.deshacer solo
+ * acepta los tipos con reversa directa. Lo que el stub si impide es nada: la unica barrera del agente es la ventana de 10 minutos y la politica de quien deshace.
+ */
 export interface DependenciasDeFolio {
   cantidad: number;
   descripcion: CifraServidor[];
@@ -275,7 +284,7 @@ export interface TomaCaducada {
 
 /** Efecto que calcula el servidor al simular una escritura (se revierte siempre). */
 export type ResultadoSimulacion =
-  | { tipo: 'simulado'; lineas: CifraServidor[]; advertencias: string[]; cuadra: boolean; rojas: string[] }
+  | { tipo: 'simulado'; lineas: CifraServidor[]; advertencias: string[]; cuadra: boolean; rojas: string[]; efectoHash?: string | null }
   | { tipo: 'pregunta'; motivo: MotivoPreguntaNegocio; texto: string; cifras: CifraServidor[] }
   | { tipo: 'rechazado'; codigo: string; texto: string };
 

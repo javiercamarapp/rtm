@@ -89,10 +89,15 @@ class Sala {
     return this.webhook({ update_id: ++this.upd, callback_query: { id: `cb${this.upd}`, from: { id: ID[quien] }, message: { message_id: de.id, chat: { id: quien === 'omar' ? ID.omar : ID.grupo, type: 'supergroup' } }, data: b.data } });
   }
 
-  /** Confirma el resumen (y la confirmacion reforzada si la pide). */
-  async confirmar(quien: keyof typeof ID) {
-    await this.pulsar(quien, 'Confirmar');
-    if (this.ultimo().botones.flat().some((b) => b.texto === 'Si, estoy seguro')) await this.pulsar(quien, 'Si, estoy seguro');
+  /**
+   * Confirma el resumen (y la confirmacion reforzada si la pide) como lo exige la politica: confirma el AUTOR (el que dice "Lo pidio X" en la tarjeta);
+   * en el lote historico el segundo paso lo da el OTRO socio. El argumento se conserva por compatibilidad y se ignora.
+   */
+  async confirmar(_quien?: keyof typeof ID) {
+    const autor = (/Lo pidio (Angelo|Javier)/.exec(this.ultimo().texto)?.[1] ?? 'Angelo').toLowerCase() as 'angelo' | 'javier';
+    await this.pulsar(autor, 'Confirmar');
+    const ref = this.ultimo();
+    if (ref.botones.flat().some((b) => b.texto === 'Si, estoy seguro')) await this.pulsar(/lote historico/i.test(ref.texto) ? (autor === 'angelo' ? 'javier' : 'angelo') : autor, 'Si, estoy seguro');
   }
 }
 
@@ -215,10 +220,12 @@ describe('casos por intencion: feliz, faltante, suma que no cuadra, sin permiso,
     expect(resumen.texto).toContain('2 renglones, todos con fecha pasada');
     expect(resumen.texto).toContain('Cuadre por dos vias');
     expect(await cuenta('agente.hecho', [])).toBe(antes);
-    await sala.pulsar('angelo', 'Confirmar');
+    await sala.pulsar('javier', 'Confirmar'); // confirma el autor
     expect(sala.ultimo().botones.flat().map((b) => b.texto)).toContain('Si, estoy seguro');
     expect(sala.ultimo().texto).toContain('Confirmacion reforzada');
-    await sala.pulsar('angelo', 'Si, estoy seguro');
+    await sala.pulsar('javier', 'Si, estoy seguro'); // el autor no basta en el lote historico: no se registra
+    expect(await cuenta('agente.hecho', [])).toBe(antes);
+    await sala.pulsar('angelo', 'Si, estoy seguro'); // el otro socio da el segundo paso
     expect(await cuenta('agente.hecho', [])).toBe(antes + 2);
     expect((await q<{ f: string }>("select min(fecha_neg)::text as f from operacion.evento where clave_idem like 'tg:%:%' and mensaje_origen like 'telegram:javier:%octubre%'"))[0]!.f).toBe(f1);
     // El mismo boton no vuelve a registrar
@@ -350,3 +357,36 @@ describe('casos por intencion: feliz, faltante, suma que no cuadra, sin permiso,
 });
 
 export type _Usar = Intencion;
+
+describe('revision de seguridad: efecto confirmado, autor verificado y deshacer entre socios', () => {
+  it('si el precio cambia entre la vista previa y Confirmar, la base aborta (P0462) y no se registra el pedido; con la vista previa nueva si', async () => {
+    const antes = await cuenta('operacion.pedido');
+    await sala.escribir('javier', '/pedido Tg Cliente | tg modelo/uva 3');
+    const resumen = sala.ultimo();
+    expect(resumen.texto).toContain('$250.00');
+    await q("select catalogo.fijar_precio('e2e:p9', 'Tg Cliente', 'Tg Modelo', 27000, negocio.hoy(), 'chat')");
+    await sala.pulsar('javier', 'Confirmar', resumen);
+    expect(sala.ultimo().texto).toContain('el efecto cambio desde la vista previa');
+    expect(await cuenta('operacion.pedido')).toBe(antes);
+    await sala.escribir('javier', '/pedido Tg Cliente | tg modelo/uva 3');
+    expect(sala.ultimo().texto).toContain('$270.00');
+    await sala.confirmar();
+    expect(await cuenta('operacion.pedido')).toBe(antes + 1);
+  });
+
+  it('la base rechaza un autor que no corresponde al id de Telegram aunque el JSON lo diga (suplantacion)', async () => {
+    await expect(q("select agente.ejecutar('e2e:sup', 'aportacion', jsonb_build_object('socio', 'angelo', 'monto_cent', 100, 'autor', 'angelo', 'telegram_user_id', $1::bigint, 'origen', 'x'))", [ID.javier])).rejects.toMatchObject({ code: '42501' });
+    await expect(q("select agente.deshacer('e2e:sup2', 'G-0001', 'angelo', $1::bigint)", [ID.javier])).rejects.toMatchObject({ code: '42501' });
+  });
+
+  it('el otro socio puede deshacer un hecho reciente y queda registrado quien lo hizo', async () => {
+    sala.ahora = new Date();
+    await sala.escribir('angelo', 'puse 700 para gastos');
+    await sala.confirmar();
+    sala.ahora = new Date();
+    const folio = (await q<{ folio: string }>("select folio from agente.hecho where tipo = 'aportacion' and deshecho_at is null order by creado_at desc limit 1"))[0]!.folio;
+    await sala.escribir('javier', `/deshacer ${folio}`);
+    const h = (await q<{ deshecho_por: string | null; autor: string }>('select deshecho_por, autor from agente.hecho where folio = $1', [folio]))[0]!;
+    expect(h).toEqual({ deshecho_por: 'javier', autor: 'angelo' });
+  });
+});

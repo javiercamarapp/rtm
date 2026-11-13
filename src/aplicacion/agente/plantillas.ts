@@ -247,6 +247,11 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
     case 'pago_proveedor':
       l.push(`Proveedor: ${nombreProveedor(d.proveedor)}`, monto(i.monto_centavos), `Lo pago: ${nombreQuien(i.pagado_por)}`);
       if (d.cliente !== null) l.push(`Por cuenta del cliente: ${r.servidor(d.cliente)}`);
+      else if (i.pagado_por !== 'sociedad') {
+        l.push(i.intencion === 'capital'
+          ? `Tipo: capital que declaro el socio con sus palabras ("${r.citaUsuario(i.fuente_cita)}"). Si no es lo que quisiste decir, cancela.`
+          : 'Tipo: reembolso, cuenta por pagar al socio (no es capital porque no lo declaro como capital)');
+      }
       break;
     case 'gasto':
       l.push(`Concepto: ${i.gasto}`, monto(i.monto_centavos), `Lo pago: ${nombreQuien(i.pagado_por)} (queda como reembolso pendiente a ese socio)`);

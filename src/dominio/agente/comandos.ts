@@ -340,7 +340,7 @@ export function parsearComando(texto: string): ResultadoComando | null {
       const c = importe === undefined ? null : monto(importe);
       const q = quien === undefined ? null : quienPaga(quien);
       if (!proveedor || c === null || q === null) return fallo('pagoprov');
-      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pago_proveedor', proveedor_texto: proveedor, monto_centavos: c, pagado_por: q, cliente_texto: null, fuente_cita: cita } };
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pago_proveedor', proveedor_texto: proveedor, monto_centavos: c, pagado_por: q, cliente_texto: null, intencion: null, fuente_cita: cita } };
     }
     case 'toma': {
       if (partes.length === 0) return fallo('toma');

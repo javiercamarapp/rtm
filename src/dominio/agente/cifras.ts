@@ -197,3 +197,30 @@ export class RegistroCifras {
     return texto;
   }
 }
+
+export type PrecioDictado = { ok: true; centavos: number } | { ok: false; motivo: 'ambiguo' | 'ilegible' };
+
+/**
+ * Un precio dictado ("250", "$1,250.50", "1250.5") a centavos exactos, con la convencion de Mexico: coma = miles, punto = decimales.
+ * Los formatos que cambian de significado segun la convencion ("1.250", "1.250,50", "1,5") NO se adivinan: devuelven `ambiguo` y el agente pide aclarar.
+ * (valoresDeTexto acepta ambas lecturas para comprobar procedencia; aqui hace falta UNA sola, porque el numero se escribe en la base.)
+ */
+export function parsearPrecio(texto: string): PrecioDictado {
+  const t = sinAcentos(texto.toLowerCase()).replace(/\b(mxn|pesos|peso|mn)\b/g, ' ');
+  const nums = [...t.matchAll(/\d[\d.,]*/g)].map((m) => m[0].replace(/[.,]+$/, ''));
+  if (nums.length === 0) {
+    // Solo palabras ("doscientos cincuenta"): vale si hay una unica lectura.
+    const v = [...valoresDeTexto(t)];
+    return v.length === 1 && v[0]! > 0n && v[0]! <= BigInt(Number.MAX_SAFE_INTEGER) ? { ok: true, centavos: Number(v[0]!) } : { ok: false, motivo: 'ilegible' };
+  }
+  if (nums.length > 1) return { ok: false, motivo: 'ambiguo' };
+  const n = nums[0]!;
+  const mult = /\d\s*(k|mil)\b/.test(t) ? 1000n : 1n;
+  let centavos: bigint | null = null;
+  if (/^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(n)) centavos = aCentesimas(n.replace(/,/g, '').split('.')[0]!, n.split('.')[1] ?? '');
+  else if (/^\d+(\.\d{1,2})?$/.test(n)) centavos = aCentesimas(n.split('.')[0]!, n.split('.')[1] ?? '');
+  else if (/^\d+$/.test(n)) centavos = aCentesimas(n, '');
+  if (centavos === null) return { ok: false, motivo: 'ambiguo' }; // 1.250 | 1.250,50 | 1,5 | 12,50,3 ...
+  const total = centavos * mult;
+  return total > 0n && total <= BigInt(Number.MAX_SAFE_INTEGER) ? { ok: true, centavos: Number(total) } : { ok: false, motivo: 'ilegible' };
+}

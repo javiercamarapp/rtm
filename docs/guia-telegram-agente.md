@@ -138,18 +138,39 @@ Rotar token y secreto si alguna vez se pegaron en un chat o en un repo.
 
 1. Registrar miembros y chats sin imprimirlos (`npm run agente:registrar -- --dry-run`, luego sin `--dry-run`), fijar el webhook con `secret_token` y dejar `telegram_envio` apagado.
 2. En el grupo: `/ayuda`, `/cuadra`, `/pendientes`. Debe responder solo a los dos socios; un tercero y Omar en el grupo no reciben respuesta.
-3. Un gasto chico: `/gasto guia 1 javier` -> resumen -> Confirmar (el otro socio) -> folio -> `/deshacer`.
+3. Un gasto chico: `/gasto guia 1 javier` -> resumen -> Confirmar (quien lo pidio; si pulsa el otro socio no se registra y la tarjeta vuelve) -> folio -> `/deshacer`.
 4. Un pedido de prueba contra un cliente de prueba con precio de tabulador: verificar el importe del resumen contra el tabulador, confirmar, `/enviado`, cobro, `/cuadra` debe decir "Las cuentas cuadran".
-5. Un lote historico de 2 renglones: vista previa, segunda confirmacion, revisar en la web que las fechas son las dictadas; `/deshacer` por folio.
+5. Un lote historico de 2 renglones: vista previa, Confirmar (quien lo pidio), segunda confirmacion (el OTRO socio), revisar en la web que las fechas son las dictadas; `/deshacer` por folio.
 6. Acta: `/acta`, firma de cada socio con `/firmaracta` desde su propio Telegram; verificar que el segundo socio no puede firmar por el primero.
 7. Mensaje de Omar en privado con un comando de socio: debe quedar bloqueado y avisar al grupo.
 8. Confirmar en el panel de Telegram que ningun mensaje salio a un chat distinto del grupo y del privado de Omar.
+
+## Politicas de seguridad (revision independiente, 13-nov)
+
+**Quien es el autor (ALTO-1).** La base no confia en el campo `autor` del JSON. Toda escritura (`agente.ejecutar`, `agente.ejecutar_ext`, `agente.simular`, `agente.deshacer`) exige que el autor exista en `agente.miembro` como persona con rol `socio` y activo, y que el `telegram_user_id` que manda TypeScript (el del remitente que verifico el webhook) sea el de esa persona; si no, `42501`. La firma del acta (`acta_firma`) exige ademas el boton "Si, estoy seguro" consumido por ESE socio, de ESA indicacion (misma clave): el id de quien pulso queda en `agente.tg_token.usado_por`. Los ayudantes internos (`agente._*`, incluidas las funciones base `_ejecutar_base` y `_ejecutar_ext_base` que no tienen candados) no tienen EXECUTE para el rol `servidor`; solo las puertas lo tienen. Limite honesto: quien tenga la credencial del rol `servidor` puede seguir invocando las puertas con el id de un socio real; esa credencial es la unica raiz de confianza.
+
+**Quien puede deshacer (MEDIO-1).** El solicitante es un socio verificado y es el actor de la anulacion; el hecho guarda `deshecho_por`. Un socio deshace SUS hechos cuando quiera (la base decide si la anulacion es posible); un hecho DEL OTRO socio solo dentro de los 10 minutos siguientes (corregir un error visible en el grupo, como el boton Deshacer); pasado ese tiempo solo lo deshace quien lo registro, o se corrige en el software. Una toma de Omar (T-) la resuelve cualquier socio. `/deshacer` sin folio toma el ultimo hecho PROPIO. `dependenciasDe` es un stub que devuelve 0 (B1): la proteccion contra dependientes la dan las propias funciones de anulacion de la base, que rechazan con un motivo en espanol.
+
+**Que efecto se confirma y quien confirma (MEDIO-2).** La vista previa devuelve el hash del efecto que calculo el servidor (precios del tabulador, tipo de cambio, totales); el boton Confirmar lo lleva y la ejecucion recalcula el efecto real: si es otro (cambio el precio, el tipo de cambio o la existencia entre simular y ejecutar) se aborta todo con `P0462` y se pide un resumen nuevo. Por omision el AUTOR confirma lo suyo (Confirmar, "Si, continuar" y "Si, estoy seguro"): si pulsa el otro socio no se registra nada y la tarjeta vuelve a mostrarse; el otro socio si puede cancelar, completar un dato faltante o elegir una opcion de aclaracion. Un segundo socio NO es obligatorio, salvo en las acciones de `SEGUNDO_SOCIO_OBLIGATORIO` (hoy solo el lote historico), cuyo segundo paso lo da el otro socio. La firma del acta es personal.
+
+**Mensajes reenviados (MEDIO-3).** Un reenviado es dato no confiable: sus `/comandos` se ignoran y, si se interpreta con IA, solo admite consultas; cualquier escritura se rechaza con un aviso.
+
+**Orden de reclamos (MEDIO-4).** El mensaje se reclama por (chat, mensaje) ANTES del limite de frecuencia: un mensaje rechazado por frecuencia queda reclamado y su edicion posterior no se procesa como nuevo. El mensaje actual cuenta en la ventana (el limite es "mas de N por minuto").
+
+**Precios dictados (MEDIO-5).** Convencion de Mexico (`parsearPrecio`): `1,250.50`, `1250.5`, `$1,250` son precios; `1.250`, `1.250,50` y `1,5` son ambiguos y el agente pide escribirlo sin ambiguedad antes de confirmar. Nunca se adivina.
+
+**Capital (decision del dueno, 13-nov).** El dinero propio de un socio que paga a un proveedor es REEMBOLSO por omision; es capital solo si el socio lo declara expresamente (capital, invertir, reinvertir, meter mas lana), verificado contra su mensaje y mostrado con su texto citado. La intencion manda `declara_capital: true` a `agente.ejecutar`; mientras `operacion.pago_proveedor_de_socio` no tenga el parametro `p_declara_capital` (lane/cuadrar-cuentas), la base responde `P0461` en vez de registrarlo como reembolso.
+
+**Folios (B2).** La vista previa corre en un sub-bloque que se revierte; los folios salen de `seguridad.contador_folio` (se actualiza dentro de la transaccion), asi que simular NO deja huecos de folio (pgTAP 031 lo comprueba).
+
+**Webhook (B3).** La ruta valida el secreto ANTES de leer el cuerpo, rechaza por `Content-Length` mayor a 1 MB sin leer y corta la lectura al pasar el tope.
 
 ## Como se probo
 
 - `test/unit/agente/agente.socios.test.ts`: cada intencion nueva, ambiguos, faltantes, duplicados, deshacer, confirmacion negada, cifras inventadas o sumadas por el modelo, Omar y consultas.
 - Simulador local: `npx tsx scripts/agente/simulador.mts scripts/agente/guion-ejemplo.txt` (sin red ni base).
 - `test/unit/agente/agente.ampliado.test.ts`: catalogo declarativo, esquemas, comandos nuevos, confirmacion reforzada, faltantes con botones, firma personal, limite de frecuencia y Omar.
+- `supabase/tests/database/031_telegram_agente_endurecimiento.test.sql` (pgTAP) y `test/unit/agente/agente.seguridad.test.ts`: autor verificado, firma con boton propio, hash del efecto, deshacer entre socios, privilegios, reenviados, orden de reclamos, quien confirma, precios, capital y webhook.
 - `supabase/tests/database/030_telegram_agente_ampliado.test.sql` (pgTAP): cada tipo de `agente.ejecutar_ext`, simulacion que no deja nada, idempotencia, deshacer, consultas, permisos y RLS.
 - `test/integracion/telegram_e2e.test.ts`: extremo a extremo contra la base local con el webhook, Telegram con fetch falso (nunca sale a api.telegram.org) y la IA simulada: dia de operacion completo (compra, recepcion, pedido, envio, cobro, gasto, reembolso) con `cuadra = true` por dos vias, mas un caso por tipo de situacion (faltante, suma que no cuadra, sin permiso, doble envio, confirmacion expirada, miembro no autorizado, secreto invalido).
 - `scripts/agente/simular-telegram.mts`: el mismo camino contra una base LOCAL, con guion (`DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres npx tsx scripts/agente/simular-telegram.mts scripts/agente/guion-telegram.txt`). Se niega a correr si la base no es local.

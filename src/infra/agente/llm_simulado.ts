@@ -132,11 +132,11 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
   // "Angel mando 30,500 a Karen" / "Pague 12,000 a Isaac desde mi cuenta"
   if ((m = new RegExp(`^(.+?)\\s+mando\\s+${NUM}\\s+a\\s+(karen|vapemate|isaac)`, 'i').exec(s))) {
     const monto = aCentavos(m[2]!);
-    if (monto !== null) return respuesta([{ tipo: 'pago_proveedor', proveedor_texto: m[3]!, monto_centavos: monto, pagado_por: 'sociedad', cliente_texto: m[1]!.trim(), fuente_cita: cita }]);
+    if (monto !== null) return respuesta([{ tipo: 'pago_proveedor', proveedor_texto: m[3]!, monto_centavos: monto, pagado_por: 'sociedad', cliente_texto: m[1]!.trim(), intencion: null, fuente_cita: cita }]);
   }
   if ((m = new RegExp(`^pague\\s+${NUM}\\s+a\\s+(karen|vapemate|isaac)`, 'i').exec(s)) && (autor === 'angelo' || autor === 'javier')) {
     const monto = aCentavos(m[1]!);
-    if (monto !== null) return respuesta([{ tipo: 'pago_proveedor', proveedor_texto: m[2]!, monto_centavos: monto, pagado_por: autor, cliente_texto: null, fuente_cita: cita }]);
+    if (monto !== null) return respuesta([{ tipo: 'pago_proveedor', proveedor_texto: m[2]!, monto_centavos: monto, pagado_por: autor, cliente_texto: null, intencion: /\b(capital|invert\w*|inviert\w*|reinvert\w*|reinviert\w*)\b/i.test(s) ? 'capital' : null, fuente_cita: cita }]);
   }
 
   const socioDe = (x: string): 'angelo' | 'javier' | null => (/angelo/.test(x) ? 'angelo' : /javier/.test(x) ? 'javier' : null);

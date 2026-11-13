@@ -118,12 +118,14 @@ describe('inyeccion', () => {
     expect(e.ultimoGrupo().texto).toContain('Waka Jupiter 50K');
   });
 
-  it('un mensaje reenviado se trata como dato: se registra el evento pero un pedido legitimo reenviado se procesa', async () => {
+  it('un mensaje reenviado es dato no confiable: se interpreta (consultas) pero NO registra movimientos', async () => {
     const e = escenario([unaAccion(pedido('Cliente Norte', [['jupiter', 28]]))]);
     await e.socio('angelo', 'Cliente Norte 28 jupiter', { reenviado: true });
-    expect(e.negocio.numeroDeHechos()).toBe(1);
+    expect(e.negocio.numeroDeHechos()).toBe(0);
     expect(e.almacen.eventos.some((x) => x.tipo === 'sospecha_inyeccion' && x.detalle === 'reenviado')).toBe(true);
+    expect(e.almacen.eventos.some((x) => x.tipo === 'sospecha_inyeccion' && x.detalle === 'reenviado_escritura')).toBe(true);
     expect(e.llmGuionado.peticiones[0]!.usuario).toContain('fuente="reenviado"');
+    expect(e.ultimoGrupo().texto).toContain('reenviado');
   });
 
   it('el texto del usuario va como DATO delimitado, sin telefonos ni correos, y sin ids de catalogo', async () => {

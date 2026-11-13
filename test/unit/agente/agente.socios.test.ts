@@ -23,11 +23,12 @@ describe('resumen y confirmacion explicita antes de registrar dinero', () => {
     expect(resumen.texto).toContain('Todavia no se registro nada');
     expect(resumen.texto).toContain('$500.00');
     expect(resumen.botones?.[0]?.map((b) => b.texto)).toEqual(['Confirmar', 'Cancelar']);
-    await e.pulsar(IDS.angelo, IDS.grupoSocios, resumen, 0, 0);
+    await e.pulsar(IDS.javier, IDS.grupoSocios, resumen, 0, 0);
     expect(e.negocio.numeroDeHechos()).toBe(1);
     expect(e.negocio.deudaCon('javier')).toBe(50_000n);
     expect(e.ultimoGrupo().texto).toContain('Registrado');
-    expect(e.ultimoGrupo().texto).toContain('confirmado por Angelo');
+    expect(e.ultimoGrupo().texto).toContain('por Javier');
+    expect(e.ultimoGrupo().texto).not.toContain('confirmado por');
   });
 
   it('confirmacion negada: Cancelar no registra y el boton ya no sirve', async () => {
@@ -177,7 +178,7 @@ describe('cobro, pago a proveedor, devolucion y paquete', () => {
   });
 
   it('pago a proveedor de un socio con resumen', async () => {
-    const e = escenario([unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Karen', monto_centavos: 3_050_000, pagado_por: 'javier', cliente_texto: null, fuente_cita: 'c' })], ESTRICTO);
+    const e = escenario([unaAccion({ tipo: 'pago_proveedor', proveedor_texto: 'Karen', monto_centavos: 3_050_000, pagado_por: 'javier', cliente_texto: null, intencion: null, fuente_cita: 'c' })], ESTRICTO);
     await e.socio('javier', 'pague 30,500 a Karen');
     expect(e.ultimoGrupo().texto).toContain('Proveedor: Karen');
     await e.pulsar(IDS.javier, IDS.grupoSocios, e.ultimoGrupo(), 0, 0);

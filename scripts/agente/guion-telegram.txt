@@ -2,4 +2,4 @@
 javier> /cuadra
 javier> /pendientes
 angelo> /cliente Cliente de Prueba
-boton javier: Confirmar
+boton angelo: Confirmar

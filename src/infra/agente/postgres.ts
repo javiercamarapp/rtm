@@ -26,6 +26,7 @@ import type {
 } from '@/aplicacion/agente/puertos';
 import { CONSULTAS_EXT } from '@/dominio/agente/catalogo_intenciones';
 import type { IConsulta, Intencion } from '@/dominio/agente/intenciones';
+import { parsearPrecio } from '@/dominio/agente/cifras';
 import { sumarDias } from '@/dominio/calendario';
 import { formatearMoneda } from '@/dominio/formato';
 import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
@@ -78,8 +79,8 @@ export class AlmacenTokensDb implements AlmacenTokens {
     await F(this.sql, 'token_emitir', [token, t.accion, t.rolesPermitidos as string[], t.chatId, t.caducaEn.toISOString(), t.grupoExclusivo, JSON.stringify(t.payload ?? {})], ['text', 'text', 'text[]', 'bigint', 'timestamptz', 'text', 'jsonb']);
     return token;
   }
-  async consumir(e: { token: string; rol: RolMiembro; chatId: number; ahora: Date }): Promise<ResultadoConsumo> {
-    const j = (await F(this.sql, 'token_consumir', [e.token, e.rol, e.chatId, e.ahora.toISOString()], ['text', 'text', 'bigint', 'timestamptz'])) as { estado: string; accion?: AccionBoton; payload?: unknown };
+  async consumir(e: { token: string; rol: RolMiembro; chatId: number; ahora: Date; usuarioId?: number }): Promise<ResultadoConsumo> {
+    const j = (await F(this.sql, 'token_consumir', [e.token, e.rol, e.chatId, e.ahora.toISOString(), e.usuarioId ?? null], ['text', 'text', 'bigint', 'timestamptz', 'bigint'])) as { estado: string; accion?: AccionBoton; payload?: unknown };
     if (j.estado === 'ok') return { estado: 'ok', accion: j.accion!, payload: j.payload };
     return { estado: j.estado as 'no_autorizado' | 'chat_distinto' | 'caducado' | 'usado' | 'invalido' };
   }
@@ -138,7 +139,15 @@ const socioNombre = (s: 'angelo' | 'javier') => (s === 'angelo' ? 'Angelo' : 'Ja
 /** Traduce una intencion ya resuelta (ids del catalogo, montos validados) a la indicacion de la base. Aqui NO se calcula ningun importe. */
 export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string): Preparada | null {
   const i: Intencion = a.intencion;
-  const base = { origen: 'fuente_cita' in i ? i.fuente_cita : '', autor: ctx.autor.persona };
+  // `telegram_user_id` es el del remitente que ya verifico el webhook: la base lo contrasta con agente.miembro (no se confia solo en `autor`).
+  // `efecto_hash` y `token_boton` solo los usan las puertas que los exigen (vista previa confirmada; firma del acta).
+  const base = {
+    origen: 'fuente_cita' in i ? i.fuente_cita : '',
+    autor: ctx.autor.persona,
+    telegram_user_id: ctx.autor.telegramUserId,
+    ...(ctx.efectoHash ? { efecto_hash: ctx.efectoHash } : {}),
+    ...(ctx.tokenBoton ? { token_boton: ctx.tokenBoton } : {}),
+  };
   const lineasSku = () => a.resoluciones.lineas.map((r, n) => ({ modelo_id: Number(r.modeloId), sabor_id: r.saborId === null ? null : Number(r.saborId), piezas: (i as { lineas: { piezas: number }[] }).lineas[n]!.piezas }));
   switch (i.tipo) {
     case 'gasto':
@@ -153,7 +162,9 @@ export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string)
     case 'pago':
       return { hub: 'ejecutar', tipo: 'pago_cliente', titulo: 'Cobro de cliente registrado', args: { ...base, cuenta: i.cuenta_destino_texto, monto_cent: i.monto_centavos, cliente_id: Number(a.resoluciones.clienteId) } };
     case 'pago_proveedor':
-      return { hub: 'ejecutar', tipo: 'pago_proveedor', titulo: 'Pago a proveedor registrado', args: { ...base, proveedor: a.resoluciones.proveedorId, monto_cent: i.monto_centavos, pagado_por: i.pagado_por, cliente_id: a.resoluciones.clienteId === null ? null : Number(a.resoluciones.clienteId) } };
+      return { hub: 'ejecutar', tipo: 'pago_proveedor', titulo: 'Pago a proveedor registrado', args: { ...base, proveedor: a.resoluciones.proveedorId, monto_cent: i.monto_centavos, pagado_por: i.pagado_por, cliente_id: a.resoluciones.clienteId === null ? null : Number(a.resoluciones.clienteId),
+        // Dinero propio de un socio que paga a un proveedor: REEMBOLSO por omision; capital solo si el socio lo declaro expresamente (la base rechaza la combinacion con la funcion aun no integrada).
+        ...(i.intencion === 'capital' && (i.pagado_por === 'angelo' || i.pagado_por === 'javier') && a.resoluciones.clienteId === null ? { declara_capital: true } : {}) } };
     case 'pedido':
       return { hub: 'ejecutar_ext', tipo: 'pedido_crear', titulo: 'Pedido creado y confirmado', args: { ...base, cliente_id: Number(a.resoluciones.clienteId), lineas: i.lineas.map((l, n) => ({ ...lineasSku()[n], precio_cent: l.precio_texto === null ? null : precioDeTexto(l.precio_texto) })), envio_cent: i.envio_cobrado_centavos ?? 0 } };
     case 'pedido_envio':
@@ -196,11 +207,14 @@ export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string)
   }
 }
 
-/** Precio dictado ("250", "$1,250.50") a centavos exactos; la guardia de cifras ya verifico que aparece en el mensaje. */
+/**
+ * Precio dictado ("250", "$1,250.50", "1250.5") a centavos exactos (convencion de Mexico). Los formatos ambiguos ("1.250", "1.250,50") ya se pidieron
+ * aclarar antes de llegar aqui (datoFaltante); si aun asi llegan, NO se adivina: se lanza y la indicacion se rechaza.
+ */
 function precioDeTexto(t: string): number | null {
-  const m = /(\d[\d,]*)(?:\.(\d{1,2}))?/.exec(t);
-  if (!m) return null;
-  return Number(m[1]!.replace(/,/g, '')) * 100 + Number((m[2] ?? '').padEnd(2, '0') || 0);
+  const r = parsearPrecio(t);
+  if (!r.ok) throw new RangeError(`precio ambiguo o ilegible: ${t}`);
+  return r.centavos;
 }
 
 type ResultadoSql = Record<string, unknown> & { folio?: string; repetido?: boolean; eco?: Parameters<typeof eco>[0] };
@@ -307,10 +321,10 @@ export class NegocioAgenteDb implements NegocioAgente {
     const prep = a.intencion.tipo === 'toma_omar' || a.intencion.tipo === 'devolucion' || a.intencion.tipo === 'paquete_perdido' ? null : preparar(a, ctx, hoyDe(ctx.ahora));
     if (!prep) return { tipo: 'simulado', lineas: [], advertencias: [], cuadra: true, rojas: [] };
     try {
-      const j = (await F(this.sql, 'simular', [prep.hub, prep.tipo, JSON.stringify(prep.args)], ['text', 'text', 'jsonb'])) as { resultado: ResultadoSql; efecto: Record<string, unknown>; cuadra: boolean; comprobaciones_rojas: { nombre: string }[] };
+      const j = (await F(this.sql, 'simular', [prep.hub, prep.tipo, JSON.stringify(prep.args)], ['text', 'text', 'jsonb'])) as { resultado: ResultadoSql; efecto: Record<string, unknown>; efecto_hash?: string; cuadra: boolean; comprobaciones_rojas: { nombre: string }[] };
       const lineas = [...efectoDeSimulacion(j.efecto ?? {}), ...lineasDeResultado(j.resultado ?? {}).filter((l) => l.tipo === 'texto' && l.etiqueta === 'Folios' ? false : true), ...eco(j.resultado?.eco).saldos];
       const avisos = Array.isArray(j.efecto?.avisos) ? (j.efecto.avisos as string[]) : [];
-      return { tipo: 'simulado', lineas, advertencias: avisos, cuadra: j.cuadra, rojas: (j.comprobaciones_rojas ?? []).map((r) => r.nombre) };
+      return { tipo: 'simulado', lineas, advertencias: avisos, cuadra: j.cuadra, rojas: (j.comprobaciones_rojas ?? []).map((r) => r.nombre), efectoHash: j.efecto_hash ?? null };
     } catch (e) {
       const cod = (e as { code?: string }).code;
       if (cod === 'P0427') return { tipo: 'pregunta', motivo: 'otro', texto: `${(e as Error).message}. ¿Lo envio de todos modos, aceptando esos avisos?`, cifras: [] };
@@ -345,13 +359,15 @@ export class NegocioAgenteDb implements NegocioAgente {
     return j ? { folio: j.folio, ejecutadoEn: new Date(j.ejecutado_en) } : null;
   }
 
+  /** STUB deliberado (B1): ver DependenciasDeFolio. Las anulaciones de la base rechazan lo que tiene dependientes; aqui no se calcula nada. */
   async dependenciasDe(): Promise<DependenciasDeFolio> {
     return { cantidad: 0, descripcion: [] };
   }
 
   async deshacer(e: { folio: string; autor: Miembro; claveIdem: string }): Promise<ResultadoDeshacer> {
     try {
-      await F(this.sql, 'deshacer', [e.claveIdem, e.folio], ['text', 'text']);
+      // El solicitante viaja verificado (id de Telegram): la base lo usa como actor, aplica la politica de quien puede deshacer y deja `deshecho_por`.
+      await F(this.sql, 'deshacer', [e.claveIdem, e.folio, e.autor.persona, e.autor.telegramUserId], ['text', 'text', 'text', 'bigint']);
       return { tipo: 'deshecho', folioContra: `Contramovimiento de ${e.folio}`, titulo: `Se deshizo ${e.folio}`, lineas: [], repetido: false };
     } catch (err) {
       return { tipo: 'rechazado', codigo: (err as { code?: string }).code ?? 'error', texto: (err as Error).message };

@@ -138,7 +138,8 @@ describe('flujos del agente: confirmacion reforzada, faltantes, firma personal, 
     const e = escenario([{ acciones: [{ tipo: 'ninguna' }], sospecha_inyeccion: false, baja_certeza: false }], ESTRICTO);
     await e.socio('javier', '/firmaracta');
     await e.pulsar(IDS.angelo, IDS.grupoSocios, e.ultimoGrupo(), 0, 0);
-    expect(e.ultimoGrupo().texto).toContain('La firma del acta es personal');
+    // Angelo no confirma lo que pidio Javier: no se firma nada y la tarjeta vuelve a mostrarse para quien la pidio.
+    expect(e.textosGrupo().some((t) => t.includes('Lo pidio Javier: lo confirma el'))).toBe(true);
     expect(e.negocio.numeroDeHechos()).toBe(0);
   });
 
