@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { AreaPesos } from '../../_a3/graficas-pesos';
 import { notFound } from 'next/navigation';
 import { exigirSocio } from '@/composicion/acceso';
@@ -47,6 +48,7 @@ export default async function PaginaEstadoSocio({ params }: { params: Promise<{ 
         migaja={{ href: '/socios', texto: 'Cuenta de socios' }}
         eyebrow="Estado de cuenta"
         titulo={`Estado de cuenta de ${socio}`}
+        acciones={<Link className="rtm-boton" href={`/socios/${socio}/historial`} data-testid="ir-historial">Historial personal</Link>}
         descripcion={`${palabra} ${m(abs(e.neto_cent))}${e.dias_fondos !== null ? ` · fondos de la sociedad en su poder desde hace ${e.dias_fondos} días` : ''}`}
       />
       <Segmentado etiquetaAria="Ver la cuenta de" opciones={(['Angelo', 'Javier'] as const).map((n) => ({ valor: n, etiqueta: n === perfil.socio_nombre ? `Mi cuenta (${n})` : `Cuenta de ${n}`, href: `/socios/${n}`, activa: n === socio, testid: `ver-${n}` }))} />

@@ -27,10 +27,12 @@ interface Props {
   nota?: ReactNode;
   /** Solo desde componentes de cliente: ajusta los argumentos antes de enviarlos (por ejemplo armar un jsonb). */
   transformar?: (args: Record<string, unknown>) => Record<string, unknown>;
+  /** Aviso informativo que se recalcula con lo que se va escribiendo (no bloquea el envio). */
+  avisoVivo?: (valores: Record<string, string>) => ReactNode;
 }
 
 /** Formulario en dialogo para una accion de la lista cerrada: convierte montos a centavos enteros, manda la clave de idempotencia y muestra el error de la base tal cual. */
-export function FormularioAccion({ boton, titulo, confirmar, accion, campos, fijos = {}, primario, chico, testid, nota, transformar }: Props) {
+export function FormularioAccion({ boton, titulo, confirmar, accion, campos, fijos = {}, primario, chico, testid, nota, transformar, avisoVivo }: Props) {
   const { correr, ocupado, error, limpiarError } = useAccion();
   const [abierto, setAbierto] = useState(false);
   const inicial = () => Object.fromEntries(campos.map((c) => [c.nombre, c.defecto ?? (c.tipo === 'seleccion' ? (c.opciones?.[0]?.valor ?? '') : '')]));
@@ -83,6 +85,7 @@ export function FormularioAccion({ boton, titulo, confirmar, accion, campos, fij
               {c.ayuda && <span className="rtm-nota">{c.ayuda}</span>}
             </label>
           ))}
+          {avisoVivo?.(valores)}
           {nota && <p className="rtm-nota">{nota}</p>}
           {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
         </ConfirmDialog>

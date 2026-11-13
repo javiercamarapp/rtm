@@ -4,8 +4,8 @@
 import { test, expect, type Browser } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { altaUsuario, conDb, correoUnico, enlaceConfirmacion, ipFalsa, sembrarCuentasE2E } from './ayudas';
-import { CONTENEDORES, CONTENEDORES_FUERA, medirControles, medirFueraDeContenedor, medirRecortes, type HallazgoControles } from './medida_controles';
+import { altaUsuario, conDb, consultar, correoUnico, enlaceConfirmacion, ipFalsa, sembrarCuentasE2E } from './ayudas';
+import { CONTENEDORES, CONTENEDORES_FUERA, medirControles, medirFueraDeContenedor, medirRecortes, medirTarjetasActas, type HallazgoControles } from './medida_controles';
 
 const FOTOS = process.env.CONTROLES_FOTOS;
 const PERFILES = [{ nombre: '1440', ancho: 1440, alto: 900, movil: false }, { nombre: '768', ancho: 768, alto: 1024, movil: false }, { nombre: '390', ancho: 390, alto: 844, movil: true }];
@@ -68,8 +68,12 @@ test('ningun control se monta sobre otro y el alto es uniforme por renglon', asy
     ['socios', '/socios'], ['avisos', '/avisos'], ['movimientos', '/movimientos'], ['proveedores', '/proveedores'], ['costos', '/costos'],
     ['catalogo-costos', `/catalogo/costos?modelo=${modelo}`], ['cliente-precios', `/clientes/${cliente}/precios?modelo=${modelo}`], ['compra-nueva', '/proveedores/compras/nueva?p=Karen'],
     ['pedido-nuevo', '/pedidos/nuevo'], ['inventario-conteo', '/inventario/conteo'], ['mayor', '/contabilidad/mayor'], ['balance', '/contabilidad/balance'],
+    ['historial', '/socios/Angelo/historial'], ['historial-dias', '/socios/Angelo/historial?vista=dia'], ['acta-cierre', '/socios/actas/__ACTA__'],
     ['contabilidad', '/contabilidad'], ['kardex-sabor', '/inventario/kardex/sabor'], ['catalogo', '/catalogo'], ['costos-servicio', '/costos/supabase'],
   ];
+  // Historial y acta necesitan al menos un acta (sembrada con scripts/capturas/datos-demo-historial.mjs); sin ella esas rutas se omiten y el conteo de abajo no las exige.
+  const actaId = (await consultar<{ id: string }>("select id::text as id from operacion.cierre_reparto where tipo = 'periodo' order by id limit 1"))[0]?.id;
+  if (actaId) rutas.forEach((r) => { r[1] = r[1].replace('__ACTA__', actaId); }); else for (const n of ['historial', 'historial-dias', 'acta-cierre']) rutas.splice(rutas.findIndex((r) => r[0] === n), 1);
   const fallos: string[] = [];
   const medidos = new Map<string, number>();
   const hallazgos: HallazgoControles[] = [];
@@ -89,6 +93,9 @@ test('ningun control se monta sobre otro y el alto es uniforme por renglon', asy
         const h = await page.evaluate(medirControles, CONTENEDORES);
         h.push(...(await page.evaluate(medirRecortes)));
         h.push(...(await page.evaluate(medirFueraDeContenedor, CONTENEDORES_FUERA)));
+        const tj = await page.evaluate(medirTarjetasActas);
+        h.push(...tj.filter((x) => x.celdas === undefined));
+        if (nombre === 'historial' && (tj.find((x) => x.celdas !== undefined)?.celdas ?? 0) === 0) fallos.push(`${nombre} ${p.nombre} ${tema}: la linea de tiempo de actas no tiene celdas que medir`);
         for (const x of h) hallazgos.push({ ...x, contenedor: `${nombre} ${p.nombre} ${tema} ${x.contenedor}` });
         if (FOTOS) {
           await page.screenshot({ path: join(FOTOS, `${nombre}-${tema}-${p.nombre}.png`) });

@@ -46,7 +46,7 @@ export default async function PaginaSocios() {
         eyebrow="Cuentas de socios"
         titulo="Cuenta de socios"
         descripcion={parejo ? 'Diferencia por la compra: parejo con lo que cada socio puso de su dinero.' : `Diferencia por la compra (informativa): ${quien} ${m(abs(d))} · costo ${m(c.costo_cent)}, mitad ${m(c.mitad_cent)}`}
-        acciones={<div className="a3-acciones"><AccionesSocios /></div>}
+        acciones={<div className="a3-acciones"><Link className="rtm-boton" href="/socios/Angelo/historial" data-testid="ir-historial-Angelo">Historial de Angelo</Link><Link className="rtm-boton" href="/socios/Javier/historial" data-testid="ir-historial-Javier">Historial de Javier</Link><Link className="rtm-boton" href="/socios/cascada">Cascada y actas</Link><AccionesSocios /></div>}
       />
       {!q.libro_conciliado && <Aviso tono="atencion" titulo="Revisar el libro: una identidad contable no se cumple.">{q.fallas} de {q.verificaciones.length} verificaciones no coinciden. Abre «Explicar este número» en el indicador Libro para ver cuáles y con qué cifras; el detalle está en Contabilidad, Comprobaciones.</Aviso>}
       {q.pendiente_proveedor_cent > 0n && <Aviso tono="atencion" titulo="Pendiente de pago al proveedor.">{m(q.pendiente_proveedor_cent)} se debe todavía a proveedores. No es una falla del libro: baja cuando la sociedad paga desde su caja o un socio paga con su dinero (Proveedores, registrar pago de un socio).</Aviso>}

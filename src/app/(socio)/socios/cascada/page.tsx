@@ -11,6 +11,8 @@ import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { Cascada } from '@/ui/graficas';
 import { BotonAccion, FormularioAccion } from '../../operacion/formulario-accion';
+import { FormularioActa } from '../../_historial/formulario-acta';
+import { historialDeSocio } from '@/composicion/historial';
 import { Dos, Estado, Pie, abs, m, pct } from '../../_a3/util';
 
 export const metadata: Metadata = { title: 'Cascada de reparto' };
@@ -25,7 +27,8 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
   const ini = q.ini && FECHA.test(q.ini) ? q.ini : sem.inicio;
   const fin = q.fin && FECHA.test(q.fin) ? q.fin : hoy;
   const lector = await operacionDeSocio();
-  const [c, cierres] = await Promise.all([lector.cascadaProyeccion(ini, fin), lector.cierresReparto()]);
+  const hist = await historialDeSocio();
+  const [c, cierres, sug, disp, rein] = await Promise.all([lector.cascadaProyeccion(ini, fin), lector.cierresReparto(), hist.periodoSugerido(), hist.disponibleActa(ini, fin), fin < hoy ? hist.reinversionSugerida(ini, fin) : null]);
   const ps = c.por_socio;
   const ant = semanaReporte(sumarDias(sem.inicio, -1));
   const terminado = fin < hoy;
@@ -57,6 +60,12 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
           </>
         }
       />
+      <Aviso tono="info" titulo="Corte mensual.">
+        {sug.acta_pendiente_id !== null ? <>Hay un acta pendiente de firma: <Link href={`/socios/actas/${sug.acta_pendiente_id}`} data-testid="acta-pendiente">ábrela</Link> antes de proponer otra.</>
+          : !sug.hay_actividad ? 'Todavía no hay actividad que cortar.'
+          : sug.listo ? <>El mes del {etiquetaFecha(sug.ini)} al {etiquetaFecha(sug.fin)} ya terminó: <Link href={enlaceCaja(sug.ini, sug.fin)} data-testid="cargar-corte-sugerido">cargar ese periodo</Link> para proponer el acta.</>
+          : <>El siguiente corte (del {etiquetaFecha(sug.ini)} al {etiquetaFecha(sug.fin)}) se puede proponer a partir del {etiquetaFecha(sug.disponible_desde)}.</>}
+      </Aviso>
       {c.utilidad_provisional && <Aviso tono="atencion" titulo="Utilidad provisional.">Hay guías sin costo real; la cifra se ajusta cuando se costeen.</Aviso>}
       {c.perdida_cent > 0n && <Aviso tono="atencion" titulo="Hay pérdida en el periodo.">{m(c.perdida_cent)}: no se reparte nada y se arrastra al periodo siguiente.</Aviso>}
 
@@ -139,9 +148,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
           )}
           {terminado ? (
             <div className="a3-acciones">
-              <FormularioAccion boton="Proponer cierre de este periodo" titulo="Proponer el cierre del reparto" confirmar="Proponer cierre" accion="proponer_cierre_reparto" primario testid="proponer-cierre"
-                fijos={{ p_ini: ini, p_fin: fin }} campos={[{ nombre: 'p_nota', etiqueta: 'Nota (opcional)', tipo: 'texto' }]}
-                nota="Congela las cifras de arriba en un acta. Cada firma recalcula: si algo cambió entre tanto, hay que anular el acta y proponerla otra vez. Surte efecto con las dos firmas y no se edita; se corrige con una contra-acta." />
+              <FormularioActa ini={ini} fin={fin} disponibles={(['Angelo', 'Javier'] as const).map((n) => ({ socio: n, disponible_cent: String(disp[n]?.disponible_cent ?? 0n) }))} reinversionComunCent={String(rein?.monto_comun_cent ?? 0n)} />
             </div>
           ) : <Pie>El periodo aún no termina: se puede proponer el cierre a partir del {etiquetaFecha(sumarDias(fin, 1))}. Mientras tanto esta vista es una proyección.</Pie>}
         </Tarjeta>
@@ -155,7 +162,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
             filas={cierres}
             vacio={{ titulo: 'Sin cierres', texto: 'Cuando se proponga y firme un cierre aparecerá aquí con las dos firmas.' }}
             columnas={[
-              { id: 'f', titulo: 'Folio', ancho: 'm', celda: (x) => <><span className="rtm-mono">{x.folio}</span>{x.tipo === 'contra' ? <span className="rtm-celda-sub">Contra-acta</span> : null}</> },
+              { id: 'f', titulo: 'Folio', ancho: 'm', celda: (x) => <><Link href={`/socios/actas/${x.id}`} className="rtm-mono">{x.folio}</Link>{x.tipo === 'contra' ? <span className="rtm-celda-sub">Contra-acta</span> : null}</> },
               { id: 'p', titulo: 'Periodo', ancho: 'l', celda: (x) => `${etiquetaFecha(x.periodo_ini)} al ${etiquetaFecha(x.periodo_fin)}` },
               { id: 'u', titulo: 'Utilidad', numerica: true, ancho: 'm', secundaria: true, celda: (x) => m(x.utilidad_cent) },
               { id: 'e', titulo: 'Estado', ancho: 'xl', celda: (x) => <Dos a={<Estado tono={x.estado === 'cerrado' ? 'ok' : x.estado === 'anulado' ? 'neutro' : 'atencion'}>{ESTADO_CIERRE[x.estado]}</Estado>} b={x.firmas.length > 0 ? `Firmas: ${x.firmas.map((f) => f.socio).join(' y ')}` : 'Sin firmas'} /> },

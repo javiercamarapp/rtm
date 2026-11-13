@@ -50,9 +50,10 @@ const existencia = z.object({
   sabores: e.sabores.map((s) => ({ skuId: s.sku_id, modeloId: s.modelo_id, sabor: s.sabor, ubicacion: s.ubicacion, ubicacionCodigo: s.ubicacion_codigo, piezas: s.piezas })),
 }));
 
-const explicacion = z.object({
+export const explicacion = z.object({
   cifra: z.string(), titulo: z.string(), unidad: z.enum(['pz', 'mxn', 'ident']), valor: z.number().nullable(),
-  comprobacion: z.object({ via1: z.string(), via1_valor: z.number(), via2: z.string(), via2_valor: z.number(), cuadra: z.boolean() }).optional(),
+  // api.explicar_historial omite la clave sin segunda via; si alguna version la mandara con valores nulos, se lee como "sin comprobacion" en vez de romper la pantalla.
+  comprobacion: z.object({ via1: z.string(), via1_valor: z.number().nullable(), via2: z.string(), via2_valor: z.number().nullable(), cuadra: z.boolean().nullable() }).nullish(),
   movimientos: z.array(z.object({ hora: z.string(), fecha_neg: z.string(), tipo: z.string(), sabor: z.string(), ubicacion: z.string(), cantidad: z.number(), saldo: z.number(), valor_cent: cent, evento: z.string(), canal: z.string(), mensaje_origen: z.string().nullable(), autor: z.string().nullable() })),
   precio_cent: centN.optional(),
   costos: z.array(z.object({ proveedor: z.string(), costo_cent: cent, desde: z.string(), supuesto: z.boolean(), fuente: z.string(), margen_cent: cent, cuadra: z.boolean() })).optional(),
@@ -60,14 +61,15 @@ const explicacion = z.object({
                               canal: z.string().nullable().optional(), autor: z.string().nullable().optional(), mensaje_origen: z.string().nullable().optional() })).optional(),
 }).transform((e) => ({
   cifra: e.cifra, titulo: e.titulo, unidad: e.unidad, valor: e.valor,
-  comprobacion: e.comprobacion ? { via1: e.comprobacion.via1, via1Valor: e.comprobacion.via1_valor, via2: e.comprobacion.via2, via2Valor: e.comprobacion.via2_valor, cuadra: e.comprobacion.cuadra } : null,
+  comprobacion: e.comprobacion && e.comprobacion.via1_valor !== null && e.comprobacion.via2_valor !== null && e.comprobacion.cuadra !== null
+    ? { via1: e.comprobacion.via1, via1Valor: e.comprobacion.via1_valor, via2: e.comprobacion.via2, via2Valor: e.comprobacion.via2_valor, cuadra: e.comprobacion.cuadra } : null,
   movimientos: e.movimientos.map((m) => ({ hora: m.hora, fechaNeg: m.fecha_neg, tipo: m.tipo, sabor: m.sabor, ubicacion: m.ubicacion, cantidad: m.cantidad, saldo: m.saldo, valorCent: m.valor_cent, evento: m.evento, canal: m.canal, mensajeOrigen: m.mensaje_origen, autor: m.autor })),
   precioCent: e.precio_cent ?? null,
   costos: (e.costos ?? []).map((c) => ({ proveedor: c.proveedor, costoCent: c.costo_cent, desde: c.desde, supuesto: c.supuesto, fuente: c.fuente, margenCent: c.margen_cent, cuadra: c.cuadra })),
   renglones: (e.renglones ?? []).map((r) => ({ concepto: r.concepto, montoCent: r.monto_cent, saldoCent: r.saldo_cent ?? null, hora: r.hora ?? null, fechaNeg: r.fecha_neg ?? null, evento: r.evento ?? null, canal: r.canal ?? null, autor: r.autor ?? null, mensajeOrigen: r.mensaje_origen ?? null })),
 }));
 
-async function llamar<T>(fn: string, args: Record<string, unknown>, esquema: z.ZodType<T, unknown>): Promise<T> {
+export async function llamar<T>(fn: string, args: Record<string, unknown>, esquema: z.ZodType<T, unknown>): Promise<T> {
   const sb = await crearClienteServidor();
   const { data, error } = await sb.rpc(fn, args);
   if (error) throw new Error(`${fn}: ${error.message}`);

@@ -1,10 +1,11 @@
 // PDF del ACTA de corte mensual (adenda 33): periodo, utilidad neta, reembolsos pagados, tope por efectivo, parte de cada socio (50/50), cuanto retira y cuanto
 // reinvierte cada uno, y las firmas de los dos. Mismo motor y huella estable que la nota: el PDF se genera una vez, se guarda y se adjunta por correo a los socios.
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import type { SelloActa } from '@/dominio/historial/tipos';
 import type { CierreReparto } from '@/dominio/operacion/tipos';
-import { Hoja, M, UTIL, nuevoDocumento, pie, sinAzar } from './nota';
+import { Hoja, M, UTIL, nuevoDocumento, partir, pie, sinAzar } from './nota';
 
-export async function pdfActaCorte(c: CierreReparto): Promise<Uint8Array> {
+export async function pdfActaCorte(c: CierreReparto, sello: SelloActa | null = null): Promise<Uint8Array> {
   return sinAzar(async () => {
     const s = c.snapshot;
     const { pdf, f } = await nuevoDocumento(`Acta de corte ${c.folio}`, c.creado_at);
@@ -22,8 +23,15 @@ export async function pdfActaCorte(c: CierreReparto): Promise<Uint8Array> {
     const fila = (t: string, v: string, fuerte = false) => {
       h.asegurar(16);
       // Importes a la derecha del renglon (misma esquina que el encabezado); la etiqueta se corta antes de pisarlos.
-      h.texto(t, M, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, ancho: UTIL - 118 });
-      h.texto(v, M + UTIL, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, derecha: true, ancho: 300 });
+      // La etiqueta larga se PARTE en renglones (nunca se corta con "..."); el importe va a la derecha del primero.
+      const fuente = fuerte ? f.negrita : f.cuerpo;
+      const tam = fuerte ? 11 : 10;
+      const lineas = partir(t, (x) => fuente.widthOfTextAtSize(x, tam), UTIL - 118);
+      h.texto(v, M + UTIL, tam, { fuente, derecha: true, ancho: 300 });
+      lineas.forEach((l, n) => {
+        if (n > 0) { h.bajar(12); h.asegurar(14); }
+        h.texto(l, M, tam, { fuente });
+      });
       h.bajar(14);
     };
     if (c.tipo === 'contra') {
@@ -61,6 +69,32 @@ export async function pdfActaCorte(c: CierreReparto): Promise<Uint8Array> {
     h.bajar(14);
     for (const x of c.firmas) {
       h.texto(`${x.socio} — firmada el ${etiquetaFecha(x.firmado_at.slice(0, 10))}`, M, 10);
+      h.bajar(14);
+    }
+    if (sello) {
+      const k = sello.contenido;
+      h.asegurar(120);
+      h.texto(`AL CORTE DEL ACTA, ${k.al_corte ?? c.periodo_fin} (sello inmutable)`, M, 8, { fuente: f.negrita });
+      h.bajar(14);
+      const sd = (v: bigint | null | undefined) => (v === null || v === undefined ? 'Sin dato' : formatearMoneda(v));
+      if (k.sin_valuacion) fila('ATENCION: sellada sin valuacion', k.motivo_sin_valuacion ?? 'sin motivo registrado');
+      if (k.capital_contable_cent !== null) {
+        fila('Capital contable al corte', formatearMoneda(k.capital_contable_cent), true);
+        for (const socio of Object.keys(k.valor_participacion_cent ?? {}).sort()) fila(`Valuacion personal de ${socio} (capital aportado + su 50 % de la utilidad - fondos en su poder)`, formatearMoneda(k.valor_participacion_cent![socio]!));
+      } else fila('Capital contable al corte', 'Sin dato');
+      for (const socio of Object.keys(k.por_socio).sort()) {
+        const x = k.por_socio[socio]!;
+        fila(`${socio}: invertido al corte`, sd(x.invertido_cent));
+        fila(`${socio}: aportacion neta al corte`, sd(x.aportacion_neta_cent));
+        fila(`${socio}: fondos de la sociedad en su poder`, sd(x.fondos_en_poder_cent));
+        fila(`${socio}: retirado al corte (retiros de utilidad + devolucion de aportaciones)`, formatearMoneda(x.retirado_cent));
+        fila(`${socio}: compensaciones aplicadas en el acta`, formatearMoneda(x.compensaciones_cent));
+        fila(`${socio}: invertido tras la decision del acta`, sd(x.invertido_tras_acta_cent));
+        fila(`${socio}: utilidad por distribuir despues del acta`, formatearMoneda(x.queda_cent));
+      }
+      h.texto(`Huella del sello (SHA-256): ${sello.huella.slice(0, 32)}`, M, 7);
+      h.bajar(10);
+      h.texto(sello.huella.slice(32), M, 7);
       h.bajar(14);
     }
     h.texto('Documento inmutable: una corrección solo se hace con una contra-acta firmada por los dos.', M, 8, { ancho: UTIL });
