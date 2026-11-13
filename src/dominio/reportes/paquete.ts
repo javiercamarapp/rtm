@@ -7,6 +7,7 @@ import { pesosEnteros } from './formato';
 import type { InsumosMensual, InsumosSemanal, PedidoInsumo } from './insumos';
 import { type Contexto, type ResultadoInsights, contribPedido, crearContexto, evaluarInsights, slug } from './insights';
 import { PARAMETROS } from './parametros';
+import { capitalTablas } from './capital';
 import { type DatosFlujo, coberturaViernes, escenarioConcentracion, escenarioCosto, escenarioMezcla, escenarioRetrasoCobro, estacionalidad, flujoCaja, promedioMovilExponencial, puntoReorden, tendenciaLineal } from './proyecciones';
 import { type AgregadoModelo, type Puente, agregarPorModelo, calcularPuente, contribucionModelo, puenteCuadra } from './puente';
 import type { Cifra, CeldaTabla, DecisionEstado, Periodicidad, PeriodoReporte, ResultadoComprobacion, Tabla } from './tipos';
@@ -476,6 +477,7 @@ function armarMensual(ins: InsumosMensual, L: LibroCifras, base: { periodo: stri
     columnas: ['Renglón', 'Mes', '% de ventas', 'Mes anterior', 'Mediana de 3 meses'],
     filas: ins.resultados.map((r) => [textoCelda(r.etiqueta), { t: 'cent', v: r.montoCent }, ventas > 0n ? { t: 'bp', v: bp(r.montoCent, ventas), f: 'pct1' } : textoCelda('—'), { t: 'cent', v: r.mesAnteriorCent }, { t: 'cent', v: r.medianaTresMesesCent }]),
   };
+  if (ins.capital) Object.assign(tablas, capitalTablas(ins.capital, L, base));
   const cs = ins.costosSistema;
   if (cs) {
     L.agregar('sis.cargo', 'Costos de mantenimiento del sistema: cargo a la sociedad', cs.cargoSociedadCent, 'cent', { ...base, clase: 'Calculado', fuente: 'costos del sistema', n: 1 });

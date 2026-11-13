@@ -1,5 +1,7 @@
 // Adaptadores de Postgres de los puertos de reportes (rol servidor, funciones `rep.*`). El PDF y el HTML viven en `rep.blob` por sha256.
 import type { EntregaReportes, FuenteInsumos, ReportePublicado, RepositorioReportes } from '@/aplicacion/reportes/puertos';
+import type { PeriodoCapital } from '@/dominio/capital/tipos';
+import { centavosABigint } from '@/dominio/operacion/json';
 import type { InsumosMensual, InsumosSemanal } from '@/dominio/reportes/insumos';
 import type { Sql } from '@/infra/postgres/servidor';
 import { insumosMensualDeJson, insumosSemanalDeJson, paqueteAJson } from './insumos_json';
@@ -12,7 +14,11 @@ export class FuenteInsumosDb implements FuenteInsumos {
   }
   async mensual(inicio: string): Promise<InsumosMensual> {
     const r = await this.sql<{ j: Record<string, unknown> }>('select rep.insumos_mensual($1::date) as j', [inicio]);
-    return insumosMensualDeJson(r[0]!.j);
+    const base = insumosMensualDeJson(r[0]!.j);
+    // Capital por socio: lectura aparte (rep.capital_mensual); null si aun no hay movimientos.
+    const c = await this.sql<{ j: { mes: unknown; acumulado: unknown } | null }>('select rep.capital_mensual($1::date) as j', [inicio]);
+    const j = c[0]?.j;
+    return j ? { ...base, capital: { mes: centavosABigint<PeriodoCapital>(j.mes), acumulado: centavosABigint<PeriodoCapital>(j.acumulado) } } : base;
   }
 }
 

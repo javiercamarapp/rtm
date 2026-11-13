@@ -323,6 +323,25 @@ function paginaSocios(a: Ayuda): PaginaModelo {
 
 // ---------- paginas mensuales ----------
 
+/** Capital por socio: valuacion, aportaciones, utilidad generada, reinvertida y retirada, fondos de la sociedad en poder de cada socio y cuenta con proveedores. Solo sale si hay movimientos. */
+function paginaCapital(a: Ayuda): PaginaModelo {
+  const t = a.p.tablas;
+  return {
+    id: 'capital',
+    titular: a.T(`Los socios suman ${M('cap.valuacion')} de valuación; en el mes se generaron ${M('cap.utilidad')} de utilidad y se retiraron ${M('cap.retirada')}.`),
+    heroe: { valor: a.fmt('cap.valuacion'), etiqueta: 'valuación de los socios', detalle: a.T(`${M('cap.reinvertida')} reinvertidos en el mes`), clase: 'Calculado' as Clase },
+    apoyo: [],
+    hallazgos: [],
+    acciones: [],
+    graficas: [],
+    tablas: [t.capital, t.capitalAcum, t.aportacionNeta, t.fondos, t.proveedores].filter((x): x is NonNullable<typeof x> => x !== undefined),
+    notas: ['La utilidad se reparte 50/50; el capital solo sube con lo que cada socio declara como inversión o reinversión.', 'La utilidad reinvertida cuenta hasta donde la respalda la utilidad calculada; el resto es anticipo al proveedor, no utilidad.'],
+    implicacion: 'Sin retirar y reinvirtiendo, la utilidad retenida sube la valuación y la participación en libros de cada socio.',
+    siguiente: 'Clasificar lo pagado por un socio a un proveedor y revisar los fondos de la sociedad que están en poder de un socio.',
+    procedencia: procedencia(a, 'libro contable, estado de resultados y balance', null, [], 'Calculado'),
+  };
+}
+
 function paginaEstado(a: Ayuda): PaginaModelo {
   const t = a.tiene('res.utilidadNeta');
   return {
@@ -370,6 +389,7 @@ export function construirReporte(p: Paquete): ReporteModelo {
   } else {
     const r = paginaResumen(a, true);
     paginas.push(r, paginaEstado(a));
+    if (p.tablas.capital && a.tiene('cap.valuacion')) paginas.push(paginaCapital(a));
     paginas.push({ ...paginaUtilidad(a), id: 'puente' });
     paginas.push({ ...paginaClientes(a), id: 'clientes', graficas: [...(g.pareto ? [{ titulo: 'Pareto de clientes', svg: svg.svgPareto(g.pareto.items, g.pareto.totalCent) }] : []), ...(g.bump ? [{ titulo: 'Posición de clientes por semana', svg: svg.svgBump(g.bump) }] : [])] });
     paginas.push(
