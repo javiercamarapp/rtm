@@ -17,7 +17,7 @@ import '@/ui/estilos/costos.css';
 
 export const metadata: Metadata = { title: 'Servicio de costos del sistema' };
 
-const dinero = (c: bigint) => `$${formatearMoneda(c).replace('$', '')}`;
+const dinero = (c: bigint) => formatearMoneda(c);
 
 /** Ficha de un servicio: sus cargos, total del mes y acumulado (suma de los montos ya redondeados de la base; una reversa ya viene con signo contrario) y el formulario de cargo con el servicio elegido. */
 export default async function PaginaServicioCostos({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ mes?: string; construccion?: string; vista?: string }> }) {

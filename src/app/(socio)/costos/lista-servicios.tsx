@@ -10,7 +10,7 @@ import { MARCAS } from '@/dominio/marcas';
 /** El logo oficial reemplaza al nombre solo cuando el servicio ES la marca (Supabase, Vercel, GitHub...); un servicio derivado ('OpenRouter, comision de recarga') conserva su nombre. */
 const conLogoOficial = (slug: string | null, nombre: string) => { const m = slug ? MARCAS[slug] : undefined; return !!m && !!m.claro && !!m.oscuro && m.nombre === nombre; };
 
-const dinero = (c: bigint) => `$${formatearMoneda(c).replace('$', '')}`;
+const dinero = (c: bigint) => formatearMoneda(c);
 
 /** Lista ordenada de servicios: una fila por servicio con columnas alineadas; cada fila es un enlace a la ficha del servicio (teclado y foco nativos).
  *  Orden: categoria (Mantenimiento, Opcional, Construccion) y luego alfabetico. Las cifras vienen de la base (costos_resumen) sin recalcularse aqui. */

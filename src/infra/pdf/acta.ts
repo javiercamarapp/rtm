@@ -63,7 +63,7 @@ export async function pdfActaCorte(c: CierreReparto): Promise<Uint8Array> {
       h.texto(`${x.socio} — firmada el ${etiquetaFecha(x.firmado_at.slice(0, 10))}`, M, 10);
       h.bajar(14);
     }
-    h.texto('Documento inmutable: una correccion solo se hace con una contra-acta firmada por los dos.', M, 8, { ancho: UTIL });
+    h.texto('Documento inmutable: una corrección solo se hace con una contra-acta firmada por los dos.', M, 8, { ancho: UTIL });
     pie(f, h, `${c.folio} · acta`);
     return pdf.save({ useObjectStreams: false });
   });

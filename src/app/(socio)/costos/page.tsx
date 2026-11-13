@@ -17,7 +17,7 @@ import '@/ui/estilos/costos.css';
 
 export const metadata: Metadata = { title: 'Costos de mantenimiento del sistema' };
 
-const dinero = (c: bigint) => `$${formatearMoneda(c).replace('$', '')}`;
+const dinero = (c: bigint) => formatearMoneda(c);
 
 export default async function PaginaCostos({ searchParams }: { searchParams: Promise<{ mes?: string; construccion?: string }> }) {
   const q = await searchParams;
