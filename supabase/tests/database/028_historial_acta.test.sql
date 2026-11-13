@@ -93,14 +93,17 @@ select is((select count(*)::int from operacion.acta_sello), 1, 'al cerrarse el a
 select throws_ok($$update operacion.acta_sello set huella = repeat('0', 64)$$, '42501', null, 'el sello es inmutable (update)');
 select throws_ok($$delete from operacion.acta_sello$$, '42501', null, 'el sello es inmutable (delete)');
 select is((select length(huella) from operacion.acta_sello), 64, 'huella sha256 de 64 hex');
-select is((select (contenido->'por_socio'->'Javier'->>'invertido_cent')::bigint from operacion.acta_sello), 600000::bigint, 'el sello fija lo invertido por Javier tras la reinversion');
-select is((select (contenido->'por_socio'->'Angelo'->>'por_distribuir_cent')::bigint from operacion.acta_sello), 400000::bigint, 'y lo que le queda por distribuir a Angelo');
+select is((select (contenido->'por_socio'->'Javier'->>'invertido_cent')::bigint from operacion.acta_sello), 0::bigint, 'el sello fija lo invertido por Javier AL CORTE (la reinversion del acta se asienta despues)');
+select is((select (contenido->'por_socio'->'Javier'->>'invertido_tras_acta_cent')::bigint from operacion.acta_sello), 600000::bigint, 'y lo invertido tras la decision del acta (corte mas reinversion)');
+select is((select (contenido->'por_socio'->'Angelo'->>'queda_cent')::bigint from operacion.acta_sello), 0::bigint, 'y lo que le queda por distribuir a Angelo tras retirar 4,000 y reinvertir 2,000');
 select is((select (contenido->>'utilidad_cent')::bigint from operacion.acta_sello), 1200000::bigint, 'la utilidad del periodo en el sello');
 
 select pg_temp.como('Angelo');
 create temp table _h as select api.historial_socio('Angelo', '2021-03-31') as j;
-select is((select j->'cabecera'->>'reinversion_cent' from _h), '200000', 'cabecera: reinversion de Angelo 2,000.00');
-select is((select j->'cabecera'->>'invertido_cent' from _h), '200000', 'cabecera: invertido = aportaciones + reinversiones');
+create temp table _h0 as select api.historial_socio('Angelo', null) as j;
+select is((select j->'cabecera'->>'reinversion_cent' from _h0), '200000', 'cabecera (hoy): reinversion de Angelo 2,000.00');
+select is((select j->'cabecera'->>'reinversion_cent' from _h), '0', 'cabecera al 31-mar: la reinversion se asento despues del corte');
+select is((select j->'cabecera'->>'invertido_cent' from _h0), '200000', 'cabecera (hoy): invertido = capital aportado (aportaciones + reinversiones)');
 select is((select j->'cabecera'->>'utilidad_asignada_cent' from _h), '600000', 'cabecera: utilidad recibida 6,000.00');
 select is((select j->'cabecera'->>'utilidad_por_distribuir_cent' from _h), '400000', 'cabecera: por distribuir 4,000.00');
 select is((select j->'cabecera'->>'retirado_cent' from _h), '0', 'cabecera: aun no retira en efectivo');
@@ -122,21 +125,35 @@ select is((select j->'por_modelo'->0->>'utilidad_cent' from _h), '1000000', 'por
 select is((select jsonb_array_length(j->'flujos') from _h), 0, 'sin aportaciones declaradas ni retiros no hay flujos');
 
 -- Valuacion personal: una sola cifra por socio y la suma de los dos es SIEMPRE el capital contable (sin centavo perdido), con o sin utilidad sin acta.
-select is((select sum(operacion.valor_socio(n, 5000001, 0))::bigint from (values ('Angelo'), ('Javier')) v(n)), 5000001::bigint, 'valor personal: la suma de los dos socios es el capital contable (impar)');
-select is((select sum(operacion.valor_socio(n, -7, 0))::bigint from (values ('Angelo'), ('Javier')) v(n)), -7::bigint, 'valor personal: tambien con capital contable negativo');
-select is(operacion.valor_socio('Angelo', operacion.capital_socio(pg_temp.sid('Angelo')) + operacion.capital_socio(pg_temp.sid('Javier')), 0), operacion.capital_socio(pg_temp.sid('Angelo')),
-  'valor personal: sin utilidad sin acta es su cuenta de capital, no la mitad plana');
-select is(operacion.valor_socio('Angelo', 1000001, 0), operacion.capital_socio(pg_temp.sid('Angelo')) + operacion.mitad_socio(1000001 - operacion.capital_socio(pg_temp.sid('Angelo')) - operacion.capital_socio(pg_temp.sid('Javier')), 'Angelo', 0),
-  'valor personal: su cuenta de capital mas su mitad de la utilidad sin acta (no la mitad plana del total)');
-select is((select (j->'cabecera'->>'cuenta_cent')::bigint from _h), operacion.reembolso_pendiente(pg_temp.sid('Angelo')) - operacion.saldo_socio(pg_temp.sid('Angelo')), 'cabecera: deuda o credito = reembolsos por cobrar menos fondos en su poder');
-select is((select (j->'cabecera'->>'neto_cent')::bigint from _h), (select (j->'cabecera'->>'capital_cuenta_cent')::bigint + (j->'cabecera'->>'cuenta_cent')::bigint from _h), 'cabecera: posicion neta = cuenta de capital + deuda o credito');
-select is((select (j->'cabecera'->'comprobaciones'->>'cuenta')::boolean from _h), true, 'cabecera: la comprobacion de la cuenta sale de las dos vias reales');
+-- Valuacion personal = la definicion vigente (Capital por mes): su cuenta de capital + su 50 % de la utilidad sin acta - fondos en su poder; sin definiciones propias.
+create temp table _cp as select api.capital_por_mes('2021-03-31', '2021-03-31') as j;
+select is((select (j->'cabecera'->>'valor_cent')::bigint from _h), (select (x->>'valuacion_cent')::bigint from _cp, jsonb_array_elements(j->'acumulado'->'socios') x where x->>'socio' = 'Angelo'),
+  'cabecera: el valor de su participacion es la valuacion personal de api.capital_por_mes (misma cifra)');
+select is((select (j->'cabecera'->>'invertido_cent')::bigint from _h), (select (x->>'capital_aportado_acum_cent')::bigint from _cp, jsonb_array_elements(j->'acumulado'->'socios') x where x->>'socio' = 'Angelo'),
+  'cabecera: invertido = capital aportado acumulado de Capital por mes');
+select is((select (j->'cabecera'->>'aportacion_neta_cent')::bigint from _h), (select (x->>'aportacion_neta_cent')::bigint from _cp, jsonb_array_elements(j->'acumulado'->'socios') x where x->>'socio' = 'Angelo'),
+  'cabecera: aportacion neta de Capital por mes');
+select is((select (j->'cabecera'->>'participacion_bp')::int from _h), 5000, 'cabecera: participacion siempre 50/50');
+select is((select (j->'cabecera'->>'valor_cent')::bigint from _h) + (api.historial_socio('Javier', '2021-03-31')->'cabecera'->>'valor_cent')::bigint
+          + (select (j->'acumulado'->'total'->>'fondos_en_poder_cent')::bigint from _cp), (select (j->'acumulado'->'balance'->>'total_capital_cent')::bigint from _cp),
+  'las dos valuaciones personales mas los fondos en poder son el capital contable');
+select is((select (j->'cabecera'->'comprobaciones'->>'neta')::boolean from _h0), true, 'cabecera: la comprobacion de la aportacion neta sale de las dos vias reales');
+select is((select (j->'cabecera'->'comprobaciones'->>'valor')::boolean from _h), true, 'cabecera: la comprobacion de la valuacion sale de las dos vias reales');
+-- Sello: valuacion AL CORTE del acta, la misma de capital_por_mes(periodo_fin), no una mezcla de fechas.
+select is((select (contenido->'valor_participacion_cent'->>'Angelo')::bigint from operacion.acta_sello), (select (x->>'valuacion_cent')::bigint from _cp, jsonb_array_elements(j->'acumulado'->'socios') x where x->>'socio' = 'Angelo'),
+  'sello: valuacion de Angelo = la de capital_por_mes al corte del acta');
+select is((select (contenido->'valor_participacion_cent'->>'Javier')::bigint from operacion.acta_sello), (select (x->>'valuacion_cent')::bigint from _cp, jsonb_array_elements(j->'acumulado'->'socios') x where x->>'socio' = 'Javier'),
+  'sello: valuacion de Javier = la de capital_por_mes al corte del acta');
+select is((select (contenido->>'capital_contable_cent')::bigint from operacion.acta_sello), (select (j->'acumulado'->'balance'->>'total_capital_cent')::bigint from _cp), 'sello: capital contable al corte');
+select is((select contenido->>'al_corte' from operacion.acta_sello), '2021-03-08', 'sello: todas las cifras de valuacion son al corte del acta (una sola fecha)');
+select is((select (contenido->'por_socio'->'Angelo'->>'retirado_cent')::bigint from operacion.acta_sello), 0::bigint, 'sello: retirado al corte (el retiro del acta se asienta despues)');
 
 -- Misma cifra, dos vias: explicar.
 select is((api.explicar_historial('historial:parte:' || (select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1) || ':Angelo')->'comprobacion'->>'cuadra')::boolean, true, 'explicar parte: cuadra');
 select is((api.explicar_historial('historial:invertido:Angelo')->'comprobacion'->>'cuadra')::boolean, true, 'explicar invertido: cuadra');
 select is((api.explicar_historial('historial:utilidad:Angelo')->>'valor')::bigint, 600000::bigint, 'explicar utilidad recibida');
-select is((api.explicar_historial('historial:cuenta:Javier')->'comprobacion'->>'cuadra')::boolean, true, 'explicar cuenta: cuadra');
+select is((api.explicar_historial('historial:neta:Javier')->'comprobacion'->>'cuadra')::boolean, true, 'explicar aportacion neta: cuadra');
+select is((api.explicar_historial('historial:valor:Javier')->'comprobacion'->>'cuadra')::boolean, true, 'explicar valuacion personal: cuadra');
 select is((api.explicar_historial('historial:retirado:Angelo')->'comprobacion'->>'cuadra')::boolean, true, 'explicar retirado: cuadra');
 select throws_ok($$select api.explicar_historial('historial:otra:Angelo')$$, '22023', null, 'cifra desconocida rechazada');
 
@@ -165,12 +182,23 @@ select is((api.acta_detalle((select id from operacion.cierre_reparto where tipo 
 -- Liquidacion entre socios: lo que recibe el otro socio es un retiro de su cuenta (igual que en su estado de cuenta).
 select pg_temp.como('Angelo');
 select lives_ok($$select operacion.registrar_liquidacion_entre_socios('h28l1', 'Angelo', 'Javier', 100000)$$, 'Angelo liquida 1,000.00 a Javier');
-create temp table _hj as select api.historial_socio('Javier', '2021-03-31') as j;
+create temp table _hj as select api.historial_socio('Javier', null) as j;
 select is((select j->'cabecera'->>'retirado_cent' from _hj), '100000', 'historial de Javier: la liquidacion recibida cuenta como retirado');
 select is((select j->'cabecera'->>'retirado_cent' from _hj)::bigint, -(operacion.libro_socio(pg_temp.sid('Javier'), 'retiro') + operacion.libro_socio(pg_temp.sid('Javier'), 'pago_utilidad') + operacion.libro_socio(pg_temp.sid('Javier'), 'liquidacion_recibida')), 'y coincide con el libro que usa su estado de cuenta');
 select is((api.explicar_historial('historial:retirado:Javier')->'comprobacion'->>'cuadra')::boolean, true, 'explicar retirado de Javier: cuadra con la liquidacion');
 select is((select (x->>'monto_cent')::bigint from _hj, jsonb_array_elements(j->'flujos') x where x->>'tipo' = 'retiro' limit 1), 100000::bigint, 'el flujo de su TIR trae la liquidacion como retiro');
 select is((select sum((x->>'retiros_cent')::bigint)::text from _hj, jsonb_array_elements(j->'meses') x) is not null, true, 'la serie mensual de Javier suma retiros');
+
+-- "Retirado" tiene UNA definicion (retiros de utilidad + devolucion de aportaciones) y la usan la tarjeta, el explicador, cada fila de las series y los flujos de la TIR.
+insert into operacion.socio_libro (socio_id, fecha_neg, concepto, monto_cent, via, nota, evento_id)
+  values (pg_temp.sid('Javier'), negocio.hoy(), 'pago_devolucion_aportacion', -30000, 'transferencia', 'devolucion de aportacion de prueba', (select max(id) from operacion.evento));
+create temp table _hd as select api.historial_socio('Javier', null) as j;
+select is((select j->'cabecera'->>'retirado_cent' from _hd), '130000', 'retirado: la tarjeta suma el retiro de utilidad (liquidacion) y la devolucion de aportaciones');
+select is((select j->'cabecera'->>'retirado_capital_cent' from _hd), '30000', 'retirado: la devolucion de aportaciones se ve aparte');
+select is((api.explicar_historial('historial:retirado:Javier')->>'valor')::bigint, 130000::bigint, 'retirado: "Explicar este numero" da la misma cifra que la tarjeta');
+select is((api.explicar_historial('historial:retirado:Javier')->'comprobacion'->>'cuadra')::boolean, true, 'retirado: las dos vias del explicador cuadran con la devolucion incluida');
+select is((select sum((x->>'retiros_cent')::bigint)::text from _hd, jsonb_array_elements(j->'dias') x where x->>'ini' = negocio.hoy()::text), '130000', 'retirado: la fila de la serie del dia cuenta lo mismo');
+select is((select sum((x->>'monto_cent')::bigint)::text from _hd, jsonb_array_elements(j->'flujos') x where x->>'tipo' in ('retiro', 'retiro_capital')), '130000', 'retirado: los flujos de la TIR suman lo mismo (retiros y devolucion)');
 
 -- Contra-acta: el acta original solo se marca corregida cuando la contra-acta esta FIRMADA por los dos.
 select lives_ok($$select operacion.contra_acta_reparto('h28c1', (select id from operacion.cierre_reparto where tipo = 'periodo' order by id desc limit 1), 'Se capturo mal una venta')$$, 'se propone la contra-acta');
