@@ -1,6 +1,7 @@
 -- pgTAP del lote "cuadrar cuentas": el flujo de primeros movimientos (apertura, compra a Isaac con guia de Angelo, fondos en poder de los socios, pago de la sociedad,
--- pago con fondos, deposito de un socio) deja la Cuenta de socios en "No cuadra" por una causa exacta (5,800.00 que no pusieron los socios) y, cuando los socios
--- registran su pago de bolsillo a Isaac por esa cifra, cuadra con via 1 = via 2. Ademas: alta de la persona de bodega desde la web. Cifras ilustrativas; nada real.
+-- pago con fondos, deposito de un socio) deja el libro de Socios CONCILIADO en cada paso (la senal de salud son las identidades del libro, no un cuadro de cifras), con
+-- "pendiente de pago al proveedor" mientras falte pagar, y la diferencia por la compra (via 1 y via 2) como dato informativo. Ademas: alta de la persona de bodega desde
+-- la web. Ninguna asercion depende de una cifra elegida de antemano: se compara contra sumas independientes. Cifras ilustrativas; nada real.
 begin;
 select no_plan();
 
@@ -43,32 +44,42 @@ select catalogo.asegurar_sku('A4F Modelo 25K', 'Fresa');
 select catalogo.fijar_costo('a4f-c', 'Isaac', 'A4F Modelo 25K', 10000, negocio.hoy() - 60, 'prueba');
 select operacion.crear_compra('a4f-oc', 'Isaac', '[{"modelo":"A4F Modelo 25K","sabor":"Fresa","pagadas":50,"facturadas":50}]'::jsonb, 25000, 0, negocio.hoy(), 'bodega', 'sociedad', 'Angelo', 'Angelo');
 select operacion.confirmar_compra('a4f-occ', (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'a4f-oc'));
-insert into operacion.cuenta_socio_mov (socio_id, fecha_neg, concepto, aplica_a, monto_cent, nota, evento_id)
-  select s.id, negocio.hoy(), 'fondos_en_poder', 'fondos', v.m, 'cobro ilustrativo en la cuenta del socio', operacion.crear_evento('aportacion_socio', negocio.hoy(), 'a4f-fondos-' || s.nombre, '{}'::jsonb, null)
-    from (values ('Angelo', 100000::bigint), ('Javier', 230000::bigint)) v(n, m) join catalogo.socio s on s.nombre = v.n;
+select catalogo.asegurar_cliente('A4F Cliente', 'Javier');
+select operacion.registrar_pago('a4f-cobro-a', 'Angelo', 100000, (select id from catalogo.cliente where nombre_norm = catalogo.normalizar('A4F Cliente')), null, true, 'abono', negocio.hoy(), null, null, 'cobro ilustrativo en la cuenta del socio');
+select operacion.registrar_pago('a4f-cobro-j', 'Javier', 230000, (select id from catalogo.cliente where nombre_norm = catalogo.normalizar('A4F Cliente')), null, true, 'abono', negocio.hoy(), null, null, 'cobro ilustrativo en la cuenta del socio');
 
 -- El flujo de la demostracion: Javier paga 500.00 a Isaac con los fondos de la sociedad que tiene; la sociedad paga 1,000.00; Javier deposita 2,000.00 (reembolso).
 select operacion.pago_proveedor_de_socio('a4f-pj', 'Isaac', 50000, 'Javier', 'fondos_sociedad', negocio.hoy());
 select operacion.registrar_pago_proveedor_sociedad('a4f-ps', 'Isaac', 100000, negocio.hoy(), 'pago ilustrativo de la sociedad');
 select operacion.registrar_aportacion('a4f-dep', 'Javier', 200000, 'deposito ilustrativo', 'reembolso', negocio.hoy());
+create function pg_temp.fallan() returns text language plpgsql as $$
+declare r text;
+begin
+  perform contabilidad.asentar_pendientes();
+  select coalesce(string_agg(x->>'id', ',' order by x->>'id'), '') into r from jsonb_array_elements(operacion.cuadre_socios()->'verificaciones') x where not (x->>'ok')::boolean;
+  return r;
+end $$;
+select is(pg_temp.fallan(), '', 'tras la apertura, la compra, los fondos en poder, el pago de Javier con fondos, el pago de la sociedad y el deposito: libro conciliado');
 create temp table _a as select operacion.cuenta_socios() as c;
-select is((select (c->>'costo_cent')::bigint from _a), 525000::bigint, 'el costo de la compra es 5,250.00');
-select is((select (c->>'financiado_por_sociedad_cent')::bigint from _a), 580000::bigint, 'antes de los pagos de bolsillo, 5,800.00 no los pusieron los socios (cifra de la demostracion)');
-select is((select (c->>'via1_cent')::bigint from _a), -337500::bigint, 'via 1 = -3,375.00 (la cifra que se veia en la demostracion)');
-select is((select (c->>'via2_cent')::bigint from _a), -47500::bigint, 'via 2 = -475.00');
-select is((select (c->>'cuadra')::boolean from _a), false, 'sin los pagos de bolsillo, Socios dice No cuadra');
+select is((select c->'cuadre'->>'estado' from _a), 'pendiente_proveedor', 'etiqueta honesta: libro conciliado, pendiente de pago al proveedor');
+select is((select (c->'cuadre'->>'pendiente_proveedor_cent')::bigint from _a), (select -operacion.saldo_proveedor(catalogo.proveedor_id('Isaac'))), 'lo pendiente es lo que se debe a Isaac segun su cuenta');
+select is((select (c->>'costo_cent')::bigint from _a), (select sum(total_cent)::bigint from operacion.compra where ambito = 'sociedad' and estado not in ('borrador', 'anulada')), 'el costo es el de las compras de la sociedad');
+select is((select (c->>'otros_cent')::bigint from _a), -contabilidad.apertura_saldo(contabilidad.cta_proveedor(catalogo.proveedor_id('Isaac'))), 'lo que no es la compra en el desglose es exactamente lo que la apertura dice que se debe a Isaac (otros)');
+select is((select (c->>'costo_cent')::bigint from _a), (select (c->>'directo_socios_cent')::bigint + (c->>'pagado_por_sociedad_cent')::bigint + (c->>'pagado_con_fondos_cent')::bigint + (c->>'pendiente_proveedor_cent')::bigint + (c->>'otros_cent')::bigint from _a), 'costo = dinero propio de socios + caja de la sociedad + fondos en poder + pendiente + otros');
+select is((select (c->>'pagado_por_sociedad_cent')::bigint from _a), (select sum(monto_cent)::bigint from operacion.cuenta_proveedor_mov where concepto = 'pago_sociedad'), 'lo pagado por la sociedad es lo registrado como pago de la sociedad');
 
--- Cada socio registra en Proveedores lo que pago de su bolsillo a Isaac (dinero propio): 2,900.00 cada uno = exactamente lo financiado.
-select operacion.pago_proveedor_de_socio('a4f-ba', 'Isaac', 290000, 'Angelo', 'dinero_propio', negocio.hoy());
-select operacion.pago_proveedor_de_socio('a4f-bj', 'Isaac', 290000, 'Javier', 'dinero_propio', negocio.hoy());
--- Regla del dueno: ese dinero propio es REEMBOLSO (cuenta por pagar al socio), no capital, porque ningun socio declaro capital.
-select is((select count(*) from operacion.aportacion_socio where ref_tipo = 'cuenta_proveedor' and clasificacion = 'reembolsable' and monto_cent = 290000), 2::bigint, 'los dos pagos de bolsillo quedan como reembolso');
+-- Cada socio registra en Proveedores lo que pago de su bolsillo (dinero propio) por lo que falta: es REEMBOLSO, no capital, y el libro sigue conciliado.
+select operacion.pago_proveedor_de_socio('a4f-ba', 'Isaac', (select (c->>'pendiente_proveedor_cent')::bigint / 2 from _a), 'Angelo', 'dinero_propio', negocio.hoy());
+select operacion.pago_proveedor_de_socio('a4f-bj', 'Isaac', (select (c->>'pendiente_proveedor_cent')::bigint - (c->>'pendiente_proveedor_cent')::bigint / 2 from _a), 'Javier', 'dinero_propio', negocio.hoy());
+select is((select count(*) from operacion.aportacion_socio where ref_tipo = 'cuenta_proveedor' and clasificacion = 'reembolsable'), 2::bigint, 'los dos pagos de bolsillo quedan como reembolso');
 select is((select count(*) from operacion.aportacion_socio where ref_tipo = 'cuenta_proveedor' and clasificacion = 'capital'), 0::bigint, 'y ninguno como capital');
+select is(pg_temp.fallan(), '', 'con el proveedor saldado: libro conciliado');
 create temp table _b as select operacion.cuenta_socios() as c;
-select is((select (c->>'financiado_por_sociedad_cent')::bigint from _b), 0::bigint, 'los socios pusieron todo el costo: nada financiado por la sociedad');
-select is((select (c->>'via1_cent')::bigint from _b), (select (c->>'via2_cent')::bigint from _b), 'via 1 = via 2');
-select is((select (c->>'via1_cent')::bigint from _b), -47500::bigint, 'ambas vias dicen -475.00 (con signo: se lee como -475.00 de Javier a Angelo)');
-select is((select (c->>'cuadra')::boolean from _b), true, 'Socios cuadra');
+select is((select c->'cuadre'->>'estado' from _b), 'conciliado', 'etiqueta: libro conciliado (ya sin pendiente con el proveedor)');
+select is((select (c->>'pendiente_proveedor_cent')::bigint from _b), 0::bigint, 'nada pendiente con el proveedor');
+select is((select (c->>'otros_cent')::bigint from _b), -contabilidad.apertura_saldo(contabilidad.cta_proveedor(catalogo.proveedor_id('Isaac'))), 'y el desglose sigue explicando todo el costo');
+-- La diferencia por la compra es informativa: la dicen las dos vias a partir de lo que cada socio puso con su dinero y no tiene que coincidir con la salud del libro.
+select is((select (c->>'via1_cent')::bigint from _b), (select (c->'angelo'->>'aportado_cent')::bigint - (c->>'mitad_cent')::bigint from _b), 'via 1 = lo puesto por Angelo menos la mitad del costo (informativa)');
 
 select * from finish();
 rollback;

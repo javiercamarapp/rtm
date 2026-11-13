@@ -24,4 +24,3 @@ begin
         'diferencia_cent', greatest(v_neto_a, v_neto_j) - least(v_neto_a, v_neto_j)) end,
     'en_bodega', case when v_mov > 0 then jsonb_build_object('piezas', v_pz, 'valor_cent', v_val) end);
 end $$;
-grant execute on function api.pulso() to authenticated;

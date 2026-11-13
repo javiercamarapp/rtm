@@ -15,8 +15,13 @@ insert into catalogo.config (clave, valor, vigente_desde) values ('caja_sociedad
 -- ---------------------------------------------------------------------------
 -- Pago de un socio a un proveedor con declaracion explicita de capital
 -- ---------------------------------------------------------------------------
-drop function api.pago_proveedor_de_socio(text, text, bigint, text, text, date, text, text);
-drop function operacion.pago_proveedor_de_socio(text, text, bigint, text, text, date, text, text);
+-- Sin DROP: las funciones de 8 argumentos (operacion y api) se CONSERVAN intactas con otro nombre (alter function ... rename, sin perder ni borrar nada) y quedan sin
+-- acceso para los roles de la aplicacion (solo revoke). Una sobrecarga de 9 argumentos con valores por omision bajo el mismo nombre seria ambigua (Postgres no elige entre
+-- dos candidatas para una llamada de 8 argumentos o menos), por eso la nueva toma el nombre original: es el contrato que ya usan la pantalla, las pruebas y el agente.
+alter function operacion.pago_proveedor_de_socio(text, text, bigint, text, text, date, text, text) rename to pago_proveedor_de_socio_v1;
+alter function api.pago_proveedor_de_socio(text, text, bigint, text, text, date, text, text) rename to pago_proveedor_de_socio_v1;
+revoke execute on function operacion.pago_proveedor_de_socio_v1(text, text, bigint, text, text, date, text, text) from public, anon, authenticated;
+revoke execute on function api.pago_proveedor_de_socio_v1(text, text, bigint, text, text, date, text, text) from public, anon, authenticated;
 
 -- fuente: 'auto' (baja primero lo que el socio debe a la sociedad; el resto es dinero propio), 'fondos_sociedad' (solo lo que tiene en su poder) o
 -- 'dinero_propio' ('aportacion' se acepta como sinonimo antiguo). El dinero propio es REEMBOLSO (cuenta por pagar al socio) salvo p_declara_capital = true.
@@ -86,47 +91,4 @@ revoke execute on function operacion.pago_proveedor_de_socio(text, text, bigint,
 revoke execute on function api.pago_proveedor_de_socio(text, text, bigint, text, text, date, text, text, boolean) from public, anon;
 grant execute on function api.pago_proveedor_de_socio(text, text, bigint, text, text, date, text, text, boolean) to authenticated;
 
--- ---------------------------------------------------------------------------
--- Cuenta de socios: parametro 'caja_sociedad_cuenta_puesto_pct' (por omision 0: sin cambio de comportamiento)
--- ---------------------------------------------------------------------------
--- Con p % > 0, esa fraccion de lo que la sociedad financio (costo - lo puesto por los socios) se atribuye por mitades iguales a los dos socios como "puesto por ellos".
--- La mitad igual preserva A - J (via 2) y el total se redondea a un numero par para no abrir un centavo entre las vias.
-create or replace function operacion.cuenta_socios() returns jsonb
-language plpgsql stable security definer set search_path = ''
-as $$
-declare
-  v_costo bigint; v_mitad bigint; v_a bigint; v_j bigint; v_ida bigint; v_idj bigint; v_via1_a bigint; v_via2_dobles bigint; v_total bigint; v_fuera jsonb;
-  v_pct numeric; v_pc bigint := 0;
-begin
-  select id into v_ida from catalogo.socio where nombre = 'Angelo';
-  select id into v_idj from catalogo.socio where nombre = 'Javier';
-  select coalesce(sum(total_cent), 0)::bigint into v_costo from operacion.compra where ambito = 'sociedad' and estado not in ('borrador', 'anulada');
-  v_a := operacion.aportado_compra_socio(v_ida) - coalesce((select sum(monto_cent) from operacion.partida_fuera_sociedad where socio_id = v_ida and estado = 'abierta'), 0) - operacion.saldo_socio(v_ida);
-  v_j := operacion.aportado_compra_socio(v_idj) - coalesce((select sum(monto_cent) from operacion.partida_fuera_sociedad where socio_id = v_idj and estado = 'abierta'), 0) - operacion.saldo_socio(v_idj);
-  v_pct := least(greatest(coalesce(catalogo.config_num('caja_sociedad_cuenta_puesto_pct'), 0), 0), 100);
-  if v_pct > 0 and v_costo - (v_a + v_j) > 0 then
-    v_pc := (floor((v_costo - (v_a + v_j)) * v_pct / 100)::bigint / 2) * 2;
-  end if;
-  v_a := v_a + v_pc / 2; v_j := v_j + v_pc / 2;
-  v_mitad := (v_costo + 1) / 2;                     -- hacia arriba, a favor de quien aporta
-  v_total := v_a + v_j;
-  v_via1_a := v_a - v_mitad;                        -- via 1: lo puesto menos la mitad del costo
-  v_via2_dobles := v_a - v_j;                       -- via 2: (A - J) / 2, comparada sin redondeo como 2 x via 1 = A - J
-  select coalesce(jsonb_agg(jsonb_build_object('socio', s.nombre, 'monto_cent', p.monto_cent, 'concepto', p.concepto, 'estado', p.estado, 'piezas', p.piezas) order by p.id), '[]'::jsonb) into v_fuera
-    from operacion.partida_fuera_sociedad p join catalogo.socio s on s.id = p.socio_id;
-  return jsonb_build_object(
-    'costo_cent', v_costo, 'mitad_cent', v_mitad,
-    'angelo', jsonb_build_object('aportado_cent', v_a, 'puso_capital_cent', operacion.aportado_socio(v_ida, 'capital'), 'puso_reembolsable_cent', operacion.aportado_socio(v_ida, 'reembolsable'),
-                                 'fuera_sociedad_cent', coalesce((select sum(monto_cent) from operacion.partida_fuera_sociedad where socio_id = v_ida and estado = 'abierta'), 0), 'debe_cent', operacion.saldo_socio(v_ida),
-                                 'diferencia_cent', v_via1_a),
-    'javier', jsonb_build_object('aportado_cent', v_j, 'puso_capital_cent', operacion.aportado_socio(v_idj, 'capital'), 'puso_reembolsable_cent', operacion.aportado_socio(v_idj, 'reembolsable'),
-                                 'fuera_sociedad_cent', coalesce((select sum(monto_cent) from operacion.partida_fuera_sociedad where socio_id = v_idj and estado = 'abierta'), 0), 'debe_cent', operacion.saldo_socio(v_idj),
-                                 'diferencia_cent', v_j - v_mitad),
-    -- Signo: > 0 Javier debe a Angelo; < 0 Angelo debe a Javier.
-    'javier_debe_a_angelo_cent', v_via1_a,
-    'via1_cent', v_via1_a, 'via2_cent', v_via2_dobles / 2, 'via2_resto_cent', v_via2_dobles % 2,
-    'financiado_por_sociedad_cent', v_costo - v_total,
-    'caja_cuenta_puesto_pct', v_pct, 'puesto_por_caja_cent', v_pc,
-    'cuadra', (2 * v_via1_a = v_via2_dobles) or (v_costo % 2 = 1 and abs(2 * v_via1_a - v_via2_dobles) = 1),
-    'partidas_fuera_sociedad', v_fuera);
-end $$;
+-- La lectura cuenta_socios() que usa ese parametro se redefine en 20261113300100 (Libro conciliado; la diferencia por la compra pasa a ser informativa).

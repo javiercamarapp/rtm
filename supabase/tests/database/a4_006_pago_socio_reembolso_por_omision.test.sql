@@ -74,36 +74,40 @@ select is(pg_temp.haber('a4g-c1', '2310') + pg_temp.haber('a4g-c1', '2320'), 0::
 select is((select count(*) from contabilidad.asiento a join contabilidad.asiento_linea l on l.asiento_id = a.id where a.evento_id in (select id from operacion.evento where clave_idem like 'a4g-%') group by a.id having sum(l.debe_cent) <> sum(l.haber_cent) limit 1), null::bigint, 'ningun asiento de la prueba queda descuadrado');
 select is((select count(*) from contabilidad.comprobaciones() where bloqueante and not ok), 0::bigint, 'ninguna comprobacion bloqueante falla');
 
--- Cuenta de socios: da igual capital o reembolso para "lo puesto"; cuadra con via 1 = via 2 cuando los socios ponen todo el costo.
--- Costo 5,000.00. Puesto: Angelo 1,000.00; Javier 700.00 + 1,000.00 + 600.00 = 2,300.00; la sociedad financio 1,700.00.
+-- Cuenta de socios: da igual capital o reembolso para "lo puesto"; el libro queda conciliado y el desglose del costo suma el costo.
+create function pg_temp.fallan() returns text language plpgsql as $$
+declare r text;
+begin
+  perform contabilidad.asentar_pendientes();
+  select coalesce(string_agg(x->>'id', ',' order by x->>'id'), '') into r from jsonb_array_elements(operacion.cuadre_socios()->'verificaciones') x where not (x->>'ok')::boolean;
+  return r;
+end $$;
 create temp table _s0 as select operacion.cuenta_socios() as c;
+select is(pg_temp.fallan(), '', 'tras reembolsos, capital declarado y pago mixto el libro esta conciliado');
 select is((select (c->>'caja_cuenta_puesto_pct')::numeric from _s0), 0::numeric, 'el parametro de caja de la sociedad vale 0 por omision (nada se cuenta como puesto por los socios)');
 select is((select (c->>'puesto_por_caja_cent')::bigint from _s0), 0::bigint, 'y por lo tanto no atribuye nada');
-select is((select ((c->'angelo'->>'aportado_cent')::bigint + (c->'javier'->>'aportado_cent')::bigint) from _s0), (select (c->>'costo_cent')::bigint - (c->>'financiado_por_sociedad_cent')::bigint from _s0), 'puesto por los socios + financiado por la sociedad = costo');
 select is((select (c->'angelo'->>'puso_capital_cent')::bigint from _s0), 0::bigint, 'Cuenta de socios: Angelo no puso capital');
 select is((select (c->'javier'->>'puso_capital_cent')::bigint from _s0), 160000::bigint, 'Cuenta de socios: el capital de Javier es solo lo declarado');
--- Parametro de la caja de la sociedad (sobre la foto _s0: la sociedad financio 1,700.00). Con 50 % se atribuye la mitad por mitades iguales; con 100 % toda.
-select is((select (c->>'financiado_por_sociedad_cent')::bigint from _s0), 170000::bigint, 'antes de completar el costo, la sociedad financio 1,700.00');
+select is((select (c->>'costo_cent')::bigint from _s0), (select (c->>'directo_socios_cent')::bigint + (c->>'pagado_por_sociedad_cent')::bigint + (c->>'pagado_con_fondos_cent')::bigint + (c->>'pendiente_proveedor_cent')::bigint + (c->>'otros_cent')::bigint from _s0), 'el desglose del costo suma el costo');
+
+-- Parametro de la caja de la sociedad: la sociedad paga con su caja (alimentada por un deposito) una parte del costo.
+select pg_temp.como('Angelo');
+select operacion.registrar_aportacion('a4g-dep', 'Angelo', 120000, 'deposito a caja', 'reembolso');
+select operacion.registrar_pago_proveedor_sociedad('a4g-ps', 'Isaac', 100000, negocio.hoy(), 'pago de la sociedad');
+create temp table _s1 as select operacion.cuenta_socios() as c;
+select is((select (c->>'pagado_por_sociedad_cent')::bigint from _s1), 100000::bigint, 'la caja de la sociedad pago 1,000.00');
+select is(pg_temp.fallan(), '', 'y el libro sigue conciliado (el deposito sin gastar y el pago de la caja no rompen nada)');
 update catalogo.config set valor = '50' where clave = 'caja_sociedad_cuenta_puesto_pct';
 create temp table _p50 as select operacion.cuenta_socios() as c;
-select is((select (c->>'puesto_por_caja_cent')::bigint from _p50), 85000::bigint, 'con 50 %: se atribuyen 850.00 de la caja de la sociedad');
-select is((select (c->'angelo'->>'aportado_cent')::bigint from _p50), 142500::bigint, 'repartidos por mitades iguales: Angelo 1,000.00 + 425.00');
-select is((select (c->>'financiado_por_sociedad_cent')::bigint from _p50), 85000::bigint, 'y queda por financiar 850.00');
+select is((select (c->>'puesto_por_caja_cent')::bigint from _p50), 50000::bigint, 'con 50 %: se atribuyen 500.00 de lo que pago la caja de la sociedad');
+select is(((select (c->'angelo'->>'aportado_cent')::bigint from _p50) - (select (c->'angelo'->>'aportado_cent')::bigint from _s1)), 25000::bigint, 'repartidos por mitades iguales: 250.00 para Angelo');
+select is(((select (c->'javier'->>'aportado_cent')::bigint from _p50) - (select (c->'javier'->>'aportado_cent')::bigint from _s1)), 25000::bigint, 'y 250.00 para Javier');
+select is((select (c->>'via2_cent')::bigint from _p50), (select (c->>'via2_cent')::bigint from _s1), 'la mitad igual no mueve la via 2 (A - J)');
 update catalogo.config set valor = '100' where clave = 'caja_sociedad_cuenta_puesto_pct';
-create temp table _p100 as select operacion.cuenta_socios() as c;
-select is((select (c->>'financiado_por_sociedad_cent')::bigint from _p100), 0::bigint, 'con 100 %: nada queda por financiar');
-select is((select (c->>'via1_cent')::bigint from _p100), (select (c->>'via2_cent')::bigint from _p100), 'y via 1 = via 2');
-select is((select (c->>'cuadra')::boolean from _p100), true, 'y Socios cuadra');
+select is((operacion.cuenta_socios()->>'puesto_por_caja_cent')::bigint, 100000::bigint, 'con 100 %: se atribuye todo lo que pago la caja');
+select is(pg_temp.fallan(), '', 'y con cualquier porcentaje el libro sigue conciliado');
 update catalogo.config set valor = '0' where clave = 'caja_sociedad_cuenta_puesto_pct';
-select is((select (operacion.cuenta_socios()->>'puesto_por_caja_cent')::bigint), 0::bigint, 'de vuelta a 0 no atribuye nada');
-
--- Completa el costo con reembolso de Angelo (sin declarar) y la cuenta cuadra.
-select pg_temp.como('Angelo');
-select operacion.pago_proveedor_de_socio('a4g-a2', 'Isaac', (select (c->>'financiado_por_sociedad_cent')::bigint from _s0), 'Angelo');
-create temp table _s1 as select operacion.cuenta_socios() as c;
-select is((select (c->>'financiado_por_sociedad_cent')::bigint from _s1), 0::bigint, 'los socios pusieron todo el costo');
-select is((select (c->>'via1_cent')::bigint from _s1), (select (c->>'via2_cent')::bigint from _s1), 'via 1 = via 2');
-select is((select (c->>'cuadra')::boolean from _s1), true, 'Socios cuadra');
+select is((operacion.cuenta_socios()->>'puesto_por_caja_cent')::bigint, 0::bigint, 'de vuelta a 0 no atribuye nada');
 
 -- Permisos: anon no ejecuta; sin rol de socio la funcion api rechaza.
 select pg_temp.como('Angelo');
