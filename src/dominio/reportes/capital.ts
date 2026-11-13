@@ -14,6 +14,24 @@ const c = (v: bigint): CeldaTabla => ({ t: 'cent', v });
 
 const COLUMNAS = ['Socio', 'Aportaciones de capital', 'Utilidad generada', 'Reinvertida', 'Retirada', 'Valuación al cierre'];
 
+const COLUMNAS_ACUM = ['Socio', 'Capital aportado', 'Utilidades acumuladas', 'Retirado', 'Fondos de la sociedad en su poder', 'Valuación'];
+
+/** Acumulado con los rotulos de la Cuenta de socios (mismas definiciones de api.cuenta_socios_valuacion): valuacion = capital aportado + utilidades acumuladas - retirado - fondos.
+ *  Utilidades acumuladas = valuacion del libro + retirado - capital aportado (la parte de la utilidad que ni se retiro ni se capitalizo por acta). Siempre 50 % y 50 %. */
+function tablaAcumulado(p: PeriodoCapital): Tabla {
+  const fila = (f: PeriodoCapital['socios'][number]) => {
+    const ret = f.utilidad_retirada_cent + f.devoluciones_capital_cent;
+    return [t(f.socio), c(f.capital_aportado_acum_cent), c(f.valuacion_libro_cent + ret - f.capital_aportado_acum_cent), c(ret), c(f.fondos_en_poder_cent), c(f.valuacion_cent)];
+  };
+  const tot = p.total;
+  const ret = tot.utilidad_retirada_cent + tot.devoluciones_capital_cent;
+  return {
+    id: 'capitalAcum', titulo: 'Capital acumulado desde el primer movimiento', columnas: COLUMNAS_ACUM,
+    filas: [...p.socios.map(fila), [t('Total de los socios'), c(tot.capital_aportado_acum_cent), c(tot.valuacion_libro_cent + ret - tot.capital_aportado_acum_cent), c(ret), c(tot.fondos_en_poder_cent), c(tot.valuacion_cent)]],
+    nota: 'Siempre 50 % y 50 %. La valuación sube con cada utilidad y baja solo cuando un socio se paga un retiro.',
+  };
+}
+
 function tablaSocios(id: string, titulo: string, p: PeriodoCapital): Tabla {
   return {
     id, titulo, columnas: COLUMNAS,
@@ -42,7 +60,7 @@ export function capitalTablas(ins: CapitalInsumo, L: LibroCifras, base: { period
   const max = PARAMETROS.maxRenglonesTabla;
   const tablas: Record<string, Tabla> = {
     capital: { ...tablaSocios('capital', 'Capital por socio del mes', m), ...(rei ? { nota: rei.texto, valoresNota: rei.igual ? [] : [m.reinversion_acta_angelo_cent, m.reinversion_acta_javier_cent] } : {}) },
-    capitalAcum: tablaSocios('capitalAcum', 'Capital acumulado desde el primer movimiento', a),
+    capitalAcum: tablaAcumulado(a),
     aportacionNeta: {
       id: 'aportacionNeta', titulo: 'Aportación neta y diferencia a igualar',
       columnas: ['Socio', 'Aportado', 'Fondos de la sociedad en su poder', 'Aportación neta', 'Diferencia a igualar'],

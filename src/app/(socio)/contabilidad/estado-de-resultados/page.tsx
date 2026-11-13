@@ -110,7 +110,7 @@ export default async function PaginaEstadoResultados({ searchParams }: { searchP
               { etiqueta: 'Utilidad bruta', valor: hayAnt ? dif(e.utilidad_bruta_cent, p!.utilidad_bruta_cent) : null },
               { etiqueta: 'Gastos totales', valor: hayAnt ? dif(totalGastos, p!.gastos_variables_cent + p!.gastos_fijos_cent) : null },
               { etiqueta: 'Utilidad neta', valor: hayAnt ? dif(e.utilidad_neta_cent, p!.utilidad_neta_cent) : null },
-              { etiqueta: 'Reparto 50/50', valor: `Angelo ${m(e.angelo_cent)} · Javier ${m(e.javier_cent)}` },
+              { etiqueta: 'Utilidad neta, mitad Javier / mitad Angelo', valor: `Javier ${m(e.javier_cent)} · Angelo ${m(e.angelo_cent)}` },
             ]}
           />
           <Rejilla dividir="6-6">

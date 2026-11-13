@@ -13,6 +13,8 @@ import { Cascada } from '@/ui/graficas';
 import { BotonAccion, FormularioAccion } from '../../operacion/formulario-accion';
 import { FormularioActa } from '../../_historial/formulario-acta';
 import { historialDeSocio } from '@/composicion/historial';
+import { valuacionDeSocios } from '@/composicion/valuacion-socios';
+import { alertaRetiros, fraseIgualar } from '@/dominio/socios/valuacion';
 import { Dos, Estado, Pie, abs, m, pct } from '../../_a3/util';
 
 export const metadata: Metadata = { title: 'Cascada de reparto' };
@@ -28,7 +30,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
   const fin = q.fin && FECHA.test(q.fin) ? q.fin : hoy;
   const lector = await operacionDeSocio();
   const hist = await historialDeSocio();
-  const [c, cierres, sug, disp, rein] = await Promise.all([lector.cascadaProyeccion(ini, fin), lector.cierresReparto(), hist.periodoSugerido(), hist.disponibleActa(ini, fin), fin < hoy ? hist.reinversionSugerida(ini, fin) : null]);
+  const [vs, c, cierres, sug, disp, rein] = await Promise.all([valuacionDeSocios().catch(() => null), lector.cascadaProyeccion(ini, fin), lector.cierresReparto(), hist.periodoSugerido(), hist.disponibleActa(ini, fin), fin < hoy ? hist.reinversionSugerida(ini, fin) : null]);
   const ps = c.por_socio;
   const ant = semanaReporte(sumarDias(sem.inicio, -1));
   const terminado = fin < hoy;
@@ -60,6 +62,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
           </>
         }
       />
+      {vs && vs.cuenta.hay_movimientos && <Aviso tono={fraseIgualar(vs.cuenta, m).tono === 'ok' ? 'info' : 'atencion'} titulo="Valuaciones al corte">{fraseIgualar(vs.cuenta, m).texto} {alertaRetiros(vs.cuenta, m) ?? 'Retiros iguales: siempre nos pagamos lo mismo.'}</Aviso>}
       <Aviso tono="info" titulo="Corte mensual.">
         {sug.acta_pendiente_id !== null ? <>Hay un acta pendiente de firma: <Link href={`/socios/actas/${sug.acta_pendiente_id}`} data-testid="acta-pendiente">ábrela</Link> antes de proponer otra.</>
           : !sug.hay_actividad ? 'Todavía no hay actividad que cortar.'

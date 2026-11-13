@@ -15,6 +15,8 @@ import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pag
 import { ColumnasPesos } from '../../../_a3/graficas-pesos';
 import { Dos, Estado, Pie, abs, pct, suma } from '../../../_a3/util';
 import { fechaCorta, mesEtiqueta, semanaEtiqueta } from '../../../_a2/util';
+import { valuacionDeSocios } from '@/composicion/valuacion-socios';
+import { tarjetaValuacion } from '@/dominio/socios/valuacion';
 import { anosDe, bpAPct, m, mesesTexto, razon } from '../../../_historial/util';
 
 export const metadata: Metadata = { title: 'Historial personal' };
@@ -32,6 +34,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
   const vista: Vista = q.vista === 'semana' || q.vista === 'dia' ? q.vista : 'mes';
   const { perfil } = await exigirSocio();
   const h = await (await historialDeSocio()).historial(socio, null);
+  const tv = await valuacionDeSocios().then((v) => tarjetaValuacion(v.cuenta, socio, m)).catch(() => null);
   const c = h.cabecera;
   const r = calcularRatios(h);
   const est = estadisticasMeses(h.meses);
@@ -82,6 +85,8 @@ export default async function PaginaHistorial({ params, searchParams }: { params
       <Segmentado etiquetaAria="Ver el historial de" opciones={(['Angelo', 'Javier'] as const).map((n) => ({ valor: n, etiqueta: n === perfil.socio_nombre ? `Mi historial (${n})` : `Historial de ${n}`, href: `/socios/${n}/historial`, activa: n === socio, testid: `ver-historial-${n}` }))} />
       {sinH && <Aviso tono="info" titulo="Sin historial todavía.">Las cifras aparecen como «Sin dato» hasta que haya ventas, aportaciones o un acta firmada; nunca se muestra un cero inventado.</Aviso>}
       {t?.provisional && <Aviso tono="atencion" titulo="Utilidad provisional.">Hay guías sin costo real; la utilidad se ajusta cuando se costeen.</Aviso>}
+
+      {tv && !sinH && <Aviso tono={tv.estado === 'igual' ? 'info' : 'atencion'} titulo={`Valuación de ${socio} ${tv.valorTexto}: ${tv.comparacion}`}>{tv.accion ?? 'Las dos valuaciones son iguales.'} Misma cifra que la Cuenta de socios y el Balance.</Aviso>}
 
       <KpiLinea
         etiquetaAria="Cabecera del historial personal"

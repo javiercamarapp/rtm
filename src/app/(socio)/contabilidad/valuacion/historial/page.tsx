@@ -7,6 +7,8 @@ import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { AreaSerie } from '@/ui/graficas';
 import { SubnavContabilidad } from '../../subnav';
+import { valuacionDeSocios } from '@/composicion/valuacion-socios';
+import { SerieValuacion } from '../../../socios/valuacion';
 import { Campo, FiltrosUrl } from '../../../_a2/filtros-url';
 import { bpTexto, fecha, fechaParam, hoyNeg, m, mesEtiqueta, semanaEtiqueta, textoParam, type Params } from '../../../_a2/util';
 
@@ -16,7 +18,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   const sp = await searchParams;
   const paso = textoParam(sp.paso) === 'semana' ? 'semana' : 'mes';
   const desde = fechaParam(sp.desde); const hasta = fechaParam(sp.hasta);
-  const s = await (await datosDeSocio()).valuacionSerie(desde, hasta, paso);
+  const [s, vs] = await Promise.all([(await datosDeSocio()).valuacionSerie(desde, hasta, paso), valuacionDeSocios(hasta).catch(() => null)]);
   const filas = s.filas;
   const conDato = filas.filter((f) => f.con_movimientos);
   const sd = conDato.length === 0;
@@ -44,6 +46,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
         { id: 'u', etiqueta: 'Utilidad de la empresa', valor: sd || !ult ? null : m(ult.utilidad_cent), categoria: 3, nota: 'Acumulada al corte' },
         { id: 'm', etiqueta: 'Mejor crecimiento', valor: mejor ? bpTexto(mejor.crecimiento_bp) : null, categoria: 4, nota: mejor ? `Corte ${fecha(mejor.corte)}` : undefined },
       ]} />
+      {vs && vs.cuenta.hay_movimientos && <div data-testid="valuacion-socios-serie"><SerieValuacion c={vs.cuenta} yo={vs.yo} /></div>}
       <Rejilla dividir="6-6">
         <Tarjeta>
           {filas.length >= 2 && noNeg('valuacion_cent') ? <AreaSerie titulo="Valuación por corte" descripcion={`Valuación al cierre de ${filas.length} cortes.`} unidad="Pesos" procedencia="observado" pie={pie} alto={150} puntos={puntos('valuacion_cent')} />
