@@ -26,7 +26,7 @@ export function explicarCuadreSocios(c: CuentaSocios): Explicacion {
   return {
     cifra: CIFRA_CUADRE_SOCIOS,
     titulo: `${q.etiqueta}: ${q.libro_conciliado ? 'todas las identidades del libro se cumplen' : `${q.fallas} identidad(es) del libro no se cumplen`}`,
-    unidad: 'mxn',
+    unidad: 'pz',
     valor: q.fallas,
     comprobacion: { via1: 'Identidades que se cumplen', via1Valor: buenas, via2: 'Identidades verificadas', via2Valor: total, cuadra: q.libro_conciliado },
     movimientos: [],
