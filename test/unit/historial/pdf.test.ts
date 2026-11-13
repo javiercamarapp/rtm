@@ -1,4 +1,5 @@
 // PDF del acta con sello y estado de cuenta personal: bytes validos y estables (mismos datos, misma huella).
+import { partir } from '@/infra/pdf/nota';
 import { describe, expect, it } from 'vitest';
 import type { Cascada, CierreReparto } from '@/dominio/operacion/tipos';
 import type { HistorialSocio, SelloActa } from '@/dominio/historial/tipos';
@@ -69,5 +70,21 @@ describe('PDF del estado de cuenta personal', () => {
     const a = await pdfHistorialSocio(h());
     expect(Buffer.from(a.slice(0, 5)).toString()).toBe('%PDF-');
     expect(huella(a)).toBe(huella(await pdfHistorialSocio(h())));
+  });
+});
+
+describe('partir etiquetas largas (el PDF no las corta con puntos suspensivos)', () => {
+  const medir = (x: string) => x.length * 5;
+  it('conserva todas las palabras y cada renglon cabe', () => {
+    const t = 'Valuacion personal (capital aportado + su 50 % de la utilidad - fondos en su poder) al corte del acta';
+    const l = partir(t, medir, 200);
+    expect(l.join(' ')).toBe(t);
+    for (const r of l) expect(medir(r)).toBeLessThanOrEqual(200);
+    expect(l.length).toBeGreaterThan(1);
+  });
+  it('una palabra mas larga que el ancho queda sola y un texto corto no se parte', () => {
+    expect(partir('supercalifragilisticoespialidoso', medir, 50)).toEqual(['supercalifragilisticoespialidoso']);
+    expect(partir('Retira', medir, 200)).toEqual(['Retira']);
+    expect(partir('', medir, 200)).toEqual(['']);
   });
 });

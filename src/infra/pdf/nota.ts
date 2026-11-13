@@ -320,3 +320,15 @@ export async function pdfHojaInterna(n: NotaFuente): Promise<Uint8Array> {
     return pdf.save({ useObjectStreams: false });
   });
 }
+
+/** Parte un texto en renglones que caben en `ancho` (por palabras; una palabra mas larga que el ancho queda sola). */
+export function partir(texto: string, medir: (s: string) => number, ancho: number): string[] {
+  const salida: string[] = [];
+  let actual = '';
+  for (const palabra of texto.split(/\s+/).filter(Boolean)) {
+    const prueba = actual === '' ? palabra : `${actual} ${palabra}`;
+    if (actual !== '' && medir(prueba) > ancho) { salida.push(actual); actual = palabra; } else actual = prueba;
+  }
+  if (actual !== '') salida.push(actual);
+  return salida.length > 0 ? salida : [''];
+}

@@ -3,7 +3,7 @@
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import type { SelloActa } from '@/dominio/historial/tipos';
 import type { CierreReparto } from '@/dominio/operacion/tipos';
-import { Hoja, M, UTIL, nuevoDocumento, pie, sinAzar } from './nota';
+import { Hoja, M, UTIL, nuevoDocumento, partir, pie, sinAzar } from './nota';
 
 export async function pdfActaCorte(c: CierreReparto, sello: SelloActa | null = null): Promise<Uint8Array> {
   return sinAzar(async () => {
@@ -23,8 +23,15 @@ export async function pdfActaCorte(c: CierreReparto, sello: SelloActa | null = n
     const fila = (t: string, v: string, fuerte = false) => {
       h.asegurar(16);
       // Importes a la derecha del renglon (misma esquina que el encabezado); la etiqueta se corta antes de pisarlos.
-      h.texto(t, M, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, ancho: UTIL - 118 });
-      h.texto(v, M + UTIL, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, derecha: true, ancho: 300 });
+      // La etiqueta larga se PARTE en renglones (nunca se corta con "..."); el importe va a la derecha del primero.
+      const fuente = fuerte ? f.negrita : f.cuerpo;
+      const tam = fuerte ? 11 : 10;
+      const lineas = partir(t, (x) => fuente.widthOfTextAtSize(x, tam), UTIL - 118);
+      h.texto(v, M + UTIL, tam, { fuente, derecha: true, ancho: 300 });
+      lineas.forEach((l, n) => {
+        if (n > 0) { h.bajar(12); h.asegurar(14); }
+        h.texto(l, M, tam, { fuente });
+      });
       h.bajar(14);
     };
     if (c.tipo === 'contra') {
@@ -55,12 +62,22 @@ export async function pdfActaCorte(c: CierreReparto, sello: SelloActa | null = n
         h.bajar(6);
       }
     }
+    h.asegurar(70);
+    h.linea();
+    h.bajar(16);
+    h.texto('FIRMAS', M, 8, { fuente: f.negrita });
+    h.bajar(14);
+    for (const x of c.firmas) {
+      h.texto(`${x.socio} — firmada el ${etiquetaFecha(x.firmado_at.slice(0, 10))}`, M, 10);
+      h.bajar(14);
+    }
     if (sello) {
       const k = sello.contenido;
       h.asegurar(120);
       h.texto(`AL CORTE DEL ACTA, ${k.al_corte ?? c.periodo_fin} (sello inmutable)`, M, 8, { fuente: f.negrita });
       h.bajar(14);
       const sd = (v: bigint | null | undefined) => (v === null || v === undefined ? 'Sin dato' : formatearMoneda(v));
+      if (k.sin_valuacion) fila('ATENCION: sellada sin valuacion', k.motivo_sin_valuacion ?? 'sin motivo registrado');
       if (k.capital_contable_cent !== null) {
         fila('Capital contable al corte', formatearMoneda(k.capital_contable_cent), true);
         for (const socio of Object.keys(k.valor_participacion_cent ?? {}).sort()) fila(`Valuacion personal de ${socio} (capital aportado + su 50 % de la utilidad - fondos en su poder)`, formatearMoneda(k.valor_participacion_cent![socio]!));
@@ -78,15 +95,6 @@ export async function pdfActaCorte(c: CierreReparto, sello: SelloActa | null = n
       h.texto(`Huella del sello (SHA-256): ${sello.huella.slice(0, 32)}`, M, 7);
       h.bajar(10);
       h.texto(sello.huella.slice(32), M, 7);
-      h.bajar(14);
-    }
-    h.asegurar(70);
-    h.linea();
-    h.bajar(16);
-    h.texto('FIRMAS', M, 8, { fuente: f.negrita });
-    h.bajar(14);
-    for (const x of c.firmas) {
-      h.texto(`${x.socio} — firmada el ${etiquetaFecha(x.firmado_at.slice(0, 10))}`, M, 10);
       h.bajar(14);
     }
     h.texto('Documento inmutable: una corrección solo se hace con una contra-acta firmada por los dos.', M, 8, { ancho: UTIL });

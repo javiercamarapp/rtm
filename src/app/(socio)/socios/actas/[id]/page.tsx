@@ -54,6 +54,7 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
         }
       />
       {c.utilidad_provisional && <Aviso tono="atencion" titulo="Utilidad provisional.">Había guías sin costo real cuando se propuso el acta.</Aviso>}
+      {k?.sin_valuacion && <Aviso tono="atencion" titulo="Sellada sin valuación.">El acta se cerró y se selló, pero no se pudo calcular la valuación al corte ({k.motivo_sin_valuacion ?? 'sin motivo registrado'}). Las cifras de valuación quedan sin dato; el sello no se puede rehacer, así que la valuación del periodo se consulta en Capital por mes.</Aviso>}
       {c.estado === 'cerrado' && !d.sello && !contra && <Aviso tono="atencion" titulo="Sin sello.">El acta se cerró antes de que existiera el sello inmutable; sus cifras siguen en el acta.</Aviso>}
 
       {contra ? (

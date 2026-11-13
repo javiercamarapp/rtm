@@ -2,7 +2,7 @@
 import { etiquetaFecha, formatearDecimal, formatearMoneda } from '@/dominio/formato';
 import { calcularRatios } from '@/dominio/historial/ratios';
 import type { HistorialSocio } from '@/dominio/historial/tipos';
-import { Hoja, M, UTIL, nuevoDocumento, pie, sinAzar } from './nota';
+import { Hoja, M, UTIL, nuevoDocumento, pie, sinAzar, partir } from './nota';
 
 const pctBp = (bp: bigint | null) => (bp === null ? 'Sin dato' : `${formatearDecimal(Number(bp) / 100, 1)} %`);
 const veces = (x: bigint | null) => (x === null ? 'Sin dato' : `${formatearDecimal(Number(x) / 100, 2)} veces`);
@@ -23,8 +23,13 @@ export async function pdfHistorialSocio(h: HistorialSocio): Promise<Uint8Array> 
     hoja.bajar(20);
     const fila = (t: string, v: string, fuerte = false) => {
       hoja.asegurar(16);
-      hoja.texto(t, M, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, ancho: 330 });
-      hoja.texto(v, M + 380, fuerte ? 11 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, derecha: true });
+      const fuente = fuerte ? f.negrita : f.cuerpo;
+      const tam = fuerte ? 11 : 10;
+      hoja.texto(v, M + 380, tam, { fuente, derecha: true });
+      partir(t, (x) => fuente.widthOfTextAtSize(x, tam), 330).forEach((l, n) => {
+        if (n > 0) { hoja.bajar(12); hoja.asegurar(14); }
+        hoja.texto(l, M, tam, { fuente });
+      });
       hoja.bajar(14);
     };
     const titulo = (t: string) => { hoja.asegurar(30); hoja.bajar(6); hoja.texto(t, M, 8, { fuente: f.negrita }); hoja.bajar(14); };

@@ -127,6 +127,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
           descripcion={`${cerradas.length} ${cerradas.length === 1 ? 'acta vigente' : 'actas vigentes'}${corregidas ? ` · ${corregidas} ${corregidas === 1 ? 'corregida' : 'corregidas'} por contra-acta (no suman al total)` : ''} · cada acta fija 50/50, retiro y reinversión`}
         >
           {anios.length > 1 && <nav className="rtm-seg" aria-label="Año de las actas"><Link href={href({ anio: null })} aria-current={!anio ? 'true' : undefined}>Todos</Link>{anios.map((a) => <Link key={a} href={href({ anio: a })} aria-current={anio === a ? 'true' : undefined}>{a}</Link>)}</nav>}
+          <div className="rtm-actas-tabla">
           <DataTable
             etiqueta={`Actas de ${socio}`}
             densidad="densa" plana primeraFija
@@ -137,15 +138,16 @@ export default async function PaginaHistorial({ params, searchParams }: { params
             columnas={[
               { id: 'f', titulo: 'Acta', ancho: 'm', prioridadMovil: 'titulo' as const, celda: (a) => <Link href={`/socios/actas/${a.id}`} className="rtm-mono">{a.folio}</Link> },
               { id: 'p', titulo: 'Periodo', ancho: 'l', celda: (a) => (a.periodo_ini.slice(8) === '01' && a.periodo_ini.slice(0, 7) === a.periodo_fin.slice(0, 7) && mesAlFinal(a.periodo_fin) ? mesEtiqueta(a.periodo_ini) : `${fechaCorta(a.periodo_ini)} al ${fechaCorta(a.periodo_fin)}`) },
-              { id: 'u', titulo: 'Utilidad del mes', numerica: true, ancho: 'm', celda: (a) => (a.tipo === 'contra' ? '—' : m(a.utilidad_cent, a.utilidad_cent < 0n)) },
+              { id: 'u', titulo: 'Utilidad del mes', etiquetaMovil: 'Utilidad', numerica: true, ancho: 'm', celda: (a) => (a.tipo === 'contra' ? '—' : m(a.utilidad_cent, a.utilidad_cent < 0n)) },
               { id: 'p2', titulo: 'Su parte', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (a) => (a.tipo === 'contra' ? '—' : m(a.parte_cent)) },
-              { id: 'r', titulo: 'Retira (decisión)', numerica: true, ancho: 'm', celda: (a) => m(a.retira_cent) },
-              { id: 'i', titulo: 'Reinvierte (decisión)', numerica: true, ancho: 'm', celda: (a) => m(a.reinvierte_cent) },
+              { id: 'r', titulo: 'Retira (decisión)', etiquetaMovil: 'Retira', numerica: true, ancho: 'm', celda: (a) => m(a.retira_cent) },
+              { id: 'i', titulo: 'Reinvierte (decisión)', etiquetaMovil: 'Reinvierte', numerica: true, ancho: 'm', celda: (a) => m(a.reinvierte_cent) },
               { id: 'v', titulo: 'Valor de su participación', etiquetaMovil: 'Valor', numerica: true, ancho: 'l', secundaria: true, prioridadMovil: 'normal' as const, celda: (a) => (a.valor_cent === null ? <span className="rtm-sin-dato">Sin dato</span> : m(a.valor_cent)) },
               { id: 'e', titulo: 'Firmas', ancho: 'l', prioridadMovil: 'detalle' as const, celda: (a) => <Dos a={<Estado tono={a.estado === 'cerrado' ? 'ok' : 'atencion'}>{a.estado === 'cerrado' ? 'Firmada por los dos' : a.estado === 'firmado_por_uno' ? 'Falta una firma' : 'Sin firmas'}</Estado>} b={a.tipo === 'contra' ? 'Contra-acta' : a.corregida ? 'Corregida por contra-acta' : a.contra_propuesta ? 'Contra-acta propuesta' : a.firmas.map((f) => f.socio).join(' y ') || 'Pendiente'} /> },
               { id: 'd', titulo: 'PDF', ancho: 's', prioridadMovil: 'detalle' as const, celda: (a) => <a href={`/socios/actas/${a.id}/pdf`} className="rtm-enlace">PDF</a> },
             ]}
           />
+          </div>
           <Pie>«Retira» y «Reinvierte» son lo que decidió el acta; «Retirado total» de arriba es lo que ya se pagó. La diferencia es lo que queda por distribuir hasta que se registre el pago.</Pie>
         </Tarjeta>
       <Rejilla dividir="4-4-4">

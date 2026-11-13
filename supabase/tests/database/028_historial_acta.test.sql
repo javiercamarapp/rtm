@@ -93,6 +93,11 @@ select is((select count(*)::int from operacion.acta_sello), 1, 'al cerrarse el a
 select throws_ok($$update operacion.acta_sello set huella = repeat('0', 64)$$, '42501', null, 'el sello es inmutable (update)');
 select throws_ok($$delete from operacion.acta_sello$$, '42501', null, 'el sello es inmutable (delete)');
 select is((select length(huella) from operacion.acta_sello), 64, 'huella sha256 de 64 hex');
+select throws_ok($$truncate operacion.acta_sello$$, '42501', null, 'el sello es inmutable tambien ante TRUNCATE');
+select is((select contenido->>'sin_valuacion' from operacion.acta_sello), 'false', 'sello con valuacion: no se marca sin_valuacion');
+select is((select contenido->>'motivo_sin_valuacion' from operacion.acta_sello), null, 'y no trae motivo');
+select throws_ok($$select operacion.proponer_cierre_reparto('b3a', '2021-04-10', '2021-04-01')$$, '22023', null, 'periodo con fin anterior al inicio: 22023 con mensaje claro, no un error crudo');
+select throws_ok($$select operacion.proponer_cierre_reparto('b3b', null, '2021-04-01')$$, '22023', null, 'periodo sin fecha inicial: 22023');
 select is((select (contenido->'por_socio'->'Javier'->>'invertido_cent')::bigint from operacion.acta_sello), 0::bigint, 'el sello fija lo invertido por Javier AL CORTE (la reinversion del acta se asienta despues)');
 select is((select (contenido->'por_socio'->'Javier'->>'invertido_tras_acta_cent')::bigint from operacion.acta_sello), 600000::bigint, 'y lo invertido tras la decision del acta (corte mas reinversion)');
 select is((select (contenido->'por_socio'->'Angelo'->>'queda_cent')::bigint from operacion.acta_sello), 0::bigint, 'y lo que le queda por distribuir a Angelo tras retirar 4,000 y reinvertir 2,000');

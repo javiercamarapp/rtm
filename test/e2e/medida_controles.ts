@@ -2,7 +2,7 @@
 // Se evalua dentro de la pagina: no depende de capturas. Dos reglas medibles:
 //  1) ningun control se monta sobre otro del mismo contenedor (cajas con interseccion > 1 px en ambos ejes);
 //  2) los controles y botones de un mismo renglon miden lo mismo de alto (32 px escritorio, 44 px tactil); los chips y segmentados quedan fuera.
-export interface HallazgoControles { contenedor: string; tipo: 'solape' | 'alto' | 'recorte' | 'ancho' | 'fuera'; detalle: string }
+export interface HallazgoControles { contenedor: string; tipo: 'solape' | 'alto' | 'recorte' | 'ancho' | 'fuera' | 'tarjeta'; detalle: string }
 
 export const CONTENEDORES = '.rtm-filtros-linea, .rtm-a2-filtros, .a3-filtros-form, .rtm-a1-buscar, .rtm-dt-barra, .rtm-paginador, .rtm-form-fila, .rtm-acciones-fila';
 
@@ -149,5 +149,47 @@ export function medirFueraDeContenedor(contenedores: string): HallazgoControles[
       }
     }
   }
+  return salida;
+}
+
+// Linea de tiempo de actas del Historial (contenedor .rtm-actas-tabla), en tabla o en tarjeta movil: ninguna celda (ni su etiqueta de campo) puede desbordar su caja (texto recortado como
+// "RETIRA (DECISION"), ni dos celdas del mismo renglon montarse o quedar pegadas (menos de 4 px entre cajas). Devuelve ademas cuantas celdas midio, para que la prueba exija que midio algo.
+export function medirTarjetasActas(): (HallazgoControles & { celdas?: number })[] {
+  const salida: (HallazgoControles & { celdas?: number })[] = [];
+  const celdas = [...document.querySelectorAll<HTMLElement>('.rtm-actas-tabla .rtm-dt-celda')].filter((c) => { const r = c.getBoundingClientRect(); const cab = c.closest('.rtm-dt-cabecera'); return r.width > 1 && r.height > 1 && !(cab && getComputedStyle(cab).position === 'absolute'); });
+  const lienzo = document.createElement('canvas').getContext('2d');
+  for (const c of celdas) {
+    const caja = c.getBoundingClientRect();
+    const nombre = c.getAttribute('data-label') ?? (c.textContent ?? '').trim().slice(0, 16);
+    // Contenido real (texto y elementos hijos): no puede pasar del borde de su celda.
+    const rango = document.createRange();
+    rango.selectNodeContents(c);
+    for (const r of [...rango.getClientRects()]) {
+      if (r.width > 0 && (r.right > caja.right + 1 || r.left < caja.left - 1)) { salida.push({ contenedor: `celda[${nombre}]`, tipo: 'tarjeta', detalle: `su contenido se sale de la celda (${Math.round(r.right - caja.right)} px a la derecha)` }); break; }
+    }
+    // Etiqueta de campo de la tarjeta movil (::before): su palabra mas larga debe caber en el ancho interior de la celda.
+    const pb = getComputedStyle(c, '::before');
+    const txt = pb.content.replace(/^["']|["']$/g, '');
+    if (lienzo && txt && pb.content !== 'none' && pb.content !== 'normal') {
+      lienzo.font = `${pb.fontStyle} ${pb.fontWeight} ${pb.fontSize} ${pb.fontFamily}`;
+      const cs = getComputedStyle(c);
+      const interior = caja.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const t = pb.textTransform === 'uppercase' ? txt.toUpperCase() : txt;
+      const kern = (parseFloat(pb.letterSpacing) || 0);
+      const mayor = Math.max(...t.split(/\s+/).map((w) => lienzo.measureText(w).width + kern * w.length));
+      if (mayor > interior + 0.5) salida.push({ contenedor: `celda[${nombre}]`, tipo: 'tarjeta', detalle: `la etiqueta "${txt}" necesita ${Math.ceil(mayor)} px y la celda ofrece ${Math.floor(interior)} px: etiqueta recortada` });
+      if (pb.whiteSpace === 'nowrap' && lienzo.measureText(t).width + kern * t.length > interior + 0.5) salida.push({ contenedor: `celda[${nombre}]`, tipo: 'tarjeta', detalle: `la etiqueta "${txt}" no cabe en una linea (${Math.ceil(lienzo.measureText(t).width)} px) y no puede partirse` });
+    }
+  }
+  for (let i = 0; i < celdas.length; i++) {
+    for (let j = i + 1; j < celdas.length; j++) {
+      const a = celdas[i]!.getBoundingClientRect();
+      const b = celdas[j]!.getBoundingClientRect();
+      if (Math.abs(a.top - b.top) > 2) continue;
+      const hueco = Math.max(b.left - a.right, a.left - b.right);
+      if (hueco < 0 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) salida.push({ contenedor: 'celdas', tipo: 'solape', detalle: `dos celdas del mismo renglon se montan (${Math.round(-hueco)} px)` });
+    }
+  }
+  salida.push({ contenedor: 'conteo', tipo: 'tarjeta', detalle: 'celdas medidas', celdas: celdas.length });
   return salida;
 }

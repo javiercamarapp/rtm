@@ -50,6 +50,8 @@ export interface SelloActa {
     valuacion_cent: Cent | null; deudas_cent: Cent | null; capital_contable_cent: Cent | null; valor_participacion_cent: Record<string, Cent> | null;
     /** Fecha unica del sello: todas las cifras de valuacion son al corte del acta (periodo_fin). */
     al_corte?: string;
+    /** El sello se tomo sin valuacion (error de calculo o sin asientos): las cifras de valuacion no existen y las pantallas lo avisan. */
+    sin_valuacion?: boolean; motivo_sin_valuacion?: string | null;
     /** Cifras AL CORTE (null si el sello se tomo sin asientos). `*_tras_acta` suma la decision del acta (se asienta despues del corte). */
     por_socio: Record<string, { invertido_cent: Cent | null; aportacion_neta_cent: Cent | null; fondos_en_poder_cent: Cent | null; valuacion_cent: Cent | null; retirado_cent: Cent;
       invertido_tras_acta_cent: Cent | null; retirado_tras_acta_cent: Cent; queda_cent: Cent; compensaciones_cent: Cent }>;

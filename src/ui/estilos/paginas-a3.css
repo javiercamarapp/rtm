@@ -65,3 +65,10 @@
 .a3-filtros-form .rtm-campo-num { width: 172px; }
 
 .a3-sin-corte { white-space: nowrap; }
+
+/* Linea de tiempo de actas a 390 px: las cifras van en dos columnas (cada una con ancho para su cifra y su etiqueta completas, sin recortes ni etiquetas pegadas). */
+@media (max-width: 767px) {
+  .rtm-actas-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-fila[data-fila], .rtm-actas-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-pie .rtm-dt-fila { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+  .rtm-actas-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda { min-width: 0; }
+  .rtm-actas-tabla .rtm-dt-caja[data-tarjeta-movil] .rtm-dt-celda::before { white-space: normal; overflow: visible; text-overflow: clip; }
+}
