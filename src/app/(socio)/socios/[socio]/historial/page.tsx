@@ -89,9 +89,9 @@ export default async function PaginaHistorial({ params, searchParams }: { params
           { id: 'inv', etiqueta: 'Invertido total', testid: 'h-invertido', valor: sinH ? null : <CifraComprobada texto={m(c.invertido_cent)} cifra={`historial:invertido:${socio}`} comprobacion={compr('invertido')} />, categoria: 1, nota: `Aportaciones ${m(c.aportaciones_cent)} · reinversiones ${m(c.reinversion_cent)}` },
           { id: 'ret', etiqueta: 'Retirado total', testid: 'h-retirado', valor: sinH ? null : <CifraComprobada texto={m(c.retirado_cent)} cifra={`historial:retirado:${socio}`} comprobacion={compr('retirado')} />, categoria: 2, nota: `Utilidad ${m(c.retirado_utilidad_cent)} · capital ${m(c.retirado_capital_cent)}` },
           { id: 'ut', etiqueta: 'Utilidad recibida en actas', testid: 'h-utilidad', valor: sinH ? null : <CifraComprobada texto={m(c.utilidad_asignada_cent)} cifra={`historial:utilidad:${socio}`} comprobacion={compr('utilidad')} />, categoria: 3, nota: `Por distribuir ${m(c.utilidad_por_distribuir_cent)}` },
-          { id: 'val', etiqueta: 'Valor actual de su participación', testid: 'h-valor', valor: valorTxt === null ? null : <CifraComprobada texto={valorTxt} cifra={`historial:valor:${socio}`} comprobacion={compr('valor')} />, categoria: 4, nota: valorTxt === null ? 'Sin asientos contables todavía' : <><Estado tono="info">Estimado</Estado> su cuenta de capital {m(c.capital_cuenta_cent)} · rango {m(c.valor_bajo_cent!)} a {m(c.valor_alto_cent!)}</> },
+          { id: 'val', etiqueta: 'Valuación personal', testid: 'h-valor', valor: valorTxt === null ? null : <CifraComprobada texto={valorTxt} cifra={`historial:valor:${socio}`} comprobacion={compr('valor')} />, categoria: 4, nota: valorTxt === null ? 'Sin asientos contables todavía' : <>Capital aportado + su 50 % de la utilidad − fondos en su poder {m(c.fondos_cent)}</> },
           { id: 'rec', etiqueta: 'Recuperado de lo invertido', testid: 'h-recuperado', valor: bpAPct(r.recuperado_bp), categoria: 5, progreso: r.recuperado_bp === null ? undefined : { pct: Math.min(100, Number(r.recuperado_bp) / 100) }, nota: r.recuperado_bp === null ? 'Aún no invierte' : `Retirado ${m(c.retirado_cent)} de ${m(c.invertido_cent)}` },
-          { id: 'cta', etiqueta: 'Deuda o crédito con la sociedad', testid: 'h-cuenta', valor: <CifraComprobada texto={m(c.cuenta_cent, true)} cifra={`historial:cuenta:${socio}`} comprobacion={compr('cuenta')} />, categoria: 6, nota: `${c.cuenta_cent > 0n ? 'La sociedad le debe' : c.cuenta_cent < 0n ? 'Debe a la sociedad' : 'En paz'} · reembolsos por cobrar ${m(c.reembolso_pendiente_cent)} menos fondos en su poder ${m(c.fondos_cent)}` },
+          { id: 'cta', etiqueta: 'Aportación neta', testid: 'h-neta', valor: <CifraComprobada texto={m(c.aportacion_neta_cent, true)} cifra={`historial:neta:${socio}`} comprobacion={compr('neta')} />, categoria: 6, nota: c.igualados ? 'Los dos tienen lo mismo aportado' : c.le_toca_aportar ? `Le toca aportar el siguiente pago · diferencia a igualar ${m(c.diferencia_a_igualar_cent)}` : `Ya aportó más · diferencia a igualar del otro socio ${m(c.diferencia_a_igualar_cent)}` },
         ]}
       />
       <FilaRatios
@@ -117,7 +117,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
           { etiqueta: 'Participación en la utilidad', valor: bpAPct(r.participacion_utilidad_bp) },
           { etiqueta: 'Utilidad atribuida a su 50 %', valor: t ? m(t.parte_cent, t.parte_cent < 0n) : null },
           { etiqueta: 'Pedidos · piezas', valor: t ? `${t.pedidos} · ${formatearDecimal(Number(t.piezas), 0)}` : null },
-          { etiqueta: 'Deuda o crédito con la sociedad', valor: conSigno(r.cuenta_neta_cent) },
+          { etiqueta: 'Aportación neta', valor: m(r.aportacion_neta_cent, r.aportacion_neta_cent < 0n) },
         ]}
       />
 
@@ -242,7 +242,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
         </Tarjeta>
       </Rejilla>
       <p className="rtm-nota" data-testid="nota-historial">
-        La utilidad se atribuye 50/50 y el centavo suelto va a quien más ha aportado (una sola regla de redondeo). {c.valor_cent !== null ? `El valor de su participación es su cuenta de capital (aportaciones y reinversiones, más la utilidad recibida en actas, menos lo retirado) más su 50 % de la utilidad que aún no pasa por un acta; la suma de los dos socios es el capital contable (${m(c.capital_contable_cent!)}). El rango bajo no cuenta lo que deben los clientes (${m(c.por_cobrar_clientes_cent ?? 0n)}). La deuda o crédito con la sociedad (reembolsos por cobrar menos fondos en su poder) va aparte y no entra en ese valor. ` : ''}
+        La utilidad se atribuye 50/50 (una sola regla de redondeo: Javier la mitad hacia cero, Angelo el resto) y aportar más no cambia la participación. {c.valor_cent !== null ? `La valuación personal es la de Capital por mes: su capital aportado (aportaciones, reinversiones y utilidad recibida en actas, menos lo retirado) más su 50 % de la utilidad que aún no pasa por un acta, menos los fondos de la sociedad que tiene en su poder; las dos valuaciones más los fondos son el capital contable (${m(c.capital_contable_cent!)}). La diferencia a igualar no es una deuda: se resuelve con las siguientes aportaciones de quien tiene menos. ` : ''}
         ROI, múltiplo y TIR usan lo invertido como aportaciones más reinversiones, según el acta de corte. Ninguna de estas cifras la calcula la IA: salen de la base y de funciones deterministas. Ver también el historial de {otro}: <Link href={`/socios/${otro}/historial`}>{otro}</Link>.
       </p>
     </Pagina>

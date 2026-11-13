@@ -6,8 +6,8 @@ import type { Cabecera, FilaSerie, HistorialSocio } from '@/dominio/historial/ti
 const cab = (o: Partial<Cabecera> = {}): Cabecera => ({
   aportaciones_cent: 1_000_000n, reinversion_cent: 200_000n, invertido_cent: 1_200_000n, invertido_ambos_cent: 2_000_000n,
   retirado_utilidad_cent: 300_000n, retirado_capital_cent: 0n, retirado_cent: 300_000n, utilidad_asignada_cent: 800_000n, utilidad_por_distribuir_cent: 300_000n,
-  capital_contable_cent: 3_200_000n, valor_cent: 1_600_000n, valor_bajo_cent: 1_400_000n, valor_alto_cent: 1_600_000n, por_cobrar_clientes_cent: 400_000n,
-  capital_cuenta_cent: 1_550_000n, neto_cent: 1_650_000n, cuenta_cent: 50_000n, comprobaciones: { invertido: true, retirado: true, utilidad: true, valor: true, cuenta: true }, reembolso_pendiente_cent: 100_000n, fondos_cent: 0n, efectivo_total_cent: 900_000n, efectivo_disponible_cent: 800_000n, primera_fecha: '2026-01-05', meses_activo: 10, ...o,
+  capital_contable_cent: 3_200_000n, valor_cent: 1_600_000n, valor_libro_cent: 1_600_000n, participacion_bp: 5000,
+  aportado_cent: 1_200_000n, aportacion_neta_cent: 1_200_000n, diferencia_a_igualar_cent: 0n, le_toca_aportar: false, turno_aportar: null, igualados: true, comprobaciones: { invertido: true, retirado: true, utilidad: true, valor: true, neta: true }, reembolso_pendiente_cent: 100_000n, fondos_cent: 0n, efectivo_total_cent: 900_000n, efectivo_disponible_cent: 800_000n, primera_fecha: '2026-01-05', meses_activo: 10, ...o,
 });
 const fila = (ini: string, parte: bigint, o: Partial<FilaSerie> = {}): FilaSerie => ({
   ini, fin: ini, parcial: false, utilidad_cent: parte * 2n, parte_cent: parte, pedidos: 3, piezas: 30, ventas_cent: parte * 10n, retiros_cent: 0n, reinversion_cent: 0n, aportaciones_cent: 0n, provisional: false, ...o,

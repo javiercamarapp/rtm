@@ -253,6 +253,7 @@ begin
     'aportado_cent', (v_fila ->> 'aportado_cent')::bigint, 'fondos_cent', (v_fila ->> 'fondos_en_poder_cent')::bigint,
     'aportacion_neta_cent', (v_fila ->> 'aportacion_neta_cent')::bigint, 'diferencia_a_igualar_cent', (v_fila ->> 'diferencia_a_igualar_cent')::bigint,
     'le_toca_aportar', (v_fila ->> 'le_toca_aportar')::boolean, 'turno_aportar', v_cap ->> 'turno_aportar', 'igualados', (v_cap ->> 'igualados')::boolean,
+    'reembolso_pendiente_cent', operacion.reembolso_pendiente(v_id),
     'efectivo_total_cent', (v_ef ->> 'total_cent')::bigint, 'efectivo_disponible_cent', (v_ef ->> 'disponible_cent')::bigint,
     'primera_fecha', v_primera, 'meses_activo', v_meses);
   -- Estado de la comprobacion por dos vias de cada cifra de la cabecera: sale de la misma funcion que usa "Explicar este numero", con el mismo periodo ya calculado (null = sin dato o sin comprobar).

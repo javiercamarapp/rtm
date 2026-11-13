@@ -16,18 +16,23 @@ export interface ActaLinea {
 }
 export interface Flujo { fecha: string; monto_cent: Cent; tipo: 'aportacion' | 'retiro' | 'retiro_capital' }
 export interface Cabecera {
+  /** Capital aportado acumulado (la cifra de Capital por mes): aportaciones declaradas, reinversion por acta y apertura. */
   aportaciones_cent: Cent; reinversion_cent: Cent; invertido_cent: Cent; invertido_ambos_cent: Cent;
+  /** Retirado = retiros de utilidad + devolucion de aportaciones (una sola definicion en la base: operacion.retirado_socio). */
   retirado_utilidad_cent: Cent; retirado_capital_cent: Cent; retirado_cent: Cent; utilidad_asignada_cent: Cent; utilidad_por_distribuir_cent: Cent;
-  capital_contable_cent: Cent | null; valor_cent: Cent | null; valor_bajo_cent: Cent | null; valor_alto_cent: Cent | null; por_cobrar_clientes_cent: Cent | null;
-  /** Su cuenta de capital (aportaciones + utilidad recibida - retiros): la base del valor de su participacion. */
-  capital_cuenta_cent: Cent;
-  /** Posicion neta total (cuenta de capital + deuda o credito); la cifra con la que se ve la cuenta es `cuenta_cent`. */
-  neto_cent: Cent;
-  /** Deuda o credito con la sociedad: reembolsos por cobrar menos fondos en su poder (+ la sociedad le debe). */
-  cuenta_cent: Cent;
-  reembolso_pendiente_cent: Cent; fondos_cent: Cent; efectivo_total_cent: Cent; efectivo_disponible_cent: Cent;
-  /** Resultado de la comprobacion por dos vias de cada cifra; null = sin dato. */
-  comprobaciones: Record<'invertido' | 'retirado' | 'utilidad' | 'valor' | 'cuenta', boolean | null>;
+  capital_contable_cent: Cent | null;
+  /** Valuacion personal (la de Capital por mes): capital aportado + su 50 % de la utilidad sin acta - fondos de la sociedad en su poder. null = sin asientos. */
+  valor_cent: Cent | null; valor_libro_cent: Cent | null;
+  /** La participacion es siempre 50/50 (5000 puntos base). */
+  participacion_bp: number;
+  aportado_cent: Cent; fondos_cent: Cent;
+  /** Aportacion neta = aportado (capital + dinero propio como reembolso) - fondos de la sociedad en su poder. */
+  aportacion_neta_cent: Cent;
+  /** La mayor aportacion neta menos la suya; NO es una deuda ni un reembolso a favor del otro. */
+  diferencia_a_igualar_cent: Cent; le_toca_aportar: boolean; turno_aportar: NombreSocio | null; igualados: boolean;
+  reembolso_pendiente_cent: Cent; efectivo_total_cent: Cent; efectivo_disponible_cent: Cent;
+  /** Resultado de la comprobacion por dos vias de cada cifra; null = sin dato o sin segunda via. */
+  comprobaciones: Record<'invertido' | 'retirado' | 'utilidad' | 'valor' | 'neta', boolean | null>;
   primera_fecha: string | null; meses_activo: number;
 }
 export interface PorCliente { cliente_id: number; cliente: string; pedidos: number; piezas: number; utilidad_cent: Cent; parte_cent: Cent }
@@ -43,11 +48,16 @@ export interface SelloActa {
   contenido: {
     periodo_ini: string; periodo_fin: string; utilidad_cent: Cent; decisiones: Record<string, { retira: Cent; reinvierte: Cent }>;
     valuacion_cent: Cent | null; deudas_cent: Cent | null; capital_contable_cent: Cent | null; valor_participacion_cent: Record<string, Cent> | null;
-    por_socio: Record<string, { invertido_cent: Cent; retirado_cent: Cent; por_distribuir_cent: Cent; fondos_en_poder_cent: Cent; compensaciones_cent: Cent; cuenta_cent: Cent; neto_cent: Cent }>;
+    /** Fecha unica del sello: todas las cifras de valuacion son al corte del acta (periodo_fin). */
+    al_corte?: string;
+    /** Cifras AL CORTE (null si el sello se tomo sin asientos). `*_tras_acta` suma la decision del acta (se asienta despues del corte). */
+    por_socio: Record<string, { invertido_cent: Cent | null; aportacion_neta_cent: Cent | null; fondos_en_poder_cent: Cent | null; valuacion_cent: Cent | null; retirado_cent: Cent;
+      invertido_tras_acta_cent: Cent | null; retirado_tras_acta_cent: Cent; queda_cent: Cent; compensaciones_cent: Cent }>;
   };
   huella: string; sellado_at: string;
 }
 export interface ActaDetalle { cierre: CierreReparto; sello: SelloActa | null; /** Disponible y lo que queda por distribuir por socio, calculados por la base (ausente en una contra-acta). */ por_socio_acta: Record<string, { disponible_cent: Cent; queda_cent: Cent; /** Resultado de la comprobacion por dos vias del disponible (null = sin comprobar). */ cuadra: boolean | null }>; /** Idem, de la utilidad neta del periodo. */ utilidad_cuadra: boolean | null; corrige_folio: string | null; contra_acta_folio: string | null }
+export interface ReinversionSugerida { ini: string; fin: string; monto_comun_cent: Cent; por_socio: Record<string, { disponible_cent: Cent; reinvierte_sugerido_cent: Cent }>; regla: string }
 export interface PeriodoSugerido { ini: string; fin: string; hoy: string; ultimo_corte: string | null; listo: boolean; disponible_desde: string; acta_pendiente_id: number | null; hay_actividad: boolean }
 
 /** Las decisiones de un acta viajan como {retira, reinvierte} (sin sufijo _cent), asi que la conversion general de centavos no las toca: se convierten aqui. */

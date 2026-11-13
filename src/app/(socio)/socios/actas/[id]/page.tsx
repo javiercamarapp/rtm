@@ -69,8 +69,8 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
               { id: 're', etiqueta: 'Reembolsos pagados', valor: m(s.reembolsos.pagado_cent), categoria: 6, nota: `Pendientes ${m(s.reembolsos.pendiente_cent)}` },
               { id: 'ef', etiqueta: 'Efectivo de la sociedad', valor: m(s.efectivo.total_cent), categoria: 1, nota: s.limitado_por_efectivo ? 'Reparto limitado por el efectivo' : `Comprometido ${m(s.efectivo.comprometido_cent)}` },
               { id: 'rp', etiqueta: 'Utilidad repartida 50/50', testid: 'acta-repartible', valor: m(s.repartible_cent), categoria: 7, nota: `Pasa al siguiente periodo ${m(c.arrastre_fin_cent, c.arrastre_fin_cent < 0n)}` },
-              { id: 'cc', etiqueta: 'Capital contable resultante', valor: k?.capital_contable_cent == null ? null : m(k.capital_contable_cent), categoria: 4, nota: k ? 'Al cierre del periodo, sellado' : 'Se sella al cerrarse el acta' },
-              { id: 'va', etiqueta: 'Valor de cada participación', valor: k?.valor_participacion_cent == null ? null : m(k.valor_participacion_cent.Angelo!), categoria: 5, nota: k?.valor_participacion_cent == null ? 'Estimado en libros' : `Angelo · Javier ${m(k.valor_participacion_cent.Javier!)} (estimado en libros)` },
+              { id: 'cc', etiqueta: 'Capital contable al corte', valor: k?.capital_contable_cent == null ? null : m(k.capital_contable_cent), categoria: 4, nota: k ? `Al ${etiquetaFecha(k.al_corte ?? c.periodo_fin)}, sellado` : 'Se sella al cerrarse el acta' },
+              { id: 'va', etiqueta: 'Valuación personal de Angelo', valor: k?.valor_participacion_cent == null ? null : m(k.valor_participacion_cent.Angelo!), categoria: 5, nota: k?.valor_participacion_cent == null ? 'Al corte del acta' : `Javier ${m(k.valor_participacion_cent.Javier!)} · al corte, la misma de Capital por mes` },
             ]}
           />
           <Tarjeta plana titulo="Por socio" descripcion="Su parte 50/50, lo que retira y lo que reinvierte; la reinversión queda como inversión suya">
@@ -86,10 +86,10 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
                 { id: 'r', titulo: 'Retira', numerica: true, ancho: 'm', celda: (f) => m(f.dec.retira) },
                 { id: 'i', titulo: 'Reinvierte', numerica: true, ancho: 'm', celda: (f) => m(f.dec.reinvierte) },
                 { id: 'q', titulo: 'Queda por distribuir', numerica: true, ancho: 'm', celda: (f) => m(f.resto) },
-                { id: 'fp', titulo: 'Fondos en su poder', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.fondos_en_poder_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
+                { id: 'fp', titulo: 'Fondos en su poder', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello?.fondos_en_poder_cent != null ? m(f.sello.fondos_en_poder_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
                 { id: 'co', titulo: 'Compensaciones', etiquetaMovil: 'Compens.', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.compensaciones_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
-                { id: 'iv', titulo: 'Invertido acumulado', etiquetaMovil: 'Invertido', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello ? m(f.sello.invertido_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
-                { id: 'v', titulo: 'Valor de su participación', etiquetaMovil: 'Valor', numerica: true, ancho: 'l', prioridadMovil: 'normal' as const, celda: (f) => (f.valor === null ? <span className="rtm-sin-dato">Sin dato</span> : m(f.valor)) },
+                { id: 'iv', titulo: 'Invertido tras el acta', etiquetaMovil: 'Invertido', numerica: true, ancho: 'm', secundaria: true, celda: (f) => (f.sello?.invertido_tras_acta_cent != null ? m(f.sello.invertido_tras_acta_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
+                { id: 'v', titulo: 'Valuación personal al corte', etiquetaMovil: 'Valuación', numerica: true, ancho: 'l', prioridadMovil: 'normal' as const, celda: (f) => (f.valor === null ? <span className="rtm-sin-dato">Sin dato</span> : m(f.valor)) },
               ]}
             />
           </Tarjeta>

@@ -46,8 +46,8 @@ export interface Ratios {
   participacion_capital_bp: bigint | null;
   /** Participacion en la utilidad: fija 50/50, no depende de lo aportado. */
   participacion_utilidad_bp: bigint;
-  /** Positivo: la sociedad le debe; negativo: el debe a la sociedad. */
-  cuenta_neta_cent: bigint;
+  /** Aportacion neta (aportado menos fondos en su poder): la misma cifra de Capital por mes. */
+  aportacion_neta_cent: bigint;
 }
 
 /** Dias entre dos fechas 'AAAA-MM-DD' (calendario, sin zona horaria). */
@@ -123,7 +123,7 @@ export function calcularRatios(h: HistorialSocio): Ratios {
     cobertura_caja_x100: pendiente > 0n ? divRedondeada(c.efectivo_disponible_cent * 100n, pendiente) : null,
     participacion_capital_bp: bp(c.invertido_cent, c.invertido_ambos_cent),
     participacion_utilidad_bp: 5000n,
-    cuenta_neta_cent: c.cuenta_cent,
+    aportacion_neta_cent: c.aportacion_neta_cent,
   };
 }
 

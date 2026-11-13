@@ -30,13 +30,13 @@ export async function pdfHistorialSocio(h: HistorialSocio): Promise<Uint8Array> 
     const titulo = (t: string) => { hoja.asegurar(30); hoja.bajar(6); hoja.texto(t, M, 8, { fuente: f.negrita }); hoja.bajar(14); };
 
     titulo('CABECERA');
-    fila('Invertido total (aportaciones + reinversiones)', formatearMoneda(c.invertido_cent), true);
-    fila('Retirado total', formatearMoneda(c.retirado_cent));
+    fila('Invertido total (capital aportado: aportaciones y reinversiones)', formatearMoneda(c.invertido_cent), true);
+    fila('Retirado total (retiros de utilidad + devolucion de aportaciones)', formatearMoneda(c.retirado_cent));
     fila('Utilidad recibida en actas', formatearMoneda(c.utilidad_asignada_cent));
     fila('Utilidad por distribuir', formatearMoneda(c.utilidad_por_distribuir_cent));
-    fila('Valor actual de su participacion (estimado)', c.valor_cent === null ? 'Sin dato' : formatearMoneda(c.valor_cent), true);
-    if (c.valor_cent !== null) fila('Rango del estimado', `${formatearMoneda(c.valor_bajo_cent!)} a ${formatearMoneda(c.valor_alto_cent!)}`);
-    fila('Deuda o credito con la sociedad (+ le debe la sociedad)', formatearMoneda(c.cuenta_cent, { conSigno: true }));
+    fila('Valuacion personal (capital aportado + su 50 % de la utilidad - fondos en su poder)', c.valor_cent === null ? 'Sin dato' : formatearMoneda(c.valor_cent), true);
+    fila('Aportacion neta (aportado menos fondos en su poder)', formatearMoneda(c.aportacion_neta_cent, { conSigno: true }));
+    fila(c.igualados ? 'Aportaciones igualadas' : c.le_toca_aportar ? 'Diferencia a igualar (le toca aportar el siguiente pago)' : 'Diferencia a igualar del otro socio', formatearMoneda(c.diferencia_a_igualar_cent));
     fila('Reembolsos por cobrar', formatearMoneda(c.reembolso_pendiente_cent));
     fila('Fondos de la sociedad en su poder', formatearMoneda(c.fondos_cent));
 

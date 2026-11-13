@@ -58,18 +58,22 @@ export async function pdfActaCorte(c: CierreReparto, sello: SelloActa | null = n
     if (sello) {
       const k = sello.contenido;
       h.asegurar(120);
-      h.texto('AL CIERRE (sello inmutable)', M, 8, { fuente: f.negrita });
+      h.texto(`AL CORTE DEL ACTA, ${k.al_corte ?? c.periodo_fin} (sello inmutable)`, M, 8, { fuente: f.negrita });
       h.bajar(14);
+      const sd = (v: bigint | null | undefined) => (v === null || v === undefined ? 'Sin dato' : formatearMoneda(v));
       if (k.capital_contable_cent !== null) {
-        fila('Capital contable resultante', formatearMoneda(k.capital_contable_cent), true);
-        for (const socio of Object.keys(k.valor_participacion_cent ?? {}).sort()) fila(`Valor de la participacion de ${socio} (estimado)`, formatearMoneda(k.valor_participacion_cent![socio]!));
-      } else fila('Capital contable resultante', 'Sin dato');
+        fila('Capital contable al corte', formatearMoneda(k.capital_contable_cent), true);
+        for (const socio of Object.keys(k.valor_participacion_cent ?? {}).sort()) fila(`Valuacion personal de ${socio} (capital aportado + su 50 % de la utilidad - fondos en su poder)`, formatearMoneda(k.valor_participacion_cent![socio]!));
+      } else fila('Capital contable al corte', 'Sin dato');
       for (const socio of Object.keys(k.por_socio).sort()) {
         const x = k.por_socio[socio]!;
-        fila(`${socio}: invertido acumulado`, formatearMoneda(x.invertido_cent));
-        fila(`${socio}: fondos de la sociedad en su poder`, formatearMoneda(x.fondos_en_poder_cent));
+        fila(`${socio}: invertido al corte`, sd(x.invertido_cent));
+        fila(`${socio}: aportacion neta al corte`, sd(x.aportacion_neta_cent));
+        fila(`${socio}: fondos de la sociedad en su poder`, sd(x.fondos_en_poder_cent));
+        fila(`${socio}: retirado al corte (retiros de utilidad + devolucion de aportaciones)`, formatearMoneda(x.retirado_cent));
         fila(`${socio}: compensaciones aplicadas en el acta`, formatearMoneda(x.compensaciones_cent));
-        fila(`${socio}: utilidad por distribuir despues del acta`, formatearMoneda(x.por_distribuir_cent));
+        fila(`${socio}: invertido tras la decision del acta`, sd(x.invertido_tras_acta_cent));
+        fila(`${socio}: utilidad por distribuir despues del acta`, formatearMoneda(x.queda_cent));
       }
       h.texto(`Huella del sello (SHA-256): ${sello.huella.slice(0, 32)}`, M, 7);
       h.bajar(10);

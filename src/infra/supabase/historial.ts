@@ -1,4 +1,4 @@
-// Implementa el puerto del historial con las funciones api.* de la migracion 20261113200000 (sesion del usuario, llave publica; nunca la de servicio).
+// Implementa el puerto del historial con las funciones api.* de la migracion 20261113800000 (sesion del usuario, llave publica; nunca la de servicio).
 import type { LectorHistorial } from '@/aplicacion/historial/puertos';
 import { decisionesABigint, type ActaDetalle } from '@/dominio/historial/tipos';
 import { centavosABigint } from '@/dominio/operacion/json';
@@ -24,6 +24,7 @@ export function lectorHistorialSupabase(): LectorHistorial {
     },
     disponibleActa: (ini, fin) => leer('acta_disponible', { p_ini: ini, p_fin: fin }),
     periodoSugerido: () => leer('acta_periodo_sugerido'),
+    reinversionSugerida: (ini, fin) => leer('acta_reinversion_sugerida', { p_ini: ini, p_fin: fin }),
     explicar: (cifra) => llamar('explicar_historial', { p_cifra: cifra }, explicacion),
   };
 }
