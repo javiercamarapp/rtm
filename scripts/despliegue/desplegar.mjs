@@ -1,6 +1,9 @@
 // `npm run desplegar`: lleva el codigo y las migraciones ADITIVAS de esta carpeta a produccion, sin builds de Vercel (se compila en la Mac).
 // Orden: compuerta local -> comparar migraciones locales contra la nube (aborta si la nube trae algo que aqui no existe o si una pendiente es destructiva)
-//        -> respaldo cifrado previo -> aplicar migraciones -> vercel build --prod -> vercel deploy --prebuilt --prod -> pruebas de humo -> si fallan, rollback.
+//        -> respaldo cifrado previo -> aplicar migraciones -> registrar a que despliegue apunta hoy el alias -> vercel build --prod
+//        -> vercel deploy --prebuilt --prod -> humo contra la URL UNICA del despliegue nuevo -> vercel alias set <URL unica> <alias>
+//        -> verificar que el alias sirve el despliegue nuevo (inspect + marcador del build en /login) -> humo contra el alias
+//        -> si algo falla despues del alias, se restaura el alias anterior y se sale con error. (`deploy --prod` NO mueve el alias en este proyecto.)
 // Opciones:
 //   --probar              solo la compuerta y el analisis de migraciones; no respalda, no aplica, no despliega
 //   --completo            compuerta completa (`npm run verificar`: reinicia y usa la base LOCAL; no correr mientras otra sesion la use)
@@ -8,17 +11,24 @@
 //   --permitir-sucio      permite arbol de trabajo con cambios sin confirmar (por omision se rechaza)
 //   --incluir-todo        pasa --include-all a db push (migraciones locales con fecha anterior a la ultima de la nube)
 //   --permitir-destructivas   permite migraciones destructivas (solo con orden expresa del dueno)
+//   --solo-alias <url>    sin compuerta, migraciones ni build: humo contra la URL unica <url>, asigna el alias, verifica y corre el humo contra el alias
+//                         (con restauracion del alias anterior si falla). Sirve para publicar un despliegue que quedo READY sin servirse.
+//   --dry-run             imprime el plan y sale; no ejecuta nada ni escribe el registro (combinable con las demas opciones)
+//   --permitir-sin-previo permite desplegar aunque no se pueda leer a que despliegue apunta hoy el alias (sin esto se aborta: no habria a donde restaurar)
 //   --con-correo-real     la prueba de humo pide un enlace al correo de Javier y confirma el envio en Resend
-// Registro: ~/.bodega-backups/despliegues.log (hora, commit, resultado, etc.). Nunca escribe secretos ni correos.
+// Registro: ~/.bodega-backups/despliegues.log (hora, commit, resultado `desplegado`/`revertido`/`humo-fallo`/`abortado`, URL anterior y nueva del alias). Nunca escribe secretos ni correos.
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, chmodSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { extraerUrlDespliegue, hostDe, leerArgumentos, parsearInspect, planDeDespliegue, publicarConAlias } from './alias.mjs';
 
 const raiz = new URL('../..', import.meta.url).pathname.replace(/\/$/, '');
-const args = new Set(process.argv.slice(2));
+const { banderas: args, valores, errores } = leerArgumentos(process.argv.slice(2));
 const SCOPE = 'likida';
 const URL_PROD = process.env.RTM_URL_PRODUCCION ?? 'https://rtm-nu.vercel.app';
+if (errores.length) { console.error(`Uso incorrecto: ${errores.join('; ')}`); process.exit(2); }
+if (args.has('--dry-run')) { console.log(planDeDespliegue({ banderas: args, valores, urlProd: URL_PROD, scope: SCOPE }).map((l, i) => (i ? `  ${i}. ${l}` : l)).join('\n')); process.exit(0); }
 const dirResp = join(homedir(), '.bodega-backups');
 const logPath = join(dirResp, 'despliegues.log');
 mkdirSync(dirResp, { recursive: true, mode: 0o700 });
@@ -31,7 +41,7 @@ const rama = git('rev-parse', '--abbrev-ref', 'HEAD');
 const limpio = (t) => String(t ?? '').replace(/re_[A-Za-z0-9_]{10,}/g, '<oculto>').replace(/eyJ[A-Za-z0-9._-]{20,}/g, '<jwt>').replace(/postgres(ql)?:\/\/\S+/g, '<url-bd>');
 const hora = () => new Date().toISOString();
 function registrar(resultado, detalle = '') {
-  appendFileSync(logPath, `${hora()} commit=${commit} rama=${rama} resultado=${resultado} builds_vercel=0${detalle ? ` ${limpio(detalle).replace(/\s+/g, ' ').slice(0, 300)}` : ''}\n`, { mode: 0o600 });
+  appendFileSync(logPath, `${hora()} commit=${commit} rama=${rama} resultado=${resultado} builds_vercel=0${detalle ? ` ${limpio(detalle).replace(/\s+/g, ' ').slice(0, 500)}` : ''}\n`, { mode: 0o600 });
   console.log(`\nRegistro: ${resultado}${detalle ? ` (${limpio(detalle).slice(0, 200)})` : ''}`);
 }
 function abortar(motivo, codigo = 1) { console.error(`\nABORTADO: ${motivo}`); registrar('abortado', motivo); process.exit(codigo); }
@@ -39,6 +49,32 @@ function paso(nombre, cmd, a, o = {}) {
   console.log(`\n== ${nombre}`);
   const r = sh(cmd, a, { stdio: 'inherit', ...o });
   if (r.status !== 0) abortar(`fallo: ${nombre}`);
+}
+
+// Publicacion bajo el alias (compartida por el flujo completo y --solo-alias).
+const registroAlias = (previo, nuevoHost) => `alias=${hostDe(URL_PROD)} alias_anterior=${previo?.host ?? 'desconocido'} alias_nuevo=${nuevoHost}`;
+const consultarAlias = () => parsearInspect(sh('vercel', ['inspect', hostDe(URL_PROD), '--json', '--scope', SCOPE]).stdout);
+async function publicar(nuevo, previo, extra = '') {
+  const r = await publicarConAlias({
+    nuevo, urlProd: URL_PROD, scope: SCOPE, previo,
+    run: (cmd, a) => sh(cmd, a),
+    pedirPagina: async (u) => { const x = await fetch(u, { redirect: 'manual', cache: 'no-store' }); return { status: x.status, html: await x.text() }; },
+    humo: (u) => sh('node', [join(raiz, 'scripts/despliegue/humo.mjs'), u, ...(args.has('--con-correo-real') ? ['--con-correo-real'] : [])], { stdio: 'inherit' }).status === 0,
+    dormir: (ms) => new Promise((res) => setTimeout(res, ms)),
+    log: (t) => console.log(`\n== ${t}`),
+  });
+  const base = `${registroAlias(previo, hostDe(nuevo))} ${extra}`.trim();
+  if (r.ok) { registrar('desplegado', `${nuevo} ${base}`); process.exit(0); }
+  console.error(`\nERROR (${r.etapa}): ${r.detalle}`);
+  registrar(r.etapa === 'alias' ? 'revertido' : 'humo-fallo', `${nuevo} ${base} ${r.detalle}`);
+  process.exit(1);
+}
+
+// --solo-alias: no compila ni migra; solo publica un despliegue ya existente.
+if (valores['--solo-alias']) {
+  const previo = consultarAlias();
+  if (!previo && !args.has('--permitir-sin-previo')) abortar(`no se pudo leer a que despliegue apunta hoy ${hostDe(URL_PROD)}; sin eso no hay a donde restaurar (--permitir-sin-previo para continuar)`);
+  await publicar(valores['--solo-alias'], previo, 'modo=solo-alias');
 }
 
 // 0. Condiciones.
@@ -87,31 +123,20 @@ if (pendientes.length) {
   paso('Aplicar migraciones aditivas', 'supabase', ['db', 'push', '--linked', '--yes', ...(args.has('--incluir-todo') ? ['--include-all'] : [])]);
 }
 
-// 4. Produccion actual (para el rollback).
-const previo = (() => {
-  const r = sh('vercel', ['list', 'rtm', '--status', 'READY', '--scope', SCOPE, '--json']);
-  try { const j = JSON.parse(r.stdout.slice(r.stdout.indexOf('{'), r.stdout.lastIndexOf('}') + 1)); return (j.deployments ?? []).find((d) => d.target === 'production')?.url ?? null; } catch { return null; }
-})();
+// 4. Despliegue al que apunta hoy el alias (para restaurarlo si algo falla despues de moverlo).
+const previo = consultarAlias();
+if (!previo && !args.has('--permitir-sin-previo')) abortar(`no se pudo leer a que despliegue apunta hoy ${hostDe(URL_PROD)}; sin eso no hay a donde restaurar (--permitir-sin-previo para continuar)`);
+console.log(`\nAlias actual: ${hostDe(URL_PROD)} -> ${previo?.host ?? 'desconocido'}`);
 
 // 5. Build local y despliegue sin Git (0 builds de Vercel).
 paso('Traer ajustes de produccion', 'vercel', ['pull', '--yes', '--environment', 'production', '--scope', SCOPE], { stdio: ['ignore', 'ignore', 'inherit'] });
 paso('Build local (vercel build --prod)', 'vercel', ['build', '--prod', '--scope', SCOPE]);
 console.log('\n== Despliegue prebuilt');
 const dep = sh('vercel', ['deploy', '--prebuilt', '--prod', '--scope', SCOPE]);
-const nuevo = /https:\/\/rtm-[a-z0-9]+-[a-z0-9-]+\.vercel\.app/.exec(`${dep.stdout}${dep.stderr}`)?.[0];
+const nuevo = extraerUrlDespliegue(dep.stdout, dep.stderr);
 if (dep.status !== 0 || !nuevo) abortar(`fallo el despliegue: ${limpio(dep.stderr).slice(-200)}`);
-console.log(`Desplegado: ${nuevo} (alias ${URL_PROD})`);
+console.log(`Desplegado (aun sin alias): ${nuevo}`);
 
-// 6. Pruebas de humo; si fallan, regresa a la version anterior.
+// 6. Humo contra la URL unica, alias, verificacion y humo contra el alias; si falla despues del alias, se restaura el anterior.
 await new Promise((r) => setTimeout(r, 4000));
-const humo = sh('node', [join(raiz, 'scripts/despliegue/humo.mjs'), URL_PROD, ...(args.has('--con-correo-real') ? ['--con-correo-real'] : [])], { stdio: 'inherit' });
-if (humo.status !== 0) {
-  let detalle = 'humo fallo';
-  if (previo) {
-    const rb = sh('vercel', ['rollback', previo, '--scope', SCOPE, '--yes'], { stdio: 'inherit' });
-    detalle += rb.status === 0 ? `; rollback a ${previo} OK` : `; ROLLBACK FALLO, retirar a mano (vercel rollback ${previo})`;
-  } else detalle += '; no hay version anterior a la cual regresar: retirar el sitio a mano';
-  registrar('revertido', `${nuevo} ${detalle}`);
-  process.exit(1);
-}
-registrar('desplegado', `${nuevo} migraciones=${pendientes.length}`);
+await publicar(nuevo, previo, `migraciones=${pendientes.length}`);
