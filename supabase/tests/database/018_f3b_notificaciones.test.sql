@@ -277,7 +277,7 @@ select is((select count(*)::int from operacion.aviso where codigo = 'posicion_so
 
 -- Triggers: periodos (NT-047) y altas de acceso (NT-095) --------------------------------------------------------------------------------------
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('f3b.notif.c@example.test', 'socio', 'Angelo', false);
-select is((select count(*)::int from operacion.aviso where codigo = 'usuario_alta_o_rol'), (select count(*)::int from operacion.aviso where codigo = 'usuario_alta_o_rol' and severidad = 'C'), 'NT-095: un alta de usuario es critica');
+select is((select count(*)::int from operacion.aviso where codigo = 'usuario_alta_o_rol'), (select count(*)::int from operacion.aviso where codigo = 'usuario_alta_o_rol' and severidad = 'I'), 'NT-095: un alta de usuario es informativa (auditoria 14-nov)');
 select ok((select count(*) from operacion.aviso where codigo = 'usuario_alta_o_rol') >= 1, 'y deja el aviso');
 select is((select payload::text from operacion.aviso where codigo = 'usuario_alta_o_rol' order by id desc limit 1), '{"rol": "socio", "activo": false}', 'sin el correo ni datos personales en el aviso');
 select is((select count(*)::int from notificacion.entrega e join operacion.aviso a on a.id = e.notificacion_id where a.codigo = 'usuario_alta_o_rol' and e.canal = 'telegram'), 0, 'nunca por Telegram');
