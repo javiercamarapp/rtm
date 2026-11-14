@@ -251,6 +251,8 @@ const ESTADO_LEGIBLE: Record<string, string> = {
   pago_reportado: 'Pago reportado (falta que el otro socio lo confirme)',
   no_pagado: 'Pendiente de pago',
   pagado: 'Pagado',
+  recibida_parcial: 'Recibida en parte (faltan piezas por llegar)',
+  recibida: 'Recibida completa',
   confirmado: 'Confirmado',
 };
 
@@ -266,6 +268,7 @@ function lineasDeResultado(j: ResultadoSql): CifraServidor[] {
   if (typeof j.pedido === 'string') salida.push({ tipo: 'folio', etiqueta: 'Pedido', folio: j.pedido });
   if (typeof j.compra === 'string') salida.push({ tipo: 'folio', etiqueta: 'Compra', folio: j.compra });
   if (typeof j.estado === 'string') salida.push({ tipo: 'texto', etiqueta: 'Estado', texto: ESTADO_LEGIBLE[j.estado] ?? j.estado });
+  if (typeof j.pendientes === 'number' && typeof j.piezas_acumuladas === 'number') salida.push({ tipo: 'texto', etiqueta: 'Avance de la compra', texto: `llevan ${j.piezas_acumuladas} de ${String(j.piezas_facturadas ?? '')} piezas; pendientes ${j.pendientes}` });
   if (typeof j.pendiente_cent === 'number') salida.push({ tipo: 'pesos', etiqueta: 'Pendiente de pago del pedido', centavos: BigInt(j.pendiente_cent) });
   if (j.comprobante_telegram === true) salida.push({ tipo: 'texto', etiqueta: 'Comprobante', texto: 'adjunto (solo se guarda su huella; no se lee)' });
   if (Array.isArray(j.folios)) salida.push({ tipo: 'texto', etiqueta: 'Folios', texto: (j.folios as string[]).join(', ') });
@@ -281,6 +284,7 @@ function efectoDeSimulacion(e: Record<string, unknown>): CifraServidor[] {
     salida.push({ tipo: 'texto', etiqueta: l.etiqueta, texto: `${l.piezas} pz a ${formatearMoneda(BigInt(l.precio_cent))} = ${formatearMoneda(BigInt(l.importe_cent))}` });
   }
   const pesos = (k: string, etiqueta: string) => { if (typeof e[k] === 'number') salida.push({ tipo: 'pesos', etiqueta, centavos: BigInt(e[k] as number) }); };
+  if (typeof e.piezas_ahora === 'number' && typeof e.pendientes === 'number') salida.push({ tipo: 'texto', etiqueta: 'Llegada', texto: `${e.piezas_ahora} pz ahora; llevaran ${String(e.piezas_acumuladas ?? '')} de ${String(e.piezas_facturadas ?? '')}; pendientes ${e.pendientes}` });
   pesos('mercancia_cent', 'Mercancia');
   pesos('envio_cent', 'Envio cobrado');
   pesos('guia_cent', 'Guia');

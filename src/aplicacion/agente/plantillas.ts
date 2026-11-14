@@ -299,7 +299,7 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
       l.push(`Compra: ${r.citaUsuario(i.compra_folio ?? '')}`, `Estado: ${i.estado === 'enviada' ? 'enviada (en trayecto)' : 'llego a Merida'}`);
       break;
     case 'compra_recepcion':
-      l.push(`Compra: ${r.citaUsuario(i.compra_folio ?? '')}`, ...(i.lineas.length === 0 ? ['Recepcion TOTAL de lo pedido'] : ['Recepcion PARCIAL:', ...lineasDe(i.lineas)]));
+      l.push(`Compra: ${r.citaUsuario(i.compra_folio ?? '')}`, ...(i.lineas.length === 0 ? ['Recepcion TOTAL de lo pedido (si la compra ya recibio parte, se recibe solo el saldo pendiente)'] : ['Recepcion PARCIAL (la compra queda abierta hasta que llegue todo o se cierre la recepcion en el software):', ...lineasDe(i.lineas)]));
       break;
     case 'gasto_servicio':
       l.push(`Servicio: ${r.citaUsuario(i.servicio_texto)}`, ...(i.monto_usd_centavos !== null ? [`Cargo en dolares: ${r.pesos(BigInt(i.monto_usd_centavos))} USD`] : [monto(i.monto_mxn_centavos ?? 0)]), `Lo pago: ${nombreQuien(i.pagado_por)} (queda como reembolso pendiente a ese socio)`);
