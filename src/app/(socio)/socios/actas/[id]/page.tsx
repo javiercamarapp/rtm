@@ -52,8 +52,8 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
             secundarias={(c.estado !== 'anulado' || pendiente) ? (
               <>
                 {c.estado !== 'anulado' && <a className="rtm-boton-item" href={`/socios/actas/${c.id}/pdf`} title="Descargar el acta en PDF" data-testid="acta-pdf">PDF del acta</a>}
-                {pendiente && <BotonAccion texto="Anular" accion="anular_cierre_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Anular ${c.folio}`} />}
-                {c.estado === 'cerrado' && c.tipo === 'periodo' && !c.corregida && <BotonAccion texto="Contra-acta" accion="contra_acta_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Corregir ${c.folio} con una contra-acta`} />}
+                {pendiente && <BotonAccion variante="item" texto="Anular" accion="anular_cierre_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Anular ${c.folio}`} />}
+                {c.estado === 'cerrado' && c.tipo === 'periodo' && !c.corregida && <BotonAccion variante="item" texto="Contra-acta" accion="contra_acta_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Corregir ${c.folio} con una contra-acta`} />}
               </>
             ) : undefined}
           />

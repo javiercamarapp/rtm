@@ -53,6 +53,11 @@
 .rtm-kr-marcas label { display: flex; align-items: center; gap: var(--rtm-e-2); padding: 4px 6px; border-radius: var(--rtm-r-1); font-size: var(--rtm-t-cuerpo); cursor: pointer; }
 .rtm-kr-marcas label:hover { background: var(--rtm-tint); }
 .rtm-kr-marcas label small { margin-left: auto; color: var(--rtm-ink-3); font-variant-numeric: tabular-nums; }
+.rtm-kr-marcas input[type='checkbox'] { width: 18px; height: 18px; margin: 0; accent-color: var(--rtm-ink); }
+/* Campo en dos filas (etiqueta arriba, seleccion abajo) dentro del desplegable de filtros. */
+.rtm-kr-marcas .rtm-bb-campo-fila { display: grid; gap: 4px; }
+.rtm-kr-marcas .rtm-bb-campo-fila select { width: 100%; }
+@media (pointer: coarse) { .rtm-kr-marcas label { min-height: 44px; } }
 
 /* Rejilla y tarjeta */
 .rtm-kr-rejilla { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(188px, 1fr)); gap: var(--rtm-e-3); }

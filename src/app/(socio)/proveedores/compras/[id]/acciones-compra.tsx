@@ -34,7 +34,7 @@ export function AccionesCompra({ compra }: { compra: CompraDetalle }) {
   const hayMenu = enCamino || anulable;
   const secundarias = hayMenu ? (
     <>
-      {enCamino && <div className="rtm-bb-items"><FormularioGuia compraId={compra.id} folio={compra.folio} /></div>}
+      {enCamino && <FormularioGuia variante="item" compraId={compra.id} folio={compra.folio} />}
       {e === 'confirmada' && <BotonAccion variante="item" boton="Llegó a Mérida" accion="marcar_llego_merida" args={{ p_compra: compra.id }} testid="oc-llego" />}
       {anulable && (
         <DialogoSimple variante="item" boton="Anular orden" titulo={`Anular ${compra.folio}`} accion="anular_compra" args={{ p_compra: compra.id }} motivo="p_motivo"

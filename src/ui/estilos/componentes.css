@@ -11,6 +11,8 @@
 .rtm-dt-grupo:last-child .rtm-dt-fila:hover { background: var(--rtm-tint); }
 .rtm-dt-celda a { text-decoration: none; font-weight: 600; }
 .rtm-dt-celda a:hover { text-decoration: underline; }
+/* Acciones dentro de una celda: una sola fila, sin partirse en dos renglones de alto. */
+.rtm-dt-celda .rtm-acciones-fila { flex-wrap: nowrap; white-space: nowrap; gap: 6px; }
 .rtm-dt-aviso { padding: 8px var(--rtm-e-3); border: 1px dashed var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-tint); display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 .rtm-dt-aviso p { margin: 0; color: var(--rtm-ink-2); }
 .rtm-esqueleto { display: block; height: 10px; width: 70%; border-radius: var(--rtm-r-pildora); background: var(--rtm-fill-active); }

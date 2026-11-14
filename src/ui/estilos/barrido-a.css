@@ -1,11 +1,5 @@
 /* Barrido de UI compacta, area A (14-nov). Solo reglas con prefijo rtm-ba- propias de este barrido. */
 
-/* Botones de acciones de dominio (dialogos, un clic) dentro del menu "Mas" de BarraAcciones: se ven como filas de menu. */
-.rtm-ba-a-menu { display: flex; flex-direction: column; gap: 1px; }
-.rtm-ba-a-menu > .rtm-boton { display: flex; align-items: center; width: 100%; height: 32px; padding: 0 10px; box-sizing: border-box; border: 0; border-radius: 6px; background: transparent; color: var(--rtm-ink); font-size: 13px; font-weight: 500; text-align: left; white-space: nowrap; }
-.rtm-ba-a-menu > .rtm-boton:hover:not(:disabled) { background: var(--rtm-tint); }
-.rtm-ba-a-menu > .rtm-boton:focus-visible { outline-offset: -2px; }
-@media (pointer: coarse) { .rtm-ba-a-menu > .rtm-boton { min-height: 44px; } }
 .rtm-ba-a-saldo { margin: 0; white-space: nowrap; }
 
 /* Filtros plegables: desplegable flotante que no ocupa alto en la pagina; la fila queda en una sola linea. */
