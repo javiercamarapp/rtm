@@ -1,5 +1,6 @@
 // Lecturas de la pagina del inventario de proveedores con la sesion del socio (api.prov_*). Nunca escribe.
 import type { LlamadaProveedores } from '@/infra/proveedores/postgres';
+import type { DatosTablero } from '@/dominio/proveedores/tablero';
 import { crearClienteServidor } from './cliente-servidor';
 
 export interface FilaInventarioProv {
@@ -36,4 +37,12 @@ export async function pantallaProveedores(): Promise<PantallaProveedores> {
   const { data, error } = await sb.rpc('prov_inventario');
   if (error) throw new Error(`prov_inventario: ${error.message}`);
   return data as PantallaProveedores;
+}
+
+/** Tablero de "Lo que hay en Karen": modelos con sabores, ventas propias, cobertura y recomendaciones (cuentas hechas en SQL). */
+export async function tableroKaren(): Promise<DatosTablero> {
+  const sb = await crearClienteServidor();
+  const { data, error } = await sb.rpc('prov_tablero');
+  if (error) throw new Error(`prov_tablero: ${error.message}`);
+  return data as DatosTablero;
 }

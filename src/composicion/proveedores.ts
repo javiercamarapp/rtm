@@ -2,7 +2,9 @@
 import { prepararListaParaCliente, type PeticionLista } from '@/aplicacion/proveedores/lista';
 import type { ResultadoLista } from '@/dominio/proveedores/lista_cliente';
 import { ContextoNegocioDb, DatosListaDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
-import { llamadaProveedoresSocio, pantallaProveedores, type PantallaProveedores } from '@/infra/supabase/proveedores';
+import { llamadaProveedoresSocio, pantallaProveedores, tableroKaren, type PantallaProveedores } from '@/infra/supabase/proveedores';
+import { bloqueoDeActualizar, type DatosTablero } from '@/dominio/proveedores/tablero';
+import { lecturaManualDeProveedores } from './produccion';
 import { exigirSocio } from './acceso';
 
 export async function proveedoresDeSocio(): Promise<PantallaProveedores> {
@@ -15,4 +17,33 @@ export async function listaParaClienteDeSocio(peticion: PeticionLista): Promise<
   await exigirSocio();
   const db = await llamadaProveedoresSocio();
   return prepararListaParaCliente({ repo: new RepositorioProveedorDb(db), contexto: new ContextoNegocioDb(db), datos: new DatosListaDb(db), reloj: () => new Date() }, peticion);
+}
+
+export async function tableroDeSocio(): Promise<DatosTablero> {
+  await exigirSocio();
+  return tableroKaren();
+}
+
+export type ResultadoActualizar =
+  | { estado: 'bloqueada'; motivo: string; mensaje: string }
+  | { estado: 'ok'; detalle: string }
+  | { estado: 'ya_en_curso' }
+  | { estado: 'error' };
+
+/**
+ * "Actualizar ahora". Cada comprobacion se repite en el servidor con la frescura de la base (la pantalla pudo quedar vieja): interruptor apagado, tope de 40 al dia,
+ * bloqueo del sitio y enfriamiento de 10 minutos. Con el interruptor apagado jamas se toca la fuente. El ciclo vuelve a respetar el interruptor y el presupuesto.
+ */
+export async function actualizarAhoraDeSocio(): Promise<ResultadoActualizar> {
+  await exigirSocio();
+  const { frescura: f } = await pantallaProveedores();
+  const bloqueo = bloqueoDeActualizar(f, new Date());
+  if (bloqueo) return { estado: 'bloqueada', ...bloqueo };
+  const r = await lecturaManualDeProveedores();
+  const cuerpo = r.cuerpo as { estado?: string; detalle?: string } | null;
+  if (r.status !== 200 || !cuerpo) return { estado: 'error' };
+  if (cuerpo.estado === 'ya_reclamada') return { estado: 'ya_en_curso' };
+  if (cuerpo.estado === 'omitida') return { estado: 'bloqueada', motivo: 'omitida', mensaje: cuerpo.detalle === 'sin fuente configurada' ? 'La fuente de Karen no está configurada en el servidor.' : 'La lectura está apagada en el servidor.' };
+  if (cuerpo.estado === 'error') return { estado: 'error' };
+  return { estado: 'ok', detalle: cuerpo.detalle ?? 'ok' };
 }
