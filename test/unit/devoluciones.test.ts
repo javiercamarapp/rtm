@@ -51,10 +51,16 @@ const lineas: RecepcionCompra['lineas'] = [
 ];
 
 describe('armarLlegada y progresoRecepcion', () => {
-  it('suma por sabor y avisa, sin bloquear, si llega mas de lo pendiente', () => {
+  it('rechaza una llegada que pasa de lo pendiente (no se recibe mas de lo pedido)', () => {
     const r = armarLlegada(lineas, [{ linea_id: 1, sku_id: 10, piezas: '45' }]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('solo faltan 40');
+  });
+  it('suma varios sabores de un renglon y acepta exactamente el pendiente', () => {
+    const r = armarLlegada(lineas, [{ linea_id: 1, sku_id: 10, piezas: '25' }, { linea_id: 1, sku_id: 12, piezas: '15' }]);
     expect(r.ok).toBe(true);
-    expect(r.avisos?.[0]).toContain('faltaban 40');
+    const r2 = armarLlegada(lineas, [{ linea_id: 1, sku_id: 10, piezas: '25' }, { linea_id: 1, sku_id: 12, piezas: '16' }]);
+    expect(r2.ok).toBe(false);
   });
   it('rechaza llegada vacia, decimales y renglones ajenos', () => {
     expect(armarLlegada(lineas, [{ linea_id: 1, sku_id: 10, piezas: '' }]).ok).toBe(false);
