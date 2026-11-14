@@ -34,7 +34,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
     <SubnavContabilidad />
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow="Contabilidad · caja y liquidez" titulo={sd ? 'Todavía no hay movimientos de caja' : `Liquidez de ${m(c.l01_liquidez_cent)}`} descripcion="Entradas y salidas de fondos, saldo por lugar o persona y liquidez después del pago semanal al proveedor." />
-      <FiltrosUrl etiquetaAria="Periodo" restablecer="/contabilidad/caja">
+      <FiltrosUrl etiquetaAria="Periodo" restablecer="/contabilidad/caja" plegable={{ etiqueta: 'Periodo' }}>
         <Campo etiqueta="Periodo"><select name="dias" defaultValue={String(per.dias ?? '90')}><option value="30">30 días</option><option value="90">90 días</option><option value="180">180 días</option><option value="365">12 meses</option></select></Campo>
       </FiltrosUrl>
       <KpiLinea etiquetaAria="Resumen de caja" celdas={[

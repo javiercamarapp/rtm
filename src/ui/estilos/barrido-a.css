@@ -23,5 +23,5 @@
 @media (max-width: 767px) { .rtm-ds-filtros-linea { flex-wrap: wrap; } .rtm-ds-filtros-linea > .rtm-ba-buscar { flex-basis: 100%; max-width: none; } }
 
 /* Barra de un solo desplegable (libro de movimientos): el formulario completo flota y no ocupa alto. */
-.rtm-ba-barra-filtros { display: flex; align-items: center; min-height: var(--rtm-ctl-alto); }
+.rtm-ba-barra-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-v-acciones); min-height: var(--rtm-ctl-alto); }
 .rtm-ba-fp-panel:has(> .rtm-a2-filtros) { width: min(760px, 92vw); }

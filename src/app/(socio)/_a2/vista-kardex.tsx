@@ -119,7 +119,7 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
         descripcion={vS ? 'Entradas, salidas y existencias del sabor. El valor es a costo del modelo: la base guarda piezas por sabor, no su costo.' : 'Entradas, salidas y existencias con cantidad, valor unitario y valor total; costo promedio móvil por modelo.'}
         acciones={<a className="rtm-boton" href={`/inventario/kardex/exportar${exportar.size ? `?${exportar}` : ''}`} data-testid="kardex-exportar">Exportar CSV</a>}
       />
-      <FiltrosUrl etiquetaAria="Filtros del kárdex" restablecer={base}>
+      <FiltrosUrl etiquetaAria="Filtros del kárdex" restablecer={base} plegable>
         {modo === 'consolidado' && (
           <Campo etiqueta="Marca">
             <select name="marca" defaultValue={marca ?? ''}><option value="">Todas</option>{k.marcas.map((x) => <option key={x} value={x}>{x}</option>)}</select>

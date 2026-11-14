@@ -32,7 +32,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow="Inventario · marcas y proveedores" titulo={sd ? 'Todavía no hay existencias por marca' : `${r.marcas.length} marcas en la bodega`} descripcion="Piezas, valor a costo, cobertura y rotación por marca, con su proveedor más reciente y la cuenta con cada proveedor." />
-      <FiltrosUrl etiquetaAria="Periodo" restablecer="/inventario/marcas">
+      <FiltrosUrl etiquetaAria="Periodo" restablecer="/inventario/marcas" plegable={{ etiqueta: 'Periodo' }}>
         <Campo etiqueta="Periodo"><select name="dias" defaultValue={String(per.dias ?? '30')}><option value="7">7 días</option><option value="30">30 días</option><option value="90">90 días</option></select></Campo>
       </FiltrosUrl>
       <KpiLinea etiquetaAria="Resumen por marca" celdas={[

@@ -184,20 +184,22 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
       {vista === 'existencias' && (
         <>
           <FiltroCatalogo etiquetaAria="Buscar y filtrar por marca" placeholder="Buscar modelo, marca o sabor" marcas={opcionesMarca} atajos={atajos} />
-          <FiltrosUrl etiquetaAria="Filtros del inventario" restablecer={base}>
-            <Campo etiqueta="Periodo"><select name="dias" defaultValue={String(per.dias ?? 'todo')}><option value="7">7 días</option><option value="30">30 días</option><option value="90">90 días</option></select></Campo>
-            {elegidas.length > 0 && <input type="hidden" name="marca" value={elegidas.join(',')} />}
-            {q && <input type="hidden" name="q" value={q} />}
-            {filtro && <input type="hidden" name="estado" value={filtro.id} />}
-            {soloCero && <input type="hidden" name="solo" value="cero" />}
-            {soloApartado && <input type="hidden" name="solo" value="apartado" />}
+          <div className="rtm-ba-barra-filtros">
             <MenuFiltro nombre="Estado" testid="filtro-estado" opciones={[
               { href: chipLink({ estado: null, solo: null }), etiqueta: 'Todos', activa: !filtro && !soloCero && !soloApartado },
               ...FILTROS.map((f) => ({ href: chipLink({ estado: f.id, solo: null }), etiqueta: `${f.etiqueta} (${cuenta(f)})`, activa: filtro?.id === f.id })),
               { href: chipLink({ solo: 'cero', estado: null }), etiqueta: `Cero o negativa (${agotados})`, activa: soloCero },
               { href: chipLink({ solo: 'apartado', estado: null }), etiqueta: 'Con apartado', activa: soloApartado },
             ]} />
-          </FiltrosUrl>
+            <FiltrosUrl etiquetaAria="Filtros del inventario" restablecer={base} plegable={{ etiqueta: 'Periodo', activos: per.dias ? 1 : 0 }}>
+              <Campo etiqueta="Periodo"><select name="dias" defaultValue={String(per.dias ?? 'todo')}><option value="7">7 días</option><option value="30">30 días</option><option value="90">90 días</option></select></Campo>
+              {elegidas.length > 0 && <input type="hidden" name="marca" value={elegidas.join(',')} />}
+              {q && <input type="hidden" name="q" value={q} />}
+              {filtro && <input type="hidden" name="estado" value={filtro.id} />}
+              {soloCero && <input type="hidden" name="solo" value="cero" />}
+              {soloApartado && <input type="hidden" name="solo" value="apartado" />}
+            </FiltrosUrl>
+          </div>
 
           <Tarjeta plana className="rtm-a2-tabla" titulo="Existencias por modelo y sabor" descripcion={`${visibles.length} modelos · abre un modelo para ver sus sabores`}>
             <DataTable
