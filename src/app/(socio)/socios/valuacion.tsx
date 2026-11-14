@@ -66,6 +66,7 @@ export function DesgloseIgualacion({ c, yo }: { c: CuentaSociosValuacion; yo: So
   const cobros = menor ? (c.socios.find((s) => s.socio === menor)?.fondos_detalle ?? []) : [];
   const indicaciones = (['Angelo', 'Javier'] as Socio[]).filter((s) => yo === null || s === yo).flatMap((s) => indicacionesSocio(c, s, m).map((t) => ({ s, t })));
   return (
+    <div data-testid="desglose-igualacion">
     <Tarjeta titulo="Por qué hay diferencia y cómo igualar" descripcion="La valuación resta los fondos de la sociedad que cada uno tiene cobrados; siempre debemos estar idénticos" acciones={<Estado tono={ig.igualados ? 'ok' : 'atencion'}>{ig.igualados ? 'Igualados' : 'Por igualar'}</Estado>}>
       <p className="sv-frase" data-testid="faltan-identicos">{textoFaltan(c, m)}</p>
       {!ig.igualados && menor && ig.mayor && (
@@ -94,6 +95,7 @@ export function DesgloseIgualacion({ c, yo }: { c: CuentaSociosValuacion; yo: So
       )}
       {ig.coincide_con_libro ? null : !ig.igualados && <p className="sv-explica">Con retiros desiguales, estos pasos igualan valuaciones; la diferencia de aportaciones del libro es {m(ig.diferencia_libro_cent)}.</p>}
     </Tarjeta>
+    </div>
   );
 }
 

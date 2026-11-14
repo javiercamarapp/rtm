@@ -69,6 +69,7 @@ export function AccionesCuenta({ correo, activo, accion, accionCorreo }: { corre
           <p>La cuenta {correo} dejará de poder entrar y se cerrarán sus sesiones. Se crea una cuenta nueva del mismo tipo y nombre con el correo que escribas; después crea su acceso con «npm run acceso:cuentas».</p>
           <Campo etiqueta="Correo nuevo" valor={nuevo} onCambio={setNuevo} testid="campo-correo-nuevo" />
           <Campo etiqueta="Motivo (opcional)" valor={motivo} onCambio={setMotivo} testid="campo-motivo-correo" ayuda="Queda en la auditoría. No escribas correos ni datos personales: se omiten." />
+          {mensaje && <p className="rtm-error" role="alert" data-testid="error-cambio-correo">{mensaje}</p>}
         </ConfirmDialog>
       )}
       {abierto && (
