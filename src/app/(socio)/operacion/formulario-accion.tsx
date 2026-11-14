@@ -23,6 +23,10 @@ interface Props {
   fijos?: Record<string, unknown>;
   primario?: boolean;
   chico?: boolean;
+  /** 'item': fila de un menu desplegable (BarraAcciones) en lugar de boton con contorno. */
+  variante?: 'boton' | 'item';
+  /** Texto largo para title y lectores cuando la etiqueta visible es corta. */
+  descripcion?: string;
   testid?: string;
   nota?: ReactNode;
   /** Solo desde componentes de cliente: ajusta los argumentos antes de enviarlos (por ejemplo armar un jsonb). */
@@ -32,7 +36,7 @@ interface Props {
 }
 
 /** Formulario en dialogo para una accion de la lista cerrada: convierte montos a centavos enteros, manda la clave de idempotencia y muestra el error de la base tal cual. */
-export function FormularioAccion({ boton, titulo, confirmar, accion, campos, fijos = {}, primario, chico, testid, nota, transformar, avisoVivo }: Props) {
+export function FormularioAccion({ boton, titulo, confirmar, accion, campos, fijos = {}, primario, chico, variante, descripcion, testid, nota, transformar, avisoVivo }: Props) {
   const { correr, ocupado, error, limpiarError } = useAccion();
   const [abierto, setAbierto] = useState(false);
   const inicial = () => Object.fromEntries(campos.map((c) => [c.nombre, c.defecto ?? (c.tipo === 'seleccion' ? (c.opciones?.[0]?.valor ?? '') : '')]));
@@ -62,7 +66,7 @@ export function FormularioAccion({ boton, titulo, confirmar, accion, campos, fij
 
   return (
     <>
-      <button type="button" className={`rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} onClick={() => { limpiarError(); setValores(inicial()); setAbierto(true); }} data-testid={testid}>{boton}</button>
+      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} title={descripcion} onClick={() => { limpiarError(); setValores(inicial()); setAbierto(true); }} data-testid={testid}>{boton}</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo={titulo} confirmar={confirmar} ocupado={ocupado} onConfirmar={enviar} onCancelar={cerrar}>
           {campos.map((c) => (

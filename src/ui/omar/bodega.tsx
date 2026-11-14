@@ -7,6 +7,7 @@ import { estadoVisible, ETIQUETA_ESTADO, TONO_ESTADO, tiempoRestante } from '@/d
 import type { Lectura, PiezaDisponible, Solicitud } from '@/dominio/omar/tipos';
 import { DataTable } from '../componentes/data-table';
 import { EstadoTexto } from '../componentes/estado-texto';
+import { ModeloMiniatura } from '../componentes/modelo';
 
 /** Lo que la pantalla dice cuando una lectura no trae datos: la funcion de la base aun no existe, o fallo. Nunca un cero inventado. */
 export function TextoLectura({ lectura, pendiente }: { lectura: Lectura<unknown>; pendiente: string }) {
@@ -32,7 +33,7 @@ export function ListaDisponible({ lectura }: { lectura: Lectura<PiezaDisponible[
       <DataTable plana densidad="densa" etiqueta="Disponible en tu bodega" clave={(p) => `${p.modelo}|${p.sabor}`} filas={filas}
         vacio={{ titulo: lectura.datos.length === 0 ? 'Bodega vacía' : 'Sin coincidencias', texto: lectura.datos.length === 0 ? 'No hay piezas en tu bodega ahora mismo.' : 'Ningún modelo o sabor coincide con la búsqueda.' }}
         columnas={[
-          { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (p) => p.modelo },
+          { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (p) => <span className="rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={p.modelo} tam="xs" /><span className="rtm-modelo-texto"><strong>{p.modelo}</strong></span></span> },
           { id: 's', titulo: 'Sabor', celda: (p) => p.sabor },
           { id: 'p', titulo: 'Disponible', numerica: true, prioridadMovil: 'principal', celda: (p) => formatearPiezas(p.piezas) },
         ]} />

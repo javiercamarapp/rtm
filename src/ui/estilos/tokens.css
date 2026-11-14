@@ -89,8 +89,13 @@
 
   /* Ritmo y densidad */
   --rtm-e-12: 48px;
-  --rtm-ritmo: 12px;
-  --rtm-pad-tarjeta: 14px;
+  /* Espaciado vertical compacto (14-nov): menos aire por altura sin tocar la lectura. Todas las paginas lo heredan. */
+  --rtm-ritmo: 10px;            /* entre secciones y bloques de una pagina */
+  --rtm-pad-tarjeta: 12px;      /* relleno de tarjetas */
+  --rtm-v-gap-tarjeta: 6px;     /* entre titulo y cuerpo dentro de una tarjeta */
+  --rtm-v-encabezado: 6px 16px; /* fila x columna del encabezado de pagina */
+  --rtm-v-acciones: 6px;        /* entre botones de una barra de acciones */
+  --rtm-boton-alto: 32px;       /* altura del boton compacto (44 en pantallas tactiles) */
   --rtm-ancho-tablero: 1280px; --rtm-ancho-normal: 1120px; --rtm-ancho-formulario: 880px; --rtm-ancho-nota: 720px;
 
   /* Controles: 8px de radio; pildora solo en chips y segmentados */

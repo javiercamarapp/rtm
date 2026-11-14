@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { notFound } from 'next/navigation';
 import { lectorDeSocio } from '@/composicion/catalogo';
 import { operacionDeSocio } from '@/composicion/operacion';
@@ -61,7 +62,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
         eyebrow={`Ficha de cliente · ${etiquetaHoy()}`}
         titulo={f.nombre}
         descripcion={`${f.tabulador.length} modelos con precio vigente. Un precio de una nota no cambia el tabulador: solo cambia cuando un socio lo indica.`}
-        acciones={<><Link className="rtm-boton rtm-boton-primario" href={`/clientes/${f.id}/precios`} data-testid="editar-precios">Editar precios</Link><Link className="rtm-boton" href={`/clientes/${f.id}/editar`}>Editar cliente</Link><Link className="rtm-boton" href={`/pedidos/nuevo?cliente=${f.id}`}>Nuevo pedido</Link>{ofrecerBodega && <AltaPersonaBodega clienteId={f.id} nombre={f.nombre} />}</>}
+        acciones={<BarraAcciones etiquetaAria="Acciones del cliente" primarias={<><Link className="rtm-boton" href={`/pedidos/nuevo?cliente=${f.id}`}>Nuevo pedido</Link><Link className="rtm-boton rtm-boton-primario" href={`/clientes/${f.id}/precios`} data-testid="editar-precios">Editar precios</Link></>} secundarias={<><Link className="rtm-boton-item" href={`/clientes/${f.id}/editar`}>Editar cliente</Link>{ofrecerBodega && <AltaPersonaBodega clienteId={f.id} nombre={f.nombre} variante="item" />}</>} />}
       />
       <div className="rtm-a1-etiquetas" aria-label="Datos del cliente">
         <Chip>{TIPOS[f.tipo] ?? f.tipo}</Chip>

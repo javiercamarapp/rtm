@@ -50,7 +50,7 @@ export default async function PaginaSocios() {
         eyebrow="Cuentas de socios"
         titulo="Cuenta de socios"
         descripcion="Valuación de cada socio: lo que invirtió más las utilidades acumuladas, menos lo que se ha pagado."
-        acciones={<div className="a3-acciones"><Link className="rtm-boton" href="/socios/Angelo/historial" data-testid="ir-historial-Angelo">Historial de Angelo</Link><Link className="rtm-boton" href="/socios/Javier/historial" data-testid="ir-historial-Javier">Historial de Javier</Link><Link className="rtm-boton" href="/contabilidad/valuacion/historial">Historial de valuación</Link><Link className="rtm-boton" href="/socios/cascada">Cascada y actas</Link><AccionesSocios /></div>}
+        acciones={<AccionesSocios />}
       />
       {!q.libro_conciliado && <Aviso tono="atencion" titulo="Revisar el libro: una identidad contable no se cumple.">{q.fallas} de {q.verificaciones.length} verificaciones no coinciden. Abre «Explicar este número» en el indicador Libro para ver cuáles y con qué cifras; el detalle está en Contabilidad, Comprobaciones.</Aviso>}
 

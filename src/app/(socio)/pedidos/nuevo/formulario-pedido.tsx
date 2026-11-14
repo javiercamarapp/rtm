@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { bigintACentavos } from '@/dominio/operacion/json';
 import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { CatalogoPedido, Origen } from '@/dominio/operacion/tipos';
+import { ModeloTarjeta } from '@/ui/componentes/modelo';
 import { ORIGEN } from '../../operacion/etiquetas';
 import { centavosDeTexto, useAccion } from '../../operacion/usar-accion';
 
@@ -92,6 +93,7 @@ export function FormularioPedido({ clienteId, clienteNombre, catalogo }: { clien
               {modelos.map((m) => <option key={m.id} value={m.id}>{m.marca} · {m.nombre}{m.estado === 'sin_disponibilidad' ? ' (sin disponibilidad)' : ''}</option>)}
             </select>
           </label>
+          {modeloId !== '' && (() => { const x = modelos.find((y) => y.id === modeloId); return x ? <ModeloTarjeta modelo={x.nombre} marca={x.marca} tam="s" testid="modelo-elegido" /> : null; })()}
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Sabor
             <select className="rtm-campo" value={skuId} onChange={(e) => setSkuId(e.target.value === '' ? '' : Number(e.target.value))} disabled={modeloId === ''} data-testid="sabor">
               <option value="">Elige un sabor</option>
