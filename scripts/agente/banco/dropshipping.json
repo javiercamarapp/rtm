@@ -311,12 +311,12 @@
   "id": "dro-115",
   "categoria": "dropshipping",
   "autor": "javier",
-  "texto": "dropshipping para Ariel: 10 zafiro 5k sandia y 10 zafiro 5k mango, a credito una semana, entrega a Carolina Ficticia",
+  "texto": "dropshipping para Cliente Alfa: 10 zafiro 5k sandia y 10 zafiro 5k mango, a credito una semana, entrega a Carolina Ficticia",
   "esperado": {
    "acciones": [
     {
      "tipo": "pedido",
-     "cliente": "ariel",
+     "cliente": "cliente alfa",
      "lineas": [
       {
        "m": "zafiro 5k",
@@ -369,12 +369,12 @@
   "id": "dro-116",
   "categoria": "dropshipping",
   "autor": "javier",
-  "texto": "pedido de Beto por dropshipping: 18 orbita 20k durazno, a credito a 2 semanas, destinatario Tomas Ejemplo",
+  "texto": "pedido de Cliente Beta por dropshipping: 18 orbita 20k durazno, a credito a 2 semanas, destinatario Tomas Ejemplo",
   "esperado": {
    "acciones": [
     {
      "tipo": "pedido",
-     "cliente": "beto",
+     "cliente": "cliente beta",
      "lineas": [
       {
        "m": "orbita 20k",
@@ -417,12 +417,12 @@
   "id": "dro-117",
   "categoria": "dropshipping",
   "autor": "javier",
-  "texto": "Lupita pide por dropshipping 12 vega 9k fresa para Valeria Muestra, costo de Angelo 66,800 pagadero el viernes",
+  "texto": "Cliente Gamma pide por dropshipping 12 vega 9k fresa para Valeria Muestra, costo de Angelo 58,400 pagadero el viernes",
   "esperado": {
    "acciones": [
     {
      "tipo": "pedido",
-     "cliente": "lupita",
+     "cliente": "cliente gamma",
      "lineas": [
       {
        "m": "vega 9k",
@@ -566,7 +566,7 @@
   "id": "dro-121",
   "categoria": "dropshipping",
   "autor": "javier",
-  "texto": "dropshipping para Ariel de orbita 20k mango y uva",
+  "texto": "dropshipping para Cliente Alfa de orbita 20k mango y uva",
   "esperado": {
    "acciones": [
     {

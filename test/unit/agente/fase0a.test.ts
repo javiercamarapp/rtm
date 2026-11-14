@@ -5,7 +5,7 @@ import { crearClienteOpenRouter, extraerObjetoJson, type FetchJson } from '@/inf
 import { crearAgenteEnMemoria } from '@/composicion/agente';
 import { ErrorLlm } from '@/aplicacion/agente/puertos';
 import { EsquemaRespuesta, adaptarEsquemaParaProveedor, esquemaJsonDeRespuesta, validarRespuesta } from '@/aplicacion/agente/esquemas';
-import { MAX_TOKENS_SALIDA_R1, SISTEMA_R1, estimarTokens, estimarTokensSolicitud } from '@/aplicacion/agente/prompt';
+import { MARGEN_ESTIMACION, MAX_TOKENS_SALIDA_R1, SISTEMA_R1, estimarTokens, estimarTokensSolicitud } from '@/aplicacion/agente/prompt';
 import { MODELOS, cadenaParaRol, peorCasoTokens } from '@/dominio/agente/modelos';
 import { MAX_LINEAS_CONTEO } from '@/dominio/agente/intenciones';
 import { updateTexto, IDS_SIMULADOS } from '@/infra/agente/updates';
@@ -44,7 +44,7 @@ describe('esquema para el proveedor', () => {
   it('sinRangos quita minLength/maxLength/minimum/maximum/minItems/maxItems/pattern y zod los sigue exigiendo', () => {
     const e = adaptarEsquemaParaProveedor(esquemaJsonDeRespuesta(), { sinRangos: true });
     for (const k of ['minLength', 'maxLength', 'minimum', 'maximum', 'minItems', 'maxItems', 'pattern']) expect(contiene(e, k)).toBe(false);
-    const fuera = validarRespuesta({ acciones: [{ tipo: 'pago', cliente_texto: 'Ariel', monto_centavos: 0, cuenta_destino_texto: null, pedido_folio: null, fuente_cita: 'x' }], sospecha_inyeccion: false, baja_certeza: false });
+    const fuera = validarRespuesta({ acciones: [{ tipo: 'pago', cliente_texto: 'Cliente Alfa', monto_centavos: 0, cuenta_destino_texto: null, pedido_folio: null, fuente_cita: 'x' }], sospecha_inyeccion: false, baja_certeza: false });
     expect(fuera.ok).toBe(false);
   });
 });
@@ -68,12 +68,13 @@ describe('listas largas (conteo de 40 sabores)', () => {
 describe('reserva del peor caso cuenta el esquema', () => {
   it('estimarTokensSolicitud suma el esquema: la reserva ya no queda en ~500 micro-USD', () => {
     const esquema = esquemaJsonDeRespuesta();
-    const usuario = '<mensaje autor="javier" fuente="texto">Ariel pago 85,550</mensaje>';
+    const usuario = '<mensaje autor="javier" fuente="texto">Cliente Alfa pago 71,260</mensaje>';
     const sinEsquema = estimarTokens(SISTEMA_R1, usuario);
     const conEsquema = estimarTokensSolicitud(SISTEMA_R1, usuario, esquema);
     expect(conEsquema).toBeGreaterThan(sinEsquema + 5000);
-    // Medido el 14-nov-2026: Haiku 10,964 tokens reales de entrada, Luna 4,316, DeepSeek 7,369. La estimacion debe cubrir al peor.
-    expect(conEsquema).toBeGreaterThanOrEqual(10_964);
+    // Medido el 14-nov-2026: Haiku hasta ~12.6 mil tokens reales de entrada (con reintentos), Luna 5.1 mil, DeepSeek 8.2 mil. La estimacion (con 10 % de holgura) debe cubrir al peor.
+    expect(conEsquema).toBeGreaterThanOrEqual(12_600);
+    expect(conEsquema).toBe(Math.ceil((sinEsquema + Math.ceil(JSON.stringify(esquema).length / 2)) * MARGEN_ESTIMACION));
     const reserva = peorCasoTokens(cadenaParaRol('texto'), conEsquema, MAX_TOKENS_SALIDA_R1);
     expect(reserva).toBeGreaterThan(1_137n); // el real medido por mensaje era ~1,137 micro-USD con Haiku
     expect(reserva).toBeLessThan(5_000n);
@@ -158,6 +159,37 @@ describe('tolerancia a la envoltura del JSON (json_object)', () => {
     const r = await crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion([HAIKU]));
     expect(validarRespuesta(r.contenido).ok).toBe(true);
     expect(validarRespuesta({ ...(r.contenido as object), extra: 1 }).ok).toBe(false);
+  });
+});
+
+describe('costo de intentos fallidos de la cadena', () => {
+  const invalido = (modelo: string, cost: number) => ({ model: modelo, choices: [{ message: { content: null }, finish_reason: 'content_filter' }], usage: { prompt_tokens: 4000, completion_tokens: 0, cost } });
+  it('un intento facturado que no sirve (filtro de contenido) se suma al costo del que responde', async () => {
+    const { f } = fetchGuionado([{ cuerpo: invalido(HAIKU, 0.0013) }, { cuerpo: bien(LUNA) }]);
+    const r = await crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion([HAIKU, LUNA]));
+    expect(r.modeloUsado).toBe(LUNA);
+    expect(r.costoMicroUsd).toBe(1300n + 350n);
+  });
+  it('un 5xx no se factura: no suma nada', async () => {
+    const { f } = fetchGuionado([{ ok: false, status: 503, cuerpo: {} }, { cuerpo: bien(LUNA) }]);
+    const r = await crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion([HAIKU, LUNA]));
+    expect(r.costoMicroUsd).toBe(350n);
+  });
+  it('si TODOS fallan, el error final lleva la suma de lo facturado', async () => {
+    const noJson = (modelo: string, cost: number) => ({ model: modelo, choices: [{ message: { content: 'no json' } }], usage: { prompt_tokens: 1, completion_tokens: 1, cost } });
+    const { f } = fetchGuionado([{ cuerpo: invalido(HAIKU, 0.0013) }, { cuerpo: noJson(LUNA, 0.0002) }]);
+    const err = await crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion([HAIKU, LUNA])).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ErrorLlm);
+    expect((err as ErrorLlm).costoMicroUsd).toBe(1500n);
+    expect((err as ErrorLlm).motivo).toBe('respuesta_invalida');
+  });
+  it('el agente LIQUIDA ese costo (no libera la reserva) cuando todos los proveedores fallaron facturando', async () => {
+    const { f } = fetchGuionado([{ cuerpo: invalido(HAIKU, 0.0013) }, { cuerpo: invalido(LUNA, 0.0002) }]);
+    const h = crearAgenteEnMemoria({ llm: crearClienteOpenRouter({ apiKey: 'k', fetch: f }), config: { confirmarMovimientos: false } });
+    const ids = IDS_SIMULADOS;
+    const r = await h.agente.procesarUpdate(updateTexto(h.contador, { de: ids.angelo, chat: ids.grupoSocios, texto: 'Cliente Norte 28 jupiter' }));
+    expect(r).toEqual({ estado: 'sin_ia' });
+    expect(h.presupuesto.snapshot()!.diaMicro).toBe(1500n);
   });
 });
 

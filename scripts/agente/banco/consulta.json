@@ -3,13 +3,13 @@
   "id": "con-068",
   "categoria": "consulta",
   "autor": "javier",
-  "texto": "saldo de Ariel",
+  "texto": "saldo de Cliente Alfa",
   "esperado": {
    "acciones": [
     {
      "tipo": "consulta",
      "consulta": "saldo",
-     "sujeto": "ariel"
+     "sujeto": "cliente alfa"
     }
    ]
   }

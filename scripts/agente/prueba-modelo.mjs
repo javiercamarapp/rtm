@@ -29,6 +29,8 @@ const args = Object.fromEntries(
 );
 const SALIDA = args.salida ? path.resolve(String(args.salida)) : null;
 if (!SALIDA) throw new Error('Falta --salida <carpeta> (fuera del repo).');
+const RAIZ_REPO = path.resolve(aqui, '..', '..');
+if (SALIDA === RAIZ_REPO || SALIDA.startsWith(RAIZ_REPO + path.sep)) throw new Error(`--salida no puede estar dentro del repo (${RAIZ_REPO}): los resultados llevan respuestas del modelo y no se versionan.`);
 fs.mkdirSync(SALIDA, { recursive: true });
 const TOPE_USD = Number(args.tope ?? 4);
 const MAX_SALIDA = Number(args['max-salida'] ?? MAX_TOKENS_SALIDA_R1);
@@ -51,7 +53,7 @@ function registrarGasto(prov, usd) {
 const excedido = () => gasto.total_usd >= TOPE_USD;
 
 // ------------------------------------------------------------------ catalogo ficticio (candidatos al prompt, como en produccion)
-const CLIENTES = ['Ariel', 'Beto', 'Lupita', 'Mauricio', 'Cliente Norte', 'Cliente Sur', 'Tienda La Esquina', 'Doña Chelo'].map((n, i) => ({ id: `c${i}`, nombre: n, alias: [] }));
+const CLIENTES = ['Cliente Alfa', 'Cliente Beta', 'Cliente Gamma', 'Cliente Delta', 'Cliente Norte', 'Cliente Sur', 'Tienda La Esquina', 'Tienda Demo Uno'].map((n, i) => ({ id: `c${i}`, nombre: n, alias: [] }));
 const MODELOS_CAT = ['Zafiro 5K', 'Orbita 20K', 'Nimbo 50K', 'Vega 9K', 'Cometa 30K'].map((n, i) => ({ id: `m${i}`, nombre: n, alias: [n.split(' ')[0]] }));
 
 // ------------------------------------------------------------------ banco
@@ -192,7 +194,8 @@ function evaluar(caso, acciones, sospechaModelo) {
 /** Guardia de cifras tal como la aplica agente.ts, separando alucinacion de error de escala (pesos en lugar de centavos). */
 function auditarCifras(texto, acciones) {
   const enFuente = valoresDeTexto(texto);
-  const enPiezas = valoresDeTexto(texto, { sinSufijoMultiplicador: true });
+  const enPiezas = valoresDeTexto(texto, { paraPiezas: true });
+  const textoPlano = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const r = { inventadas: [], escala: [], precios: [], ambiguas: [], ajenas_estricto: [] };
   for (const a of acciones) {
     for (const c of cifrasDeIntencion(a)) {
@@ -209,11 +212,11 @@ function auditarCifras(texto, acciones) {
     const visitar = (k, v) => {
       if (typeof v === 'number') {
         const big = BigInt(Math.round(v));
-        if (!enFuente.has(big) && !enFuente.has(big * 100n)) r.ajenas_estricto.push(`${a.tipo}.${k}=${v}`);
+        if (!enFuente.has(big) && !enPiezas.has(big * 100n)) r.ajenas_estricto.push(`${a.tipo}.${k}=${v}`);
       } else if (typeof v === 'string' && !['fuente_cita', 'pregunta'].includes(k)) {
+        // Texto libre (modelo_texto, cliente_texto...): sus digitos deben estar tal cual en el mensaje ("Zafiro 5K" copia el 5 del nombre del modelo, no es una cantidad).
         for (const m of v.matchAll(/\d[\d.,]*/g)) {
-          const vals = valoresDeTexto(m[0]);
-          if (vals.size && ![...vals].some((x) => enFuente.has(x))) r.ajenas_estricto.push(`${a.tipo}.${k}="${m[0]}"`);
+          if (!textoPlano.includes(m[0].replace(/[.,]+$/, ''))) r.ajenas_estricto.push(`${a.tipo}.${k}="${m[0]}"`);
         }
       } else if (Array.isArray(v)) v.forEach((x, i) => (typeof x === 'object' && x ? Object.entries(x).forEach(([kk, vv]) => visitar(`${k}.${i}.${kk}`, vv)) : visitar(`${k}.${i}`, x)));
     };

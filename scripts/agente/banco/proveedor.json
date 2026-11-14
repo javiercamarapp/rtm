@@ -3,13 +3,13 @@
   "id": "pro-043",
   "categoria": "proveedor",
   "autor": "javier",
-  "texto": "pague 30,500 a Karen",
+  "texto": "pague 27,400 a Karen",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago_proveedor",
      "proveedor": "karen",
-     "monto_pesos": 30500,
+     "monto_pesos": 27400,
      "pagado_por": "javier"
     }
    ]
@@ -51,13 +51,13 @@
   "id": "pro-046",
   "categoria": "proveedor",
   "autor": "javier",
-  "texto": "Cliente Norte mando 30,500 a Karen",
+  "texto": "Cliente Norte mando 27,400 a Karen",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago_proveedor",
      "proveedor": "karen",
-     "monto_pesos": 30500,
+     "monto_pesos": 27400,
      "cliente": "cliente norte"
     }
    ]

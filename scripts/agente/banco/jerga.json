@@ -3,12 +3,12 @@
   "id": "jer-082",
   "categoria": "jerga",
   "autor": "javier",
-  "texto": "ya cayeron los 6 mil de Beto",
+  "texto": "ya cayeron los 6 mil de Cliente Beta",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "beto",
+     "cliente": "cliente beta",
      "monto_pesos": 6000
     }
    ]
@@ -18,12 +18,12 @@
   "id": "jer-083",
   "categoria": "jerga",
   "autor": "javier",
-  "texto": "Mauricio me aventó 14 mil en efectivo",
+  "texto": "Cliente Delta me aventó 14 mil en efectivo",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "mauricio",
+     "cliente": "cliente delta",
      "monto_pesos": 14000
     }
    ]
@@ -33,12 +33,12 @@
   "id": "jer-084",
   "categoria": "jerga",
   "autor": "javier",
-  "texto": "me fie de 2 cajas de zafiro 5k sandia con Lupita, son 20 piezas",
+  "texto": "me fie de 2 cajas de zafiro 5k sandia con Cliente Gamma, son 20 piezas",
   "esperado": {
    "acciones": [
     {
      "tipo": "pedido",
-     "cliente": "lupita",
+     "cliente": "cliente gamma",
      "lineas": [
       {
        "m": "zafiro 5k",
@@ -61,13 +61,13 @@
   "id": "jer-085",
   "categoria": "jerga",
   "autor": "javier",
-  "texto": "pásame el saldo de la Doña Chelo porfa",
+  "texto": "pásame el saldo de la Tienda Demo Uno porfa",
   "esperado": {
    "acciones": [
     {
      "tipo": "consulta",
      "consulta": "saldo",
-     "sujeto": "dona chelo"
+     "sujeto": "tienda demo uno"
     }
    ]
   }
@@ -148,12 +148,12 @@
   "id": "jer-089",
   "categoria": "jerga",
   "autor": "javier",
-  "texto": "ya ni modo, hay que mandar a Ariel 25 nimbo 50k mango hielo",
+  "texto": "ya ni modo, hay que mandar a Cliente Alfa 25 nimbo 50k mango hielo",
   "esperado": {
    "acciones": [
     {
      "tipo": "pedido",
-     "cliente": "ariel",
+     "cliente": "cliente alfa",
      "lineas": [
       {
        "m": "nimbo 50k",

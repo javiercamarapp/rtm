@@ -3,13 +3,13 @@
   "id": "cob-019",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "Ariel pago 85,550",
+  "texto": "Cliente Alfa pago 71,260",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "ariel",
-     "monto_pesos": 85550
+     "cliente": "cliente alfa",
+     "monto_pesos": 71260
     }
    ]
   }
@@ -18,12 +18,12 @@
   "id": "cob-020",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "Beto abono 12 mil en efectivo",
+  "texto": "Cliente Beta abono 12 mil en efectivo",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "beto",
+     "cliente": "cliente beta",
      "monto_pesos": 12000
     }
    ]
@@ -48,12 +48,12 @@
   "id": "cob-022",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "Lupita me paso 3k",
+  "texto": "Cliente Gamma me paso 3k",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "lupita",
+     "cliente": "cliente gamma",
      "monto_pesos": 3000
     }
    ]
@@ -78,12 +78,12 @@
   "id": "cob-024",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "Ariel nos deposito quince mil",
+  "texto": "Cliente Alfa nos deposito quince mil",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "ariel",
+     "cliente": "cliente alfa",
      "monto_pesos": 15000
     }
    ]
@@ -93,12 +93,12 @@
   "id": "cob-025",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "cobre 9,800 de Mauricio en efectivo",
+  "texto": "cobre 9,800 de Cliente Delta en efectivo",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "mauricio",
+     "cliente": "cliente delta",
      "monto_pesos": 9800
     }
    ]
@@ -124,12 +124,12 @@
   "id": "cob-027",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "Doña Chelo abono 500",
+  "texto": "Tienda Demo Uno abono 500",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "dona chelo",
+     "cliente": "tienda demo uno",
      "monto_pesos": 500
     }
    ]
@@ -139,7 +139,7 @@
   "id": "cob-028",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "Beto pago 1.5k a Karen directo",
+  "texto": "Cliente Beta pago 1.5k a Karen directo",
   "esperado": {
    "acciones": [
     {
@@ -152,7 +152,7 @@
     [
      {
       "tipo": "pago",
-      "cliente": "beto",
+      "cliente": "cliente beta",
       "monto_pesos": 1500
      }
     ]
@@ -163,17 +163,17 @@
   "id": "cob-029",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "Ariel pago 85,550 y Beto pago 12,000",
+  "texto": "Cliente Alfa pago 71,260 y Cliente Beta pago 12,000",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "ariel",
-     "monto_pesos": 85550
+     "cliente": "cliente alfa",
+     "monto_pesos": 71260
     },
     {
      "tipo": "pago",
-     "cliente": "beto",
+     "cliente": "cliente beta",
      "monto_pesos": 12000
     }
    ]
@@ -183,12 +183,12 @@
   "id": "cob-030",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "ya cayo el pago de Mauricio, 18,750",
+  "texto": "ya cayo el pago de Cliente Delta, 18,750",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "mauricio",
+     "cliente": "cliente delta",
      "monto_pesos": 18750
     }
    ]
@@ -198,17 +198,17 @@
   "id": "cob-031",
   "categoria": "cobro",
   "autor": "javier",
-  "texto": "Lupita abono 2,000 en efectivo y 3,500 por transferencia",
+  "texto": "Cliente Gamma abono 2,000 en efectivo y 3,500 por transferencia",
   "esperado": {
    "acciones": [
     {
      "tipo": "pago",
-     "cliente": "lupita",
+     "cliente": "cliente gamma",
      "monto_pesos": 2000
     },
     {
      "tipo": "pago",
-     "cliente": "lupita",
+     "cliente": "cliente gamma",
      "monto_pesos": 3500
     }
    ],
