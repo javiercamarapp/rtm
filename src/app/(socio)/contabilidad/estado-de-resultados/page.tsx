@@ -96,10 +96,10 @@ export default async function PaginaEstadoResultados({ searchParams }: { searchP
           <KpiLinea
             etiquetaAria="Indicadores del estado de resultados"
             celdas={[
-              { id: 'vn', etiqueta: 'Ventas netas', valor: m(e.ventas_netas_cent), categoria: 1, nota: hayAnt ? `Periodo anterior ${m(p!.ventas_netas_cent)}` : 'Sin periodo anterior comparable' },
+              { id: 'vn', etiqueta: 'Ventas netas (mercancía, sin envío)', valor: m(e.ventas_netas_cent), categoria: 1, nota: hayAnt ? `Periodo anterior ${m(p!.ventas_netas_cent)}` : 'Sin periodo anterior comparable' },
               { id: 'ub', testid: 'utilidad-bruta', etiqueta: 'Utilidad bruta', valor: cifra(e.utilidad_bruta_cent, 'bruta'), categoria: 2, nota: `Margen ${pctSigno(e.utilidad_bruta_cent, e.ingresos_operativos_cent)}` },
               { id: 'uc', testid: 'utilidad-contribucion', etiqueta: 'Utilidad de contribución', valor: cifra(e.utilidad_contribucion_cent, 'contribucion'), categoria: 6, nota: `Margen ${pctSigno(e.utilidad_contribucion_cent, e.ingresos_operativos_cent)}` },
-              { id: 'un', testid: 'utilidad-neta', etiqueta: 'Utilidad neta', valor: cifra(e.utilidad_neta_cent, 'neta'), categoria: 7, nota: `Margen ${pctSigno(e.utilidad_neta_cent, e.ingresos_operativos_cent)}` },
+              { id: 'un', testid: 'utilidad-neta', etiqueta: 'Utilidad neta del periodo', valor: cifra(e.utilidad_neta_cent, 'neta'), categoria: 7, nota: `Margen ${pctSigno(e.utilidad_neta_cent, e.ingresos_operativos_cent)} · incluye merma, gastos y recargos por crédito` },
               { id: 'pz', etiqueta: 'Piezas vendidas', valor: formatearPiezas(e.piezas_vendidas), categoria: 4, nota: porPieza === null ? 'Sin piezas en el periodo' : `Utilidad neta por pieza ${m(porPieza, true)}` },
             ]}
           />

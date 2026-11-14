@@ -23,7 +23,8 @@ export const metadata: Metadata = { title: 'Proveedores' };
 
 type Vista = 'ordenes' | 'cuenta' | 'hoja' | 'liquidaciones';
 const VISTAS: Vista[] = ['ordenes', 'cuenta', 'hoja', 'liquidaciones'];
-const EN_CAMINO: EstadoCompra[] = ['enviada', 'en_trayecto', 'llego_merida'];
+// Por llegar = confirmadas pendientes de envio + enviadas + en trayecto + llegadas a Merida sin recibir (el libro las lleva en mercancia en transito).
+const EN_CAMINO: EstadoCompra[] = ['confirmada', 'enviada', 'en_trayecto', 'llego_merida'];
 
 export default async function PaginaProveedores({ searchParams }: { searchParams: Promise<{ p?: string; vista?: string }> }) {
   const { p, vista: vq = '' } = await searchParams;
@@ -98,7 +99,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
           { id: 'posicion', etiqueta: `${pos.palabra} con ${proveedor}`, testid: 'posicion-proveedor', valor: <CifraComprobada texto={pos.monto} cifra={`proveedor:deuda:${proveedor}`} comprobacion={pos.cuadra ? 'cuadra' : 'no_cuadra'} />, categoria: 4, nota: pos.pedidosSocio.hay ? `Total según el libro: ${pos.totalLibro}` : pos.totalLibro },
           ...(pos.pedidosSocio.hay ? [{ id: 'socio', etiqueta: `Pedidos de ${socioMenudeo} pendientes`, testid: 'pedidos-socio-pendiente', valor: <CifraComprobada texto={pos.pedidosSocio.pendiente} cifra={`proveedor:posicion:${proveedor}`} comprobacion="cuadra" />, categoria: 6 as const, nota: `A su cuenta, no son deuda de la empresa · ${pos.pedidosSocio.pedidos} ${pos.pedidosSocio.pedidos === 1 ? 'pedido' : 'pedidos'}` }] : []),
           { id: 'costo', etiqueta: 'Costo de la semana con guías', valor: m(t.costo_total_cent), categoria: 1, partes: t.costo_total_cent > 0n ? [{ etiqueta: 'Mercancía', valor: Number(t.mercancia_cent) }, { etiqueta: 'Seguros', valor: Number(t.seguros_cent) }, { etiqueta: 'Guías', valor: Number(t.guias_cent), estado: hoja.guias_pendientes > 0 ? 'parcial' : 'real' }] : undefined, nota: hoja.guias_pendientes > 0 ? `${hoja.guias_pendientes} guías sin costo real` : `${hoja.renglones.length} renglones` },
-          { id: 'trayecto', etiqueta: 'Compras en trayecto', valor: String(enCamino.length), categoria: 6, nota: enCamino.length > 0 ? `${m(suma(enCamino.map((c) => c.total_cent)))} por recibir` : 'Nada en camino' },
+          { id: 'trayecto', etiqueta: 'Compras por llegar', valor: String(enCamino.length), categoria: 6, nota: enCamino.length > 0 ? `${m(suma(enCamino.map((c) => c.total_cent)))} por recibir · ${enCamino.filter((c) => c.estado === 'confirmada').length} confirmadas sin enviar` : 'Nada confirmado ni en camino' },
           { id: 'dif', etiqueta: 'Diferencias de recepción abiertas', valor: String(difAbiertas), categoria: 7, nota: difAbiertas > 0n ? 'Sin responsable asignado' : 'Todas con responsable' },
         ]}
       />

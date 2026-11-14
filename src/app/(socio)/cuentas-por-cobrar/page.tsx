@@ -59,7 +59,8 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
   const deudaSocios = suma(d.socios.map((s) => s.deuda_cent));
   const favorTotal = suma(d.saldos_a_favor.map((s) => s.monto_cent));
   const sinIdTotal = suma(d.pagos_sin_identificar.map((p) => p.monto_cent));
-  const principal = d.por_cliente[0];
+  // Proximo vencimiento de TODA la cartera: la fecha mas cercana a hoy entre todos los clientes (no solo el de mayor saldo).
+  const proximoVence = todas.filter((f) => f.saldo_cent > 0n && f.vence && f.vence >= d.hoy).map((f) => f.vence!).sort()[0] ?? null;
   const proximos = todas.filter((f) => f.saldo_cent > 0n && f.vence && f.vence >= d.hoy).sort((x, y) => (x.vence! < y.vence! ? -1 : 1)).slice(0, 5);
   const vencidos = todas.filter((f) => f.estado === 'vencido');
 
@@ -123,7 +124,7 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
       <EncabezadoPagina
         eyebrow="Cuentas por cobrar"
         titulo="Por cobrar"
-        descripcion={d.total_cent === 0n ? 'Nada por cobrar: ningún pedido enviado tiene saldo.' : `${m(d.total_cent)} en ${d.por_cliente.length} ${d.por_cliente.length === 1 ? 'cliente' : 'clientes'} · ${m(d.vencido_cent)} vencido${pctVencido === null ? '' : ` (${pctTexto(pctVencido)})`}${principal?.proximo_vence ? ` · próximo vencimiento ${etiquetaFecha(principal.proximo_vence)}` : ''}`}
+        descripcion={d.total_cent === 0n ? 'Nada por cobrar: ningún pedido enviado tiene saldo.' : `${m(d.total_cent)} en ${d.por_cliente.length} ${d.por_cliente.length === 1 ? 'cliente' : 'clientes'} · ${m(d.vencido_cent)} vencido${pctVencido === null ? '' : ` (${pctTexto(pctVencido)})`}${proximoVence ? ` · próximo vencimiento ${etiquetaFecha(proximoVence)}` : ''}`}
         acciones={<FormularioPago cuentas={ctx.cuentas.map((c) => c.nombre)} clientes={clientesOpc} />}
       />
 

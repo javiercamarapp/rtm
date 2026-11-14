@@ -14,7 +14,7 @@ import { AreaSerie, ColumnasPeriodo } from '@/ui/graficas';
 import { Campo, FiltrosUrl } from './filtros-url';
 import { TIPO_MOV, dec, enlace, enteroParam, fecha, fechaParam, hoyNeg, m, pz, pzs, fechaCorta, semanaEtiqueta, textoParam, type Params } from './util';
 
-const PASO = 200;
+const PASO = 100;
 type Fila = { clave: string; inicial: true; piezas: number; valor: bigint; costo: bigint | null } | { clave: string; inicial?: false; k: FilaKardex };
 
 const TABS: { id: string; etiqueta: string }[] = [
