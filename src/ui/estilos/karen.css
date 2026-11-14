@@ -71,7 +71,7 @@
 .rtm-kr-insignia { height: 18px; padding: 0 7px; border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); border: 1px solid var(--rtm-line-2); font-size: 11px; font-weight: 500; line-height: 16px; }
 .rtm-kr-insignia[data-tipo='nuevo'] { background: var(--rtm-ink); color: var(--rtm-panel); border-color: var(--rtm-ink); }
 .rtm-kr-marca { font-size: var(--rtm-t-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--rtm-ink-3); margin-top: 4px; }
-.rtm-kr-nombre { font-size: var(--rtm-t-seccion); font-weight: 600; letter-spacing: var(--rtm-trk-seccion); line-height: 1.25; min-height: 2.5em; }
+.rtm-kr-nombre { font-size: var(--rtm-t-seccion); font-weight: 600; letter-spacing: var(--rtm-trk-seccion); line-height: 1.25; }
 .rtm-kr-sabores { display: flex; align-items: center; justify-content: space-between; gap: var(--rtm-e-2); font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
 .rtm-kr-sabores b { color: var(--rtm-ink); font-variant-numeric: tabular-nums; }
 .rtm-kr-disp { display: inline-flex; align-items: center; gap: 6px; font-size: var(--rtm-t-pequeno); font-weight: 500; }
@@ -83,10 +83,10 @@
 .rtm-kr-cambio { color: var(--rtm-ink-3); }
 
 /* Vacios */
-.rtm-kr-vacio { display: grid; justify-items: center; gap: var(--rtm-e-2); text-align: center; padding: var(--rtm-e-10) var(--rtm-e-5); border: 1px dashed var(--rtm-line-strong); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
-.rtm-kr-vacio h2 { margin: 0; font-size: var(--rtm-t-seccion); }
+.rtm-kr-vacio { display: grid; justify-items: center; gap: 4px; text-align: center; padding: 8px var(--rtm-e-3); border: 1px dashed var(--rtm-line-strong); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
+.rtm-kr-vacio h2 { margin: 0; font-size: var(--rtm-t-cuerpo); }
 .rtm-kr-vacio p { margin: 0; max-width: 56ch; color: var(--rtm-ink-2); font-size: var(--rtm-t-cuerpo); }
-.rtm-kr-vacio-marca { display: grid; place-items: center; width: 56px; height: 56px; border-radius: var(--rtm-r-4); background: var(--rtm-ink); color: var(--rtm-panel); font-size: 24px; font-weight: 600; }
+.rtm-kr-vacio-marca { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--rtm-r-2); background: var(--rtm-ink); color: var(--rtm-panel); font-size: 14px; font-weight: 600; }
 
 /* Linea de tiempo y promociones */
 .rtm-kr-dos { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--rtm-ritmo); }

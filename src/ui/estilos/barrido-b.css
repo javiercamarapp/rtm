@@ -13,9 +13,6 @@
 .rtm-bb-pie { padding: 4px var(--rtm-pad-tarjeta); border-top: var(--rtm-borde); }
 
 /* Pagina de Karen: estado vacio compacto y fila de campo dentro del desplegable de filtros. */
-.rtm-kr-vacio.rtm-bb-compacto { padding: var(--rtm-e-3) var(--rtm-e-4); gap: 4px; }
-.rtm-kr-vacio.rtm-bb-compacto .rtm-kr-vacio-marca { width: 28px; height: 28px; border-radius: var(--rtm-r-2); font-size: 14px; }
-.rtm-kr-vacio.rtm-bb-compacto h2 { font-size: var(--rtm-t-cuerpo); }
 .rtm-bb-campo-fila { display: grid !important; gap: 4px; }
 .rtm-bb-campo-fila select { width: 100%; }
 .rtm-kr-marcas input[type='checkbox'] { width: 18px; height: 18px; margin: 0; accent-color: var(--rtm-ink); }
@@ -51,6 +48,4 @@
 .rtm-bb-items > .rtm-boton:hover:not(:disabled) { background: var(--rtm-tint); }
 @media (pointer: coarse) { .rtm-bb-items > .rtm-boton { min-height: 44px; } }
 
-/* Aviso de estado vacio de tabla/hoja: relleno compacto. */
-.rtm-dt-aviso.rtm-bb-compacto { padding: var(--rtm-e-3) var(--rtm-e-4); gap: 2px; }
 @media (pointer: coarse) { .rtm-kr-marcas label, .rtm-bb-menu-panel > .rtm-boton-item { min-height: 44px; } }

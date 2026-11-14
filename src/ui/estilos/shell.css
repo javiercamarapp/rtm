@@ -112,11 +112,11 @@
 
 /* ---- Estado vacio y tarjetas ---- */
 .rtm-vacio {
-  display: flex; flex-direction: column; align-items: flex-start; gap: var(--rtm-e-2);
-  padding: var(--rtm-e-4) var(--rtm-e-5); border: 1px dashed var(--rtm-line-2); border-radius: var(--rtm-r-3);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 8px var(--rtm-e-3); border: 1px dashed var(--rtm-line-2); border-radius: var(--rtm-r-3);
   background: var(--rtm-tint);
 }
-.rtm-vacio h2 { margin: 0; font-size: var(--rtm-t-seccion); font-weight: 600; }
+.rtm-vacio h2 { margin: 0; font-size: var(--rtm-t-cuerpo); font-weight: 600; }
 .rtm-vacio p { margin: 0; color: var(--rtm-ink-2); max-width: 60ch; }
 .rtm-tarjeta { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-pad-tarjeta); }
 .rtm-tarjeta h2 { margin: 0 0 var(--rtm-v-gap-tarjeta); font-size: var(--rtm-t-seccion); font-weight: 600; }
@@ -229,7 +229,6 @@
 @media (max-width: 767px) {
   .rtm-panel-scroll { padding-top: var(--rtm-e-2); padding-bottom: var(--rtm-e-3); }
   .rtm-pagina { gap: var(--rtm-ritmo); }
-  .rtm-vacio { padding: var(--rtm-e-3) var(--rtm-e-4); }
   .rtm-tarjeta { padding: var(--rtm-pad-tarjeta); }
   .rtm-acciones { margin-top: var(--rtm-e-2); }
   .rtm-acciones > .rtm-boton, .rtm-acciones-fila > .rtm-boton { flex-grow: 1; }

@@ -116,13 +116,13 @@ export function TableroKaren(p: PropsTablero) {
       </section>
 
       {p.modelos.length === 0 ? (
-        <div className="rtm-kr-vacio rtm-bb-compacto" data-testid="vacio-sin-lecturas">
+        <div className="rtm-kr-vacio" data-testid="vacio-sin-lecturas">
           <span aria-hidden="true" className="rtm-kr-vacio-marca">K</span>
           <h2>Todavía no hay lecturas de Karen</h2>
           <p>Cuando se active la lectura horaria, aquí verás cada modelo con su foto y sus sabores en tiempo real, con avisos de lo nuevo y lo agotado. Mientras tanto la lista para clientes no está disponible.</p>
         </div>
       ) : lista.length === 0 ? (
-        <div className="rtm-kr-vacio rtm-bb-compacto" data-testid="vacio-sin-resultados">
+        <div className="rtm-kr-vacio" data-testid="vacio-sin-resultados">
           <h2>Ningún modelo coincide</h2>
           <p>Prueba con otra palabra o quita algún filtro.</p>
           <button type="button" className="rtm-boton" onClick={() => aplicar({ ...FILTROS_INICIALES, caladas: f.caladas, orden: f.orden })}>Limpiar filtros</button>

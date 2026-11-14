@@ -41,8 +41,8 @@
 }
 
 /* Gráficas de columnas: etiqueta del periodo en una linea. */
-.a3-grafica-vacia { margin: 0; padding: 24px 12px; border: 1px dashed var(--rtm-line-strong); border-radius: var(--rtm-r-2); text-align: center; color: var(--rtm-ink-3); font-size: var(--rtm-t-cuerpo); }
-.a3-grafica-vacia strong { display: block; color: var(--rtm-ink-2); margin-bottom: 4px; font-weight: var(--rtm-peso-medio); }
+.a3-grafica-vacia { margin: 0; padding: 8px 12px; border: 1px dashed var(--rtm-line-strong); border-radius: var(--rtm-r-2); text-align: center; color: var(--rtm-ink-3); font-size: var(--rtm-t-cuerpo); }
+.a3-grafica-vacia strong { display: inline; color: var(--rtm-ink-2); margin: 0 6px 0 0; font-weight: var(--rtm-peso-medio); }
 
 .a3-pila { display: flex; flex-direction: column; gap: var(--rtm-ritmo); min-width: 0; }
 
