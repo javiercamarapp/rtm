@@ -1,0 +1,4 @@
+{
+  "P-9001": { "total_pesos": 4660, "precios": { "Modelo Ficticio Uno": 185, "Modelo Ficticio Dos": 155, "Modelo Ficticio Tres": 180 }, "piezas": { "Modelo Ficticio Uno": 10, "Modelo Ficticio Dos": 10, "Modelo Ficticio Tres": 7 } },
+  "P-9002": { "total_pesos": 6470, "precios": { "Modelo Ficticio Uno": 189, "Modelo Ficticio Cuatro": 229 }, "piezas": { "Modelo Ficticio Uno": 10, "Modelo Ficticio Cuatro": 20 } }
+}

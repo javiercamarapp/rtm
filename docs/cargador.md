@@ -115,3 +115,7 @@ Costos: la carga no toca Vercel ni GitHub; su unico efecto externo es la base de
 - `supabase/tests/database/a6_001_negocio_hoy_fecha_de_carga.test.sql` (pgTAP).
 - `npm run cargador:prueba`: de extremo a extremo con datos sinteticos sobre una base local recien reseteada con `scripts/cargador/semilla-local.sql` (carga, segunda corrida sin cambios, lote suelto sin cambios, cuadre).
 - Base local propia: `project_id` y puertos distintos (`supabase/config.toml` fuera de commits con `skip-worktree`).
+
+## Correccion de precios por modelo de pedidos enviados (14-nov)
+
+Despues del despliegue de la migracion `20261115400000` (que no provoca builds de Vercel: se compila en local y se sube prebuilt): `node scripts/cargador/corregir-precios-por-modelo.mjs --datos <JSON privado> --verificar` (solo lectura) y luego `--aplicar` (solo la funcion oficial `operacion.corregir_precio_por_modelo`, una transaccion por pedido, idempotente). Los datos reales van en un archivo privado fuera del repo; formato, ejemplo ficticio y detalle en `docs/correccion-precios-por-modelo.md`.

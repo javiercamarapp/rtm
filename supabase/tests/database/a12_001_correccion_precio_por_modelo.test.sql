@@ -1,4 +1,4 @@
--- pgTAP a12_001: CORRECCION DE PRECIO POR MODELO (decision del dueno, 14-nov). Reproduce con datos SINTETICOS el patron de los pedidos P-0016, P-0017 y P-0018: tres pedidos de dropshipping
+-- pgTAP a12_001: CORRECCION DE PRECIO POR MODELO (decision del dueno, 14-nov). Reproduce con datos SINTETICOS el patron de tres pedidos de dropshipping
 -- con Isaac, enviados, con un precio PLANO por pieza en todos los renglones (varios sabores por modelo; uno con recargo de credito y con un abono) que dejan renglones bajo costo.
 -- Se prueba: totales, por cobrar, pagos, utilidad, costo, kardex, saldos y el libro IDENTICOS antes y despues (hash encadenado integro, sin asientos nuevos, C1..C24 y CU sin cambio);
 -- suma exacta; rechazo si no cuadra; idempotencia; permisos (Omar, bodega y anon no pueden); T4 sigue cerrando todo lo demas; reversibilidad (otra correccion y regreso).
@@ -44,16 +44,16 @@ create function pg_temp.mid(p text) returns bigint language sql as $$ select id 
 create function pg_temp.cli() returns bigint language sql as $$ select id from catalogo.cliente where nombre_norm = catalogo.normalizar('CP Cliente') $$;
 create function pg_temp.ped(p text) returns bigint language sql as $$ select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = $1 $$;
 
--- Pedido A (como P-0016): 27 piezas, total 4,660.00, precio plano 172.59 / 172.60 (el residuo en un renglon).
+-- Pedido A: 27 piezas, total 4,660.00, precio plano 172.59 / 172.60 (el residuo en un renglon).
 select operacion.ds_crear_pedido('cp-a', pg_temp.cli(), '[
   {"modelo":"CP Modelo Uno","sabor":"Fresa","piezas":6,"precio_cent":17259},{"modelo":"CP Modelo Uno","sabor":"Mango","piezas":4,"precio_cent":17259},
   {"modelo":"CP Modelo Dos","sabor":"Fresa","piezas":10,"precio_cent":17259},{"modelo":"CP Modelo Tres","sabor":"Fresa","piezas":7,"precio_cent":17260}]'::jsonb,
   'isaac_directo', null, null, 'cliente', null, null, 0, 0, negocio.hoy() - 2);
--- Pedido B (como P-0017): 30 piezas, total 6,470.00.
+-- Pedido B: 30 piezas, total 6,470.00.
 select operacion.ds_crear_pedido('cp-b', pg_temp.cli(), '[
   {"modelo":"CP Modelo Uno","sabor":"Fresa","piezas":10,"precio_cent":21566},{"modelo":"CP Modelo Cuatro","sabor":"Fresa","piezas":12,"precio_cent":21567},
   {"modelo":"CP Modelo Cuatro","sabor":"Mango","piezas":8,"precio_cent":21567}]'::jsonb, 'isaac_directo', null, null, 'cliente', null, null, 0, 0, negocio.hoy() - 2);
--- Pedido C (como P-0018): 30 piezas, mercancia 4,250.00 y recargo de credito 450.00 aparte.
+-- Pedido C: 30 piezas, mercancia 4,250.00 y recargo de credito 450.00 aparte.
 select operacion.ds_crear_pedido('cp-c', pg_temp.cli(), '[
   {"modelo":"CP Modelo Cuatro","sabor":"Fresa","piezas":10,"precio_cent":14166},{"modelo":"CP Modelo Cinco","sabor":"Fresa","piezas":20,"precio_cent":14167}]'::jsonb,
   'isaac_directo', null, '{"interes_cent": 45000}'::jsonb, 'cliente', null, null, 0, 0, negocio.hoy() - 2);
