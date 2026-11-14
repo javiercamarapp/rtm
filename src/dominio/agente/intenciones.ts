@@ -22,6 +22,10 @@ export interface IPedido {
   destino_texto: string | null;
   lineas: LineaPedidoTexto[];
   envio_cobrado_centavos: number | null;
+  /** Frase del plazo tal como la dijo el socio ("de contado", "a 15 dias", "el viernes"); la interpreta el CODIGO (plazo_pedido.ts), nunca el modelo. */
+  plazo_texto?: string | null;
+  /** Dias para pagar, calculados por el codigo: 0 = de contado. Sin esto el pedido NO se escribe (el bot pregunta). */
+  plazo_dias?: number | null;
   fuente_cita: string;
 }
 
@@ -321,6 +325,8 @@ export const TIPOS_CONSULTA = [
   'utilidad',
   /** Cuanto debe cada cliente. */
   'cartera',
+  /** Por pagar de la empresa: Isaac, Karen y la renta de Omar (renglones aparte) y el total (agente.consulta 'por_pagar'). */
+  'por_pagar',
   /** Valuacion de quien pregunta y del otro socio, y como igualar (agente.valuacion_socios). */
   'valuacion',
 ] as const;

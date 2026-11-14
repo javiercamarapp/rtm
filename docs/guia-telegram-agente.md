@@ -38,6 +38,7 @@ Se puede escribir con tus palabras o con comando (los comandos funcionan aunque 
 | Cuenta entre socios | "saldo de socios" | `/saldo socios` |
 | Utilidad del mes (o hoy, semana) | "utilidad del mes" | `/utilidad mes` |
 | Cuanto debe cada cliente | "cuanto debe cada cliente" | `/cartera` |
+| Por pagar de la empresa (Isaac, Karen y la renta de Omar, cada uno aparte, y el total) | "cuanto debemos", "por pagar" | `/porpagar` |
 | Saldo de un cliente o proveedor | "saldo de Cliente Norte", "saldo con Karen" | `/saldo Cliente Norte` |
 | Existencias por modelo | "cuanto hay de jupiter" | `/stock jupiter` |
 
@@ -49,7 +50,7 @@ Cada fila es una intencion del catalogo declarativo (`src/dominio/agente/catalog
 
 | Que haces | Mensaje o comando | Confirmacion | Deshacer |
 |---|---|---|---|
-| Crear pedido (precio del tabulador, lo pone el sistema) | `/pedido Cliente \| modelo/sabor 24` o "Cliente: 24 modelo/sabor" | normal | si, mientras no este enviado (se cancela) |
+| Crear pedido (precio del tabulador, lo pone el sistema; el PLAZO es obligatorio: si no lo dices el bot pregunta antes de escribir, ver `docs/plazo-obligatorio.md`) | `/pedido Cliente \| modelo/sabor 24 \| plazo contado` (o `plazo 15 dias`) o "Cliente: 24 modelo/sabor, de contado" | normal | si, mientras no este enviado (se cancela) |
 | Pedido enviado o entregado | `/enviado P-0001 [guia]`, `/entregado P-0001`, "se envio el pedido P-0001" | normal | no directo: se corrige en el software |
 | Cancelar pedido con motivo | `/cancelar P-0001 \| motivo` | reforzada | no |
 | Cobro de nota o pago de cliente | `/pago Cliente \| 7000` o "Cliente pago 7000 en efectivo" | normal | si |

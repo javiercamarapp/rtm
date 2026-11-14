@@ -16,7 +16,7 @@ import {
 } from './intenciones';
 
 export const USO_COMANDOS: Readonly<Record<string, string>> = {
-  pedido: '/pedido Cliente | modelo 28 | 24 modelo | envio 150',
+  pedido: '/pedido Cliente | modelo 28 | 24 modelo | envio 150 | plazo contado (o plazo 15 dias)',
   pago: '/pago Cliente | 7000',
   gasto: '/gasto guia 500 angelo',
   aporte: '/aporte javier 1000 [capital|reembolso] [motivo]',
@@ -27,6 +27,7 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
   estado: '/estado angelo|javier',
   utilidad: '/utilidad [hoy|semana|mes]',
   cartera: '/cartera',
+  porpagar: '/porpagar',
   compra: '/compra karen | modelo 100 | modelo 50',
   oc: '/oc karen | modelo 100 | saldo',
   pagoprov: '/pagoprov karen | 30500 | angelo',
@@ -226,6 +227,8 @@ export function parsearComando(texto: string): ResultadoComando | null {
     }
     case 'cartera':
       return consulta('cartera');
+    case 'porpagar':
+      return consulta('por_pagar');
     case 'resumen': {
       const p = normalizar(resto);
       if (p === '') return consulta('resumen', { periodo: 'hoy' });
@@ -241,7 +244,13 @@ export function parsearComando(texto: string): ResultadoComando | null {
       if (!cliente || segmentos.length === 0) return fallo('pedido');
       const lineas: LineaPedidoTexto[] = [];
       let envio: number | null = null;
+      let plazo: string | null = null;
       for (const seg of segmentos) {
+        const pz = /^(?:plazo|paga|pago)\s+(.+)$/i.exec(seg);
+        if (pz) {
+          plazo = pz[1]!.trim();
+          continue;
+        }
         const e = /^env[ií]o\s+(.+)$/i.exec(seg);
         if (e) {
           envio = monto(e[1]!);
@@ -253,7 +262,7 @@ export function parsearComando(texto: string): ResultadoComando | null {
         lineas.push({ ...modeloSabor(l.modelo), piezas: l.piezas, precio_texto: null, fuente_cita: seg.slice(0, 120) });
       }
       if (lineas.length === 0 || lineas.length > 30) return fallo('pedido');
-      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pedido', cliente_texto: cliente, destino_texto: null, lineas, envio_cobrado_centavos: envio, fuente_cita: cita } };
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pedido', cliente_texto: cliente, destino_texto: null, lineas, envio_cobrado_centavos: envio, plazo_texto: plazo, fuente_cita: cita } };
     }
     case 'pago': {
       const [cliente, importe] = partes;

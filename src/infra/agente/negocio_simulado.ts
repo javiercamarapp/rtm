@@ -793,6 +793,13 @@ export class NegocioSimulado implements NegocioAgente {
         const filas = [...this.clientes.values()].map((cl) => ({ cl, saldo: this.saldoCliente(cl.id) })).filter((x) => x.saldo > 0n);
         return { titulo: 'Cuanto debe cada cliente', lineas: filas.length === 0 ? [{ tipo: 'texto', etiqueta: 'Cartera', texto: 'Ningun cliente debe nada.' }] : filas.map((x) => pesos(x.cl.nombre, x.saldo)) };
       }
+      case 'por_pagar': {
+        // Espejo en memoria: Karen e Isaac (cuenta negativa = se les debe) y el renglon de Omar aparte.
+        const deuda = (c: bigint): bigint => (c < 0n ? -c : 0n);
+        const isaac = deuda(this.cuentaCon('isaac'));
+        const karen = deuda(this.cuentaCon('karen'));
+        return { titulo: 'Por pagar', lineas: [pesos('Isaac', isaac), pesos('Karen', karen), pesos('Renta de Omar', 0n), pesos('Total por pagar', isaac + karen)] };
+      }
       default:
         return { titulo: 'Consulta no disponible todavia', lineas: [] };
     }
