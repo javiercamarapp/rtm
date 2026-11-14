@@ -1,0 +1,9 @@
+# Guion 'mi valuacion' / 'como estamos' (cifras del dueno). Reproducir con: npx tsx scripts/agente/simulador.mts scripts/agente/guion-valuacion.txt
+# Angelo tiene menos: ve su valuacion, la diferencia y como igualar (entregar fondos + aportar).
+angelo> mi valuacion
+# Javier tiene mas: ve que Angelo debe igualar y el desglose de entregar + aportar.
+javier> como estamos
+# El comando directo da lo mismo.
+angelo> /valuacion
+# Omar no ve la valuacion de los socios.
+omar> mi valuacion

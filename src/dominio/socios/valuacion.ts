@@ -143,14 +143,14 @@ export interface TarjetaValuacion {
 }
 
 /** Texto de cuanto falta: "Faltan $X para estar idénticos" o "Igualados". */
-export function textoFaltan(c: CuentaSociosValuacion, formato: Formato): string {
+export function textoFaltan(c: Pick<CuentaSociosValuacion, 'igualacion'>, formato: Formato): string {
   return c.igualacion.igualados ? 'Igualados' : `Faltan ${formato(c.igualacion.faltan_cent)} para estar idénticos`;
 }
 
 /** Indicaciones para que las valuaciones queden identicas, para el socio `yo` (todo sale de c.igualacion, calculado por la base):
  *  - quien tiene menos: "Para igualar: entrega a la sociedad los $F que tienes cobrados y aporta $A con el siguiente pago";
  *  - quien tiene mas: "<otro> debe igualar: faltan $X (entregar $F + aportar $A)". */
-export function indicacionesSocio(c: CuentaSociosValuacion, yo: Socio, formato: Formato): string[] {
+export function indicacionesSocio(c: Pick<CuentaSociosValuacion, 'igualacion'>, yo: Socio, formato: Formato): string[] {
   const ig = c.igualacion;
   if (ig.igualados || !ig.mayor || !ig.menor) return [];
   const salida: string[] = [];
@@ -237,4 +237,33 @@ export function puntosSerie(c: CuentaSociosValuacion, socio: Socio): { mes: stri
     const f = m.socios.find((s) => s.socio === socio);
     return f ? [{ mes: m.mes, valor: Number(f.valuacion_cent) }] : [];
   });
+}
+
+/** Lo que lee el agente de Telegram (agente.valuacion_socios): las mismas cifras que la web, sin serie ni detalle. */
+export interface VistaValuacionAgente {
+  socios: { socio: Socio; valuacion_cent: bigint; fondos_en_poder_cent: bigint; capital_aportado_cent: bigint }[];
+  igualacion: IgualacionValuacion;
+  retiros_desiguales: boolean;
+  diferencia_retiros_cent: bigint;
+  retiro_mas: Socio | null;
+}
+
+/** Respuesta determinista de 'mi valuacion' / 'como estamos' para el socio que pregunta: "Tu valuacion $X · Tienes $Y mas/menos que <otro> · <instruccion>".
+ *  Solo redacta lo que la base entrego; el modelo nunca calcula dinero. */
+export function respuestaValuacionAgente(v: VistaValuacionAgente, yo: Socio, formato: Formato): { valuacionCent: bigint; textos: { etiqueta: string; texto: string }[] } | null {
+  const mia = v.socios.find((s) => s.socio === yo);
+  const otra = v.socios.find((s) => s.socio === otroSocio(yo));
+  if (!mia || !otra) return null;
+  const ig = v.igualacion;
+  const textos: { etiqueta: string; texto: string }[] = [];
+  if (ig.igualados) textos.push({ etiqueta: 'Contra ' + otra.socio, texto: `Estás igualado con ${otra.socio}` });
+  else {
+    const menos = mia.valuacion_cent < otra.valuacion_cent;
+    textos.push({ etiqueta: 'Contra ' + otra.socio, texto: `Tienes ${formato(ig.faltan_cent)} ${menos ? 'menos' : 'más'} que ${otra.socio}` });
+    textos.push({ etiqueta: 'Estado', texto: textoFaltan({ igualacion: ig }, formato) });
+    const ind = indicacionesSocio({ igualacion: ig }, yo, formato);
+    ind.forEach((t, i) => textos.push({ etiqueta: i === 0 ? 'Cómo igualar' : 'Además', texto: t }));
+  }
+  if (v.retiros_desiguales && v.retiro_mas) textos.push({ etiqueta: 'Retiros', texto: `${v.retiro_mas} se ha pagado ${formato(v.diferencia_retiros_cent)} más que ${otroSocio(v.retiro_mas)}` });
+  return { valuacionCent: mia.valuacion_cent, textos };
 }

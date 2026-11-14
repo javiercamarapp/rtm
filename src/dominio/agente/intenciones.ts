@@ -321,6 +321,8 @@ export const TIPOS_CONSULTA = [
   'utilidad',
   /** Cuanto debe cada cliente. */
   'cartera',
+  /** Valuacion de quien pregunta y del otro socio, y como igualar (agente.valuacion_socios). */
+  'valuacion',
 ] as const;
 export type TipoConsulta = (typeof TIPOS_CONSULTA)[number];
 

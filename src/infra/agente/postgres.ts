@@ -35,6 +35,8 @@ import { parsearPrecio } from '@/dominio/agente/cifras';
 import { sumarDias } from '@/dominio/calendario';
 import { formatearFechaPago } from '@/dominio/agente/fecha_pago';
 import { formatearMoneda } from '@/dominio/formato';
+import { centavosABigint } from '@/dominio/operacion/json';
+import { respuestaValuacionAgente, type Socio, type VistaValuacionAgente } from '@/dominio/socios/valuacion';
 import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type { AvisoPresupuesto, RolPresupuesto } from '@/dominio/agente/presupuesto';
 import type { CifraServidor, ChatsRegistrados, Miembro, RolMiembro } from '@/dominio/agente/tipos';
@@ -386,11 +388,20 @@ export class NegocioAgenteDb implements NegocioAgente {
     }
   }
 
-  async consultar(c: IConsulta, r: Resoluciones): Promise<RespuestaConsulta> {
+  async consultar(c: IConsulta, r: Resoluciones, autor?: Miembro): Promise<RespuestaConsulta> {
     type Cons = { titulo: string; lineas: LineaJson[] };
     const q = async (tipo: string, id: number | null, sujeto: string | null): Promise<Cons> => (await F(this.sql, 'consulta', [tipo, id, sujeto], ['text', 'bigint', 'text'])) as Cons;
     let j: Cons | null = null;
     const qx = async (tipo: string, id: number | null, sujeto: string | null): Promise<Cons> => (await F(this.sql, 'consulta_ext', [tipo, id, sujeto], ['text', 'bigint', 'text'])) as Cons;
+    if (c.consulta === 'valuacion') {
+      // La misma funcion de la base que la web (api.cuenta_socios_valuacion); el texto lo arma codigo determinista, nunca el modelo.
+      if (!autor || autor.rol !== 'socio') return { titulo: 'Eso lo ven solo los socios', lineas: [] };
+      const v = centavosABigint<VistaValuacionAgente>(await F(this.sql, 'valuacion_socios'));
+      const yo: Socio = autor.persona === 'angelo' ? 'Angelo' : 'Javier';
+      const resp = respuestaValuacionAgente(v, yo, formatearMoneda);
+      if (!resp) return { titulo: 'Todavía no hay valuación para comparar', lineas: [] };
+      return { titulo: 'Tu valuación', lineas: [{ tipo: 'pesos', etiqueta: 'Tu valuación', centavos: resp.valuacionCent }, ...resp.textos.map((t) => ({ tipo: 'texto' as const, etiqueta: t.etiqueta, texto: t.texto }))] };
+    }
     if (CONSULTAS_EXT.has(c.consulta) && !(c.consulta === 'saldo')) {
       if (c.consulta === 'reporte') j = await qx('reporte', null, c.periodo ?? 'semana');
       else j = await qx(c.consulta, c.consulta === 'cobertura' && r.modeloId ? Number(r.modeloId) : null, null);
