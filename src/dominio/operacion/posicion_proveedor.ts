@@ -96,3 +96,10 @@ export function armarHojaProveedor(h: HojaProveedor, socio = 'Angelo'): HojaVM {
   const deudaEmpresaTexto = separa ? pesos(h.totales.deuda_empresa_cent) : null;
   return { cuadraConLibro, sello, nota, saldoAnterior, faltaTexto, separacion, deudaEmpresaTexto };
 }
+
+/** Rotulo de la modalidad en /proveedores. 'Prepago total' solo cuando de verdad hay anticipo a favor (saldo de la cuenta corriente a favor Y posicion con el proveedor a favor);
+ *  con deuda de la empresa (o saldo cero) no aparece la palabra 'Prepago'. */
+export function rotuloModalidad(modalidad: 'semanal_viernes' | 'prepago_total', saldoCuentaCent: bigint, tono: TonoPosicion): string {
+  if (modalidad === 'prepago_total') return saldoCuentaCent > 0n && tono === 'favor' ? 'Prepago total' : 'Pago por adelantado';
+  return 'Liquidación los viernes';
+}

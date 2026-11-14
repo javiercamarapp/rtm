@@ -44,6 +44,7 @@ for (const prov of ['Karen', 'Isaac'] as const) {
     await expect(page.getByTestId('posicion-proveedor')).toContainText(e.empresa);
     await expect(page.getByTestId('posicion-cifra')).toContainText(e.empresa);
     await expect(page.getByTestId('etiqueta-saldo')).toContainText('Deuda de la empresa');
+    await expect(page.getByTestId('etiqueta-saldo')).not.toContainText(/prepago/i);
     // El desglose del libro y la conciliacion con los pedidos de Angelo.
     await expect(page.getByTestId('posicion-desglose')).toContainText(`total con ${prov} según el libro se le debe ${e.libro}`);
     if (e.conciliacion) await expect(page.getByTestId('conciliacion-libro')).toHaveText(e.conciliacion);
