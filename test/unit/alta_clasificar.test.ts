@@ -4,12 +4,12 @@ import { clasificar } from '../../scripts/acceso/clasificar.mjs';
 // Solo correos ficticios: la lista real vive fuera del repo.
 describe('clasificar la lista de permitidos por nombre', () => {
   const ok = 'javier.uno@example.test\nangelo.dos@example.test\nomar.tres@example.test\n';
-  it('asigna rol por el nombre; Omar nace desactivado', () => {
+  it('asigna rol por el nombre; Omar tiene acceso desde el 14-nov', () => {
     const r = clasificar(ok) as { persona: string; rol: string; activo: boolean; socio: string | null }[];
     expect(r.map((x) => [x.persona, x.rol, x.activo, x.socio])).toEqual([
       ['javier', 'socio', true, 'Javier'],
       ['angelo', 'socio', true, 'Angelo'],
-      ['omar', 'omar', false, null],
+      ['omar', 'omar', true, null],
     ]);
   });
   it('guarda el texto exacto en minusculas (Gmail con puntos es otra cuenta)', () => {

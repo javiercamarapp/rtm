@@ -4,8 +4,8 @@
 const PERSONAS = [
   { clave: 'javier', rol: 'socio', socio: 'Javier', activo: true },
   { clave: 'angelo', rol: 'socio', socio: 'Angelo', activo: true },
-  // Omar queda con acceso desactivado hasta que exista su vista (M2).
-  { clave: 'omar', rol: 'omar', socio: null, activo: false },
+  // Omar tiene acceso desde el 14-nov-2026 (decision del dueno): su vista (/mi-bodega y Pago renta) ya existe y solo lee lo suyo.
+  { clave: 'omar', rol: 'omar', socio: null, activo: true },
 ];
 
 export function clasificar(texto) {
