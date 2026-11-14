@@ -18,6 +18,8 @@ import { aNumero, porcentaje } from '@/dominio/tablero/agregados';
 import '@/ui/estilos/paginas-a1.css';
 import { etiquetaHoy } from '../contexto';
 import { BotonDisponibilidad } from './boton-disponibilidad';
+import { SaboresPorRevisar } from './sabores-por-revisar';
+import '@/ui/estilos/barrido-b.css';
 
 export const metadata: Metadata = { title: 'Catálogo y precios' };
 
@@ -90,14 +92,16 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
               etiquetaAria="Costo contra precio por modelo" mostrarPct={false}
               items={conMargen.slice(0, 10).map((x) => ({ id: String(x.m.id), etiqueta: x.m.nombre, href: enlace({ modelo: String(x.m.id) }) + '#precios', texto: `${formatearMoneda(x.costo)} → ${formatearMoneda(x.precio)}`, pct: porcentaje(aNumero(x.costo), topeCosto), umbral: porcentaje(aNumero(x.precio), topeCosto) ?? undefined, nota: `margen ${formatearMoneda(x.precio - x.costo)}${x.supuesto ? ' · costo supuesto' : ''}`, tono: x.precio <= x.costo ? ('malo' as const) : undefined }))}
             />
-          ) : <p className="rtm-a1-estado-vacio">Sin modelos con costo y precio al mismo tiempo.</p>}
+          ) : <p className="rtm-bb-vacio">Sin modelos con costo y precio al mismo tiempo.</p>}
         </Tarjeta>
         <Tarjeta titulo="Rango de precios" descripcion="Mínimo a máximo y clientes con precio">
           {conRango.length > 0 ? (
             <BarList etiquetaAria="Rango de precios por modelo" mostrarPct={false} items={conRango.slice(0, 10).map((m) => ({ id: String(m.id), etiqueta: m.nombre, texto: m.precios.minCent === m.precios.maxCent ? formatearMoneda(m.precios.minCent!) : `${formatearMoneda(m.precios.minCent!)} a ${formatearMoneda(m.precios.maxCent!)}`, pct: porcentaje(aNumero(m.precios.maxCent!), topeRango), nota: `${m.precios.clientes} cl.` }))} />
-          ) : <p className="rtm-a1-estado-vacio">Ningún modelo tiene precios de clientes.</p>}
+          ) : <p className="rtm-bb-vacio">Ningún modelo tiene precios de clientes.</p>}
         </Tarjeta>
       </Rejilla>
+
+      <SaboresPorRevisar />
 
       <Tarjeta plana titulo="Modelos" descripcion={`${modelos.length} de ${todos.length}`}>
         <DataTable

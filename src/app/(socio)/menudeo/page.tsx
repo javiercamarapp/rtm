@@ -5,6 +5,7 @@ import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, BarraFiltros, Chip, ChipEstado } from '@/ui/componentes/controles';
+import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
@@ -43,12 +44,14 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
         acciones={esMenudeo ? <Link className="rtm-boton rtm-boton-primario" href="/dropshipping/nuevo" data-testid="nuevo-pedido-costo">Nuevo pedido a costo</Link> : undefined}
       />
       <BarraFiltros etiquetaAria="Filtros" extras={hayFiltros ? <Chip href="/menudeo">Quitar filtros</Chip> : undefined}>
-        <form className="rtm-form-fila rtm-ds-filtros" method="get" aria-label="Filtrar pedidos">
+        <form className="rtm-ds-filtros-linea" method="get" aria-label="Filtrar pedidos">
+          <FiltrosPlegables etiqueta="Filtros" titulo="Filtrar pedidos por periodo, proveedor y estado de pago" activos={[desde, hasta, proveedor, estadoPago].filter(Boolean).length}>
           <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
           <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
           <label className="rtm-etiqueta-campo">Proveedor<select className="rtm-campo" name="proveedor" defaultValue={proveedor ?? ''}><option value="">Todos</option><option>Karen</option><option>Isaac</option></select></label>
           <label className="rtm-etiqueta-campo">Estado de pago<select className="rtm-campo" name="estado" defaultValue={estadoPago ?? ''}><option value="">Todos</option><option value="pagado">Pagado</option><option value="no_pagado">Pendiente de pago</option><option value="pago_reportado">Pago reportado</option><option value="vencido">Vencido</option><option value="por_confirmar">Por confirmar</option></select></label>
-          <button type="submit" className="rtm-boton" data-testid="menudeo-filtrar">Filtrar</button>
+          <button type="submit" className="rtm-boton rtm-boton-primario" data-testid="menudeo-filtrar">Filtrar</button>
+          </FiltrosPlegables>
         </form>
       </BarraFiltros>
 

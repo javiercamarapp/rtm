@@ -38,7 +38,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow="Inventario · antigüedad y rotación" titulo={sd ? 'Sin existencias para medir antigüedad' : `${pctTexto(partePct(viejas.piezas, totalPz)) ?? '0 %'} de las piezas tienen más de 90 días`} descripcion="Días desde la última entrada de compra de cada sabor, rotación del periodo y valor por tramo." />
-      <FiltrosUrl etiquetaAria="Filtros" restablecer="/inventario/antiguedad">
+      <FiltrosUrl etiquetaAria="Filtros" restablecer="/inventario/antiguedad" plegable={{ activos: q ? 1 : 0 }}>
         <Campo etiqueta="Periodo de rotación"><select name="dias" defaultValue={String(per.dias ?? '90')}><option value="30">30 días</option><option value="90">90 días</option><option value="180">180 días</option></select></Campo>
         <Campo etiqueta="Buscar"><input type="search" name="q" placeholder="Modelo o sabor" defaultValue={q ?? ''} data-noauto="" /></Campo>
       </FiltrosUrl>

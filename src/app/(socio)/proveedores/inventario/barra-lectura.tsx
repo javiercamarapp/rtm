@@ -45,7 +45,7 @@ export function BarraLectura({ frescura: f, ahoraIso, actualizar }: { frescura: 
         <button type="button" className="rtm-boton" onClick={pulsar} disabled={ocupado || bloqueo !== null} aria-describedby="rtm-kr-actualizar-nota" aria-busy={ocupado || undefined} data-testid="actualizar-ahora">
           {ocupado ? 'Leyendo' : 'Actualizar ahora'}
         </button>
-        <Link className="rtm-boton rtm-boton-primario" href="/proveedores/compras/nueva?p=Karen" data-testid="oc-karen">Crear orden de compra a Karen</Link>
+        <Link className="rtm-boton rtm-boton-primario" href="/proveedores/compras/nueva?p=Karen" data-testid="oc-karen" title="Crear orden de compra a Karen" aria-label="Crear orden de compra a Karen">Orden de compra</Link>
       </div>
       <p id="rtm-kr-actualizar-nota" className="rtm-kr-nota-lectura" role="status" data-testid="nota-actualizar" data-tono={mensaje?.tono ?? (bloqueo ? 'atencion' : undefined)}>
         {mensaje?.texto ?? bloqueo?.mensaje ?? ''}

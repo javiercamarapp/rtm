@@ -18,7 +18,25 @@ Una sola fila siempre (sin `flex-wrap`). Reglas:
 3. La navegacion entre vistas relacionadas (`vistas`) es un segmentado compacto; con menos de 1100 px pasa al menu y en movil el menu queda como icono.
 4. Uso: `<EncabezadoPagina acciones={<BarraAcciones primarias={...} secundarias={...} vistas={[...]} />} />`.
 
-Aplicada en: Cuenta de socios (`src/app/(socio)/socios`) y Cliente (`clientes/[id]`). Pendiente del barrido: Clientes (lista), Dropshipping, Movimientos, Menudeo, Pedidos y las filas `rtm-acciones-fila` de cuentas por cobrar, pedido, apertura y cascada. Los e2e que hacian clic en una accion que ahora vive en "Mas" deben abrir primero `data-testid="barra-mas"`.
+Aplicada en: Cuenta de socios (`socios`), historial de socio, acta de reparto, Cliente (`clientes/[id]`), Pedido (`pedidos/[id]`, acciones primarias visibles y el resto en "Mas"), Proveedores (`proveedores`), orden de compra (`proveedores/compras/[id]`), liquidacion semanal, Inventario (CSV y exportar PDF; el panel de exportar flota) y Contactos (exportacion). Pendiente: las filas `rtm-acciones-fila` de cuentas por cobrar, apertura y cascada. Los e2e que hacian clic en una accion que ahora vive en "Mas" abren primero `data-testid="barra-mas"`.
+
+Dentro de "Mas" todo debe ser una fila de menu: usa `variante="item"` en `FormularioAccion`, `DialogoSimple`, `BotonAccion` (ambos), `FormularioGuia`, o un enlace/boton con `rtm-boton-item`. No se envuelve el contenido en clases propias. `controles.css` conserva una red de seguridad para un `.rtm-boton` suelto dentro del panel, pero es respaldo, no el camino. `PagoSocioProveedor` se queda como accion primaria de Proveedores (sus e2e lo pulsan directo), por eso no usa la variante.
+
+## Filtros plegables (`src/ui/componentes/filtros-plegables.tsx`)
+
+`FiltrosPlegables` agrupa campos de formulario en un desplegable flotante de una sola linea (no ocupa alto en la pagina). Los campos siguen montados al cerrar (un formulario que los contiene los envia igual), el contador de `activos` no se pierde, cierra con Escape o al pulsar fuera. Aplicado en Pedidos, Libro de movimientos, Dropshipping (lista, pedidos y utilidad) y Menudeo. `FiltrosUrl` (`_a2/filtros-url.tsx`, formulario GET con la URL como fuente de verdad) acepta `plegable` y se envuelve solo: Inventario (existencias, marcas, antiguedad, mermas, kardex) y Contabilidad (valuacion, historial, capital, caja).
+
+## MenuFiltro (`src/ui/componentes/menu-filtro.tsx`) y por que no se unifica
+
+`MenuFiltro` es un desplegable de ENLACES de una sola opcion (navega con `href`, marca `aria-current`, flechas arriba y abajo recorren). Se usa en el estado de Inventario. No se fusiona con `FiltrosPlegables` ni con `FiltroCatalogo`: `FiltrosPlegables` es un contenedor de campos que deben seguir montados y `FiltroCatalogo` es un buscador en vivo con multiseleccion de marcas por estado en la URL; los tres resuelven necesidades distintas (opciones por enlace, campos de formulario, busqueda con marcas) y mezclarlos obligaria a cambiar su teclado y sus selectores e2e. Regla: opciones excluyentes por enlace = `MenuFiltro`; campos de formulario = `FiltrosPlegables`; marcas + buscador = `FiltroCatalogo`.
+
+## Encabezado de pagina y ayuda (`src/ui/componentes/pagina.tsx`, `ayuda.tsx`)
+
+La descripcion de `EncabezadoPagina` es de una sola linea (120 caracteres como maximo). Lo que no cabe va en la prop `ayuda` (con `ayudaResumen` opcional), que muestra el componente `Ayuda` en un `details` cerrado: nada de texto se pierde. Aplicado en Comprobaciones, Valuacion, Historial de valuacion, Reportes, Avisos, Apertura, Cascada, Balance y Capital. Quedan descripciones dinamicas largas en otras paginas (devoluciones, contactos, movimientos, catalogo, clientes, etc.) pendientes de pasar al mismo patron.
+
+## Estados vacios compartidos
+
+`.rtm-vacio`, `.rtm-dt-aviso`, `.rtm-kr-vacio`, `.a3-grafica-vacia` y `.rtm-a1-estado-vacio` tienen relleno de 12 px o menos y ocupan una o dos lineas; se definen una sola vez en su hoja base (no hay parches `rtm-bb-compacto`). Las hojas `barrido-a/b/c.css` solo conservan reglas con prefijo propio; las reglas sin prefijo viven en `controles.css`, `componentes.css`, `operacion.css` y `karen.css`, de modo que ganan por especificidad y no por orden de carga.
 
 ## Espaciado vertical compacto (`tokens.css`)
 

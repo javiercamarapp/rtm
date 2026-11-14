@@ -139,6 +139,7 @@ test('4 compra a Isaac: orden, confirmar, enviada, guia, llego, recepcion', asyn
   await page.getByTestId('confirmar-oc').click();
   await expect(page.getByTestId('estado-oc')).toContainText('Confirmada');
   await page.getByTestId('oc-enviada').click();
+  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${oc}`).click();
   await page.getByLabel('Número de guía').fill(`CUADRE-OC-${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -232,6 +233,7 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
   await expect(javier.getByText(`Aportacion demo ${d.sufijo}`).first()).toBeVisible();
   const page = angelo;
   await page.goto('/proveedores?p=Isaac');
+  await page.getByTestId('barra-mas').click();
   await page.getByTestId('pago-sociedad').click();
   await page.getByLabel(/Monto/).fill('1000');
   await page.getByTestId('confirmar').click();

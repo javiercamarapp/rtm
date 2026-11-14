@@ -9,7 +9,7 @@
 .rtm-a1-sub div { display: flex; flex-direction: column; gap: 2px; }
 .rtm-a1-sub dt { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-muted); }
 .rtm-a1-sub dd { margin: 0; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.rtm-a1-estado-vacio { margin: 0; padding: 12px 0; color: var(--rtm-muted); font-size: 13px; }
+.rtm-a1-estado-vacio { margin: 0; padding: 4px 0; color: var(--rtm-muted); font-size: 13px; }
 .rtm-a1-acciones-fila { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .rtm-a1-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .rtm-a1-tarjeta-cuerpo-alta { min-height: 0; }

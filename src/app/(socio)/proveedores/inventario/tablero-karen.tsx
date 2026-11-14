@@ -9,6 +9,7 @@ import { fotoDeModelo } from '@/config/fotos_karen';
 import { etiquetaFechaHora } from '@/dominio/formato';
 import { PanelVape } from './panel-vape';
 import { TarjetaVape } from './tarjeta-vape';
+import '@/ui/estilos/barrido-b.css';
 
 export interface PropsTablero extends DatosTablero {
   eventos: EventoGlobal[];
@@ -47,6 +48,7 @@ export function TableroKaren(p: PropsTablero) {
   const abierto = p.modelos.find((m) => m.producto_id === f.modelo) ?? null;
   const reco = abierto ? p.recomendaciones.find((r) => r.producto_id === abierto.producto_id) ?? null : null;
   const activos = filtrosActivos(f);
+  const extras = [f.existencia !== 'todas', f.vendemos, f.nuevos, f.caladas].filter(Boolean).length;
   const foto = (handle: string) => fotoDeModelo(handle, p.fotos);
   const visibles = todosAvisos ? avisos : avisos.slice(0, 3);
 
@@ -88,14 +90,20 @@ export function TableroKaren(p: PropsTablero) {
         <div className="rtm-seg-mini" role="group" aria-label="Disponibilidad en Karen">
           {([['todos', 'Todos'], ['con', 'Con sabores'], ['agotados', 'Agotados']] as const).map(([v, t]) => <button key={v} type="button" aria-pressed={f.disp === v} onClick={() => aplicar({ disp: v })}>{t}</button>)}
         </div>
-        <label className="rtm-kr-select"><span className="rtm-solo-lectores">Existencia propia</span>
-          <select className="rtm-campo" value={f.existencia} onChange={(e) => aplicar({ existencia: e.target.value as FiltrosKaren['existencia'] })} data-testid="filtro-existencia">
-            <option value="todas">Con o sin existencia nuestra</option><option value="con">Con existencia nuestra</option><option value="sin">Sin existencia nuestra</option>
-          </select>
-        </label>
-        <button type="button" className="rtm-kr-chip" aria-pressed={f.vendemos} onClick={() => aplicar({ vendemos: !f.vendemos })} data-testid="solo-vendemos">Solo lo que vendemos</button>
-        <button type="button" className="rtm-kr-chip" aria-pressed={f.nuevos} onClick={() => aplicar({ nuevos: !f.nuevos })} data-testid="solo-nuevos">Nuevos esta semana</button>
-        <button type="button" className="rtm-kr-chip" aria-pressed={f.caladas} onClick={() => aplicar({ caladas: !f.caladas })} data-testid="ver-caladas">Mostrar caladas</button>
+        <details className="rtm-kr-marcas" data-testid="mas-filtros">
+          <summary className="rtm-boton" title="Existencia propia, lo que vendemos, nuevos y caladas">Más filtros{extras ? ` (${extras})` : ''}</summary>
+          <fieldset>
+            <legend className="rtm-solo-lectores">Más filtros</legend>
+            <label className="rtm-bb-campo-fila"><span>Existencia nuestra</span>
+              <select className="rtm-campo" value={f.existencia} onChange={(e) => aplicar({ existencia: e.target.value as FiltrosKaren['existencia'] })} data-testid="filtro-existencia" aria-label="Existencia propia">
+                <option value="todas">Con o sin existencia nuestra</option><option value="con">Con existencia nuestra</option><option value="sin">Sin existencia nuestra</option>
+              </select>
+            </label>
+            <label><input type="checkbox" checked={f.vendemos} onChange={() => aplicar({ vendemos: !f.vendemos })} data-testid="solo-vendemos" /><span>Solo lo que vendemos</span></label>
+            <label><input type="checkbox" checked={f.nuevos} onChange={() => aplicar({ nuevos: !f.nuevos })} data-testid="solo-nuevos" /><span>Nuevos esta semana</span></label>
+            <label><input type="checkbox" checked={f.caladas} onChange={() => aplicar({ caladas: !f.caladas })} data-testid="ver-caladas" /><span>Mostrar caladas</span></label>
+          </fieldset>
+        </details>
         <label className="rtm-kr-select"><span className="rtm-solo-lectores">Ordenar por</span>
           <select className="rtm-campo" value={f.orden} onChange={(e) => aplicar({ orden: e.target.value as OrdenTablero })} data-testid="orden">
             {ORDENES.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}

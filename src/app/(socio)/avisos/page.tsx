@@ -43,7 +43,7 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
       <EncabezadoPagina
         eyebrow={`Avisos · ${etiquetaHoy()}`}
         titulo={todas.length === 0 ? 'No hay avisos' : `Tienes ${lista.sin_leer} ${lista.sin_leer === 1 ? 'aviso sin leer' : 'avisos sin leer'}`}
-        descripcion="La campana es la fuente de verdad: Telegram solo la espeja. Leído y resuelto son cosas distintas: un aviso con acción sigue pendiente hasta que la condición deja de existir."
+        descripcion="La campana es la fuente de verdad: Telegram solo la espeja." ayudaResumen="Leído y resuelto" ayuda="Leído y resuelto son cosas distintas: un aviso con acción sigue pendiente hasta que la condición deja de existir."
       />
       <BarraFiltros etiquetaAria="Filtros de avisos" extras={sev ? <Chip href={enlace(pestana, 0, '')}>Quitar severidad</Chip> : undefined}>
         <Chip href={enlace('todas')} activo={pestana === 'todas'}>Todas</Chip>

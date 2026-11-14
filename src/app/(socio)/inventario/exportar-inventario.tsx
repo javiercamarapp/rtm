@@ -125,7 +125,7 @@ export function ExportarInventario({ marcas, modelos, clientes }: Props) {
           {resultado && (
             <div className="rtm-exportar-resultado" data-testid="exportar-resultado">
               <p><strong>{resultado.folio}</strong> <span className="rtm-nota">huella {resultado.sha256.slice(0, 12)}</span></p>
-              <div className="rtm-acciones-fila">
+              <div className="rtm-bb-linea">
                 <a className="rtm-boton" href={`/inventario/documento/${resultado.id}/pdf`} target="_blank" rel="noreferrer" data-testid="exportar-ver">Ver PDF</a>
                 <a className="rtm-boton" href={`/inventario/documento/${resultado.id}/pdf?descargar=1`} data-testid="exportar-descargar">Descargar</a>
                 <button type="button" className="rtm-boton rtm-boton-primario" onClick={compartir} data-testid="exportar-compartir">Compartir</button>
@@ -133,7 +133,7 @@ export function ExportarInventario({ marcas, modelos, clientes }: Props) {
               <label className="rtm-etiqueta-campo">Texto sugerido para WhatsApp
                 <textarea className="rtm-campo" rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} data-testid="exportar-texto" />
               </label>
-              <div className="rtm-acciones-fila">
+              <div className="rtm-bb-linea">
                 <a className="rtm-boton rtm-boton-chico" href={enlaceWhatsApp(texto)} target="_blank" rel="noreferrer" data-testid="exportar-whatsapp">Abrir WhatsApp</a>
                 <button type="button" className="rtm-boton rtm-boton-chico" onClick={copiar}>Copiar texto</button>
               </div>

@@ -1,0 +1,27 @@
+/* Barrido de UI compacta, area A (14-nov). Solo reglas con prefijo rtm-ba- propias de este barrido. */
+
+.rtm-ba-a-saldo { margin: 0; white-space: nowrap; }
+
+/* Filtros plegables: desplegable flotante que no ocupa alto en la pagina; la fila queda en una sola linea. */
+.rtm-ba-fp { position: relative; flex: none; }
+.rtm-ba-fp-disparo { display: inline-flex; align-items: center; gap: 6px; }
+.rtm-ba-fp-disparo > small { min-width: 16px; padding: 0 5px; border-radius: 999px; background: var(--rtm-ink); color: var(--rtm-panel); font-size: 11px; line-height: 16px; text-align: center; }
+.rtm-ba-fp-disparo > svg { width: 10px; height: 10px; }
+.rtm-ba-fp-disparo[aria-expanded='true'] > svg { transform: rotate(180deg); }
+.rtm-ba-fp-panel { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; width: min(520px, 90vw); display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--rtm-v-acciones) 10px; padding: var(--rtm-pad-tarjeta); box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: 10px; background: var(--rtm-surface); box-shadow: var(--rtm-sombra-flotante); }
+.rtm-ba-fp-panel[hidden] { display: none; }
+.rtm-ba-fp-panel > .rtm-etiqueta-campo { flex: 1 1 auto; min-width: 140px; }
+.rtm-ba-fp-panel > .rtm-etiqueta-campo > :is(.rtm-campo, select, input) { width: 100%; box-sizing: border-box; }
+.rtm-ba-fp-panel > .rtm-ba-fp-grupo { flex: 1 1 auto; min-width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rtm-ba-fp-panel > .rtm-ba-fp-grupo > small { flex: 1 1 auto; min-width: 100%; color: var(--rtm-ink-3); font-size: 11px; }
+@media (max-width: 767px) { .rtm-ba-fp-panel { left: 0; right: auto; } .rtm-ba-fp-panel > .rtm-etiqueta-campo { min-width: 100%; } }
+
+/* Formulario de filtros en una sola linea: busqueda, boton y desplegable (los campos secundarios flotan, no ocupan alto). */
+.rtm-ds-filtros-linea { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-v-acciones); min-width: 0; margin: 0; }
+.rtm-ds-filtros-linea > .rtm-ba-buscar { flex: 1 1 auto; width: 220px; min-width: 160px; max-width: 420px; height: var(--rtm-ctl-alto); }
+.rtm-ds-filtros-linea > .rtm-boton { flex: none; }
+@media (max-width: 767px) { .rtm-ds-filtros-linea { flex-wrap: wrap; } .rtm-ds-filtros-linea > .rtm-ba-buscar { width: 100%; max-width: none; } }
+
+/* Barra de un solo desplegable (libro de movimientos): el formulario completo flota y no ocupa alto. */
+.rtm-ba-barra-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-v-acciones); min-height: var(--rtm-ctl-alto); }
+.rtm-ba-fp-panel:has(> .rtm-a2-filtros) { width: min(760px, 92vw); }

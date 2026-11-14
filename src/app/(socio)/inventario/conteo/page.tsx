@@ -9,6 +9,7 @@ import '@/ui/estilos/paginas-a2.css';
 import { etiquetaHoy } from '../../contexto';
 import { HojaConteo } from './hoja-conteo';
 import { PanelConcilia } from '../concilia';
+import '@/ui/estilos/barrido-b.css';
 
 export const metadata: Metadata = { title: 'Conteo físico' };
 

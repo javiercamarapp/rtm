@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { formatearMoneda } from '@/dominio/formato';
 import type { EstadoPedido } from '@/dominio/operacion/tipos';
+import Link from 'next/link';
+import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
+import '@/ui/estilos/barrido-a.css';
 import { DialogoEnviar, type RenglonEnvio } from '../../operacion/dialogo-enviar';
 import { BotonAccion, DialogoSimple } from '../../operacion/dialogo-simple';
 import { centavosDeTexto, useAccion } from '../../operacion/usar-accion';
@@ -21,6 +24,8 @@ interface Props {
   lineasNota: { id: number; etiqueta: string; precio_cent: bigint }[];
   cuentas: string[];
   saldoCent: bigint | null;
+  /** Ruta de la ficha de dropshipping, si el pedido se surte asi. */
+  fichaDs?: string;
 }
 
 function Pago({ pedidoId, folio, clienteId, cuentas }: Pick<Props, 'pedidoId' | 'folio' | 'clienteId' | 'cuentas'>) {
@@ -61,7 +66,7 @@ function Pago({ pedidoId, folio, clienteId, cuentas }: Pick<Props, 'pedidoId' | 
   );
 }
 
-function CorreccionNota({ pedidoId, folio, lineasNota }: Pick<Props, 'pedidoId' | 'folio' | 'lineasNota'>) {
+function CorreccionNota({ pedidoId, folio, lineasNota, variante }: Pick<Props, 'pedidoId' | 'folio' | 'lineasNota'> & { variante?: 'boton' | 'item' }) {
   const { correr, ocupado, error, limpiarError } = useAccion();
   const [abierto, setAbierto] = useState(false);
   const [motivo, setMotivo] = useState('');
@@ -89,7 +94,7 @@ function CorreccionNota({ pedidoId, folio, lineasNota }: Pick<Props, 'pedidoId' 
   };
   return (
     <>
-      <button type="button" className="rtm-boton" onClick={() => { limpiarError(); setAbierto(true); }} data-testid="corregir-nota">Emitir corrección</button>
+      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : 'rtm-boton'} onClick={() => { limpiarError(); setAbierto(true); }} data-testid="corregir-nota">Emitir corrección</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo={`Corregir la nota de ${folio}`} confirmar="Emitir corrección" ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           <p>La nota emitida no se edita: la corrección es un documento nuevo enlazado (P-xxxx-C1). Deja en blanco lo que no cambia.</p>
@@ -111,7 +116,7 @@ function CorreccionNota({ pedidoId, folio, lineasNota }: Pick<Props, 'pedidoId' 
   );
 }
 
-function Plazo({ pedidoId }: { pedidoId: number }) {
+function Plazo({ pedidoId, variante }: { pedidoId: number; variante?: 'boton' | 'item' }) {
   const { correr, ocupado, error, limpiarError } = useAccion();
   const [abierto, setAbierto] = useState(false);
   const [dias, setDias] = useState('');
@@ -124,7 +129,7 @@ function Plazo({ pedidoId }: { pedidoId: number }) {
   };
   return (
     <>
-      <button type="button" className="rtm-boton" onClick={() => { limpiarError(); setAbierto(true); }}>Acordar plazo</button>
+      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : 'rtm-boton'} onClick={() => { limpiarError(); setAbierto(true); }}>Acordar plazo</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo="Acordar plazo de pago" confirmar="Guardar plazo" ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           <label className="rtm-etiqueta-campo">Plazo en días desde el envío<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={dias} onChange={(e) => setDias(e.target.value)} aria-label="Plazo en días" /></label>
@@ -136,26 +141,38 @@ function Plazo({ pedidoId }: { pedidoId: number }) {
 }
 
 export function AccionesPedido(p: Props) {
+  const borrador = p.estado === 'borrador';
+  const confirmado = p.estado === 'confirmado';
+  const enviado = p.estado === 'enviado';
+  const cancelar = (borrador || confirmado) && (
+    <DialogoSimple variante="item" boton="Cancelar pedido" titulo={`Cancelar ${p.folio}`} accion="cancelar_pedido" args={{ p_pedido: p.pedidoId }} motivo="p_motivo" texto={<p>Libera las reservas. Todavía no salió nada, así que no hay nada que revertir.</p>} />
+  );
+  const primarias = (
+    <>
+      {borrador && <BotonAccion boton="Confirmar pedido" accion="confirmar_pedido" args={{ p_pedido: p.pedidoId }} primario testid="confirmar-pedido" />}
+      {confirmado && p.puedeEmpacar && !p.empacado && <BotonAccion boton="Marcar empacado" accion="marcar_empacado" args={{ p_pedido: p.pedidoId }} testid="marcar-empacado" />}
+      {confirmado && <DialogoEnviar pedidoId={p.pedidoId} folio={p.folio} renglones={p.renglones} avisosPendientes={p.avisosPendientes} />}
+      {enviado && <Pago pedidoId={p.pedidoId} folio={p.folio} clienteId={p.clienteId} cuentas={p.cuentas} />}
+      {enviado && !p.entregado && <BotonAccion boton="Marcar entregado" accion="marcar_entregado" args={{ p_pedido: p.pedidoId }} />}
+    </>
+  );
+  const hayMenu = borrador || confirmado || enviado || Boolean(p.fichaDs);
+  const secundarias = hayMenu ? (
+    <>
+      {enviado && <CorreccionNota variante="item" pedidoId={p.pedidoId} folio={p.folio} lineasNota={p.lineasNota} />}
+      {enviado && <Plazo variante="item" pedidoId={p.pedidoId} />}
+      {cancelar}
+      {enviado && (
+        <DialogoSimple variante="item" boton="Anular pedido" titulo={`Anular ${p.folio}`} accion="anular_pedido" args={{ p_pedido: p.pedidoId }} motivo="p_motivo" testid="anular-pedido"
+          texto={<p>Anular es un contramovimiento: regresan las piezas, se revierte la renta y los pagos aplicados quedan como saldo a favor. La nota original no se toca.</p>} />
+      )}
+      {p.fichaDs && <Link className="rtm-boton-item" href={p.fichaDs} data-testid="ir-ficha-ds" title="Ficha de dropshipping de este pedido">Ficha de dropshipping</Link>}
+    </>
+  ) : undefined;
   return (
-    <div className="rtm-acciones-fila" aria-label="Acciones del pedido">
-      {p.estado === 'borrador' && <BotonAccion boton="Confirmar pedido" accion="confirmar_pedido" args={{ p_pedido: p.pedidoId }} primario testid="confirmar-pedido" />}
-      {p.estado === 'confirmado' && p.puedeEmpacar && !p.empacado && <BotonAccion boton="Marcar empacado" accion="marcar_empacado" args={{ p_pedido: p.pedidoId }} testid="marcar-empacado" />}
-      {p.estado === 'confirmado' && <DialogoEnviar pedidoId={p.pedidoId} folio={p.folio} renglones={p.renglones} avisosPendientes={p.avisosPendientes} />}
-      {(p.estado === 'borrador' || p.estado === 'confirmado') && (
-        <DialogoSimple boton="Cancelar pedido" titulo={`Cancelar ${p.folio}`} accion="cancelar_pedido" args={{ p_pedido: p.pedidoId }} motivo="p_motivo" texto={<p>Libera las reservas. Todavía no salió nada, así que no hay nada que revertir.</p>} />
-      )}
-      {p.estado === 'enviado' && (
-        <>
-          <Pago pedidoId={p.pedidoId} folio={p.folio} clienteId={p.clienteId} cuentas={p.cuentas} />
-          <CorreccionNota pedidoId={p.pedidoId} folio={p.folio} lineasNota={p.lineasNota} />
-          <Plazo pedidoId={p.pedidoId} />
-          {!p.entregado && <BotonAccion boton="Marcar entregado" accion="marcar_entregado" args={{ p_pedido: p.pedidoId }} />}
-          <DialogoSimple boton="Anular pedido" titulo={`Anular ${p.folio}`} accion="anular_pedido" args={{ p_pedido: p.pedidoId }} motivo="p_motivo" testid="anular-pedido"
-            texto={<p>Anular es un contramovimiento: regresan las piezas, se revierte la renta y los pagos aplicados quedan como saldo a favor. La nota original no se toca.</p>} />
-        </>
-      )}
-      {p.saldoCent !== null && p.saldoCent !== 0n && p.estado === 'enviado' && <span className="rtm-nota">Saldo: {formatearMoneda(p.saldoCent)}</span>}
-    </div>
+    <>
+      {enviado && p.saldoCent !== null && p.saldoCent !== 0n && <span className="rtm-nota rtm-ba-a-saldo">Saldo: {formatearMoneda(p.saldoCent)}</span>}
+      <BarraAcciones etiquetaAria="Acciones del pedido" primarias={primarias} secundarias={secundarias} />
+    </>
   );
 }
-

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { datosDeSocio } from '@/composicion/datos';
 import type { EstadoLibro } from '@/dominio/datos/tipos';
 import { ChipEstado } from '@/ui/componentes/controles';
+import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
 import { Paginador } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
@@ -40,6 +41,8 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow="Movimientos · libro" titulo={sd ? 'Todavía no hay movimientos en el libro' : `${l.total} renglones, saldo de ${m(t.saldo_final_cent)}`} descripcion="Todos los ingresos y egresos en una sola tabla con saldo corrido, totales del filtro completo y paginación en servidor." acciones={<><Link className="rtm-boton" href="/movimientos">Bandeja</Link><a className="rtm-boton" href={`${base}/exportar${exportar.size ? `?${exportar}` : ''}`} data-testid="libro-exportar">Exportar CSV</a></>} />
+      <div className="rtm-ba-barra-filtros">
+      <FiltrosPlegables etiqueta="Filtros" titulo="Filtros del libro: periodo, estado, cuenta, monto y concepto" activos={[filtro.ini, filtro.fin, estado, filtro.cuenta, uno(sp.min), uno(sp.max), filtro.q].filter(Boolean).length}>
       <FiltrosUrl etiquetaAria="Filtros del libro" restablecer={base}>
         <Campo etiqueta="Desde"><input type="date" name="ini" defaultValue={filtro.ini ?? ''} /></Campo>
         <Campo etiqueta="Hasta"><input type="date" name="fin" defaultValue={filtro.fin ?? ''} /></Campo>
@@ -50,6 +53,8 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
         <Campo etiqueta="Buscar concepto"><input type="search" name="q" placeholder="Texto del concepto" defaultValue={filtro.q ?? ''} data-noauto="" /></Campo>
         {orden === 'desc' && <input type="hidden" name="orden" value="desc" />}
       </FiltrosUrl>
+      </FiltrosPlegables>
+      </div>
       <KpiLinea etiquetaAria="Resumen del libro" celdas={[
         { id: 'c', etiqueta: 'Cargos (+)', valor: sd ? null : m(t.cargos_cent), categoria: 2, nota: 'Dinero que entró' },
         { id: 'a', etiqueta: 'Abonos (−)', valor: sd ? null : m(t.abonos_cent), categoria: 3, nota: 'Dinero que salió' },

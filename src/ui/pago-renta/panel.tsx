@@ -2,6 +2,7 @@
 // El dinero viene de la base; aqui se agrupa por periodo, se redactan frases con plantilla fija y se dibuja. Todo lo proyectado va como "Estimado".
 import type { ReactNode } from 'react';
 import '@/ui/estilos/paginas-a3.css';
+import '@/ui/estilos/barrido-c.css';
 import '@/ui/estilos/pago-renta.css';
 import { acumuladoDelMes, agruparPorPeriodo, desdePrimerMovimiento, estadisticas, insights, reglaDeCalculo, type Paso, PASOS } from '@/dominio/pago-renta/calculos';
 import type { PanelRenta, PagoRenta } from '@/dominio/pago-renta/tipos';

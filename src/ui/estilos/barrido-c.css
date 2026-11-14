@@ -1,0 +1,22 @@
+/* Barrido de UI compacta, area C (socios, contabilidad, cuentas por cobrar, cuentas, avisos, reportes, pago renta).
+   Solo reglas nuevas con prefijo rtm-bc-; sin editar CSS compartido. Solo tokens, blanco y negro. */
+
+/* Selector de periodo (contabilidad): segmentado compacto de una fila en lugar de botones de 44 px que se parten. */
+.rtm-bc-rango { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-v-acciones); max-width: 100%; min-width: 0; }
+.rtm-bc-rango > nav { display: inline-flex; padding: 2px; gap: 2px; box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-ctl-r); background: var(--rtm-tint); overflow-x: auto; scrollbar-width: none; }
+.rtm-bc-rango > nav > a { display: inline-flex; align-items: center; height: calc(var(--rtm-boton-alto) - 6px); padding: 0 10px; border-radius: calc(var(--rtm-ctl-r) - 2px); color: var(--rtm-ink-2); font-size: 12.5px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.rtm-bc-rango > nav > a:hover { background: var(--rtm-surface); color: var(--rtm-ink); }
+.rtm-bc-rango > nav > a[aria-current='true'] { background: var(--rtm-surface); color: var(--rtm-ink); box-shadow: inset 0 0 0 1px var(--rtm-ink); }
+.rtm-bc-rango > nav > a:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 1px; }
+.rtm-bc-rango > p { margin: 0; white-space: nowrap; }
+@media (pointer: coarse) { .rtm-bc-rango > nav > a { min-height: 44px; } }
+@media (max-width: 767px) { .rtm-bc-rango { flex-wrap: wrap; } }
+
+/* Filtro desplegable: cliente y fechas dentro de un desplegable agrupado cuando no hay filtro activo. */
+.rtm-bc-filtros { min-width: 0; }
+.rtm-bc-filtros > summary { display: inline-flex; align-items: center; gap: 6px; height: var(--rtm-boton-alto); padding: 0 11px; box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-ctl-r); background: var(--rtm-surface); color: var(--rtm-ink); font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; }
+.rtm-bc-filtros > summary::-webkit-details-marker { display: none; }
+.rtm-bc-filtros > summary:hover { border-color: var(--rtm-ink-3); }
+.rtm-bc-filtros > summary:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
+.rtm-bc-filtros[open] > summary { margin-bottom: var(--rtm-v-acciones); }
+@media (pointer: coarse) { .rtm-bc-filtros > summary { min-height: 44px; } }

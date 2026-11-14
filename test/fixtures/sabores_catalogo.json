@@ -1,0 +1,514 @@
+[
+{
+"id": 1,
+"nombre": "Alaska Ice"
+},
+{
+"id": 2,
+"nombre": "Apple Strawberry Raspberry"
+},
+{
+"id": 3,
+"nombre": "Ay Mama"
+},
+{
+"id": 4,
+"nombre": "Banana Ice"
+},
+{
+"id": 5,
+"nombre": "Banana Taffy Freeze"
+},
+{
+"id": 6,
+"nombre": "Black Berry Ice"
+},
+{
+"id": 7,
+"nombre": "Black Blue"
+},
+{
+"id": 8,
+"nombre": "Black Blue Razz"
+},
+{
+"id": 9,
+"nombre": "Black Cherry"
+},
+{
+"id": 10,
+"nombre": "Black Mint"
+},
+{
+"id": 11,
+"nombre": "Blackberry"
+},
+{
+"id": 12,
+"nombre": "Blue Razz Blackberry"
+},
+{
+"id": 13,
+"nombre": "Blue Razz Ice"
+},
+{
+"id": 14,
+"nombre": "Blue Wizard"
+},
+{
+"id": 15,
+"nombre": "Blueberry Ice"
+},
+{
+"id": 16,
+"nombre": "Blueberry Kiwi"
+},
+{
+"id": 17,
+"nombre": "Blueberry Mint"
+},
+{
+"id": 18,
+"nombre": "Blueberry Raspberry"
+},
+{
+"id": 19,
+"nombre": "Blueberry Raspberry Ice"
+},
+{
+"id": 20,
+"nombre": "Blueberry Spash"
+},
+{
+"id": 21,
+"nombre": "Blueberry Splash"
+},
+{
+"id": 22,
+"nombre": "Blueberry Watermelon"
+},
+{
+"id": 23,
+"nombre": "BP"
+},
+{
+"id": 24,
+"nombre": "Bubblegum Mint"
+},
+{
+"id": 25,
+"nombre": "Cherry Berry"
+},
+{
+"id": 26,
+"nombre": "Cherry Bomb"
+},
+{
+"id": 27,
+"nombre": "Cherry Boom"
+},
+{
+"id": 28,
+"nombre": "Cherry Cranberry"
+},
+{
+"id": 29,
+"nombre": "Cherry Ice"
+},
+{
+"id": 30,
+"nombre": "Cherry Watermelon"
+},
+{
+"id": 31,
+"nombre": "Cherry Watermelon Ice"
+},
+{
+"id": 32,
+"nombre": "Coco Strawberry"
+},
+{
+"id": 33,
+"nombre": "Coconut Ice"
+},
+{
+"id": 34,
+"nombre": "Coconut Milk"
+},
+{
+"id": 35,
+"nombre": "Coconut Pineapple"
+},
+{
+"id": 36,
+"nombre": "Cool Mint"
+},
+{
+"id": 37,
+"nombre": "Cranberry Lemon"
+},
+{
+"id": 38,
+"nombre": "Danonino"
+},
+{
+"id": 39,
+"nombre": "Dark Cherry"
+},
+{
+"id": 40,
+"nombre": "Double Mint"
+},
+{
+"id": 41,
+"nombre": "Energy Drink"
+},
+{
+"id": 42,
+"nombre": "Forest Berries"
+},
+{
+"id": 43,
+"nombre": "Fresh Mint"
+},
+{
+"id": 44,
+"nombre": "Frozen Banana"
+},
+{
+"id": 45,
+"nombre": "Fucking Fab"
+},
+{
+"id": 46,
+"nombre": "Grape Gummy"
+},
+{
+"id": 47,
+"nombre": "Grape Ice"
+},
+{
+"id": 48,
+"nombre": "Grape Lemonade"
+},
+{
+"id": 49,
+"nombre": "Grape Mint"
+},
+{
+"id": 50,
+"nombre": "Grape Straw"
+},
+{
+"id": 51,
+"nombre": "Grape Strawberry"
+},
+{
+"id": 52,
+"nombre": "Green Apple"
+},
+{
+"id": 53,
+"nombre": "Guava Raspberry"
+},
+{
+"id": 54,
+"nombre": "Halls"
+},
+{
+"id": 55,
+"nombre": "Ice Mint"
+},
+{
+"id": 56,
+"nombre": "Icy Peach"
+},
+{
+"id": 57,
+"nombre": "Juicy Grape"
+},
+{
+"id": 58,
+"nombre": "Kiwi Dragón"
+},
+{
+"id": 59,
+"nombre": "Kiwi Dragon Berry"
+},
+{
+"id": 60,
+"nombre": "Kiwi Dragon Fruit"
+},
+{
+"id": 61,
+"nombre": "Kiwi Dragonfruit"
+},
+{
+"id": 62,
+"nombre": "Kiwi Ice"
+},
+{
+"id": 63,
+"nombre": "Kiwi Passion Fruit Guava"
+},
+{
+"id": 64,
+"nombre": "Kiwi Straw"
+},
+{
+"id": 65,
+"nombre": "Lemon Frozen"
+},
+{
+"id": 66,
+"nombre": "Lush Ice"
+},
+{
+"id": 67,
+"nombre": "Lychee"
+},
+{
+"id": 68,
+"nombre": "Lychee Burst"
+},
+{
+"id": 69,
+"nombre": "Lychee Ice"
+},
+{
+"id": 70,
+"nombre": "Mamba"
+},
+{
+"id": 71,
+"nombre": "Mango Ice"
+},
+{
+"id": 72,
+"nombre": "Mango Lychee"
+},
+{
+"id": 73,
+"nombre": "Mango Oasis"
+},
+{
+"id": 74,
+"nombre": "Maracuya"
+},
+{
+"id": 75,
+"nombre": "Mexican Mango"
+},
+{
+"id": 76,
+"nombre": "Miami"
+},
+{
+"id": 77,
+"nombre": "Miami Mint"
+},
+{
+"id": 78,
+"nombre": "Mighty Mint"
+},
+{
+"id": 79,
+"nombre": "Mint Mancer"
+},
+{
+"id": 80,
+"nombre": "Mixed Berrie Ice"
+},
+{
+"id": 81,
+"nombre": "Mixed Berries"
+},
+{
+"id": 82,
+"nombre": "Mr Peach"
+},
+{
+"id": 83,
+"nombre": "Orange Ice"
+},
+{
+"id": 84,
+"nombre": "Passion Fruit"
+},
+{
+"id": 85,
+"nombre": "Passionfruit"
+},
+{
+"id": 86,
+"nombre": "Peach"
+},
+{
+"id": 87,
+"nombre": "Peach Blue"
+},
+{
+"id": 88,
+"nombre": "Peach Blue Raspberry"
+},
+{
+"id": 89,
+"nombre": "Peach Blue Razz"
+},
+{
+"id": 90,
+"nombre": "Peach Blueberry"
+},
+{
+"id": 91,
+"nombre": "Peach Ice"
+},
+{
+"id": 92,
+"nombre": "Peach Mango"
+},
+{
+"id": 93,
+"nombre": "Peach Mango Watermelon"
+},
+{
+"id": 94,
+"nombre": "Peach Mint"
+},
+{
+"id": 95,
+"nombre": "Piña Colada"
+},
+{
+"id": 96,
+"nombre": "Pink Drink"
+},
+{
+"id": 97,
+"nombre": "Pink Lemonade"
+},
+{
+"id": 98,
+"nombre": "Raspberry Candy Bubblegum"
+},
+{
+"id": 99,
+"nombre": "Sin sabor especificado"
+},
+{
+"id": 100,
+"nombre": "Skittles"
+},
+{
+"id": 101,
+"nombre": "Sour Watermelon"
+},
+{
+"id": 102,
+"nombre": "Sour Watermelon Peach"
+},
+{
+"id": 103,
+"nombre": "Strawberry Banana"
+},
+{
+"id": 104,
+"nombre": "Strawberry Burst"
+},
+{
+"id": 105,
+"nombre": "Strawberry Coco"
+},
+{
+"id": 106,
+"nombre": "Strawberry Colada"
+},
+{
+"id": 107,
+"nombre": "Strawberry Grape"
+},
+{
+"id": 108,
+"nombre": "Strawberry Guava"
+},
+{
+"id": 109,
+"nombre": "Strawberry Ice"
+},
+{
+"id": 110,
+"nombre": "Strawberry Kiwi"
+},
+{
+"id": 111,
+"nombre": "Strawberry Mango"
+},
+{
+"id": 112,
+"nombre": "Strawberry Mint"
+},
+{
+"id": 113,
+"nombre": "Strawberry Raspberry"
+},
+{
+"id": 114,
+"nombre": "Strawberry Refresher"
+},
+{
+"id": 115,
+"nombre": "Strawberry Watermelon"
+},
+{
+"id": 116,
+"nombre": "Triple Berry"
+},
+{
+"id": 117,
+"nombre": "Tulum"
+},
+{
+"id": 118,
+"nombre": "Tulum Mint"
+},
+{
+"id": 119,
+"nombre": "Unicorn Shake"
+},
+{
+"id": 120,
+"nombre": "Variados"
+},
+{
+"id": 121,
+"nombre": "Watermelon Chill"
+},
+{
+"id": 122,
+"nombre": "Watermelon Crush"
+},
+{
+"id": 123,
+"nombre": "Watermelon Ice"
+},
+{
+"id": 124,
+"nombre": "Watermelon Kiwi"
+},
+{
+"id": 125,
+"nombre": "Watermelon Mint"
+},
+{
+"id": 126,
+"nombre": "White Carajillo"
+},
+{
+"id": 127,
+"nombre": "Winter Green"
+},
+{
+"id": 128,
+"nombre": "Winter Mint"
+}
+]

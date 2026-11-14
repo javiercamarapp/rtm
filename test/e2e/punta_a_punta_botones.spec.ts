@@ -78,11 +78,12 @@ for (const tema of TEMAS) {
       await sesionSocio(page, '/pedidos');
       await expect(page.getByRole('link', { name: 'Nuevo pedido' }).first()).toBeVisible();
       for (const [chip, estado] of [['Todos', null], ['Borradores', 'borrador'], ['Por enviar', 'por_enviar'], ['Enviados', 'enviado'], ['Anulados', 'anulado']] as const) {
-        await page.getByRole('link', { name: chip, exact: true }).first().click();
+        await page.getByRole('link', { name: new RegExp(`^${chip}`) }).first().click(); // el segmentado de estado trae el conteo despues del nombre
         await page.waitForLoadState('networkidle');
         if (estado) await expect(page).toHaveURL(new RegExp(`estado=`));
         await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
+      await page.getByTestId('filtros-plegables').click(); // "Más": avisos y origen viven en el desplegable
       await page.getByRole('link', { name: /Con aviso/ }).first().click();
       await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page).toHaveURL(/aviso=1/);
@@ -94,6 +95,7 @@ for (const tema of TEMAS) {
     test('Pedido enviado: registrar pago, emitir correccion, anular, vistas de la nota, copiar texto y PDF (B-58 a B-75)', async ({ page }, info) => {
       await sesionSocio(page, `/pedidos/${d.pedidoBodegaId}`);
       for (const [id, nombre] of [['registrar-pago', 'registrar-pago'], ['corregir-nota', 'corregir-nota'], ['anular-pedido', 'anular-pedido']] as const) {
+        if (id !== 'registrar-pago') await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
         await abrirYCancelar(page, info, tema, page.getByTestId(id), nombre);
       }
       for (const vista of ['Nota', 'Hoja interna', 'Versiones']) {
@@ -174,7 +176,9 @@ for (const tema of TEMAS) {
       await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page.getByTestId('nueva-oc')).toBeVisible();
       await abrirYCancelar(page, info, tema, page.getByTestId('pago-socio'), 'pago-socio');
+      await page.getByTestId('barra-mas').click();
       await abrirYCancelar(page, info, tema, page.getByTestId('pago-sociedad'), 'pago-sociedad');
+      await page.getByTestId('barra-mas').click();
       await abrirYCancelar(page, info, tema, page.getByTestId('ajuste-proveedor'), 'ajuste-proveedor');
       await page.getByTestId('abrir-liquidacion').click();
       await page.waitForURL('**/proveedores/liquidacion**');

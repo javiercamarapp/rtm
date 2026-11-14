@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { notFound } from 'next/navigation';
 import { exigirSocio } from '@/composicion/acceso';
 import { historialDeSocio } from '@/composicion/historial';
@@ -75,11 +76,14 @@ export default async function PaginaHistorial({ params, searchParams }: { params
         titulo={`Historial de ${socio}`}
         descripcion={sinH ? 'Todavía no hay movimientos: el historial se llena con el primer pedido, aportación o acta.' : `Desde ${etiquetaFecha(c.primera_fecha!)} · ${c.meses_activo} ${c.meses_activo === 1 ? 'mes' : 'meses'} · 50/50 fijo, transparente para los dos socios`}
         acciones={
-          <>
-            <Link className="rtm-boton" href={`/socios/${socio}`}>Estado de cuenta</Link>
-            <Link className="rtm-boton" href="/socios/cascada">Cascada y actas</Link>
-            <a className="rtm-boton rtm-boton-primario" href={`${base}/pdf`} data-testid="historial-pdf">Exportar PDF</a>
-          </>
+          <BarraAcciones
+            etiquetaAria="Acciones del historial"
+            vistas={[
+              { href: `/socios/${socio}`, etiqueta: 'Cuenta', titulo: `Estado de cuenta de ${socio}` },
+              { href: '/socios/cascada', etiqueta: 'Cascada', titulo: 'Cascada y actas' },
+            ]}
+            primarias={<a className="rtm-boton rtm-boton-primario" href={`${base}/pdf`} title="Exportar el historial en PDF" data-testid="historial-pdf">Exportar PDF</a>}
+          />
         }
       />
       <Segmentado etiquetaAria="Ver el historial de" opciones={(['Angelo', 'Javier'] as const).map((n) => ({ valor: n, etiqueta: n === perfil.socio_nombre ? `Mi historial (${n})` : `Historial de ${n}`, href: `/socios/${n}/historial`, activa: n === socio, testid: `ver-historial-${n}` }))} />

@@ -27,7 +27,7 @@ export default async function PaginaApertura() {
       <EncabezadoPagina
         eyebrow="Apertura · saldos iniciales"
         titulo={s === null ? 'Carga los saldos de apertura' : `Apertura al corte del ${etiquetaFecha(s.fecha_corte)}`}
-        descripcion="Una sola sesión con fecha de corte, diez pasos guiados y la firma de los dos socios. La diferencia contra la identidad contable queda en la cuenta puente 3990."
+        descripcion="Una sola sesión con fecha de corte, diez pasos guiados y la firma de los dos socios." ayudaResumen="Cuenta puente" ayuda="La diferencia contra la identidad contable queda en la cuenta puente 3990."
         acciones={s === null ? <CrearSesion hoy={hoy} /> : undefined}
       />
       {s === null ? (

@@ -75,8 +75,8 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
     <>
     <SubnavContabilidad />
     <Pagina ancho="tablero">
-      <EncabezadoPagina eyebrow={`Contabilidad · valuación al ${fecha(hasta)}`} titulo={sd ? 'Todavía no hay valuación' : `Valuación de ${m(v.v01_valuacion_cent)}`} descripcion="Qué hay en cada renglón del activo y de las deudas, y cómo se llega a la utilidad. Cada total cuadra contra la valuación contable." acciones={<Link className="rtm-boton" href={`/contabilidad/valuacion/historial`}>Historial mensual</Link>} />
-      <FiltrosUrl etiquetaAria="Fecha de corte" restablecer="/contabilidad/valuacion">
+      <EncabezadoPagina eyebrow={`Contabilidad · valuación al ${fecha(hasta)}`} titulo={sd ? 'Todavía no hay valuación' : `Valuación de ${m(v.v01_valuacion_cent)}`} descripcion="Qué hay en cada renglón del activo y de las deudas, y cómo se llega a la utilidad." ayudaResumen="Cómo cuadra" ayuda="Cada total cuadra contra la valuación contable." acciones={<Link className="rtm-boton" href={`/contabilidad/valuacion/historial`}>Historial mensual</Link>} />
+      <FiltrosUrl etiquetaAria="Fecha de corte" restablecer="/contabilidad/valuacion" plegable={{ etiqueta: 'Fecha de corte' }}>
         <Campo etiqueta="Fecha de corte"><input type="date" name="hasta" defaultValue={hasta} max={hoyNeg()} /></Campo>
       </FiltrosUrl>
       <KpiLinea etiquetaAria="Valuación" celdas={[

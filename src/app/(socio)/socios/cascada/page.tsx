@@ -15,6 +15,7 @@ import { FormularioActa } from '../../_historial/formulario-acta';
 import { historialDeSocio } from '@/composicion/historial';
 import { valuacionDeSocios } from '@/composicion/valuacion-socios';
 import { alertaRetiros, fraseIgualar } from '@/dominio/socios/valuacion';
+import { Ayuda } from '@/ui/componentes/ayuda';
 import { Dos, Estado, Pie, abs, m, pct } from '../../_a3/util';
 
 export const metadata: Metadata = { title: 'Cascada de reparto' };
@@ -52,7 +53,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
         migaja={{ href: '/socios', texto: 'Cuenta de socios' }}
         eyebrow="Cascada de reparto"
         titulo={`${c.en_vivo ? 'Proyección en vivo del' : 'Reparto del'} ${etiquetaFecha(ini)} al ${etiquetaFecha(fin)}`}
-        descripcion="La empresa paga primero los reembolsos y solo lo que queda se reparte 50/50, limitado por el efectivo. Pérdidas y utilidad no repartida pasan al siguiente periodo. El capital solo se devuelve con un retiro acordado por los dos."
+        descripcion="La empresa paga primero los reembolsos y solo lo que queda se reparte 50/50, limitado por el efectivo."
         acciones={
           <>
             <nav className="rtm-seg" aria-label="Periodo">
@@ -62,6 +63,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
           </>
         }
       />
+      <Ayuda resumen="Qué pasa con pérdidas y capital">Pérdidas y utilidad no repartida pasan al siguiente periodo. El capital solo se devuelve con un retiro acordado por los dos.</Ayuda>
       {vs && vs.cuenta.hay_movimientos && <Aviso tono={fraseIgualar(vs.cuenta, m).tono === 'ok' ? 'info' : 'atencion'} titulo="Valuaciones al corte">{fraseIgualar(vs.cuenta, m).texto} {alertaRetiros(vs.cuenta, m) ?? 'Retiros iguales: siempre nos pagamos lo mismo.'}</Aviso>}
       <Aviso tono="info" titulo="Corte mensual.">
         {sug.acta_pendiente_id !== null ? <>Hay un acta pendiente de firma: <Link href={`/socios/actas/${sug.acta_pendiente_id}`} data-testid="acta-pendiente">ábrela</Link> antes de proponer otra.</>

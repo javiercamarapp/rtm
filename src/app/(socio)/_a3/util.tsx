@@ -2,6 +2,7 @@
 // solo proporciones para barras, sumas de columnas ya entregadas por la base y la traduccion de tonos a chips.
 import type { ReactNode } from 'react';
 import '@/ui/estilos/paginas-a3.css';
+import '@/ui/estilos/barrido-c.css';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { ChipEstado } from '@/ui/componentes/controles';
 
