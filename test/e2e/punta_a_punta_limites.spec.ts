@@ -39,6 +39,7 @@ test('T01 pedido sin renglones: "Agrega al menos un renglón." y DialogoSimple s
   expect(await contarEventos('pedido_creado')).toBe(antes);
   await page.goto(`/pedidos/${d.pedidoBodegaId}`);
   const anulados = await contarEventos('pedido_anulado');
+  await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
   await page.getByTestId('anular-pedido').click();
   await page.getByTestId('confirmar').click();
   await expect(page.getByRole('dialog')).toContainText('Escribe el motivo.');

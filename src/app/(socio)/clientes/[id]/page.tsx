@@ -92,7 +92,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
         ]}
       />
 
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="6-6" alinear="inicio">
         <Tarjeta titulo={modeloLinea ? `Historial de precio: ${modeloLinea}` : 'Historial de precio'} descripcion="Precio del tabulador a lo largo del tiempo (escalonado)">
           {puntos.length >= 2 ? (
             <AreaSerie
@@ -124,7 +124,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
         />
       </Tarjeta>
 
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="6-6" alinear="inicio">
         <Tarjeta plana titulo="Pedidos del cliente" descripcion={`${pedidos.length} en el libro`}>
           <DataTable
             etiqueta={`Pedidos de ${f.nombre}`} densidad="densa" plana primeraFija clave={(p) => p.id} filas={pedidos}

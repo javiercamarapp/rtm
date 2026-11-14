@@ -256,6 +256,7 @@ test('F05 pago parcial y total: 5,000.00, correccion de envio a 350 (6,350.00), 
   await expect(page.getByText('Por cobrar', { exact: true }).locator('..')).toContainText('$1,300.00');
   expect(await saldoSocio('Angelo')).toBeGreaterThanOrEqual(500_000n);
   // Correccion: envio 350.
+  await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
   await page.getByTestId('corregir-nota').click();
   await page.getByLabel('Motivo de la corrección').fill('el envío fue de 350');
   await page.getByLabel('Envío nuevo').fill('350');
@@ -485,6 +486,7 @@ test('F10 estado de cuenta y cascada de reparto: cinco pasos, identidad por dos 
 test('F11 anulacion: anular el pedido P-2 regresa las 30 piezas a su costo original 3,067.50 y revierte la renta; la nota original sigue', async ({ page }, info) => {
   const antes = await piezasYValor(d.modelo);
   await sesionSocio(page, `/pedidos/${pedido2}`, 'Javier');
+  await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
   await page.getByTestId('anular-pedido').click();
   await page.getByRole('dialog').getByLabel('Motivo').fill('devolucion total del cliente');
   await page.getByTestId('confirmar').click();

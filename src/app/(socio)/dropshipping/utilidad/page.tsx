@@ -4,6 +4,7 @@ import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, BarraFiltros, Chip } from '@/ui/componentes/controles';
+import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
@@ -32,10 +33,12 @@ export default async function PaginaUtilidadDs({ searchParams }: { searchParams:
       />
       <PestanasDs activa="utilidad" sinFolio={resumen.sin_folio_externo} />
       <BarraFiltros etiquetaAria="Periodo" extras={desde || hasta ? <Chip href="/dropshipping/utilidad">Quitar filtros</Chip> : undefined}>
-        <form className="rtm-form-fila rtm-ds-filtros" method="get" aria-label="Periodo">
-          <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
-          <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
-          <button type="submit" className="rtm-boton">Aplicar</button>
+        <form className="rtm-ds-filtros-linea" method="get" aria-label="Periodo">
+          <FiltrosPlegables etiqueta="Periodo" titulo="Filtrar por periodo (desde y hasta)" activos={(desde ? 1 : 0) + (hasta ? 1 : 0)}>
+            <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
+            <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
+            <button type="submit" className="rtm-boton rtm-boton-primario">Aplicar</button>
+          </FiltrosPlegables>
         </form>
       </BarraFiltros>
       {t.pedidos > 0 && t.reinvertida_cent < t.utilidad_cent && <Aviso tono="info" titulo="Parte de la utilidad no está en el proveedor.">{formatearMoneda(t.fuera_proveedor_cent)} de la utilidad está por cobrar o en poder de un socio; solo lo depositado por encima del costo en la cuenta del proveedor cuenta como reinvertido.</Aviso>}

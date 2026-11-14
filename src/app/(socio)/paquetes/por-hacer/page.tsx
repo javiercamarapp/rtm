@@ -55,7 +55,7 @@ export default async function PaginaPorHacer() {
         </Aviso>
       )}
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="8-4" alinear="inicio">
         <Tarjeta titulo="Tiempo sin enviar" descripcion={`Horas desde la confirmación contra el umbral de ${umbral.horas_sin_empacar} h`}>
           {d.pedidos.length ? (
             <BarList

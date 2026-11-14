@@ -5,7 +5,7 @@ import { operacionDeSocio } from '@/composicion/operacion';
 import { fechaNeg } from '@/dominio/calendario';
 import { etiquetaFecha, formatearMoneda, formatearMonedaCompacta, formatearPiezas } from '@/dominio/formato';
 import { alcanzanUmbral, aNumero, porcentaje, ritmoCliente } from '@/dominio/tablero/agregados';
-import { BarraFiltros, CeldaPersona, Chip, ChipEstado } from '@/ui/componentes/controles';
+import { BarraFiltros, CeldaPersona, ChipEstado, Segmentado } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
@@ -60,7 +60,7 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
         acciones={<><Link className="rtm-boton" href="/pedidos/nuevo">Nuevo pedido</Link><Link className="rtm-boton rtm-boton-primario" href="/clientes/nuevo" data-testid="nuevo-cliente">Nuevo cliente</Link></>}
       />
       <BarraFiltros etiquetaAria="Vistas de clientes">
-        {VISTAS.map((v) => <Chip key={v.clave} href={filtro(v.clave)} activo={vista === v.clave} tono={v.clave === 'vencido' ? 'malo' : 'neutro'}>{`${v.texto} ${cuenta(v.clave)}`}</Chip>)}
+        <Segmentado etiquetaAria="Vista de la cartera" tamano="chico" opciones={VISTAS.map((v) => ({ valor: v.clave, etiqueta: v.texto, contador: cuenta(v.clave), href: filtro(v.clave), activa: vista === v.clave }))} />
       </BarraFiltros>
       <KpiLinea
         etiquetaAria="Indicadores de clientes"
@@ -82,7 +82,7 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
         ]}
       />
 
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="6-6" alinear="inicio">
         <Tarjeta titulo="Concentración de ventas" descripcion="Ventas facturadas por cliente y porcentaje acumulado">
           {conPedidos.length >= 4 ? (
             <Pareto
