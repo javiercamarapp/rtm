@@ -12,6 +12,7 @@ export interface PuertoCuentas {
   listar(): Promise<ListaCuentas>;
   alta(clave: string, e: EntradaAlta): Promise<{ estado: 'creada' | 'sin_cambio' | 'desactivada'; accesoCreado: boolean }>;
   cambiarEstado(clave: string, correo: string, activo: boolean, motivo: string | null): Promise<{ estado: 'reactivada' | 'desactivada' | 'sin_cambio' }>;
+  cambiarCorreo(clave: string, actual: string, nuevo: string, motivo: string | null): Promise<{ estado: 'cambiada' | 'sin_cambio' }>;
 }
 
 export type ResultadoCuentas<K extends string = never> =
@@ -55,6 +56,26 @@ export async function cambiarEstado(p: PuertoCuentas, clave: string, correo: str
     const r = await p.cambiarEstado(clave, c, activo, motivo && motivo.trim() !== '' ? sinCorreos(motivo).slice(0, 200) : null);
     if (r.estado === 'sin_cambio') return { ok: true, eco: 'La cuenta ya estaba así: no hubo cambio.' };
     return { ok: true, eco: r.estado === 'desactivada' ? 'Cuenta desactivada: ya no puede entrar y se cerraron sus sesiones. Se conserva para reactivarla.' : 'Cuenta reactivada.' };
+  } catch (e) {
+    return falla(mensajeDe(e));
+  }
+}
+
+const CORREO_VALIDO = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+
+/** Cambiar el correo de una cuenta de bodega: desactiva el acceso anterior y crea el nuevo (mismo tipo y nombre). La confirmacion la pide la pantalla; la base valida de nuevo. */
+export async function cambiarCorreo(p: PuertoCuentas, clave: string, actual: string, nuevo: string, motivo: string | null): Promise<ResultadoCuentas> {
+  if (!CLAVE.test(clave)) return falla('Falta la clave de la operación. Recarga la página.');
+  const a = normalizarCorreo(actual);
+  const n = normalizarCorreo(nuevo);
+  if (a === '') return falla('Falta el correo actual.');
+  if (n === '') return falla('Escribe el correo nuevo.');
+  if (n.length > 254 || !CORREO_VALIDO.test(n) || /(^\.|\.@|\.\.)/.test(n)) return falla('Escribe un correo nuevo válido.');
+  if (n === a) return falla('El correo nuevo es el mismo que el actual.');
+  try {
+    const r = await p.cambiarCorreo(clave, a, n, motivo && motivo.trim() !== '' ? sinCorreos(motivo).slice(0, 200) : null);
+    if (r.estado === 'sin_cambio') return { ok: true, eco: 'El cambio ya estaba hecho: no se duplicó nada.' };
+    return { ok: true, eco: `Correo cambiado: ${n} ya es la cuenta activa y el acceso anterior quedó desactivado (se cerraron sus sesiones). Falta crear el acceso con «npm run acceso:cuentas»; después la persona pide su enlace.` };
   } catch (e) {
     return falla(mensajeDe(e));
   }

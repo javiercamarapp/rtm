@@ -1,6 +1,8 @@
 // SERVIDOR SIMULADO de negocio para el agente: hace de las funciones SQL que construyen otras olas (pedido, pago, gasto, aportacion,
 // compra, orden de compra, toma de Omar, consultas, deshacer). Aqui se CALCULA todo el dinero, con bigint en centavos; el modelo
 // de lenguaje nunca lo toca. Datos ILUSTRATIVOS (ningun dato real). Idempotente por clave.
+import { formatearMoneda } from '@/dominio/formato';
+import { respuestaValuacionAgente, type VistaValuacionAgente } from '@/dominio/socios/valuacion';
 import { centavosDesdeTexto } from '@/dominio/dinero';
 import type { IConsulta, Intencion } from '@/dominio/agente/intenciones';
 import { contramovimiento, type HechoAplicado } from '@/dominio/agente/deshacer';
@@ -710,7 +712,27 @@ export class NegocioSimulado implements NegocioAgente {
 
   // ---- consultas
 
+  /** Datos del guion para 'mi valuacion' (en produccion salen de agente.valuacion_socios): cifras del dueno, 13-nov. */
+  valuacionSimulada: VistaValuacionAgente = {
+    socios: [
+      { socio: 'Angelo', valuacion_cent: 10691039n, fondos_en_poder_cent: 3547500n, capital_aportado_cent: 10571500n },
+      { socio: 'Javier', valuacion_cent: 15483230n, fondos_en_poder_cent: 0n, capital_aportado_cent: 11816191n },
+    ],
+    igualacion: {
+      igualados: false, faltan_cent: 4792191n, mayor: 'Javier', menor: 'Angelo', componentes: [], suma_componentes_cent: 4792191n,
+      por_socio: { Angelo: { entregar_cent: 3547500n, valuacion_tras_entregar_cent: 14238539n, aportar_cent: 1244691n }, Javier: { entregar_cent: 0n, valuacion_tras_entregar_cent: 15483230n, aportar_cent: 0n } },
+      diferencia_libro_cent: 4792191n, coincide_con_libro: true, regla: '',
+    },
+    retiros_desiguales: false, diferencia_retiros_cent: 0n, retiro_mas: null,
+  };
+
   async consultar(c: IConsulta, r: Resoluciones, autor: Miembro, ahora: Date = new Date(0)): Promise<RespuestaConsulta> {
+    if (c.consulta === 'valuacion') {
+      if (autor.rol !== 'socio') return { titulo: 'Eso lo ven solo los socios', lineas: [] };
+      const resp = respuestaValuacionAgente(this.valuacionSimulada, autor.persona === 'angelo' ? 'Angelo' : 'Javier', formatearMoneda);
+      if (!resp) return { titulo: 'Todavía no hay valuación para comparar', lineas: [] };
+      return { titulo: 'Tu valuación', lineas: [{ tipo: 'pesos', etiqueta: 'Tu valuación', centavos: resp.valuacionCent }, ...resp.textos.map((t) => ({ tipo: 'texto' as const, etiqueta: t.etiqueta, texto: t.texto }))] };
+    }
     switch (c.consulta) {
       case 'inventario': {
         const ids = r.modeloId ? [r.modeloId] : [...this.modelos.keys()];

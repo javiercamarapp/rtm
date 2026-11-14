@@ -29,6 +29,7 @@ export function lectorInventarioSupabase(): LectorInventario {
     completo: () => llamar('inventario_completo'),
     kardex: (modeloId, skuId, ini, fin, limite) => llamar('inventario_kardex', { p_modelo: modeloId, p_sku: skuId, p_ini: ini, p_fin: fin, p_limite: limite }),
     conteoHoja: (ubicacion) => llamar('conteo_hoja', { p_ubicacion: ubicacion }),
+    concilia: () => llamar('inventario_concilia'),
     conteoPrevisualizar: (ubicacion, lineas) => llamar('conteo_previsualizar', { p_ubicacion: ubicacion, p_lineas: lineas }),
     conteos: () => llamar('conteos_lista'),
     conteo: (id) => llamar('conteo_detalle', { p_conteo: id }),
@@ -44,6 +45,7 @@ export function escritorInventarioSupabase(): EscritorInventario {
   return {
     abrirConteo: (clave, ubicacion, tipo, contadoAt) => escribir('abrir_conteo', { p_clave_idem: clave, p_ubicacion: ubicacion, p_tipo: tipo, p_contado_at: contadoAt }),
     cerrarConteo: (clave, conteoId, lineas) => escribir('cerrar_conteo', { p_clave_idem: clave, p_conteo_id: conteoId, p_lineas: lineas }),
+    agregarSabor: (clave, modeloId, sabor, confirmar) => escribir('conteo_agregar_sabor', { p_clave_idem: clave, p_modelo_id: modeloId, p_sabor: sabor, p_confirmar: confirmar }),
     reservarDocumento: (clave, version, params) => escribir<DocumentoReservado>('reservar_documento_inventario', { p_clave_idem: clave, p_version: version, p_params: params }),
     async completarDocumento(id, sha256, bytes) {
       await escribir('completar_documento_inventario', { p_id: id, p_sha256: sha256, p_base64: Buffer.from(bytes).toString('base64') });

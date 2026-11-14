@@ -33,12 +33,14 @@ for (const socio of ['Javier', 'Angelo'] as const) {
     await expect(celda).toContainText('TU VALUACIÓN', { ignoreCase: true });
     await expect(page.getByTestId('inicio-valuacion-cifra')).toContainText(peso(o.valuacion_personal[socio]));
     const dif = peso(Math.abs(o.valuacion_personal.Javier - o.valuacion_personal.Angelo));
+    const fondosAngelo = o.fondos_en_poder.Angelo ?? 0;
+    await expect(page.getByTestId('inicio-valuacion-faltan')).toHaveText(`Faltan ${dif} para estar idénticos`);
     if (socio === 'Javier') {
       await expect(page.getByTestId('inicio-valuacion-comparacion')).toHaveText(`Tienes ${dif} más que Angelo`);
-      await expect(page.getByTestId('inicio-valuacion-accion')).toHaveText('Angelo debe igualar');
+      await expect(page.getByTestId('inicio-valuacion-accion')).toHaveText(`Angelo debe igualar: faltan ${dif} (entregar ${peso(fondosAngelo)} + aportar ${peso(Math.abs(o.valuacion_personal.Javier - o.valuacion_personal.Angelo) - fondosAngelo)})`);
     } else {
       await expect(page.getByTestId('inicio-valuacion-comparacion')).toHaveText(`Tienes ${dif} menos que Javier`);
-      await expect(page.getByTestId('inicio-valuacion-accion')).toHaveText(`Te toca aportar ${dif} para igualar`);
+      await expect(page.getByTestId('inicio-valuacion-accion')).toHaveText(`Para igualar: entrega a la sociedad los ${peso(fondosAngelo)} que tienes cobrados y aporta ${peso(Math.abs(o.valuacion_personal.Javier - o.valuacion_personal.Angelo) - fondosAngelo)} con el siguiente pago`);
     }
     await celda.click();
     await expect(page).toHaveURL(/\/socios$/);
@@ -57,6 +59,15 @@ for (const socio of ['Javier', 'Angelo'] as const) {
     await expect(page.getByTestId('fondos-Angelo')).toContainText(peso(o.fondos_en_poder.Angelo ?? 0));
     await expect(page.getByTestId('dif-valuacion')).toContainText(peso(o.diferencia_a_igualar));
     await expect(page.getByTestId('le-toca')).toContainText(socio === 'Angelo' ? 'Te toca a ti' : 'Angelo');
+    // Desglose explicito: 47,921.91 = lo que aporto menos + los fondos cobrados en su cuenta, con enlace a los cobros y los pasos para igualar.
+    const x = Math.abs(o.valuacion_personal.Javier - o.valuacion_personal.Angelo);
+    const fon = o.fondos_en_poder.Angelo ?? 0;
+    await expect(page.getByTestId('faltan-identicos')).toHaveText(`Faltan ${peso(x)} para estar idénticos`);
+    await expect(page.getByTestId('desglose-capital')).toContainText(peso(x - fon));
+    await expect(page.getByTestId('desglose-fondos')).toContainText(peso(fon));
+    await expect(page.getByTestId('desglose-total')).toHaveText(peso(x));
+    await expect(page.getByTestId('cobros-fondos')).toContainText('Ver la cuenta de Angelo');
+    await expect(page.getByTestId('indicaciones-igualar')).toContainText(socio === 'Angelo' ? `aporta ${peso(x - fon)} con el siguiente pago` : `aportar ${peso(x - fon)})`);
     await expect(page.getByTestId('texto-sube')).toContainText('baja solo cuando te pagas un retiro');
     for (const id of ['S1', 'S2', 'S3', 'S4', 'S5', 'S6']) await expect(page.getByTestId(`cuadra-${id}`)).toHaveAttribute('data-ok', 'true');
     await expect(page.getByTestId('conciliacion-capital')).toContainText('Suma por socio');
@@ -93,7 +104,7 @@ test('capturas 1440 y 390, claro y oscuro', async ({ browser }) => {
         const page = await ctx.newPage();
         await sesion(page, socio, '/');
         // El contenido se desplaza dentro del armazon (no la ventana): se captura cada bloque con scroll hasta el.
-        const bloques: [string, string, string][] = [['/', 'inicio', 'inicio-valuacion'], ['/socios', 'socios-valuaciones', 'valuaciones'], ['/socios', 'socios-cuadra', 'panel-cuadra'], ['/socios', 'socios-serie', 'serie-valuacion'], ['/socios', 'socios-proveedores', 'prov-total'], ['/socios', 'socios-comprobaciones', 'comprobaciones'], ['/contabilidad/balance', 'balance-capital', 'balance-capital-socios'], ['/contabilidad/valuacion', 'valuacion-socios', 'valuacion-por-socio']];
+        const bloques: [string, string, string][] = [['/', 'inicio', 'inicio-valuacion'], ['/socios', 'socios-valuaciones', 'valuaciones'], ['/socios', 'socios-cuadra', 'panel-cuadra'], ['/socios', 'socios-igualar', 'desglose-igualacion'], ['/socios', 'socios-serie', 'serie-valuacion'], ['/socios', 'socios-proveedores', 'prov-total'], ['/socios', 'socios-comprobaciones', 'comprobaciones'], ['/contabilidad/balance', 'balance-capital', 'balance-capital-socios'], ['/contabilidad/valuacion', 'valuacion-socios', 'valuacion-por-socio']];
         for (const [url, etiqueta, testid] of bloques) {
           await page.goto(url);
           await page.waitForLoadState('networkidle');

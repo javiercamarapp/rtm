@@ -5,7 +5,7 @@ import { EXPLICACIONES_CONTEO, type ExplicacionConteo, type HojaConteoSku, type 
 import { formatearPiezas } from '@/dominio/formato';
 import { Aviso } from '@/ui/componentes/controles';
 import { Tarjeta } from '@/ui/componentes/pagina';
-import { cerrarConteoAccion, previsualizarConteoAccion } from '../acciones';
+import { agregarSaborAccion, cerrarConteoAccion, previsualizarConteoAccion } from '../acciones';
 
 const ETIQUETA: Record<ExplicacionConteo, string> = {
   venta_no_registrada: 'Venta no registrada', toma_no_registrada: 'Toma no registrada', error_de_sabor: 'Error de sabor', reclamo_proveedor: 'Reclamo al proveedor', merma: 'Merma', error_de_conteo: 'Error de conteo',
@@ -18,7 +18,14 @@ function ahoraLocal(): string {
 }
 
 /** Conteo ciego: primero se cuenta (sin ver lo que dice el sistema), despues se muestra la diferencia, se explica y se cierra. */
-export function HojaConteo({ ubicacion, hoja }: { ubicacion: string; hoja: HojaConteoSku[] }) {
+export function HojaConteo({ ubicacion, hoja: hojaInicial }: { ubicacion: string; hoja: HojaConteoSku[] }) {
+  const [agregados, setAgregados] = useState<HojaConteoSku[]>([]);
+  const hoja = [...hojaInicial, ...agregados];
+  const [nuevoDe, setNuevoDe] = useState<string | null>(null);
+  const [nuevoSabor, setNuevoSabor] = useState('');
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [parecidos, setParecidos] = useState<string[]>([]);
+  const claveAlta = useRef(`web:${crypto.randomUUID()}`);
   const [cuentas, setCuentas] = useState<Record<number, string>>({});
   const [cuando, setCuando] = useState('');
   const [previa, setPrevia] = useState<PrevisualizacionConteo | null>(null);
@@ -31,6 +38,23 @@ export function HojaConteo({ ubicacion, hoja }: { ubicacion: string; hoja: HojaC
 
   const lineas = hoja.filter((h) => cuentas[h.sku_id] !== undefined && cuentas[h.sku_id] !== '').map((h) => ({ sku_id: h.sku_id, contado: Number(cuentas[h.sku_id]) }));
   const invalidas = lineas.some((l) => !Number.isInteger(l.contado) || l.contado < 0);
+
+  const crearSabor = (h: HojaConteoSku, confirmar: boolean) => {
+    if (h.modelo_id === undefined) return;
+    setAviso(null);
+    empezar(async () => {
+      const r = await agregarSaborAccion(claveAlta.current, h.modelo_id!, nuevoSabor, confirmar);
+      if (!r.ok) { setAviso(r.mensaje); return; }
+      if (r.datos.estado === 'parecidos') { setParecidos(r.datos.parecidos.map((x) => x.nombre)); claveAlta.current = `web:${crypto.randomUUID()}`; return; }
+      const d = r.datos;
+      claveAlta.current = `web:${crypto.randomUUID()}`;
+      setParecidos([]);
+      if (!hoja.some((x) => x.sku_id === d.sku_id)) setAgregados((a) => [...a, { sku_id: d.sku_id, marca: h.marca, modelo: h.modelo, sabor: d.sabor, modelo_id: h.modelo_id }]);
+      setAviso(d.estado === 'existente' ? `${d.sabor} ya existía: quedó en la hoja.` : `${d.sabor} creado. No tiene costo propio: usa el costo promedio del modelo.`);
+      setNuevoDe(null);
+      setNuevoSabor('');
+    });
+  };
 
   const ver = () => {
     setError(null);
@@ -123,9 +147,22 @@ export function HojaConteo({ ubicacion, hoja }: { ubicacion: string; hoja: HojaC
               <input className="rtm-campo rtm-campo-num" inputMode="numeric" pattern="[0-9]*" placeholder="Contadas" value={cuentas[h.sku_id] ?? ''} onChange={(e) => setCuentas({ ...cuentas, [h.sku_id]: e.target.value.replace(/[^0-9]/g, '') })} aria-label={`Piezas contadas de ${h.modelo} ${h.sabor}`} data-testid={`contado-${h.sku_id}`} />
             </label>
           ))}
+          {nuevoDe === m ? (
+            <div className="rtm-conteo-fila" data-testid="alta-sabor">
+              <input className="rtm-campo" placeholder="Sabor nuevo" maxLength={40} value={nuevoSabor} onChange={(e) => { setNuevoSabor(e.target.value); setParecidos([]); }} aria-label={`Sabor nuevo de ${m}`} data-testid="alta-sabor-nombre" />
+              <button type="button" className="rtm-boton rtm-boton-chico" disabled={ocupado || nuevoSabor.trim().length < 2} onClick={() => crearSabor(hoja.find((h) => `${h.marca} · ${h.modelo}` === m)!, false)} data-testid="alta-sabor-crear">Crear</button>
+              <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => { setNuevoDe(null); setParecidos([]); }}>Cancelar</button>
+              {parecidos.length > 0 && (
+                <p className="rtm-nota" role="alert" data-testid="alta-sabor-parecidos">Se parece a {parecidos.join(', ')}. Si es uno de esos, cuéntalo en su renglón; si es distinto, <button type="button" className="rtm-boton rtm-boton-chico" disabled={ocupado} onClick={() => crearSabor(hoja.find((h) => `${h.marca} · ${h.modelo}` === m)!, true)} data-testid="alta-sabor-confirmar">Crear de todos modos</button></p>
+              )}
+            </div>
+          ) : (
+            <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => { setNuevoDe(m); setAviso(null); }} data-testid="alta-sabor-abrir">Crear sabor nuevo</button>
+          )}
         </fieldset>
       ))}
       </div>
+      {aviso && <Aviso tono="info">{aviso}</Aviso>}
       {error && <Aviso tono="error">{error}</Aviso>}
       <div className="rtm-acciones-fila">
         <button type="button" className="rtm-boton rtm-boton-primario" onClick={ver} disabled={ocupado || lineas.length === 0 || invalidas || cuando === ''} data-testid="conteo-ver">{ocupado ? 'Calculando' : 'Ver diferencias'}</button>

@@ -44,7 +44,7 @@ Pendiente de decisión del dueño: automatizar el paso 2 desde el servidor exigi
 - `api.bodega_hoy_a_preparar()`: pedidos `confirmado` que salen de la bodega (el mismo criterio que "Paquetes por hacer": confirmados sin enviar, empacados o no), agrupados por cliente, con folio, estado de empaque, si vienen de días anteriores, zona (Mérida o fuera), piezas por modelo y sabor, lista de surtido total contra existencia y faltantes.
 - `api.bodega_llegadas()`: compras a proveedor con destino bodega en `confirmada`, `enviada`, `en_trayecto` o `llego_merida`: proveedor, fecha esperada, guía de entrada (paquetería y número), piezas por modelo y sabor y total por guardar.
 
-Alcance pedido por el dueño: bodega ve el NOMBRE del cliente, el NOMBRE del proveedor y los folios (de pedido y de compra). Si más adelante no debe ver el proveedor, basta poner `MOSTRAR_PROVEEDOR = false` en `src/dominio/bodega/bodega.ts` (el parser descarta el dato; la pantalla muestra "Compra").
+Alcance (decisión del dueño, 14-nov): bodega ve el NOMBRE del cliente y los folios (de pedido y de compra), pero NO el nombre del proveedor: `MOSTRAR_PROVEEDOR = false` en `src/dominio/bodega/bodega.ts` (el parser descarta el dato aunque la base lo entregue; la pantalla muestra "Compra" y el folio). Para volver a mostrarlo basta ponerla en `true`.
 
 Nunca devuelven precios, montos, costos, márgenes, saldos, cuentas por pagar, teléfonos, direcciones, notas ni dueño del cliente. Además el parser de la web copia solo campos de una lista blanca. Un socio activo puede abrir la misma vista (vista previa, con aviso y regreso a Cuentas); Omar y anónimo no.
 
@@ -77,3 +77,15 @@ La renta por pieza que se devenga a esa persona es entre los socios y la socieda
 - `seguridad.operacion.resultado` no guarda el correo (solo huella, tipo y estado). La auditoría filtra lo que parezca un correo en el motivo y el nombre; la pantalla avisa que el motivo no debe llevar correos.
 - `acceso:cuentas` continúa con la siguiente cuenta si una falla (por ejemplo un 400 de Auth), reporta solo conteos y tipos, termina con código 1, y un 422 solo cuenta como "ya existía" si el usuario realmente está en `auth.users`.
 - pgTAP `a8_003_cuentas_endurecimiento`; vitest en `test/unit/rol_bodega.test.ts`.
+
+## Cambiar el correo de una cuenta (migración 20261114500100)
+
+Decisión del dueño (14-nov): el correo de una cuenta de bodega puede ser provisional y se puede cambiar. En Cuentas, la acción «Cambiar correo» (solo socio, con confirmación) llama a `api.cuenta_cambiar_correo(clave, correo_actual, correo_nuevo, motivo)`:
+
+- Solo tipos creables desde la web (bodega): nunca la cuenta de un socio ni la de Omar.
+- Desactiva el acceso anterior (igual que Desactivar: `activo = false`, usuario inactivo y se cierran sus sesiones de Auth) y crea la cuenta con el correo nuevo del mismo tipo y nombre. La anterior se conserva para el historial.
+- Mismo validador y misma forma canónica que el alta (trim, NFKC, minúsculas, sin punto final); un correo que ya tiene otra cuenta es conflicto (23505); el tope de 20 cuentas activas se respeta (el cambio es neutro: una sale, una entra).
+- Idempotente: la misma clave repite el resultado; otra clave con el cambio ya hecho responde «sin cambio» y no duplica filas.
+- Auditoría con la huella (16 caracteres de un hash) de los dos correos; el correo nunca queda en claro, ni en la auditoría ni en `seguridad.operacion`; el motivo pierde lo que parezca un correo.
+- El usuario de Auth del correo nuevo lo crea `npm run acceso:cuentas` (o `:nube`): ese script ya atiende a toda cuenta creable activa que no tenga usuario de Auth, sin mandar correos. Hasta correrlo, la pantalla muestra «Falta crear su acceso».
+- Pruebas: pgTAP `a11_002_cuenta_cambiar_correo`, vitest en `test/unit/rol_bodega.test.ts` y Playwright `test/e2e/bodega.spec.ts` (cambia el correo, la sesión anterior cae, el nuevo entra a su vista).

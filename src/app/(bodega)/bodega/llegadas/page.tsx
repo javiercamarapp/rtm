@@ -22,7 +22,7 @@ export default async function PaginaLlegadasBodega() {
         descripcion={d.compras.length === 0 ? 'Cuando un socio confirme una compra para la bodega, aparecerá aquí.' : `${llegaron} ya ${llegaron === 1 ? 'llegó' : 'llegaron'} a Mérida. Cuenta lo que llega y guárdalo por modelo y sabor; los socios registran la recepción.`}
       />
       <Rejilla dividir="6-6" alinear="inicio">
-        <Tarjeta titulo="Por proveedor" descripcion="Lo que viene en camino o ya llegó">
+        <Tarjeta titulo="Por llegar" descripcion="Lo que viene en camino o ya llegó">
           {d.compras.length === 0
             ? <p className="rtm-nota" data-testid="bodega-vacio">Sin llegadas por recibir.</p>
             : <ul className="bodega-lista">{d.compras.map((c) => <TarjetaCompra key={c.folio} c={c} />)}</ul>}

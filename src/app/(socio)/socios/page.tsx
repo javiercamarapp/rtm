@@ -16,7 +16,7 @@ import { Dos, Estado, Pie, abs, m, pct, suma } from '../_a3/util';
 import { AccionesSocios } from './formularios';
 import { valuacionDeSocios } from '@/composicion/valuacion-socios';
 import { otroSocio } from '@/dominio/socios/valuacion';
-import { ComparativaValuaciones, PanelCuadra, SeccionDeudaProveedores, SerieValuacion, TarjetaValuacionSocio } from './valuacion';
+import { ComparativaValuaciones, DesgloseIgualacion, PanelCuadra, SeccionDeudaProveedores, SerieValuacion, TarjetaValuacionSocio } from './valuacion';
 
 export const metadata: Metadata = { title: 'Cuenta de socios' };
 
@@ -61,6 +61,7 @@ export default async function PaginaSocios() {
         <ComparativaValuaciones c={val} yo={yo} />
         <PanelCuadra c={val} />
       </Rejilla>
+      <DesgloseIgualacion c={val} yo={yo} />
       <SerieValuacion c={val} yo={yo} />
 
       <KpiLinea

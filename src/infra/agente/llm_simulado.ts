@@ -203,6 +203,7 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
     if (/^(cuadra|cuadran las cuentas|las cuentas cuadran)\??$/.test(n)) return respuesta([{ tipo: 'consulta', consulta: 'cuadra', ...sinCons, periodo: null }]);
     if (/^(que falta|pendientes|que falta por hacer)/.test(n)) return respuesta([{ tipo: 'consulta', consulta: 'pendientes', ...sinCons, periodo: null }]);
     if (/^(reporte|dame el reporte)/.test(n)) return respuesta([{ tipo: 'consulta', consulta: 'reporte', ...sinCons, periodo: /mes/.test(n) ? 'mes' : 'semana' }]);
+    if (/^(mi valuacion|la valuacion|valuacion|como estamos|como vamos|como estamos de valuacion)\b/.test(n)) return respuesta([{ tipo: 'consulta', consulta: 'valuacion', ...sinCons, periodo: null }]);
     if (/^(saldo de los socios|saldos de socios|como van los socios)/.test(n)) return respuesta([{ tipo: 'consulta', consulta: 'saldos_socios', ...sinCons, periodo: null }]);
   }
 

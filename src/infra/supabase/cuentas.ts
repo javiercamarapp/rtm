@@ -19,6 +19,13 @@ export function cuentasSupabase(): PuertoCuentas {
       const estado = r.estado === 'sin_cambio' || r.estado === 'desactivada' ? r.estado : 'creada';
       return { estado, accesoCreado: r.acceso_creado === true };
     },
+    async cambiarCorreo(clave, actual, nuevo, motivo) {
+      const sb = await crearClienteServidor();
+      const { data, error } = await sb.rpc('cuenta_cambiar_correo', { p_clave_idem: clave, p_correo_actual: actual, p_correo_nuevo: nuevo, p_motivo: motivo });
+      if (error) throw new ErrorCuentas(error.message, error.code ?? null);
+      const r = (data ?? {}) as Record<string, unknown>;
+      return { estado: r.estado === 'cambiada' ? 'cambiada' : 'sin_cambio' };
+    },
     async cambiarEstado(clave, correo, activo, motivo) {
       const sb = await crearClienteServidor();
       const { data, error } = await sb.rpc('cuenta_cambiar_estado', { p_clave_idem: clave, p_correo: correo, p_activo: activo, p_motivo: motivo });

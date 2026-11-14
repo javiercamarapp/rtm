@@ -67,7 +67,7 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
 };
 
 export const LISTA_COMANDOS =
-  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes, /enviado, /entregado, /cancelar, /aprobar, /enviada, /llego, /recibir, /servicio, /merma, /conteo, /cliente, /precio, /acta, /firmaracta, /lote, /pedidomenudeo, /pagopedido, /cuadra, /balance, /diario, /cobertura, /reporte, /compras, /pedidos, /socios';
+  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes, /enviado, /entregado, /cancelar, /aprobar, /enviada, /llego, /recibir, /servicio, /merma, /conteo, /cliente, /precio, /acta, /firmaracta, /lote, /pedidomenudeo, /pagopedido, /cuadra, /balance, /diario, /cobertura, /reporte, /compras, /pedidos, /socios, /valuacion';
 
 export type ResultadoComando =
   | { ok: true; tipo: 'intencion'; intencion: Intencion }
@@ -512,6 +512,9 @@ export function parsearComando(texto: string): ResultadoComando | null {
       return consulta(nombre);
     case 'socios':
       return consulta('saldos_socios');
+    case 'valuacion':
+    case 'estamos':
+      return consulta('valuacion');
     case 'cobertura':
       return consulta('cobertura', { modelo_texto: resto === '' ? null : resto });
     case 'reporte': {

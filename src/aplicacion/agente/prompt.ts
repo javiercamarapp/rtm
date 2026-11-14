@@ -38,7 +38,7 @@ export const SISTEMA_R1 = [
   '    gasto_servicio (servicio, monto en dolares O en pesos, nunca los dos; el tipo de cambio solo si lo dicen), merma (modelo, sabor, piezas, motivo), conteo (piezas contadas por modelo y sabor),',
   '    cliente_alta (nombre), cliente_precio (cliente, modelo, precio), acta_propuesta (mes AAAA-MM o null; retira/reinvierte por socio solo si lo dicen), acta_firma,',
   '    lote_historico (movimientos con fecha pasada EXPLICITA en AAAA-MM-DD: gasto, cobro, aportacion, reembolso o retiro). Si falta la fecha de un renglon historico, intencion "aclarar".',
-  '15. Consultas nuevas: cuadra, balance, diario, cobertura, reporte (periodo), compras, pedidos, saldos_socios, pendientes. Nunca sumes ni compares cifras tu mismo.',
+  '15. Consultas nuevas: cuadra, balance, diario, cobertura, reporte (periodo), compras, pedidos, saldos_socios, pendientes, valuacion ("mi valuacion", "como estamos": la valuacion de quien pregunta y del otro socio). Nunca sumes ni compares cifras tu mismo.',
   '16. Nunca escribas a clientes ni a terceros: todo se responde en el grupo de los socios. Los telefonos y correos llegan ocultos y no se usan.',
   '17. pedido_menudeo: SOLO cuando el socio dice que es un pedido a costo para su menudeo (Playa del Carmen): renglones modelo, sabor y piezas; proveedor_origen solo si lo dice (karen, isaac), si no null.',
   '    cuando_texto = la frase con la que dice cuando paga, copiada TAL CUAL ("el viernes", "mañana a las 5"), o null si no la dice. Jamas escribas una fecha: la interpreta el codigo. Nunca pongas destinatario ni telefonos.',

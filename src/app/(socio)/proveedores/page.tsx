@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
-import { armarHojaProveedor, armarPosicionProveedor } from '@/dominio/operacion/posicion_proveedor';
+import { armarHojaProveedor, armarPosicionProveedor, rotuloModalidad } from '@/dominio/operacion/posicion_proveedor';
 import type { EstadoCompra } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Segmentado } from '@/ui/componentes/controles';
@@ -121,7 +121,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
         </Tarjeta>
         <Tarjeta titulo={`${pos.palabra === 'Deuda de la empresa' ? 'Deuda de la empresa' : 'Posición'} con ${proveedor}`} descripcion="Lo que debe la empresa, sin los pedidos de menudeo del socio que aún no paga; el total del libro va abajo">
           <p className="a3-cifra" data-testid="posicion-cifra"><CifraComprobada texto={pos.monto} cifra={`proveedor:deuda:${proveedor}`} comprobacion={pos.cuadra ? 'cuadra' : 'no_cuadra'} /></p>
-          <p className="a3-cifra-apoyo" data-testid="etiqueta-saldo"><Estado tono={pos.tono === 'debe' ? 'atencion' : 'ok'}>{pos.palabra}</Estado><span>{cuenta.modalidad === 'prepago_total' ? 'Prepago total' : 'Liquidación los viernes'}</span></p>
+          <p className="a3-cifra-apoyo" data-testid="etiqueta-saldo"><Estado tono={pos.tono === 'debe' ? 'atencion' : 'ok'}>{pos.palabra}</Estado><span>{rotuloModalidad(cuenta.modalidad, cuenta.saldo_cent, pos.tono)}</span></p>
           {pos.conciliacionLibro && <p className="a3-pie" data-testid="conciliacion-libro">{pos.conciliacionLibro}</p>}
           <p className="a3-pie" data-testid="posicion-desglose">{pos.desglose}</p>
           {pos.anticipo && <p className="a3-pie" data-testid="posicion-anticipo">{pos.anticipo}</p>}

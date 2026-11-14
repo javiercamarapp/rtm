@@ -18,6 +18,7 @@ const cuentaVal = {
   hay_movimientos: true,
   socios: [{ socio: 'Angelo', valuacion_cent: 10691039n }, { socio: 'Javier', valuacion_cent: 15483230n }],
   comparacion: { mayor: 'Javier', menor: 'Angelo', igualados: false, diferencia_valuacion_cent: 4792191n, aportar_para_igualar_cent: 4792191n },
+  igualacion: { igualados: false, faltan_cent: 4792191n, mayor: 'Javier', menor: 'Angelo', por_socio: { Angelo: { entregar_cent: 3547500n, valuacion_tras_entregar_cent: 14238539n, aportar_cent: 1244691n }, Javier: { entregar_cent: 0n, valuacion_tras_entregar_cent: 15483230n, aportar_cent: 0n } } },
 } as unknown as CuentaSociosValuacion;
 
 describe('armarPulso', () => {

@@ -6,7 +6,7 @@ import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { AccionesCuenta } from './acciones-cuenta';
-import { altaCuentaAccion, estadoCuentaAccion } from './acciones';
+import { altaCuentaAccion, cambiarCorreoAccion, estadoCuentaAccion } from './acciones';
 import { FormularioAltaCuenta } from './formulario-alta';
 
 export const metadata: Metadata = { title: 'Cuentas' };
@@ -48,7 +48,7 @@ export default async function PaginaCuentas() {
                   </>
                 ),
               },
-              { id: 'a', titulo: 'Acciones', celda: (c) => (c.gestionable ? <AccionesCuenta correo={c.correo} activo={c.activo} accion={estadoCuentaAccion} /> : <span className="rtm-celda-sub">Se administra fuera de la web</span>) },
+              { id: 'a', titulo: 'Acciones', celda: (c) => (c.gestionable ? <AccionesCuenta correo={c.correo} activo={c.activo} accion={estadoCuentaAccion} accionCorreo={cambiarCorreoAccion} /> : <span className="rtm-celda-sub">Se administra fuera de la web</span>) },
             ]}
           />
         </Tarjeta>

@@ -27,3 +27,11 @@ Leer **solo** `api.cuenta_socios_valuacion()` (con el actor de lectura, como hac
 - `comparacion.retiros_desiguales` y `diferencia_retiros_cent`: alerta de retiro desigual.
 
 Hay una funcion de view-model con estos textos en `src/dominio/socios/valuacion.ts` (`tarjetaValuacion`, `fraseIgualar`, `alertaRetiros`) que puede reutilizarse.
+
+## Pulido final (14-nov): desglose, rendimiento y Telegram
+
+**Desglose explícito (decisión del dueño).** La valuación de quien tiene fondos de la sociedad en su cuenta SÍ los resta; ahora se ve por qué es menos. Campo nuevo `igualacion` en `api.cuenta_socios_valuacion` (migración `20261114500000`): `faltan_cent` (diferencia de valuación), `componentes` (aportó menos capital, fondos cobrados pendientes de entregar, retiros desiguales, centavo suelto; suman exactamente lo que falta) y `por_socio` (`entregar_cent`, `valuacion_tras_entregar_cent`, `aportar_cent`). Con datos del dueño: Javier 154,832.30 contra Angelo 106,910.39 = 47,921.91 = 12,446.91 + 35,475.00; al entregar los 35,475.00 Angelo sube a 142,385.39 y solo falta aportar 12,446.91, que coincide con «diferencia a igualar» y «le toca aportar» del libro (`coincide_con_libro`; con retiros desiguales difieren y se avisa). Cada socio tiene `fondos_detalle` (los cobros). Textos: `src/dominio/socios/valuacion.ts` (`textoFaltan`, `indicacionesSocio`, `desgloseDiferencia`); aparecen en la tarjeta de Inicio, en /socios («Por qué hay diferencia y cómo igualar», con enlace a la cuenta del socio y esos cobros) y en el aviso del Historial personal.
+
+**Rendimiento.** La serie mensual ya no llama a `cap_periodo` por mes: una sola consulta por conjuntos, mismas cifras (pgTAP `a11_001` compara contra el cálculo anterior con 1, 12 y 61 meses). Medido en local con la misma siembra: 1 mes 619 ms → 361 ms, 12 meses 767 → 361 ms, 61 meses 2,317 → 615 ms.
+
+**Telegram.** `mi valuación`, `como estamos` y `/valuacion` responden con `agente.valuacion_socios()` (la misma función de la base, sin teléfonos, solo socios; Omar rechazado). Causa del silencio: el prefiltro sin IA descartaba mensajes sin cifras ni palabras de negocio; se añadieron `valuacion`, `estamos`, `igualar`, `igualados`. Guion: `scripts/agente/guion-valuacion.txt`.
