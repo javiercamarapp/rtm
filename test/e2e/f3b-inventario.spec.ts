@@ -159,7 +159,7 @@ test('inicio: los cuatro indicadores del pulso con datos reales y Tu turno', asy
   await expect(page.getByTestId('inicio-bodega')).not.toContainText('Sin dato');
   await expect(page.getByTestId('inicio-isaac')).toBeVisible();
   await expect(page.getByTestId('inicio-cobrar')).toBeVisible();
-  await expect(page.getByTestId('inicio-socios')).toBeVisible();
+  await expect(page.getByTestId(/^inicio-(socios|valuacion)$/)).toBeVisible();
   await expect(page.getByTestId('pulso-bodega').first()).not.toContainText('Sin dato');
   await expect(page.getByRole('heading', { name: 'Tu turno' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Por reponer' })).toBeVisible();
