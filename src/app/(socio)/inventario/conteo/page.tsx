@@ -8,12 +8,13 @@ import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import '@/ui/estilos/paginas-a2.css';
 import { etiquetaHoy } from '../../contexto';
 import { HojaConteo } from './hoja-conteo';
+import { PanelConcilia } from '../concilia';
 
 export const metadata: Metadata = { title: 'Conteo físico' };
 
 export default async function PaginaConteo() {
   const lector = await inventarioDeSocio();
-  const [hoja, conteos] = await Promise.all([lector.conteoHoja('bodega_omar'), lector.conteos()]);
+  const [hoja, conteos, concilia] = await Promise.all([lector.conteoHoja('bodega_omar'), lector.conteos(), lector.concilia()]);
   const cerrados = conteos.filter((c) => c.estado === 'cerrado');
   const ultimo = cerrados[0] ?? null;
   const sinExplicar = conteos.reduce((a, c) => a + c.sin_explicar, 0);
@@ -30,6 +31,7 @@ export default async function PaginaConteo() {
         { id: 'd', etiqueta: 'Sabores con diferencia (último)', valor: ultimo ? String(ultimo.con_diferencia) : null, categoria: 3, nota: ultimo ? `de ${ultimo.lineas} sabores` : undefined },
         { id: 's', etiqueta: 'Diferencias sin explicar', valor: conteos.length === 0 ? null : String(sinExplicar), categoria: 4, nota: 'En todos los conteos' },
       ]} />
+      <PanelConcilia c={concilia} />
       {hoja.length === 0 ? (
         <div className="rtm-dt-aviso"><strong>Nada que contar todavía</strong><p>La hoja de conteo se arma con los sabores que ya tuvieron una entrada en la Bodega Omar.</p></div>
       ) : (

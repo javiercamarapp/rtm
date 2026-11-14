@@ -243,3 +243,12 @@ Rotar token y secreto si alguna vez se pegaron en un chat o en un repo.
 - `supabase/tests/database/030_telegram_agente_ampliado.test.sql` (pgTAP): cada tipo de `agente.ejecutar_ext`, simulacion que no deja nada, idempotencia, deshacer, consultas, permisos y RLS.
 - `test/integracion/telegram_e2e.test.ts`: extremo a extremo contra la base local con el webhook, Telegram con fetch falso (nunca sale a api.telegram.org) y la IA simulada: dia de operacion completo (compra, recepcion, pedido, envio, cobro, gasto, reembolso) con `cuadra = true` por dos vias, mas un caso por tipo de situacion (faltante, suma que no cuadra, sin permiso, doble envio, confirmacion expirada, miembro no autorizado, secreto invalido).
 - `scripts/agente/simular-telegram.mts`: el mismo camino contra una base LOCAL, con guion (`DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres npx tsx scripts/agente/simular-telegram.mts scripts/agente/guion-telegram.txt`). Se niega a correr si la base no es local.
+
+## «Mi valuación» y «cómo estamos» (14-nov)
+
+Consulta determinista (`consulta: valuacion`): la valuación de quien pregunta, cuánto más o menos tiene que el otro, cuánto falta para estar idénticos y cómo igualar («Para igualar: entrega a la sociedad los $F que tienes cobrados y aporta $A con el siguiente pago»; al que tiene más: «Angelo debe igualar: faltan $X (entregar $F + aportar $A)»). Solo socios. Las cifras vienen de `agente.valuacion_socios()`; el texto lo arma código, no el modelo. Simulador: `npx tsx scripts/agente/simulador.mts scripts/agente/guion-valuacion.txt`.
+
+## Alta asistida (modelos, sabores, clientes): estado
+
+Hecho y verificado: el núcleo de base para SABORES, `catalogo.alta_sabor` (validación del nombre como dato, parecidos por distancia de edición con umbral documentado, idempotencia, topes de 10 por hora y 30 por día por actor, auditoría con origen), usado por el botón «Crear sabor nuevo» de la hoja de conteo web. El canal `telegram` está admitido por la función pero NINGUNA ruta del bot la llama todavía.
+Pendiente (no activado): tarjeta con botones en el grupo para sabor, modelo y cliente desconocidos, alta de modelo (marca obligatoria, puffs por omisión) y de cliente (solo nombre y tipo; el teléfono nunca pasa por el modelo), reanudar el pedido que originó la mención, simulador y pgTAP de esos flujos. Ver `docs/alta-asistida-pendiente.md`.

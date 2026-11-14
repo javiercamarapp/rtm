@@ -19,6 +19,7 @@ import { Campo, FiltrosUrl } from '../_a2/filtros-url';
 import { acumularPorTramo, TRAMOS } from '../_a2/antiguedad';
 import { dec, diasEntre, enlace, m, partePct, periodo, pctTexto, pz, pzs, fechaCorta, textoParam, tonoChip, uno, type Params } from '../_a2/util';
 import { ExportarInventario } from './exportar-inventario';
+import { PanelConcilia } from './concilia';
 
 export const metadata: Metadata = { title: 'Inventario' };
 
@@ -35,8 +36,8 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
   const sp = await searchParams;
   const vista = ['compras', 'documentos', 'sin-movimientos'].includes(uno(sp.vista) ?? '') ? (uno(sp.vista) as string) : 'existencias';
   const per = periodo(sp, 30);
-  const [inv, documentos, clientes, detalle] = await Promise.all([
-    (await inventarioDeSocio()).completo(), (await inventarioDeSocio()).documentos(), (await lectorDeSocio()).clientes(), (await datosDeSocio()).detalleInventario(per.ini, per.fin),
+  const [inv, documentos, clientes, detalle, concilia] = await Promise.all([
+    (await inventarioDeSocio()).completo(), (await inventarioDeSocio()).documentos(), (await lectorDeSocio()).clientes(), (await datosDeSocio()).detalleInventario(per.ini, per.fin), (await inventarioDeSocio()).concilia(),
   ]);
   const conDato = inv.modelos.filter((x) => x.piezas !== null);
   const sinMovimientos = inv.modelos.filter((x) => x.piezas === null);
@@ -113,6 +114,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
         descripcion="Existencia por modelo y sabor a costo promedio, con semáforo de reposición. El inventario es de los socios; su ubicación es la Bodega Omar."
         acciones={<><a className="rtm-boton" href="/inventario/csv" data-testid="inventario-csv">CSV</a><ExportarInventario marcas={marcas} modelos={conDato.map((x) => ({ marca: x.marca, modelo: x.modelo }))} clientes={clientes.filter((c) => c.precios > 0 && c.activo).map((c) => ({ id: c.id, nombre: c.nombre }))} /></>}
       />
+      <PanelConcilia c={concilia} />
       <Pestanas etiquetaAria="Vistas del inventario" items={[
         { id: 'existencias', etiqueta: 'Existencias', href: enlace(base, sp, { vista: null }), activa: vista === 'existencias', contador: conDato.length },
         { id: 'compras', etiqueta: 'Compras', href: enlace(base, sp, { vista: 'compras' }), activa: vista === 'compras', contador: inv.compras_recientes.length },

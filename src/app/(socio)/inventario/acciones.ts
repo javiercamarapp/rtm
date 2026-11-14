@@ -2,7 +2,7 @@
 
 import { inventarioDeSocio, exportarInventarioDeSocio, operarConteo, type ResultadoInventario } from '@/composicion/inventario';
 import type { InventarioExportado } from '@/aplicacion/inventario/exportar';
-import { EXPLICACIONES_CONTEO, type ExplicacionConteo, type ParametrosInventario, type PrevisualizacionConteo, type VersionInventario } from '@/dominio/inventario/tipos';
+import { EXPLICACIONES_CONTEO, type ExplicacionConteo, type ResultadoAltaSabor, type ParametrosInventario, type PrevisualizacionConteo, type VersionInventario } from '@/dominio/inventario/tipos';
 
 const CLAVE = /^web:[0-9a-f-]{8,64}$/;
 
@@ -45,4 +45,10 @@ export async function cerrarConteoAccion(
     const { conteo_id } = await e.abrirConteo(`${claveIdem}:abrir`, ubicacion, 'semanal', new Date(contadoAt).toISOString());
     return e.cerrarConteo(`${claveIdem}:cerrar`, conteo_id, limpias);
   });
+}
+
+/** Alta de un sabor nuevo desde la hoja de conteo (solo socio). Valida, detecta parecidos y deja auditoria en la base; el nombre es siempre un dato. */
+export async function agregarSaborAccion(claveIdem: string, modeloId: number, sabor: string, confirmar: boolean): Promise<ResultadoInventario<ResultadoAltaSabor>> {
+  if (!CLAVE.test(claveIdem) || !Number.isInteger(modeloId) || modeloId <= 0 || typeof sabor !== 'string' || sabor.length > 80) return { ok: false, mensaje: 'Solicitud inválida. Recarga la página.' };
+  return operarConteo((e) => e.agregarSabor(claveIdem, modeloId, sabor, confirmar === true));
 }

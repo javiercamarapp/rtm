@@ -47,7 +47,24 @@ export interface Kardex {
   comprobacion: { via1: string; via1_valor_cent: Cent; via2: string; via2_valor_cent: Cent; cuadra: boolean };
 }
 
-export interface HojaConteoSku { sku_id: number; marca: string; modelo: string; sabor: string }
+export interface HojaConteoSku { sku_id: number; marca: string; modelo: string; sabor: string; modelo_id?: number }
+
+/** api.inventario_concilia: el kardex contra el libro y el ultimo conteo fisico. Todo lo calcula la base. */
+export interface ConciliaInventario {
+  hoy: string;
+  valor: { kardex_cent: Cent; libro_1310_cent: Cent; existencia_cent: Cent; ok: boolean };
+  piezas: { kardex: number; existencia: number; ok: boolean };
+  concilia: boolean;
+  estado_conteo: 'conciliado' | 'diferencias_abiertas' | 'sin_conteo';
+  ultimo_conteo: {
+    id: number; contado_at: string; ubicacion: string; sabores_con_diferencia: number; abiertas: number; neto_piezas: number; ajuste_valor_cent: Cent;
+    diferencias: { modelo: string; sabor: string; esperado: number; contado: number; diferencia: number; explicada: boolean }[];
+  } | null;
+}
+
+export type ResultadoAltaSabor =
+  | { estado: 'creado' | 'existente'; sku_id: number; modelo: string; sabor: string }
+  | { estado: 'parecidos'; parecidos: { sabor_id: number; nombre: string }[]; sabor: string; modelo: string };
 export interface LineaDiferenciaConteo {
   sku_id: number; marca: string; modelo: string; sabor: string; esperado: number; vendido_por_recoger: number; disponible_sistema: number; contado: number; diferencia: number;
 }
