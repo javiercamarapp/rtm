@@ -5,6 +5,7 @@ import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { DimensionDesglose, FilaDesglose, OrigenSurtido } from '@/dominio/dropshipping/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { BarraFiltros, Segmentado, Chip } from '@/ui/componentes/controles';
+import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
@@ -62,10 +63,12 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
       />
       <PestanasDs activa="resumen" sinFolio={r.sin_folio_externo} />
       <BarraFiltros etiquetaAria="Periodo y origen" extras={desde || hasta || origen ? <Chip href="/dropshipping">Quitar filtros</Chip> : undefined}>
-        <form className="rtm-form-fila rtm-ds-filtros" method="get" aria-label="Periodo">
-          <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
-          <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
-          <button type="submit" className="rtm-boton">Aplicar</button>
+        <form className="rtm-ds-filtros-linea" method="get" aria-label="Periodo">
+          <FiltrosPlegables etiqueta="Periodo" titulo="Filtrar por periodo (desde y hasta)" activos={(desde ? 1 : 0) + (hasta ? 1 : 0)}>
+            <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
+            <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
+            <button type="submit" className="rtm-boton rtm-boton-primario">Aplicar</button>
+          </FiltrosPlegables>
         </form>
         <Segmentado etiquetaAria="Origen del surtido" tamano="chico" opciones={[{ valor: '', etiqueta: 'Todos', href: enlace({ origen: '' }), activa: !origen }, { valor: 'dropshipping', etiqueta: 'Dropshipping', href: enlace({ origen: 'dropshipping' }), activa: origen === 'dropshipping' }, { valor: 'inventario_merida', etiqueta: 'Inventario en Mérida', href: enlace({ origen: 'inventario_merida' }), activa: origen === 'inventario_merida' }]} />
       </BarraFiltros>
@@ -102,7 +105,7 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
         />
       </Tarjeta>
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="8-4" alinear="inicio">
         <Tarjeta titulo="Piezas de dropshipping por semana" descripcion="Piezas surtidas por los proveedores, enviadas cada semana">
           {semanas.length >= 1 ? (
             <ColumnasPeriodo titulo="Piezas de dropshipping por semana" descripcion="Piezas surtidas por semana de envío; la última puede ser parcial." unidad="Piezas" procedencia="observado" pie="Fuente: libro de pedidos"

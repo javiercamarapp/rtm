@@ -7,6 +7,7 @@ import type { OrigenSurtido } from '@/dominio/dropshipping/tipos';
 import type { EstadoPedido } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { BarraFiltros, Chip, ChipEstado, CeldaPersona, Segmentado } from '@/ui/componentes/controles';
+import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
@@ -56,16 +57,18 @@ export default async function PaginaPedidosDs({ searchParams }: { searchParams: 
         <Segmentado etiquetaAria="Origen" tamano="chico" opciones={[
           { valor: 'dropshipping', etiqueta: 'Dropshipping', href: enlace({ origen: '' }), activa: origen === 'dropshipping' }, { valor: 'inventario_merida', etiqueta: 'Inventario en Mérida', href: enlace({ origen: 'inventario_merida' }), activa: origen === 'inventario_merida' },
           { valor: 'todos', etiqueta: 'Todos', href: enlace({ origen: 'todos' }), activa: origen === null }]} />
-        <form className="rtm-form-fila rtm-ds-filtros" method="get" aria-label="Buscar y filtrar">
+        <form className="rtm-ds-filtros-linea" method="get" aria-label="Buscar y filtrar">
           <input type="hidden" name="origen" value={sp['origen'] ?? ''} />
-          <label className="rtm-etiqueta-campo rtm-campo-ancho">Folio del proveedor, folio o cliente<input className="rtm-campo" type="search" name="q" defaultValue={busqueda ?? ''} data-testid="ds-buscar" placeholder="73266" /></label>
-          <label className="rtm-etiqueta-campo">Proveedor<select className="rtm-campo" name="proveedor" defaultValue={proveedor ?? ''}><option value="">Todos</option><option value="Karen">Karen</option><option value="Isaac">Isaac</option></select></label>
-          <label className="rtm-etiqueta-campo">Estado<select className="rtm-campo" name="estado" defaultValue={estado ?? ''}><option value="">Todos</option>{ESTADOS.map((e) => <option key={e} value={e}>{ESTADO_PEDIDO[e as EstadoPedido].texto}</option>)}</select></label>
-          <label className="rtm-etiqueta-campo">Tipo<select className="rtm-campo" name="tipo" defaultValue={tipoVenta ?? ''}><option value="">Todos</option><option value="cliente">De cliente</option><option value="socio_a_costo">A costo para socio</option></select></label>
-          <label className="rtm-etiqueta-campo rtm-campo-ancho">Cliente<select className="rtm-campo" name="cliente" defaultValue={clienteId ?? ''}><option value="">Todos</option>{clientes.filter((c) => c.activo && !c.esBodega).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></label>
-          <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
-          <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
-          <button type="submit" className="rtm-boton" data-testid="ds-filtrar">Filtrar</button>
+          <input className="rtm-campo rtm-ba-buscar" type="search" name="q" defaultValue={busqueda ?? ''} data-testid="ds-buscar" placeholder="Buscar por folio del proveedor, folio o cliente" aria-label="Folio del proveedor, folio o cliente" />
+          <button type="submit" className="rtm-boton rtm-boton-primario" data-testid="ds-filtrar">Filtrar</button>
+          <FiltrosPlegables etiqueta="Filtros" titulo="Más filtros: proveedor, estado, tipo, cliente y periodo" activos={[proveedor, estado, tipoVenta, clienteId, desde, hasta].filter(Boolean).length}>
+            <label className="rtm-etiqueta-campo">Proveedor<select className="rtm-campo" name="proveedor" defaultValue={proveedor ?? ''}><option value="">Todos</option><option value="Karen">Karen</option><option value="Isaac">Isaac</option></select></label>
+            <label className="rtm-etiqueta-campo">Estado<select className="rtm-campo" name="estado" defaultValue={estado ?? ''}><option value="">Todos</option>{ESTADOS.map((e) => <option key={e} value={e}>{ESTADO_PEDIDO[e as EstadoPedido].texto}</option>)}</select></label>
+            <label className="rtm-etiqueta-campo">Tipo<select className="rtm-campo" name="tipo" defaultValue={tipoVenta ?? ''}><option value="">Todos</option><option value="cliente">De cliente</option><option value="socio_a_costo">A costo para socio</option></select></label>
+            <label className="rtm-etiqueta-campo rtm-campo-ancho">Cliente<select className="rtm-campo" name="cliente" defaultValue={clienteId ?? ''}><option value="">Todos</option>{clientes.filter((c) => c.activo && !c.esBodega).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></label>
+            <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
+            <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
+          </FiltrosPlegables>
         </form>
       </BarraFiltros>
 

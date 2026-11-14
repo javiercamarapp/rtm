@@ -59,7 +59,7 @@ export default async function FichaDs({ params }: { params: Promise<{ id: string
           { id: 'cobrar', etiqueta: 'Por cobrar al cliente', valor: f.saldo_cliente_cent === null ? null : formatearMoneda(f.saldo_cliente_cent), categoria: 7 },
         ]}
       />
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="6-6" alinear="inicio">
         <Tarjeta titulo="Avance" descripcion="Confirma el pedido y márcalo enviado cuando el proveedor lo despache">
           <div className="rtm-a1-cuerpo">
             <PasosPedido pedidoId={f.pedido_id} estado={f.estado} avisos={f.avisos} />
@@ -109,7 +109,7 @@ export default async function FichaDs({ params }: { params: Promise<{ id: string
           <p className="rtm-nota">Costo a {proveedor} según su catálogo vigente: {formatearMoneda(orden.costo_proveedor_cent)}.</p>
         </Tarjeta>
       )}
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="6-6" alinear="inicio">
         {credito && (
           <Tarjeta titulo="Crédito" descripcion="Interés calculado por la base; el modelo de IA nunca calcula dinero">
             <ListaClaveValor items={[
