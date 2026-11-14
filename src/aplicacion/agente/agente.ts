@@ -44,6 +44,7 @@ import type {
   RespuestaLlm,
   TipoEspera,
 } from './puertos';
+import { ErrorLlm } from './puertos';
 import { resolverAccion, type PreguntaAbierta } from './resolucion';
 import type { TgCallback, TgMensaje, UpdateTelegram } from './telegram';
 
@@ -628,8 +629,11 @@ export class AgenteTelegram {
         maxTokensSalida: MAX_TOKENS_SALIDA_R1,
         esquemaJson,
       });
-    } catch {
-      await this.d.presupuesto.liberar(claveReserva);
+    } catch (e) {
+      // Los intentos fallidos que el proveedor facturo (respuesta vacia, filtro de contenido) se liquidan; si no hubo costo, se libera la reserva.
+      const facturado = e instanceof ErrorLlm ? e.costoMicroUsd : 0n;
+      if (facturado > 0n) await this.avisosPresupuesto((await this.d.presupuesto.liquidar(claveReserva, facturado)).avisos);
+      else await this.d.presupuesto.liberar(claveReserva);
       await this.d.almacen.registrarEvento({ tipo: 'error_llm', miembro: autor.telegramUserId, detalle: 'llamada_fallida' });
       return 'llm';
     }

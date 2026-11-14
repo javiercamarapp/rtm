@@ -89,12 +89,14 @@ export function crearClienteOpenRouter(config: ConfigOpenRouter): ClienteLlm {
     if (!r.ok) throw new ErrorLlm('proveedor', `estado ${r.status}`);
     const datos = (await r.json().catch(() => null)) as Completado | null;
     const texto = datos?.choices?.[0]?.message?.content;
-    if (typeof texto !== 'string') throw new ErrorLlm('respuesta_invalida', 'sin contenido');
+    // Una respuesta 200 que no sirve (filtro de contenido, vacia o no JSON) igual se factura: el costo viaja en el error para liquidarlo.
+    const facturado = costoMicro(datos?.usage, modelo);
+    if (typeof texto !== 'string') throw new ErrorLlm('respuesta_invalida', 'sin contenido', facturado);
     let contenido: unknown;
     try {
       contenido = JSON.parse(extraerObjetoJson(texto));
     } catch {
-      throw new ErrorLlm('respuesta_invalida', 'contenido no es JSON');
+      throw new ErrorLlm('respuesta_invalida', 'contenido no es JSON', facturado);
     }
     const usado = datos?.model ?? slugs[0] ?? 'desconocido';
     return {
@@ -120,23 +122,31 @@ export function crearClienteOpenRouter(config: ConfigOpenRouter): ClienteLlm {
       });
       // Cadena CLIENTE: un modelo a la vez, en el orden de la politica (cada uno con su propio modo de salida estructurada). El chino solo con lista blanca de EE.UU., sin respaldo a otros.
       let ultimo: unknown = new ErrorLlm('politica', 'ningun modelo utilizable');
+      // Costo de los intentos fallidos que si se facturaron: se suma al del intento que responde, o viaja en el error final.
+      let facturadoEnFallos = 0n;
+      const fallo = (e: unknown) => {
+        ultimo = e;
+        if (e instanceof ErrorLlm) facturadoEnFallos += e.costoMicroUsd;
+      };
+      const conFallos = (r: RespuestaLlm): RespuestaLlm => ({ ...r, costoMicroUsd: r.costoMicroUsd + facturadoEnFallos });
       for (const m of modelos) {
         if (m.chino) {
           const lista = config.endpointsEeuuPorModelo?.[m.slug] ?? [];
           if (lista.length === 0) continue;
           try {
-            return await intentar(p, m, lista);
+            return conFallos(await intentar(p, m, lista));
           } catch (e) {
-            ultimo = e;
+            fallo(e);
           }
           continue;
         }
         try {
-          return await intentar(p, m, null);
+          return conFallos(await intentar(p, m, null));
         } catch (e) {
-          ultimo = e;
+          fallo(e);
         }
       }
+      if (ultimo instanceof ErrorLlm && facturadoEnFallos > 0n) throw new ErrorLlm(ultimo.motivo, ultimo.message, facturadoEnFallos);
       throw ultimo;
     },
   };
