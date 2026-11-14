@@ -1,0 +1,163 @@
+[
+ {
+  "id": "gas-033",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "pague 500 de guia",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "guia",
+     "monto_pesos": 500,
+     "pagado_por": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "gas-034",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "pague 350 de uber al almacen",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "uber",
+     "monto_pesos": 350,
+     "pagado_por": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "gas-035",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "gasto de envio 1,280 pagado por la sociedad",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "envio",
+     "monto_pesos": 1280,
+     "pagado_por": "sociedad"
+    }
+   ]
+  }
+ },
+ {
+  "id": "gas-036",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "me aventé 800 de uber para entregar",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "uber",
+     "monto_pesos": 800,
+     "pagado_por": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "gas-037",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "comision de la terminal 1,134.20",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "comision_terminal",
+     "monto_pesos": 1134.2
+    }
+   ]
+  }
+ },
+ {
+  "id": "gas-038",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "pague la renta de la bodega 8,500",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "otro",
+     "monto_pesos": 8500,
+     "pagado_por": "javier"
+    }
+   ],
+   "nota": "renta"
+  }
+ },
+ {
+  "id": "gas-039",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "renta del mes del local 12,000 la puso la sociedad",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "otro",
+     "monto_pesos": 12000,
+     "pagado_por": "sociedad"
+    }
+   ],
+   "nota": "renta"
+  }
+ },
+ {
+  "id": "gas-040",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "pague la renta 9,000 con mi tarjeta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "otro",
+     "monto_pesos": 9000,
+     "pagado_por": "javier"
+    }
+   ],
+   "nota": "renta"
+  }
+ },
+ {
+  "id": "gas-041",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "pague 20 usd de openrouter",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto_servicio",
+     "servicio": "openrouter",
+     "monto_usd": 20
+    }
+   ]
+  }
+ },
+ {
+  "id": "gas-042",
+  "categoria": "gasto",
+  "autor": "javier",
+  "texto": "cargo de vercel 500 pesos pagado por Angelo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto_servicio",
+     "servicio": "vercel",
+     "monto_pesos": 500,
+     "pagado_por": "angelo"
+    }
+   ]
+  }
+ }
+]

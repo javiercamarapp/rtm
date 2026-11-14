@@ -1,0 +1,127 @@
+[
+ {
+  "id": "pro-043",
+  "categoria": "proveedor",
+  "autor": "javier",
+  "texto": "pague 30,500 a Karen",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "karen",
+     "monto_pesos": 30500,
+     "pagado_por": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "pro-044",
+  "categoria": "proveedor",
+  "autor": "javier",
+  "texto": "le mande 5,000 a Isaac de mi bolsa",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "isaac",
+     "monto_pesos": 5000,
+     "pagado_por": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "pro-045",
+  "categoria": "proveedor",
+  "autor": "javier",
+  "texto": "ya le cayo 20 mil a Karen de parte de la sociedad",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "karen",
+     "monto_pesos": 20000,
+     "pagado_por": "sociedad"
+    }
+   ]
+  }
+ },
+ {
+  "id": "pro-046",
+  "categoria": "proveedor",
+  "autor": "javier",
+  "texto": "Cliente Norte mando 30,500 a Karen",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "karen",
+     "monto_pesos": 30500,
+     "cliente": "cliente norte"
+    }
+   ]
+  }
+ },
+ {
+  "id": "pro-047",
+  "categoria": "proveedor",
+  "autor": "javier",
+  "texto": "meti 20,000 de capital para invertir",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aportacion",
+     "socio": "javier",
+     "monto_pesos": 20000,
+     "intencion": "capital"
+    }
+   ]
+  }
+ },
+ {
+  "id": "pro-048",
+  "categoria": "proveedor",
+  "autor": "javier",
+  "texto": "puse 1,000 para gastos",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aportacion",
+     "socio": "javier",
+     "monto_pesos": 1000
+    }
+   ]
+  }
+ },
+ {
+  "id": "pro-049",
+  "categoria": "proveedor",
+  "autor": "angelo",
+  "texto": "le pague a Javier 1,000 de reembolso por transferencia",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "reembolso_socio",
+     "socio": "javier",
+     "monto_pesos": 1000
+    }
+   ]
+  }
+ },
+ {
+  "id": "pro-050",
+  "categoria": "proveedor",
+  "autor": "angelo",
+  "texto": "retiro 4,000 de utilidad en efectivo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "retiro_utilidad",
+     "socio": "angelo",
+     "monto_pesos": 4000
+    }
+   ]
+  }
+ }
+]

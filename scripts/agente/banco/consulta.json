@@ -1,0 +1,220 @@
+[
+ {
+  "id": "con-068",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "saldo de Ariel",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "saldo",
+     "sujeto": "ariel"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-069",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "cuanto debe cada cliente",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "cartera"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-070",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "como estamos",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "valuacion"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-071",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "mi valuacion",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "valuacion"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-072",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "utilidad del mes",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "utilidad",
+     "periodo": "mes"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-073",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "cuanto hay de zafiro 5k sandia",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "inventario",
+     "modelo": "zafiro 5k",
+     "sabor": "sandia"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-074",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "cuanto le debemos a Karen",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "saldo_proveedor",
+     "sujeto": "karen"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-075",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "que falta por hacer",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "pendientes"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-076",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "cuadran las cuentas?",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "cuadra"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-077",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "estado de cuenta de Angelo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "estado_cuenta_socio",
+     "sujeto": "angelo"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-078",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "reporte de la semana",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "reporte",
+     "periodo": "semana"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-079",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "dame el saldo de los socios",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "saldos_socios"
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-080",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "cuanto vendimos hoy?",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "utilidad",
+     "periodo": "hoy"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "consulta",
+      "consulta": "diario"
+     }
+    ],
+    [
+     {
+      "tipo": "consulta",
+      "consulta": "reporte",
+      "periodo": "hoy"
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "con-081",
+  "categoria": "consulta",
+  "autor": "javier",
+  "texto": "deshaz",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "deshacer"
+    }
+   ]
+  }
+ }
+]

@@ -1,0 +1,1156 @@
+[
+ {
+  "id": "con-001",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo zafiro 5k: sandia 12, mango 8, uva 0, menta 5",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 12
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 8
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "uva",
+       "n": 0
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "menta",
+       "n": 5
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-002",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conte orbita 20k, hay fresa 4, durazno 9, limon 0 y cereza 15",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "fresa",
+       "n": 4
+      },
+      {
+       "m": "orbita 20k",
+       "s": "durazno",
+       "n": 9
+      },
+      {
+       "m": "orbita 20k",
+       "s": "limon",
+       "n": 0
+      },
+      {
+       "m": "orbita 20k",
+       "s": "cereza",
+       "n": 15
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-003",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo nimbo 50k\nmango hielo 6\nuva hielo 0\nsandia hielo 11",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "mango hielo",
+       "n": 6
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "uva hielo",
+       "n": 0
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "sandia hielo",
+       "n": 11
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-004",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "cuente vega 9k: coco 3, kiwi 0, melon 22",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "coco",
+       "n": 3
+      },
+      {
+       "m": "vega 9k",
+       "s": "kiwi",
+       "n": 0
+      },
+      {
+       "m": "vega 9k",
+       "s": "melon",
+       "n": 22
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-005",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo cometa 30k: platano 10, maracuya 0, guayaba 6, frambuesa 1, mandarina 13",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "cometa 30k",
+       "s": "platano",
+       "n": 10
+      },
+      {
+       "m": "cometa 30k",
+       "s": "maracuya",
+       "n": 0
+      },
+      {
+       "m": "cometa 30k",
+       "s": "guayaba",
+       "n": 6
+      },
+      {
+       "m": "cometa 30k",
+       "s": "frambuesa",
+       "n": 1
+      },
+      {
+       "m": "cometa 30k",
+       "s": "mandarina",
+       "n": 13
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-006",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo de bodega: zafiro 5k sandia 12 y mango 8; orbita 20k fresa 4 y limon 0",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 12
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 8
+      },
+      {
+       "m": "orbita 20k",
+       "s": "fresa",
+       "n": 4
+      },
+      {
+       "m": "orbita 20k",
+       "s": "limon",
+       "n": 0
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-007",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "ya conte: nomas quedan 3 de menta zafiro 5k y 0 de uva",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "menta",
+       "n": 3
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "uva",
+       "n": 0
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-008",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo zafiro 5k - cola 5 // energy 0 // gomita 17",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "cola",
+       "n": 5
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "energy",
+       "n": 0
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "gomita",
+       "n": 17
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-009",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo vega 9k: tamarindo 8, jamaica 0, pera 12, lichi 4, granada 9, arandano 0",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "tamarindo",
+       "n": 8
+      },
+      {
+       "m": "vega 9k",
+       "s": "jamaica",
+       "n": 0
+      },
+      {
+       "m": "vega 9k",
+       "s": "pera",
+       "n": 12
+      },
+      {
+       "m": "vega 9k",
+       "s": "lichi",
+       "n": 4
+      },
+      {
+       "m": "vega 9k",
+       "s": "granada",
+       "n": 9
+      },
+      {
+       "m": "vega 9k",
+       "s": "arandano",
+       "n": 0
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-010",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo orbita 20k: sandia 12, mango 0, uva 7, menta 24, fresa 3, durazno 18, piña 0, limon 9, mora azul 31, cereza 5, coco 14, kiwi 2, melon 27, platano 8",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "sandia",
+       "n": 12
+      },
+      {
+       "m": "orbita 20k",
+       "s": "mango",
+       "n": 0
+      },
+      {
+       "m": "orbita 20k",
+       "s": "uva",
+       "n": 7
+      },
+      {
+       "m": "orbita 20k",
+       "s": "menta",
+       "n": 24
+      },
+      {
+       "m": "orbita 20k",
+       "s": "fresa",
+       "n": 3
+      },
+      {
+       "m": "orbita 20k",
+       "s": "durazno",
+       "n": 18
+      },
+      {
+       "m": "orbita 20k",
+       "s": "piña",
+       "n": 0
+      },
+      {
+       "m": "orbita 20k",
+       "s": "limon",
+       "n": 9
+      },
+      {
+       "m": "orbita 20k",
+       "s": "mora azul",
+       "n": 31
+      },
+      {
+       "m": "orbita 20k",
+       "s": "cereza",
+       "n": 5
+      },
+      {
+       "m": "orbita 20k",
+       "s": "coco",
+       "n": 14
+      },
+      {
+       "m": "orbita 20k",
+       "s": "kiwi",
+       "n": 2
+      },
+      {
+       "m": "orbita 20k",
+       "s": "melon",
+       "n": 27
+      },
+      {
+       "m": "orbita 20k",
+       "s": "platano",
+       "n": 8
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-011",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo nimbo 50k:\nsandia 24\nmango 3\nuva 18\nmenta 0\nfresa 9\ndurazno 31\npiña 5\nlimon 14\nmora azul 2\ncereza 27\ncoco 8\nkiwi 0\nmelon 16\nplatano 21",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "sandia",
+       "n": 24
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "mango",
+       "n": 3
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "uva",
+       "n": 18
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "menta",
+       "n": 0
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "fresa",
+       "n": 9
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "durazno",
+       "n": 31
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "piña",
+       "n": 5
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "limon",
+       "n": 14
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "mora azul",
+       "n": 2
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "cereza",
+       "n": 27
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "coco",
+       "n": 8
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "kiwi",
+       "n": 0
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "melon",
+       "n": 16
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "platano",
+       "n": 21
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-012",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo zafiro 5k: sandia 0, mango 7, uva 24, menta 3, fresa 18, durazno 0, piña 9, limon 31, mora azul 5, cereza 14, coco 2, kiwi 27, melon 8, platano 0, maracuya 16, guayaba 21, frambuesa 4, mandarina 11, naranja 6, manzana verde 12, chicle 0, cafe 7, vainilla 24, caramelo 3, tamarindo 18, jamaica 0, pera 9, lichi 31, granada 5, arandano 14, ice mint 2, cola 27, energy 8, gomita 0, sandia hielo 16, mango hielo 21, uva hielo 4, fresa kiwi 11, pina coco 6, limonada rosa 12",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 0
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 7
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "uva",
+       "n": 24
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "menta",
+       "n": 3
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "fresa",
+       "n": 18
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "durazno",
+       "n": 0
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "piña",
+       "n": 9
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "limon",
+       "n": 31
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "mora azul",
+       "n": 5
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "cereza",
+       "n": 14
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "coco",
+       "n": 2
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "kiwi",
+       "n": 27
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "melon",
+       "n": 8
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "platano",
+       "n": 0
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "maracuya",
+       "n": 16
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "guayaba",
+       "n": 21
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "frambuesa",
+       "n": 4
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "mandarina",
+       "n": 11
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "naranja",
+       "n": 6
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "manzana verde",
+       "n": 12
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "chicle",
+       "n": 0
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "cafe",
+       "n": 7
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "vainilla",
+       "n": 24
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "caramelo",
+       "n": 3
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "tamarindo",
+       "n": 18
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "jamaica",
+       "n": 0
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "pera",
+       "n": 9
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "lichi",
+       "n": 31
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "granada",
+       "n": 5
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "arandano",
+       "n": 14
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "ice mint",
+       "n": 2
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "cola",
+       "n": 27
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "energy",
+       "n": 8
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "gomita",
+       "n": 0
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "sandia hielo",
+       "n": 16
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "mango hielo",
+       "n": 21
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "uva hielo",
+       "n": 4
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "fresa kiwi",
+       "n": 11
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "pina coco",
+       "n": 6
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "limonada rosa",
+       "n": 12
+      }
+     ],
+     "parcial_ok": false
+    }
+   ],
+   "nota": "lista larga de 40 sabores"
+  }
+ },
+ {
+  "id": "con-013",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo cometa 30k:\nsandia 9\nmango 31\nuva 5\nmenta 14\nfresa 2\ndurazno 27\npiña 8\nlimon 0\nmora azul 16\ncereza 21\ncoco 4\nkiwi 11\nmelon 6\nplatano 12\nmaracuya 0\nguayaba 7\nframbuesa 24\nmandarina 3\nnaranja 18\nmanzana verde 0\nchicle 9\ncafe 31\nvainilla 5\ncaramelo 14\ntamarindo 2\njamaica 27\npera 8\nlichi 0\ngranada 16\narandano 21\nice mint 4\ncola 11\nenergy 6\ngomita 12\nsandia hielo 0\nmango hielo 7\nuva hielo 24\nfresa kiwi 3\npina coco 18\nlimonada rosa 0",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "cometa 30k",
+       "s": "sandia",
+       "n": 9
+      },
+      {
+       "m": "cometa 30k",
+       "s": "mango",
+       "n": 31
+      },
+      {
+       "m": "cometa 30k",
+       "s": "uva",
+       "n": 5
+      },
+      {
+       "m": "cometa 30k",
+       "s": "menta",
+       "n": 14
+      },
+      {
+       "m": "cometa 30k",
+       "s": "fresa",
+       "n": 2
+      },
+      {
+       "m": "cometa 30k",
+       "s": "durazno",
+       "n": 27
+      },
+      {
+       "m": "cometa 30k",
+       "s": "piña",
+       "n": 8
+      },
+      {
+       "m": "cometa 30k",
+       "s": "limon",
+       "n": 0
+      },
+      {
+       "m": "cometa 30k",
+       "s": "mora azul",
+       "n": 16
+      },
+      {
+       "m": "cometa 30k",
+       "s": "cereza",
+       "n": 21
+      },
+      {
+       "m": "cometa 30k",
+       "s": "coco",
+       "n": 4
+      },
+      {
+       "m": "cometa 30k",
+       "s": "kiwi",
+       "n": 11
+      },
+      {
+       "m": "cometa 30k",
+       "s": "melon",
+       "n": 6
+      },
+      {
+       "m": "cometa 30k",
+       "s": "platano",
+       "n": 12
+      },
+      {
+       "m": "cometa 30k",
+       "s": "maracuya",
+       "n": 0
+      },
+      {
+       "m": "cometa 30k",
+       "s": "guayaba",
+       "n": 7
+      },
+      {
+       "m": "cometa 30k",
+       "s": "frambuesa",
+       "n": 24
+      },
+      {
+       "m": "cometa 30k",
+       "s": "mandarina",
+       "n": 3
+      },
+      {
+       "m": "cometa 30k",
+       "s": "naranja",
+       "n": 18
+      },
+      {
+       "m": "cometa 30k",
+       "s": "manzana verde",
+       "n": 0
+      },
+      {
+       "m": "cometa 30k",
+       "s": "chicle",
+       "n": 9
+      },
+      {
+       "m": "cometa 30k",
+       "s": "cafe",
+       "n": 31
+      },
+      {
+       "m": "cometa 30k",
+       "s": "vainilla",
+       "n": 5
+      },
+      {
+       "m": "cometa 30k",
+       "s": "caramelo",
+       "n": 14
+      },
+      {
+       "m": "cometa 30k",
+       "s": "tamarindo",
+       "n": 2
+      },
+      {
+       "m": "cometa 30k",
+       "s": "jamaica",
+       "n": 27
+      },
+      {
+       "m": "cometa 30k",
+       "s": "pera",
+       "n": 8
+      },
+      {
+       "m": "cometa 30k",
+       "s": "lichi",
+       "n": 0
+      },
+      {
+       "m": "cometa 30k",
+       "s": "granada",
+       "n": 16
+      },
+      {
+       "m": "cometa 30k",
+       "s": "arandano",
+       "n": 21
+      },
+      {
+       "m": "cometa 30k",
+       "s": "ice mint",
+       "n": 4
+      },
+      {
+       "m": "cometa 30k",
+       "s": "cola",
+       "n": 11
+      },
+      {
+       "m": "cometa 30k",
+       "s": "energy",
+       "n": 6
+      },
+      {
+       "m": "cometa 30k",
+       "s": "gomita",
+       "n": 12
+      },
+      {
+       "m": "cometa 30k",
+       "s": "sandia hielo",
+       "n": 0
+      },
+      {
+       "m": "cometa 30k",
+       "s": "mango hielo",
+       "n": 7
+      },
+      {
+       "m": "cometa 30k",
+       "s": "uva hielo",
+       "n": 24
+      },
+      {
+       "m": "cometa 30k",
+       "s": "fresa kiwi",
+       "n": 3
+      },
+      {
+       "m": "cometa 30k",
+       "s": "pina coco",
+       "n": 18
+      },
+      {
+       "m": "cometa 30k",
+       "s": "limonada rosa",
+       "n": 0
+      }
+     ]
+    }
+   ],
+   "nota": "lista larga de 40 sabores en renglones"
+  }
+ },
+ {
+  "id": "con-014",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo vega 9k: sandia 18, mango 0, uva 9, menta 31, fresa 5, durazno 14, piña 2, limon 27, mora azul 8, cereza 0, coco 16, kiwi 21, melon 4, platano 11, maracuya 6, guayaba 12, frambuesa 0, mandarina 7, naranja 24, manzana verde 3, chicle 18, cafe 0",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "sandia",
+       "n": 18
+      },
+      {
+       "m": "vega 9k",
+       "s": "mango",
+       "n": 0
+      },
+      {
+       "m": "vega 9k",
+       "s": "uva",
+       "n": 9
+      },
+      {
+       "m": "vega 9k",
+       "s": "menta",
+       "n": 31
+      },
+      {
+       "m": "vega 9k",
+       "s": "fresa",
+       "n": 5
+      },
+      {
+       "m": "vega 9k",
+       "s": "durazno",
+       "n": 14
+      },
+      {
+       "m": "vega 9k",
+       "s": "piña",
+       "n": 2
+      },
+      {
+       "m": "vega 9k",
+       "s": "limon",
+       "n": 27
+      },
+      {
+       "m": "vega 9k",
+       "s": "mora azul",
+       "n": 8
+      },
+      {
+       "m": "vega 9k",
+       "s": "cereza",
+       "n": 0
+      },
+      {
+       "m": "vega 9k",
+       "s": "coco",
+       "n": 16
+      },
+      {
+       "m": "vega 9k",
+       "s": "kiwi",
+       "n": 21
+      },
+      {
+       "m": "vega 9k",
+       "s": "melon",
+       "n": 4
+      },
+      {
+       "m": "vega 9k",
+       "s": "platano",
+       "n": 11
+      },
+      {
+       "m": "vega 9k",
+       "s": "maracuya",
+       "n": 6
+      },
+      {
+       "m": "vega 9k",
+       "s": "guayaba",
+       "n": 12
+      },
+      {
+       "m": "vega 9k",
+       "s": "frambuesa",
+       "n": 0
+      },
+      {
+       "m": "vega 9k",
+       "s": "mandarina",
+       "n": 7
+      },
+      {
+       "m": "vega 9k",
+       "s": "naranja",
+       "n": 24
+      },
+      {
+       "m": "vega 9k",
+       "s": "manzana verde",
+       "n": 3
+      },
+      {
+       "m": "vega 9k",
+       "s": "chicle",
+       "n": 18
+      },
+      {
+       "m": "vega 9k",
+       "s": "cafe",
+       "n": 0
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-015",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "recuento orbita 20k: sandia 12 mango 8 uva 0 menta 5 fresa 3",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "sandia",
+       "n": 12
+      },
+      {
+       "m": "orbita 20k",
+       "s": "mango",
+       "n": 8
+      },
+      {
+       "m": "orbita 20k",
+       "s": "uva",
+       "n": 0
+      },
+      {
+       "m": "orbita 20k",
+       "s": "menta",
+       "n": 5
+      },
+      {
+       "m": "orbita 20k",
+       "s": "fresa",
+       "n": 3
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-016",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo zafiro 5k: sandia doce, mango ocho, uva cero",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 12
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 8
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "uva",
+       "n": 0
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-017",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "hice el conteo de nimbo 50k: durazno 14, pina coco 6, limonada rosa 0, fresa kiwi 9",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "durazno",
+       "n": 14
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "pina coco",
+       "n": 6
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "limonada rosa",
+       "n": 0
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "fresa kiwi",
+       "n": 9
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "con-018",
+  "categoria": "conteo",
+  "autor": "javier",
+  "texto": "conteo de merma: se rompieron 2 sandia zafiro 5k",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "merma",
+     "modelo": "zafiro 5k",
+     "sabor": "sandia",
+     "piezas": 2
+    }
+   ]
+  }
+ }
+]

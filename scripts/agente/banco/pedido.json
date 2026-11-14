@@ -1,0 +1,231 @@
+[
+ {
+  "id": "ped-051",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "Cliente Norte: 24 zafiro 5k sandia y 12 zafiro 5k mango",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "cliente norte",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 24
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 12
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "ped-052",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "Ariel pidio 50 nimbo 50k uva hielo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "ariel",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "uva hielo",
+       "n": 50
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "ped-053",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "pedido para Lupita: 10 vega 9k menta, 10 vega 9k fresa, 6 vega 9k limon",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "lupita",
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "menta",
+       "n": 10
+      },
+      {
+       "m": "vega 9k",
+       "s": "fresa",
+       "n": 10
+      },
+      {
+       "m": "vega 9k",
+       "s": "limon",
+       "n": 6
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "ped-054",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "Beto: 30 orbita 20k mango a 250 c/u",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "beto",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "mango",
+       "n": 30
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "ped-055",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "Mauricio quiere 100 cometa 30k surtido",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "mauricio",
+     "lineas": [
+      {
+       "m": "cometa 30k",
+       "s": "surtido",
+       "n": 100
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "ped-056",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "Ariel: 20 zafiro 5k sandia\nBeto: 15 orbita 20k fresa\nLupita: 8 vega 9k menta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "ariel",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 20
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "beto",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "fresa",
+       "n": 15
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "lupita",
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "menta",
+       "n": 8
+      }
+     ]
+    }
+   ],
+   "nota": "lote de 3 pedidos"
+  }
+ },
+ {
+  "id": "ped-057",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "Tienda La Esquina pidio 40 nimbo 50k mango hielo, mandalo a Progreso",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "tienda la esquina",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "mango hielo",
+       "n": 40
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "ped-058",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "se envio el pedido P-0014 por estafeta guia 0045",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_envio",
+     "folio": "p-0014",
+     "estado": "enviado"
+    }
+   ]
+  }
+ },
+ {
+  "id": "ped-059",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "cancela el pedido P-0020, el cliente se arrepintio",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_cancelar",
+     "folio": "p-0020"
+    }
+   ]
+  }
+ },
+ {
+  "id": "ped-060",
+  "categoria": "pedido",
+  "autor": "javier",
+  "texto": "entregado el P-0019",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_envio",
+     "folio": "p-0019",
+     "estado": "entregado"
+    }
+   ]
+  }
+ }
+]
