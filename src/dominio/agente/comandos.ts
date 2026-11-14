@@ -43,7 +43,7 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
   aprobar: '/aprobar C-0001',
   enviada: '/enviada C-0001',
   llego: '/llego C-0001',
-  recibir: '/recibir C-0001 [| modelo/sabor 5 | ...]  (sin renglones = recepcion total)',
+  recibir: '/recibir C-0001 [| modelo/sabor 5 | ...]  (con renglones = llegada parcial, la compra sigue abierta; sin renglones = lo que falta: total si aun no ha llegado nada)',
   servicio: '/servicio openrouter 20usd javier [tc 18.50]  o  /servicio vercel 500 javier',
   merma: '/merma modelo/sabor 3 | motivo',
   conteo: '/conteo modelo/sabor 12 | modelo/sabor 4',

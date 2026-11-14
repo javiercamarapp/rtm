@@ -12,6 +12,8 @@ Estado: migracion `20261114600000_recepcion_parcial_guarda_y_bot.sql` sobre la m
 
 ## Guardas
 
+Alcance de P0435: solo la ruta parcial (`recibir_compra_parcial`, web y bot) rechaza el exceso. La ruta total vieja `operacion.recibir_compra` (20261110000800) NO cambia: sigue aceptando exceso como sobrante (y lo usa el carril de paquete perdido). La guarda suma por LINEA de la compra (facturadas del renglon contra lo ya recibido mas lo de la llegada, sumando todos los sabores que se cuenten contra ese renglon), no por sabor.
+
 | Caso | Resultado |
 |---|---|
 | Llegada que suma mas de lo facturado del renglon (ya recibido + ahora) | P0435 "no se recibe mas de lo pedido" (base y pantalla) |
@@ -29,12 +31,15 @@ Costo puesto de un renglon = (mercancia + guia + seguro) / piezas FACTURADAS, co
 
 Ejemplo (caso tipo Nexa, en chico): 100 pz a 100.00, sin guia. Llegan 88 y se cierra: inventario 8,800.00 (88 x 100.00), faltante de 12 pz por 1,200.00 en la cuenta puente.
 
+Redondeo: la ruta parcial reconoce el costo con redondeo acumulado por componente (mercancia, guia, seguro); la ruta total con faltante redondea el valor puesto una sola vez. Para la misma recepcion final pueden diferir hasta 1 centavo por linea; cada ruta es exacta contra su propio libro y el kardex cuadra.
+
 Nota para el dueno: la regla NO divide el costo entre las piezas recibidas. Si se quisiera que las 12 faltantes encarezcan las 88 recibidas (costo = total / recibidas), seria un cambio de regla contable y de costo promedio; no se hizo.
 
 ## Telegram (`compra_recepcion`)
 
 - Con renglones dictados (`/recibir C-0002 | jupiter/uva 30`): recepcion PARCIAL. La compra queda abierta; antes de esta migracion el bot cerraba la compra con faltantes.
 - Sin renglones: si la compra aun no recibe nada, recepcion total como siempre; si ya esta `recibida_parcial`, recibe solo el saldo pendiente de cada renglon.
+- El titulo del resultado distingue llegada parcial (compra abierta), recepcion que completa la compra y recepcion total.
 - La tarjeta de confirmacion muestra la llegada (piezas ahora, acumuladas, pendientes) y el estado resultante; ese efecto entra al hash de la vista previa, de modo que si otra llegada se registra entre la vista previa y la confirmacion, se aborta (P0462).
 - El bot no cierra recepciones con faltante ni deshace llegadas: eso se hace en el software (no se abrio escritura nueva).
 - Misma regla de exceso: P0435.

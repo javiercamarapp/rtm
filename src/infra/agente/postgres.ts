@@ -197,7 +197,7 @@ export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string)
     case 'compra_estado':
       return { hub: 'ejecutar_ext', tipo: 'compra_estado', titulo: i.estado === 'enviada' ? 'Compra marcada en trayecto' : 'Compra marcada: llegó a Mérida', args: { ...base, compra_folio: i.compra_folio, estado: i.estado } };
     case 'compra_recepcion':
-      return { hub: 'ejecutar_ext', tipo: 'compra_recepcion', titulo: i.lineas.length === 0 ? 'Recepción total registrada' : 'Recepción parcial registrada', args: { ...base, compra_folio: i.compra_folio, lineas: i.lineas.length === 0 ? [] : lineasSku() } };
+      return { hub: 'ejecutar_ext', tipo: 'compra_recepcion', titulo: i.lineas.length === 0 ? 'Recepción registrada (lo que falta de la compra)' : 'Recepción parcial registrada', args: { ...base, compra_folio: i.compra_folio, lineas: i.lineas.length === 0 ? [] : lineasSku() } };
     case 'gasto_servicio':
       return { hub: 'ejecutar_ext', tipo: 'gasto_servicio', titulo: `Cargo de servicio registrado (${i.servicio_texto})`, args: { ...base, servicio: i.servicio_texto, monto_usd_cent: i.monto_usd_centavos, monto_mxn_cent: i.monto_mxn_centavos, tc_micro: i.tipo_cambio_micro, pagado_por: i.pagado_por } };
     case 'merma':
@@ -255,6 +255,12 @@ const ESTADO_LEGIBLE: Record<string, string> = {
   recibida: 'Recibida completa',
   confirmado: 'Confirmado',
 };
+
+/** Titulo de la recepcion segun lo que la base hizo: llegada parcial (compra abierta), saldo pendiente que la completa, o recepcion total. */
+export function tituloRecepcion(j: ResultadoSql, porOmision: string): string {
+  if (typeof j.piezas_ahora !== 'number') return 'Recepción total registrada';
+  return j.estado === 'recibida' ? 'Recepción registrada: la compra quedó completa' : j.estado === 'recibida_parcial' ? 'Recepción parcial registrada (la compra sigue abierta)' : porOmision;
+}
 
 /** Lineas de la respuesta: solo cifras que devolvio la base. */
 function lineasDeResultado(j: ResultadoSql): CifraServidor[] {
@@ -314,7 +320,7 @@ export class NegocioAgenteDb implements NegocioAgente {
         if (!ls.some((l) => l.etiqueta === 'Monto') && typeof prep.args.monto_cent === 'number') ls.unshift({ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(prep.args.monto_cent) });
         const adv = i.tipo === 'pedido_menudeo' ? ['Cuando el proveedor lo envie marcalo con /enviado; los datos de entrega se capturan en la web, nunca por Telegram.'] : [];
         if (i.tipo === 'pedido_menudeo') ls.push({ tipo: 'texto', etiqueta: 'Fecha comprometida de pago', texto: i.fecha_compromiso ? formatearFechaPago(i.fecha_compromiso, i.hora_compromiso ?? null) : 'sin fecha comprometida (queda como alerta)' });
-        return { tipo: 'ejecutado', folio: j.folio ?? '', titulo: prep.titulo, lineas: ls, ...eco(j.eco), advertencias: adv, ejecutadoEn: ctx.ahora, repetido: j.repetido === true, datos: j };
+        return { tipo: 'ejecutado', folio: j.folio ?? '', titulo: prep.tipo === 'compra_recepcion' ? tituloRecepcion(j, prep.titulo) : prep.titulo, lineas: ls, ...eco(j.eco), advertencias: adv, ejecutadoEn: ctx.ahora, repetido: j.repetido === true, datos: j };
       }
       if (i.tipo === 'gasto') {
         const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'gasto', JSON.stringify({ pagado_por: i.pagado_por, monto_cent: i.monto_centavos, categoria: CATEGORIA_GASTO[i.gasto] ?? 'otro', nota: i.descripcion, origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; eco?: Parameters<typeof eco>[0]; repetido?: boolean };

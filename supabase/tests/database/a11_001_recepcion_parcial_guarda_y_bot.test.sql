@@ -85,5 +85,31 @@ select pg_temp.flush();
 select ok(pg_temp.ok('C4') and pg_temp.ok('C5') and pg_temp.ok('C18') and pg_temp.ok('C19'), 'libro, inventario, kardex y puente cuadran tras las recepciones parciales');
 select ok((select count(*) = 0 from contabilidad.comprobaciones() c where not c.ok and c.bloqueante), 'ninguna comprobacion bloqueante en rojo');
 
+-- Vista previa vieja: si entre la vista previa y la confirmacion cambia lo pendiente, se aborta (P0462) ----------------------------------------------
+select operacion.crear_compra('rpe', 'Isaac', '[{"modelo":"RP Modelo","sabor":"Mango","pagadas":100}]'::jsonb, 0);
+select operacion.confirmar_compra('rpe:c', pg_temp.res('rpe', 'compra_id'));
+create temp table _e as select pg_temp.fol('rpe') as folio;
+create temp table _h as select
+  agente.simular('ejecutar_ext', 'compra_recepcion', jsonb_build_object('autor', 'javier', 'telegram_user_id', 5100002, 'origen', 'x', 'compra_folio', (select folio from _e),
+    'lineas', jsonb_build_array(jsonb_build_object('modelo_id', pg_temp.mid(), 'sabor_id', pg_temp.sid('Mango'), 'piezas', 40)))) ->> 'efecto_hash' as parcial;
+select ok((select parcial from _h) is not null, 'la vista previa de una llegada parcial trae su hash');
+select pg_temp.bot('rpe0', (select folio from _e), jsonb_build_array(jsonb_build_object('modelo_id', pg_temp.mid(), 'sabor_id', pg_temp.sid('Mango'), 'piezas', 10)));
+select throws_ok($$select agente.ejecutar_ext('rpe1', 'compra_recepcion', jsonb_build_object('autor', 'javier', 'telegram_user_id', 5100002, 'origen', 'x', 'compra_folio', (select folio from _e),
+  'efecto_hash', (select parcial from _h), 'lineas', jsonb_build_array(jsonb_build_object('modelo_id', pg_temp.mid(), 'sabor_id', pg_temp.sid('Mango'), 'piezas', 40))))$$,
+  'P0462', null, 'hash viejo de una llegada parcial: si cambio lo pendiente desde la vista previa, se aborta');
+select is(pg_temp.exist('Mango') - (select mango from _base), 88 + 10, 'la llegada abortada no sumo nada (solo las 88 de C y las 10 de E)');
+create temp table _h2 as select
+  agente.simular('ejecutar_ext', 'compra_recepcion', jsonb_build_object('autor', 'javier', 'telegram_user_id', 5100002, 'origen', 'x', 'compra_folio', (select folio from _e), 'lineas', '[]'::jsonb)) ->> 'efecto_hash' as saldo;
+select pg_temp.bot('rpe2', (select folio from _e), jsonb_build_array(jsonb_build_object('modelo_id', pg_temp.mid(), 'sabor_id', pg_temp.sid('Mango'), 'piezas', 5)));
+select throws_ok($$select agente.ejecutar_ext('rpe3', 'compra_recepcion', jsonb_build_object('autor', 'javier', 'telegram_user_id', 5100002, 'origen', 'x', 'compra_folio', (select folio from _e),
+  'efecto_hash', (select saldo from _h2), 'lineas', '[]'::jsonb))$$, 'P0462', null, 'hash viejo del saldo: si llego otra parte desde la vista previa, se aborta');
+select is((pg_temp.bot('rpe4', (select folio from _e), '[]'::jsonb)->>'estado'), 'recibida', 'con la vista previa vigente el saldo se recibe y la compra se completa');
+select is((select titulo from (select case when (r->>'piezas_ahora') is not null and r->>'estado' = 'recibida' then 'saldo' end as titulo from (select resultado as r from seguridad.operacion where clave = 'rpe4') q) z), 'saldo', 'el resultado del saldo trae piezas_ahora y estado recibida (el titulo lo distingue de la recepcion total)');
+
+-- El wrapper del bot sigue delegando (si una migracion futura lo pisa, este caso falla) ---------------------------------------------------------------
+select ok((select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base(text,text,jsonb)'::regprocedure) like '%recibir_compra_parcial%'
+  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_parcial%', 'agente._ejecutar_ext_base conserva la recepcion parcial y delega el resto');
+select ok((select prosrc from pg_proc where oid = 'agente._efecto(text,jsonb)'::regprocedure) like '%piezas_ahora%', 'agente._efecto conserva las piezas de la llegada en el hash');
+
 select * from finish();
 rollback;

@@ -34,7 +34,7 @@ export const SISTEMA_R1 = [
   '12. Nunca sumes, restes ni deduzcas un monto: si el socio no dijo la cifra exacta, intencion "aclarar". "Lo que le debo" o "todo" no es una cifra.',
   '13. Reinversion de utilidades solo dentro de acta_propuesta (reinvierte_*), nunca como movimiento suelto.',
   '14. Mas intenciones de los socios: pedido (renglones modelo, sabor y piezas; precio_texto SOLO si el mensaje trae un precio), pedido_envio (enviado o entregado, folio P-),',
-  '    pedido_cancelar (folio y motivo), compra y orden_compra (proveedor, renglones), compra_aprobar, compra_estado (enviada o llego_merida), compra_recepcion (renglones vacios = total),',
+  '    pedido_cancelar (folio y motivo), compra y orden_compra (proveedor, renglones), compra_aprobar, compra_estado (enviada o llego_merida), compra_recepcion (con renglones = llegada parcial y la compra sigue abierta; renglones vacios = lo que falta, total si aun no ha llegado nada),',
   '    gasto_servicio (servicio, monto en dolares O en pesos, nunca los dos; el tipo de cambio solo si lo dicen), merma (modelo, sabor, piezas, motivo), conteo (piezas contadas por modelo y sabor),',
   '    cliente_alta (nombre), cliente_precio (cliente, modelo, precio), acta_propuesta (mes AAAA-MM o null; retira/reinvierte por socio solo si lo dicen), acta_firma,',
   '    lote_historico (movimientos con fecha pasada EXPLICITA en AAAA-MM-DD: gasto, cobro, aportacion, reembolso o retiro). Si falta la fecha de un renglon historico, intencion "aclarar".',
