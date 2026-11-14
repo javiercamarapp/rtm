@@ -540,6 +540,7 @@ test('F13 liquidacion semanal con Isaac: hoja con comprobacion, ambito sociedad/
   await expect(page.getByTestId('texto-copiable')).not.toContainText(d.cliente);
   const hoyEsViernes = new Date(Date.now() - 6 * 3_600_000).getUTCDay() === 5;
   if (!hoyEsViernes) await expect(page.getByTestId('cerrar-liquidacion')).toBeDisabled();
+  await page.getByTestId('barra-mas').click();
   await page.getByRole('link', { name: 'Semana anterior' }).click();
   await expect(page.getByTestId('comprobacion')).toBeVisible();
   await capturar(page, info, 'claro', 'F13-liquidacion');

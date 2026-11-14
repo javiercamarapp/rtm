@@ -232,6 +232,7 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
   await expect(javier.getByText(`Aportacion demo ${d.sufijo}`).first()).toBeVisible();
   const page = angelo;
   await page.goto('/proveedores?p=Isaac');
+  await page.getByTestId('barra-mas').click();
   await page.getByTestId('pago-sociedad').click();
   await page.getByLabel(/Monto/).fill('1000');
   await page.getByTestId('confirmar').click();

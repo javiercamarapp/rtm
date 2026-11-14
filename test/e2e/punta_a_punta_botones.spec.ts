@@ -174,7 +174,9 @@ for (const tema of TEMAS) {
       await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page.getByTestId('nueva-oc')).toBeVisible();
       await abrirYCancelar(page, info, tema, page.getByTestId('pago-socio'), 'pago-socio');
+      await page.getByTestId('barra-mas').click();
       await abrirYCancelar(page, info, tema, page.getByTestId('pago-sociedad'), 'pago-sociedad');
+      await page.getByTestId('barra-mas').click();
       await abrirYCancelar(page, info, tema, page.getByTestId('ajuste-proveedor'), 'ajuste-proveedor');
       await page.getByTestId('abrir-liquidacion').click();
       await page.waitForURL('**/proveedores/liquidacion**');

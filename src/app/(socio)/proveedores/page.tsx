@@ -6,6 +6,7 @@ import { operacionDeSocio } from '@/composicion/operacion';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import { armarHojaProveedor, armarPosicionProveedor, rotuloModalidad } from '@/dominio/operacion/posicion_proveedor';
 import type { EstadoCompra } from '@/dominio/operacion/tipos';
+import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Segmentado } from '@/ui/componentes/controles';
 import { BarList, LineaTiempo, ListaClaveValor } from '@/ui/componentes/datos';
@@ -18,6 +19,7 @@ import { CONCEPTO_CUENTA, ESTADO_COMPRA, ORIGEN } from '../operacion/etiquetas';
 import { FormularioAccion } from '../operacion/formulario-accion';
 import { Dos, Estado, Pie, m, pct, suma } from '../_a3/util';
 import { PagoSocioProveedor } from './pago-socio';
+import '@/ui/estilos/barrido-b.css';
 
 export const metadata: Metadata = { title: 'Proveedores' };
 
@@ -85,11 +87,33 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
         titulo={`Cuenta con ${proveedor}`}
         descripcion={`${pos.titular}${pos.pedidosSocio.hay && cuenta.posicion.menudeo_pendiente_cent > 0n ? ` · aparte, pedidos de ${socioMenudeo} pendientes ${pos.pedidosSocio.pendiente}` : ''} · hoja de la semana del ${etiquetaFecha(hoja.semana_ini)} al ${etiquetaFecha(hoja.semana_fin)}`}
         acciones={
-          <>
-            <Segmentado etiquetaAria="Proveedor" opciones={[{ valor: 'Isaac', etiqueta: 'Isaac', href: '/proveedores?p=Isaac', activa: proveedor === 'Isaac' }, { valor: 'Karen', etiqueta: 'Karen', href: '/proveedores?p=Karen', activa: proveedor === 'Karen' }]} />
-            <Link className="rtm-boton" href="/proveedores/inventario" data-testid="ir-inventario">Inventario actual de proveedores</Link>
-            <Link className="rtm-boton rtm-boton-primario" href={`/proveedores/compras/nueva?p=${proveedor}`} data-testid="nueva-oc">Nueva orden de compra</Link>
-          </>
+          <BarraAcciones
+            etiquetaAria="Acciones del proveedor"
+            primarias={
+              <>
+                <Segmentado etiquetaAria="Proveedor" opciones={[{ valor: 'Isaac', etiqueta: 'Isaac', href: '/proveedores?p=Isaac', activa: proveedor === 'Isaac' }, { valor: 'Karen', etiqueta: 'Karen', href: '/proveedores?p=Karen', activa: proveedor === 'Karen' }]} />
+                <PagoSocioProveedor proveedor={proveedor} />
+                <Link className="rtm-boton rtm-boton-primario" href={`/proveedores/compras/nueva?p=${proveedor}`} data-testid="nueva-oc" title="Nueva orden de compra">Nueva compra</Link>
+              </>
+            }
+            secundarias={
+              <>
+                <FormularioAccion variante="item" boton="Pago de la sociedad" descripcion={`Registrar un pago de la sociedad a ${proveedor}`} titulo={`Pago de la sociedad a ${proveedor}`} confirmar="Registrar pago" accion="registrar_pago_proveedor_sociedad" testid="pago-sociedad"
+                  fijos={{ p_proveedor: proveedor }} campos={[{ nombre: 'p_monto_cent', etiqueta: 'Monto', tipo: 'monto', requerido: true }, { nombre: 'p_nota', etiqueta: 'Nota (opcional)', tipo: 'texto' }]}
+                  nota="Sale de la Caja de la empresa: si no tiene saldo suficiente el pago se bloquea (registralo como pago de un socio con su dinero o como cobro de cliente aplicado al proveedor). Se puede deshacer con un movimiento contrario." />
+                <FormularioAccion variante="item" boton="Registrar ajuste" descripcion={`Registrar un ajuste con ${proveedor}`} titulo={`Ajuste con ${proveedor}`} confirmar="Registrar ajuste" accion="registrar_ajuste_proveedor" testid="ajuste-proveedor"
+                  fijos={{ p_proveedor: proveedor }}
+                  campos={[
+                    { nombre: 'p_tipo', etiqueta: 'Tipo', tipo: 'seleccion', opciones: [
+                      { valor: 'descuento_proveedor', texto: 'Descuento del proveedor (a favor)' }, { valor: 'saldo_a_favor', texto: 'Saldo a favor' }, { valor: 'pago_de_mas', texto: 'Pago de más' },
+                      { valor: 'error_bodega', texto: 'Error de bodega' }, { valor: 'seguro_reenvio', texto: 'Seguro de reenvío' }] },
+                    { nombre: 'p_monto_cent', etiqueta: 'Monto a favor de la sociedad', tipo: 'monto', requerido: true, ayuda: 'Un cargo a favor del proveedor se registra como orden de compra.' },
+                    { nombre: 'p_motivo', etiqueta: 'Motivo', tipo: 'texto', requerido: true },
+                  ]} />
+                <Link className="rtm-boton-item" href="/proveedores/inventario" data-testid="ir-inventario" title="Inventario actual de proveedores">Inventario de proveedores</Link>
+              </>
+            }
+          />
         }
       />
 
@@ -133,21 +157,6 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             { k: 'Cuenta puente', v: cuenta.puente_cent === 0n ? 'Sin diferencias por asignar' : m(cuenta.puente_cent) },
           ]} />
           <Pie>Isaac y Karen nunca se mezclan. La misma cifra aparece en Inicio, Contabilidad y Capital por socio.</Pie>
-          <div className="a3-acciones">
-            <PagoSocioProveedor proveedor={proveedor} />
-            <FormularioAccion boton="Pago de la sociedad" titulo={`Pago de la sociedad a ${proveedor}`} confirmar="Registrar pago" accion="registrar_pago_proveedor_sociedad" testid="pago-sociedad"
-              fijos={{ p_proveedor: proveedor }} campos={[{ nombre: 'p_monto_cent', etiqueta: 'Monto', tipo: 'monto', requerido: true }, { nombre: 'p_nota', etiqueta: 'Nota (opcional)', tipo: 'texto' }]}
-              nota="Sale de la Caja de la empresa: si no tiene saldo suficiente el pago se bloquea (registralo como pago de un socio con su dinero o como cobro de cliente aplicado al proveedor). Se puede deshacer con un movimiento contrario." />
-            <FormularioAccion boton="Registrar ajuste" titulo={`Ajuste con ${proveedor}`} confirmar="Registrar ajuste" accion="registrar_ajuste_proveedor" testid="ajuste-proveedor"
-              fijos={{ p_proveedor: proveedor }}
-              campos={[
-                { nombre: 'p_tipo', etiqueta: 'Tipo', tipo: 'seleccion', opciones: [
-                  { valor: 'descuento_proveedor', texto: 'Descuento del proveedor (a favor)' }, { valor: 'saldo_a_favor', texto: 'Saldo a favor' }, { valor: 'pago_de_mas', texto: 'Pago de más' },
-                  { valor: 'error_bodega', texto: 'Error de bodega' }, { valor: 'seguro_reenvio', texto: 'Seguro de reenvío' }] },
-                { nombre: 'p_monto_cent', etiqueta: 'Monto a favor de la sociedad', tipo: 'monto', requerido: true, ayuda: 'Un cargo a favor del proveedor se registra como orden de compra.' },
-                { nombre: 'p_motivo', etiqueta: 'Motivo', tipo: 'texto', requerido: true },
-              ]} />
-          </div>
         </Tarjeta>
       </Rejilla>
 
@@ -179,7 +188,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
           {puntosSaldo.length >= 2 ? (
             <AreaPesos titulo="Saldo corrido con el proveedor" descripcion={`Saldo de la cuenta con ${proveedor} tras cada uno de ${puntosSaldo.length} movimientos.`} procedencia="observado" pie={`Fuente: movimientos de la cuenta con ${proveedor}`} puntos={puntosSaldo} />
           ) : (
-            <p className="a3-grafica-vacia"><strong>Pocos movimientos</strong>Con dos o más movimientos de la cuenta se dibuja el saldo corrido.</p>
+            <p className="rtm-bb-vacio"><strong>Pocos movimientos.</strong>Con dos o más movimientos de la cuenta se dibuja el saldo corrido.</p>
           )}
           <Pie><span data-testid="reconciliacion-cuenta">{pos.reconciliacion.texto}</span></Pie>
         </Tarjeta>
@@ -284,7 +293,6 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             ]}
           />
         )}
-        {vista === 'cuenta' && <div className="a3-pie-tarjeta"><Pie>Solo movimientos de cuenta (pagos y compras). {pos.reconciliacion.texto}.</Pie></div>}
         {cierre && vista === 'hoja' && <div className="a3-pie-tarjeta"><Pie>Semana liquidada: {cierre.folio} el {etiquetaFecha(cierre.fecha_cierre)}.</Pie></div>}
       </Tarjeta>
     </Pagina>

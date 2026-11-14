@@ -29,7 +29,7 @@ export function PagoSocioProveedor({ proveedor }: { proveedor: string }) {
   };
   return (
     <>
-      <button type="button" className="rtm-boton" onClick={() => { limpiarError(); setAbierto(true); }} data-testid="pago-socio">Registrar pago de un socio</button>
+      <button type="button" className="rtm-boton" onClick={() => { limpiarError(); setAbierto(true); }} data-testid="pago-socio" title="Registrar pago de un socio">Pago de socio</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo={`Pago de un socio a ${proveedor}`} confirmar="Registrar pago" ocupado={ocupado} onConfirmar={ir} onCancelar={cerrar}>
           <label className="rtm-etiqueta-campo">Socio que pagó

@@ -6,6 +6,7 @@ import { sumarDias } from '@/dominio/calendario';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import { armarHojaProveedor } from '@/dominio/operacion/posicion_proveedor';
 import type { AmbitoHoja } from '@/dominio/operacion/tipos';
+import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, Segmentado } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
@@ -66,11 +67,21 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
         titulo={`Lo que falta por saldar con ${proveedor}`}
         descripcion={`Semana del ${etiquetaFecha(h.semana_ini)} al ${etiquetaFecha(h.semana_fin)} · ${cerrada ? `liquidada (${h.cierre!.folio})` : h.viernes_cerrado ? 'lista para liquidar' : `se liquida a partir del viernes ${etiquetaFecha(h.semana_fin)}`}`}
         acciones={
-          <>
-            <Segmentado etiquetaAria="Proveedor" opciones={[{ valor: 'Isaac', etiqueta: 'Isaac', href: enlace({ p: 'Isaac' }), activa: proveedor === 'Isaac' }, { valor: 'Karen', etiqueta: 'Karen', href: enlace({ p: 'Karen' }), activa: proveedor === 'Karen' }]} />
-            <Segmentado etiquetaAria="Ámbito de la hoja" opciones={[{ valor: 's', etiqueta: 'Solo de la sociedad', href: enlace({ ambito: 'sociedad' }), activa: ambito === 'sociedad', testid: 'ambito-sociedad' }, { valor: 't', etiqueta: 'Todo', href: enlace({ ambito: 'todo' }), activa: ambito === 'todo', testid: 'ambito-todo' }]} />
-            <Segmentado etiquetaAria="Semana" opciones={[{ valor: 'a', etiqueta: 'Semana anterior', href: enlace({ semana: sumarDias(h.semana_ini, -7) }), activa: false }, { valor: 's', etiqueta: 'Semana siguiente', href: enlace({ semana: sumarDias(h.semana_ini, 7) }), activa: false }]} />
-          </>
+          <BarraAcciones
+            etiquetaAria="Opciones de la liquidación"
+            primarias={
+              <>
+                <Segmentado etiquetaAria="Proveedor" opciones={[{ valor: 'Isaac', etiqueta: 'Isaac', href: enlace({ p: 'Isaac' }), activa: proveedor === 'Isaac' }, { valor: 'Karen', etiqueta: 'Karen', href: enlace({ p: 'Karen' }), activa: proveedor === 'Karen' }]} />
+                <Segmentado etiquetaAria="Ámbito de la hoja" opciones={[{ valor: 's', etiqueta: 'Sociedad', href: enlace({ ambito: 'sociedad' }), activa: ambito === 'sociedad', testid: 'ambito-sociedad' }, { valor: 't', etiqueta: 'Todo', href: enlace({ ambito: 'todo' }), activa: ambito === 'todo', testid: 'ambito-todo' }]} />
+              </>
+            }
+            secundarias={
+              <>
+                <Link className="rtm-boton-item" href={enlace({ semana: sumarDias(h.semana_ini, -7) })}>Semana anterior</Link>
+                <Link className="rtm-boton-item" href={enlace({ semana: sumarDias(h.semana_ini, 7) })}>Semana siguiente</Link>
+              </>
+            }
+          />
         }
       />
       {h.guias_pendientes > 0 && <Aviso tono="atencion" titulo="Cifra provisional.">{h.guias_pendientes} guías sin costo real: la hoja es provisional hasta costearlas.</Aviso>}
