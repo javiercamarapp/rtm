@@ -18,7 +18,7 @@ export default async function PaginaDiario({ searchParams }: { searchParams: Pro
   const q = await searchParams;
   const ini = esFecha(q.ini) ? q.ini : null;
   const fin = esFecha(q.fin) ? q.fin : null;
-  const limite = Math.min(Math.max(Number(q.n) || 40, 10), 200);
+  const limite = Math.min(Math.max(Number(q.n) || 20, 10), 200);
   const d = await (await contabilidadDeSocio()).diario(ini, fin, limite);
   const enlace = (n: number) => `/contabilidad/diario?n=${n}${ini ? `&ini=${ini}` : ''}${fin ? `&fin=${fin}` : ''}`;
   const lineas = d.asientos.flatMap((a) => a.lineas);
@@ -49,13 +49,13 @@ export default async function PaginaDiario({ searchParams }: { searchParams: Pro
           </form>
         }
       >
-        {[40, 100, 200].map((n) => <Chip key={n} href={enlace(n)} activo={limite === n}>{n} asientos</Chip>)}
+        {[20, 50, 100, 200].map((n) => <Chip key={n} href={enlace(n)} activo={limite === n}>{n} asientos</Chip>)}
       </BarraFiltros>
 
       <KpiLinea
         etiquetaAria="Indicadores del diario"
         celdas={[
-          { id: 'total', etiqueta: 'Asientos en el periodo', valor: String(d.total), categoria: 1, nota: <span data-testid="diario-total">{d.total === 0 ? 'Sin asientos todavía.' : `Se muestran los ${d.asientos.length} más recientes${ini || fin ? ' del periodo' : ''}.`}</span> },
+          { id: 'total', etiqueta: 'Asientos en el periodo', valor: String(d.total), categoria: 1, nota: <span data-testid="diario-total">{d.total === 0 ? 'Sin asientos todavía.' : `Se muestran los ${d.asientos.length} más recientes (el total del libro no cambia)${ini || fin ? ' del periodo' : ''}.`}</span> },
           { id: 'debe', etiqueta: 'Debe mostrado', valor: d.total === 0 ? null : m(debe), categoria: 2, nota: `${lineas.length} líneas` },
           { id: 'haber', etiqueta: 'Haber mostrado', valor: d.total === 0 ? null : m(haber), categoria: 6, nota: d.total === 0 ? undefined : <Estado tono={debe === haber ? 'ok' : 'malo'}>{debe === haber ? 'Cuadra con el debe' : 'No cuadra'}</Estado> },
           { id: 'rev', etiqueta: 'Reversas', valor: d.total === 0 ? null : String(reversas), categoria: 4, nota: `${manuales} asientos manuales` },
@@ -95,7 +95,7 @@ export default async function PaginaDiario({ searchParams }: { searchParams: Pro
                 </Tarjeta>
               </div>
             ))}
-            {d.total > d.asientos.length && <p className="a3-pie"><Link href={enlace(Math.min(limite * 2, 200))}>Mostrar más asientos</Link></p>}
+            {d.total > d.asientos.length && <p className="a3-pie"><Link href={enlace(Math.min(limite < 50 ? 50 : limite * 2, 200))}>Mostrar más asientos</Link></p>}
           </div>
           <Tarjeta titulo="Qué origina los asientos" descripcion="Cuenta de los asientos mostrados por origen">
             <BarList etiquetaAria="Asientos por origen" items={origenes.map(([k, n]) => ({ id: k, etiqueta: k.replaceAll('_', ' '), texto: String(n), pct: pct(BigInt(n), BigInt(d.asientos.length)) }))} />
