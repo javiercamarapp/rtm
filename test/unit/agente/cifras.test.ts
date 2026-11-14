@@ -108,14 +108,57 @@ describe('RegistroCifras (guardia de salida: ningun numero que no venga del serv
     );
   });
 
-  it('las piezas no toman su procedencia del sufijo k del nombre del modelo ("Zafiro 5K", "Orbita 20K")', () => {
-    expect(valoresDeTexto('pedido a costo de zafiro 5k sandia, pago el viernes').has(500n)).toBe(true); // para dinero, 5k = 5,000 y tambien 5
-    expect(cifrasSinProcedencia('pedido a costo de zafiro 5k sandia, pago el viernes', [cifrasDePiezas('piezas', 5)])).toEqual(['piezas']);
-    expect(cifrasSinProcedencia('dropshipping de orbita 20k mango y uva', [cifrasDePiezas('l0', 20), cifrasDePiezas('l1', 20)])).toEqual(['l0', 'l1']);
-    // con la cantidad realmente escrita sigue pasando, aunque el modelo tenga sufijo k
-    expect(cifrasSinProcedencia('12 zafiro 5k sandia', [cifrasDePiezas('piezas', 12)])).toEqual([]);
-    expect(cifrasSinProcedencia('5 zafiro 5k sandia', [cifrasDePiezas('piezas', 5)])).toEqual([]);
-    // los montos conservan su lectura con k: "3k" = 3,000
-    expect(cifrasSinProcedencia('Lupita me paso 3k', [cifrasDeMonto('monto', 300_000)])).toEqual([]);
+  describe('procedencia de PIEZAS (Fase 0a): solo cuentan las cantidades', () => {
+    const sin = (texto: string, piezas: number) => cifrasSinProcedencia(texto, [cifrasDePiezas('p', piezas)]);
+    it('el sufijo k del modelo no es cantidad ("Zafiro 5K", "Orbita 20K")', () => {
+      expect(sin('pedido a costo de zafiro 5k sandia, pago el viernes', 5)).toEqual(['p']);
+      expect(sin('dropshipping de orbita 20k mango y uva', 20)).toEqual(['p']);
+      expect(sin('12 zafiro 5k sandia', 12)).toEqual([]);
+      expect(sin('5 zafiro 5k sandia', 5)).toEqual([]);
+    });
+    it('"mil" si multiplica en piezas: "2 mil zafiro 5k mango" = 2000, y el 2 suelto no', () => {
+      expect(sin('2 mil zafiro 5k mango', 2000)).toEqual([]);
+      expect(sin('2 mil zafiro 5k mango', 2)).toEqual(['p']);
+      expect(sin('mil zafiro 5k mango', 1000)).toEqual([]);
+    });
+    it('un folio no es cantidad (P-0012, C-0004)', () => {
+      expect(sin('cancela el pedido P-0012', 12)).toEqual(['p']);
+      expect(sin('recibi C-0004 completa', 4)).toEqual(['p']);
+      expect(sin('recibi C-0004: 30 zafiro 5k sandia', 30)).toEqual([]);
+    });
+    it('una fecha no es cantidad (15/11, 15/11/2026)', () => {
+      expect(sin('pago el 15/11 de zafiro sandia', 15)).toEqual(['p']);
+      expect(sin('pago el 15/11 de zafiro sandia', 11)).toEqual(['p']);
+      expect(sin('pago el 15/11/2026 de zafiro', 2026)).toEqual(['p']);
+      expect(sin('pago el 15/11, 8 zafiro sandia', 8)).toEqual([]);
+    });
+    it('un porcentaje no es cantidad (10%)', () => {
+      expect(sin('con 10% de descuento, zafiro sandia', 10)).toEqual(['p']);
+      expect(sin('con 10% de descuento, 6 zafiro sandia', 6)).toEqual([]);
+      expect(sin('descuento del 12.5 %: zafiro', 12)).toEqual(['p']);
+    });
+    it('la numeracion de lista no es cantidad (1) 2) 3))', () => {
+      const lote = '1) zafiro sandia, pago el viernes\n2) orbita mango, pago el sabado';
+      expect(sin(lote, 1)).toEqual(['p']);
+      expect(sin(lote, 2)).toEqual(['p']);
+      expect(sin('1) 10 zafiro sandia\n2) 12 orbita mango', 10)).toEqual([]);
+      expect(sin('1) 10 zafiro sandia\n2) 12 orbita mango', 2)).toEqual(['p']);
+    });
+  });
+
+  describe('procedencia de DINERO con sufijo k/mil (Fase 0a)', () => {
+    const sin = (texto: string, centavos: number) => cifrasSinProcedencia(texto, [cifrasDeMonto('m', centavos)]);
+    it('"20k" solo aporta 20,000 pesos; el 20 sin multiplicar no pasa', () => {
+      expect(sin('Cliente Alfa pago orbita 20k', 2000)).toEqual(['m']); // 20 pesos
+      expect(sin('Cliente Alfa pago orbita 20k', 2_000_000)).toEqual([]); // 20,000 pesos: unica lectura valida de "20k"
+      expect(sin('Cliente Alfa pago orbita 20k', 200)).toEqual(['m']); // 2 pesos
+    });
+    it('k y mil siguen valiendo para los montos dictados', () => {
+      expect(sin('Cliente Gamma me paso 3k', 300_000)).toEqual([]);
+      expect(sin('Cliente Gamma me paso 3k', 300)).toEqual(['m']);
+      expect(sin('abono 12 mil en efectivo', 1_200_000)).toEqual([]);
+      expect(sin('abono 12 mil en efectivo', 1200)).toEqual(['m']);
+      expect(sin('pago 1.5k', 150_000)).toEqual([]);
+    });
   });
 });
