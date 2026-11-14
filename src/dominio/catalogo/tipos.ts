@@ -96,7 +96,7 @@ export interface Explicacion {
   titulo: string;
   unidad: 'pz' | 'mxn' | 'ident';
   valor: number | null;
-  comprobacion: { via1: string; via1Valor: number; via2: string; via2Valor: number; cuadra: boolean } | null;
+  comprobacion: { via1: string; via1Valor: number; via2: string; via2Valor: number; cuadra: boolean; /** Diferencia entre las dos vias, calculada por la base (nunca en TypeScript); ausente en las explicaciones que no pasan por api.explicar_cifra. */ diferencia?: number | null } | null;
   movimientos: {
     hora: string; fechaNeg: string; tipo: string; sabor: string; ubicacion: string; cantidad: number; saldo: number;
     valorCent: bigint; evento: string; canal: string; mensajeOrigen: string | null; autor: string | null;
@@ -107,4 +107,8 @@ export interface Explicacion {
   /** De donde sale la cifra (una frase); opcional. */
   fuente?: string;
   renglones: { concepto: string; montoCent: bigint; saldoCent: bigint | null; hora: string | null; fechaNeg: string | null; evento: string | null; canal: string | null; autor: string | null; mensajeOrigen: string | null }[];
+  /** Panel premium (aditivo, todo opcional; lo entrega api.explicar_cifra desde la migracion de la ficha): corte de la lectura, historial por mes y cuentas del libro con su saldo. */
+  corte?: { fecha: string; hora: string } | null;
+  historial?: { periodo: string; fecha: string; valorCent: bigint }[];
+  cuentas?: { codigo: string; nombre: string; tipo: string; naturaleza: string; saldoCent: bigint | null }[];
 }

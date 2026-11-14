@@ -53,7 +53,12 @@ const existencia = z.object({
 export const explicacion = z.object({
   cifra: z.string(), titulo: z.string(), unidad: z.enum(['pz', 'mxn', 'ident']), valor: z.number().nullable(),
   // api.explicar_historial omite la clave sin segunda via; si alguna version la mandara con valores nulos, se lee como "sin comprobacion" en vez de romper la pantalla.
-  comprobacion: z.object({ via1: z.string(), via1_valor: z.number().nullable(), via2: z.string(), via2_valor: z.number().nullable(), cuadra: z.boolean().nullable() }).nullish(),
+  comprobacion: z.object({ via1: z.string(), via1_valor: z.number().nullable(), via2: z.string(), via2_valor: z.number().nullable(), cuadra: z.boolean().nullable(), diferencia: z.number().nullish() }).nullish(),
+  fuente: z.string().nullish(),
+  // Ficha del panel (migracion 20261115200000): todo opcional; una base sin la migracion sigue funcionando.
+  corte: z.object({ fecha: z.string(), hora: z.string() }).nullish(),
+  historial: z.array(z.object({ periodo: z.string(), fecha: z.string(), valor_cent: cent })).optional(),
+  cuentas: z.array(z.object({ codigo: z.string(), nombre: z.string(), tipo: z.string(), naturaleza: z.string(), saldo_cent: centN.optional() })).optional(),
   movimientos: z.array(z.object({ hora: z.string(), fecha_neg: z.string(), tipo: z.string(), sabor: z.string(), ubicacion: z.string(), cantidad: z.number(), saldo: z.number(), valor_cent: cent, evento: z.string(), canal: z.string(), mensaje_origen: z.string().nullable(), autor: z.string().nullable() })),
   precio_cent: centN.optional(),
   costos: z.array(z.object({ proveedor: z.string(), costo_cent: cent, desde: z.string(), supuesto: z.boolean(), fuente: z.string(), margen_cent: cent, cuadra: z.boolean() })).optional(),
@@ -62,7 +67,11 @@ export const explicacion = z.object({
 }).transform((e) => ({
   cifra: e.cifra, titulo: e.titulo, unidad: e.unidad, valor: e.valor,
   comprobacion: e.comprobacion && e.comprobacion.via1_valor !== null && e.comprobacion.via2_valor !== null && e.comprobacion.cuadra !== null
-    ? { via1: e.comprobacion.via1, via1Valor: e.comprobacion.via1_valor, via2: e.comprobacion.via2, via2Valor: e.comprobacion.via2_valor, cuadra: e.comprobacion.cuadra } : null,
+    ? { via1: e.comprobacion.via1, via1Valor: e.comprobacion.via1_valor, via2: e.comprobacion.via2, via2Valor: e.comprobacion.via2_valor, cuadra: e.comprobacion.cuadra, diferencia: e.comprobacion.diferencia ?? null } : null,
+  fuente: e.fuente ?? undefined,
+  corte: e.corte ?? null,
+  historial: (e.historial ?? []).map((h) => ({ periodo: h.periodo, fecha: h.fecha, valorCent: h.valor_cent })),
+  cuentas: (e.cuentas ?? []).map((c) => ({ codigo: c.codigo, nombre: c.nombre, tipo: c.tipo, naturaleza: c.naturaleza, saldoCent: c.saldo_cent ?? null })),
   movimientos: e.movimientos.map((m) => ({ hora: m.hora, fechaNeg: m.fecha_neg, tipo: m.tipo, sabor: m.sabor, ubicacion: m.ubicacion, cantidad: m.cantidad, saldo: m.saldo, valorCent: m.valor_cent, evento: m.evento, canal: m.canal, mensajeOrigen: m.mensaje_origen, autor: m.autor })),
   precioCent: e.precio_cent ?? null,
   costos: (e.costos ?? []).map((c) => ({ proveedor: c.proveedor, costoCent: c.costo_cent, desde: c.desde, supuesto: c.supuesto, fuente: c.fuente, margenCent: c.margen_cent, cuadra: c.cuadra })),
