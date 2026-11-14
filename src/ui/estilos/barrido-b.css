@@ -19,3 +19,23 @@
 .rtm-bb-campo-fila { display: grid !important; gap: 4px; }
 .rtm-bb-campo-fila select { width: 100%; }
 .rtm-kr-marcas input[type='checkbox'] { width: 18px; height: 18px; margin: 0; accent-color: var(--rtm-ink); }
+
+/* Menu de filtro desplegable (src/ui/componentes/menu-filtro.tsx). */
+.rtm-bb-menu-filtro { position: relative; display: inline-block; }
+.rtm-bb-menu-filtro > .rtm-boton { gap: 6px; }
+.rtm-bb-menu-panel { position: absolute; z-index: 40; left: 0; top: calc(100% + 6px); min-width: 220px; max-width: min(320px, 90vw); display: flex; flex-direction: column; gap: 1px; padding: 4px; box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: 10px; background: var(--rtm-surface); box-shadow: var(--rtm-sombra-flotante); }
+.rtm-bb-menu-panel[hidden] { display: none; }
+.rtm-bb-menu-panel > .rtm-boton-item[aria-current='true'] { background: var(--rtm-fill-active); font-weight: 600; }
+
+/* Exportar PDF del inventario como ventana flotante: no estira el encabezado de la pagina. */
+.rtm-ba .rtm-exportar-panel { position: absolute; z-index: 40; right: 0; top: calc(100% + 6px); margin-top: 0; width: min(560px, 92vw); max-height: 80vh; overflow: auto; box-shadow: var(--rtm-sombra-flotante); background: var(--rtm-surface); }
+@media (max-width: 767px) {
+  .rtm-ba .rtm-exportar-panel { position: fixed; z-index: 60; inset: auto 8px 8px 8px; width: auto; }
+}
+
+/* Bloque plegable cerrado por omision (razones secundarias): resumen de una linea. */
+.rtm-bb-plegable { margin: 0; }
+.rtm-bb-plegable > summary { display: flex; align-items: center; min-height: 28px; cursor: pointer; font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-2); }
+.rtm-bb-plegable > summary:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
+.rtm-bb-plegable[open] > summary { margin-bottom: 4px; }
+@media (pointer: coarse) { .rtm-bb-plegable > summary { min-height: 44px; } }
