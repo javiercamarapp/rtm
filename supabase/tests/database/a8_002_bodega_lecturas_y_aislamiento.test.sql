@@ -57,7 +57,7 @@ select is((select jsonb_array_length(j #> '{clientes,0,pedidos,0,lineas}') from 
 select is((select (x ->> 'falta')::int from _hoy, jsonb_array_elements(j -> 'surtido') x where x ->> 'sabor' = 'Fresa'), 5, 'surtido: faltan 5 de Fresa (35 pedidas, 30 en existencia)');
 select is((select (x ->> 'piezas')::int from _hoy, jsonb_array_elements(j -> 'surtido') x where x ->> 'sabor' = 'Uva'), 20, 'surtido: 20 de Uva');
 select is((select jsonb_array_length(j -> 'compras') from _lleg), 1, 'llegadas: una orden por recibir (el borrador no cuenta)');
-select is((select j #>> '{compras,0,proveedor}' from _lleg), 'Isaac', 'llegadas: proveedor');
+select is((select j #>> '{compras,0,proveedor}' from _lleg), null, 'llegadas: ya no lleva el proveedor (decision del dueno, 14-nov)');
 select is((select j #>> '{compras,0,llegada_estimada}' from _lleg), '2026-11-20', 'llegadas: fecha esperada');
 select is((select j #>> '{compras,0,guias,0,numero}' from _lleg), 'B82-GUIA-1', 'llegadas: guia de entrada (paqueteria y numero)');
 select is((select (j #>> '{compras,0,piezas}')::int from _lleg), 100, 'llegadas: 100 piezas esperadas');
