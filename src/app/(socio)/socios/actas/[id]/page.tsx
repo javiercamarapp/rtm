@@ -8,6 +8,7 @@ import { Aviso } from '@/ui/componentes/controles';
 import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
+import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { BotonAccion } from '../../../operacion/formulario-accion';
 import { Estado, Pie, m } from '../../../_a3/util';
 import { NOMBRES } from '../../../_historial/util';
@@ -45,12 +46,17 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
         titulo={`${c.folio} · ${etiquetaFecha(c.periodo_ini)} al ${etiquetaFecha(c.periodo_fin)}`}
         descripcion={`${ESTADO[c.estado]}${d.corrige_folio ? ` · deshace el acta ${d.corrige_folio}` : ''}${d.contra_acta_folio ? ` · corregida por ${d.contra_acta_folio}` : ''}`}
         acciones={
-          <>
-            {c.estado !== 'anulado' && <a className="rtm-boton" href={`/socios/actas/${c.id}/pdf`} data-testid="acta-pdf">PDF del acta</a>}
-            {pendiente && !c.yo_firme && <BotonAccion primario texto="Firmar" titulo={`Firmar ${c.folio}`} confirmarTexto="Firmar" accion="firmar_cierre_reparto" args={{ p_cierre: c.id }} testid="firmar-acta" />}
-            {pendiente && <BotonAccion texto="Anular" accion="anular_cierre_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Anular ${c.folio}`} />}
-            {c.estado === 'cerrado' && c.tipo === 'periodo' && !c.corregida && <BotonAccion texto="Contra-acta" accion="contra_acta_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Corregir ${c.folio} con una contra-acta`} />}
-          </>
+          <BarraAcciones
+            etiquetaAria="Acciones del acta"
+            primarias={pendiente && !c.yo_firme ? <BotonAccion primario texto="Firmar" titulo={`Firmar ${c.folio}`} confirmarTexto="Firmar" accion="firmar_cierre_reparto" args={{ p_cierre: c.id }} testid="firmar-acta" /> : undefined}
+            secundarias={(c.estado !== 'anulado' || pendiente) ? (
+              <>
+                {c.estado !== 'anulado' && <a className="rtm-boton-item" href={`/socios/actas/${c.id}/pdf`} title="Descargar el acta en PDF" data-testid="acta-pdf">PDF del acta</a>}
+                {pendiente && <BotonAccion texto="Anular" accion="anular_cierre_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Anular ${c.folio}`} />}
+                {c.estado === 'cerrado' && c.tipo === 'periodo' && !c.corregida && <BotonAccion texto="Contra-acta" accion="contra_acta_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Corregir ${c.folio} con una contra-acta`} />}
+              </>
+            ) : undefined}
+          />
         }
       />
       {c.utilidad_provisional && <Aviso tono="atencion" titulo="Utilidad provisional.">Había guías sin costo real cuando se propuso el acta.</Aviso>}

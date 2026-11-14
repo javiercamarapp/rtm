@@ -1,3 +1,4 @@
+import { Ayuda } from '../../_a3/ayuda';
 import type { Metadata } from 'next';
 import '@/ui/estilos/capital.css';
 import { capitalDeSocio } from '@/composicion/capital';
@@ -67,7 +68,8 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
       <SubnavContabilidad />
       <Pagina ancho="tablero">
         <EncabezadoPagina eyebrow="Contabilidad · capital por socio" titulo={sd ? 'Todavía no hay capital que mostrar' : `Valuación de ${m(a.total.valuacion_cent)}`}
-          descripcion="Por mes y por socio: aportaciones de capital, utilidad generada, reinvertida y retirada, fondos de la sociedad en poder de cada socio y valuación. La participación es 50/50 y se busca que ambos tengan el mismo dinero invertido. Cada cifra cuadra contra el Estado de resultados, el Balance y el Libro." />
+          descripcion="Por mes y por socio: aportaciones de capital, utilidad generada, reinvertida y retirada, fondos de la sociedad en poder de cada socio y valuación." />
+        <Ayuda resumen="Participación y cuadre">La participación es 50/50 y se busca que ambos tengan el mismo dinero invertido. Cada cifra cuadra contra el Estado de resultados, el Balance y el Libro.</Ayuda>
         <FiltrosUrl etiquetaAria="Periodo" restablecer="/contabilidad/capital">
           <Campo etiqueta="Desde"><input type="date" name="desde" defaultValue={desdeP ?? ''} max={hoyNeg()} /></Campo>
           <Campo etiqueta="Hasta"><input type="date" name="hasta" defaultValue={hastaP} max={hoyNeg()} /></Campo>
