@@ -121,8 +121,9 @@ test('inventario de proveedores: estado de la lectura, lista para cliente sin pr
   await expect(page.getByText('Fresa Kiwi Hielo')).toBeVisible();
   await expect(page.locator('main')).not.toContainText(/myshopify|https?:\/\//i);
   // Lo que viene de la fuente (promociones, estado, sabores) nunca trae importes; el costo que se muestra es el que dio Javier para el catalogo propio.
-  for (const region of ['Promociones', 'Estado de la lectura', 'Por confirmar', 'Cambios recientes']) await expect(page.locator(`[aria-label="${region}"]`)).not.toContainText(/\$\s?\d/);
-  await expect(page.getByTestId(`sabores-9${SUF.length}0001`)).toContainText('2 de 3 disponibles');
+  for (const region of ['Promociones', 'Estado de la lectura', 'Cambios recientes']) await expect(page.locator(`[aria-label="${region}"]`)).not.toContainText(/\$\s?\d/);
+  await expect(page.getByTestId(`modelo-9${SUF.length}0001`)).toContainText('2 de 3 sabores');
+  await page.getByTestId('lista-clientes').locator('summary').click();
 
   await page.getByTestId('lista-marca').selectOption(MARCA);
   await page.getByTestId('lista-preparar').click();
@@ -137,7 +138,8 @@ test('inventario de proveedores: estado de la lectura, lista para cliente sin pr
   await expect(page.getByTestId('lista-copiada')).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('Mango');
 
-  // Orden de compra a Karen desde el modelo: el sabor agotado queda bloqueado
+  // Orden de compra a Karen desde el panel del modelo: el sabor agotado queda bloqueado
+  await page.getByTestId(`modelo-9${SUF.length}0001`).click();
   await page.getByTestId(`orden-9${SUF.length}0001`).click();
   await expect(page).toHaveURL(/\/proveedores\/compras\/nueva\?p=Karen/);
   await expect(page.getByTestId('oc-modelo')).toHaveValue(MODELO);
@@ -148,6 +150,7 @@ test('inventario de proveedores: estado de la lectura, lista para cliente sin pr
   await sembrarProveedores(canonico, 5);
   await page.goto('/proveedores/inventario');
   await expect(page.getByTestId('estado-fuente')).toContainText('Dato desactualizado');
+  await page.getByTestId('lista-clientes').locator('summary').click();
   await page.getByTestId('lista-preparar').click();
   await expect(page.getByTestId('lista-bloqueada')).toContainText('No se prepara la lista');
 });

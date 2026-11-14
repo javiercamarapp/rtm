@@ -30,10 +30,11 @@ export function BarraLectura({ frescura: f, ahoraIso, actualizar }: { frescura: 
   return (
     <div className="rtm-kr-barra-lectura" data-testid="estado-fuente" role="group" aria-label="Estado de la lectura">
       <div className="rtm-kr-lectura-datos">
-        <span className="rtm-kr-estado" data-estado={f.bloqueada ? 'bloqueada' : !f.lectura_activa ? 'apagada' : f.desactualizado ? 'vieja' : 'ok'}>
+        <span className="rtm-kr-estado" data-estado={f.bloqueada ? 'bloqueada' : sinLectura ? 'apagada' : f.desactualizado ? 'vieja' : 'ok'}>
           <i aria-hidden="true" />
-          {f.bloqueada ? 'Bloqueada' : !f.lectura_activa ? 'Lectura apagada' : sinLectura ? 'Sin lecturas' : f.desactualizado ? 'Dato desactualizado' : 'Al día'}
+          {f.bloqueada ? 'Bloqueada' : sinLectura ? 'Sin lecturas' : f.desactualizado ? 'Dato desactualizado' : 'Al día'}
         </span>
+        {!f.lectura_activa && <span className="rtm-kr-estado" data-estado="apagada"><i aria-hidden="true" />Lectura automática apagada</span>}
         <span>{sinLectura ? 'Todavía no hay una lectura' : <>Última lectura <b>{hace(f.ultima_lectura_ok, ahora)}</b></>}</span>
         <span className="rtm-kr-peticiones" title="Peticiones al sitio de Karen hoy">
           Peticiones hoy <b>{f.peticiones_hoy}</b> de {f.tope_dia}
