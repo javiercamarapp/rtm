@@ -126,8 +126,9 @@ const reg = await fetch(`${API}/auth/v1/signup`, { method: 'POST', headers: cab,
 ok('Registro abierto cerrado (signup rechazado)', reg.status >= 400, String(reg.status));
 const sup = await fetch(`${API}/auth/v1/otp`, { method: 'POST', headers: cab, body: JSON.stringify({ email: `humo-${randomBytes(3).toString('hex')}@rtm-humo.test`, create_user: true }) });
 ok('OTP directo con create_user no crea usuario', sup.status >= 400, String(sup.status));
-const nUsuarios = sql(`select count(*)::int n from auth.users`)[0].n;
-ok('Siguen exactamente 3 usuarios en Auth', nUsuarios === 3, `n=${nUsuarios}`);
+// Auth debe tener exactamente las personas de la lista de permitidos (socios, Omar y las cuentas de bodega dadas de alta): ninguna de mas.
+const usuarios = sql(`select (select count(*) from auth.users)::int a, (select count(*) from seguridad.correo_permitido)::int c`)[0];
+ok('Auth tiene exactamente las personas de la lista de permitidos (ninguna de mas)', usuarios.a === usuarios.c, `auth=${usuarios.a} lista=${usuarios.c}`);
 
 // 8. Bundle publico sin secretos ni correos.
 const cli = await fetch(`${base}/login`).then((r) => r.text());
