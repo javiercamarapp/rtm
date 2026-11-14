@@ -35,6 +35,56 @@ alter table catalogo.unificacion_sabor force row level security;
 revoke all on catalogo.unificacion_sabor from public, anon, authenticated;
 revoke all on all sequences in schema catalogo from public, anon, authenticated;
 
+-- Motivos por los que un sku NO puede fusionarse con el canonico (vacio = se puede). Solo lectura.
+create function catalogo.sku_bloqueos_unificacion(p_sku bigint) returns text[]
+language sql stable security definer set search_path = ''
+as $$
+  select array_remove(array[
+    case when exists (select 1 from operacion.existencia_sku_ubicacion e where e.sku_id = p_sku and e.piezas <> 0) then 'tiene existencia' end,
+    case when exists (select 1 from operacion.reserva r where r.sku_id = p_sku and r.estado = 'activa') then 'tiene una reserva activa' end,
+    case when exists (select 1 from operacion.pedido_linea l join operacion.pedido p on p.id = l.pedido_id where l.sku_id = p_sku and p.estado in ('borrador', 'confirmado')) then 'esta en un pedido abierto' end,
+    case when exists (select 1 from operacion.compra_linea l join operacion.compra c on c.id = l.compra_id where l.sku_id = p_sku and c.estado not in ('recibida', 'cerrada', 'anulada')) then 'esta en una compra abierta' end,
+    case when exists (select 1 from operacion.toma_omar t where t.sku_id = p_sku and t.estado = 'pendiente') then 'tiene una toma pendiente' end,
+    case when exists (select 1 from operacion.conteo c where c.estado = 'abierto') then 'hay un conteo abierto' end], null)
+$$;
+
+-- Plan de una unificacion SIN escribir: por cada sku del origen, si se reasigna o se fusiona y que lo bloquea. Para --verificar del script y para la web.
+create function catalogo.unificacion_plan(p_origen bigint, p_destino bigint) returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  perform seguridad.exigir_rol(array['socio', 'importacion']);
+  return jsonb_build_object('origen', p_origen, 'destino', p_destino, 'skus', coalesce((
+    select jsonb_agg(jsonb_build_object('sku_id', s.id, 'modelo', m.nombre_canonico,
+             'accion', case when d.id is null then 'reasigna' else 'fusiona' end,
+             'bloqueos', case when d.id is null then '[]'::jsonb else to_jsonb(catalogo.sku_bloqueos_unificacion(s.id)) end) order by s.id)
+      from catalogo.sku s join catalogo.modelo m on m.id = s.modelo_id
+      left join catalogo.sku d on d.modelo_id = s.modelo_id and d.sabor_id = p_destino and d.unificado_en is null
+     where s.sabor_id = p_origen and s.unificado_en is null), '[]'::jsonb));
+end $$;
+
+-- Huella de todo lo que una unificacion NO debe tocar: kardex, existencias, pedidos, surtidos, eventos, asientos, cadena de hash del libro, cuenta 1310 y comprobaciones C1..C24.
+create function catalogo.huella_inmutables() returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  perform seguridad.exigir_rol(array['socio', 'importacion']);
+  return jsonb_build_object(
+    'kardex', (select md5(string_agg(to_jsonb(m)::text, '|' order by m.id)) from operacion.movimiento_inventario m),
+    'kardex_n', (select count(*) from operacion.movimiento_inventario),
+    'existencia_sku', (select md5(string_agg(to_jsonb(e)::text, '|' order by e.sku_id, e.ubicacion)) from operacion.existencia_sku_ubicacion e),
+    'existencia_modelo', (select md5(string_agg(to_jsonb(e)::text, '|' order by e.modelo_id)) from operacion.existencia_modelo e),
+    'pedido_linea', (select md5(string_agg(to_jsonb(l)::text, '|' order by l.id)) from operacion.pedido_linea l),
+    'surtido', (select md5(string_agg(to_jsonb(s)::text, '|' order by s.id)) from operacion.pedido_surtido s),
+    'eventos', (select md5(string_agg(to_jsonb(e)::text, '|' order by e.id)) from operacion.evento e),
+    'asientos', (select md5(string_agg(to_jsonb(a)::text, '|' order by a.id)) from contabilidad.asiento a),
+    'asientos_n', (select count(*) from contabilidad.asiento),
+    'cadena', contabilidad.verificar_cadena(),
+    'c1310', contabilidad.saldo('1310'),
+    'comprobaciones', (select jsonb_agg(jsonb_build_object('c', c.codigo, 'ok', c.ok, 'a', c.via_a_cent, 'b', c.via_b_cent) order by c.codigo) from contabilidad.comprobaciones() c),
+    'rojas', (select count(*) from contabilidad.comprobaciones() c where not c.ok and c.bloqueante));
+end $$;
+
 -- ---------------------------------------------------------------------------
 -- Unificar dos sabores (nucleo). Solo con una pregunta pendiente de ESE par (respuesta de un socio) o con una aprobacion explicita por clave.
 -- Devuelve estado: 'unificado' | 'ya_unificado' | 'bloqueado' (con los motivos; no escribe nada).
@@ -95,13 +145,7 @@ begin
     if k.dest_sku is null then
       v_det := v_det || jsonb_build_object('sku_id', k.sku_id, 'accion', 'reasignado', 'sku_destino', k.sku_id);
     else
-      m := array_remove(array[
-        case when exists (select 1 from operacion.existencia_sku_ubicacion e where e.sku_id = k.sku_id and e.piezas <> 0) then 'tiene existencia' end,
-        case when exists (select 1 from operacion.reserva r where r.sku_id = k.sku_id and r.estado = 'activa') then 'tiene una reserva activa' end,
-        case when exists (select 1 from operacion.pedido_linea l join operacion.pedido p on p.id = l.pedido_id where l.sku_id = k.sku_id and p.estado in ('borrador', 'confirmado')) then 'esta en un pedido abierto' end,
-        case when exists (select 1 from operacion.compra_linea l join operacion.compra c on c.id = l.compra_id where l.sku_id = k.sku_id and c.estado not in ('recibida', 'cerrada', 'anulada')) then 'esta en una compra abierta' end,
-        case when exists (select 1 from operacion.toma_omar t where t.sku_id = k.sku_id and t.estado = 'pendiente') then 'tiene una toma pendiente' end,
-        case when exists (select 1 from operacion.conteo c where c.estado = 'abierto') then 'hay un conteo abierto' end], null);
+      m := catalogo.sku_bloqueos_unificacion(k.sku_id);
       if cardinality(m) > 0 then
         v_bloq := v_bloq || jsonb_build_object('sku_id', k.sku_id, 'modelo', (select nombre_canonico from catalogo.modelo where id = k.modelo_id), 'motivos', to_jsonb(m));
       else
@@ -422,7 +466,8 @@ begin
     from catalogo.sku k join catalogo.sabor s on s.id = k.sabor_id join operacion.existencia_sku_ubicacion u on u.sku_id = k.id and u.piezas > 0 where k.modelo_id = p_modelo and k.unificado_en is null), '[]'::jsonb);
 end $$;
 
-revoke execute on function catalogo.unificar_sabor(text, bigint, bigint, text, text, bigint, text), catalogo.deshacer_unificacion_sabor(text, bigint, text),
+revoke execute on function catalogo.sku_bloqueos_unificacion(bigint), catalogo.unificacion_plan(bigint, bigint), catalogo.huella_inmutables(),
+  catalogo.unificar_sabor(text, bigint, bigint, text, text, bigint, text), catalogo.deshacer_unificacion_sabor(text, bigint, text),
   catalogo.responder_duplicado(text, bigint, text, bigint, text, text) from public, anon, authenticated;
 revoke execute on function api.duplicados_pendientes(text), api.duplicado_responder(text, bigint, text, bigint, text), api.duplicados_escanear(text),
   api.sabor_unificacion_deshacer(text, bigint), api.sabor_unificaciones(int) from public, anon;

@@ -46,7 +46,7 @@ export function BotonesDuplicado({ p }: { p: PreguntaDuplicado }) {
               <fieldset>
                 <legend>Nombre que queda</legend>
                 {[p.a, p.b].map((x) => (
-                  <label key={x.id} style={{ display: 'block' }}>
+                  <label key={x.id} className="rtm-a1-nota">
                     <input type="radio" name={`canonico-${p.id}`} checked={canonico === x.id} onChange={() => setCanonico(x.id)} /> {x.nombre} ({x.skus} {x.skus === 1 ? 'modelo' : 'modelos'}, {x.lineas_pedido} {x.lineas_pedido === 1 ? 'renglón vendido' : 'renglones vendidos'})
                   </label>
                 ))}
