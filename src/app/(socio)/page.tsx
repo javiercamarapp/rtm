@@ -113,12 +113,12 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
         etiquetaAria="Indicadores de la operación"
         celdas={[
           {
-            id: 'ventas', etiqueta: 'Ventas de la semana', valor: hayPedidos ? centTexto(ventas[iSemana] ?? 0) : null, categoria: 1, href: '/pedidos',
-            delta: deltaSemanal(semanas, ventas, true), spark: sparkSemanal(semanas, ventas, centTexto), nota: `${formatearPiezas(piezas[iSemana] ?? 0)} surtidas · semana en curso`,
+            id: 'ventas', etiqueta: 'Ventas de la semana (facturado)', valor: hayPedidos ? centTexto(ventas[iSemana] ?? 0) : null, categoria: 1, href: '/pedidos',
+            delta: deltaSemanal(semanas, ventas, true), spark: sparkSemanal(semanas, ventas, centTexto), nota: `${formatearPiezas(piezas[iSemana] ?? 0)} surtidas · mercancía, envío y recargos de pedidos enviados`,
           },
           {
-            id: 'utilidad', etiqueta: utilidadProvisional ? 'Utilidad de la semana (provisional)' : 'Utilidad de la semana', valor: hayPedidos ? centTexto(utilidad[iSemana] ?? 0) : null, categoria: 3, href: '/contabilidad/estado-de-resultados',
-            delta: deltaSemanal(semanas, utilidad, true), nota: ventas[iSemana] ? `Margen ${(((utilidad[iSemana] ?? 0) / (ventas[iSemana] ?? 1)) * 100).toFixed(1)} % sobre lo vendido` : 'Sin ventas enviadas todavía',
+            id: 'utilidad', etiqueta: utilidadProvisional ? 'Utilidad por pedido de la semana (provisional)' : 'Utilidad por pedido de la semana', valor: hayPedidos ? centTexto(utilidad[iSemana] ?? 0) : null, categoria: 3, href: '/contabilidad/estado-de-resultados',
+            delta: deltaSemanal(semanas, utilidad, true), nota: ventas[iSemana] ? `Margen ${(((utilidad[iSemana] ?? 0) / (ventas[iSemana] ?? 1)) * 100).toFixed(1)} % sobre lo facturado · sin merma; la utilidad neta del periodo está en Estado de resultados` : 'Sin ventas enviadas todavía',
           },
           { id: 'porenviar', etiqueta: 'Pedidos por enviar', valor: pedidos === null ? null : String(porEnviar.length), categoria: 6, href: '/pedidos?estado=confirmado', nota: `${borradores.length} ${borradores.length === 1 ? 'borrador' : 'borradores'} · ${conAvisos.length} con avisos` },
           {
@@ -163,10 +163,10 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
       })()}
 
       <Rejilla dividir="8-4">
-        <Tarjeta titulo="Ventas por semana" descripcion={`Lo cobrado de los pedidos enviados, últimas ${n} semanas; la semana en curso va con trama`}>
+        <Tarjeta titulo="Ventas por semana" descripcion={`Lo facturado en los pedidos enviados (cobrado + por cobrar), últimas ${n} semanas; la semana en curso va con trama`}>
           {hayPedidos ? (
             <ColumnasPeriodo
-              titulo="Ventas cobradas por semana" descripcion={`Ventas de los pedidos enviados en las últimas ${n} semanas; la última es parcial.`} unidad="Ventas (pesos)" procedencia="observado"
+              titulo="Ventas facturadas por semana" descripcion={`Ventas de los pedidos enviados en las últimas ${n} semanas; la última es parcial.`} unidad="Ventas (pesos)" procedencia="observado"
               pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: pedidos enviados`} datos={columnasSemana(semanas, ventas, centTexto, 'ventas', 100)}
             />
           ) : <p className="rtm-a1-estado-vacio">Sin pedidos todavía: aquí aparecerán las ventas por semana.</p>}
@@ -248,7 +248,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
             { id: 'c', titulo: 'Cliente', ancho: 'l', celda: (p) => p.cliente },
             { id: 'd', titulo: 'Fecha', ancho: 'm', secundaria: true, celda: (p) => etiquetaFecha(p.fecha_neg) },
             { id: 'z', titulo: 'Piezas', numerica: true, ancho: 's', celda: (p) => formatearPiezas(p.piezas_pedidas) },
-            { id: 'b', titulo: 'Cobrado', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? formatearMoneda(p.cobrado_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
+            { id: 'b', titulo: 'Facturado', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? formatearMoneda(p.cobrado_cent) : <span className="rtm-sin-dato">Sin dato</span>) },
             { id: 'e', titulo: 'Estado', ancho: 'm', celda: (p) => <ChipEstado tono={p.estado === 'enviado' ? 'ok' : p.estado === 'anulado' ? 'malo' : p.estado === 'confirmado' ? 'atencion' : 'apagado'}>{ESTADO_PEDIDO[p.estado].texto}</ChipEstado> },
           ]}
         />
