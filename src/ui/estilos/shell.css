@@ -1,4 +1,4 @@
-/* Armazon: sidebar unico de 216 px, barra superior de 48 px, panel flotante de radio 22 con inset de 10 px. */
+/* Armazon: sidebar unico de 216 px, barra superior de 44 px, panel flotante de radio 22 con inset de 10 px. */
 
 .rtm-app {
   display: grid;
@@ -10,11 +10,11 @@
 
 /* ---- Sidebar ---- */
 .rtm-lateral {
-  display: flex; flex-direction: column; gap: var(--rtm-e-4);
-  padding: var(--rtm-e-4) var(--rtm-e-3);
+  display: flex; flex-direction: column; gap: var(--rtm-e-3);
+  padding: var(--rtm-e-3);
   min-height: 0; overflow-y: auto;
 }
-.rtm-lateral-marca { display: flex; align-items: center; padding: var(--rtm-e-1) var(--rtm-e-2); height: 32px; }
+.rtm-lateral-marca { display: flex; align-items: center; padding: 0 var(--rtm-e-2); height: 32px; }
 .rtm-nav-caja { position: relative; }
 .rtm-nav { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .rtm-nav-item {
@@ -59,7 +59,7 @@
 .rtm-nav-indicador[data-indice='21'] { transform: translateY(714px); }
 .rtm-nav-indicador[data-indice='22'] { transform: translateY(748px); }
 .rtm-nav-indicador[data-indice='23'] { transform: translateY(782px); }
-.rtm-lateral-pie { margin-top: auto; display: flex; flex-direction: column; gap: var(--rtm-e-2); padding: var(--rtm-e-2); }
+.rtm-lateral-pie { margin-top: auto; display: flex; flex-direction: column; gap: var(--rtm-e-1); padding: var(--rtm-e-2); }
 .rtm-lateral-usuario { font-size: 12px; color: var(--rtm-ink-3); overflow-wrap: anywhere; }
 .rtm-lateral-salir { align-self: flex-start; height: 28px; font-size: 12px; padding: 0 var(--rtm-e-3); }
 
@@ -92,9 +92,10 @@
   background: var(--rtm-panel); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-panel);
   overflow: hidden;
 }
-.rtm-panel-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: var(--rtm-e-6) clamp(var(--rtm-e-4), 2.2vw, 28px) 28px; }
+/* Ritmo vertical compacto (14-nov): 12 px arriba y 16 abajo en vez de 24 y 28; los lados siguen el ancho. */
+.rtm-panel-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: var(--rtm-e-3) clamp(var(--rtm-e-3), 2.2vw, 24px) var(--rtm-e-4); }
 /* Tope del armazon = ancho de tablero (1280); cada Pagina fija el suyo. */
-.rtm-pagina { max-width: var(--rtm-ancho-tablero); margin-inline: auto; display: flex; flex-direction: column; gap: var(--rtm-e-8); }
+.rtm-pagina { max-width: var(--rtm-ancho-tablero); margin-inline: auto; display: flex; flex-direction: column; gap: var(--rtm-ritmo); }
 
 /* ---- Anatomia de pagina ---- */
 .rtm-eyebrow {
@@ -102,25 +103,25 @@
   text-transform: uppercase; color: var(--rtm-ink-3);
 }
 .rtm-titular {
-  margin: var(--rtm-e-2) 0 0; font-family: var(--rtm-fuente-ui); font-weight: 600;
+  margin: var(--rtm-e-1) 0 0; font-family: var(--rtm-fuente-ui); font-weight: 600;
   font-size: var(--rtm-t-pagina); line-height: 1.2; letter-spacing: var(--rtm-trk-pagina); text-wrap: balance;
 }
 .rtm-titular em { font-style: normal; font-weight: inherit; }
-.rtm-contexto { margin: var(--rtm-e-2) 0 0; color: var(--rtm-ink-2); max-width: 62ch; }
-.rtm-acciones { display: flex; gap: var(--rtm-e-2); margin-top: var(--rtm-e-5); flex-wrap: wrap; }
+.rtm-contexto { margin: var(--rtm-e-1) 0 0; color: var(--rtm-ink-2); max-width: 62ch; }
+.rtm-acciones { display: flex; gap: var(--rtm-v-acciones); margin-top: var(--rtm-e-3); flex-wrap: wrap; }
 
 /* ---- Estado vacio y tarjetas ---- */
 .rtm-vacio {
   display: flex; flex-direction: column; align-items: flex-start; gap: var(--rtm-e-2);
-  padding: var(--rtm-e-8); border: 1px dashed var(--rtm-line-2); border-radius: var(--rtm-r-4);
+  padding: var(--rtm-e-4) var(--rtm-e-5); border: 1px dashed var(--rtm-line-2); border-radius: var(--rtm-r-3);
   background: var(--rtm-tint);
 }
-.rtm-vacio h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.rtm-vacio h2 { margin: 0; font-size: var(--rtm-t-seccion); font-weight: 600; }
 .rtm-vacio p { margin: 0; color: var(--rtm-ink-2); max-width: 60ch; }
-.rtm-tarjeta { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-4); background: var(--rtm-surface); padding: var(--rtm-e-5) var(--rtm-e-6); }
-.rtm-tarjeta h2 { margin: 0 0 var(--rtm-e-3); font-size: 16px; font-weight: 600; }
+.rtm-tarjeta { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-pad-tarjeta); }
+.rtm-tarjeta h2 { margin: 0 0 var(--rtm-v-gap-tarjeta); font-size: var(--rtm-t-seccion); font-weight: 600; }
 .rtm-pasos { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
-.rtm-paso { display: flex; gap: var(--rtm-e-3); align-items: flex-start; padding: var(--rtm-e-3) 0; border-top: 1px solid var(--rtm-line); }
+.rtm-paso { display: flex; gap: var(--rtm-e-3); align-items: flex-start; padding: var(--rtm-e-2) 0; border-top: 1px solid var(--rtm-line); }
 .rtm-paso:first-child { border-top: 0; }
 .rtm-paso-n {
   flex: none; width: 24px; height: 24px; display: grid; place-items: center;
@@ -134,7 +135,7 @@
 /* ---- Pie fijo ---- */
 .rtm-pie {
   flex: none; display: flex; gap: var(--rtm-e-3); align-items: center;
-  padding: var(--rtm-e-2) var(--rtm-e-6); border-top: 1px solid var(--rtm-line);
+  padding: var(--rtm-e-1) var(--rtm-e-5); border-top: 1px solid var(--rtm-line);
   font-size: 12px; color: var(--rtm-ink-3); background: var(--rtm-panel);
 }
 
@@ -142,7 +143,7 @@
 .rtm-acentos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--rtm-e-4); }
 .rtm-acento-muestra {
   display: flex; flex-direction: column; gap: var(--rtm-e-3);
-  padding: var(--rtm-e-5); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-4); background: var(--rtm-surface);
+  padding: var(--rtm-pad-tarjeta); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-4); background: var(--rtm-surface);
 }
 .rtm-acento-muestra h3 { margin: 0; font-size: 14px; }
 .rtm-seleccion { padding: 0 var(--rtm-e-3); height: 28px; display: inline-flex; align-items: center; border-radius: var(--rtm-r-pildora); background: var(--rtm-accent-soft); color: var(--rtm-ink); border: 1px solid var(--rtm-accent); font-size: 12px; width: fit-content; }
@@ -191,6 +192,19 @@
   .rtm-pie { flex-wrap: wrap; padding-inline: var(--rtm-e-4); }
   .rtm-boton, .rtm-icono-boton { min-height: 44px; }
   .rtm-icono-boton { min-width: 44px; }
+  /* Menu lateral compacto: filas de 44 px (objetivo tactil) pegadas, sin separacion ni el indicador deslizante (calibrado a filas de 32);
+     la entrada actual se marca con su propio fondo. */
+  .rtm-lateral { gap: var(--rtm-e-2); padding: var(--rtm-e-2); }
+  .rtm-lateral-marca { height: 28px; }
+  .rtm-nav { gap: 0; }
+  .rtm-nav-item { height: 44px; padding: 0 var(--rtm-e-3); }
+  .rtm-nav-indicador { display: none; }
+  .rtm-nav-item[aria-current='page'] { background: var(--rtm-fill-active); font-weight: 600; }
+  .rtm-lateral-pie { padding: var(--rtm-e-1) var(--rtm-e-2); }
+  /* Nunca scroll horizontal de pagina: lo ancho (tablas) se desplaza dentro de su propio contenedor. */
+  .rtm-panel-scroll { overflow-x: hidden; }
+  .rtm-pagina { min-width: 0; }
+  .rtm-pagina > * { min-width: 0; }
 }
 
 @media (max-width: 767px) {
@@ -213,16 +227,16 @@
 
 /* iPhone 16 Pro (402) y plegable cerrado (344): menos aire vertical, sin bloques sobredimensionados. */
 @media (max-width: 767px) {
-  .rtm-panel-scroll { padding-top: var(--rtm-e-5); padding-bottom: var(--rtm-e-5); }
-  .rtm-pagina { gap: var(--rtm-e-5); }
-  .rtm-vacio { padding: var(--rtm-e-5); }
-  .rtm-tarjeta { padding: var(--rtm-e-4); }
-  .rtm-acciones { margin-top: var(--rtm-e-4); }
+  .rtm-panel-scroll { padding-top: var(--rtm-e-2); padding-bottom: var(--rtm-e-3); }
+  .rtm-pagina { gap: var(--rtm-ritmo); }
+  .rtm-vacio { padding: var(--rtm-e-3) var(--rtm-e-4); }
+  .rtm-tarjeta { padding: var(--rtm-pad-tarjeta); }
+  .rtm-acciones { margin-top: var(--rtm-e-2); }
   .rtm-acciones > .rtm-boton, .rtm-acciones-fila > .rtm-boton { flex-grow: 1; }
 }
 @media (max-width: 380px) {
   .rtm-panel-scroll { padding-inline: var(--rtm-e-4); }
-  .rtm-titular { font-size: 26px; line-height: 32px; }
+  .rtm-titular { font-size: 20px; line-height: 1.2; }
 }
 
 /* Tactil: los chips del pulso crecen a 44 px para que la cifra explicable y el enlace sean tocables. */
