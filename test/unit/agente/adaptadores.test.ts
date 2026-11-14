@@ -130,7 +130,7 @@ function fetchOpenRouter(respuestas: Array<{ ok?: boolean; status?: number; cuer
   return { f, llamadas };
 }
 const completado = (contenido: unknown, uso: Record<string, number> = { prompt_tokens: 1000, completion_tokens: 100, cost: 0.00015 }) => ({
-  model: 'anthropic/claude-haiku-5.5',
+  model: 'anthropic/claude-haiku-5.5-20261007',
   choices: [{ message: { content: JSON.stringify(contenido) } }],
   usage: uso,
 });
@@ -140,14 +140,14 @@ describe('cliente de OpenRouter (politica 19 y privacidad)', () => {
   it('cada llamada lleva retencion cero, data_collection deny, JSON estricto y modelos de la politica; el costo real viene del proveedor', async () => {
     const { f, llamadas } = fetchOpenRouter([{ cuerpo: completado({ acciones: [] }) }]);
     const llm = crearClienteOpenRouter({ apiKey: 'LLAVE_FALSA', fetch: f });
-    const r = await llm.extraer(peticion(['anthropic/claude-haiku-5.5', 'openai/gpt-6-luna', 'deepseek/deepseek-v4.1-flash']));
+    const r = await llm.extraer(peticion(['anthropic/claude-haiku-5.5-20261007', 'openai/gpt-6-luna-20260922', 'deepseek/deepseek-v4.1-flash-20260910']));
     const c = llamadas[0]!;
     expect(c.url).toBe('https://openrouter.ai/api/v1/chat/completions');
     expect(c.headers.authorization).toBe('Bearer LLAVE_FALSA');
-    expect(c.body.models).toEqual(['anthropic/claude-haiku-5.5', 'openai/gpt-6-luna']); // el chino no entra sin lista blanca de EE.UU.
+    expect(c.body.models).toEqual(['anthropic/claude-haiku-5.5-20261007']); // un modelo a la vez; el chino no entra sin lista blanca de EE.UU.
     expect(c.body.provider).toMatchObject({ zdr: true, data_collection: 'deny' });
-    expect(c.body.response_format).toMatchObject({ type: 'json_schema', json_schema: { strict: true } });
-    expect(c.body).toMatchObject({ max_tokens: 700, temperature: 0, reasoning: { effort: 'minimal' } });
+    expect(c.body.response_format).toEqual({ type: 'json_object' }); // Haiku: esquema dentro del prompt (rechaza el estricto de 31 variantes)
+    expect(c.body).toMatchObject({ max_tokens: 700, temperature: 0, reasoning: { enabled: false } });
     expect(JSON.stringify(c.body)).not.toContain('LLAVE_FALSA');
     expect(r.costoMicroUsd).toBe(150n);
     expect(r.tokensEntrada).toBe(1000);
@@ -155,19 +155,19 @@ describe('cliente de OpenRouter (politica 19 y privacidad)', () => {
   });
   it('sin costo reportado, lo calcula con la tabla de precios (hacia arriba)', async () => {
     const { f } = fetchOpenRouter([{ cuerpo: completado({}, { prompt_tokens: 1000, completion_tokens: 100 }) }]);
-    const r = await crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion(['anthropic/claude-haiku-5.5']));
+    const r = await crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion(['anthropic/claude-haiku-5.5-20261007']));
     expect(r.costoMicroUsd).toBe(100n + 50n);
     const sinUso = fetchOpenRouter([{ cuerpo: { choices: [{ message: { content: '{}' } }] } }]);
-    const r2 = await crearClienteOpenRouter({ apiKey: 'k', fetch: sinUso.f }).extraer(peticion(['anthropic/claude-haiku-5.5']));
+    const r2 = await crearClienteOpenRouter({ apiKey: 'k', fetch: sinUso.f }).extraer(peticion(['anthropic/claude-haiku-5.5-20261007']));
     expect(r2.costoMicroUsd).toBe(0n);
-    expect(r2.modeloUsado).toBe('anthropic/claude-haiku-5.5');
+    expect(r2.modeloUsado).toBe('anthropic/claude-haiku-5.5-20261007');
   });
   it('el modelo chino solo corre con endpoints de EE.UU. en lista blanca y sin respaldo a otros', async () => {
     const { f, llamadas } = fetchOpenRouter([{ ok: false, status: 500, cuerpo: {} }, { cuerpo: completado({ acciones: [] }) }]);
-    const llm = crearClienteOpenRouter({ apiKey: 'k', fetch: f, endpointsEeuuPorModelo: { 'deepseek/deepseek-v4.1-flash': ['proveedor-eeuu-1'] } });
-    const r = await llm.extraer(peticion(['anthropic/claude-haiku-5.5', 'deepseek/deepseek-v4.1-flash']));
+    const llm = crearClienteOpenRouter({ apiKey: 'k', fetch: f, endpointsEeuuPorModelo: { 'deepseek/deepseek-v4.1-flash-20260910': ['proveedor-eeuu-1'] } });
+    const r = await llm.extraer(peticion(['anthropic/claude-haiku-5.5-20261007', 'deepseek/deepseek-v4.1-flash-20260910']));
     expect(llamadas).toHaveLength(2);
-    expect(llamadas[1]!.body.models).toEqual(['deepseek/deepseek-v4.1-flash']);
+    expect(llamadas[1]!.body.models).toEqual(['deepseek/deepseek-v4.1-flash-20260910']);
     expect(llamadas[1]!.body.provider).toMatchObject({ zdr: true, data_collection: 'deny', only: ['proveedor-eeuu-1'], allow_fallbacks: false });
     expect(r.contenido).toEqual({ acciones: [] });
   });
@@ -182,7 +182,7 @@ describe('cliente de OpenRouter (politica 19 y privacidad)', () => {
   it('un modelo en la tabla que supera el techo tambien se rechaza', async () => {
     const { f } = fetchOpenRouter([{ cuerpo: completado({}) }]);
     const llm = crearClienteOpenRouter({ apiKey: 'k', fetch: f });
-    await expect(llm.extraer(peticion(['anthropic/claude-haiku-5.5', 'anthropic/claude-sonnet-5.5']))).rejects.toBeInstanceOf(ErrorLlm);
+    await expect(llm.extraer(peticion(['anthropic/claude-haiku-5.5-20261007', 'anthropic/claude-sonnet-5.5']))).rejects.toBeInstanceOf(ErrorLlm);
   });
   it('errores tipados: red, estado no 2xx, contenido ausente o no JSON; solo el chino sin lista -> politica', async () => {
     const casos: Array<[Parameters<typeof fetchOpenRouter>[0][number], string]> = [
@@ -193,12 +193,12 @@ describe('cliente de OpenRouter (politica 19 y privacidad)', () => {
     ];
     for (const [resp, motivo] of casos) {
       const { f } = fetchOpenRouter([resp]);
-      await expect(crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion(['anthropic/claude-haiku-5.5']))).rejects.toMatchObject({ motivo });
+      await expect(crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion(['anthropic/claude-haiku-5.5-20261007']))).rejects.toMatchObject({ motivo });
     }
     const { f } = fetchOpenRouter([{ cuerpo: completado({}) }]);
-    await expect(crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion(['deepseek/deepseek-v4.1-flash']))).rejects.toMatchObject({ motivo: 'politica' });
+    await expect(crearClienteOpenRouter({ apiKey: 'k', fetch: f }).extraer(peticion(['deepseek/deepseek-v4.1-flash-20260910']))).rejects.toMatchObject({ motivo: 'politica' });
     const sinJson: FetchJson = async () => ({ ok: true, status: 200, json: async () => Promise.reject(new Error('x')) });
-    await expect(crearClienteOpenRouter({ apiKey: 'k', fetch: sinJson }).extraer(peticion(['anthropic/claude-haiku-5.5']))).rejects.toMatchObject({ motivo: 'respuesta_invalida' });
+    await expect(crearClienteOpenRouter({ apiKey: 'k', fetch: sinJson }).extraer(peticion(['anthropic/claude-haiku-5.5-20261007']))).rejects.toMatchObject({ motivo: 'respuesta_invalida' });
   });
 });
 

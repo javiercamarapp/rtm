@@ -1,0 +1,168 @@
+[
+ {
+  "id": "jer-082",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "ya cayeron los 6 mil de Cliente Beta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago",
+     "cliente": "cliente beta",
+     "monto_pesos": 6000
+    }
+   ]
+  }
+ },
+ {
+  "id": "jer-083",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "Cliente Delta me aventó 14 mil en efectivo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago",
+     "cliente": "cliente delta",
+     "monto_pesos": 14000
+    }
+   ]
+  }
+ },
+ {
+  "id": "jer-084",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "me fie de 2 cajas de zafiro 5k sandia con Cliente Gamma, son 20 piezas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "cliente gamma",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 20
+      }
+     ]
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "aclarar"
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "jer-085",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "pásame el saldo de la Tienda Demo Uno porfa",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "saldo",
+     "sujeto": "tienda demo uno"
+    }
+   ]
+  }
+ },
+ {
+  "id": "jer-086",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "ahorita le deposito 5 mil a Isaac",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "isaac",
+     "monto_pesos": 5000
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "aclarar"
+     }
+    ],
+    [
+     {
+      "tipo": "ninguna"
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "jer-087",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "neta ya quedaron 0 de uva en vega 9k, solo cuento mango 4 y menta 6",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "conteo",
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "uva",
+       "n": 0
+      },
+      {
+       "m": "vega 9k",
+       "s": "mango",
+       "n": 4
+      },
+      {
+       "m": "vega 9k",
+       "s": "menta",
+       "n": 6
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "jer-088",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "pague 1,200 de guia, una lana nomas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "guia",
+     "monto_pesos": 1200
+    }
+   ]
+  }
+ },
+ {
+  "id": "jer-089",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "ya ni modo, hay que mandar a Cliente Alfa 25 nimbo 50k mango hielo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "cliente alfa",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "mango hielo",
+       "n": 25
+      }
+     ]
+    }
+   ]
+  }
+ }
+]

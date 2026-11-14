@@ -1,0 +1,149 @@
+[
+ {
+  "id": "rec-061",
+  "categoria": "recepcion",
+  "autor": "javier",
+  "texto": "llego la compra C-0003 completa",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra_recepcion",
+     "folio": "c-0003",
+     "lineas": []
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "compra_estado",
+      "folio": "c-0003",
+      "estado": "llego_merida"
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "rec-062",
+  "categoria": "recepcion",
+  "autor": "javier",
+  "texto": "recibi C-0004: 30 zafiro 5k sandia y 20 zafiro 5k mango",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra_recepcion",
+     "folio": "c-0004",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 30
+      },
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 20
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "rec-063",
+  "categoria": "recepcion",
+  "autor": "javier",
+  "texto": "recepcion parcial de C-0005: solo llegaron 40 nimbo 50k uva hielo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra_recepcion",
+     "folio": "c-0005",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "uva hielo",
+       "n": 40
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "rec-064",
+  "categoria": "recepcion",
+  "autor": "javier",
+  "texto": "la C-0006 ya va en camino",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra_estado",
+     "folio": "c-0006",
+     "estado": "enviada"
+    }
+   ]
+  }
+ },
+ {
+  "id": "rec-065",
+  "categoria": "recepcion",
+  "autor": "javier",
+  "texto": "compra a Isaac: 100 orbita 20k fresa y 100 orbita 20k mango",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra",
+     "proveedor": "isaac",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "fresa",
+       "n": 100
+      },
+      {
+       "m": "orbita 20k",
+       "s": "mango",
+       "n": 100
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "rec-066",
+  "categoria": "recepcion",
+  "autor": "javier",
+  "texto": "aprueba la orden C-0007",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra_aprobar",
+     "folio": "c-0007"
+    }
+   ]
+  }
+ },
+ {
+  "id": "rec-067",
+  "categoria": "recepcion",
+  "autor": "javier",
+  "texto": "orden de compra a Karen: 200 cometa 30k surtido, aplica el saldo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "orden_compra",
+     "proveedor": "karen",
+     "lineas": [
+      {
+       "m": "cometa 30k",
+       "s": "surtido",
+       "n": 200
+      }
+     ]
+    }
+   ]
+  }
+ }
+]

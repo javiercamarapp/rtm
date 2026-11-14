@@ -113,6 +113,8 @@ export class ErrorLlm extends Error {
   constructor(
     readonly motivo: 'red' | 'tiempo' | 'proveedor' | 'respuesta_invalida' | 'politica',
     mensaje: string,
+    /** Costo real (micro-USD) de los intentos que el proveedor SI facturo aunque la respuesta no sirviera (contenido vacio, filtro de contenido, no JSON). */
+    readonly costoMicroUsd: bigint = 0n,
   ) {
     super(mensaje);
     this.name = 'ErrorLlm';

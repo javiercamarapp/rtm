@@ -138,7 +138,7 @@ describe('inyeccion', () => {
     expect(p.usuario).not.toContain('<system>');
     expect(p.usuario).toContain('candidatos_modelos');
     expect(p.sistema).toContain('Solo interpretas');
-    expect(p.modelos).toEqual(['anthropic/claude-haiku-5.5', 'openai/gpt-6-luna', 'deepseek/deepseek-v4.1-flash']);
+    expect(p.modelos).toEqual(['anthropic/claude-haiku-5.5-20261007', 'openai/gpt-6-luna-20260922', 'deepseek/deepseek-v4.1-flash-20260910']);
     expect(JSON.stringify(p.esquemaJson)).toContain('pedido');
   });
 });

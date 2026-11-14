@@ -41,12 +41,12 @@ describe('politica 19: modelos', () => {
     }
   });
   it('texto: Haiku 5.5, respaldo GPT-6 Luna, luego DeepSeek V4.1 Flash', () => {
-    expect(cadenaParaRol('texto').map((m) => m.slug)).toEqual(['anthropic/claude-haiku-5.5', 'openai/gpt-6-luna', 'deepseek/deepseek-v4.1-flash']);
+    expect(cadenaParaRol('texto').map((m) => m.slug)).toEqual(['anthropic/claude-haiku-5.5-20261007', 'openai/gpt-6-luna-20260922', 'deepseek/deepseek-v4.1-flash-20260910']);
   });
   it('fotos: Haiku con vision y segunda lectura independiente con Luna; redaccion Luna con respaldo Haiku', () => {
-    expect(cadenaParaRol('vision')[0]!.slug).toBe('anthropic/claude-haiku-5.5');
-    expect(cadenaParaRol('vision_segunda')[0]!.slug).toBe('openai/gpt-6-luna');
-    expect(cadenaParaRol('redaccion').map((m) => m.slug)).toEqual(['openai/gpt-6-luna', 'anthropic/claude-haiku-5.5']);
+    expect(cadenaParaRol('vision')[0]!.slug).toBe('anthropic/claude-haiku-5.5-20261007');
+    expect(cadenaParaRol('vision_segunda')[0]!.slug).toBe('openai/gpt-6-luna-20260922');
+    expect(cadenaParaRol('redaccion').map((m) => m.slug)).toEqual(['openai/gpt-6-luna-20260922', 'anthropic/claude-haiku-5.5-20261007']);
     expect(cadenaParaRol('audio')[0]!.slug).toContain('whisper-large-v3-turbo');
   });
   it('Sonnet, Opus, Gemini y Qwen estan eliminados; un modelo sobre el techo exige autorizacion', () => {

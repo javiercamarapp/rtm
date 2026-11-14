@@ -1,7 +1,7 @@
 // Esquemas ESTRICTOS de la salida del extractor (zod). Propiedades desconocidas = rechazo. Todos los campos son obligatorios
 // (los opcionales van como null) para poder exigir el mismo esquema al proveedor en modo json_schema estricto.
 import { z } from 'zod';
-import { MAX_ACCIONES, MAX_LINEAS, TIPOS_CONSULTA, TIPOS_GASTO, type RespuestaExtractor } from '@/dominio/agente/intenciones';
+import { MAX_ACCIONES, MAX_LINEAS, MAX_LINEAS_CONTEO, TIPOS_CONSULTA, TIPOS_GASTO, type RespuestaExtractor } from '@/dominio/agente/intenciones';
 
 const texto = (max: number) => z.string().min(1).max(max);
 const textoONulo = (max: number) => z.string().min(1).max(max).nullable();
@@ -132,7 +132,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     fuente_cita: cita,
   }),
   z.strictObject({ tipo: z.literal('merma'), modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas, motivo: textoONulo(100), fuente_cita: cita }),
-  z.strictObject({ tipo: z.literal('conteo'), lineas: z.array(z.strictObject({ modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas: z.number().int().min(0).max(5000) })).min(1).max(MAX_LINEAS), fuente_cita: cita }),
+  z.strictObject({ tipo: z.literal('conteo'), lineas: z.array(z.strictObject({ modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas: z.number().int().min(0).max(5000) })).min(1).max(MAX_LINEAS_CONTEO), fuente_cita: cita }),
   z.strictObject({ tipo: z.literal('cliente_alta'), nombre: texto(60), fuente_cita: cita }),
   z.strictObject({ tipo: z.literal('cliente_precio'), cliente_texto: texto(60), modelo_texto: texto(60), precio_centavos: monto, fuente_cita: cita }),
   z.strictObject({
@@ -213,7 +213,31 @@ export function validarRespuesta(crudo: unknown): ValidacionRespuesta {
   return { ok: false, errores: r.error.issues.map((i) => `${i.path.join('.') || '(raiz)'}: ${i.message}`) };
 }
 
+/** Restricciones de rango que los proveedores con salida estructurada estricta no aceptan o ignoran; zod las sigue exigiendo al validar la respuesta. */
+const RESTRICCIONES_DE_RANGO = new Set(['minLength', 'maxLength', 'minimum', 'maximum', 'minItems', 'maxItems', 'pattern', 'exclusiveMinimum', 'exclusiveMaximum']);
+
+/**
+ * Adapta el JSON Schema de zod al dialecto de salida estructurada estricta de los proveedores (medido en la Fase 0a):
+ *  - `oneOf` se rechaza (Anthropic via Vertex: "Schema type 'oneOf' is not supported"); las variantes se distinguen por `tipo` (const), asi que `anyOf` es equivalente.
+ *  - `$schema` sobra.
+ *  - con `sinRangos` se quitan minLength/maxLength/minimum/maximum/minItems/maxItems/pattern; la validacion de rangos queda en zod (validarRespuesta).
+ */
+export function adaptarEsquemaParaProveedor(esquema: unknown, opciones: { sinRangos?: boolean } = {}): unknown {
+  const visitar = (nodo: unknown): unknown => {
+    if (Array.isArray(nodo)) return nodo.map(visitar);
+    if (nodo === null || typeof nodo !== 'object') return nodo;
+    const salida: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(nodo as Record<string, unknown>)) {
+      if (k === '$schema') continue;
+      if (opciones.sinRangos && RESTRICCIONES_DE_RANGO.has(k)) continue;
+      salida[k === 'oneOf' ? 'anyOf' : k] = visitar(v);
+    }
+    return salida;
+  };
+  return visitar(esquema);
+}
+
 /** JSON Schema para response_format estricto del proveedor. */
-export function esquemaJsonDeRespuesta(): unknown {
-  return z.toJSONSchema(EsquemaRespuesta);
+export function esquemaJsonDeRespuesta(opciones: { sinRangos?: boolean } = {}): unknown {
+  return adaptarEsquemaParaProveedor(z.toJSONSchema(EsquemaRespuesta), opciones);
 }

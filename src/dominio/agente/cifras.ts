@@ -88,15 +88,34 @@ function numerosEnPalabras(texto: string): bigint[] {
   return hallados;
 }
 
-/** Todos los valores numericos mencionados en un texto, en centesimas (cifras, "1.5k", "15 mil" y palabras en espanol). */
-export function valoresDeTexto(texto: string): Set<bigint> {
+/**
+ * Para CANTIDADES de piezas: se quitan del texto los numeros que no son cantidades (folios P-0012 / C-0004, fechas 15/11, porcentajes 10% y numeracion de lista "1)", "2)").
+ * Hallazgo de la Fase 0a: cualquier numero del mensaje servia de procedencia para unas piezas.
+ */
+function sinNumerosQueNoSonCantidades(t: string): string {
+  return t
+    .replace(/\b[a-z]{1,3}-\d+\b/g, ' ')
+    .replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, ' ')
+    .replace(/\d+(?:[.,]\d+)?\s*%/g, ' ')
+    .replace(/\b\d{1,2}\)/g, ' ');
+}
+
+/**
+ * Todos los valores numericos mencionados en un texto, en centesimas (cifras, "1.5k", "15 mil" y palabras en espanol).
+ * Un numero con sufijo k/mil aporta SOLO su valor multiplicado: "20k" es 20,000 y no tambien 20.
+ * Con `paraPiezas`: se ignoran folios, fechas, porcentajes y numeracion de listas, y un numero con sufijo `k` ("Zafiro 5K") es parte del nombre del modelo;
+ * "mil" si multiplica ("2 mil" = 2,000).
+ */
+export function valoresDeTexto(texto: string, opciones: { paraPiezas?: boolean } = {}): Set<bigint> {
   const valores = new Set<bigint>();
-  const t = sinAcentos(texto.toLowerCase());
+  let t = sinAcentos(texto.toLowerCase());
+  if (opciones.paraPiezas) t = sinNumerosQueNoSonCantidades(t);
   for (const m of t.matchAll(/(\d[\d.,]*)(?:\s*(k|mil|millones|millon)\b)?/g)) {
+    if (opciones.paraPiezas && m[2] === 'k') continue;
     const mult = m[2] === undefined ? 1n : m[2] === 'k' || m[2] === 'mil' ? 1000n : 1_000_000n;
     for (const v of interpretaciones(m[1]!)) {
-      valores.add(v);
-      if (mult !== 1n) valores.add(v * mult);
+      if (mult === 1n) valores.add(v);
+      else valores.add(v * mult);
     }
   }
   for (const v of numerosEnPalabras(t)) valores.add(v);
@@ -109,16 +128,19 @@ export interface CifraExtraida {
   valor: bigint;
   /** true en montos de dinero: si el mensaje solo lo explica con un formato ambiguo ("1.250") se pide aclarar en vez de aceptarlo. */
   esDinero?: boolean;
+  /** true en cantidades de piezas: la procedencia excluye folios, fechas, porcentajes, numeracion de listas y el sufijo k del nombre del modelo ("Zafiro 5K"). */
+  esPiezas?: boolean;
 }
 
 /** Devuelve los campos cuya cifra NO aparece en el mensaje fuente. Lista vacia = todo con procedencia. */
 export function cifrasSinProcedencia(fuente: string, extraidas: readonly CifraExtraida[]): string[] {
   const enFuente = valoresDeTexto(fuente);
-  return extraidas.filter((c) => !enFuente.has(c.valor)).map((c) => c.campo);
+  const enFuentePiezas = valoresDeTexto(fuente, { paraPiezas: true });
+  return extraidas.filter((c) => !(c.esPiezas === true ? enFuentePiezas : enFuente).has(c.valor)).map((c) => c.campo);
 }
 
 export function cifrasDePiezas(campo: string, piezas: number): CifraExtraida {
-  return { campo, valor: BigInt(piezas) * 100n };
+  return { campo, valor: BigInt(piezas) * 100n, esPiezas: true };
 }
 
 export function cifrasDeMonto(campo: string, centavos: number): CifraExtraida {
