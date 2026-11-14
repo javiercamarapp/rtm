@@ -132,3 +132,7 @@ Comandos (con `DATABASE_URL` de la base destino; ejecuta el dueno con `!`):
 DATABASE_URL=... node scripts/cargador/plazo-pendiente.mjs --verificar   # solo lectura: cantidad y folios, sin datos personales
 DATABASE_URL=... node scripts/cargador/plazo-pendiente.mjs --aplicar     # escribe (--fecha 2026-11-20 por omision, --actor Javier)
 ```
+
+## Correccion de precios por modelo de pedidos enviados (14-nov)
+
+Despues del despliegue de la migracion `20261115400000` (que no provoca builds de Vercel: se compila en local y se sube prebuilt): `node scripts/cargador/corregir-precios-por-modelo.mjs --datos <JSON privado> --verificar` (solo lectura) y luego `--aplicar` (solo la funcion oficial `operacion.corregir_precio_por_modelo`, una transaccion por pedido, idempotente). Los datos reales van en un archivo privado fuera del repo; formato, ejemplo ficticio y detalle en `docs/correccion-precios-por-modelo.md`.
