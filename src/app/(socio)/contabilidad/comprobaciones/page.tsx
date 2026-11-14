@@ -36,7 +36,8 @@ export default async function PaginaComprobaciones() {
       <EncabezadoPagina
         eyebrow="Contabilidad · comprobaciones"
         titulo={bloqueantes.length > 0 ? `Un reporte no puede salir: ${bloqueantes.length} ${bloqueantes.length === 1 ? 'comprobación bloqueante falla' : 'comprobaciones bloqueantes fallan'}` : fallan.length > 0 ? `${fallan.length} de ${todas.length} comprobaciones no cuadran (ninguna bloquea reportes)` : 'Todo cuadra'}
-        descripcion="Cada comprobación calcula la cifra por dos vías independientes y exige igualdad exacta; las bloqueantes impiden aprobar y publicar un periodo."
+        descripcion="Cada cifra se calcula por dos vías independientes y debe coincidir exacta."
+        ayudaResumen="Qué bloquea" ayuda="Cada comprobación calcula la cifra por dos vías independientes y exige igualdad exacta; las bloqueantes impiden aprobar y publicar un periodo."
       />
       {bloqueantes.length > 0 && <Aviso tono="error" titulo="Reporte bloqueado.">{bloqueantes.map((x) => x.codigo).join(', ')} no cuadran.</Aviso>}
       <KpiLinea

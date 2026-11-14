@@ -12,13 +12,6 @@
 @media (pointer: coarse) { .rtm-bc-rango > nav > a { min-height: 44px; } }
 @media (max-width: 767px) { .rtm-bc-rango { flex-wrap: wrap; } }
 
-/* Texto de ayuda largo del encabezado: cerrado por omision, una linea. */
-.rtm-bc-ayuda { margin: 0; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
-.rtm-bc-ayuda > summary { display: inline-flex; align-items: center; min-height: 24px; cursor: pointer; color: var(--rtm-ink-2); }
-.rtm-bc-ayuda > summary:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
-.rtm-bc-ayuda > p { margin: 2px 0 0; line-height: 1.4; max-width: 90ch; }
-@media (pointer: coarse) { .rtm-bc-ayuda > summary { min-height: 44px; } }
-
 /* Filtro desplegable: cliente y fechas dentro de un desplegable agrupado cuando no hay filtro activo. */
 .rtm-bc-filtros { min-width: 0; }
 .rtm-bc-filtros > summary { display: inline-flex; align-items: center; gap: 6px; height: var(--rtm-boton-alto); padding: 0 11px; box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-ctl-r); background: var(--rtm-surface); color: var(--rtm-ink); font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; }

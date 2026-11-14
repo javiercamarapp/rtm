@@ -125,3 +125,10 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
 .rtm-campo:disabled, .rtm-boton:disabled, .rtm-chip-filtro[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
 .rtm-campo:disabled { background: var(--rtm-tint); border-style: dashed; }
 .rtm-nowrap { white-space: nowrap; }
+
+/* Texto de ayuda largo del encabezado: cerrado por omision, una linea. */
+.rtm-ayuda { margin: 0; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); }
+.rtm-ayuda > summary { display: inline-flex; align-items: center; min-height: 24px; cursor: pointer; color: var(--rtm-ink-2); }
+.rtm-ayuda > summary:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
+.rtm-ayuda > p { margin: 2px 0 0; line-height: 1.4; max-width: 90ch; }
+@media (pointer: coarse) { .rtm-ayuda > summary { min-height: 44px; } }

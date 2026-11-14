@@ -34,7 +34,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
     <>
     <SubnavContabilidad />
     <Pagina ancho="tablero">
-      <EncabezadoPagina eyebrow="Contabilidad · historial de valuación" titulo={sd ? 'Todavía no hay historial de valuación' : `${filas.length} cortes ${paso === 'mes' ? 'mensuales' : 'semanales'}`} descripcion="Valuación al cierre de cada periodo, su cambio, el crecimiento y la utilidad. Cada corte usa la misma función que la valuación." acciones={<Link className="rtm-boton" href="/contabilidad/valuacion">Valuación al detalle</Link>} />
+      <EncabezadoPagina eyebrow="Contabilidad · historial de valuación" titulo={sd ? 'Todavía no hay historial de valuación' : `${filas.length} cortes ${paso === 'mes' ? 'mensuales' : 'semanales'}`} descripcion="Valuación al cierre de cada periodo, su cambio, el crecimiento y la utilidad." ayudaResumen="Cómo se calcula" ayuda="Cada corte usa la misma función que la valuación." acciones={<Link className="rtm-boton" href="/contabilidad/valuacion">Valuación al detalle</Link>} />
       <FiltrosUrl etiquetaAria="Periodo del historial" restablecer="/contabilidad/valuacion/historial">
         <Campo etiqueta="Corte"><select name="paso" defaultValue={paso}><option value="mes">Mensual</option><option value="semana">Semanal</option></select></Campo>
         <Campo etiqueta="Desde"><input type="date" name="desde" defaultValue={desde ?? ''} /></Campo>

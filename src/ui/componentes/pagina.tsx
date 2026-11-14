@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { indiceEscalonado } from '../movimiento';
+import { Ayuda } from './ayuda';
 
 interface EncabezadoProps {
   eyebrow?: string;
@@ -9,16 +10,20 @@ interface EncabezadoProps {
   antes?: string;
   enfasis?: string;
   despues?: string;
-  /** Una linea de 120 caracteres como maximo. `contexto` es el nombre anterior. */
+  /** Una linea de 120 caracteres como maximo; lo demas va en `ayuda`. `contexto` es el nombre anterior. */
   descripcion?: string;
   contexto?: string;
+  /** Texto largo que no cabe en la descripcion: se muestra en un details cerrado debajo de la linea (nada se pierde). */
+  ayuda?: ReactNode;
+  /** Resumen del details de `ayuda` (por omision "Cómo se lee"). */
+  ayudaResumen?: string;
   acciones?: ReactNode;
   /** Detalle: enlace "Volver a ...". */
   migaja?: { href: string; texto: string };
 }
 
 /** Anatomia de pagina v2: migaja opcional, eyebrow, titular de 24/600, descripcion de una linea y acciones a la derecha (una sola primaria). */
-export function EncabezadoPagina({ eyebrow, titulo, antes, enfasis, despues, descripcion, contexto, acciones, migaja }: EncabezadoProps) {
+export function EncabezadoPagina({ eyebrow, titulo, antes, enfasis, despues, descripcion, contexto, ayuda, ayudaResumen, acciones, migaja }: EncabezadoProps) {
   const texto = titulo ?? [antes, enfasis, despues].filter(Boolean).join(' ');
   const linea = descripcion ?? contexto;
   return (
@@ -28,6 +33,7 @@ export function EncabezadoPagina({ eyebrow, titulo, antes, enfasis, despues, des
         {eyebrow && <p className="rtm-eyebrow">{eyebrow}</p>}
         <h1 className="rtm-titular">{texto}</h1>
         {linea && <p className="rtm-contexto">{linea}</p>}
+        {ayuda && <Ayuda resumen={ayudaResumen}>{ayuda}</Ayuda>}
       </div>
       {acciones && <div className="rtm-encabezado-acciones">{acciones}</div>}
     </header>

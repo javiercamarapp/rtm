@@ -19,7 +19,7 @@ export default async function PaginaReportes() {
       <EncabezadoPagina
         eyebrow="Reportes"
         titulo="Lo que pasó, comprobado"
-        descripcion="El semanal sale el lunes a las 6:00 y el mensual el día 1. Un reporte publicado se reemite como versión nueva y se conserva la anterior."
+        descripcion="El semanal sale el lunes a las 6:00 y el mensual el día 1." ayudaResumen="Reemisión" ayuda="Un reporte publicado se reemite como versión nueva y se conserva la anterior."
       />
       <Tarjeta titulo="Preparar un reporte" descripcion="Definitivo exige el periodo aprobado; Preliminar, que alguna comprobación falle; Parcial, datos incompletos o periodo en curso">
         <PrepararReporte />

@@ -15,7 +15,7 @@ import { FormularioActa } from '../../_historial/formulario-acta';
 import { historialDeSocio } from '@/composicion/historial';
 import { valuacionDeSocios } from '@/composicion/valuacion-socios';
 import { alertaRetiros, fraseIgualar } from '@/dominio/socios/valuacion';
-import { Ayuda } from '../../_a3/ayuda';
+import { Ayuda } from '@/ui/componentes/ayuda';
 import { Dos, Estado, Pie, abs, m, pct } from '../../_a3/util';
 
 export const metadata: Metadata = { title: 'Cascada de reparto' };

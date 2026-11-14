@@ -1,4 +1,4 @@
-import { Ayuda } from '../../_a3/ayuda';
+import { Ayuda } from '@/ui/componentes/ayuda';
 import type { Metadata } from 'next';
 import '@/ui/estilos/capital.css';
 import { capitalDeSocio } from '@/composicion/capital';

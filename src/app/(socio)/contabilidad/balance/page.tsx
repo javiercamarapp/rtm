@@ -15,7 +15,7 @@ import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { Cascada } from '@/ui/graficas';
-import { Ayuda } from '../../_a3/ayuda';
+import { Ayuda } from '@/ui/componentes/ayuda';
 import { Estado, Pie, m, pct, suma } from '../../_a3/util';
 import { SubnavContabilidad } from '../subnav';
 
