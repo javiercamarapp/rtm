@@ -107,4 +107,15 @@ describe('RegistroCifras (guardia de salida: ningun numero que no venga del serv
       { numRuns: 300 },
     );
   });
+
+  it('las piezas no toman su procedencia del sufijo k del nombre del modelo ("Zafiro 5K", "Orbita 20K")', () => {
+    expect(valoresDeTexto('pedido a costo de zafiro 5k sandia, pago el viernes').has(500n)).toBe(true); // para dinero, 5k = 5,000 y tambien 5
+    expect(cifrasSinProcedencia('pedido a costo de zafiro 5k sandia, pago el viernes', [cifrasDePiezas('piezas', 5)])).toEqual(['piezas']);
+    expect(cifrasSinProcedencia('dropshipping de orbita 20k mango y uva', [cifrasDePiezas('l0', 20), cifrasDePiezas('l1', 20)])).toEqual(['l0', 'l1']);
+    // con la cantidad realmente escrita sigue pasando, aunque el modelo tenga sufijo k
+    expect(cifrasSinProcedencia('12 zafiro 5k sandia', [cifrasDePiezas('piezas', 12)])).toEqual([]);
+    expect(cifrasSinProcedencia('5 zafiro 5k sandia', [cifrasDePiezas('piezas', 5)])).toEqual([]);
+    // los montos conservan su lectura con k: "3k" = 3,000
+    expect(cifrasSinProcedencia('Lupita me paso 3k', [cifrasDeMonto('monto', 300_000)])).toEqual([]);
+  });
 });

@@ -89,10 +89,12 @@ function numerosEnPalabras(texto: string): bigint[] {
 }
 
 /** Todos los valores numericos mencionados en un texto, en centesimas (cifras, "1.5k", "15 mil" y palabras en espanol). */
-export function valoresDeTexto(texto: string): Set<bigint> {
+export function valoresDeTexto(texto: string, opciones: { sinSufijoMultiplicador?: boolean } = {}): Set<bigint> {
   const valores = new Set<bigint>();
   const t = sinAcentos(texto.toLowerCase());
   for (const m of t.matchAll(/(\d[\d.,]*)(?:\s*(k|mil|millones|millon)\b)?/g)) {
+    // Para piezas, "5k" o "20k" son parte del nombre del modelo ("Zafiro 5K"), no una cantidad: no aportan ni el 5 ni el 20 (hallazgo de la Fase 0a con Luna).
+    if (opciones.sinSufijoMultiplicador && m[2] !== undefined) continue;
     const mult = m[2] === undefined ? 1n : m[2] === 'k' || m[2] === 'mil' ? 1000n : 1_000_000n;
     for (const v of interpretaciones(m[1]!)) {
       valores.add(v);
@@ -109,16 +111,19 @@ export interface CifraExtraida {
   valor: bigint;
   /** true en montos de dinero: si el mensaje solo lo explica con un formato ambiguo ("1.250") se pide aclarar en vez de aceptarlo. */
   esDinero?: boolean;
+  /** true en cantidades de piezas: un numero con sufijo k/mil (nombre de modelo como "Zafiro 5K") no cuenta como procedencia. */
+  esPiezas?: boolean;
 }
 
 /** Devuelve los campos cuya cifra NO aparece en el mensaje fuente. Lista vacia = todo con procedencia. */
 export function cifrasSinProcedencia(fuente: string, extraidas: readonly CifraExtraida[]): string[] {
   const enFuente = valoresDeTexto(fuente);
-  return extraidas.filter((c) => !enFuente.has(c.valor)).map((c) => c.campo);
+  const enFuentePiezas = valoresDeTexto(fuente, { sinSufijoMultiplicador: true });
+  return extraidas.filter((c) => !(c.esPiezas === true ? enFuentePiezas : enFuente).has(c.valor)).map((c) => c.campo);
 }
 
 export function cifrasDePiezas(campo: string, piezas: number): CifraExtraida {
-  return { campo, valor: BigInt(piezas) * 100n };
+  return { campo, valor: BigInt(piezas) * 100n, esPiezas: true };
 }
 
 export function cifrasDeMonto(campo: string, centavos: number): CifraExtraida {

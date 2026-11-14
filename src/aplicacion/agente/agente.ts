@@ -24,7 +24,7 @@ import { Comunicador, verificarMensajeOmar } from './comunicador';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
 import * as P from './plantillas';
 import type { MensajeListo } from './plantillas';
-import { MAX_TOKENS_SALIDA_R1, SISTEMA_R1, VERSION_PROMPT, construirUsuarioR1, estimarTokens } from './prompt';
+import { MAX_TOKENS_SALIDA_R1, SISTEMA_R1, VERSION_PROMPT, construirUsuarioR1, estimarTokensSolicitud } from './prompt';
 import type {
   AccionBoton,
   AccionResuelta,
@@ -219,7 +219,7 @@ interface ContextoMensaje {
 const MENSAJE_MONTO_AMBIGUO = 'el monto sin ambiguedad: con coma para los miles y punto para los centavos (un punto seguido de tres cifras puede leerse de dos maneras)';
 const MSG_ERROR = 'No pude procesar ese mensaje. Intentalo de nuevo o usa los comandos.';
 
-function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
+export function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
   const salida: CifraExtraida[] = [];
   switch (a.tipo) {
     case 'pedido':
@@ -272,7 +272,7 @@ function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
   return salida;
 }
 
-function cifrasDePrecios(a: Intencion, fuente: string): string[] {
+export function cifrasDePrecios(a: Intencion, fuente: string): string[] {
   if (a.tipo !== 'pedido') return [];
   const enFuente = valoresDeTexto(fuente);
   const faltan: string[] = [];
@@ -612,7 +612,8 @@ export class AgenteTelegram {
   /** Reserva el peor caso ANTES de llamar; liquida con el costo real; libera si la llamada falla. */
   private async llamar(claveReserva: string, usuario: string, autor: Miembro): Promise<RespuestaLlm | 'presupuesto' | 'llm'> {
     const cadena = cadenaParaRol('texto');
-    const reserva = peorCasoTokens(cadena, estimarTokens(SISTEMA_R1, usuario), MAX_TOKENS_SALIDA_R1);
+    const esquemaJson = esquemaJsonDeRespuesta();
+    const reserva = peorCasoTokens(cadena, estimarTokensSolicitud(SISTEMA_R1, usuario, esquemaJson), MAX_TOKENS_SALIDA_R1);
     const ahora = this.d.reloj();
     const dec = await this.d.presupuesto.reservar({ clave: claveReserva, rol: 'texto', microUsd: reserva, fechaNeg: fechaNeg(ahora) });
     if (!dec.ok) return 'presupuesto';
@@ -625,7 +626,7 @@ export class AgenteTelegram {
         sistema: SISTEMA_R1,
         usuario,
         maxTokensSalida: MAX_TOKENS_SALIDA_R1,
-        esquemaJson: esquemaJsonDeRespuesta(),
+        esquemaJson,
       });
     } catch {
       await this.d.presupuesto.liberar(claveReserva);
