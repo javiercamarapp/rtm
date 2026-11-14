@@ -17,6 +17,7 @@ import { ColumnasPeriodo } from '@/ui/graficas';
 import '@/ui/estilos/paginas-a1.css';
 import { ESTADO_PEDIDO, ORIGEN } from '../operacion/etiquetas';
 import { columnasSemana, deltaSemanal, NUMERO_SEMANAS, semanasDe, sparkSemanal } from '../_a1/comun';
+import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
 import { etiquetaHoy } from '../contexto';
 
 export const metadata: Metadata = { title: 'Pedidos y notas' };
@@ -82,9 +83,17 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
           { valor: 'dropshipping', etiqueta: `Dropshipping ${todos.filter((p) => origenSurtido(p.origen) === 'dropshipping').length}`, href: enlace({ surtido: 'dropshipping' }), activa: surtido === 'dropshipping', testid: 'surtido-dropshipping' },
           { valor: 'inventario_merida', etiqueta: `Inventario en Mérida ${todos.filter((p) => origenSurtido(p.origen) === 'inventario_merida').length}`, href: enlace({ surtido: 'inventario_merida' }), activa: surtido === 'inventario_merida', testid: 'surtido-inventario' },
         ]} />
-        {ESTADOS.map((e) => <Chip key={e.clave} href={enlace({ estado: e.clave })} activo={estado === e.clave}>{`${e.texto} ${cuenta(e.clave)}`}</Chip>)}
-        <Chip tono="atencion" href={enlace({ aviso: aviso ? '' : '1' })} activo={aviso === '1'}>Con avisos</Chip>
-        {(Object.keys(ORIGEN) as Origen[]).filter((o) => cuentaOrigen.some((c) => c.clave === o)).map((o) => <Chip key={o} href={enlace({ origen: origen === o ? '' : o })} activo={origen === o}>{ORIGEN[o]}</Chip>)}
+        <Segmentado etiquetaAria="Estado del pedido" tamano="chico" opciones={ESTADOS.map((e) => ({ valor: e.clave, etiqueta: e.texto, contador: cuenta(e.clave), href: enlace({ estado: e.clave }), activa: estado === e.clave }))} />
+        <FiltrosPlegables etiqueta="Más" titulo="Más filtros: avisos y origen del cliente" activos={(aviso ? 1 : 0) + (origen ? 1 : 0)}>
+          <div className="rtm-ba-fp-grupo">
+            <small>Avisos</small>
+            <Chip tono="atencion" href={enlace({ aviso: aviso ? '' : '1' })} activo={aviso === '1'}>Con avisos</Chip>
+          </div>
+          <div className="rtm-ba-fp-grupo">
+            <small>Origen</small>
+            {(Object.keys(ORIGEN) as Origen[]).filter((o) => cuentaOrigen.some((c) => c.clave === o)).map((o) => <Chip key={o} href={enlace({ origen: origen === o ? '' : o })} activo={origen === o}>{ORIGEN[o]}</Chip>)}
+          </div>
+        </FiltrosPlegables>
       </BarraFiltros>
 
       <KpiLinea

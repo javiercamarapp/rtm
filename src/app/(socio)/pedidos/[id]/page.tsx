@@ -61,7 +61,15 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
         migaja={{ href: '/pedidos', texto: 'Volver a pedidos' }}
         eyebrow={`Pedido ${p.folio} · ${etiquetaHoy()}`}
         titulo={`${p.cliente.nombre} · ${p.folio}`}
-        acciones={origenSurtido(p.origen) === 'dropshipping' ? <Link className="rtm-boton" href={`/dropshipping/pedidos/${p.id}`} data-testid="ir-ficha-ds">Ficha de dropshipping</Link> : undefined}
+        acciones={
+          <AccionesPedido
+            pedidoId={p.id} folio={p.folio} clienteId={p.cliente.id} estado={p.estado} empacado={p.empacado_at !== null} entregado={p.entregado_at !== null}
+            puedeEmpacar={p.origen === 'bodega_omar' || p.origen === 'castores'} avisosPendientes={avisosPendientes} cuentas={cuentas} saldoCent={p.saldo_cent}
+            fichaDs={origenSurtido(p.origen) === 'dropshipping' ? `/dropshipping/pedidos/${p.id}` : undefined}
+            renglones={p.lineas.map((l) => ({ linea_id: l.id, modelo: l.modelo, sabor: l.sabor, piezas: l.piezas_pedidas, disponible: l.disponible }))}
+            lineasNota={p.lineas.filter((l) => l.piezas_surtidas > 0).map((l) => ({ id: l.id, etiqueta: `${l.modelo} ${l.sabor}`, precio_cent: l.precio_cent }))}
+          />
+        }
         descripcion={`${ORIGEN[p.origen]} · creado el ${etiquetaFecha(p.fecha_neg)}${p.fecha_envio ? ` · enviado el ${etiquetaFecha(p.fecha_envio)}` : ''}. Nada se descuenta ni devenga renta antes de marcarlo enviado.`}
       />
       <div className="rtm-a1-etiquetas" aria-label="Estado del pedido">
@@ -108,13 +116,6 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
           ]} />
         </Tarjeta>
       </Rejilla>
-
-      <AccionesPedido
-        pedidoId={p.id} folio={p.folio} clienteId={p.cliente.id} estado={p.estado} empacado={p.empacado_at !== null} entregado={p.entregado_at !== null}
-        puedeEmpacar={p.origen === 'bodega_omar' || p.origen === 'castores'} avisosPendientes={avisosPendientes} cuentas={cuentas} saldoCent={p.saldo_cent}
-        renglones={p.lineas.map((l) => ({ linea_id: l.id, modelo: l.modelo, sabor: l.sabor, piezas: l.piezas_pedidas, disponible: l.disponible }))}
-        lineasNota={p.lineas.filter((l) => l.piezas_surtidas > 0).map((l) => ({ id: l.id, etiqueta: `${l.modelo} ${l.sabor}`, precio_cent: l.precio_cent }))}
-      />
 
       {p.avisos.length > 0 && (
         <section className="rtm-seccion" aria-label="Avisos del pedido">
