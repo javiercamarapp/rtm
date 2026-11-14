@@ -1,5 +1,5 @@
 // Raiz de composicion de la pantalla Cuentas. Las paginas y acciones de app/(socio)/cuentas importan de aqui, nunca de infra.
-import { cambiarEstado, darDeAlta } from '@/aplicacion/cuentas/cuentas';
+import { cambiarCorreo, cambiarEstado, darDeAlta } from '@/aplicacion/cuentas/cuentas';
 import type { EntradaAlta, ListaCuentas } from '@/dominio/cuentas/cuentas';
 import { cuentasSupabase } from '@/infra/supabase/cuentas';
 import { exigirSocio } from './acceso';
@@ -18,4 +18,8 @@ export async function altaDeCuenta(clave: string, entrada: EntradaAlta) {
 export async function estadoDeCuenta(clave: string, correo: string, activo: boolean, motivo: string | null) {
   await exigirSocio();
   return cambiarEstado(cuentasSupabase(), clave, correo, activo, motivo);
+}
+export async function correoDeCuenta(clave: string, actual: string, nuevo: string, motivo: string | null) {
+  await exigirSocio();
+  return cambiarCorreo(cuentasSupabase(), clave, actual, nuevo, motivo);
 }

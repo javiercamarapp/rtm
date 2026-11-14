@@ -227,3 +227,36 @@ test('el socio desactiva la cuenta: bodega pierde el acceso; reactivarla lo devu
   const aud = await conDb((c) => c.query("select count(*)::int n from seguridad.auditoria where tabla = 'seguridad.correo_permitido' and accion = 'UPDATE'"));
   expect(aud.rows[0].n).toBeGreaterThanOrEqual(2);
 });
+
+test('cambiar el correo: el acceso anterior se desactiva, el nuevo entra a su vista y la auditoria no trae correos', async ({ page, browser }, info) => {
+  const socio = correoUnico('socio-cc');
+  await altaUsuario({ correo: socio, socio: 'Angelo' });
+  const provisional = correoUnico('provisional');
+  const definitivo = correoUnico('definitivo');
+  await altaUsuario({ correo: provisional, rol: 'bodega', activo: true });
+  await entrarComo(page, socio, '/cuentas');
+  const ctx = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipFalsa() } });
+  const b = await ctx.newPage();
+  await entrarComo(b, provisional, '/bodega');
+  const fila = page.getByRole('row').filter({ hasText: provisional });
+  await fila.getByTestId('cambiar-correo').click();
+  await expect(page.getByRole('dialog')).toContainText('dejará de poder entrar');
+  await page.getByTestId('campo-correo-nuevo').fill('no es correo');
+  await page.getByTestId('confirmar').click();
+  await expect(page.getByRole('dialog')).toContainText('correo nuevo válido');
+  await page.getByTestId('campo-correo-nuevo').fill(definitivo);
+  await page.getByTestId('confirmar').click();
+  await expect(page.getByRole('row').filter({ hasText: definitivo })).toContainText('Activa');
+  await expect(page.getByRole('row').filter({ hasText: provisional })).toContainText('Desactivada');
+  await captura(page, info.project.name, 'claro', 'cuentas-correo-cambiado');
+  // La sesion del correo anterior ya no sirve.
+  await b.goto('/bodega');
+  await expect(b).toHaveURL(/\/login/);
+  // El acceso del correo nuevo lo crea `acceso:cuentas` (aqui, el mismo alta de usuario de las pruebas) y entra a SU vista.
+  await altaUsuario({ correo: definitivo, rol: 'bodega', activo: true });
+  await entrarComo(b, definitivo, '/bodega');
+  await expect(b).toHaveURL(/\/bodega$/);
+  await ctx.close();
+  const aud = await conDb((c) => c.query("select count(*)::int n from seguridad.auditoria where tabla = 'seguridad.correo_permitido' and (coalesce(antes::text,'') || coalesce(despues::text,'') || coalesce(registro_id,'')) ilike '%@%'"));
+  expect(aud.rows[0].n).toBe(0);
+});

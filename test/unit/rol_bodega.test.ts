@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { completarAcceso, completarConfirmacion } from '@/aplicacion/acceso/completar_acceso';
 import type { Autenticador, DepsAcceso, EstadoSesion } from '@/aplicacion/acceso/puertos';
-import { cambiarEstado, darDeAlta, ErrorCuentas, type PuertoCuentas } from '@/aplicacion/cuentas/cuentas';
+import { cambiarCorreo, cambiarEstado, darDeAlta, ErrorCuentas, type PuertoCuentas } from '@/aplicacion/cuentas/cuentas';
 import { ACCIONES, ACCIONES_BODEGA, CAPACIDADES, puede, puedeBodega, puedeOmar } from '@/dominio/capacidades';
 import { destinoSeguro, rutaPropiaSegura } from '@/dominio/acceso/ruta_segura';
 import { parsearHoy, parsearLlegadas } from '@/dominio/bodega/bodega';
@@ -104,7 +104,7 @@ describe('cuentas: validacion y casos de uso', () => {
     expect(JSON.stringify(l)).not.toMatch(/secreto|zz/);
     expect(l.cuentas[0]!.accesoCreado).toBe(false);
   });
-  const puerto = (alta: PuertoCuentas['alta'], estado?: PuertoCuentas['cambiarEstado']): PuertoCuentas => ({ listar: async () => ({ tipos: [], cuentas: [] }), alta, cambiarEstado: estado ?? (async () => ({ estado: 'sin_cambio' as const })) });
+  const puerto = (alta: PuertoCuentas['alta'], estado?: PuertoCuentas['cambiarEstado']): PuertoCuentas => ({ listar: async () => ({ tipos: [], cuentas: [] }), alta, cambiarCorreo: async () => ({ estado: 'cambiada' }), cambiarEstado: estado ?? (async () => ({ estado: 'sin_cambio' as const })) });
   const CLAVE = 'web:12345678-1234-1234-1234-123456789abc';
   it('el alta valida antes de llamar al puerto y sin clave no hace nada', async () => {
     let llamadas = 0;
@@ -148,8 +148,21 @@ describe('cuentas: correo endurecido (alineado con la base)', () => {
   it('el motivo pierde lo que parezca un correo antes de salir', async () => {
     expect(sinCorreos('avisar a persona@example.test ya')).toBe('avisar a [correo omitido] ya');
     let visto: string | null = null;
-    const p: PuertoCuentas = { listar: async () => ({ tipos: [], cuentas: [] }), alta: async () => ({ estado: 'creada', accesoCreado: true }), cambiarEstado: async (_c, _o, _a, m) => { visto = m; return { estado: 'desactivada' }; } };
+    const p: PuertoCuentas = { listar: async () => ({ tipos: [], cuentas: [] }), alta: async () => ({ estado: 'creada', accesoCreado: true }), cambiarCorreo: async () => ({ estado: 'cambiada' }), cambiarEstado: async (_c, _o, _a, m) => { visto = m; return { estado: 'desactivada' }; } };
     await cambiarEstado(p, 'web:12345678-1234-1234-1234-123456789abc', 'a@example.test', false, 'llamar a juan@example.test');
     expect(visto).toBe('llamar a [correo omitido]');
+  });
+
+  it('cambiar correo: valida antes de llamar al puerto, normaliza y pasa el motivo sin correos', async () => {
+    const visto: unknown[] = [];
+    const p: PuertoCuentas = { listar: async () => ({ tipos: [], cuentas: [] }), alta: async () => ({ estado: 'creada', accesoCreado: true }), cambiarEstado: async () => ({ estado: 'sin_cambio' }),
+      cambiarCorreo: async (...a) => { visto.push(a); return { estado: 'cambiada' }; } };
+    expect((await cambiarCorreo(p, 'web:12345678-1234-1234-1234-123456789abc', 'a@example.test', 'no es correo', null)).ok).toBe(false);
+    expect((await cambiarCorreo(p, 'web:12345678-1234-1234-1234-123456789abc', 'a@example.test', 'A@Example.test.', null)).ok).toBe(false);
+    expect((await cambiarCorreo(p, 'sin-clave', 'a@example.test', 'b@example.test', null)).ok).toBe(false);
+    expect(visto).toHaveLength(0);
+    const r = await cambiarCorreo(p, 'web:12345678-1234-1234-1234-123456789abc', 'A@Example.test', ' B@Example.test ', 'avisar a x@example.test');
+    expect(r.ok).toBe(true);
+    expect(visto).toEqual([['web:12345678-1234-1234-1234-123456789abc', 'a@example.test', 'b@example.test', 'avisar a [correo omitido]']]);
   });
 });
