@@ -38,7 +38,7 @@ export function BarraLectura({ frescura: f, ahoraIso, actualizar }: { frescura: 
         <span>{sinLectura ? 'Todavía no hay una lectura' : <>Última lectura <b>{hace(f.ultima_lectura_ok, ahora)}</b></>}</span>
         <span className="rtm-kr-peticiones" title="Peticiones al sitio de Karen hoy">
           Peticiones hoy <b>{f.peticiones_hoy}</b> de {f.tope_dia}
-          <i className="rtm-kr-barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></i>
+          <i className="rtm-kr-barra" aria-hidden="true"><svg viewBox="0 0 100 4" preserveAspectRatio="none"><rect className="rtm-kr-barra-r" width={pct} height="4" /></svg></i>
         </span>
       </div>
       <div className="rtm-kr-lectura-acciones">

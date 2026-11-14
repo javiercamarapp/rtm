@@ -41,7 +41,7 @@ export function TarjetaVape({ modelo: m, foto, caladas, ahora, abierta, indice, 
   const nombre = nombreVisible(m, caladas);
   const pct = total ? Math.round((d / total) * 100) : 0;
   return (
-    <li className="rtm-kr-item rtm-entra" style={{ ['--rtm-i' as string]: Math.min(indice, 5) }}>
+    <li className={`rtm-kr-item rtm-entra rtm-i-${Math.min(indice, 5)}`}>
       <button type="button" className="rtm-kr-tarjeta" onClick={() => onAbrir(m.producto_id)} aria-haspopup="dialog" aria-expanded={abierta} data-testid={`modelo-${m.producto_id}`} data-estado={estado}>
         <FotoVape src={foto} marca={m.marca} nombre={nombre} />
         <span className="rtm-kr-insignias">
@@ -52,7 +52,7 @@ export function TarjetaVape({ modelo: m, foto, caladas, ahora, abierta, indice, 
         <strong className="rtm-kr-nombre">{nombre}</strong>
         <span className="rtm-kr-sabores">
           {total ? <><b>{d}</b> de {total} sabores</> : 'Sin sabores leídos'}
-          <i className="rtm-kr-barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></i>
+          <i className="rtm-kr-barra" aria-hidden="true"><svg viewBox="0 0 100 4" preserveAspectRatio="none"><rect className="rtm-kr-barra-r" width={pct} height="4" /></svg></i>
         </span>
         <IndicadorDisponibilidad estado={estado} />
         <span className="rtm-kr-propio">

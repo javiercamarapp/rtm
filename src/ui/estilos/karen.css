@@ -14,9 +14,10 @@
 .rtm-kr-estado[data-estado='vieja'] i, .rtm-kr-estado[data-estado='bloqueada'] i { background: var(--rtm-bad); }
 .rtm-kr-peticiones { display: inline-flex; align-items: center; gap: var(--rtm-e-2); }
 .rtm-kr-barra { display: inline-block; width: 56px; height: 4px; border-radius: 2px; background: var(--rtm-line-2); overflow: hidden; vertical-align: middle; }
-.rtm-kr-barra > i { display: block; height: 100%; background: var(--rtm-ink); transform-origin: left; animation: rtm-kr-crece var(--rtm-mov-barra) var(--rtm-mov-curva) both; }
+.rtm-kr-barra > svg { display: block; width: 100%; height: 100%; }
+.rtm-kr-barra-r { fill: var(--rtm-ink); transform-box: fill-box; transform-origin: left; animation: rtm-kr-crece var(--rtm-mov-barra) var(--rtm-mov-curva) both; }
 @keyframes rtm-kr-crece { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-:root[data-movimiento='off'] .rtm-kr-barra > i, :root[data-movimiento='reduced'] .rtm-kr-barra > i { animation: none; }
+:root[data-movimiento='off'] .rtm-kr-barra-r, :root[data-movimiento='reduced'] .rtm-kr-barra-r { animation: none; }
 
 .rtm-kr-sec-cab { display: flex; align-items: baseline; justify-content: space-between; gap: var(--rtm-e-3); margin-bottom: var(--rtm-e-2); }
 .rtm-kr-sec-cab h2 { margin: 0; font-size: var(--rtm-t-seccion); font-weight: 600; letter-spacing: var(--rtm-trk-seccion); }
@@ -38,7 +39,7 @@
 
 /* Barra de busqueda y filtros */
 .rtm-kr-barra-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-e-2); padding: var(--rtm-e-2) 0; }
-.rtm-kr-buscar { flex: 1 1 240px; min-width: 200px; }
+.rtm-kr-buscar { flex: 1 1 auto; min-width: 240px; }
 .rtm-kr-buscar .rtm-campo { width: 100%; }
 .rtm-kr-select .rtm-campo { height: var(--rtm-ctl-alto); }
 .rtm-kr-chip, .rtm-seg-mini button { height: var(--rtm-ctl-alto-chico); padding: 0 var(--rtm-e-3); border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); color: var(--rtm-ink); font: inherit; font-size: var(--rtm-t-pequeno); cursor: pointer; white-space: nowrap; }

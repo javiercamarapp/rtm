@@ -32,7 +32,7 @@ export function BannerIgualar({ banner, yo }: { banner: BannerIgualacion | null 
       {v.antiguedad && <p className="bi-nota" data-testid="banner-antiguedad">{v.antiguedad}</p>}
       {v.progreso && (
         <div className="bi-progreso" data-testid="banner-progreso">
-          <div className="bi-pista" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={v.progreso.pct} aria-label="Avance de la entrega de fondos"><span className="bi-relleno" style={{ width: `${v.progreso.pct}%` }} /></div>
+          <div className="bi-pista" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={v.progreso.pct} aria-label="Avance de la entrega de fondos"><svg className="bi-relleno" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><rect width={v.progreso.pct} height="6" /></svg></div>
           <p className="bi-nota">{v.progreso.texto}</p>
         </div>
       )}
