@@ -44,20 +44,20 @@ async function devLineas(pedido, sabor, n) { const l = await q1(JAV, 'select id 
 const flujos = {
   async pedido_cliente() {
     const lin = [{ modelo: 'Nexa Ultra 50K', sabor: 'Mango Oasis', piezas: 10, precio_cent: 15000 }, { modelo: 'Nexa Ultra 50K', sabor: 'Miami Mint', piezas: 5, precio_cent: 15000 }];
-    const cr = (await q1(JAV, "select api.crear_pedido($1,2,$2::jsonb,'bodega_omar',null,0,0,0,'2026-11-13',null,null,null,'maestro') as r", [K('p1'), JSON.stringify(lin)])).r;
+    const cr = (await q1(JAV, "select api.crear_pedido($1,2,$2::jsonb,'bodega_omar',null,0,0,0,negocio.hoy(),null,null,null,'maestro') as r", [K('p1'), JSON.stringify(lin)])).r;
     await q1(JAV, 'select api.confirmar_pedido($1,$2)', [K('p1c'), cr.pedido_id]);
-    const env = (await q1(JAV, "select api.enviar_pedido($1,$2,null,null,'2026-11-13',true) as r", [K('p1e'), cr.pedido_id])).r;
+    const env = (await q1(JAV, "select api.enviar_pedido($1,$2,null,null,negocio.hoy(),true) as r", [K('p1e'), cr.pedido_id])).r;
     nota('pedido de cliente: crear, confirmar, enviar', Number(env.total_cent) === 225000, `total_cent=${env.total_cent} (esperado 225000)`);
-    await q1(JAV, "select api.registrar_pago($1,'Efectivo',100000,2,$2::jsonb,true,'abono','2026-11-13',null,'parcial',null)", [K('p1p1'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 100000 }])]);
+    await q1(JAV, "select api.registrar_pago($1,'Efectivo',100000,2,$2::jsonb,true,'abono',negocio.hoy(),null,'parcial',null)", [K('p1p1'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 100000 }])]);
     let s = (await q1(JAV, 'select operacion.pedido_saldo($1) s', [cr.pedido_id])).s;
     nota('cobro parcial', Number(s) === 125000, `saldo=${s} (esperado 125000)`);
-    const sobre = await intenta(JAV, "select api.registrar_pago($1,'Efectivo',999999900,2,$2::jsonb,true,'abono','2026-11-13',null,'excede',null)", [K('p1x'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 999999900 }])]);
+    const sobre = await intenta(JAV, "select api.registrar_pago($1,'Efectivo',999999900,2,$2::jsonb,true,'abono',negocio.hoy(),null,'excede',null)", [K('p1x'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 999999900 }])]);
     s = (await q1(JAV, 'select operacion.pedido_saldo($1) s', [cr.pedido_id])).s;
     nota('cobro mayor al saldo no deja saldo negativo', Number(s) >= 0, `intento ${sobre.ok ? 'aceptado' : 'rechazado'} saldo=${s}`);
-    await q1(JAV, "select api.registrar_pago($1,'Efectivo',125000,2,$2::jsonb,true,'abono','2026-11-13',null,'total',null)", [K('p1p2'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 125000 }])]);
+    await q1(JAV, "select api.registrar_pago($1,'Efectivo',125000,2,$2::jsonb,true,'abono',negocio.hoy(),null,'total',null)", [K('p1p2'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 125000 }])]);
     s = (await q1(JAV, 'select operacion.pedido_saldo($1) s', [cr.pedido_id])).s;
     nota('cobro total', Number(s) === 0, `saldo=${s}`);
-    await q1(JAV, "select api.registrar_pago($1,'Efectivo',125000,2,$2::jsonb,true,'abono','2026-11-13',null,'total',null) as r", [K('p1p2'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 125000 }])]);
+    await q1(JAV, "select api.registrar_pago($1,'Efectivo',125000,2,$2::jsonb,true,'abono',negocio.hoy(),null,'total',null) as r", [K('p1p2'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 125000 }])]);
     s = (await q1(JAV, 'select operacion.pedido_saldo($1) s', [cr.pedido_id])).s;
     nota('reintento con la misma clave no duplica el cobro', Number(s) === 0, `saldo=${s}`);
     
@@ -67,20 +67,20 @@ const flujos = {
     // el sabor puede no existir para Waka: se usa el sku existente del modelo
     const sk = await q1(JAV, "select sb.nombre_canonico s from catalogo.sku k join catalogo.modelo m on m.id=k.modelo_id join catalogo.sabor sb on sb.id=k.sabor_id where m.nombre_canonico='Waka Duo 25K' limit 1");
     if (sk) lin[0].sabor = sk.s;
-    const cr = (await q1(JAV, "select api.ds_crear_pedido($1,3,$2::jsonb,'isaac_directo',null,null,'cliente',null,null,0,0,'2026-11-13','maestro',null,null,null) as r", [K('d1'), JSON.stringify(lin)])).r;
+    const cr = (await q1(JAV, "select api.ds_crear_pedido($1,3,$2::jsonb,'isaac_directo',null,null,'cliente',null,null,0,0,negocio.hoy(),'maestro',null,null,null) as r", [K('d1'), JSON.stringify(lin)])).r;
     const ls = await como(JAV, 'select l.id, coalesce(l.costo_unit_cent, operacion.costo_ref_pedido(pe.origen, l.modelo_id, pe.fecha_neg)) c from operacion.pedido_linea l join operacion.pedido pe on pe.id=l.pedido_id where l.pedido_id=$1 order by l.id', [cr.pedido_id]);
     const costoRef = Number(ls[0].c);
     await q1(JAV, 'select api.ds_capturar_costo($1,$2,$3::jsonb,$4)', [K('d1k'), cr.pedido_id, JSON.stringify([{ linea_id: ls[0].id, costo_unit_cent: 19000 }]), 'maestro costo distinto']);
     await q1(JAV, 'select api.confirmar_pedido($1,$2)', [K('d1c'), cr.pedido_id]);
-    await q1(JAV, "select api.enviar_pedido($1,$2,null,null,'2026-11-13',true)", [K('d1e'), cr.pedido_id]);
+    await q1(JAV, "select api.enviar_pedido($1,$2,null,null,negocio.hoy(),true)", [K('d1e'), cr.pedido_id]);
     const m = await q1(JAV, 'select (select costo_unit_cent from operacion.pedido_linea where pedido_id=$1 limit 1) cu', [cr.pedido_id]);
     nota('pedido dropshipping con costo distinto del catalogo', Number(m.cu) === 19000, `costo catalogo/ref=${costoRef} costo capturado aplicado=${m.cu}`);
-    await q1(JAV, "select api.ds_pagar_proveedor($1,'Isaac',460000,'cliente_a_proveedor',null,3,$2,'2026-11-13','maestro')", [K('d1p'), cr.pedido_id]);
+    await q1(JAV, "select api.ds_pagar_proveedor($1,'Isaac',460000,'cliente_a_proveedor',null,3,$2,negocio.hoy(),'maestro')", [K('d1p'), cr.pedido_id]);
     const s = (await q1(JAV, 'select operacion.pedido_saldo($1) s', [cr.pedido_id])).s;
     nota('pago del cliente al proveedor amortiza el pedido', Number(s) === 0, `saldo=${s}`);
   },
   async recepcion_parcial() {
-    const cr = (await q1(JAV, "select api.crear_compra($1,'Isaac',$2::jsonb,5000,0,'2026-11-13','bodega','sociedad',null,null,'maestro') as r", [K('c1'), JSON.stringify([{ modelo: 'Nexa Ultra 50K', sabor: 'Strawberry Ice', pagadas: 100 }])])).r;
+    const cr = (await q1(JAV, "select api.crear_compra($1,'Isaac',$2::jsonb,5000,0,negocio.hoy(),'bodega','sociedad',null,null,'maestro') as r", [K('c1'), JSON.stringify([{ modelo: 'Nexa Ultra 50K', sabor: 'Strawberry Ice', pagadas: 100 }])])).r;
     await q1(JAV, 'select api.confirmar_compra($1,$2)', [K('c1c'), cr.compra_id]);
     const lin = await como(JAV, 'select id linea_id, sku_id from operacion.compra_linea where compra_id=$1', [cr.compra_id]);
     const rec = (n) => JSON.stringify(lin.map((l) => ({ linea_id: l.linea_id, sku_id: l.sku_id, piezas: n })));
@@ -94,10 +94,10 @@ const flujos = {
   },
   async devoluciones() {
     const lin = [{ modelo: 'Nexa Ultra 50K', sabor: 'Sour Watermelon', piezas: 20, precio_cent: 15000 }];
-    const cr = (await q1(JAV, "select api.crear_pedido($1,4,$2::jsonb,'bodega_omar',null,10000,20000,0,'2026-11-13',null,null,null,'maestro dev') as r", [K('v1'), JSON.stringify(lin)])).r;
+    const cr = (await q1(JAV, "select api.crear_pedido($1,4,$2::jsonb,'bodega_omar',null,10000,20000,0,negocio.hoy(),null,null,null,'maestro dev') as r", [K('v1'), JSON.stringify(lin)])).r;
     await q1(JAV, 'select api.confirmar_pedido($1,$2)', [K('v1c'), cr.pedido_id]);
-    await q1(JAV, "select api.enviar_pedido($1,$2,null,null,'2026-11-13',true)", [K('v1e'), cr.pedido_id]);
-    await q1(JAV, "select api.registrar_pago($1,'Efectivo',290000,4,$2::jsonb,true,'abono','2026-11-13',null,'pago',null)", [K('v1p'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 290000 }])]);
+    await q1(JAV, "select api.enviar_pedido($1,$2,null,null,negocio.hoy(),true)", [K('v1e'), cr.pedido_id]);
+    await q1(JAV, "select api.registrar_pago($1,'Efectivo',290000,4,$2::jsonb,true,'abono',negocio.hoy(),null,'pago',null)", [K('v1p'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 290000 }])]);
     await invariantes('pedido con descuento y cobrado');
     const dev = (await q1(JAV, "select api.registrar_devolucion_cliente($1,$2,$3::jsonb,'maestro devolucion parcial') as r", [K('v1d'), cr.pedido_id, JSON.stringify(await devLineas(cr.pedido_id, 'Sour Watermelon', 5))])).r;
     nota('devolucion parcial de cliente con descuento', !!dev, `resultado=${JSON.stringify(dev).slice(0, 160)}`);
@@ -112,9 +112,9 @@ const flujos = {
   },
   async paquete_perdido() {
     const lin = [{ modelo: 'Nexa Ultra 50K', sabor: 'Blue Razz Ice', piezas: 10, precio_cent: 15000 }];
-    const cr = (await q1(JAV, "select api.crear_pedido($1,5,$2::jsonb,'bodega_omar',null,0,0,0,'2026-11-13',null,null,null,'maestro paq') as r", [K('q1'), JSON.stringify(lin)])).r;
+    const cr = (await q1(JAV, "select api.crear_pedido($1,5,$2::jsonb,'bodega_omar',null,0,0,0,negocio.hoy(),null,null,null,'maestro paq') as r", [K('q1'), JSON.stringify(lin)])).r;
     await q1(JAV, 'select api.confirmar_pedido($1,$2)', [K('q1c'), cr.pedido_id]);
-    await q1(JAV, "select api.enviar_pedido($1,$2,null,null,'2026-11-13',true)", [K('q1e'), cr.pedido_id]);
+    await q1(JAV, "select api.enviar_pedido($1,$2,null,null,negocio.hoy(),true)", [K('q1e'), cr.pedido_id]);
     const rep = (await q1(JAV, "select api.reportar_paquete_salida($1,$2,'perdido','maestro paquete perdido',$3::jsonb) as r", [K('q1r'), cr.pedido_id, JSON.stringify(await devLineas(cr.pedido_id, 'Blue Razz Ice', 4))])).r;
     nota('paquete perdido reportado', !!rep, JSON.stringify(rep).slice(0, 140));
     await invariantes('paquete perdido (reporte)');
@@ -125,7 +125,7 @@ const flujos = {
       await invariantes('paquete perdido (castigo)');
     }
     // paquete perdido de ENTRADA: se reclama al proveedor y se bonifica
-    const cr2 = (await q1(JAV, "select api.crear_compra($1,'Isaac',$2::jsonb,0,0,'2026-11-13','bodega','sociedad',null,null,'maestro') as r", [K('q2'), JSON.stringify([{ modelo: 'Nexa Ultra 50K', sabor: 'Miami Mint', pagadas: 50 }])])).r;
+    const cr2 = (await q1(JAV, "select api.crear_compra($1,'Isaac',$2::jsonb,0,0,negocio.hoy(),'bodega','sociedad',null,null,'maestro') as r", [K('q2'), JSON.stringify([{ modelo: 'Nexa Ultra 50K', sabor: 'Miami Mint', pagadas: 50 }])])).r;
     await q1(JAV, 'select api.confirmar_compra($1,$2)', [K('q2c'), cr2.compra_id]);
     const lin2 = await como(JAV, 'select id linea_id, sku_id from operacion.compra_linea where compra_id=$1', [cr2.compra_id]);
     const rep2 = (await q1(JAV, "select api.reportar_paquete_entrada($1,$2,'perdido','maestro entrada perdida',$3::jsonb) as r", [K('q2r'), cr2.compra_id, JSON.stringify(lin2.map((l) => ({ linea_id: l.linea_id, sku_id: l.sku_id, piezas: 10 })))])).r;
