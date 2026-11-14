@@ -133,7 +133,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
               { id: 'f', titulo: 'Folio', ancho: 'm', celda: (p) => <Link className="rtm-mono" href={`/pedidos/${p.id}`}>{p.folio}</Link> },
               { id: 'd', titulo: 'Fecha', ancho: 'm', celda: (p) => etiquetaFecha(p.fecha_neg) },
               { id: 'z', titulo: 'Piezas', numerica: true, ancho: 's', celda: (p) => formatearPiezas(p.piezas_pedidas) },
-              { id: 'b', titulo: 'Cobrado', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? formatearMoneda(p.cobrado_cent) : <SinDato />) },
+              { id: 'b', titulo: 'Facturado', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? formatearMoneda(p.cobrado_cent) : <SinDato />) },
               { id: 'e', titulo: 'Estado', ancho: 'm', celda: (p) => <ChipEstado tono={p.estado === 'enviado' ? 'ok' : p.estado === 'anulado' ? 'malo' : p.estado === 'confirmado' ? 'atencion' : 'apagado'}>{ESTADO_PEDIDO[p.estado].texto}</ChipEstado> },
             ]}
           />

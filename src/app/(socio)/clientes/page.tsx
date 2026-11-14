@@ -74,7 +74,7 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
       <FilaRatios
         etiqueta="Razones de la cartera"
         items={[
-          { etiqueta: 'Ventas cobradas', valor: pedidos ? formatearMoneda(ventasTot) : null },
+          { etiqueta: 'Ventas facturadas', valor: pedidos ? formatearMoneda(ventasTot) : null },
           { etiqueta: 'Clientes con compras', valor: pedidos ? String(conPedidos.length) : null },
           { etiqueta: 'Concentración', valor: umbral.total > 1 ? `${umbral.n} de ${umbral.total} suman el 80 %` : null },
           { etiqueta: 'Saldo sobre ventas', valor: ventasTot > 0n && cxc ? `${((aNumero(saldoTot) / aNumero(ventasTot)) * 100).toFixed(1)} %` : null },
@@ -83,10 +83,10 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
       />
 
       <Rejilla dividir="6-6">
-        <Tarjeta titulo="Concentración de ventas" descripcion="Ventas cobradas por cliente y porcentaje acumulado">
+        <Tarjeta titulo="Concentración de ventas" descripcion="Ventas facturadas por cliente y porcentaje acumulado">
           {conPedidos.length >= 4 ? (
             <Pareto
-              titulo="¿Quiénes concentran las ventas?" descripcion={`Ventas cobradas de ${conPedidos.length} clientes, de mayor a menor.`} unidad="Ventas" sustantivo="clientes" procedencia="observado" pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: pedidos enviados`}
+              titulo="¿Quiénes concentran las ventas?" descripcion={`Ventas facturadas de ${conPedidos.length} clientes, de mayor a menor.`} unidad="Ventas" sustantivo="clientes" procedencia="observado" pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: pedidos enviados`}
               datos={[...conPedidos].sort((a, b) => (a.ventas === b.ventas ? 0 : a.ventas < b.ventas ? 1 : -1)).slice(0, 12).map((c) => ({ id: String(c.id), etiqueta: c.nombre, valor: aNumero(c.ventas), texto: formatearMoneda(c.ventas) }))}
             />
           ) : conPedidos.length > 0 ? (
@@ -117,7 +117,7 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
             { id: 't', titulo: 'Tipo', prioridadMovil: 'oculta', ancho: 'm', secundaria: true, celda: (c) => <>{TIPOS[c.tipo] ?? c.tipo}{c.esBodega && <> · <ChipEstado tono="info">presta la bodega</ChipEstado></>}</> },
             { id: 'p', titulo: 'Modelos con precio', prioridadMovil: 'oculta', numerica: true, ancho: 's', celda: (c) => c.precios },
             { id: 'z', titulo: 'Pedidos', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (c) => (pedidos ? c.pedidos : <SinDato />) },
-            { id: 'v', titulo: 'Ventas cobradas', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (c) => (pedidos ? (c.ventas > 0n ? formatearMoneda(c.ventas) : <SinDato />) : <SinDato />) },
+            { id: 'v', titulo: 'Ventas facturadas', prioridadMovil: 'normal', numerica: true, ancho: 'm', celda: (c) => (pedidos ? (c.ventas > 0n ? formatearMoneda(c.ventas) : <SinDato />) : <SinDato />) },
             { id: 'u', titulo: 'Última compra', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (c) => (c.ultima ? etiquetaFecha(c.ultima) : <SinDato />) },
             { id: 's', titulo: 'Saldo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (c) => (c.saldo === null ? <SinDato /> : c.saldo > 0n ? formatearMoneda(c.saldo) : '—') },
             { id: 'x', titulo: 'Estado de cobro', prioridadMovil: 'normal', ancho: 'm', celda: (c) => ((c.vencido ?? 0n) > 0n ? <ChipEstado tono="malo">Vencido {c.diasMax} d</ChipEstado> : (c.saldo ?? 0n) > 0n ? <ChipEstado tono="atencion">Por cobrar</ChipEstado> : c.ritmo?.baja ? <ChipEstado tono="atencion">Baja de ritmo</ChipEstado> : <ChipEstado tono="ok">Al corriente</ChipEstado>) },

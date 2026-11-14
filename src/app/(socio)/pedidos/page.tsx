@@ -54,6 +54,8 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
   const utilidad = conUtilidad.length ? conUtilidad.reduce((a, p) => a + (p.utilidad_cent ?? 0n), 0n) : null;
   const provisional = conUtilidad.some((p) => p.utilidad_provisional);
   const saldo = enviadosFiltro.reduce((a, p) => a + (p.saldo_cent !== null && p.saldo_cent > 0n ? p.saldo_cent : 0n), 0n);
+  // Facturado = suma de las notas de los pedidos enviados; cobrado = lo aplicado de verdad; facturado = cobrado + por cobrar.
+  const cobradoReal = cobrado - saldo;
   const piezasTot = filas.reduce((a, p) => a + p.piezas_pedidas, 0);
   const surtidasTot = filas.reduce((a, p) => a + p.piezas_surtidas, 0);
   const cuentaEstado = contarPor(todos, (p) => p.estado);
@@ -66,7 +68,7 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
       <EncabezadoPagina
         eyebrow={`Pedidos y notas · ${etiquetaHoy()}`}
         titulo={todos.length === 0 ? 'Aún no hay pedidos' : `Tienes ${todos.length} ${todos.length === 1 ? 'pedido' : 'pedidos'} en el libro`}
-        descripcion={todos.length === 0 ? 'Crea el primer pedido: el precio sale del tabulador del cliente.' : `${porEnviar.length} por enviar · ${formatearPiezas(piezasPorSurtir)} por surtir · cobrado ${formatearMoneda(cobrado)}. Se cobra solo lo surtido.`}
+        descripcion={todos.length === 0 ? 'Crea el primer pedido: el precio sale del tabulador del cliente.' : `${porEnviar.length} por enviar · ${formatearPiezas(piezasPorSurtir)} por surtir · facturado ${formatearMoneda(cobrado)}, cobrado ${formatearMoneda(cobradoReal)}. Se factura solo lo surtido.`}
         acciones={
           <>
             <Segmentado etiquetaAria="Periodo de la gráfica" tamano="chico" opciones={NUMERO_SEMANAS.map((s) => ({ valor: String(s), etiqueta: `${s} sem`, href: enlace({ semanas: s === 8 ? '' : String(s) }), activa: s === n }))} />
@@ -97,9 +99,10 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
       <FilaRatios
         etiqueta="Razones de los pedidos enviados"
         items={[
-          { etiqueta: 'Cobrado', valor: enviadosFiltro.length ? formatearMoneda(cobrado) : null },
-          { etiqueta: provisional ? 'Utilidad (provisional)' : 'Utilidad', valor: utilidad === null ? null : formatearMoneda(utilidad) },
-          { etiqueta: 'Margen', valor: utilidad !== null && cobrado > 0n ? `${((aNumero(utilidad) / aNumero(cobrado)) * 100).toFixed(1)} %` : null },
+          { etiqueta: 'Facturado', valor: enviadosFiltro.length ? formatearMoneda(cobrado) : null },
+          { etiqueta: 'Cobrado', valor: enviadosFiltro.length ? formatearMoneda(cobradoReal) : null },
+          { etiqueta: provisional ? 'Utilidad por pedido (provisional, sin merma)' : 'Utilidad por pedido (sin merma)', valor: utilidad === null ? null : formatearMoneda(utilidad) },
+          { etiqueta: 'Margen sobre lo facturado', valor: utilidad !== null && cobrado > 0n ? `${((aNumero(utilidad) / aNumero(cobrado)) * 100).toFixed(1)} %` : null },
           { etiqueta: 'Ticket promedio', valor: ticket === null ? null : formatearMoneda(ticket) },
           { etiqueta: 'Por cobrar', valor: enviadosFiltro.length ? formatearMoneda(saldo) : null },
           { etiqueta: 'Surtido', valor: piezasTot > 0 ? `${((surtidasTot / piezasTot) * 100).toFixed(0)} %` : null },
@@ -117,7 +120,7 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
             <p className="rtm-a1-subtitulo">Por estado</p>
             <BarList etiquetaAria="Pedidos por estado" items={cuentaEstado.map((c) => ({ id: c.clave, etiqueta: ESTADO_PEDIDO[c.clave as EstadoPedido].texto, texto: String(c.n), pct: porcentaje(c.n, todos.length), tono: c.clave === 'anulado' ? ('malo' as const) : c.clave === 'confirmado' ? ('atencion' as const) : undefined }))} />
             <p className="rtm-a1-subtitulo">Por origen de surtido</p>
-            <BarList etiquetaAria="Pedidos por origen de surtido" items={(['dropshipping', 'inventario_merida'] as const).map((k) => { const g = todos.filter((p) => origenSurtido(p.origen) === k); const env = g.filter((p) => p.estado === 'enviado'); const util = env.filter((p) => p.utilidad_cent !== null).reduce((a, p) => a + (p.utilidad_cent ?? 0n), 0n); return { id: k, etiqueta: k === 'dropshipping' ? 'Dropshipping' : 'Inventario en Mérida', texto: String(g.length), pct: porcentaje(g.length, todos.length), nota: `${env.length} enviados · cobrado ${formatearMoneda(env.reduce((a, p) => a + p.cobrado_cent, 0n))} · utilidad ${formatearMoneda(util)}` }; })} />
+            <BarList etiquetaAria="Pedidos por origen de surtido" items={(['dropshipping', 'inventario_merida'] as const).map((k) => { const g = todos.filter((p) => origenSurtido(p.origen) === k); const env = g.filter((p) => p.estado === 'enviado'); const util = env.filter((p) => p.utilidad_cent !== null).reduce((a, p) => a + (p.utilidad_cent ?? 0n), 0n); return { id: k, etiqueta: k === 'dropshipping' ? 'Dropshipping' : 'Inventario en Mérida', texto: String(g.length), pct: porcentaje(g.length, todos.length), nota: `${env.length} enviados · facturado ${formatearMoneda(env.reduce((a, p) => a + p.cobrado_cent, 0n))} · utilidad ${formatearMoneda(util)}` }; })} />
             <p className="rtm-a1-subtitulo">Por origen</p>
             <BarList etiquetaAria="Pedidos por origen" items={cuentaOrigen.map((c) => ({ id: c.clave, etiqueta: ORIGEN[c.clave as Origen], texto: String(c.n), pct: porcentaje(c.n, todos.length) }))} />
           </div>
@@ -140,7 +143,7 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
             { id: 'r', titulo: 'Origen', prioridadMovil: 'oculta', ancho: 'l', secundaria: true, celda: (p) => ORIGEN[p.origen] },
             { id: 'os', titulo: 'Surtido', prioridadMovil: 'normal', ancho: 'l', celda: (p) => <span data-testid={`surtido-${p.id}`}>{origenSurtido(p.origen) === 'dropshipping' ? 'Dropshipping' : 'Inventario en Mérida'}</span> },
             { id: 'z', titulo: 'Piezas', prioridadMovil: 'normal', numerica: true, ancho: 's', celda: (p) => (p.estado === 'enviado' || p.estado === 'anulado' ? `${formatearPiezas(p.piezas_surtidas)} de ${p.piezas_pedidas}` : formatearPiezas(p.piezas_pedidas)) },
-            { id: 'b', titulo: 'Cobrado', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? <CifraComprobada texto={formatearMoneda(p.cobrado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" /> : <SinDato />) },
+            { id: 'b', titulo: 'Facturado', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (p) => (p.estado === 'enviado' ? <CifraComprobada texto={formatearMoneda(p.cobrado_cent)} cifra={`pedido:total:${p.id}`} comprobacion="cuadra" /> : <SinDato />) },
             { id: 'u', titulo: 'Utilidad', prioridadMovil: 'normal', numerica: true, ancho: 'm', secundaria: true, celda: (p) => (p.utilidad_cent === null ? <SinDato /> : <>{formatearMoneda(p.utilidad_cent)}{p.utilidad_provisional ? <> <EstadoTexto tono="atencion">provisional</EstadoTexto></> : null}</>) },
             { id: 'e', titulo: 'Estado', prioridadMovil: 'normal', ancho: 'm', celda: (p) => <ChipEstado tono={TONO[p.estado]}>{ESTADO_PEDIDO[p.estado].texto}</ChipEstado> },
             { id: 'p', titulo: 'Pago', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (p) => (p.estado !== 'enviado' || p.saldo_cent === null ? '' : p.saldo_cent === 0n ? <EstadoTexto tono="ok">Saldado</EstadoTexto> : p.saldo_cent < 0n ? <EstadoTexto tono="neutro">A favor</EstadoTexto> : <EstadoTexto tono="atencion">Por cobrar</EstadoTexto>) },
