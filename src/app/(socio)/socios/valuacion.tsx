@@ -2,7 +2,7 @@ import '@/ui/estilos/socios-valuacion.css';
 import type { ReactNode } from 'react';
 import { etiquetaMesCapital } from '@/dominio/capital/etiquetas';
 import Link from 'next/link';
-import { alertaRetiros, desgloseDiferencia, fraseIgualar, indicacionesSocio, textoFaltan, notaDiferencias, puntosSerie, otroSocio, TEXTO_VALUACION_SUBE, type CuentaSociosValuacion, type FilaSocioValuacion, type Socio } from '@/dominio/socios/valuacion';
+import { alertaRetiros, desgloseDiferencia, fraseIgualar, indicacionesSocio, textoFaltan, textoFaltanPasos, notaDiferencias, puntosSerie, otroSocio, TEXTO_VALUACION_SUBE, type CuentaSociosValuacion, type FilaSocioValuacion, type Socio } from '@/dominio/socios/valuacion';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Tarjeta } from '@/ui/componentes/pagina';
 import { AreaSerie, Contador } from '@/ui/graficas';
@@ -48,11 +48,12 @@ export function ComparativaValuaciones({ c, yo }: { c: CuentaSociosValuacion; yo
       <ul className="sv-rubros" aria-label="Comparación de valuaciones">
         <li><span>Diferencia de valuación</span><span data-testid="dif-valuacion"><CifraComprobada texto={m(k.diferencia_valuacion_cent)} cifra={`historial:valor:${k.mayor ?? 'Javier'}`} comprobacion="cuadra" /></span></li>
         <li><span>Diferencia de aportación<small>Aportado menos fondos en poder: la inversión neta de cada uno</small></span><span data-testid="dif-aportacion"><CifraComprobada texto={m(k.diferencia_aportacion_cent)} cifra={`historial:neta:${k.turno_aportacion_neta ?? 'Angelo'}`} comprobacion="cuadra" /></span></li>
-        <li><span>Le toca aportar</span><span data-testid="le-toca">{k.le_toca_aportar ? `${k.le_toca_aportar === yo ? 'Te toca a ti' : k.le_toca_aportar}: ${m(k.aportar_para_igualar_cent)}` : 'Nadie, están igualados'}</span></li>
+        <li><span>Le toca aportar</span><span data-testid="le-toca">{k.le_toca_aportar ? `${k.le_toca_aportar === yo ? 'Te toca a ti' : k.le_toca_aportar}. ${textoFaltanPasos(c, m)}` : 'Nadie, están igualados'}</span></li>
       </ul>
       <p className="sv-frase" data-testid="frase-igualar">{frase.texto}</p>
       {nota && <p className="sv-explica" data-testid="nota-diferencias">{nota}</p>}
       {alerta && <p className="sv-alerta" role="alert" data-testid="alerta-retiros">{alerta}</p>}
+      {k.retiros_desiguales && <p className="sv-explica" data-testid="nota-sentido">Con retiros desiguales, la diferencia a igualar del libro (aportaciones) puede ir en sentido contrario a la de valuación: para quedar idénticos manda la valuación y los pasos de arriba.</p>}
       <p className="sv-explica" data-testid="texto-sube">{TEXTO_VALUACION_SUBE} La valuación es lo que invertiste más las utilidades acumuladas, menos lo que te has pagado.</p>
     </Tarjeta>
   );

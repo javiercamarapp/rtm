@@ -204,13 +204,23 @@ export function tarjetaValuacion(c: CuentaSociosValuacion, yo: Socio, formato: F
   return { ...base, estado: 'menos', comparacion: `Tienes ${formato(x)} menos que ${otro}`, accion: ind[0] ?? `Te toca aportar ${formato(c.comparacion.aportar_para_igualar_cent)} para igualar`, indicaciones: ind };
 }
 
+/** 'Faltan $X: entregar $F y aportar $A' del que tiene menos (misma fuente que los pasos: c.igualacion). Con retiros desiguales o fondos del otro, solo se nombran los pasos que existen. */
+export function textoFaltanPasos(c: Pick<CuentaSociosValuacion, 'igualacion'>, formato: Formato): string {
+  const ig = c.igualacion;
+  const p = ig.menor ? ig.por_socio[ig.menor] : undefined;
+  const partes: string[] = [];
+  if (p && p.entregar_cent > 0n) partes.push(`entregar ${formato(p.entregar_cent)}`);
+  if (p && p.aportar_cent > 0n) partes.push(`aportar ${formato(p.aportar_cent)}`);
+  return `Faltan ${formato(ig.faltan_cent)}${partes.length > 0 ? `: ${partes.join(' y ')}` : ''}`;
+}
+
 export interface FraseIgualar { texto: string; tono: 'ok' | 'atencion' }
 
 /** Frase de la cabecera de /socios y del agente: quien tiene mas y quien debe igualar. */
 export function fraseIgualar(c: CuentaSociosValuacion, formato: Formato): FraseIgualar {
   const x = c.comparacion.diferencia_valuacion_cent;
   if (c.comparacion.igualados || !c.comparacion.mayor || !c.comparacion.menor) return { texto: 'Valuaciones iguales: los dos están igualados.', tono: 'ok' };
-  return { texto: `${c.comparacion.mayor} tiene ${formato(x)} más que ${c.comparacion.menor}. Le toca aportar ${formato(c.comparacion.aportar_para_igualar_cent)} a ${c.comparacion.menor} para igualar valuaciones.`, tono: 'atencion' };
+  return { texto: `${c.comparacion.mayor} tiene ${formato(x)} más que ${c.comparacion.menor}. ${textoFaltanPasos(c, formato)} para igualar valuaciones.`, tono: 'atencion' };
 }
 
 /** Alerta de retiro desigual ('siempre nos pagamos lo mismo'). null si son iguales. */

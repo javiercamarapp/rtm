@@ -78,7 +78,7 @@ describe('tarjeta TU VALUACION del Inicio', () => {
 
 describe('frases de comparacion y retiros', () => {
   it('frase: quien tiene mas y a quien le toca aportar', () => {
-    expect(fraseIgualar(cuenta(), f)).toEqual({ texto: 'Javier tiene $47,921.91 más que Angelo. Le toca aportar $47,921.91 a Angelo para igualar valuaciones.', tono: 'atencion' });
+    expect(fraseIgualar(cuenta(), f)).toEqual({ texto: 'Javier tiene $47,921.91 más que Angelo. Faltan $47,921.91: entregar $35,475.00 y aportar $12,446.91 para igualar valuaciones.', tono: 'atencion' });
   });
   it('retiros iguales: sin alerta', () => { expect(alertaRetiros(cuenta(), f)).toBeNull(); });
   it('retiro desigual: alerta con la diferencia a igualar', () => {

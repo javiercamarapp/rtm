@@ -79,13 +79,15 @@ describe('parsers de bodega: lista blanca', () => {
   });
   it('llegadas: solo estados validos y sin costos', () => {
     const l = parsearLlegadas({ fecha: '2026-11-14', compras: [
-      { folio: 'C-1', proveedor: 'Isaac', estado: 'en_trayecto', llegada_estimada: '2026-11-20', dias_en_camino: 1, atrasada: false, piezas: 10, total_cent: 99, guias: [{ paqueteria: 'Castores', numero: 'G1', costo_cent: 5 }], lineas: [{ modelo: 'M', sabor: 'S', piezas: 10, costo_unit_cent: 4 }] },
-      { folio: 'C-2', proveedor: 'Isaac', estado: 'borrador', piezas: 1, lineas: [] },
+      { folio: 'C-1', estado: 'en_trayecto', llegada_estimada: '2026-11-20', dias_en_camino: 1, atrasada: false, piezas: 10, total_cent: 99, guias: [{ paqueteria: 'Castores', numero: 'G1', costo_cent: 5 }], lineas: [{ modelo: 'M', sabor: 'S', piezas: 10, costo_unit_cent: 4 }] },
+      { folio: 'C-2', estado: 'borrador', piezas: 1, lineas: [] },
     ], por_guardar: [{ modelo: 'M', sabor: 'S', piezas: 10 }] });
     expect(l.compras).toHaveLength(1);
     expect(JSON.stringify(l)).not.toMatch(/total|costo|99/);
     // Decision del dueno 14-nov: bodega no ve el nombre del proveedor (la pantalla muestra 'Compra' y el folio).
     expect(l.compras[0]!.proveedor).toBe('');
+    // Aunque una version vieja de la base aun mandara el nombre, el parser lo descarta (MOSTRAR_PROVEEDOR = false).
+    expect(parsearLlegadas({ fecha: '2026-11-14', compras: [{ folio: 'C-9', proveedor: 'Isaac', estado: 'en_trayecto', piezas: 1, lineas: [] }], por_guardar: [] }).compras[0]!.proveedor).toBe('');
     expect(JSON.stringify(l)).not.toMatch(/Isaac|Karen/);
     expect(parsearHoy(null).clientes).toEqual([]);
   });
