@@ -39,3 +39,9 @@
 .rtm-bb-plegable > summary:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
 .rtm-bb-plegable[open] > summary { margin-bottom: 4px; }
 @media (pointer: coarse) { .rtm-bb-plegable > summary { min-height: 44px; } }
+
+/* Barra sobre una tabla: casilla a la izquierda y acciones a la derecha, una sola fila. */
+.rtm-bb-barra { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: var(--rtm-v-acciones); padding: 6px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); min-width: 0; }
+.rtm-bb-barra > .rtm-casilla { flex: 0 1 auto; min-width: 0; min-height: 32px; }
+@media (pointer: coarse) { .rtm-bb-barra > .rtm-casilla { min-height: 44px; } }
+@media (max-width: 767px) { .rtm-bb-barra { flex-wrap: wrap; } }
