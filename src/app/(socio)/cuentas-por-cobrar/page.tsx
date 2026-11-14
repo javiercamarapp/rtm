@@ -15,6 +15,7 @@ import { AntiguedadSaldos } from '@/ui/graficas';
 import { CUBETA, ESTADO_CXC } from '../operacion/etiquetas';
 import { CopiarTexto } from '../operacion/copiar-texto';
 import { FormularioAccion } from '../operacion/formulario-accion';
+import '@/ui/estilos/barrido-c.css';
 import { Dos, Estado, Pie, fechaCorta, m, pct, pctTexto, suma } from '../_a3/util';
 import { EntregaSocio, FormularioPago, IdentificarPago } from './formularios';
 
@@ -221,6 +222,8 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
         <div className="a3-barra"><BarraFiltros
           etiquetaAria="Filtros"
           extras={
+            <details className="rtm-bc-filtros" open={Boolean(cliente || desde || hasta) || undefined}>
+            <summary>Cliente y fechas{cliente || desde || hasta ? ' (activo)' : ''}</summary>
             <form action="/cuentas-por-cobrar" method="get" className="a3-filtros-form" aria-label="Filtrar por cliente y fechas">
               <select className="rtm-campo" name="cliente" defaultValue={cliente} aria-label="Cliente">
                 <option value="">Todos los clientes</option>
@@ -232,6 +235,7 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
               {vista !== 'pedido' && <input type="hidden" name="vista" value={vista} />}
               <button type="submit" className="rtm-boton">Filtrar</button>
             </form>
+            </details>
           }
         >
           <Chip href={enlace({ cliente: '', vencido: '', desde: '', hasta: '' })} activo={!cliente && !vencido && !desde && !hasta}>Todos</Chip>
