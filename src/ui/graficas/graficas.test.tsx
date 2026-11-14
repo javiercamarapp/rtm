@@ -466,3 +466,28 @@ describe('integridad de los datos', () => {
     expect(m.cont.querySelector('.rtm-g-lectura')!.textContent).toMatch(/^Los 3 primeros clientes concentran \d+ % del total\.$/);
   });
 });
+
+describe('Pareto en filas (sin etiquetas que se empalmen)', () => {
+  const muchos = Array.from({ length: 14 }, (_, i) => ({ id: `c${i}`, etiqueta: `Cliente número ${i + 1} Apellido`, valor: 100_000 - i * 5_000, texto: `$${100_000 - i * 5_000},00`, corto: `$${100 - i * 5} mil` }));
+  it('con 14 elementos no hay texto dentro de SVG: monto y nombre van en celdas de una cuadricula', () => {
+    const m = abrir(montar(<Pareto titulo="t" descripcion="d" datos={muchos} unidad="Ventas" sustantivo="clientes" />));
+    expect(m.cont.querySelectorAll('svg text')).toHaveLength(0);
+    expect(m.cont.querySelectorAll('[data-marca]')).toHaveLength(14);
+    expect(m.cont.querySelectorAll('.rtm-g-par-monto')[0]!.textContent).toBe('$100 mil');
+    expect(m.cont.querySelectorAll('.rtm-g-par-nombre')[0]!.textContent).toBe('Cliente N.');
+  });
+  it('una sola regla de umbral, fuera de las filas, con rotulo en palabras; la tabla conserva el monto exacto', () => {
+    const m = abrir(montar(<Pareto titulo="t" descripcion="d" datos={muchos} unidad="Ventas" sustantivo="clientes" tablaAbierta />));
+    const reglas = m.cont.querySelectorAll('[data-llave="umbral"]');
+    expect(reglas).toHaveLength(1);
+    expect(reglas[0]!.closest('[data-marca]')).toBeNull();
+    expect(reglas[0]!.textContent).toMatch(/^Hasta aquí: \d+ clientes, \d+ % de las ventas \(umbral 80 %\)$/);
+    expect(textoDeTabla(m.cont)).toContain('$100000,00');
+  });
+  it('cada fila trae el detalle completo en aria-label y title', () => {
+    const m = abrir(montar(<Pareto titulo="t" descripcion="d" datos={muchos} unidad="Ventas" sustantivo="clientes" />));
+    const fila = m.cont.querySelector('[data-marca="c0"]')!;
+    expect(fila.getAttribute('aria-label')).toMatch(/^1\. Cliente número 1 Apellido: \$100000,00, .* del total, acumulado/);
+    expect(fila.getAttribute('title')).toBe(fila.getAttribute('aria-label'));
+  });
+});

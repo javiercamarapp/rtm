@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { lectorDeSocio } from '@/composicion/catalogo';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { fechaNeg } from '@/dominio/calendario';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, formatearMonedaCompacta, formatearPiezas } from '@/dominio/formato';
 import { alcanzanUmbral, aNumero, porcentaje, ritmoCliente } from '@/dominio/tablero/agregados';
 import { BarraFiltros, CeldaPersona, Chip, ChipEstado } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
@@ -87,7 +87,7 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
           {conPedidos.length >= 4 ? (
             <Pareto
               titulo="¿Quiénes concentran las ventas?" descripcion={`Ventas facturadas de ${conPedidos.length} clientes, de mayor a menor.`} unidad="Ventas" sustantivo="clientes" procedencia="observado" pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: pedidos enviados`}
-              datos={[...conPedidos].sort((a, b) => (a.ventas === b.ventas ? 0 : a.ventas < b.ventas ? 1 : -1)).slice(0, 12).map((c) => ({ id: String(c.id), etiqueta: c.nombre, valor: aNumero(c.ventas), texto: formatearMoneda(c.ventas) }))}
+              datos={[...conPedidos].sort((a, b) => (a.ventas === b.ventas ? 0 : a.ventas < b.ventas ? 1 : -1)).slice(0, 12).map((c) => ({ id: String(c.id), etiqueta: c.nombre, valor: aNumero(c.ventas), texto: formatearMoneda(c.ventas), corto: formatearMonedaCompacta(c.ventas) }))}
             />
           ) : conPedidos.length > 0 ? (
             <BarList etiquetaAria="Ventas por cliente" items={[...conPedidos].sort((a, b) => (a.ventas < b.ventas ? 1 : -1)).map((c) => ({ id: String(c.id), etiqueta: c.nombre, href: `/clientes/${c.id}`, texto: formatearMoneda(c.ventas), pct: porcentaje(aNumero(c.ventas), aNumero(ventasTot)) }))} />

@@ -284,6 +284,15 @@ export function partirEtiqueta(texto: string, max: number, lineasMax: number = 2
   return lineas;
 }
 
+/** Nombre corto para etiquetas: completo si cabe; si no, primer nombre e inicial de la palabra siguiente ("Dana M."). El nombre completo va en tooltip y tabla. */
+export function abreviarNombre(nombre: string, max: number = 16): string {
+  const limpio = nombre.trim().replace(/\s+/g, ' ');
+  if (limpio.length <= max) return limpio;
+  const [primero = '', segundo] = limpio.split(' ');
+  const corto = segundo ? `${primero} ${segundo[0]!.toUpperCase()}.` : primero;
+  return corto.length <= max ? corto : `${corto.slice(0, Math.max(1, max - 1))}…`;
+}
+
 /** Clase de escalonado de entrada (maximo 6 elementos retrasados). */
 export function claseEscalonado(i: number): string {
   return `rtm-i-${indiceEscalonado(i)}`;
