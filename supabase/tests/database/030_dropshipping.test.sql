@@ -195,7 +195,7 @@ select throws_ok($$select operacion.ds_pagar_proveedor('ds-c7', 'Isaac', 100, 's
 -- ---------------------------------------------------------------------------
 -- (d) Credito: 10 % de UNA semana, simple, monto pactado fijo; otro porcentaje o monto por venta
 -- ---------------------------------------------------------------------------
-select operacion.ds_crear_pedido('ds-d', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Menta","piezas":200}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Cuatro'), '{}'::jsonb);
+select operacion.ds_crear_pedido('ds-d', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Menta","piezas":200}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Cuatro'), '{"semanas":1}'::jsonb);
 create temp table _d as select resultado as r from seguridad.operacion where clave = 'ds-d';
 select is((select (r->>'interes_cent')::bigint from _d), 260000::bigint, '(d) 200 x 130.00 = 26,000.00 a una semana al 10 % => interes 2,600.00');
 select is((select (r->>'total_credito_cent')::bigint from _d), 2860000::bigint, '(d) total pactado 28,600.00');
@@ -215,7 +215,7 @@ select is(pg_temp.fallan(), '', '(d) libro conciliado tras cobrar el credito');
 select operacion.ds_crear_pedido('ds-d2', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Mora","piezas":10}]'::jsonb, 'karen_directo', null, jsonb_build_object('tasa_semanal_bp', 500, 'fecha_pago', (negocio.hoy() + 15)::text));
 select is((select semanas from operacion.pedido_credito where pedido_id = pg_temp.ped('ds-d2:ped')), 3, '(d) 15 dias => 3 semanas (hacia arriba)');
 select is((select interes_cent from operacion.pedido_credito where pedido_id = pg_temp.ped('ds-d2:ped')), 19500::bigint, '(d) 10 x 130.00 = 1,300.00 x 5 % x 3 semanas = 195.00');
-select operacion.ds_crear_pedido('ds-d3', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Limon","piezas":10}]'::jsonb, 'karen_directo', null, '{"interes_cent": 12345}'::jsonb);
+select operacion.ds_crear_pedido('ds-d3', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Limon","piezas":10}]'::jsonb, 'karen_directo', null, '{"interes_cent": 12345, "semanas": 1}'::jsonb);
 select is((select interes_cent || modo from operacion.pedido_credito where pedido_id = pg_temp.ped('ds-d3:ped')), '12345fijo', '(d) monto pactado fijo por venta');
 select is((select recargo_cent from operacion.pedido where id = pg_temp.ped('ds-d3:ped')), 12345::bigint, '(d) y es el recargo del pedido');
 select operacion.ds_crear_pedido('ds-d4', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Cereza","piezas":10}]'::jsonb, 'karen_directo', null, null);

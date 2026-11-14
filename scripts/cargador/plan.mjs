@@ -162,7 +162,7 @@ export function construirPlan(dominio, alias, opciones = {}) {
         const lineasSql = v.renglones.map((r) => ({ modelo: r.linea.modelo, sabor: r.linea.sabor, piezas: r.piezas, ...(r.precio != null ? { precio_cent: r.precio } : {}) }));
         let pedidoId;
         if (p.origen === 'inventario') {
-          const plazo = p.credito ? Math.round((Date.parse(p.credito.fechaPago) - Date.parse(p.fecha)) / 86400000) : null;
+          const plazo = p.credito ? Math.round((Date.parse(p.credito.fechaPago) - Date.parse(p.fecha)) / 86400000) : 0; // contado = plazo 0 (api.crear_pedido exige plazo desde 14-nov)
           const cr = (await db.q('select api.crear_pedido($1,$2,$3::jsonb,$4,null,0,0,$5,$6::date,null,$7,null,$8,null) as r', [k(p.id, 'pedido'), cli, JSON.stringify(lineasSql), 'bodega_omar', p.interesCent, p.fecha, plazo, 'Venta de inventario de Merida (carga historica)'])).rows[0].r;
           pedidoId = cr.pedido_id;
           await db.q('select api.confirmar_pedido($1,$2)', [k(p.id, 'confirmar'), pedidoId]);

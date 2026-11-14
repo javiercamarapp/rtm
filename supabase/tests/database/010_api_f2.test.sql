@@ -32,7 +32,7 @@ select set_config('rtm.canal', '', true);
 select set_config('request.jwt.claim.sub', '51111111-1111-1111-1111-111111111111', true);
 set local role authenticated;
 select ok((api.crear_pedido('apx1', (select (x->>'id')::bigint from jsonb_array_elements(api.clientes_lista()) x where x->>'nombre' = 'Api Cliente'),
-  '[{"modelo":"Api Modelo 50K","sabor":"Fresa","piezas":40}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-10')->>'folio') ~ '^P-\d{4}$', 'api.crear_pedido devuelve el folio');
+  '[{"modelo":"Api Modelo 50K","sabor":"Fresa","piezas":40}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-10', null, 30)->>'folio') ~ '^P-\d{4}$', 'api.crear_pedido devuelve el folio');
 select ok(jsonb_array_length(api.pedidos_lista()) >= 1, 'api.pedidos_lista()');
 select is((api.pedido_detalle((select (x->>'id')::bigint from jsonb_array_elements(api.pedidos_lista()) x where x->>'cliente' = 'Api Cliente' limit 1))->>'estado'), 'borrador', 'api.pedido_detalle()');
 select ok((api.pedido_catalogo((select (x->>'id')::bigint from jsonb_array_elements(api.clientes_lista()) x where x->>'nombre' = 'Api Cliente'))->'skus') @> '[{"modelo":"Api Modelo 50K","precio_cent":15000}]'::jsonb, 'api.pedido_catalogo(): precio del tabulador y existencia');
@@ -47,7 +47,7 @@ select is((api.explicar_cifra('socio:deuda:Javier')->'comprobacion'->>'cuadra'):
 select is((api.explicar_cifra('socio:deuda:Javier')->>'valor')::bigint, 200000::bigint, 'Javier debe lo que cayo en su cuenta');
 select is((api.explicar_cifra('cxc:total')->>'valor')::bigint - (select total from _c0), 400000::bigint, 'por cobrar: 40 x 150 = 6,000 menos 2,000');
 select is((api.cuentas_por_cobrar()->>'total_cent')::bigint - (select total from _c0), 400000::bigint, 'api.cuentas_por_cobrar()');
-select is((select f->>'estado' from jsonb_array_elements(api.cuentas_por_cobrar()->'filas') f where f->>'cliente' = 'Api Cliente'), 'sin_plazo', 'sin plazo acordado: estado en palabra');
+select is((select f->>'estado' from jsonb_array_elements(api.cuentas_por_cobrar()->'filas') f where f->>'cliente' = 'Api Cliente'), 'al_corriente', 'con plazo de 30 dias: estado en palabra');
 select is((api.proveedor_cuenta('Vapemate')->>'proveedor'), 'Karen', 'Vapemate es el alias de Karen');
 select ok(api.proveedor_cuenta('Karen') ? 'etiqueta', 'api.proveedor_cuenta()');
 select ok(api.avisos_lista()->'avisos' is not null, 'api.avisos_lista()');

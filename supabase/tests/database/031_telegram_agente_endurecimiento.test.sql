@@ -19,7 +19,7 @@ create function pg_temp.mid() returns bigint language sql as $$ select id from c
 create function pg_temp.sid(n text) returns bigint language sql as $$ select id from catalogo.sabor where nombre_canonico = n $$;
 create function pg_temp.cid() returns bigint language sql as $$ select id from catalogo.cliente where nombre_canonico = 'Tg Cliente' $$;
 create function pg_temp.pedido(p_autor text, p_id bigint) returns jsonb language sql as $$
-  select jsonb_build_object('autor', p_autor, 'telegram_user_id', p_id, 'origen', 'x', 'cliente_id', pg_temp.cid(),
+  select jsonb_build_object('plazo_dias', 0, 'autor', p_autor, 'telegram_user_id', p_id, 'origen', 'x', 'cliente_id', pg_temp.cid(),
     'lineas', jsonb_build_array(jsonb_build_object('modelo_id', pg_temp.mid(), 'sabor_id', pg_temp.sid('Uva'), 'piezas', 10))) $$;
 
 -- ------------------------------------------------------------------ ALTO-1: el autor del JSON no basta
