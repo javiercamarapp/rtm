@@ -3,8 +3,9 @@ import fc from 'fast-check';
 import {
   ErrorGrafica, seguro, exigirFinitos, exigirNoNegativos, r2, acotar, escala, extremos, rutaPoligonal, rutaEscalon, rutaBanda,
   calcularCascada, calcularPareto, elementosHasta, calcularTreemap, nivelCalor, NIVELES_CALOR, puntoRadar, radioBurbuja, apilar,
-  easeOutCubic, interpolar, sentidoDelta, siguienteIndice, partirEtiqueta, claseEscalonado, muestraSuficiente,
+  easeOutCubic, interpolar, sentidoDelta, siguienteIndice, partirEtiqueta, claseEscalonado, muestraSuficiente, abreviarNombre,
 } from './geo';
+import { formatearMonedaCompacta } from '@/dominio/formato';
 
 const entero = fc.integer({ min: -1_000_000, max: 1_000_000 });
 const positivo = fc.integer({ min: 0, max: 5_000_000 });
@@ -215,5 +216,25 @@ describe('animacion, delta, teclado, texto', () => {
     expect(claseEscalonado(40)).toBe('rtm-i-6');
     expect(muestraSuficiente(4, 4)).toBe(true);
     expect(muestraSuficiente(3, 4)).toBe(false);
+  });
+});
+
+describe('etiquetas compactas', () => {
+  it('moneda compacta: miles sin centavos, un decimal bajo 100 mil, nunca cruza de unidad', () => {
+    const c = (p: number) => formatearMonedaCompacta(BigInt(Math.round(p * 100)));
+    expect(c(850.4)).toBe('$850');
+    expect(c(92_850)).toBe('$92.9 mil');
+    expect(c(210_375)).toBe('$210 mil');
+    expect(c(30_600)).toBe('$30.6 mil');
+    expect(c(999_900)).toBe('$1 M');
+    expect(c(1_250_000)).toBe('$1.3 M');
+    expect(formatearMonedaCompacta(-21_037_500n)).toBe('−$210 mil');
+  });
+  it('abreviarNombre conserva lo corto y abrevia lo largo con la inicial', () => {
+    expect(abreviarNombre('Angelo Menudeo')).toBe('Angelo Menudeo');
+    expect(abreviarNombre('Dana Marcela Gonzalez Perez')).toBe('Dana M.');
+    expect(abreviarNombre('Francisco Amezaga Lopez')).toBe('Francisco A.');
+    expect(abreviarNombre('Supercalifragilisticoespialidoso')).toHaveLength(16);
+    expect(abreviarNombre('  ')).toBe('');
   });
 });

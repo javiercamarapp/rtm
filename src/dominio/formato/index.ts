@@ -17,6 +17,24 @@ export function formatearMoneda(cent: bigint, opciones: { conSigno?: boolean } =
   return opciones.conSigno && cent > 0n ? `+${cuerpo}` : cuerpo;
 }
 
+/**
+ * Moneda compacta para etiquetas de grafica: "$850", "$92.9 mil", "$210 mil", "$1.2 M". Sin centavos; el monto exacto vive en el tooltip y en la tabla.
+ * Menos de 100 mil lleva un decimal; desde 100 mil, entero. El redondeo nunca cruza de unidad ("$999.9 mil" sube a "$1 M").
+ */
+export function formatearMonedaCompacta(cent: bigint): string {
+  const negativo = cent < 0n;
+  const pesos = Number(negativo ? -cent : cent) / 100;
+  const signo = negativo ? MENOS : '';
+  const uno = (n: number) => (Math.round(n * 10) / 10).toString();
+  if (pesos < 1000) return `${signo}$${Math.round(pesos)}`;
+  if (pesos < 1_000_000) {
+    const miles = pesos / 1000;
+    if (Math.round(miles) >= 1000) return `${signo}$1 M`;
+    return `${signo}$${miles >= 100 ? Math.round(miles) : uno(miles)} mil`;
+  }
+  return `${signo}$${uno(pesos / 1_000_000)} M`;
+}
+
 /** Entero con separador de miles ("7,934"), para conteos que no son piezas ni dinero. */
 export function formatearEntero(n: number): string {
   if (!Number.isInteger(n)) throw new RangeError('se esperaba un entero');
