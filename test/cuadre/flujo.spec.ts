@@ -157,6 +157,7 @@ test('4b persona de bodega: se da de alta desde la ficha del cliente (sin ella, 
   await page.getByRole('link', { name: d.omar }).first().click();
   await page.waitForURL(/\/clientes\/\d+$/);
   await cap(page, 'persona-bodega-antes');
+  await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
   await page.getByTestId('alta-persona-bodega').click();
   await page.getByTestId('confirmar').click();
   await expect(page.getByTestId('alta-persona-bodega')).toHaveCount(0);

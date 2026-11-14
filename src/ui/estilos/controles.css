@@ -108,3 +108,46 @@ body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { widt
 
 /* Dentro de una tarjeta plana (sin relleno propio) los formularios y notas sueltos conservan el margen de la tarjeta. */
 .rtm-tarjeta-v2[data-plana] > :is(p.rtm-nota, .rtm-form, form) { margin: var(--rtm-e-3) var(--rtm-pad-tarjeta); }
+
+/* ---- Botones (sistema de diseno, 14-nov): compactos, un solo radio, variantes y estados. Se usan SIEMPRE por clase, nunca pagina por pagina. ----
+   Variantes: .rtm-boton (secundaria, contorno fino) | .rtm-boton-primario (negro solido) | .rtm-boton-terciario (texto) | .rtm-boton-peligro (destructiva sobria) | .rtm-boton-item (fila de menu).
+   Estados: hover, :focus-visible, :active, :disabled y [aria-busy='true'] (cargando). Alto 32 px (44 en pantallas tactiles). */
+.rtm-boton { height: var(--rtm-boton-alto); padding: 0 11px; gap: 6px; border-radius: var(--rtm-ctl-r); font-size: 13px; font-weight: 500; letter-spacing: 0; box-shadow: none; transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, opacity 140ms ease, transform 140ms var(--rtm-mov-curva, ease); }
+.rtm-boton:hover:not(:disabled):not([aria-busy='true']) { border-color: var(--rtm-ink-3); }
+.rtm-boton:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
+.rtm-boton > svg { width: 14px; height: 14px; flex: none; }
+.rtm-boton-primario:hover:not(:disabled) { background: var(--rtm-ink); border-color: var(--rtm-ink); opacity: 0.86; }
+.rtm-boton-primario:focus-visible { outline-color: var(--rtm-ink); box-shadow: 0 0 0 2px var(--rtm-panel); }
+.rtm-boton-terciario { border-color: transparent; background: transparent; padding: 0 8px; }
+.rtm-boton-terciario:hover:not(:disabled) { background: var(--rtm-tint); border-color: transparent; }
+.rtm-boton-peligro { color: var(--rtm-bad); border-color: var(--rtm-bad); background: var(--rtm-surface); }
+.rtm-boton-peligro:hover:not(:disabled) { background: var(--rtm-tint); border-color: var(--rtm-bad); }
+.rtm-boton[aria-busy='true'] { position: relative; color: transparent; pointer-events: none; }
+.rtm-boton[aria-busy='true']::after { content: ''; position: absolute; width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--rtm-ink-3); border-top-color: var(--rtm-ink); animation: rtm-boton-gira 700ms linear infinite; }
+.rtm-boton-primario[aria-busy='true']::after { border-color: color-mix(in srgb, var(--rtm-panel) 40%, transparent); border-top-color: var(--rtm-panel); }
+@keyframes rtm-boton-gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .rtm-boton { transition: none; } .rtm-boton:active { transform: none; } .rtm-boton[aria-busy='true']::after { animation-duration: 2s; } }
+:root[data-movimiento='reduced'] .rtm-boton[aria-busy='true']::after, :root[data-movimiento='off'] .rtm-boton[aria-busy='true']::after { animation-duration: 2s; }
+.rtm-boton-chico { height: calc(var(--rtm-boton-alto) - 4px); padding: 0 9px; font-size: 12.5px; }
+.rtm-boton-item { display: flex; align-items: center; width: 100%; height: 32px; padding: 0 10px; box-sizing: border-box; border: 0; border-radius: 6px; background: transparent; color: var(--rtm-ink); font: inherit; font-size: 13px; font-weight: 500; text-align: left; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.rtm-boton-item:hover { background: var(--rtm-tint); }
+.rtm-boton-item:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: -2px; }
+@media (pointer: coarse) { .rtm-boton, .rtm-boton-chico, .rtm-boton-item { min-height: 44px; } }
+
+/* ---- BarraAcciones: UNA sola fila (primarias + vistas + menu "Mas"); jamas se parte en dos filas ---- */
+.rtm-ba { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: var(--rtm-v-acciones); min-width: 0; max-width: 100%; }
+.rtm-ba-primarias { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-v-acciones); }
+.rtm-ba-vistas { display: inline-flex; padding: 2px; gap: 2px; height: var(--rtm-boton-alto); box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-ctl-r); background: var(--rtm-tint); }
+.rtm-ba-vistas > a { display: inline-flex; align-items: center; padding: 0 10px; border-radius: calc(var(--rtm-ctl-r) - 2px); color: var(--rtm-ink-2); font-size: 12.5px; font-weight: 500; text-decoration: none; white-space: nowrap; transition: background-color 140ms ease, color 140ms ease; }
+.rtm-ba-vistas > a:hover { background: var(--rtm-surface); color: var(--rtm-ink); }
+.rtm-ba-vistas > a:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 1px; }
+.rtm-ba-mas { position: relative; }
+.rtm-ba-panel { position: absolute; z-index: 40; right: 0; top: calc(100% + 6px); min-width: 220px; max-width: min(320px, 90vw); display: flex; flex-direction: column; gap: 1px; padding: 4px; box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: 10px; background: var(--rtm-surface); box-shadow: var(--rtm-sombra-flotante); animation: rtm-fc-entra 140ms ease both; }
+.rtm-ba-panel[data-cerrado] { visibility: hidden; position: absolute; width: 0; min-width: 0; height: 0; padding: 0; border: 0; overflow: hidden; animation: none; }
+.rtm-ba-panel[data-cerrado] dialog { visibility: visible; }
+.rtm-ba-panel-vistas { display: none; flex-direction: column; gap: 1px; padding-bottom: 4px; margin-bottom: 4px; border-bottom: 1px solid var(--rtm-line); }
+.rtm-ba-panel > .rtm-boton-item, .rtm-ba-panel > * > .rtm-boton-item { width: 100%; }
+@media (max-width: 1100px) { .rtm-ba-vistas { display: none; } .rtm-ba-panel-vistas { display: flex; } }
+@media (max-width: 767px) { .rtm-ba-etq { display: none; } .rtm-ba-disparo { padding: 0 9px; } .rtm-ba { justify-content: flex-start; } .rtm-ba-panel { right: auto; left: 0; } }
+@media (prefers-reduced-motion: reduce) { .rtm-ba-panel { animation: none; } }
+:root[data-movimiento='reduced'] .rtm-ba-panel, :root[data-movimiento='off'] .rtm-ba-panel { animation: none; }
