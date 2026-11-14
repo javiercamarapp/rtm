@@ -8,7 +8,7 @@ const base = { cifra: 'historial:parte:7:Angelo', titulo: 'Parte de Angelo', uni
 describe('esquema de la explicacion del historial', () => {
   it('con dos vias reales lee la comprobacion', () => {
     const e = explicacion.parse({ ...base, comprobacion: { via1: 'a', via1_valor: 600000, via2: 'b', via2_valor: 600000, cuadra: true } });
-    expect(e.comprobacion).toEqual({ via1: 'a', via1Valor: 600000, via2: 'b', via2Valor: 600000, cuadra: true });
+    expect(e.comprobacion).toEqual({ via1: 'a', via1Valor: 600000, via2: 'b', via2Valor: 600000, cuadra: true, diferencia: null });
   });
   it('sin la clave (acta sin segunda via) no hay comprobacion y no rompe', () => {
     expect(explicacion.parse(base).comprobacion).toBeNull();

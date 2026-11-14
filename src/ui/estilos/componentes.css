@@ -1,4 +1,4 @@
-/* Componentes de F1: DataTable, cifras, cajon "Explicar este numero", dialogo, graficas. Solo tokens; sin colores literales. */
+/* Componentes de F1: DataTable, cifras, dialogo, graficas. Solo tokens; sin colores literales. */
 
 /* ---- DataTable (div con roles ARIA; display:table para columnas automaticas) ---- */
 .rtm-dt-caja { overflow-x: auto; border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
@@ -47,25 +47,6 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
 .rtm-migaja { font-size: 13px; color: var(--rtm-ink-3); }
 .rtm-migaja a { color: var(--rtm-ink-2); }
 
-/* ---- Cajon "Explicar este numero" (hoja derecha de 440 px) ---- */
-.rtm-velo-cajon { z-index: 40; }
-.rtm-cajon {
-  position: fixed; z-index: 41; top: 0; right: 0; bottom: 0; width: min(440px, 100vw);
-  display: flex; flex-direction: column; background: var(--rtm-panel); border-left: 1px solid var(--rtm-line-2);
-  box-shadow: var(--rtm-sombra-flotante); padding-bottom: env(safe-area-inset-bottom);
-  animation: rtm-cajon-entra 240ms var(--rtm-mov-curva) both;
-}
-@keyframes rtm-cajon-entra { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
-:root[data-movimiento='reduced'] .rtm-cajon { animation: rtm-fundido 120ms linear both; }
-:root[data-movimiento='off'] .rtm-cajon { animation: none; }
-.rtm-cajon-cabecera { display: flex; align-items: center; justify-content: space-between; padding: var(--rtm-e-4) var(--rtm-e-5); border-bottom: 1px solid var(--rtm-line); padding-top: calc(var(--rtm-e-4) + env(safe-area-inset-top)); }
-.rtm-cajon-cabecera .rtm-eyebrow { margin: 0; }
-.rtm-cajon-cuerpo { padding: var(--rtm-e-5); overflow-y: auto; display: flex; flex-direction: column; gap: var(--rtm-e-5); }
-.rtm-cajon-estado { padding: var(--rtm-e-5); color: var(--rtm-ink-2); margin: 0; }
-.rtm-cajon-titulo { margin: 0; font-family: var(--rtm-fuente-ui); font-weight: 600; font-size: 18px; line-height: 24px; letter-spacing: var(--rtm-trk-seccion); }
-.rtm-cajon-cifra { margin: 0; font-family: var(--rtm-fuente-ui); font-weight: 600; letter-spacing: var(--rtm-trk-cifra); font-size: var(--rtm-t-cifra-grande); line-height: 1.1; text-align: left; font-variant-numeric: tabular-nums; }
-.rtm-cajon-bloque h3 { margin: 0 0 var(--rtm-e-2); font-size: 13px; font-weight: 600; color: var(--rtm-ink-3); }
-
 /* ---- Dialogo de confirmacion (A17) ---- */
 .rtm-dialogo { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-4); background: var(--rtm-surface); color: var(--rtm-ink); padding: var(--rtm-e-6); width: min(440px, calc(100vw - 32px)); box-shadow: var(--rtm-sombra-flotante); }
 .rtm-dialogo::backdrop { background: var(--rtm-velo); }
@@ -105,7 +86,6 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
   .rtm-dt-celda[data-secundaria] { display: none; }
   .rtm-dt-celda { padding: 6px var(--rtm-e-3); height: 44px; }
   .rtm-campo, .rtm-cifra { font-size: 16px; }
-  .rtm-cajon-cifra { font-size: 28px; line-height: 32px; }
 }
 
 .rtm-boton-chico { height: var(--rtm-ctl-alto-chico); padding: 0 var(--rtm-e-3); font-size: var(--rtm-t-pequeno); }

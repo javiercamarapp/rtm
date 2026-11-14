@@ -8,6 +8,7 @@ import '@/ui/estilos/base.css';
 import '@/ui/estilos/movimiento.css';
 import '@/ui/estilos/shell.css';
 import '@/ui/estilos/componentes.css';
+import '@/ui/estilos/explicar.css';
 import '@/ui/estilos/operacion.css';
 import '@/ui/estilos/graficas.css';
 import '@/ui/estilos/apertura.css';
