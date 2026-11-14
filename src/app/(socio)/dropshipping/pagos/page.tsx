@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { lectorDeSocio } from '@/composicion/catalogo';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
+import { operacionDeSocio } from '@/composicion/operacion';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { Segmentado, ChipEstado } from '@/ui/componentes/controles';
 import { DataTable } from '@/ui/componentes/data-table';
@@ -21,14 +22,17 @@ export default async function PaginaPagosDs({ searchParams }: { searchParams: Pr
   const sp = await searchParams;
   const proveedor = sp.proveedor === 'Isaac' ? 'Isaac' : 'Karen';
   const ds = await dropshippingDeSocio();
-  const [c, clientes, resumen, difs] = await Promise.all([ds.cuentaProveedor(proveedor), (await lectorDeSocio()).clientes(), ds.resumen(), ds.diferencias(null)]);
+  const [c, clientes, resumen, difs, cuentaOp, socioMenudeo] = await Promise.all([ds.cuentaProveedor(proveedor), (await lectorDeSocio()).clientes(), ds.resumen(), ds.diferencias(null), (await operacionDeSocio()).cuentaProveedor(proveedor), ds.socioMenudeo()]);
+  // Deuda de la EMPRESA: el total del libro menos los pedidos a costo del socio de menudeo pendientes de pago (a su cuenta).
+  const emp = cuentaOp.posicion.posicion_empresa_cent;
+  const pendSocio = cuentaOp.posicion.menudeo_pendiente_cent;
   const difsProv = difs.filas.filter((d) => d.proveedor === proveedor);
   const pedidosAbiertos = c.pedidos.filter((p) => p.estado === 'confirmado' || p.estado === 'enviado');
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina
         eyebrow={`Dropshipping · Pagos al proveedor · ${etiquetaHoy()}`}
-        titulo={`Cuenta con ${proveedor}: ${c.etiqueta.toLowerCase()} ${c.saldo_cent === 0n ? '' : formatearMoneda(c.saldo_cent < 0n ? -c.saldo_cent : c.saldo_cent)}`.trim()}
+        titulo={`Cuenta con ${proveedor}: ${emp < 0n ? 'deuda de la empresa' : emp > 0n ? 'a favor' : 'saldo cero'} ${emp === 0n ? '' : formatearMoneda(emp < 0n ? -emp : emp)}`.trim()}
         descripcion="Costo de los pedidos enviados, pagos (completos o parciales) y saldo. Los pagos parciales amortizan primero el costo."
         acciones={<FormularioPagoProveedor proveedor={proveedor} pedidos={pedidosAbiertos.map((p) => ({ id: p.pedido_id, texto: `${p.folio} · ${p.cliente}${p.folio_externo ? ` · ${p.folio_externo}` : ''}` }))} clientes={clientes.filter((x) => x.activo && !x.esBodega).map((x) => ({ id: x.id, texto: x.nombre }))} />}
       />
@@ -38,7 +42,7 @@ export default async function PaginaPagosDs({ searchParams }: { searchParams: Pr
       <KpiLinea
         etiquetaAria={`Cuenta con ${proveedor}`}
         celdas={[
-          { id: 'saldo', etiqueta: 'Posición con el proveedor', valor: formatearMoneda(c.saldo_cent), categoria: 1, nota: `${c.etiqueta} · pagos y ajustes ${formatearMoneda(c.saldo_cuenta_corriente_cent)} menos costo de pedidos enviados ${formatearMoneda(c.directos_enviados_cent)}`, testid: 'ds-saldo' },
+          { id: 'saldo', etiqueta: 'Deuda de la empresa con el proveedor', valor: formatearMoneda(emp), categoria: 1, nota: `${pendSocio > 0n ? `Total según el libro ${formatearMoneda(c.saldo_cent)} = empresa ${formatearMoneda(emp)} + pedidos de ${socioMenudeo} pendientes ${formatearMoneda(-pendSocio)} · ` : ''}${c.etiqueta} · pagos y ajustes ${formatearMoneda(c.saldo_cuenta_corriente_cent)} menos costo de pedidos enviados ${formatearMoneda(c.directos_enviados_cent)}`, testid: 'ds-saldo' },
           { id: 'costo', etiqueta: 'Costo de pedidos enviados', valor: formatearMoneda(c.costo_enviado_cent), categoria: 4 },
           { id: 'amort', etiqueta: 'Amortizado por pedido', valor: formatearMoneda(c.amortizado_cent), categoria: 2, nota: 'Pagos ligados a un pedido' },
           { id: 'reinv', etiqueta: 'Utilidad reinvertida en el proveedor', valor: formatearMoneda(c.reinvertida_cent), categoria: 3, nota: 'Excedente de lo depositado sobre el costo, respaldado por utilidad' },

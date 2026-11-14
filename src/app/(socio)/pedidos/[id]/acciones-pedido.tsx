@@ -24,7 +24,8 @@ interface Props {
 }
 
 function Pago({ pedidoId, folio, clienteId, cuentas }: Pick<Props, 'pedidoId' | 'folio' | 'clienteId' | 'cuentas'>) {
-  const { correr, ocupado, error, limpiarError } = useAccion();
+  const { correr, ocupado, error, codigo, limpiarError } = useAccion();
+  const [confirmoExceso, setConfirmoExceso] = useState(false);
   const [abierto, setAbierto] = useState(false);
   const [cuenta, setCuenta] = useState(cuentas[0] ?? 'Angelo');
   const [monto, setMonto] = useState('');
@@ -33,7 +34,7 @@ function Pago({ pedidoId, folio, clienteId, cuentas }: Pick<Props, 'pedidoId' | 
     const c = centavosDeTexto(monto);
     if (c === null || c === 0) return setLocal('Escribe el monto del pago, por ejemplo 9000 o 9,000.50.');
     setLocal(null);
-    correr('registrar_pago', { p_cuenta: cuenta, p_monto_cent: c, p_cliente_id: clienteId, p_pedidos: [{ pedido_id: pedidoId, monto_cent: c }] }, () => { setAbierto(false); setMonto(''); });
+    correr('registrar_pago', { p_cuenta: cuenta, p_monto_cent: c, p_cliente_id: clienteId, p_pedidos: [{ pedido_id: pedidoId, monto_cent: c }], p_confirmo_exceso: confirmoExceso }, () => { setAbierto(false); setMonto(''); setConfirmoExceso(false); });
   };
   return (
     <>
@@ -48,6 +49,12 @@ function Pago({ pedidoId, folio, clienteId, cuentas }: Pick<Props, 'pedidoId' | 
             <input className="rtm-campo rtm-campo-num" inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} data-testid="pago-monto" />
           </label>
           {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
+          {codigo === 'P0429' && (
+            <label className="rtm-casilla" data-testid="pago-confirmo-exceso">
+              <input type="checkbox" checked={confirmoExceso} onChange={(e) => setConfirmoExceso(e.target.checked)} />
+              <span>Confirmo que el excedente es un anticipo a favor del cliente.</span>
+            </label>
+          )}
         </ConfirmDialog>
       )}
     </>

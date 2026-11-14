@@ -20,6 +20,10 @@ import '@/ui/estilos/paginas-a1.css';
 import { CUBETA, ESTADO_PEDIDO, SEVERIDAD } from './operacion/etiquetas';
 import { centTexto, columnasSemana, deltaSemanal, NUMERO_SEMANAS, semanasDe, sparkSemanal } from './_a1/comun';
 import { etiquetaHoy } from './contexto';
+import { valuacionDeSocios } from '@/composicion/valuacion-socios';
+import { tarjetaValuacion } from '@/dominio/socios/valuacion';
+import { Contador } from '@/ui/graficas';
+import '@/ui/estilos/socios-valuacion.css';
 
 export const metadata: Metadata = { title: 'Inicio' };
 
@@ -31,13 +35,14 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   const n = semanasDe(sp.semanas);
   const op = await operacionDeSocio();
   const lector = await notificacionesDeSocio();
-  const [pulso, turno, inv, cxc, pedidos, pendientesMenudeo] = await Promise.all([
+  const [pulso, turno, inv, cxc, pedidos, pendientesMenudeo, valuacion] = await Promise.all([
     lector.pulso().catch(() => null),
     lector.tuTurno().catch(() => ({ items: [] })),
     (await inventarioDeSocio()).completo().catch(() => null),
     op.cuentasPorCobrar().catch(() => null),
     op.pedidos().catch(() => null),
     dropshippingDeSocio().then(async (d) => ({ pend: await d.menudeoPendientes(), socio: await d.socioMenudeo() })).catch(() => null),
+    valuacionDeSocios().catch(() => null),
   ]);
   const hoy = fechaNeg(new Date());
   const semanas = ultimasSemanas(hoy, n);
@@ -55,15 +60,22 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   const indicadores = chipsPulso(pulso);
   const categoriaPulso = { isaac: 5, cobrar: 2, socios: 7, bodega: 8 } as const;
   const notaPulso = {
-    isaac: 'Posición completa con el proveedor',
+    isaac: 'Deuda de la empresa con el proveedor; los pedidos del socio de menudeo van aparte',
     cobrar: cxc ? `${cxc.por_cliente.length} clientes con saldo` : undefined,
     socios: 'Posición neta de cada socio',
     bodega: pulso?.en_bodega ? `${formatearPiezas(pulso.en_bodega.piezas)} · ${inv ? `${inv.totales.modelos_con_existencia} modelos` : 'a costo promedio'}` : undefined,
   } as const;
-  const pulsoCeldas = indicadores.map((c) => ({
+  const tv = valuacion && valuacion.yo ? tarjetaValuacion(valuacion.cuenta, valuacion.yo, formatearMoneda) : null;
+  const pulsoBase = indicadores.map((c) => ({
     id: c.id, etiqueta: c.etiqueta, valor: c.id === 'bodega' ? (pulso?.en_bodega ? formatearMoneda(pulso.en_bodega.valor_cent) : null) : c.texto, href: c.href, ayuda: c.ayuda, testid: `inicio-${c.id}`, categoria: categoriaPulso[c.id as keyof typeof categoriaPulso], nota: notaPulso[c.id as keyof typeof notaPulso],
     partes: c.id === 'cobrar' && cxc && cxc.total_cent > 0n ? (['0_7', '8_14', '15_30', 'mas_30'] as const).map((k) => ({ etiqueta: CUBETA[k]!, valor: aNumero(cxc.antiguedad_cent[k]) })) : undefined,
   }));
+  // TU VALUACION reemplaza 'Entre socios': la misma funcion de la base que /socios y el Balance (api.cuenta_socios_valuacion); sin sesion de socio con nombre se conserva el indicador anterior.
+  const pulsoCeldas = pulsoBase.map((c) => c.id !== 'socios' || !tv ? c : {
+    ...c, etiqueta: tv.titulo, href: '/socios', testid: 'inicio-valuacion', ayuda: 'Capital aportado más utilidades acumuladas, menos lo retirado y los fondos de la sociedad en tu poder. Compara contra el otro socio.', partes: undefined,
+    valor: <span data-testid="inicio-valuacion-cifra"><Contador valor={Number(tv.valorCent)} tipo="moneda" /></span>,
+    nota: <span className="sv-inicio" data-testid="inicio-valuacion-nota"><span className="sv-linea" data-testid="inicio-valuacion-comparacion">{tv.comparacion}</span>{tv.accion && <span className="sv-accion" data-testid="inicio-valuacion-accion">{tv.accion}</span>}</span>,
+  });
 
   const reponer = (inv?.modelos ?? []).filter((m) => m.estado !== null && ['urge', 'brevedad', 'siguiente'].includes(m.estado)).sort((a, b) => URGENCIA_COBERTURA[a.estado!] - URGENCIA_COBERTURA[b.estado!] || (a.cobertura_dias ?? 0) - (b.cobertura_dias ?? 0)).slice(0, 6);
   const conCobertura = (inv?.modelos ?? []).filter((m) => m.cobertura_dias !== null);

@@ -5,7 +5,7 @@ import { serieSemanalDeSocio } from '@/composicion/contabilidad-serie';
 import { diaSemanaLunes0, fechaNeg, sumarDias } from '@/dominio/calendario';
 import { etiquetaFecha } from '@/dominio/formato';
 import type { FlujoInsumo } from '@/dominio/reportes/insumos';
-import { LEYENDA_ESCENARIO, LEYENDA_ESTIMADO, coberturaViernes, diasEntre, escenarioCosto, flujoCaja, promedioMovilExponencial, tendenciaLineal, type Proyeccion } from '@/dominio/reportes/proyecciones';
+import { LEYENDA_ESCENARIO, LEYENDA_ESTIMADO, coberturaViernes, diasEntre, etiquetaCobertura, escenarioCosto, flujoCaja, promedioMovilExponencial, tendenciaLineal, type Proyeccion } from '@/dominio/reportes/proyecciones';
 import { PARAMETROS } from '@/dominio/reportes/parametros';
 import { Aviso } from '@/ui/componentes/controles';
 import { BarList, ListaClaveValor } from '@/ui/componentes/datos';
@@ -49,7 +49,10 @@ export default async function PaginaProyecciones() {
   const fondos = v?.l01_liquidez_cent ?? null;
   const viernes = sumarDias(hoy, (4 - diaSemanaLunes0(hoy) + 7) % 7);
   const idxViernes = Math.min(3, Math.floor(diasEntre(hoy, viernes) / 7));
-  const porPagarViernes = [hojaI, hojaK].reduce((a, h) => a + (h && h.totales.falta_por_saldar_cent > 0n ? h.totales.falta_por_saldar_cent : 0n), 0n);
+  // Por pagar a proveedores el viernes = deuda de la EMPRESA: lo que falta por saldar menos los pedidos a costo del socio de menudeo aun pendientes (a su cuenta; los reembolsa el).
+  const deudaHoja = (h: typeof hojaI) => (h && h.totales.falta_por_saldar_cent > 0n ? (h.totales.menudeo_vigente ? h.totales.deuda_empresa_cent : h.totales.falta_por_saldar_cent) : 0n);
+  const porPagarViernes = [hojaI, hojaK].reduce((a, h) => a + deudaHoja(h), 0n);
+  const pedidosSocioPendientes = [hojaI, hojaK].reduce((a, h) => a + (h && h.totales.menudeo_vigente && h.totales.falta_por_saldar_cent > 0n ? h.totales.menudeo_pendiente_cent : 0n), 0n);
   const prometidos = [0n, 0n, 0n, 0n];
   for (const f of cxc?.filas ?? []) {
     if (f.saldo_cent <= 0n || !f.vence || f.vence < hoy) continue;
@@ -93,7 +96,7 @@ export default async function PaginaProyecciones() {
   const MIN = PARAMETROS.minSemanasEma;
   const mayorBarra = [fondos ?? 0n, hastaViernes, porPagarViernes].reduce((a, b) => (b > a ? b : a), 1n);
   const coberturaTexto = cobertura === null ? null : `${(Number(cobertura) / 1000).toFixed(2)} veces`;
-  const coberturaOk = cobertura !== null && cobertura >= PARAMETROS.coberturaViernesVerde;
+  const coberturaEstado = cobertura === null ? null : etiquetaCobertura(cobertura);
 
   return (
     <Pagina ancho="tablero">
@@ -111,13 +114,14 @@ export default async function PaginaProyecciones() {
           { id: 'hist', etiqueta: 'Historia disponible', valor: `${nHist} ${nHist === 1 ? 'semana' : 'semanas'}`, categoria: 1, progreso: { pct: Math.min(100, (nHist / MIN) * 100), meta: 100 }, nota: nHist >= MIN ? 'Muestra mínima alcanzada' : `Faltan ${faltan(MIN)} para estimar` },
           { id: 'cobros', etiqueta: 'Cobros esperados por semana', valor: pCobros.emite ? m(aBig(pCobros.datos.central)) : null, categoria: 2, nota: pCobros.emite ? `Estimado · rango ${m(aBig(pCobros.datos.puntos[0]!.lo))} a ${m(aBig(pCobros.datos.puntos[0]!.hi))}` : razon(pCobros) },
           { id: 'util', etiqueta: 'Utilidad esperada por semana', valor: pUtil.emite ? m(aBig(pUtil.datos.central), true) : null, categoria: 7, nota: pUtil.emite ? `Estimado · rango ${m(aBig(pUtil.datos.puntos[0]!.lo), true)} a ${m(aBig(pUtil.datos.puntos[0]!.hi), true)}` : razon(pUtil) },
-          { id: 'cob', etiqueta: 'Cobertura del viernes', valor: coberturaTexto, categoria: 4, nota: cobertura === null ? (fondos === null ? 'Sin dato de fondos' : 'Nada por pagar el viernes') : <Estado tono={coberturaOk ? 'ok' : 'atencion'}>{coberturaOk ? 'Cubierto' : 'Justo'}</Estado> },
+          { id: 'cob', etiqueta: 'Cobertura del viernes', valor: coberturaTexto, categoria: 4, nota: cobertura === null ? (fondos === null ? 'Sin dato de fondos' : 'Nada por pagar el viernes') : <Estado tono={coberturaEstado!.tono}>{coberturaEstado!.etiqueta}</Estado> },
         ]}
       />
       <FilaRatios
         etiqueta="Compromisos conocidos"
         items={[
           { etiqueta: `Por pagar el viernes ${etiquetaFecha(viernes)}`, valor: porPagarViernes > 0n ? m(porPagarViernes) : null },
+          { etiqueta: 'Aparte: pedidos del socio de menudeo pendientes (a su cuenta)', valor: pedidosSocioPendientes > 0n ? m(pedidosSocioPendientes) : null },
           { etiqueta: 'Fondos de la sociedad hoy', valor: fondos === null ? null : m(fondos) },
           { etiqueta: 'Cobros prometidos hasta el viernes', valor: cxc ? m(hastaViernes) : null },
           { etiqueta: 'Omar nos cobra', valor: omar ? m(omarPaga) : null },

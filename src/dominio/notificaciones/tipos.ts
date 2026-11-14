@@ -13,6 +13,8 @@ export interface TuTurno { items: ItemTuTurno[] }
 
 export interface Pulso {
   por_pagar_isaac_cent: bigint | null;
+  /** Pedidos a costo del socio de menudeo pendientes de pago con Isaac (aparte: no son deuda de la empresa). */
+  por_pagar_isaac_socio_cent?: bigint | null;
   por_cobrar_cent: bigint | null;
   entre_socios: { socio: 'Angelo' | 'Javier'; diferencia_cent: bigint } | null;
   en_bodega: { piezas: number; valor_cent: bigint } | null;

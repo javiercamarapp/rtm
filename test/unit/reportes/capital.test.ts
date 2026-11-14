@@ -44,6 +44,12 @@ describe('capital por socio en el reporte mensual', () => {
     expect(texto).not.toContain('retirados por ti');
     expect(texto).toContain('Pago PG-0001 en la cuenta de Javier');
   });
+  it('el acumulado usa los rotulos de la Cuenta de socios y la nota 50/50', () => {
+    const pg = construirReporte(conCapital()).paginas.find((x) => x.id === 'capital')!;
+    const a = pg.tablas.find((x) => x.id === 'capitalAcum')!;
+    expect(a.columnas).toEqual(['Socio', 'Capital aportado', 'Utilidades acumuladas', 'Retirado', 'Fondos de la sociedad en su poder', 'Valuación']);
+    expect(a.nota).toContain('50 % y 50 %');
+  });
   it('trae valuacion, aportaciones, utilidad, reinvertida, retirada, proveedores y por clasificar, sin lenguaje de deuda en los fondos', () => {
     const r = construirReporte(conCapital());
     const pg = r.paginas.find((x) => x.id === 'capital')!;

@@ -1,6 +1,7 @@
 // Pulso de arriba y pie de pagina: cifras reales de las lecturas existentes. Nunca un cero inventado: sin datos, "Sin dato".
 import type { Existencia } from '../catalogo/tipos';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '../formato';
+import { tarjetaValuacion, type CuentaSociosValuacion, type Socio } from '../socios/valuacion';
 import type { CuentaProveedor, CuentaSocios, CuentasPorCobrar } from './tipos';
 
 export interface ChipPulso {
@@ -22,17 +23,21 @@ export interface EntradasPulso {
   isaac: CuentaProveedor | null;
   cxc: CuentasPorCobrar | null;
   socios: CuentaSocios | null;
+  /** Valuacion de los socios (api.cuenta_socios_valuacion) y el socio con sesion: alimenta el chip personal 'Tu valuacion'. */
+  valuacion?: { cuenta: CuentaSociosValuacion; yo: Socio } | null;
   existencia: Existencia | null;
 }
 
-/** Por pagar a Isaac: POSICION COMPLETA con el proveedor, la del Mayor (cuenta 2110), la misma cifra que 'Falta por saldar' en Proveedores y que Capital por socio. Suma la cuenta corriente (pagos de socios y de clientes, ordenes confirmadas) y el costo de los pedidos directos enviados que aun no se descuenta ahi. Saldo negativo = se debe. Sin movimientos ni posicion no hay dato. */
+/** Por pagar a Isaac: DEUDA DE LA EMPRESA con el proveedor = el total del Mayor (cuenta 2110) menos los pedidos a costo del socio de menudeo que aun no paga (a su cuenta, no son deuda de la empresa; van aparte en el detalle). Misma cifra que 'Deuda de la empresa' en Proveedores. Sin movimientos ni posicion no hay dato. */
 function chipIsaac(c: CuentaProveedor | null): ChipPulso {
   const base: ChipPulso = { clave: 'isaac', etiqueta: 'Por pagar a Isaac', texto: null, cifra: null, href: '/proveedores?p=Isaac', detalle: null };
   if (!c || (c.movimientos.length === 0 && c.posicion_cent === 0n)) return base;
-  const cifra = 'conta:saldo:2110';
-  if (c.posicion_cent < 0n) return { ...base, texto: formatearMoneda(-c.posicion_cent), cifra, href: null, detalle: 'posición completa: se debe' };
-  if (c.posicion_cent > 0n) return { ...base, texto: formatearMoneda(c.posicion_cent), cifra, href: null, detalle: 'posición completa: a favor' };
-  return { ...base, texto: formatearMoneda(0n), cifra, href: null, detalle: 'posición completa: saldo cero' };
+  const cifra = 'proveedor:deuda:Isaac';
+  const emp = c.posicion.posicion_empresa_cent;
+  const aparte = c.posicion.menudeo_pendiente_cent > 0n ? ` · aparte ${formatearMoneda(c.posicion.menudeo_pendiente_cent)} de pedidos del socio` : '';
+  if (emp < 0n) return { ...base, texto: formatearMoneda(-emp), cifra, href: null, detalle: `deuda de la empresa${aparte}` };
+  if (emp > 0n) return { ...base, texto: formatearMoneda(emp), cifra, href: null, detalle: `a favor${aparte}` };
+  return { ...base, texto: formatearMoneda(0n), cifra, href: null, detalle: `saldo cero${aparte}` };
 }
 
 function chipCobrar(c: CuentasPorCobrar | null): ChipPulso {
@@ -41,10 +46,16 @@ function chipCobrar(c: CuentasPorCobrar | null): ChipPulso {
   return { ...base, texto: formatearMoneda(c.total_cent), cifra: 'cxc:total', href: null };
 }
 
-function chipSocios(s: CuentaSocios | null): ChipPulso {
-  const base: ChipPulso = { clave: 'socios', etiqueta: 'Entre socios', texto: null, cifra: null, href: '/socios', detalle: null };
-  if (!s || (s.movimientos.length === 0 && s.costo_cent === 0n)) return base;
-  return { ...base, texto: formatearMoneda(s.javier_debe_a_angelo_cent, { conSigno: true }), cifra: 'socios:diferencia', href: null };
+/** Tu valuacion (reemplaza a 'Entre socios', que mostraba la diferencia informativa por la compra): la valuacion personal y cuanto mas o menos tiene contra el otro socio.
+ *  Misma fuente que Inicio, Cuenta de socios y Balance (api.cuenta_socios_valuacion). Sin sesion de socio con nombre o sin lectura: "Sin dato". */
+function chipSocios(v: EntradasPulso['valuacion']): ChipPulso {
+  const base: ChipPulso = { clave: 'socios', etiqueta: 'Tu valuación', texto: null, cifra: null, href: '/socios', detalle: null };
+  if (!v || !v.cuenta.hay_movimientos) return base;
+  const t = tarjetaValuacion(v.cuenta, v.yo, formatearMoneda);
+  if (!t) return base;
+  const x = formatearMoneda(v.cuenta.comparacion.diferencia_valuacion_cent);
+  const detalle = t.estado === 'igual' ? `igualado con ${t.otro}` : t.estado === 'mas' ? `+${x} vs ${t.otro}` : `-${x} vs ${t.otro}`;
+  return { ...base, texto: t.valorTexto, cifra: `historial:valor:${v.yo}`, href: null, detalle };
 }
 
 /** En bodega: suma de piezas de los modelos con movimientos. Aun no hay una cifra explicable del total: enlaza al inventario, donde cada modelo si se explica. */
@@ -57,7 +68,7 @@ function chipBodega(e: Existencia | null): ChipPulso {
 }
 
 export function armarPulso(e: EntradasPulso): Pulso {
-  const chips = [chipIsaac(e.isaac), chipCobrar(e.cxc), chipSocios(e.socios), chipBodega(e.existencia)];
+  const chips = [chipIsaac(e.isaac), chipCobrar(e.cxc), chipSocios(e.valuacion), chipBodega(e.existencia)];
   const fecha = e.cxc?.hoy ?? e.socios?.hoy ?? null;
   const hayDatos = chips.some((c) => c.texto !== null);
   return { chips, corte: hayDatos && fecha ? etiquetaFecha(fecha) : null };

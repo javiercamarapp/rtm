@@ -14,6 +14,7 @@ export function useAccion() {
   const router = useRouter();
   const [ocupado, empezar] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [codigo, setCodigo] = useState<string | null>(null);
   const clave = useRef<string>(`web:${crypto.randomUUID()}`);
 
   const correr = useCallback(
@@ -31,16 +32,18 @@ export function useAccion() {
         if (r.ok) {
           clave.current = `web:${crypto.randomUUID()}`;
           setError(null);
+          setCodigo(null);
           alTerminar?.(r.datos);
           router.refresh();
         } else {
           setError(r.mensaje);
+          setCodigo(r.codigo);
         }
       });
     },
     [router],
   );
-  return { correr, ocupado, error, limpiarError: () => setError(null) };
+  return { correr, ocupado, error, codigo, limpiarError: () => { setError(null); setCodigo(null); } };
 }
 
 /** Pesos escritos por una persona ("250", "1,234.50") a centavos enteros para la base; null si no es un monto valido o es negativo. Sin decimales flotantes. */

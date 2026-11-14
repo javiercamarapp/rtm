@@ -9,6 +9,8 @@ import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { Campo, FiltrosUrl } from '../../_a2/filtros-url';
 import { SubnavContabilidad } from '../subnav';
+import { valuacionDeSocios } from '@/composicion/valuacion-socios';
+import { ComparativaValuaciones } from '../../socios/valuacion';
 import { bpTexto, fechaParam, fecha, hoyNeg, m, partePct, pctTexto, type Params } from '../../_a2/util';
 
 export const metadata: Metadata = { title: 'Valuación al detalle' };
@@ -31,7 +33,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   const sp = await searchParams;
   const hasta = fechaParam(sp.hasta) ?? hoyNeg();
   const datos = await datosDeSocio();
-  const [d, serie] = await Promise.all([datos.valuacionDetalle(hasta), datos.valuacionSerie(null, hasta, 'mes')]);
+  const [d, serie, vs] = await Promise.all([datos.valuacionDetalle(hasta), datos.valuacionSerie(null, hasta, 'mes'), valuacionDeSocios(hasta).catch(() => null)]);
   const v = d.valuacion;
   const sd = !v.con_movimientos;
   const ctas = new Map(d.cuentas.map((c) => [c.codigo, c]));
@@ -94,6 +96,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
               { k: 'Deudas por renglones = deudas', v: <EstadoTexto tono={cuadraD ? 'ok' : 'malo'}>{cuadraD ? 'Cuadra' : 'No cuadra'}</EstadoTexto> },
             ]} />
         </Tarjeta>
+      {vs && vs.cuenta.hay_movimientos && <div data-testid="valuacion-por-socio"><ComparativaValuaciones c={vs.cuenta} yo={vs.yo} /></div>}
       <Rejilla dividir="6-6">
         <Tarjeta titulo="De la valuación a la utilidad" descripcion="Cascada hasta la utilidad">
           {sd ? <p className="rtm-a2-nota">Sin asientos: la cascada aparece con el primer movimiento.</p> : (

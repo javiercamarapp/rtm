@@ -20,8 +20,17 @@ export function sanitizar(texto: string): string {
   return limpio.slice(0, MAX_CARACTERES);
 }
 
+/**
+ * Un nombre (de cliente, de modelo) es DATO: se guarda tal cual lo escribe el socio, pero sin controles ni ancho cero y con los < y > neutralizados, de modo que ningun nombre
+ * pueda abrir ni cerrar una etiqueta del prompt (<mensaje>, </system>) ni inyectar marcado. Se usa al dar de alta y al ofrecer candidatos al modelo.
+ */
+export function nombreSeguro(texto: string, max = 60): string {
+  return sanitizar(texto).replace(/</g, '‹').replace(/>/g, '›').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
 const PATRONES_INYECCION: ReadonlyArray<readonly [string, RegExp]> = [
   ['ignora_instrucciones', /\b(ignora|olvida|descarta)\b.{0,30}\b(instrucciones|reglas|indicaciones|prompt)\b/],
+  ['ignora_lo_anterior', /\b(ignora|olvida|descarta|ignore|forget|disregard)\b.{0,20}\b(lo anterior|todo lo anterior|lo de arriba|everything above|all previous)\b/],
   ['ignore_previous', /\bignore\b.{0,30}\b(previous|prior|above|all)\b.{0,20}\b(instructions|rules|prompt)\b/],
   ['revelar_prompt', /\b(revela|muestra|imprime|dime|reveal|show|print)\b.{0,30}\b(prompt|instrucciones del sistema|system prompt|tus reglas)\b/],
   ['etiqueta_system', /<\s*\/?\s*(system|sistema|assistant|instructions)\s*>/],
