@@ -45,7 +45,7 @@
 .rtm-kr-chip, .rtm-seg-mini button { height: var(--rtm-ctl-alto-chico); padding: 0 var(--rtm-e-3); border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); color: var(--rtm-ink); font: inherit; font-size: var(--rtm-t-pequeno); cursor: pointer; white-space: nowrap; }
 .rtm-kr-chip[aria-pressed='true'], .rtm-seg-mini button[aria-pressed='true'] { background: var(--rtm-ink); color: var(--rtm-panel); border-color: var(--rtm-ink); }
 .rtm-seg-mini { display: inline-flex; gap: 4px; }
-.rtm-kr-resumen { flex-basis: 100%; display: flex; align-items: center; gap: var(--rtm-e-3); font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
+.rtm-kr-resumen { width: 100%; display: flex; align-items: center; gap: var(--rtm-e-3); font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
 .rtm-kr-marcas { position: relative; }
 .rtm-kr-marcas summary { list-style: none; cursor: pointer; }
 .rtm-kr-marcas summary::-webkit-details-marker { display: none; }
@@ -108,7 +108,7 @@
 .rtm-kr-cola span { color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); }
 
 /* Panel lateral */
-.rtm-kr-panel { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(520px, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh; padding: 0; border: 0; border-left: 1px solid var(--rtm-line-2); background: var(--rtm-panel); color: var(--rtm-ink); box-shadow: var(--rtm-sombra-flotante); }
+.rtm-kr-panel { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(520px, 100vw); max-width: 100vw; height: auto; max-height: none; padding: 0; border: 0; border-left: 1px solid var(--rtm-line-2); background: var(--rtm-panel); color: var(--rtm-ink); box-shadow: var(--rtm-sombra-flotante); }
 .rtm-kr-panel[open] { animation: rtm-cajon-entra 240ms var(--rtm-mov-curva) both; }
 .rtm-kr-panel::backdrop { background: var(--rtm-velo); }
 :root[data-movimiento='off'] .rtm-kr-panel[open] { animation: none; }

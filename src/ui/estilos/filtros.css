@@ -1,7 +1,7 @@
 /* Filtro compartido: una sola barra compacta (32 px) con buscador en vivo, segmentado de estado y marcas en desplegable. */
 .rtm-fc { display: flex; flex-direction: column; gap: var(--rtm-e-2); min-width: 0; }
 .rtm-fc-barra { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-e-2); min-width: 0; }
-.rtm-fc-barra > .rtm-fc-busca { position: relative; flex: 1 1 220px; min-width: 180px; max-width: 360px; }
+.rtm-fc-barra > .rtm-fc-busca { position: relative; flex: 1 1 auto; width: 220px; min-width: 180px; max-width: 360px; }
 .rtm-fc-busca > svg { position: absolute; left: 10px; top: 50%; width: 14px; height: 14px; transform: translateY(-50%); color: var(--rtm-ink-3); pointer-events: none; }
 .rtm-fc-busca > input { width: 100%; height: var(--rtm-ctl-alto); box-sizing: border-box; padding: 0 10px 0 30px; border: 1px solid var(--rtm-campo-borde); border-radius: var(--rtm-ctl-r); background: var(--rtm-surface); color: var(--rtm-ink); font: inherit; font-size: var(--rtm-ctl-fs); transition: border-color 140ms ease, box-shadow 140ms ease; }
 .rtm-fc-busca > input:hover { border-color: var(--rtm-ink-3); }
@@ -49,7 +49,7 @@
 @media (prefers-reduced-motion: reduce) { .rtm-fc-panel, .rtm-fc-chips button { animation: none; } .rtm-fc *, .rtm-fc-disparo > svg { transition: none !important; } }
 
 @media (max-width: 767px) {
-  .rtm-fc-barra > .rtm-fc-busca { flex: 1 1 100%; max-width: none; }
+  .rtm-fc-barra > .rtm-fc-busca { flex: 1 1 auto; width: 100%; max-width: none; }
   .rtm-fc-atajos { display: none; }
   .rtm-fc-barra { gap: 6px; }
 }
