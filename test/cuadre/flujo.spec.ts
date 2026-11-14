@@ -177,6 +177,7 @@ test('5 venta: pedido con nota, empacar, enviar con guia', async () => {
   await page.getByTestId('agregar-renglon').click();
   await page.getByTestId('envio').fill('300');
   await cap(page, 'pedido-nuevo');
+  await page.getByTestId('condicion-pago').selectOption('contado');
   await page.getByTestId('crear-pedido').click();
   await page.waitForURL(/\/pedidos\/\d+$/);
   pedido = Number(page.url().split('/').pop());

@@ -44,7 +44,7 @@ async function devLineas(pedido, sabor, n) { const l = await q1(JAV, 'select id 
 const flujos = {
   async pedido_cliente() {
     const lin = [{ modelo: 'Nexa Ultra 50K', sabor: 'Mango Oasis', piezas: 10, precio_cent: 15000 }, { modelo: 'Nexa Ultra 50K', sabor: 'Miami Mint', piezas: 5, precio_cent: 15000 }];
-    const cr = (await q1(JAV, "select api.crear_pedido($1,2,$2::jsonb,'bodega_omar',null,0,0,0,negocio.hoy(),null,null,null,'maestro') as r", [K('p1'), JSON.stringify(lin)])).r;
+    const cr = (await q1(JAV, "select api.crear_pedido($1,2,$2::jsonb,'bodega_omar',null,0,0,0,negocio.hoy(),null,0,null,'maestro') as r", [K('p1'), JSON.stringify(lin)])).r;
     await q1(JAV, 'select api.confirmar_pedido($1,$2)', [K('p1c'), cr.pedido_id]);
     const env = (await q1(JAV, "select api.enviar_pedido($1,$2,null,null,negocio.hoy(),true) as r", [K('p1e'), cr.pedido_id])).r;
     nota('pedido de cliente: crear, confirmar, enviar', Number(env.total_cent) === 225000, `total_cent=${env.total_cent} (esperado 225000)`);
@@ -94,7 +94,7 @@ const flujos = {
   },
   async devoluciones() {
     const lin = [{ modelo: 'Nexa Ultra 50K', sabor: 'Sour Watermelon', piezas: 20, precio_cent: 15000 }];
-    const cr = (await q1(JAV, "select api.crear_pedido($1,4,$2::jsonb,'bodega_omar',null,10000,20000,0,negocio.hoy(),null,null,null,'maestro dev') as r", [K('v1'), JSON.stringify(lin)])).r;
+    const cr = (await q1(JAV, "select api.crear_pedido($1,4,$2::jsonb,'bodega_omar',null,10000,20000,0,negocio.hoy(),null,0,null,'maestro dev') as r", [K('v1'), JSON.stringify(lin)])).r;
     await q1(JAV, 'select api.confirmar_pedido($1,$2)', [K('v1c'), cr.pedido_id]);
     await q1(JAV, "select api.enviar_pedido($1,$2,null,null,negocio.hoy(),true)", [K('v1e'), cr.pedido_id]);
     await q1(JAV, "select api.registrar_pago($1,'Efectivo',290000,4,$2::jsonb,true,'abono',negocio.hoy(),null,'pago',null)", [K('v1p'), JSON.stringify([{ pedido_id: cr.pedido_id, monto_cent: 290000 }])]);
@@ -112,7 +112,7 @@ const flujos = {
   },
   async paquete_perdido() {
     const lin = [{ modelo: 'Nexa Ultra 50K', sabor: 'Blue Razz Ice', piezas: 10, precio_cent: 15000 }];
-    const cr = (await q1(JAV, "select api.crear_pedido($1,5,$2::jsonb,'bodega_omar',null,0,0,0,negocio.hoy(),null,null,null,'maestro paq') as r", [K('q1'), JSON.stringify(lin)])).r;
+    const cr = (await q1(JAV, "select api.crear_pedido($1,5,$2::jsonb,'bodega_omar',null,0,0,0,negocio.hoy(),null,0,null,'maestro paq') as r", [K('q1'), JSON.stringify(lin)])).r;
     await q1(JAV, 'select api.confirmar_pedido($1,$2)', [K('q1c'), cr.pedido_id]);
     await q1(JAV, "select api.enviar_pedido($1,$2,null,null,negocio.hoy(),true)", [K('q1e'), cr.pedido_id]);
     const rep = (await q1(JAV, "select api.reportar_paquete_salida($1,$2,'perdido','maestro paquete perdido',$3::jsonb) as r", [K('q1r'), cr.pedido_id, JSON.stringify(await devLineas(cr.pedido_id, 'Blue Razz Ice', 4))])).r;

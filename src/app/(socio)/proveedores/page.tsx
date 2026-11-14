@@ -3,6 +3,8 @@ import { AreaPesos } from '../_a3/graficas-pesos';
 import Link from 'next/link';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { operacionDeSocio } from '@/composicion/operacion';
+import { notificacionesDeSocio } from '@/composicion/inventario';
+import { presentarPorPagar } from '@/dominio/operacion/por_pagar';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import { armarHojaProveedor, armarPosicionProveedor, rotuloModalidad } from '@/dominio/operacion/posicion_proveedor';
 import type { EstadoCompra } from '@/dominio/operacion/tipos';
@@ -32,6 +34,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
   const lector = await operacionDeSocio();
   const ds = await dropshippingDeSocio();
   const socioMenudeo = await ds.socioMenudeo();
+  const porPagar = presentarPorPagar((await (await notificacionesDeSocio()).pulso().catch(() => null))?.por_pagar);
   const [cuenta, compras, hoja, cierres, menudeo] = await Promise.all([lector.cuentaProveedor(proveedor), lector.compras(proveedor), lector.hojaProveedor(proveedor, null, 'sociedad'), lector.liquidacionesProveedor(proveedor), ds.menudeo(socioMenudeo, { proveedor })]);
   const t = hoja.totales;
   // UNA sola verdad: la posicion con el proveedor del libro (2110 / 2120), la misma de Inicio y Contabilidad.
@@ -95,6 +98,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       <KpiLinea
         etiquetaAria="Indicadores del proveedor"
         celdas={[
+          { id: 'porpagar', etiqueta: 'Por pagar de la empresa', testid: 'por-pagar-empresa', valor: porPagar.texto, categoria: 5, nota: porPagar.detalle ?? undefined, partes: porPagar.partes.length > 0 ? porPagar.partes : undefined, ayuda: 'Isaac, Karen y la renta de bodega de Omar, cada uno aparte; el total los suma' },
           { id: 'posicion', etiqueta: `${pos.palabra} con ${proveedor}`, testid: 'posicion-proveedor', valor: <CifraComprobada texto={pos.monto} cifra={`proveedor:deuda:${proveedor}`} comprobacion={pos.cuadra ? 'cuadra' : 'no_cuadra'} />, categoria: 4, nota: pos.pedidosSocio.hay ? `Total según el libro: ${pos.totalLibro}` : pos.totalLibro },
           ...(pos.pedidosSocio.hay ? [{ id: 'socio', etiqueta: `Pedidos de ${socioMenudeo} pendientes`, testid: 'pedidos-socio-pendiente', valor: <CifraComprobada texto={pos.pedidosSocio.pendiente} cifra={`proveedor:posicion:${proveedor}`} comprobacion="cuadra" />, categoria: 6 as const, nota: `A su cuenta, no son deuda de la empresa · ${pos.pedidosSocio.pedidos} ${pos.pedidosSocio.pedidos === 1 ? 'pedido' : 'pedidos'}` }] : []),
           { id: 'costo', etiqueta: 'Costo de la semana con guías', valor: m(t.costo_total_cent), categoria: 1, partes: t.costo_total_cent > 0n ? [{ etiqueta: 'Mercancía', valor: Number(t.mercancia_cent) }, { etiqueta: 'Seguros', valor: Number(t.seguros_cent) }, { etiqueta: 'Guías', valor: Number(t.guias_cent), estado: hoja.guias_pendientes > 0 ? 'parcial' : 'real' }] : undefined, nota: hoja.guias_pendientes > 0 ? `${hoja.guias_pendientes} guías sin costo real` : `${hoja.renglones.length} renglones` },

@@ -1,5 +1,6 @@
 'use client';
 
+import { plazoDeFormulario, type CondicionPago } from '@/dominio/operacion/plazo_pedido';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { bigintACentavos } from '@/dominio/operacion/json';
@@ -31,6 +32,7 @@ export function FormularioPedido({ clienteId, clienteNombre, catalogo }: { clien
   const [envio, setEnvio] = useState(textoPesos(catalogo.envio_default_cent));
   const [descuento, setDescuento] = useState('');
   const [recargo, setRecargo] = useState('');
+  const [condicion, setCondicion] = useState<CondicionPago>('');
   const [plazo, setPlazo] = useState('');
   const [local, setLocal] = useState<string | null>(null);
 
@@ -60,9 +62,11 @@ export function FormularioPedido({ clienteId, clienteNombre, catalogo }: { clien
     const d = centavosDeTexto(descuento || '0');
     const r = centavosDeTexto(recargo || '0');
     if (e === null || d === null || r === null) return setLocal('Revisa envío, descuento y recargo: deben ser montos como 300 o 300.00.');
+    const pz = plazoDeFormulario(condicion, plazo);
+    if (!pz.ok) return setLocal(pz.mensaje);
     setLocal(null);
     correr('crear_pedido', {
-      p_cliente_id: clienteId, p_origen: origen, p_envio_cent: e, p_descuento_cent: d, p_recargo_cent: r, p_plazo_dias: plazo ? Number(plazo) : null,
+      p_cliente_id: clienteId, p_origen: origen, p_envio_cent: e, p_descuento_cent: d, p_recargo_cent: r, p_plazo_dias: pz.plazo_dias,
       p_lineas: renglones.map((x) => ({ sku_id: x.sku_id, piezas: x.piezas, precio_cent: centavosDeTexto(x.precio), motivo_precio: x.motivo || undefined })),
     }, (datos) => router.push(`/pedidos/${String(datos['pedido_id'])}`));
   };
@@ -130,11 +134,20 @@ export function FormularioPedido({ clienteId, clienteNombre, catalogo }: { clien
           <label className="rtm-etiqueta-campo">Recargo
             <input className="rtm-campo rtm-campo-num" inputMode="decimal" value={recargo} onChange={(e) => setRecargo(e.target.value)} />
           </label>
-          <label className="rtm-etiqueta-campo">Plazo (días)
-            <input className="rtm-campo rtm-campo-num" inputMode="numeric" value={plazo} onChange={(e) => setPlazo(e.target.value)} />
+          <label className="rtm-etiqueta-campo">Condición de pago (obligatoria)
+            <select className="rtm-campo" value={condicion} onChange={(e) => setCondicion(e.target.value as CondicionPago)} data-testid="condicion-pago" aria-required="true">
+              <option value="">Elige…</option>
+              <option value="contado">De contado</option>
+              <option value="credito">A crédito</option>
+            </select>
           </label>
+          {condicion === 'credito' && (
+            <label className="rtm-etiqueta-campo">Plazo (días)
+              <input className="rtm-campo rtm-campo-num" inputMode="numeric" value={plazo} onChange={(e) => setPlazo(e.target.value)} data-testid="plazo-dias" aria-required="true" />
+            </label>
+          )}
         </div>
-        <p className="rtm-nota">Envío en 0 = no se cobra. El total se calcula al enviar, sobre lo que realmente salga.</p>
+        <p className="rtm-nota">Envío en 0 = no se cobra. El total se calcula al enviar, sobre lo que realmente salga. Todo pedido lleva condición de pago: a crédito exige el plazo en días (el vencimiento se cuenta desde el envío).</p>
       </section>
 
       {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}

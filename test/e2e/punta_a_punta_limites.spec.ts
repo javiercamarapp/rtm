@@ -33,6 +33,7 @@ test('T01 campos vacios en FormularioAccion: mensaje local "Falta:" y ninguna ll
 test('T01 pedido sin renglones: "Agrega al menos un renglón." y DialogoSimple sin motivo: "Escribe el motivo."', async ({ page }) => {
   await sesionSocio(page, `/pedidos/nuevo?cliente=${d.clienteId}`);
   const antes = await contarEventos('pedido_creado');
+  await page.getByTestId('condicion-pago').selectOption('contado');
   await page.getByTestId('crear-pedido').click();
   await expect(page.locator('main:not(.rtm-documento)')).toContainText('Agrega al menos un renglón.');
   expect(await contarEventos('pedido_creado')).toBe(antes);
@@ -73,6 +74,7 @@ test('T04 doble clic en Crear pedido y Enter repetido: un solo evento', async ({
   await page.getByTestId('sabor').selectOption({ index: 1 });
   await page.getByTestId('piezas').fill('25');
   await page.getByTestId('agregar-renglon').click();
+  await page.getByTestId('condicion-pago').selectOption('contado');
   await page.getByTestId('crear-pedido').dblclick();
   await page.waitForURL(/\/pedidos\/\d+$/);
   expect((await contarEventos('pedido_creado')) - antes).toBe(1);
