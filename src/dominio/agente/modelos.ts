@@ -1,6 +1,6 @@
 // Router de modelos por rol (politica 19, 10-nov-2026). Ningun modelo por encima del techo; sin escalamiento a Sonnet ni superiores.
 // Precios en micro-USD por millon de tokens (1 USD = 1,000,000 micro-USD). Referencia: OpenRouter, 10-nov-2026.
-// Los slugs son los de referencia de la politica; antes de produccion se fijan por slug FECHADO (nunca alias "latest").
+// Slugs FECHADOS (canonical_slug de OpenRouter, verificados el 14-nov-2026); nunca alias "latest". Al cambiar uno, repetir scripts/agente/prueba-modelo.mjs.
 
 export type RolIa = 'texto' | 'vision' | 'vision_segunda' | 'audio' | 'redaccion';
 
@@ -13,6 +13,11 @@ export interface ModeloIa {
   vision: boolean;
   /** Modelo de origen chino: solo con endpoints de EE.UU. con retencion cero (lista blanca inyectada, falla cerrado). */
   chino: boolean;
+  /**
+   * Como se exige el JSON al proveedor. Por omision `json_schema` estricto. Haiku 5.5 rechaza el esquema de 31 variantes en modo estricto
+   * (limite de uniones y gramatica demasiado grande, medido en la Fase 0a): se usa `json_object` con el esquema en el prompt y zod valida la salida.
+   */
+  salida?: 'json_schema' | 'json_object';
 }
 
 /** Techo operativo: entrada 0.15 y salida 0.60 USD por millon de tokens. */
@@ -20,9 +25,9 @@ export const TECHO_ENTRADA_MICRO_POR_MTOK = 150_000n;
 export const TECHO_SALIDA_MICRO_POR_MTOK = 600_000n;
 
 export const MODELOS: Readonly<Record<string, ModeloIa>> = {
-  haiku: { slug: 'anthropic/claude-haiku-5.5', entradaMicroPorMtok: 100_000n, salidaMicroPorMtok: 500_000n, vision: true, chino: false },
-  luna: { slug: 'openai/gpt-6-luna', entradaMicroPorMtok: 100_000n, salidaMicroPorMtok: 500_000n, vision: true, chino: false },
-  deepseek: { slug: 'deepseek/deepseek-v4.1-flash', entradaMicroPorMtok: 51_000n, salidaMicroPorMtok: 567_000n, vision: false, chino: true },
+  haiku: { slug: 'anthropic/claude-haiku-5.5-20261007', entradaMicroPorMtok: 100_000n, salidaMicroPorMtok: 500_000n, vision: true, chino: false, salida: 'json_object' },
+  luna: { slug: 'openai/gpt-6-luna-20260922', entradaMicroPorMtok: 100_000n, salidaMicroPorMtok: 500_000n, vision: true, chino: false },
+  deepseek: { slug: 'deepseek/deepseek-v4.1-flash-20260910', entradaMicroPorMtok: 51_000n, salidaMicroPorMtok: 567_000n, vision: false, chino: true, salida: 'json_object' },
   whisper: {
     slug: 'openai/whisper-large-v3-turbo',
     entradaMicroPorMtok: 0n,
