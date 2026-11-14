@@ -1,5 +1,5 @@
 -- pgTAP a12_001: banner de igualacion de valuacion (api.cuenta_socios_valuacion -> banner; agente.valuacion_socios). Escenario del dueno (14-nov): Javier 154,832.30, Angelo 106,910.39;
--- faltan 47,921.91 = 35,475.00 de fondos cobrados en la cuenta personal de Angelo + 12,446.91 de aportacion. ESCRITA SIN DOCKER: no se ha ejecutado (ver docs/banner-igualar-valuacion.md).
+-- faltan 47,921.91 = 35,475.00 de fondos cobrados en la cuenta personal de Angelo + 12,446.91 de aportacion. Corrida por un revisor independiente en base limpia: 27 de 27 en verde (requiere base recien reseteada).
 begin;
 select no_plan();
 update catalogo.config set vigente_desde = '2020-01-01' where vigente_desde > '2020-01-01';

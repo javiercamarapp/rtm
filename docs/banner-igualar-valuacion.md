@@ -46,5 +46,5 @@ No existe hoy un resumen diario del agente con plantilla propia (`/resumen` resp
 
 - vitest: `test/unit/socios/banner-igualar.test.ts` (variantes, partidas, neteo, tolerancia, lectura bigint, frase del bot), `src/ui/componentes/banner-igualar.test.tsx` (jsdom + axe, roles ARIA, enlaces), `test/unit/agente/valuacion_consulta.test.ts`.
 - SQL: la lógica de `banner_igualacion` y `api.cuenta_socios_valuacion` se ejecutó en una base PostgreSQL 17 temporal con tablas de prueba mínimas (ya borrada): cifras del dueño, entrega reversada excluida, entrega anterior al cobro excluida, corte histórico en null.
-- pgTAP `supabase/tests/database/a12_001_banner_igualar_valuacion.test.sql`: escrita con el escenario completo del dueño, **no se pudo correr** (requiere Docker y la pila completa de migraciones; había otros agentes ocupando la máquina).
+- pgTAP `supabase/tests/database/a12_001_banner_igualar_valuacion.test.sql`: escrita con el escenario completo del dueño, corrida por un revisor independiente en una base limpia con la pila completa de migraciones: 27 de 27 en verde. Requiere una base recien reseteada (con datos residuales falla por cifras, no por la migracion).
 - No se probó en navegador.
