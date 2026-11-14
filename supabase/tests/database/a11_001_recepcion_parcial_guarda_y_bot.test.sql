@@ -107,8 +107,10 @@ select is((pg_temp.bot('rpe4', (select folio from _e), '[]'::jsonb)->>'estado'),
 select is((select titulo from (select case when (r->>'piezas_ahora') is not null and r->>'estado' = 'recibida' then 'saldo' end as titulo from (select resultado as r from seguridad.operacion where clave = 'rpe4') q) z), 'saldo', 'el resultado del saldo trae piezas_ahora y estado recibida (el titulo lo distingue de la recepcion total)');
 
 -- El wrapper del bot sigue delegando (si una migracion futura lo pisa, este caso falla) ---------------------------------------------------------------
-select ok((select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base(text,text,jsonb)'::regprocedure) like '%recibir_compra_parcial%'
-  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_parcial%', 'agente._ejecutar_ext_base conserva la recepcion parcial y delega el resto');
+-- La migracion 20261114700000 (plazo obligatorio) envuelve de nuevo: la cadena es _ejecutar_ext_base -> _sin_plazo (esta migracion) -> _sin_parcial.
+select ok((select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base_sin_plazo(text,text,jsonb)'::regprocedure) like '%recibir_compra_parcial%'
+  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base_sin_plazo(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_parcial%'
+  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_plazo%', 'agente._ejecutar_ext_base conserva la recepcion parcial y delega el resto (por la capa del plazo)');
 select ok((select prosrc from pg_proc where oid = 'agente._efecto(text,jsonb)'::regprocedure) like '%piezas_ahora%', 'agente._efecto conserva las piezas de la llegada en el hash');
 
 select * from finish();
