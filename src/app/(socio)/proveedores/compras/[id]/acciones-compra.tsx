@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { formatearPiezas } from '@/dominio/formato';
 import { armarLlegada } from '@/dominio/operacion/devoluciones';
 import type { CompraDetalle, RecepcionCompra } from '@/dominio/operacion/tipos';
+import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { Tarjeta } from '@/ui/componentes/pagina';
+import '@/ui/estilos/barrido-b.css';
 import { BotonAccion, DialogoSimple } from '../../../operacion/dialogo-simple';
 import { useAccion } from '../../../operacion/usar-accion';
 import { FormularioGuia } from '../../../paquetes/en-trayecto/formulario-guia';
@@ -14,23 +16,33 @@ export interface SaborOpcion { sku_id: number; sabor: string }
 /** Acciones de la orden segun su estado. Confirmar aplica el dinero a la cuenta con el proveedor; las piezas NO cuentan hasta confirmar la recepcion. */
 export function AccionesCompra({ compra }: { compra: CompraDetalle }) {
   const e = compra.estado;
-  return (
-    <div className="rtm-acciones-fila" aria-label="Acciones de la orden">
-      {e === 'borrador' && <BotonAccion boton="Confirmar orden (aplica el dinero)" accion="confirmar_compra" args={{ p_compra: compra.id }} primario testid="confirmar-oc" />}
-      {e === 'confirmada' && <BotonAccion boton="Marcar enviada" accion="marcar_compra_enviada" args={{ p_compra: compra.id }} testid="oc-enviada" />}
-      {(e === 'confirmada' || e === 'enviada' || e === 'en_trayecto') && <FormularioGuia compraId={compra.id} folio={compra.folio} />}
-      {(e === 'confirmada' || e === 'enviada' || e === 'en_trayecto') && <BotonAccion boton="Llegó a Mérida" accion="marcar_llego_merida" args={{ p_compra: compra.id }} testid="oc-llego" />}
+  const enCamino = e === 'confirmada' || e === 'enviada' || e === 'en_trayecto';
+  const anulable = ['borrador', 'confirmada', 'enviada', 'en_trayecto', 'llego_merida'].includes(e);
+  // Una sola fila: el siguiente paso de la orden va visible; lo demas, en "Mas".
+  const primarias = (
+    <>
+      {e === 'borrador' && <BotonAccion boton="Confirmar orden" descripcion="Confirmar orden (aplica el dinero)" accion="confirmar_compra" args={{ p_compra: compra.id }} primario testid="confirmar-oc" />}
+      {e === 'confirmada' && <BotonAccion boton="Marcar enviada" accion="marcar_compra_enviada" args={{ p_compra: compra.id }} primario testid="oc-enviada" />}
+      {(e === 'enviada' || e === 'en_trayecto') && <BotonAccion boton="Llegó a Mérida" accion="marcar_llego_merida" args={{ p_compra: compra.id }} primario testid="oc-llego" />}
       {e === 'recibida_parcial' && (
-        <DialogoSimple boton="Cerrar la recepción" titulo={`Cerrar la recepción de ${compra.folio}`} accion="cerrar_recepcion_compra" args={{ p_compra: compra.id }} motivo="p_motivo" testid="cerrar-recepcion"
+        <DialogoSimple primario boton="Cerrar recepción" descripcion="Cerrar la recepción de la orden" titulo={`Cerrar la recepción de ${compra.folio}`} accion="cerrar_recepcion_compra" args={{ p_compra: compra.id }} motivo="p_motivo" testid="cerrar-recepcion"
           texto={<p>Lo que no llegó queda como faltante (y lo que sobró como sobrante) en la cuenta puente, con el costo puesto no reconocido; después se asigna a un responsable. Ya no se podrán registrar más llegadas.</p>} />
       )}
       {e === 'recibida' && <BotonAccion boton="Cerrar orden" accion="cerrar_compra" args={{ p_compra: compra.id }} primario testid="cerrar-oc" />}
-      {['borrador', 'confirmada', 'enviada', 'en_trayecto', 'llego_merida'].includes(e) && (
-        <DialogoSimple boton="Anular orden" titulo={`Anular ${compra.folio}`} accion="anular_compra" args={{ p_compra: compra.id }} motivo="p_motivo"
+    </>
+  );
+  const hayMenu = enCamino || anulable;
+  const secundarias = hayMenu ? (
+    <>
+      {enCamino && <div className="rtm-bb-items"><FormularioGuia compraId={compra.id} folio={compra.folio} /></div>}
+      {e === 'confirmada' && <BotonAccion variante="item" boton="Llegó a Mérida" accion="marcar_llego_merida" args={{ p_compra: compra.id }} testid="oc-llego" />}
+      {anulable && (
+        <DialogoSimple variante="item" boton="Anular orden" titulo={`Anular ${compra.folio}`} accion="anular_compra" args={{ p_compra: compra.id }} motivo="p_motivo"
           texto={<p>Anular es un contramovimiento: el cargo regresa a la cuenta con el proveedor. Una orden ya recibida no se anula.</p>} />
       )}
-    </div>
-  );
+    </>
+  ) : undefined;
+  return <BarraAcciones etiquetaAria="Acciones de la orden" primarias={primarias} secundarias={secundarias} />;
 }
 
 interface FilaRecepcion { linea_id: number; sku_id: number | ''; piezas: string }

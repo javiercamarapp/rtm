@@ -45,3 +45,8 @@
 .rtm-bb-barra > .rtm-casilla { flex: 0 1 auto; min-width: 0; min-height: 32px; }
 @media (pointer: coarse) { .rtm-bb-barra > .rtm-casilla { min-height: 44px; } }
 @media (max-width: 767px) { .rtm-bb-barra { flex-wrap: wrap; } }
+
+/* Boton ajeno al sistema de items dentro del menu "Mas": se ve como una fila del menu. */
+.rtm-bb-items > .rtm-boton { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 32px; padding: 0 10px; border: 0; background: transparent; font-weight: 500; }
+.rtm-bb-items > .rtm-boton:hover:not(:disabled) { background: var(--rtm-tint); }
+@media (pointer: coarse) { .rtm-bb-items > .rtm-boton { min-height: 44px; } }

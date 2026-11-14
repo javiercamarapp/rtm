@@ -143,6 +143,7 @@ test('orden de compra a Karen: el saldo a favor se aplica, la recepcion por sabo
 
   await page.getByTestId('oc-enviada').click();
   await expect(page.getByTestId('estado-oc')).toContainText('Enviada');
+  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${idOc}`).click();
   await page.getByLabel('Número de guía').fill('TRAYECTO-E2E');
   await page.getByTestId('confirmar').click();

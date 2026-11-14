@@ -139,6 +139,7 @@ test('4 compra a Isaac: orden, confirmar, enviada, guia, llego, recepcion', asyn
   await page.getByTestId('confirmar-oc').click();
   await expect(page.getByTestId('estado-oc')).toContainText('Confirmada');
   await page.getByTestId('oc-enviada').click();
+  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${oc}`).click();
   await page.getByLabel('Número de guía').fill(`CUADRE-OC-${d.sufijo}`);
   await page.getByTestId('confirmar').click();

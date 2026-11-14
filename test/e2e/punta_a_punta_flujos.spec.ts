@@ -156,6 +156,7 @@ test('F02 compra a Isaac: 100 Fresa + 100 Uva a 100.00, guia 450.00 pagada por A
   await page.goto(`/proveedores/compras/${oc1}`);
   await page.getByTestId('oc-enviada').click();
   await expect(page.getByTestId('estado-oc')).toContainText('Enviada');
+  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${oc1}`).click();
   await page.getByLabel('Número de guía').fill(`QA-OC1-${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -325,6 +326,7 @@ test('F06 paquetes por hacer y en trayecto: Uva 30 pz a 150.00 + envio 300 = 4,8
   oc2 = Number(page.url().split('/').pop());
   await page.getByTestId('confirmar-oc').click();
   await page.getByTestId('oc-enviada').click();
+  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${oc2}`).click();
   await page.getByLabel('Número de guía').fill(`QA-OC2-${d.sufijo}`);
   await page.getByTestId('confirmar').click();
