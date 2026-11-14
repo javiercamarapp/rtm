@@ -100,7 +100,7 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
         ]}
       />
 
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="6-6" alinear="inicio">
         <Tarjeta titulo="Datos del pedido">
           <ListaClaveValor columnas={2} items={[
             { k: 'Cliente', v: <Link href={`/clientes/${p.cliente.id}`}>{p.cliente.nombre}</Link> }, { k: 'Origen', v: ORIGEN[p.origen] }, { k: 'Fecha', v: etiquetaFecha(p.fecha_neg) },

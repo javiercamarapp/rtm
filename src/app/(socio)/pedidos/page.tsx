@@ -118,7 +118,7 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
         ]}
       />
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="8-4" alinear="inicio">
         <Tarjeta titulo="Piezas pedidas por semana" descripcion={`Pedidos activos de las últimas ${n} semanas · surtidas esta semana: ${formatearPiezas(surtidas[iSem] ?? 0)}`}>
           {todos.length ? (
             <ColumnasPeriodo titulo="Piezas pedidas por semana" descripcion={`Piezas de los pedidos activos por semana; la última es parcial.`} unidad="Piezas" procedencia="observado" pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: libro de pedidos`} datos={columnasSemana(semanas, pedidas, (v) => formatearPiezas(v), 'piezas')} />
