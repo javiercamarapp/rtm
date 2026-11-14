@@ -34,3 +34,7 @@ GRANT: solo `EXECUTE` a `authenticated` en las tres funciones de arriba; cada un
 ## Archivos compartidos tocados (una linea cada uno)
 
 `src/ui/shell/armazon.tsx` (entrada "Pago renta" del menu del socio), `src/ui/omar/armazon-omar.tsx` y su prueba (entrada en el menu de Omar, al final), `src/aplicacion/operacion/puertos.ts` (accion `registrar_pago_renta` en su propio renglon).
+
+## Por pagar de la empresa (14-nov)
+
+Decision del dueno: la renta de Omar devengada entra en la cifra "Por pagar" como RENGLON APARTE junto a Isaac y Karen. Es solo presentacion: la renta ya esta en el libro (6110 contra 2210) y NO se agrega ningun asiento; `operacion.por_pagar_renglones()` (migracion `20261114700100`) lee la deuda de la empresa con cada proveedor (`operacion.posicion_proveedor`, sin los pedidos a costo del socio de menudeo) y el por pagar de la renta (`operacion.renta_estado`, igual al saldo de la 2210) y los suma. Superficies: `api.por_pagar()`, `api.pulso().por_pagar` (Inicio), consulta del bot `/porpagar`. Omar no la ve (trae costos de proveedores); su renta sigue en `omar.mi_pago_renta()`. El Balance ya muestra la 2210 como su propio renglon de pasivo; Pago renta ya es solo la renta. Las identidades C1 a C24 no cambian (prueba pgTAP `a12_003`).

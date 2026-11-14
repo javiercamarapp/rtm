@@ -52,7 +52,12 @@ create function pg_temp.tipo(p bigint, p_ahora timestamptz) returns text languag
 create function pg_temp.enviar(p text, p_lineas jsonb, p_fc date, p_hc time) returns bigint language plpgsql as $$
 declare v bigint;
 begin
-  perform operacion.ds_crear_pedido('cmp-' || p, pg_temp.cli('CMP Stock Angelo'), p_lineas, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 5, null, null, p_fc, p_hc);
+  -- Sin fecha ya no se acepta al crear (P0436); el caso "sin fecha comprometida" que sigue existiendo es el de pedidos anteriores a la regla, que se simula con la funcion interna.
+  if p_fc is null then
+    perform operacion._ds_crear_pedido_sin_plazo('cmp-' || p, pg_temp.cli('CMP Stock Angelo'), p_lineas, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 5, null, null, p_fc, p_hc);
+  else
+    perform operacion.ds_crear_pedido('cmp-' || p, pg_temp.cli('CMP Stock Angelo'), p_lineas, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 5, null, null, p_fc, p_hc);
+  end if;
   v := (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'cmp-' || p || ':ped');
   perform operacion.confirmar_pedido('cmp-' || p || 'c', v); perform operacion.enviar_pedido('cmp-' || p || 'e', v, null, null, null, true);
   return v;
@@ -62,10 +67,10 @@ create temp table _base as select pg_temp.v03() as v03, pg_temp.neta('Angelo') a
 -- Socio de menudeo: Angelo por omision; solo el mete pedidos a costo
 select is(api.ds_menudeo_config() ->> 'socio_menudeo', 'Angelo', 'el socio de menudeo es Angelo por omision');
 select pg_temp.web('Javier');
-select throws_ok($$select operacion.ds_crear_pedido('cmp-x1', (select id from catalogo.cliente where nombre_norm = 'cmp stock javier'), '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Javier')$$, '42501', null, 'Javier no mete pedidos a costo (solo supervisa)');
-select throws_ok($$select operacion.ds_crear_pedido('cmp-x2', (select id from catalogo.cliente where nombre_norm = 'cmp stock angelo'), '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo')$$, '42501', null, 'ni a nombre de Angelo');
+select throws_ok($$select operacion.ds_crear_pedido('cmp-x1', (select id from catalogo.cliente where nombre_norm = 'cmp stock javier'), '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Javier', null, 0, 0, null, null, null, negocio.hoy() + 7)$$, '42501', null, 'Javier no mete pedidos a costo (solo supervisa)');
+select throws_ok($$select operacion.ds_crear_pedido('cmp-x2', (select id from catalogo.cliente where nombre_norm = 'cmp stock angelo'), '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, null, null, null, negocio.hoy() + 7)$$, '42501', null, 'ni a nombre de Angelo');
 select pg_temp.bot();
-select throws_ok($$select operacion.ds_crear_pedido('cmp-x3', (select id from catalogo.cliente where nombre_norm = 'cmp stock javier'), '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Javier')$$, '42501', null, 'tampoco por el canal del bot para otro socio (el agente verifica el autor)');
+select throws_ok($$select operacion.ds_crear_pedido('cmp-x3', (select id from catalogo.cliente where nombre_norm = 'cmp stock javier'), '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Javier', null, 0, 0, null, null, null, negocio.hoy() + 7)$$, '42501', null, 'tampoco por el canal del bot para otro socio (el agente verifica el autor)');
 select pg_temp.web('Angelo');
 
 -- Pedidos de Angelo con y sin fecha comprometida
@@ -75,6 +80,7 @@ create temp table _p as select
   pg_temp.enviar('a', '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":10}]'::jsonb, negocio.hoy() + 2, '10:00') as a,
   pg_temp.enviar('b', '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":20}]'::jsonb, null, null) as b,
   pg_temp.enviar('c', '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":30}]'::jsonb, negocio.hoy() + 1, null) as c;
+select throws_ok($$select operacion.ds_crear_pedido('cmp-nf', pg_temp.cli('CMP Stock Angelo'), '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":10}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo')$$, 'P0436', null, 'pedido nuevo a costo sin fecha de pago: P0436');
 select is((pg_temp.fila((select a from _p))->>'fecha_compromiso')::date, negocio.hoy() + 2, 'el pedido guarda su fecha comprometida');
 select is(pg_temp.fila((select a from _p))->>'hora_compromiso', '10:00:00', '... y su hora');
 select is(pg_temp.fila((select a from _p))->>'comprometido_por', 'Angelo', '... y quien la comprometio');
@@ -158,7 +164,7 @@ select pg_temp.web('Angelo');
 select api.ds_menudeo_socio_guardar('cmp-m1', 'Javier');
 select is(api.ds_menudeo_config() ->> 'socio_menudeo', 'Javier', 'el parametro socio_menudeo se edita');
 select pg_temp.web('Javier');
-select lives_ok($$select operacion.ds_crear_pedido('cmp-j1', (select id from catalogo.cliente where nombre_norm = 'cmp stock javier'), '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Javier')$$, 'con el parametro en Javier, Javier mete pedidos a costo');
+select lives_ok($$select operacion.ds_crear_pedido('cmp-j1', (select id from catalogo.cliente where nombre_norm = 'cmp stock javier'), '[{"modelo":"CMP Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Javier', null, 0, 0, null, null, null, negocio.hoy() + 7)$$, 'con el parametro en Javier, Javier mete pedidos a costo');
 select api.ds_menudeo_socio_guardar('cmp-m2', 'Angelo');
 select is(api.ds_menudeo_config() ->> 'socio_menudeo', 'Angelo', 'y se regresa a Angelo');
 select pg_temp.web('Angelo');

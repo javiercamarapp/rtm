@@ -44,19 +44,19 @@ create function pg_temp.cli(p text) returns bigint language sql as $$ select id 
 create function pg_temp.ped(p text) returns bigint language sql as $$ select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = $1 $$;
 
 -- (A) Angelo pide 50 piezas a Karen para su stock; Javier 30 a Isaac para el suyo; un cliente compra 40 a Karen
-select operacion.ds_crear_pedido('a2c-a', pg_temp.cli('A2C Stock Angelo'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":50}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo');
+select operacion.ds_crear_pedido('a2c-a', pg_temp.cli('A2C Stock Angelo'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":50}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, null, null, null, negocio.hoy() + 7);
 -- El socio de menudeo es Angelo por omision; para este pedido de Javier se parametriza a Javier (solo el socio de menudeo mete pedidos a costo).
 select pg_temp.como('Javier');
 update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Javier') where id = 1;
-select operacion.ds_crear_pedido('a2c-j', pg_temp.cli('A2C Stock Javier'), '[{"modelo":"A2C Modelo 25K","sabor":"Mango","piezas":30}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Javier');
+select operacion.ds_crear_pedido('a2c-j', pg_temp.cli('A2C Stock Javier'), '[{"modelo":"A2C Modelo 25K","sabor":"Mango","piezas":30}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Javier', null, 0, 0, null, null, null, negocio.hoy() + 7);
 update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Angelo') where id = 1;
 select pg_temp.como('Angelo');
 select operacion.ds_crear_pedido('a2c-c', pg_temp.cli('A2C Cliente'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":40}]'::jsonb, 'karen_directo');
 select is((select precio_cent from operacion.pedido_linea where pedido_id = pg_temp.ped('a2c-a:ped')), 8929::bigint, '(A) a Angelo se le cobra solo el costo de Karen');
 select is((select precio_cent from operacion.pedido_linea where pedido_id = pg_temp.ped('a2c-j:ped')), 9000::bigint, '(A) a Javier solo el costo de Isaac');
-select throws_ok($$select operacion.ds_crear_pedido('a2c-x1', (select id from catalogo.cliente where nombre_norm = 'a2c stock angelo'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, '{}'::jsonb, 'socio_a_costo', 'Angelo')$$, '22023', null, '(A) a costo no admite credito (crearia interes)');
-select throws_ok($$select operacion.ds_crear_pedido('a2c-x2', (select id from catalogo.cliente where nombre_norm = 'a2c stock angelo'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 30000)$$, '22023', null, '(A) a costo no admite envio cobrado');
-select throws_ok($$select operacion.ds_crear_pedido('a2c-x3', (select id from catalogo.cliente where nombre_norm = 'a2c stock angelo'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 100)$$, '22023', null, '(A) ni descuento');
+select throws_ok($$select operacion.ds_crear_pedido('a2c-x1', (select id from catalogo.cliente where nombre_norm = 'a2c stock angelo'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, '{}'::jsonb, 'socio_a_costo', 'Angelo', null, 0, 0, null, null, null, negocio.hoy() + 7)$$, '22023', null, '(A) a costo no admite credito (crearia interes)');
+select throws_ok($$select operacion.ds_crear_pedido('a2c-x2', (select id from catalogo.cliente where nombre_norm = 'a2c stock angelo'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 30000, null, null, null, null, negocio.hoy() + 7)$$, '22023', null, '(A) a costo no admite envio cobrado');
+select throws_ok($$select operacion.ds_crear_pedido('a2c-x3', (select id from catalogo.cliente where nombre_norm = 'a2c stock angelo'), '[{"modelo":"A2C Modelo 25K","sabor":"Fresa","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 100, null, null, null, negocio.hoy() + 7)$$, '22023', null, '(A) ni descuento');
 select operacion.confirmar_pedido('a2c-ac', pg_temp.ped('a2c-a:ped')); select operacion.enviar_pedido('a2c-ae', pg_temp.ped('a2c-a:ped'), null, null, null, true);
 select operacion.confirmar_pedido('a2c-jc', pg_temp.ped('a2c-j:ped')); select operacion.enviar_pedido('a2c-je', pg_temp.ped('a2c-j:ped'), null, null, null, true);
 select operacion.confirmar_pedido('a2c-cc', pg_temp.ped('a2c-c:ped')); select operacion.enviar_pedido('a2c-ce', pg_temp.ped('a2c-c:ped'), null, null, null, true);

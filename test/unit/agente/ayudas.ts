@@ -58,6 +58,7 @@ export function pedido(cliente: string, lineas: Array<[string, number] | [string
     destino_texto: null,
     lineas: lineas.map((l) => ({ modelo_texto: l[0], sabor_texto: l[2] ?? null, piezas: l[1], precio_texto: (l as [string, number, string | null, string])[3] ?? null, fuente_cita: 'cita' })),
     envio_cobrado_centavos: null,
+    plazo_texto: 'de contado', // pruebas generales (el cfg exigirPlazoPedido va apagado); las del plazo obligatorio lo prueban con el cfg encendido
     fuente_cita: 'cita',
     ...extra,
   };

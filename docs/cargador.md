@@ -115,3 +115,20 @@ Costos: la carga no toca Vercel ni GitHub; su unico efecto externo es la base de
 - `supabase/tests/database/a6_001_negocio_hoy_fecha_de_carga.test.sql` (pgTAP).
 - `npm run cargador:prueba`: de extremo a extremo con datos sinteticos sobre una base local recien reseteada con `scripts/cargador/semilla-local.sql` (carga, segunda corrida sin cambios, lote suelto sin cambios, cuadre).
 - Base local propia: `project_id` y puertos distintos (`supabase/config.toml` fuera de commits con `skip-worktree`).
+
+## Plazo pendiente de pedidos a credito (14-nov)
+
+Decision del dueno: todo pedido a credito exige plazo (ver `docs/plazo-obligatorio.md`) y los pedidos a credito enviados que ya existian sin plazo reciben fecha de pago 2026-11-20. Script: `scripts/cargador/plazo-pendiente.mjs`. Se corre DESPUES del despliegue de la migracion `20261114700000` y no forma parte de los lotes del cargador.
+
+- Escribe solo por la funcion oficial `api.acordar_plazo` (evento `plazo_acordado` con actor y clave `plazo-pendiente:<folio>:<fecha>`). Nunca con instrucciones directas sobre las tablas; cada pedido va en su propia transaccion.
+- El plazo vive en dias (`operacion.pedido.plazo_dias`) y el vencimiento de Cuentas por cobrar es `fecha_envio + plazo_dias`. Por eso los dias se cuentan desde la fecha de ENVIO (no desde la del pedido): el vencimiento resultante es exactamente la fecha elegida y el script lo comprueba al aplicar.
+- Entran TODOS los pedidos enviados con saldo y sin plazo, tambien los pedidos a costo del socio de menudeo que no tienen fecha comprometida (la decision del dueno es que ninguno quede abierto sin plazo). Un pedido a costo con fecha comprometida propia conserva esa fecha y solo se informa. Los pagados (saldo 0) y los que aun no se envian se informan, no se modifican.
+- Un pedido con envio igual o posterior a la fecha elegida (plazo <= 0) no se toca y se lista aparte para decidir a mano.
+- Idempotente: lo que ya tiene plazo no se toca; una segunda corrida aplica 0.
+
+Comandos (con `DATABASE_URL` de la base destino; ejecuta el dueno con `!`):
+
+```
+DATABASE_URL=... node scripts/cargador/plazo-pendiente.mjs --verificar   # solo lectura: cantidad y folios, sin datos personales
+DATABASE_URL=... node scripts/cargador/plazo-pendiente.mjs --aplicar     # escribe (--fecha 2026-11-20 por omision, --actor Javier)
+```

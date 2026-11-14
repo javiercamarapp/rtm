@@ -284,6 +284,10 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
       break;
     case 'pedido':
       l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, ...lineasDe(i.lineas));
+      if (i.plazo_dias !== undefined && i.plazo_dias !== null) {
+        l.push(i.plazo_dias === 0 ? 'Plazo: de contado' : r.servidor(`Plazo: ${i.plazo_dias} dias a credito, contados desde el ENVIO del pedido`));
+        if (i.plazo_fecha_dicha) l.push(r.servidor(`Dijiste el ${formatearFechaPago(i.plazo_fecha_dicha, null).replace(' (sin hora)', '')}: ese dia solo vence si el pedido se envia hoy; si se envia despues, vence ${i.plazo_dias} dias despues del envio`));
+      }
       break;
     case 'pedido_envio':
       l.push(`Pedido: ${r.citaUsuario(i.pedido_folio ?? '')}`, `Nuevo estado: ${i.estado}`);
@@ -374,6 +378,21 @@ export function comentarioIgualacion(ig: Igualacion): MensajeListo {
 export function preguntaCuandoPagas(): MensajeListo {
   const r = new RegistroCifras();
   return { texto: r.servidor('¿Cuándo pagas este pedido? Escribe la fecha y la hora, por ejemplo «el viernes», «mañana a las 5 de la tarde» o «20 de noviembre». Si todavía no hay fecha, escribe «sin fecha». (Hora de Mérida.)'), registro: r };
+}
+
+export function fechaObligatoria(): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: r.servidor('Todo pedido necesita fecha de pago, y no lo registro sin ella. Dime cuándo paga, por ejemplo «el viernes», «mañana a las 5 de la tarde» o «20 de noviembre». (Hora de Mérida.)'), registro: r };
+}
+
+export function preguntaPlazoPedido(): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: r.servidor('Falta el plazo de pago de este pedido, y no lo registro sin él. ¿Es de contado o a cuántos días paga? Escribe por ejemplo «de contado», «a 15 días» o «el viernes».'), registro: r };
+}
+
+export function plazoNoEntendido(): MensajeListo {
+  const r = new RegistroCifras();
+  return { texto: r.servidor('No entendí el plazo. Dime «de contado», un número de días (por ejemplo «a 15 días», de 1 a 365) o una fecha como «el viernes».'), registro: r };
 }
 
 export function preguntaCuandoReprogramas(folio: string): MensajeListo {

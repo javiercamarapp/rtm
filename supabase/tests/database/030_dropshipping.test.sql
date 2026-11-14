@@ -195,7 +195,7 @@ select throws_ok($$select operacion.ds_pagar_proveedor('ds-c7', 'Isaac', 100, 's
 -- ---------------------------------------------------------------------------
 -- (d) Credito: 10 % de UNA semana, simple, monto pactado fijo; otro porcentaje o monto por venta
 -- ---------------------------------------------------------------------------
-select operacion.ds_crear_pedido('ds-d', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Menta","piezas":200}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Cuatro'), '{}'::jsonb);
+select operacion.ds_crear_pedido('ds-d', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Menta","piezas":200}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Cuatro'), '{"semanas":1}'::jsonb);
 create temp table _d as select resultado as r from seguridad.operacion where clave = 'ds-d';
 select is((select (r->>'interes_cent')::bigint from _d), 260000::bigint, '(d) 200 x 130.00 = 26,000.00 a una semana al 10 % => interes 2,600.00');
 select is((select (r->>'total_credito_cent')::bigint from _d), 2860000::bigint, '(d) total pactado 28,600.00');
@@ -215,7 +215,7 @@ select is(pg_temp.fallan(), '', '(d) libro conciliado tras cobrar el credito');
 select operacion.ds_crear_pedido('ds-d2', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Mora","piezas":10}]'::jsonb, 'karen_directo', null, jsonb_build_object('tasa_semanal_bp', 500, 'fecha_pago', (negocio.hoy() + 15)::text));
 select is((select semanas from operacion.pedido_credito where pedido_id = pg_temp.ped('ds-d2:ped')), 3, '(d) 15 dias => 3 semanas (hacia arriba)');
 select is((select interes_cent from operacion.pedido_credito where pedido_id = pg_temp.ped('ds-d2:ped')), 19500::bigint, '(d) 10 x 130.00 = 1,300.00 x 5 % x 3 semanas = 195.00');
-select operacion.ds_crear_pedido('ds-d3', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Limon","piezas":10}]'::jsonb, 'karen_directo', null, '{"interes_cent": 12345}'::jsonb);
+select operacion.ds_crear_pedido('ds-d3', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Limon","piezas":10}]'::jsonb, 'karen_directo', null, '{"interes_cent": 12345, "semanas": 1}'::jsonb);
 select is((select interes_cent || modo from operacion.pedido_credito where pedido_id = pg_temp.ped('ds-d3:ped')), '12345fijo', '(d) monto pactado fijo por venta');
 select is((select recargo_cent from operacion.pedido where id = pg_temp.ped('ds-d3:ped')), 12345::bigint, '(d) y es el recargo del pedido');
 select operacion.ds_crear_pedido('ds-d4', pg_temp.cli('DS Cliente Dos'), '[{"modelo":"DS Modelo 25K","sabor":"Cereza","piezas":10}]'::jsonb, 'karen_directo', null, null);
@@ -227,12 +227,12 @@ select is((select count(*) from operacion.pedido_credito where pedido_id = pg_te
 -- El socio de menudeo es Angelo por omision; para este pedido de Javier se parametriza a Javier (solo el socio de menudeo mete pedidos a costo).
 select pg_temp.como('Javier');
 update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Javier') where id = 1;
-select operacion.ds_crear_pedido('ds-e', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":50}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Cinco'), null, 'socio_a_costo', 'Javier');
+select operacion.ds_crear_pedido('ds-e', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":50}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Cinco'), null, 'socio_a_costo', 'Javier', null, 0, 0, null, null, null, negocio.hoy() + 7);
 update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Angelo') where id = 1;
 select pg_temp.como('Angelo');
 select is((select (r->>'margen_estimado_cent')::bigint from seguridad.operacion o, lateral (select o.resultado r) q where o.clave = 'ds-e'), 0::bigint, '(e) a costo: margen cero');
 select is((select precio_cent from operacion.pedido_linea where pedido_id = pg_temp.ped('ds-e:ped')), 8929::bigint, '(e) el precio es exactamente el costo de Karen');
-select throws_ok($$select operacion.ds_crear_pedido('ds-e2', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', null)$$, '22023', null, '(e) la venta a costo exige el socio');
+select throws_ok($$select operacion.ds_crear_pedido('ds-e2', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', null, null, 0, 0, null, null, null, negocio.hoy() + 7)$$, '22023', null, '(e) la venta a costo exige el socio');
 select operacion.confirmar_pedido('ds-e-c', pg_temp.ped('ds-e:ped')); select operacion.enviar_pedido('ds-e-e', pg_temp.ped('ds-e:ped'), null, null, null, true);
 select is((select utilidad_cent from operacion.v_ds_utilidad where pedido_id = pg_temp.ped('ds-e:ped')), 0::bigint, '(e) no genera utilidad');
 select is((select count(*) from operacion.pedido_aviso where pedido_id = pg_temp.ped('ds-e:ped') and codigo = 'venta_bajo_costo'), 1::bigint, '(e) el aviso de venta a costo se mostro y se acepto al enviar');

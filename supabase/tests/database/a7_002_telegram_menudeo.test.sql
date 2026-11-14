@@ -85,9 +85,10 @@ select is((select count(*)::int from agente.hecho where tipo = 'pedido'), 1, '..
 select is((select (select count(*)::int from catalogo.cliente where nombre_norm = 'menudeo angelo')), 1, 'el cliente interno "Menudeo Angelo" existe una vez');
 -- fecha pasada rechazada por la base (validacion adicional a la del codigo)
 select throws_ok($$ select agente.ejecutar_ext('mt:p2', 'pedido_menudeo', pg_temp.pedido_args(negocio.hoy() - 30, null)) $$, '23514', null, 'la base rechaza una fecha comprometida pasada');
--- sin fecha: queda como alerta
-create temp table _p2 as select agente.ejecutar_ext('mt:p3', 'pedido_menudeo', pg_temp.pedido_args(null, null)) as j;
-select is((select fecha_compromiso from operacion.ds_pedido_compromiso where pedido_id = (select (j ->> 'pedido_id')::bigint from _p2)), null, 'sin fecha: queda sin fecha comprometida (alerta)');
+-- sin fecha: ya no se acepta (decision del dueno 14-nov: ningun pedido nuevo sin plazo)
+select throws_ok($$ select agente.ejecutar_ext('mt:p3x', 'pedido_menudeo', pg_temp.pedido_args(null, null)) $$, 'P0436', null, 'sin fecha de pago el pedido a costo no se crea');
+create temp table _p2 as select agente.ejecutar_ext('mt:p3', 'pedido_menudeo', pg_temp.pedido_args(negocio.hoy() + 1, null)) as j;
+select is((select plazo_dias from operacion.pedido where id = (select (j ->> 'pedido_id')::bigint from _p2)), 1, 'el pedido a costo queda con plazo = dias hasta su fecha de pago');
 
 -- enviar (lo hace /enviado, funcion existente) para poder pagar
 select set_config('rtm.canal', 'importacion', true);

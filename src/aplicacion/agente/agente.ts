@@ -11,7 +11,7 @@ import { parsearComando } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN, evaluarDeshacer } from '@/dominio/agente/deshacer';
 import { debeProcesarConIa, declaraCapitalExpreso, detectarInyeccion, redactarContactos, sanitizar } from '@/dominio/agente/entrada';
 import { CATALOGO_INTENCIONES, confirmacionDe } from '@/dominio/agente/catalogo_intenciones';
-import { esEscritura, exigeConfirmacion, type IPedidoMenudeo, type Intencion, type RespuestaExtractor, type TipoIntencion } from '@/dominio/agente/intenciones';
+import { esEscritura, exigeConfirmacion, type IPedido, type IPedidoMenudeo, type Intencion, type RespuestaExtractor, type TipoIntencion } from '@/dominio/agente/intenciones';
 import { cadenaParaRol, peorCasoTokens } from '@/dominio/agente/modelos';
 import { permisoParaIntencion } from '@/dominio/agente/permisos';
 import { ALERTA_PORCENTAJE, type AvisoPresupuesto } from '@/dominio/agente/presupuesto';
@@ -19,6 +19,7 @@ import type { Candidato } from '@/dominio/agente/resolutor';
 import type { ChatsRegistrados, FuenteMensaje, Miembro, Persona } from '@/dominio/agente/tipos';
 import { fechaNeg } from '@/dominio/calendario';
 import { dijoSinFecha, interpretarFechaPago, type OpcionFecha } from '@/dominio/agente/fecha_pago';
+import { interpretarPlazo } from '@/dominio/agente/plazo_pedido';
 import { normalizar } from '@/dominio/catalogo/normalizar';
 import { Comunicador, verificarMensajeOmar } from './comunicador';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
@@ -61,6 +62,8 @@ export interface ConfigAgente {
   confirmarMovimientos: boolean;
   /** Produccion: un renglon sin sabor se pregunta (la base exige sku). En simulacion sin base se deja en false. */
   exigirSabor: boolean;
+  /** Decision del dueno (14-nov): un pedido sin plazo NO se escribe; el bot pregunta. Produccion lo enciende; la base lo exige de todos modos (P0436). */
+  exigirPlazoPedido: boolean;
   /** Limite de frecuencia por chat: mensajes procesados por minuto (0 = sin limite). */
   limiteMensajesPorMinuto: number;
   /** Minutos que espera el bot la respuesta de una pregunta abierta ("¿cuando pagas?"). */
@@ -77,6 +80,7 @@ export const CONFIG_POR_OMISION: ConfigAgente = {
   maxOpciones: 4,
   confirmarMovimientos: true,
   exigirSabor: false,
+  exigirPlazoPedido: false,
   limiteMensajesPorMinuto: 20,
   caducaEsperaMin: 30,
   maxIntentosFecha: 3,
@@ -726,6 +730,7 @@ export class AgenteTelegram {
         continue;
       }
       // Las frases de fecha vienen del mensaje del socio (si el modelo las invento, se ignoran) y las interpreta el codigo.
+      if (declarada.tipo === 'pedido' && (declarada.plazo_texto ?? null) !== null && ctx.verificarCifras && !contieneTexto(ctx.texto, declarada.plazo_texto!)) declarada = { ...declarada, plazo_texto: null };
       if (declarada.tipo === 'pedido_menudeo' && declarada.cuando_texto !== null && ctx.verificarCifras && !contieneTexto(ctx.texto, declarada.cuando_texto)) declarada = { ...declarada, cuando_texto: null };
       if (declarada.tipo === 'pago_pedido_menudeo' && declarada.fecha_texto !== null) {
         if (ctx.verificarCifras && !contieneTexto(ctx.texto, declarada.fecha_texto)) declarada = { ...declarada, fecha_texto: null };
@@ -822,6 +827,16 @@ export class AgenteTelegram {
       return;
     }
 
+    // Pedido de cliente: el plazo (contado = 0 dias, o dias a credito) es obligatorio y lo calcula el codigo; sin el, el bot pregunta ANTES de escribir.
+    if (intencion.tipo === 'pedido' && !estado.vistoBueno) {
+      const e2 = await this.completarPlazoPedido(estado, chats);
+      if (e2 === null) return;
+      if (e2 !== estado) {
+        await this.resolverYEjecutar(e2, chats);
+        return;
+      }
+    }
+
     if (this.cfg.confirmarMovimientos && exigeConfirmacion(intencion.tipo) && !estado.vistoBueno) {
       await this.pedirConfirmacion(estado, a, chats);
       return;
@@ -915,13 +930,35 @@ export class AgenteTelegram {
 
   private async completarFechaMenudeo(estado: EstadoAccion, chats: ChatsRegistrados): Promise<EstadoAccion | null> {
     const i = estado.intencion as IPedidoMenudeo;
-    if ((i.fecha_compromiso ?? null) !== null || i.sin_fecha === true) return estado;
-    if (i.cuando_texto === null) {
-      await this.abrirPregunta(estado.autor, 'fecha_pago', { estado, intentos: 0 }, chats, P.preguntaCuandoPagas());
+    if ((i.fecha_compromiso ?? null) !== null) return estado;
+    // Decision del dueno (14-nov): ningun pedido nuevo queda sin plazo. "Sin fecha" ya no se acepta: se vuelve a preguntar.
+    if (i.sin_fecha === true || i.cuando_texto === null || dijoSinFecha(i.cuando_texto)) {
+      await this.abrirPregunta(estado.autor, 'fecha_pago', { estado: { ...estado, intencion: { ...i, sin_fecha: false, cuando_texto: null } }, intentos: 0 }, chats, i.sin_fecha === true || i.cuando_texto !== null ? P.fechaObligatoria() : P.preguntaCuandoPagas());
       return null;
     }
-    if (dijoSinFecha(i.cuando_texto)) return { ...estado, intencion: { ...i, sin_fecha: true } };
     return this.aplicarFechaPedido(estado, i.cuando_texto, 0, chats);
+  }
+
+  private async completarPlazoPedido(estado: EstadoAccion, chats: ChatsRegistrados): Promise<EstadoAccion | null> {
+    const i = estado.intencion as IPedido;
+    if (!this.cfg.exigirPlazoPedido || (i.plazo_dias ?? null) !== null) return estado;
+    if ((i.plazo_texto ?? null) === null) {
+      await this.abrirPregunta(estado.autor, 'fecha_pago', { estado, intentos: 0 }, chats, P.preguntaPlazoPedido());
+      return null;
+    }
+    return this.aplicarPlazoPedido(estado, i.plazo_texto!, 0, chats);
+  }
+
+  private async aplicarPlazoPedido(estado: EstadoAccion, texto: string, intentos: number, chats: ChatsRegistrados): Promise<EstadoAccion | null> {
+    const i = estado.intencion as IPedido;
+    const r = interpretarPlazo(texto, this.d.reloj());
+    if (r.tipo === 'ok') return { ...estado, intencion: { ...i, plazo_dias: r.dias, plazo_fecha_dicha: r.fecha_dicha ?? null } };
+    if (intentos + 1 >= this.cfg.maxIntentosFecha) {
+      await this.responder(estado.autor, chats, P.rechazo('No pude entender el plazo. No registre el pedido: mandalo de nuevo con el plazo (por ejemplo /pedido Cliente | modelo 24 | plazo contado).'));
+      return null;
+    }
+    await this.abrirPregunta(estado.autor, 'fecha_pago', { estado: { ...estado, intencion: { ...i, plazo_texto: null } }, intentos: intentos + 1 }, chats, P.plazoNoEntendido());
+    return null;
   }
 
   private async abrirPregunta(autor: Miembro, tipo: TipoEspera, payload: Record<string, unknown>, chats: ChatsRegistrados, mensaje: MensajeListo): Promise<void> {
@@ -958,8 +995,16 @@ export class AgenteTelegram {
     if (espera.tipo === 'fecha_pago') {
       const p = espera.payload as { estado?: EstadoAccion; intentos?: number };
       if (!p.estado) return { estado: 'ignorado', motivo: 'espera_invalida' };
-      const i = p.estado.intencion as IPedidoMenudeo;
-      const sig = dijoSinFecha(texto) ? { ...p.estado, intencion: { ...i, sin_fecha: true } } : await this.aplicarFechaPedido(p.estado, texto, p.intentos ?? 0, chats);
+      if (p.estado.intencion.tipo === 'pedido') {
+        const sigP = await this.aplicarPlazoPedido(p.estado, texto, p.intentos ?? 0, chats);
+        if (sigP) await this.resolverYEjecutar(sigP, chats);
+        return { estado: 'procesado', acciones: 1 };
+      }
+      if (dijoSinFecha(texto)) {
+        await this.abrirPregunta(autor, 'fecha_pago', { estado: p.estado, intentos: p.intentos ?? 0 }, chats, P.fechaObligatoria());
+        return { estado: 'procesado', acciones: 1 };
+      }
+      const sig = await this.aplicarFechaPedido(p.estado, texto, p.intentos ?? 0, chats);
       if (sig) await this.resolverYEjecutar(sig, chats);
       return { estado: 'procesado', acciones: 1 };
     }

@@ -1,3 +1,4 @@
+import type { PorPagar } from '../operacion/por_pagar';
 export type SeveridadAviso = 'C' | 'I' | 'F';
 
 export interface NotificacionCampana {
@@ -12,6 +13,8 @@ export interface ItemTuTurno {
 export interface TuTurno { items: ItemTuTurno[] }
 
 export interface Pulso {
+  /** Por pagar de la empresa con renglones (Isaac, Karen, renta de Omar) y total; la renta ya esta en el libro. */
+  por_pagar?: PorPagar | null;
   por_pagar_isaac_cent: bigint | null;
   /** Pedidos a costo del socio de menudeo pendientes de pago con Isaac (aparte: no son deuda de la empresa). */
   por_pagar_isaac_socio_cent?: bigint | null;

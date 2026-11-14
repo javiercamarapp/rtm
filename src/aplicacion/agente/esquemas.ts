@@ -31,6 +31,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     destino_texto: textoONulo(40),
     lineas: z.array(lineaPedido).min(1).max(MAX_LINEAS),
     envio_cobrado_centavos: z.number().int().min(0).max(200_000).nullable(),
+    plazo_texto: textoONulo(60).optional(),
     fuente_cita: cita,
   }),
   z.strictObject({

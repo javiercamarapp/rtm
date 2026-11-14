@@ -49,6 +49,7 @@ async function crearPedido(page: Page, piezas: string, sabor: 'Fresa' | 'Uva', e
   await expect(page.getByTestId('precio')).toHaveValue('150.00');
   await page.getByTestId('agregar-renglon').click();
   await page.getByTestId('envio').fill(envio);
+  await page.getByTestId('condicion-pago').selectOption('contado');
   await page.getByTestId('crear-pedido').click();
   await page.waitForURL(/\/pedidos\/\d+$/);
   return Number(page.url().split('/').pop());

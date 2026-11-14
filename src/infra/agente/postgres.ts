@@ -184,7 +184,7 @@ export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string)
         // Dinero propio de un socio que paga a un proveedor: REEMBOLSO por omision; capital solo si el socio lo declaro expresamente (la base rechaza la combinacion con la funcion aun no integrada).
         ...(i.intencion === 'capital' && (i.pagado_por === 'angelo' || i.pagado_por === 'javier') && a.resoluciones.clienteId === null ? { declara_capital: true } : {}) } };
     case 'pedido':
-      return { hub: 'ejecutar_ext', tipo: 'pedido_crear', titulo: 'Pedido creado y confirmado', args: { ...base, cliente_id: Number(a.resoluciones.clienteId), lineas: i.lineas.map((l, n) => ({ ...lineasSku()[n], precio_cent: l.precio_texto === null ? null : precioDeTexto(l.precio_texto) })), envio_cent: i.envio_cobrado_centavos ?? 0 } };
+      return { hub: 'ejecutar_ext', tipo: 'pedido_crear', titulo: 'Pedido creado y confirmado', args: { ...base, cliente_id: Number(a.resoluciones.clienteId), lineas: i.lineas.map((l, n) => ({ ...lineasSku()[n], precio_cent: l.precio_texto === null ? null : precioDeTexto(l.precio_texto) })), envio_cent: i.envio_cobrado_centavos ?? 0, plazo_dias: i.plazo_dias ?? null } };
     case 'pedido_envio':
       return { hub: 'ejecutar_ext', tipo: i.estado === 'enviado' ? 'pedido_enviar' : 'pedido_entregar', titulo: i.estado === 'enviado' ? 'Pedido marcado como enviado' : 'Pedido marcado como entregado', args: { ...base, pedido_folio: i.pedido_folio, guia: i.guia_texto, paqueteria: i.paqueteria_texto, aceptar_avisos: ctx.confirmado } };
     case 'pedido_cancelar':
@@ -424,6 +424,7 @@ export class NegocioAgenteDb implements NegocioAgente {
     else if (c.consulta === 'estado_cuenta_socio') j = await q('estado_socio', null, c.sujeto_texto);
     else if (c.consulta === 'utilidad') j = await q('utilidad', null, c.periodo ?? 'mes');
     else if (c.consulta === 'cartera') j = await q('cartera', null, null);
+    else if (c.consulta === 'por_pagar') j = await q('por_pagar', null, null);
     if (!j) return { titulo: 'Eso todavía no lo consulto desde Telegram', lineas: [{ tipo: 'texto', etiqueta: 'Dónde verlo', texto: 'En el software, en la sección correspondiente.' }] };
     return { titulo: j.titulo, lineas: aCifras(j.lineas) };
   }

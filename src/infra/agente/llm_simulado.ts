@@ -219,6 +219,10 @@ export function interpretarHeuristico(autor: 'angelo' | 'javier' | 'omar', texto
     return respuesta([{ tipo: 'consulta', consulta: 'cartera', modelo_texto: null, sabor_texto: null, sujeto_texto: null, folio: null, periodo: null }]);
   }
 
+  if (/(cuanto debemos|por pagar|lo que debemos)/.test(n)) {
+    return respuesta([{ tipo: 'consulta', consulta: 'por_pagar', modelo_texto: null, sabor_texto: null, sujeto_texto: null, folio: null, periodo: null }]);
+  }
+
   // Orden de compra: "pidele a Karen 100 nexa 50k y 50 waka icon"
   if ((m = /^(?:pidele|pide)\s+a\s+(karen|vapemate|isaac)\s+(.+)$/i.exec(s))) {
     const ls = lineasDe(m[2]!);

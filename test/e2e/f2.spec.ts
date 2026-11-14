@@ -32,6 +32,7 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   await page.getByTestId('agregar-renglon').click();
   await expect(page.getByRole('list', { name: 'Renglones agregados' })).toContainText('50 pz a $150.00');
   await expect(page.getByTestId('envio')).toHaveValue('300.00');
+  await page.getByTestId('condicion-pago').selectOption('contado');
   await page.getByTestId('crear-pedido').click();
   await page.waitForURL(/\/pedidos\/\d+$/);
   const idPedido = Number(page.url().split('/').pop());

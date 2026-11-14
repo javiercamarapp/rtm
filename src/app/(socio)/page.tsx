@@ -1,3 +1,4 @@
+import { presentarPorPagar } from '@/dominio/operacion/por_pagar';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { exigirSocio } from '@/composicion/acceso';
@@ -77,6 +78,11 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
     nota: <span className="sv-inicio" data-testid="inicio-valuacion-nota"><span className="sv-linea" data-testid="inicio-valuacion-comparacion">{tv.comparacion}</span><span className="sv-accion" data-testid="inicio-valuacion-faltan">{tv.faltan}</span>{tv.indicaciones.length > 0 ? tv.indicaciones.map((t, i) => <span key={i} className="sv-accion" data-testid="inicio-valuacion-accion">{t}</span>) : tv.accion && <span className="sv-accion" data-testid="inicio-valuacion-accion">{tv.accion}</span>}</span>,
   });
 
+  // POR PAGAR: Isaac + Karen + renta de Omar, cada renglon aparte y el total con todos (la renta ya esta en el libro; aqui solo se presenta).
+  const pp = presentarPorPagar(pulso?.por_pagar);
+  const celdaPorPagar = { id: 'porpagar', etiqueta: 'Por pagar', valor: pp.texto, href: '/proveedores', ayuda: 'Lo que la empresa debe: Isaac, Karen y la renta de bodega de Omar, cada uno por separado. El total los suma.', testid: 'inicio-porpagar', categoria: 5 as const, nota: pp.detalle ?? undefined, partes: pp.partes.length > 0 ? pp.partes : undefined };
+  const pulsoConPorPagar = pulsoCeldas.flatMap((c) => (c.id === 'isaac' ? [c, celdaPorPagar] : [c]));
+
   const reponer = (inv?.modelos ?? []).filter((m) => m.estado !== null && ['urge', 'brevedad', 'siguiente'].includes(m.estado)).sort((a, b) => URGENCIA_COBERTURA[a.estado!] - URGENCIA_COBERTURA[b.estado!] || (a.cobertura_dias ?? 0) - (b.cobertura_dias ?? 0)).slice(0, 6);
   const conCobertura = (inv?.modelos ?? []).filter((m) => m.cobertura_dias !== null);
   const coberturaMedia = conCobertura.length ? conCobertura.reduce((a, m) => a + (m.cobertura_dias ?? 0), 0) / conCobertura.length : null;
@@ -108,7 +114,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
           </>
         }
       />
-      <KpiLinea etiquetaAria="Indicadores del pulso" celdas={pulsoCeldas} />
+      <KpiLinea etiquetaAria="Indicadores del pulso" celdas={pulsoConPorPagar} />
       <KpiLinea
         etiquetaAria="Indicadores de la operación"
         celdas={[

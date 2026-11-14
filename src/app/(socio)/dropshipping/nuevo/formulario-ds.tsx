@@ -89,6 +89,8 @@ export function FormularioDs({ clienteId, clienteNombre, origen, catalogo, socio
     if (dest.nombre.trim() && !/^\d{5}$/.test(dest.cp.trim())) return setLocal('El código postal del destinatario debe tener 5 dígitos.');
     const tieneDest = dest.nombre.trim() !== '' || dest.calle_numero.trim() !== '';
     if (tieneDest && (!dest.nombre.trim() || !dest.calle_numero.trim() || !dest.municipio.trim() || !dest.estado.trim())) return setLocal('El destinatario necesita nombre, calle y número, código postal, municipio y estado.');
+    if (aCosto && !fechaCompromiso) return setLocal('Indica la fecha de pago del pedido a costo: todo pedido necesita plazo y no se crea sin ella.');
+    if (credito && !aCosto && !(fechaPago !== '' || Number(semanas) >= 1)) return setLocal('Un crédito necesita fecha de pago o al menos una semana. Si es de contado, desmarca la venta a crédito.');
     setLocal(null);
     const cr = credito && !aCosto ? { ...(fechaPago ? { fecha_pago: fechaPago } : { semanas: Number(semanas || '1') }), tasa_semanal_bp: tasaBp, ...(fijoC !== null ? { interes_cent: fijoC } : {}) } : null;
     correr('ds_crear_pedido', {
@@ -120,7 +122,7 @@ export function FormularioDs({ clienteId, clienteNombre, origen, catalogo, socio
             </select>
           </label>
           {aCosto && <p className="rtm-etiqueta-campo">Socio<span className="rtm-campo" data-testid="ds-socio">{socioMenudeo}</span></p>}
-          {aCosto && <label className="rtm-etiqueta-campo">Fecha comprometida de pago (opcional)<input className="rtm-campo" type="date" value={fechaCompromiso} onChange={(e) => setFechaCompromiso(e.target.value)} data-testid="ds-fecha-compromiso" /></label>}
+          {aCosto && <label className="rtm-etiqueta-campo">Fecha de pago (obligatoria)<input className="rtm-campo" type="date" value={fechaCompromiso} onChange={(e) => setFechaCompromiso(e.target.value)} data-testid="ds-fecha-compromiso" /></label>}
           {aCosto && fechaCompromiso !== '' && <label className="rtm-etiqueta-campo">Hora (opcional)<input className="rtm-campo" type="time" value={horaCompromiso} onChange={(e) => setHoraCompromiso(e.target.value)} data-testid="ds-hora-compromiso" /></label>}
         </div>
         {aCosto && <p className="rtm-nota">Solo {socioMenudeo} mete pedidos a costo para su menudeo (Playa del Carmen); el otro socio los supervisa. Se cobra solo el costo del proveedor: ingreso igual al costo, utilidad cero. Si no fijas fecha comprometida de pago, el pedido se muestra «sin fecha comprometida» como alerta.</p>}

@@ -48,13 +48,13 @@ create function pg_temp.neta(p text) returns bigint language sql as $$ select (x
 create temp table _base as select pg_temp.v03() as v03, pg_temp.neta('Angelo') as na, pg_temp.neta('Javier') as nj, (select count(*) from operacion.aportacion_socio) as ap;
 
 -- Tres pedidos de Angelo y uno de Javier (a costo)
-select operacion.ds_crear_pedido('a2m-1', pg_temp.cli('A2M Stock Angelo'), '[{"modelo":"A2M Modelo 25K","sabor":"Fresa","piezas":30},{"modelo":"A2M Modelo 25K","sabor":"Mango","piezas":20}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 2);
-select operacion.ds_crear_pedido('a2m-2', pg_temp.cli('A2M Stock Angelo'), '[{"modelo":"A2M Modelo 25K","sabor":"Fresa","piezas":30}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 1);
-select operacion.ds_crear_pedido('a2m-3', pg_temp.cli('A2M Stock Angelo'), '[{"modelo":"A2M Modelo 25K","sabor":"Mango","piezas":20}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo');
+select operacion.ds_crear_pedido('a2m-1', pg_temp.cli('A2M Stock Angelo'), '[{"modelo":"A2M Modelo 25K","sabor":"Fresa","piezas":30},{"modelo":"A2M Modelo 25K","sabor":"Mango","piezas":20}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 2, null, null, negocio.hoy() + 7);
+select operacion.ds_crear_pedido('a2m-2', pg_temp.cli('A2M Stock Angelo'), '[{"modelo":"A2M Modelo 25K","sabor":"Fresa","piezas":30}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 1, null, null, negocio.hoy() + 7);
+select operacion.ds_crear_pedido('a2m-3', pg_temp.cli('A2M Stock Angelo'), '[{"modelo":"A2M Modelo 25K","sabor":"Mango","piezas":20}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, null, null, null, negocio.hoy() + 7);
 -- El socio de menudeo es Angelo por omision; para este pedido de Javier se parametriza a Javier (solo el socio de menudeo mete pedidos a costo).
 select pg_temp.como('Javier');
 update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Javier') where id = 1;
-select operacion.ds_crear_pedido('a2m-4', pg_temp.cli('A2M Stock Javier'), '[{"modelo":"A2M Modelo 25K","sabor":"Fresa","piezas":10}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Javier');
+select operacion.ds_crear_pedido('a2m-4', pg_temp.cli('A2M Stock Javier'), '[{"modelo":"A2M Modelo 25K","sabor":"Fresa","piezas":10}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Javier', null, 0, 0, null, null, null, negocio.hoy() + 7);
 update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Angelo') where id = 1;
 select pg_temp.como('Angelo');
 select is((api.ds_menudeo('Angelo')->'totales'->>'pendiente_cent')::bigint, 0::bigint, 'borradores: nada pendiente aun (no comprometen)');

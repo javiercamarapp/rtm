@@ -87,7 +87,7 @@ for (const tema of TEMAS) {
       await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page).toHaveURL(/aviso=1/);
       await page.goto(`/pedidos/nuevo?cliente=${d.clienteId}`);
-      for (const id of ['modelo', 'sabor', 'piezas', 'precio', 'motivo', 'agregar-renglon', 'envio', 'crear-pedido']) await expect(page.getByTestId(id), `campo ${id}`).toBeVisible();
+      for (const id of ['modelo', 'sabor', 'piezas', 'precio', 'motivo', 'agregar-renglon', 'envio', 'condicion-pago', 'crear-pedido']) await expect(page.getByTestId(id), `campo ${id}`).toBeVisible();
       await capturar(page, info, tema, 'pedido-nuevo');
     });
 
