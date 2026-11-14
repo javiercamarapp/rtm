@@ -723,6 +723,13 @@ export class NegocioSimulado implements NegocioAgente {
       por_socio: { Angelo: { entregar_cent: 3547500n, valuacion_tras_entregar_cent: 14238539n, aportar_cent: 1244691n }, Javier: { entregar_cent: 0n, valuacion_tras_entregar_cent: 15483230n, aportar_cent: 0n } },
       diferencia_libro_cent: 4792191n, coincide_con_libro: true, regla: '',
     },
+    banner: {
+      activo: true, igualados: false, exacto: false, tolerancia_cent: 1n, faltan_cent: 4792191n, mayor: 'Javier', menor: 'Angelo', neteo_cent: 0n, cuadra: true, regla: '',
+      por_socio: {
+        Angelo: { entregar_cent: 3547500n, aportar_cent: 1244691n, dias_fondos: 4, desde: '2026-11-10', entregado_cent: 0n, entrega_total_cent: 3547500n, progreso_bp: null, entregas: [] },
+        Javier: { entregar_cent: 0n, aportar_cent: 0n, dias_fondos: null, desde: null, entregado_cent: 0n, entrega_total_cent: 0n, progreso_bp: null, entregas: [] },
+      },
+    },
     retiros_desiguales: false, diferencia_retiros_cent: 0n, retiro_mas: null,
   };
 
