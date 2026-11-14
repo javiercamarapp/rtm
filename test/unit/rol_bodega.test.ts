@@ -84,6 +84,9 @@ describe('parsers de bodega: lista blanca', () => {
     ], por_guardar: [{ modelo: 'M', sabor: 'S', piezas: 10 }] });
     expect(l.compras).toHaveLength(1);
     expect(JSON.stringify(l)).not.toMatch(/total|costo|99/);
+    // Decision del dueno 14-nov: bodega no ve el nombre del proveedor (la pantalla muestra 'Compra' y el folio).
+    expect(l.compras[0]!.proveedor).toBe('');
+    expect(JSON.stringify(l)).not.toMatch(/Isaac|Karen/);
     expect(parsearHoy(null).clientes).toEqual([]);
   });
 });

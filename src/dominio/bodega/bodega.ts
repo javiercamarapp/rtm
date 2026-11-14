@@ -2,7 +2,7 @@
 // margen, saldo, telefono, direccion, nota ni dueno. Solo cliente (nombre), modelo, sabor, piezas, folio, estado de empaque, zona, proveedor, fechas y guia de entrada.
 
 /** Alcance pedido por el dueno: bodega ve el nombre del proveedor. Ponerla en false lo quita de la web (el parser descarta el dato) sin tocar la base. */
-export const MOSTRAR_PROVEEDOR = true;
+export const MOSTRAR_PROVEEDOR = false;
 
 export interface LineaBodega {
   modelo: string;

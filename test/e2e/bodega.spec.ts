@@ -128,7 +128,8 @@ for (const tema of ['claro', 'oscuro'] as const) {
     await expect(page).toHaveURL(/\/bodega\/llegadas$/);
     const compra = page.getByTestId('bodega-compra').filter({ hasText: `E2E-${SUF}` });
     await expect(compra).toHaveCount(1);
-    await expect(compra).toContainText('Isaac');
+    await expect(compra).not.toContainText(/Isaac|Karen/);
+    await expect(compra).toContainText('Compra');
     await expect(compra).toContainText('90');
     await expect(compra).toContainText('Mango');
     expect(await page.locator('main').innerText()).not.toMatch(SIN_DINERO);

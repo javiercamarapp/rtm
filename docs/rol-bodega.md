@@ -44,7 +44,7 @@ Pendiente de decisión del dueño: automatizar el paso 2 desde el servidor exigi
 - `api.bodega_hoy_a_preparar()`: pedidos `confirmado` que salen de la bodega (el mismo criterio que "Paquetes por hacer": confirmados sin enviar, empacados o no), agrupados por cliente, con folio, estado de empaque, si vienen de días anteriores, zona (Mérida o fuera), piezas por modelo y sabor, lista de surtido total contra existencia y faltantes.
 - `api.bodega_llegadas()`: compras a proveedor con destino bodega en `confirmada`, `enviada`, `en_trayecto` o `llego_merida`: proveedor, fecha esperada, guía de entrada (paquetería y número), piezas por modelo y sabor y total por guardar.
 
-Alcance pedido por el dueño: bodega ve el NOMBRE del cliente, el NOMBRE del proveedor y los folios (de pedido y de compra). Si más adelante no debe ver el proveedor, basta poner `MOSTRAR_PROVEEDOR = false` en `src/dominio/bodega/bodega.ts` (el parser descarta el dato; la pantalla muestra "Compra").
+Alcance (decisión del dueño, 14-nov): bodega ve el NOMBRE del cliente y los folios (de pedido y de compra), pero NO el nombre del proveedor: `MOSTRAR_PROVEEDOR = false` en `src/dominio/bodega/bodega.ts` (el parser descarta el dato aunque la base lo entregue; la pantalla muestra "Compra" y el folio). Para volver a mostrarlo basta ponerla en `true`.
 
 Nunca devuelven precios, montos, costos, márgenes, saldos, cuentas por pagar, teléfonos, direcciones, notas ni dueño del cliente. Además el parser de la web copia solo campos de una lista blanca. Un socio activo puede abrir la misma vista (vista previa, con aviso y regreso a Cuentas); Omar y anónimo no.
 
