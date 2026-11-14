@@ -172,6 +172,11 @@ export async function tareaProgramada(tarea: string, autorizacion: string | null
   if (!secretoValido(autorizacion?.startsWith('Bearer ') ? autorizacion.slice(7) : null, esperado)) return { status: 401, cuerpo: null };
   const deps: DepsProduccion = { sql: sqlServidor, urlApp: urlAppOpcional(), ...d };
   if (tarea === 'latido') return { status: 200, cuerpo: await ejecutarLatidoProduccion(deps) };
+  return correrTareaManual(tarea, deps);
+}
+
+/** Corre una tarea de la lista con su propia ventana manual (idempotente por minuto). La autorizacion ya la hizo quien llama (secreto o sesion de socio). */
+export async function correrTareaManual(tarea: string, deps: DepsProduccion): Promise<RespuestaTarea> {
   const def = TAREAS.find((t) => t.tarea === tarea);
   const manejador = manejadoresDeTareas(deps)[tarea];
   if (!def || !manejador) return { status: 404, cuerpo: null };
@@ -187,4 +192,9 @@ export async function tareaProgramada(tarea: string, autorizacion: string | null
     await puerto.terminar(tarea, ventana, 'error', e instanceof Error ? e.name : 'error');
     return { status: 500, cuerpo: { estado: 'error' } };
   }
+}
+
+/** "Actualizar ahora" de la pagina de Karen: la misma lectura horaria, con la sesion de un socio ya comprobada por quien llama. Respeta el interruptor y el tope de 40 peticiones. */
+export function lecturaManualDeProveedores(d: Partial<DepsProduccion> = {}): Promise<RespuestaTarea> {
+  return correrTareaManual('inventario-proveedores', { sql: sqlServidor, urlApp: urlAppOpcional(), ...d });
 }

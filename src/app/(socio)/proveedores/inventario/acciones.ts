@@ -1,6 +1,6 @@
 'use server';
 
-import { listaParaClienteDeSocio } from '@/composicion/proveedores';
+import { actualizarAhoraDeSocio, listaParaClienteDeSocio, type ResultadoActualizar } from '@/composicion/proveedores';
 import type { ResultadoLista } from '@/dominio/proveedores/lista_cliente';
 
 export interface OpcionesListaWeb {
@@ -19,4 +19,13 @@ export async function prepararLista(o: OpcionesListaWeb): Promise<ResultadoLista
     combinarExistenciaPropia: o.combinarExistencia,
     opciones: { ...(o.marca ? { marcas: [o.marca] } : {}), soloSocios: o.soloSocios, mostrarCaladas: o.mostrarCaladas, conPrecios: o.clienteId !== null },
   });
+}
+
+/** Boton "Actualizar ahora". La accion exige sesion de socio y repite las comprobaciones del tope y del interruptor. */
+export async function actualizarAhora(): Promise<ResultadoActualizar> {
+  try {
+    return await actualizarAhoraDeSocio();
+  } catch {
+    return { estado: 'error' };
+  }
 }
