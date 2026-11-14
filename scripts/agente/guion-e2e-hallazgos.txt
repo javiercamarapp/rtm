@@ -1,6 +1,6 @@
 # Guion de los hallazgos de la campana E2E maestra (13-nov). Uso (base LOCAL con la carga real o la semilla):
 #   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres npx tsx scripts/agente/simular-telegram.mts scripts/agente/guion-e2e-hallazgos.txt
-# ALTO-1 y ALTO-2: la cuenta con un proveedor responde, con deuda positiva y lineas que suman al total (base de prueba con Isaac 227,678.09 + 66,800.00 = 294,478.09; Karen 53,250.00).
+# ALTO-1 y ALTO-2: la cuenta con un proveedor responde, con deuda positiva y lineas que suman al total (base de prueba con deuda de la empresa a Isaac mas pedidos del socio a su cuenta; saldo de Karen distinto de cero).
 javier> /saldo isaac
 javier> /saldo karen
 javier> /saldo con Karen
