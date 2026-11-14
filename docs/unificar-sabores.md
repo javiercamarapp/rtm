@@ -47,9 +47,21 @@ Catorce tablas apuntan a `catalogo.sku(id)` (kardex, existencias, conteos, compr
 - **Se bloquea sin escribir** si el sku origen tiene existencia, reserva activa, pedido en borrador o confirmado, compra abierta, toma pendiente, o hay un conteo abierto. Devuelve los motivos.
 - Reversible: `api.sabor_unificacion_deshacer` devuelve los sku, restaura nombres y alias, y la pregunta vuelve a quedar pendiente. Se rechaza si otro sabor ya ocupa el nombre original.
 - Funciones: `catalogo.unificar_sabor` (idempotente por clave; exige una pregunta pendiente de ese par o una aprobación explícita por clave), `catalogo.deshacer_unificacion_sabor`, `catalogo.unificacion_plan` (solo lectura), `catalogo.huella_inmutables`.
-- Canónico por omisión: el sabor con más sku (a igual, el de id menor); el socio puede elegir el otro y escribir un nombre final.
+- Canónico por omisión: el sabor con más sku vigentes. **En empate de sku** (`catalogo.sabor_canonico_preferido`, lo usan `canonico_sugerido` de la web y la respuesta por omisión): gana el nombre con **más palabras separadas por espacio** ("Passion Fruit" gana a "Passionfruit"; "Kiwi Dragon Fruit" a "Kiwi Dragonfruit"), luego el **más largo**, luego el de id menor. Así, aunque un socio conteste "sí" antes de que corra el script de aprobados, queda el nombre con espacios. El socio puede elegir el otro y escribir un nombre final.
+- **Clave ya deshecha**: si una clave de idempotencia ya tiene el resultado `unificado` pero esa unificación se **deshizo** después, `unificar_sabor` y `responder_duplicado` se detienen con `P0463` ("ya deshecho: usa una clave nueva") en lugar de devolver el resultado viejo sin unificar nada. Para los dos pares aprobados, el script lo detecta antes: `--verificar` avisa "ya deshecho" y `--aplicar` se detiene; con `--aplicar --reaplicar` usa una clave derivada (`clave:r1`, `clave:r2`...) y vuelve a unificar (la aprobación por clave explícita sigue siendo la misma).
 
-Limitación: una devolución de cliente de un renglón vendido con el sku origen reingresa la pieza a ese sku (el kardex es inmutable). Los totales por modelo no cambian; solo ese sku tendría existencia aparte. Si pasa, se traspasa con un movimiento normal al sku canónico.
+Limitación: una devolución de cliente de un renglón vendido con el sku origen reingresa la pieza a ese sku (el kardex es inmutable y el surtido apunta a él). Los totales por modelo no cambian. **Las lecturas por sabor no pierden esas piezas**: se suman al sku canónico (ver "Lecturas por sabor"). Para poder venderlas se traspasa con un movimiento normal al sku canónico.
+
+### Lecturas por sabor (parche 20261115500000, hallazgo H2)
+
+Una lectura que muestra o agrupa por sku trata al sku fusionado (`sku.unificado_en`) como parte de su sku vigente (`catalogo.sku_vigente`, `catalogo.skus_del_grupo`): sus piezas, entradas y salidas se **suman** al canónico y el sku fusionado ya no sale como segundo renglón con el mismo nombre y 0 piezas. Un renglón fusionado solo desaparece de la lista si suma 0; si tuviera piezas, se ven en el canónico. Cubre: `api.inventario_existencia`, `api.inventario_detalle`, `api.inventario_kardex` y `api.inventario_kardex_consolidado` (el filtro por sabor incluye los movimientos del fusionado y su cuadre inicial + entradas - salidas = final se mantiene; pedir el sku fusionado por una liga vieja devuelve el canónico), `operacion.cobertura`, `operacion.inventario_base` (pantalla Inventario), `proveedores.tablero_karen` (ventas y existencia por variante, resolviendo también un `sabor_canonico_id` que apunte al sabor origen) y `proveedores.existencia_propia`. Las pantallas de documentos (pedido, compra, conteo, devolución) muestran el sku histórico por su nombre, que es el mismo texto canónico; los catálogos para elegir sku (`pedido_catalogo`, `compra_catalogo`, `ds_catalogo`, apertura, conteo, agente) ya excluían el inactivo, y `devolucion_proveedor_catalogo` lo excluye ahora. Los totales, el kardex y las comprobaciones C1..C24 no cambian (prueba `a12_003`).
+
+### Redirección de escrituras (hallazgo H4)
+
+- `operacion.resolver_sku` (lo usan crear pedido, crear compra, toma de Omar y devolución a proveedor): un `sku_id` fusionado se **redirige** al sku vigente y el resultado trae `redirigido_de`; por nombre resuelve por nombre propio **o por alias de unificación** (`catalogo.sabor_por_nombre`: "Passionfruit" resuelve a "Passion Fruit"; los alias que no vienen de una unificación no se asumen).
+- `registrar_movimiento`, `cerrar_conteo` y las recepciones resuelven el sabor por esa misma regla; la recepción (completa y parcial), el surtido al enviar un pedido y `conteo_diferencias` redirigen un `sku_id` fusionado al vigente.
+- **Auditado**: la redirección de un `sku_id` en recepción y surtido deja `REDIRECCION_SKU_FUSIONADO` y la de un nombre-alias en `registrar_movimiento` deja `REDIRECCION_ALIAS_SABOR` (`seguridad.auditoria`). `resolver_sku` es de solo lectura: devuelve `redirigido_de` y no escribe.
+- No se redirige la **devolución de cliente**: su renglón apunta al sku que se surtió (kardex inmutable), así que respeta el sku histórico (limitación de arriba).
 
 ### Prueba (pgTAP `a12_001`)
 
@@ -93,10 +105,18 @@ RTM_DB_URL='postgres://postgres:...@host:5432/postgres' node scripts/catalogo/un
 
 `--verificar` es solo lectura (estado, plan por modelo y bloqueos). `--aplicar` corre en una transacción con guarda: si cambia la huella de lo inmutable, hace rollback. Es idempotente. `--sql-salida archivo.sql` escribe el mismo SQL para `supabase db query --linked -f`. Después de aplicar, ejecutar `select api.duplicados_escanear('sabor')` (como socio) para dejar en la cola el resto de preguntas.
 
+## Orden de operación en producción
+
+Es importante respetar el orden:
+
+1. **Desplegar las migraciones** con `node scripts/despliegue/desplegar.mjs ... --incluir-todo` (la nube puede tener una migración posterior a las de la unificación y `db push` exige `--include-all`). Aditivas, sin tocar datos: `20261115300000`, `300100`, `300200`, `500000` (parche).
+2. **Unificar los dos pares aprobados**: `unificar-aprobados.mjs --verificar` (solo lectura) y, si no hay bloqueos, `--aplicar` (una transacción con guarda de huella; si dice "ya deshecho", ver `--reaplicar`).
+3. **Solo después** `api.duplicados_escanear('sabor')` (como socio). Si el escaneo corriera antes, dejaría las preguntas de esos dos pares en la cola y un socio podría contestarlas por la vía normal; el desempate de arriba evita que "Passion Fruit" pierda contra "Passionfruit", pero el camino aprobado es el único previsto para esos dos pares.
+
 ## 8. Fase posterior: clientes y modelos
 
 Solo se detectan y se preguntan. La unión mueve saldos, precios del tabulador, pedidos, cobros y asientos: necesita su propio diseño (cuenta de cliente destino, reasignación de partidas abiertas, historial de precios, reversa) y una auditoría contable aparte. Hasta entonces la respuesta "sí" queda como `confirmado_igual`.
 
 ## Costos de despliegue
 
-Ninguno por sí mismo: la rama no hace push ni toca Vercel. Al desplegar, el cambio lleva migraciones `20261115300000`, `20261115300100` y `20261115300200` (aditivas) y un build de la web.
+Ninguno por sí mismo: la rama no hace push ni toca Vercel. Al desplegar, el cambio lleva migraciones `20261115300000`, `20261115300100`, `20261115300200` y `20261115500000` (aditivas) y un build de la web.
