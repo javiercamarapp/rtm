@@ -11,7 +11,7 @@ export default async function LayoutOmar({ children }: { children: ReactNode }) 
   await exigirOmar();
   return (
     <ArmazonOmar accionSalir={salir}>
-      <ExplicarProvider explicar={explicarCifra}>{children}</ExplicarProvider>
+      <ExplicarProvider explicar={explicarCifra} modo="omar">{children}</ExplicarProvider>
     </ArmazonOmar>
   );
 }
