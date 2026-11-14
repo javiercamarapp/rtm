@@ -18,6 +18,7 @@ import { aNumero, porcentaje } from '@/dominio/tablero/agregados';
 import '@/ui/estilos/paginas-a1.css';
 import { etiquetaHoy } from '../contexto';
 import { BotonDisponibilidad } from './boton-disponibilidad';
+import { SaboresPorRevisar } from './sabores-por-revisar';
 
 export const metadata: Metadata = { title: 'Catálogo y precios' };
 
@@ -98,6 +99,8 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
           ) : <p className="rtm-a1-estado-vacio">Ningún modelo tiene precios de clientes.</p>}
         </Tarjeta>
       </Rejilla>
+
+      <SaboresPorRevisar />
 
       <Tarjeta plana titulo="Modelos" descripcion={`${modelos.length} de ${todos.length}`}>
         <DataTable
