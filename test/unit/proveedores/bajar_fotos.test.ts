@@ -88,7 +88,9 @@ describe('ejecutar (sin red)', () => {
     expect(t).toContain("'modelo-uno': '/proveedores/karen/modelo-uno.webp'");
     expect(t).not.toContain('invalido');
     expect(log.join('\n')).not.toContain('invalido');
-    expect(a.esperas.every((ms) => ms >= 1000)).toBe(true);
+    expect(a.esperas.length).toBeGreaterThan(0);
+    // La espera es lo que falta para completar 1.1 s desde la ultima peticion (la prueba no depende de la carga de la maquina).
+    expect(a.esperas.every((ms) => ms > 0 && ms <= 1100)).toBe(true);
     expect(a.pedidos.every((p) => p.ua === 'RTM-inventario/1.0 (catalogo publico, lectura unica de imagenes)' && !/@|\d{7,}/.test(p.ua))).toBe(true);
     // Segunda corrida: no vuelve a pedir ninguna imagen.
     const antes = a.pedidos.length;
