@@ -101,7 +101,7 @@ export async function exigirSocio(): Promise<SesionActiva> {
   return { perfil };
 }
 
-/** Guarda de la vista de Omar: sin sesion, o sin cuenta ACTIVA con rol omar (hoy desactivada hasta M2), no se renderiza nada. Un socio vuelve a su inicio. */
+/** Guarda de la vista de Omar: sin sesion, o sin cuenta ACTIVA con rol omar (activa: vista propia de Omar), no se renderiza nada. Un socio vuelve a su inicio. */
 export async function exigirOmar(): Promise<SesionActiva> {
   const estado = await deps().autenticador.sesion();
   if (!estado.autenticado) redirect('/login');

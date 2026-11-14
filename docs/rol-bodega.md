@@ -9,7 +9,7 @@ Rama `feat/rol-bodega`. Migraciones `20261114000100_rol_bodega_cuentas.sql` y `2
 | Rol | Quién | Dónde entra |
 | --- | --- | --- |
 | `socio` | Angelo y Javier | todo el sistema; `Cuentas` es solo suya |
-| `omar` | Omar (desactivado hasta M2) | `/mi-bodega` |
+| `omar` | Omar (ACTIVO con vista propia: renta y disponibilidad sin costos) | `/mi-bodega` |
 | `bodega` | quien dé de alta un socio | `/bodega` y `/bodega/llegadas` (solo lectura) |
 | `importacion` | no es una cuenta: es el canal del importador local y del agente | ninguna pantalla |
 
