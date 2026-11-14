@@ -26,6 +26,8 @@ export interface IPedido {
   plazo_texto?: string | null;
   /** Dias para pagar, calculados por el codigo: 0 = de contado. Sin esto el pedido NO se escribe (el bot pregunta). */
   plazo_dias?: number | null;
+  /** Si el socio dijo una fecha, la que entendio el codigo (los dias corren desde el envio; solo coincide si se envia hoy). */
+  plazo_fecha_dicha?: string | null;
   fuente_cita: string;
 }
 

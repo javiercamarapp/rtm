@@ -54,8 +54,8 @@ create temp table _png as select encode('\x89504e470d0a1a0a0000000d49484452'::by
 create temp table _pdf as select encode('\x255044462d312e340a'::bytea, 'base64') as b;
 create temp table _base as select pg_temp.v03() as v03, pg_temp.neta('Angelo') as na, pg_temp.neta('Javier') as nj, (select count(*) from operacion.aportacion_socio) as ap;
 
-select operacion.ds_crear_pedido('a2p-1', pg_temp.cli(), '[{"modelo":"A2P Modelo 25K","sabor":"Fresa","piezas":100}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 3);
-select operacion.ds_crear_pedido('a2p-2', pg_temp.cli(), '[{"modelo":"A2P Modelo 25K","sabor":"Fresa","piezas":50}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 2);
+select operacion.ds_crear_pedido('a2p-1', pg_temp.cli(), '[{"modelo":"A2P Modelo 25K","sabor":"Fresa","piezas":100}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 3, null, null, negocio.hoy() + 7);
+select operacion.ds_crear_pedido('a2p-2', pg_temp.cli(), '[{"modelo":"A2P Modelo 25K","sabor":"Fresa","piezas":50}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, negocio.hoy() - 2, null, null, negocio.hoy() + 7);
 select operacion.confirmar_pedido('a2p-1c', pg_temp.ped('a2p-1:ped')); select operacion.enviar_pedido('a2p-1e', pg_temp.ped('a2p-1:ped'), null, null, null, true);
 select operacion.confirmar_pedido('a2p-2c', pg_temp.ped('a2p-2:ped')); select operacion.enviar_pedido('a2p-2e', pg_temp.ped('a2p-2:ped'), null, null, null, true);
 select is(pg_temp.estado(pg_temp.ped('a2p-1:ped')), 'no_pagado', 'sin pago: pendiente de pago (estado no_pagado)');

@@ -1,6 +1,7 @@
 // Construye el PLAN de carga: una lista ordenada de pasos. Cada paso llama SOLO funciones existentes del sistema (api.* u operacion.* con la identidad de un socio);
 // nunca inserta en tablas de negocio. La clave de idempotencia de cada operacion sale de la clave de identidad del pedido o asiento (proveedor|folio|cliente|fecha|consecutivo).
 import { claveOperacion, repartirExacto, sumaRenglones, fmt } from './lib.mjs';
+import { FECHA_PAGO_DEFECTO } from './fuentes.mjs';
 
 export const LOTES = {
   1: 'Catalogo y clientes',
@@ -169,9 +170,11 @@ export function construirPlan(dominio, alias, opciones = {}) {
           await db.q('select api.enviar_pedido($1,$2,null,null,$3::date,true)', [k(p.id, 'enviar'), pedidoId, p.fecha]);
         } else {
           const credito = p.credito ? { fecha_pago: p.credito.fechaPago, modo: 'fijo', interes_cent: p.interesCent } : null;
-          const cr = (await db.q('select api.ds_crear_pedido($1,$2,$3::jsonb,$4,$5::jsonb,$6::jsonb,$7,$8,$9,$10,0,$11::date,$12,null,null,null) as r', [
+          const cr = (await db.q('select api.ds_crear_pedido($1,$2,$3::jsonb,$4,$5::jsonb,$6::jsonb,$7,$8,$9,$10,0,$11::date,$12,null,$13::date,null) as r', [
             k(p.id, 'pedido'), cli, JSON.stringify(lineasSql), p.origen === 'Isaac' ? 'isaac_directo' : 'karen_directo', null, credito ? JSON.stringify(credito) : null,
             p.tipo, p.socio, p.folio, p.envioCent, p.fecha, 'Carga historica',
+            // Pedido a costo del socio: la base exige fecha de pago (14-nov). Con saldo pendiente, la de omision del dueno; si ya esta pagado, la del propio pedido.
+            p.tipo === 'socio_a_costo' ? (p.saldoCent > 0 ? FECHA_PAGO_DEFECTO : p.fecha) : null,
           ])).rows[0].r;
           pedidoId = cr.pedido_id;
           // El destinatario va en su propio paso idempotente (cifrado en reposo): correr con o sin --con-destinatarios no cambia la clave del pedido.

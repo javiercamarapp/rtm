@@ -49,6 +49,14 @@ describe('pedido de cliente: plazo obligatorio en el bot', () => {
     await e2.socio('angelo', '/pedido Cliente Norte | jupiter 40 | plazo contado');
     expect(e2.negocio.numeroDeHechos()).toBe(1);
   });
+  it('una fecha dicha se explica en la tarjeta: los dias corren desde el envio', async () => {
+    const e = escenario([unaAccion(sinPlazo())], { config: { exigirPlazoPedido: true, confirmarMovimientos: true } });
+    await e.socio('angelo', 'Cliente Norte 40 jupiter');
+    await e.socio('angelo', 'el 20 de noviembre');
+    const t = e.ultimoGrupo().texto;
+    expect(t).toContain('dias a credito, contados desde el ENVIO del pedido');
+    expect(t).toContain('ese dia solo vence si el pedido se envia hoy');
+  });
   it('los dias salen del codigo', () => {
     expect(interpretarPlazo('a 15 dias', new Date('2026-11-10T18:00:00Z'))).toEqual({ tipo: 'ok', dias: 15 });
   });

@@ -31,6 +31,10 @@ select is((select plazo_dias from operacion.pedido where id = (select (resultado
 select lives_ok($$select operacion.ds_crear_pedido('a12-d3', pg_temp.cli(), pg_temp.lin(), 'karen_directo', null, '{"semanas":2}'::jsonb)$$, 'ds: credito con semanas explicitas se crea');
 select lives_ok($$select operacion.ds_crear_pedido('a12-d4', pg_temp.cli(), pg_temp.lin(), 'karen_directo')$$, 'ds: contado (sin credito) no cambia');
 
+select is((select plazo_dias from operacion.pedido where id = (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'a12-d4:ped')), 0, 'ds: el contado queda con plazo 0 (nunca NULL)');
+select throws_ok($$select operacion.ds_crear_pedido('a12-d5', pg_temp.cli(), pg_temp.lin(), 'karen_directo', null, '{"semanas":0}'::jsonb)$$, 'P0436', null, 'ds: credito de 0 semanas se rechaza (el contado se declara como contado)');
+select throws_ok($$select operacion.ds_crear_pedido('a12-d6', pg_temp.cli(), pg_temp.lin(), 'karen_directo', null, null, 'socio_a_costo', 'Angelo')$$, 'P0436', null, 'ds: pedido a costo del socio sin fecha de pago se rechaza');
+
 -- Bot
 select throws_ok($$select agente._ejecutar_ext_base('a12-b1', 'pedido_crear', jsonb_build_object('autor', 'javier', 'cliente_id', pg_temp.cli(), 'lineas', '[]'::jsonb))$$, 'P0436', null, 'bot: pedido sin plazo se rechaza antes de escribir');
 select throws_ok($$select agente._ejecutar_ext_base('a12-b2', 'pedido_crear', jsonb_build_object('autor', 'javier', 'cliente_id', pg_temp.cli(), 'lineas', '[]'::jsonb, 'plazo_dias', 400))$$, 'P0436', null, 'bot: plazo fuera de rango se rechaza');

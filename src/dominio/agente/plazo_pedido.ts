@@ -3,7 +3,8 @@
 import { fechaNeg } from '../calendario';
 import { interpretarFechaPago } from './fecha_pago';
 
-export type PlazoInterpretado = { tipo: 'ok'; dias: number } | { tipo: 'no_entendi' };
+/** `fecha_dicha`: cuando el socio dijo una FECHA ("el viernes"), la fecha tal como la entendio el codigo. Los dias se cuentan DESDE EL ENVIO (vencimiento = fecha_envio + plazo_dias), asi que esa fecha solo se cumple si el pedido se envia hoy. */
+export type PlazoInterpretado = { tipo: 'ok'; dias: number; fecha_dicha?: string } | { tipo: 'no_entendi' };
 
 const NUM_TEXTO: Readonly<Record<string, number>> = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, diez: 10, quince: 15, veinte: 20, treinta: 30 };
 
@@ -22,7 +23,9 @@ const MS_DIA = 86_400_000;
 export function interpretarPlazo(texto: string, ahora: Date): PlazoInterpretado {
   const t = sinAcentos(texto.toLowerCase()).replace(/[,;.]/g, ' ').replace(/\s+/g, ' ').trim();
   if (t === '' || t.length > 80) return { tipo: 'no_entendi' };
-  if (/\b(?:de|al)\s+contado\b|^contado$|\bpaga\s+(?:hoy|ya|en el acto)\b|\bpago\s+inmediato\b|\bpagado\b|\bsin\s+credito\b/.test(t)) return { tipo: 'ok', dias: 0 };
+  // Una negacion ("no es de contado", "no paga hoy") nunca es contado: se vuelve a preguntar.
+  if (/\bno\b/.test(t) && /contado|paga|pagado|credito/.test(t) && !/\d/.test(t)) return { tipo: 'no_entendi' };
+  if (/\b(?:de|al)\s+contado\b|^contado$|\bpaga\s+(?:hoy|ya|en el acto)\b|\bpago\s+inmediato\b/.test(t)) return { tipo: 'ok', dias: 0 };
   const dias = /\b(\d{1,3}|un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|diez|quince|veinte|treinta)\s*(?:dias?|d)\b/.exec(t);
   if (dias) {
     const n = numero(dias[1]!);
@@ -39,7 +42,7 @@ export function interpretarPlazo(texto: string, ahora: Date): PlazoInterpretado 
   const f = interpretarFechaPago(texto, ahora);
   if (f.tipo === 'ok') {
     const d = Math.round((Date.parse(`${f.fecha}T00:00:00Z`) - Date.parse(`${fechaNeg(ahora)}T00:00:00Z`)) / MS_DIA);
-    return d >= 0 && d <= 365 ? { tipo: 'ok', dias: d } : { tipo: 'no_entendi' };
+    return d >= 0 && d <= 365 ? { tipo: 'ok', dias: d, fecha_dicha: f.fecha } : { tipo: 'no_entendi' };
   }
   return { tipo: 'no_entendi' };
 }

@@ -4,7 +4,7 @@
 --   * Web (api.crear_pedido)             : exige plazo_dias (0 a 365); sin el, P0436.
 --   * Bot (agente pedido_crear)          : exige args.plazo_dias; el plazo se fija con operacion.acordar_plazo (con evento); sin el, P0436. El bot pregunta antes de escribir.
 --   * Dropshipping (operacion.ds_crear_pedido, api.ds_crear_pedido): un credito debe traer fecha_pago o semanas EXPLICITAS (antes se asumia 1 semana); sin ellas, P0436.
---     Contado y venta a costo del socio (sin p_credito) no cambian: su plazo es la fecha comprometida propia del socio de menudeo.
+--     Contado fija plazo 0; la venta a costo del socio exige fecha de pago (p_fecha_compromiso) y fija plazo = dias hasta ella. Un credito de 0 semanas se rechaza (contado se declara como contado).
 --   * Cargador historico: llama api.crear_pedido y operacion.ds_crear_pedido; el credito ya lleva su plazo explicito y el contado se carga con plazo 0 (scripts/cargador/plan.mjs).
 --   * Importacion: no crea pedidos.
 --   * operacion.crear_pedido (interna, sin EXECUTE para ningun rol de la web) NO cambia: la usan las rutas anteriores.
@@ -46,12 +46,27 @@ create function operacion.ds_crear_pedido(p_clave_idem text, p_cliente_id bigint
                                           p_mensaje_origen text default null, p_fecha_compromiso date default null, p_hora_compromiso time default null) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
+declare v_res jsonb; v_fecha date := coalesce(p_fecha, negocio.hoy());
 begin
-  if p_credito is not null and p_tipo_venta <> 'socio_a_costo' and nullif(p_credito ->> 'fecha_pago', '') is null and nullif(p_credito ->> 'semanas', '') is null then
-    raise exception 'la venta a credito necesita plazo: indica la fecha de pago o las semanas' using errcode = 'P0436';
+  if p_credito is not null and p_tipo_venta <> 'socio_a_costo' then
+    if nullif(p_credito ->> 'fecha_pago', '') is null and nullif(p_credito ->> 'semanas', '') is null then
+      raise exception 'la venta a credito necesita plazo: indica la fecha de pago o las semanas' using errcode = 'P0436';
+    end if;
+    if nullif(p_credito ->> 'fecha_pago', '') is null and (p_credito ->> 'semanas')::int < 1 then
+      raise exception 'un credito de 0 semanas no es credito: si es de contado, declaralo como contado (sin credito)' using errcode = 'P0436';
+    end if;
   end if;
-  return operacion._ds_crear_pedido_sin_plazo(p_clave_idem, p_cliente_id, p_lineas, p_origen, p_destinatario, p_credito, p_tipo_venta, p_socio, p_folio_externo,
+  -- La venta a costo del socio de menudeo tambien necesita plazo: su fecha de pago.
+  if p_tipo_venta = 'socio_a_costo' and p_fecha_compromiso is null and p_hora_compromiso is null then
+    raise exception 'el pedido a costo del socio necesita fecha de pago: indica cuando paga' using errcode = 'P0436';
+  end if;
+  v_res := operacion._ds_crear_pedido_sin_plazo(p_clave_idem, p_cliente_id, p_lineas, p_origen, p_destinatario, p_credito, p_tipo_venta, p_socio, p_folio_externo,
     p_envio_cent, p_descuento_cent, p_fecha, p_nota, p_mensaje_origen, p_fecha_compromiso, p_hora_compromiso);
+  -- Ningun pedido nuevo queda sin plazo: contado = 0 dias; a costo del socio = dias hasta su fecha de pago (el credito ya fija el suyo).
+  if p_credito is null then
+    perform operacion.acordar_plazo(p_clave_idem || ':plazo', (v_res ->> 'pedido_id')::bigint, case when p_tipo_venta = 'socio_a_costo' then greatest(p_fecha_compromiso - v_fecha, 0) else 0 end);
+  end if;
+  return v_res;
 end $$;
 
 -- Bot: pedido_crear exige plazo y lo fija con la funcion oficial (queda el evento plazo_acordado).

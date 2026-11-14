@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Asigna fecha de pago (2026-11-20 por omision) a los pedidos a credito ENVIADOS que siguen sin plazo (decision del dueno, 14-nov).
+// Asigna fecha de pago (2026-11-20 por omision) a los pedidos abiertos (a credito o a costo del socio) ENVIADOS que siguen sin plazo (decision del dueno, 14-nov).
 //   DATABASE_URL=postgresql://... node scripts/cargador/plazo-pendiente.mjs --verificar   (solo lectura: cantidad y folios; sin datos personales)
 //   DATABASE_URL=postgresql://... node scripts/cargador/plazo-pendiente.mjs --aplicar     (escribe, un pedido por transaccion)
 // Escribe SOLO por la funcion oficial api.acordar_plazo (queda el evento plazo_acordado con actor y clave de idempotencia); nunca con instrucciones directas sobre las tablas.
 // El plazo se guarda en dias (operacion.pedido.plazo_dias) y el vencimiento de cuentas por cobrar es fecha_envio + plazo_dias: por eso los dias se cuentan DESDE LA FECHA DE ENVIO,
 // asi el vencimiento resultante es exactamente la fecha elegida. Idempotente: un pedido que ya tiene plazo no se toca, una segunda corrida no cambia nada.
 // Un pedido cuya fecha de envio es igual o posterior a la fecha elegida NO se modifica (plazo <= 0): se lista aparte para decidir a mano.
-// Los pedidos a costo del socio de menudeo llevan su propia fecha comprometida y no entran aqui.
+// Los pedidos a costo del socio de menudeo enviados con saldo y SIN fecha comprometida tambien entran (decision del dueno: todos los abiertos sin plazo); si ya tienen fecha comprometida propia se conserva y no se tocan.
 import { parseArgs } from 'node:util';
 import pg from 'pg';
 
@@ -19,11 +19,12 @@ const url = a.url ?? process.env.DATABASE_URL;
 if (!url) { console.error('Falta --url o DATABASE_URL.'); process.exit(2); }
 
 const SQL_CANDIDATOS = `
-  select pe.id, pe.folio, pe.fecha_neg::text as fecha_neg, pe.fecha_envio::text as fecha_envio, ($1::date - pe.fecha_envio) as dias
+  select pe.id, pe.folio, coalesce(d.tipo_venta, 'cliente') = 'socio_a_costo' as a_costo, pe.fecha_neg::text as fecha_neg, pe.fecha_envio::text as fecha_envio, ($1::date - pe.fecha_envio) as dias
     from operacion.pedido pe
     left join operacion.pedido_ds d on d.pedido_id = pe.id
    where pe.plazo_dias is null and pe.estado = 'enviado' and pe.fecha_envio is not null
-     and operacion.pedido_saldo(pe.id) > 0 and coalesce(d.tipo_venta, 'cliente') <> 'socio_a_costo'
+     and operacion.pedido_saldo(pe.id) > 0
+     and (coalesce(d.tipo_venta, 'cliente') <> 'socio_a_costo' or not exists (select 1 from operacion.ds_pedido_compromiso c where c.pedido_id = pe.id and c.fecha_compromiso is not null))
    order by pe.fecha_envio, pe.id`;
 
 const client = new pg.Client({ connectionString: url });
@@ -37,13 +38,14 @@ try {
   const distintaFecha = cand.filter((x) => x.fecha_neg !== x.fecha_envio);
   const info = (await client.query(`select
       (select count(*) from operacion.pedido pe left join operacion.pedido_ds d on d.pedido_id = pe.id where pe.plazo_dias is null and pe.estado = 'confirmado' and coalesce(d.tipo_venta, 'cliente') <> 'socio_a_costo') as confirmados_sin_plazo,
-      (select count(*) from operacion.pedido pe join operacion.pedido_ds d on d.pedido_id = pe.id where d.tipo_venta = 'socio_a_costo' and pe.estado = 'enviado' and operacion.pedido_saldo(pe.id) > 0
-          and not exists (select 1 from operacion.ds_pedido_compromiso c where c.pedido_id = pe.id and c.fecha_compromiso is not null)) as a_costo_sin_fecha`)).rows[0];
+      (select count(*) from operacion.pedido pe join operacion.pedido_ds d on d.pedido_id = pe.id where d.tipo_venta = 'socio_a_costo' and pe.estado = 'enviado' and pe.plazo_dias is null and operacion.pedido_saldo(pe.id) > 0
+          and exists (select 1 from operacion.ds_pedido_compromiso c where c.pedido_id = pe.id and c.fecha_compromiso is not null)) as a_costo_con_fecha`)).rows[0];
   console.log(`Pedidos enviados a credito sin plazo: ${cand.length} (fecha de pago ${a.fecha}).`);
   console.log(`  Aplicables: ${aplicables.length}${aplicables.length ? ` -> ${aplicables.map((x) => `${x.folio} (${x.dias} dias desde el envio)`).join(', ')}` : ''}`);
   console.log(`  NO aplicables (envio igual o posterior a la fecha; plazo <= 0, no se tocan): ${noAplicables.length}${noAplicables.length ? ` -> ${noAplicables.map((x) => x.folio).join(', ')}` : ''}`);
   console.log(`  Con fecha de pedido distinta de la de envio (el plazo se cuenta desde el envio): ${distintaFecha.length}`);
-  console.log(`  Informativo, no se tocan: ${info.confirmados_sin_plazo} confirmados sin plazo (aun no enviados); ${info.a_costo_sin_fecha} pedidos a costo del socio de menudeo sin fecha comprometida.`);
+  console.log(`  Informativo, no se tocan: ${info.confirmados_sin_plazo} confirmados sin plazo (aun no enviados); ${info.a_costo_con_fecha} pedidos a costo del socio de menudeo sin plazo pero con fecha comprometida propia (la conserva).`);
+  console.log(`  De los aplicables, a costo del socio de menudeo sin fecha comprometida: ${aplicables.filter((x) => x.a_costo).length}${aplicables.some((x) => x.a_costo) ? ` -> ${aplicables.filter((x) => x.a_costo).map((x) => x.folio).join(', ')}` : ''}`);
   if (a.verificar) {
     console.log('Verificacion: solo lectura, no se escribio nada.');
   } else {

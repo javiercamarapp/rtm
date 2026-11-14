@@ -48,6 +48,11 @@ select is((api.explicar_cifra('socio:deuda:Javier')->>'valor')::bigint, 200000::
 select is((api.explicar_cifra('cxc:total')->>'valor')::bigint - (select total from _c0), 400000::bigint, 'por cobrar: 40 x 150 = 6,000 menos 2,000');
 select is((api.cuentas_por_cobrar()->>'total_cent')::bigint - (select total from _c0), 400000::bigint, 'api.cuentas_por_cobrar()');
 select is((select f->>'estado' from jsonb_array_elements(api.cuentas_por_cobrar()->'filas') f where f->>'cliente' = 'Api Cliente'), 'al_corriente', 'con plazo de 30 dias: estado en palabra');
+-- Pedidos anteriores a la regla de plazo obligatorio (14-nov) pueden seguir sin plazo: el estado 'sin_plazo' se conserva.
+reset role;
+update operacion.pedido set plazo_dias = null where cliente_id = (select id from catalogo.cliente where nombre_canonico = 'Api Cliente');
+set local role authenticated;
+select is((select f->>'estado' from jsonb_array_elements(api.cuentas_por_cobrar()->'filas') f where f->>'cliente' = 'Api Cliente'), 'sin_plazo', 'pedido anterior sin plazo (NULL): estado en palabra sin_plazo');
 select is((api.proveedor_cuenta('Vapemate')->>'proveedor'), 'Karen', 'Vapemate es el alias de Karen');
 select ok(api.proveedor_cuenta('Karen') ? 'etiqueta', 'api.proveedor_cuenta()');
 select ok(api.avisos_lista()->'avisos' is not null, 'api.avisos_lista()');

@@ -227,12 +227,12 @@ select is((select count(*) from operacion.pedido_credito where pedido_id = pg_te
 -- El socio de menudeo es Angelo por omision; para este pedido de Javier se parametriza a Javier (solo el socio de menudeo mete pedidos a costo).
 select pg_temp.como('Javier');
 update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Javier') where id = 1;
-select operacion.ds_crear_pedido('ds-e', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":50}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Cinco'), null, 'socio_a_costo', 'Javier');
+select operacion.ds_crear_pedido('ds-e', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":50}]'::jsonb, 'karen_directo', pg_temp.dest('Persona Sintetica Cinco'), null, 'socio_a_costo', 'Javier', null, 0, 0, null, null, null, negocio.hoy() + 7);
 update operacion.ds_recordatorio_config set socio_menudeo = (select id from catalogo.socio where nombre = 'Angelo') where id = 1;
 select pg_temp.como('Angelo');
 select is((select (r->>'margen_estimado_cent')::bigint from seguridad.operacion o, lateral (select o.resultado r) q where o.clave = 'ds-e'), 0::bigint, '(e) a costo: margen cero');
 select is((select precio_cent from operacion.pedido_linea where pedido_id = pg_temp.ped('ds-e:ped')), 8929::bigint, '(e) el precio es exactamente el costo de Karen');
-select throws_ok($$select operacion.ds_crear_pedido('ds-e2', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', null)$$, '22023', null, '(e) la venta a costo exige el socio');
+select throws_ok($$select operacion.ds_crear_pedido('ds-e2', pg_temp.cli('DS Socio Menudeo'), '[{"modelo":"DS Modelo 25K","sabor":"Coco","piezas":5}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', null, null, 0, 0, null, null, null, negocio.hoy() + 7)$$, '22023', null, '(e) la venta a costo exige el socio');
 select operacion.confirmar_pedido('ds-e-c', pg_temp.ped('ds-e:ped')); select operacion.enviar_pedido('ds-e-e', pg_temp.ped('ds-e:ped'), null, null, null, true);
 select is((select utilidad_cent from operacion.v_ds_utilidad where pedido_id = pg_temp.ped('ds-e:ped')), 0::bigint, '(e) no genera utilidad');
 select is((select count(*) from operacion.pedido_aviso where pedido_id = pg_temp.ped('ds-e:ped') and codigo = 'venta_bajo_costo'), 1::bigint, '(e) el aviso de venta a costo se mostro y se acepto al enviar');

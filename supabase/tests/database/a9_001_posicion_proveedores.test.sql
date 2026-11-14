@@ -120,10 +120,10 @@ create function pg_temp.como(p text) returns void language sql as
 select pg_temp.como('Angelo');
 select catalogo.asegurar_cliente('PQ Stock Angelo', 'Angelo');
 select pg_temp.dia((select sem from _f));
-select operacion.ds_crear_pedido('pq-a1', pg_temp.cli('PQ Stock Angelo'), '[{"modelo":"PQ Modelo","sabor":"Uva","piezas":10}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, (select sem from _f));
+select operacion.ds_crear_pedido('pq-a1', pg_temp.cli('PQ Stock Angelo'), '[{"modelo":"PQ Modelo","sabor":"Uva","piezas":10}]'::jsonb, 'isaac_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, (select sem from _f), null, null, negocio.hoy() + 7);
 select operacion.confirmar_pedido('pq-a1-c', pg_temp.ped('pq-a1:ped'));
 select operacion.enviar_pedido('pq-a1-e', pg_temp.ped('pq-a1:ped'), null, null, null, true);
-select operacion.ds_crear_pedido('pq-a2', pg_temp.cli('PQ Stock Angelo'), '[{"modelo":"PQ Modelo","sabor":"Uva","piezas":20}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, (select sem from _f));
+select operacion.ds_crear_pedido('pq-a2', pg_temp.cli('PQ Stock Angelo'), '[{"modelo":"PQ Modelo","sabor":"Uva","piezas":20}]'::jsonb, 'karen_directo', null, null, 'socio_a_costo', 'Angelo', null, 0, 0, (select sem from _f), null, null, negocio.hoy() + 7);
 select operacion.confirmar_pedido('pq-a2-c', pg_temp.ped('pq-a2:ped'));
 select operacion.enviar_pedido('pq-a2-e', pg_temp.ped('pq-a2:ped'), null, null, null, true);
 select operacion.ds_pagar_pedido_menudeo('pq-a2-p', pg_temp.ped('pq-a2:ped'), 'proveedor');

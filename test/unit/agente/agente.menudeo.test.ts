@@ -34,7 +34,6 @@ async function pedidoConfirmado(e: Escenario, cuando = 'el viernes a las 5 de la
   const eco = [...e.textosGrupo()].reverse().find((t) => t.startsWith('Registrado'))!;
   return /Registrado (P-\d+)/.exec(eco)![1]!;
 }
-const folioDe = (e: Escenario) => e.negocio.menudeo.pedidos[0]!.folio;
 
 describe('comentario de igualacion', () => {
   it('despues de un deposito el bot dice quien lleva mas y a quien le toca, con cifras de la base', async () => {
@@ -166,13 +165,21 @@ describe('pedido_menudeo', () => {
     expect(e.ultimoGrupo().texto).toContain('No pude entender la fecha de pago');
     expect(e.negocio.menudeo.pedidos).toHaveLength(0);
   });
-  it('"sin fecha" crea el pedido sin fecha comprometida (alerta)', async () => {
+  it('"sin fecha" ya no se acepta: el bot insiste en la fecha de pago y no escribe nada', async () => {
     const e = escenario([], ESTRICTO);
     await e.socio('angelo', '/pedidomenudeo elux/sandia 10');
     await e.socio('angelo', 'sin fecha');
-    expect(conBotones(e, 'Resumen para confirmar').texto).toContain('ninguna');
+    expect(e.ultimoGrupo().texto).toContain('Todo pedido necesita fecha de pago');
+    expect(e.negocio.menudeo.pedidos).toHaveLength(0);
+    await e.socio('angelo', 'el viernes a las 5 de la tarde');
     await pulsar(e, 'angelo', conBotones(e, 'Resumen para confirmar'), 'Confirmar');
-    expect(e.negocio.menudeo.pedidos[0]!.fecha).toBeNull();
+    expect(e.negocio.menudeo.pedidos[0]!.fecha).toBe('2026-11-13');
+  });
+  it('el comando con "sin fecha" tambien insiste', async () => {
+    const e = escenario([], ESTRICTO);
+    await e.socio('angelo', '/pedidomenudeo elux/sandia 10 | sin fecha');
+    expect(e.ultimoGrupo().texto).toContain('Todo pedido necesita fecha de pago');
+    expect(e.negocio.menudeo.pedidos).toHaveLength(0);
   });
   it('con IA: la frase de fecha se copia del mensaje; si el modelo la inventa, se ignora y se pregunta', async () => {
     const e = escenario([unaAccion(pedidoMenudeo({ cuando_texto: 'el lunes' }))], ESTRICTO);
@@ -447,18 +454,6 @@ describe('recordatorios del latido', () => {
     expect(e.textosGrupo().join('\n')).not.toMatch(/\d{10}|@/);
   });
 
-  it('un pago ya reportado o un pedido sin fecha no generan recordatorio de chat', async () => {
-    const e = escenario([], ESTRICTO);
-    e.negocio.menudeo.envioActivo = true;
-    await e.socio('angelo', '/pedidomenudeo elux/sandia 10');
-    await e.socio('angelo', 'sin fecha');
-    await pulsar(e, 'angelo', conBotones(e, 'Resumen para confirmar'), 'Confirmar');
-    const folio = folioDe(e);
-    await e.socio('angelo', `/enviado ${folio}`);
-    await pulsar(e, 'angelo', conBotones(e, 'Resumen para confirmar'), 'Confirmar');
-    e.reloj.avanzarHoras(24 * 5);
-    expect((await e.agente.enviarRecordatoriosMenudeo()).enviados).toBe(0);
-  });
 
   it('Pagado: reporta el pago pendiente y avisa al otro socio; Reprogramar: pregunta la fecha, la confirma con boton y la guarda', async () => {
     const e = escenario([], ESTRICTO);

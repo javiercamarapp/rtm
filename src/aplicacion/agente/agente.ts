@@ -925,12 +925,12 @@ export class AgenteTelegram {
 
   private async completarFechaMenudeo(estado: EstadoAccion, chats: ChatsRegistrados): Promise<EstadoAccion | null> {
     const i = estado.intencion as IPedidoMenudeo;
-    if ((i.fecha_compromiso ?? null) !== null || i.sin_fecha === true) return estado;
-    if (i.cuando_texto === null) {
-      await this.abrirPregunta(estado.autor, 'fecha_pago', { estado, intentos: 0 }, chats, P.preguntaCuandoPagas());
+    if ((i.fecha_compromiso ?? null) !== null) return estado;
+    // Decision del dueno (14-nov): ningun pedido nuevo queda sin plazo. "Sin fecha" ya no se acepta: se vuelve a preguntar.
+    if (i.sin_fecha === true || i.cuando_texto === null || dijoSinFecha(i.cuando_texto)) {
+      await this.abrirPregunta(estado.autor, 'fecha_pago', { estado: { ...estado, intencion: { ...i, sin_fecha: false, cuando_texto: null } }, intentos: 0 }, chats, i.sin_fecha === true || i.cuando_texto !== null ? P.fechaObligatoria() : P.preguntaCuandoPagas());
       return null;
     }
-    if (dijoSinFecha(i.cuando_texto)) return { ...estado, intencion: { ...i, sin_fecha: true } };
     return this.aplicarFechaPedido(estado, i.cuando_texto, 0, chats);
   }
 
@@ -947,7 +947,7 @@ export class AgenteTelegram {
   private async aplicarPlazoPedido(estado: EstadoAccion, texto: string, intentos: number, chats: ChatsRegistrados): Promise<EstadoAccion | null> {
     const i = estado.intencion as IPedido;
     const r = interpretarPlazo(texto, this.d.reloj());
-    if (r.tipo === 'ok') return { ...estado, intencion: { ...i, plazo_dias: r.dias } };
+    if (r.tipo === 'ok') return { ...estado, intencion: { ...i, plazo_dias: r.dias, plazo_fecha_dicha: r.fecha_dicha ?? null } };
     if (intentos + 1 >= this.cfg.maxIntentosFecha) {
       await this.responder(estado.autor, chats, P.rechazo('No pude entender el plazo. No registre el pedido: mandalo de nuevo con el plazo (por ejemplo /pedido Cliente | modelo 24 | plazo contado).'));
       return null;
@@ -995,8 +995,11 @@ export class AgenteTelegram {
         if (sigP) await this.resolverYEjecutar(sigP, chats);
         return { estado: 'procesado', acciones: 1 };
       }
-      const i = p.estado.intencion as IPedidoMenudeo;
-      const sig = dijoSinFecha(texto) ? { ...p.estado, intencion: { ...i, sin_fecha: true } } : await this.aplicarFechaPedido(p.estado, texto, p.intentos ?? 0, chats);
+      if (dijoSinFecha(texto)) {
+        await this.abrirPregunta(autor, 'fecha_pago', { estado: p.estado, intentos: p.intentos ?? 0 }, chats, P.fechaObligatoria());
+        return { estado: 'procesado', acciones: 1 };
+      }
+      const sig = await this.aplicarFechaPedido(p.estado, texto, p.intentos ?? 0, chats);
       if (sig) await this.resolverYEjecutar(sig, chats);
       return { estado: 'procesado', acciones: 1 };
     }
