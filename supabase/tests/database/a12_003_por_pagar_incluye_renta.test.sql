@@ -18,7 +18,7 @@ select catalogo.fijar_precio('a12r:p', 'A12R Cliente', 'A12R Modelo', 9000, nego
 select operacion.registrar_movimiento('a12r:m', 'A12R Modelo', 'Uva', 'bodega_omar', 'entrada_compra', 100, 500000, negocio.hoy() - 5);
 create function pg_temp.ped(p text) returns bigint language sql as $$ select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = $1 $$;
 create function pg_temp.cli() returns bigint language sql as $$ select id from catalogo.cliente where nombre_canonico = 'A12R Cliente' $$;
-create function pg_temp.renglon(c text) returns bigint language sql as $$ select (r->>'cent')::bigint from jsonb_array_elements(api.por_pagar()->'renglones') r where r->>'clave' = $1 $$;
+create function pg_temp.renglon(c text) returns bigint language sql as $$ select (r->>'monto_cent')::bigint from jsonb_array_elements(api.por_pagar()->'renglones') r where r->>'clave' = $1 $$;
 create temp table _b0 as select pg_temp.renglon('renta_omar') as renta, pg_temp.renglon('karen') as karen, pg_temp.renglon('isaac') as isaac, (api.por_pagar()->>'total_cent')::bigint as total;
 select contabilidad.asentar_pendientes();
 create temp table _base as select count(*)::int as rojas from contabilidad.comprobaciones() c where not c.ok and c.bloqueante;
@@ -41,7 +41,7 @@ select is(pg_temp.renglon('karen') - (select karen from _b0), 20000::bigint, 're
 select is(pg_temp.renglon('isaac') - (select isaac from _b0), 50000::bigint, 'renglon Isaac: +500.00');
 select is(pg_temp.renglon('renta_omar') - (select renta from _b0), 4000::bigint, 'renglon renta de Omar: +20 piezas x 2.00 = 40.00');
 select is((api.por_pagar()->>'total_cent')::bigint - (select total from _b0), 74000::bigint, 'total sube 740.00 = Isaac + Karen + renta de Omar');
-select is((api.por_pagar()->>'total_cent')::bigint, (select sum((r->>'cent')::bigint)::bigint from jsonb_array_elements(api.por_pagar()->'renglones') r), 'el total es la suma de los renglones (cada uno se ve separado)');
+select is((api.por_pagar()->>'total_cent')::bigint, (select sum((r->>'monto_cent')::bigint)::bigint from jsonb_array_elements(api.por_pagar()->'renglones') r), 'el total es la suma de los renglones (cada uno se ve separado)');
 select is(pg_temp.renglon('renta_omar'), (operacion.renta_estado(negocio.hoy())->>'por_pagar_cent')::bigint, 'la renta es la misma cifra de Pago renta (cuenta 2210)');
 select is(pg_temp.renglon('renta_omar'), contabilidad.saldo('2210')::bigint, 'la renta coincide con el saldo del Mayor 2210 (sin duplicar)');
 select is((api.pulso()->'por_pagar'->>'total_cent')::bigint - (select total from _b0), 74000::bigint, 'api.pulso trae el mismo por pagar');

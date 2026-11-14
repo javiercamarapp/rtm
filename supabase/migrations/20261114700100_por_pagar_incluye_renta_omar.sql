@@ -15,12 +15,12 @@ begin
   for r in select p.id, p.nombre from catalogo.proveedor p where p.nombre in ('Isaac', 'Karen') order by case p.nombre when 'Isaac' then 1 else 2 end loop
     v_pos := operacion.posicion_proveedor(r.id);
     v_c := greatest((v_pos ->> 'deuda_empresa_cent')::bigint, 0);
-    v_ren := v_ren || jsonb_build_array(jsonb_build_object('clave', lower(r.nombre), 'etiqueta', r.nombre, 'cent', v_c));
+    v_ren := v_ren || jsonb_build_array(jsonb_build_object('clave', lower(r.nombre), 'etiqueta', r.nombre, 'monto_cent', v_c));
     v_total := v_total + v_c; v_fav := v_fav + greatest((v_pos ->> 'a_favor_empresa_cent')::bigint, 0);
   end loop;
   v_renta := operacion.renta_estado(negocio.hoy());
   v_c := greatest((v_renta ->> 'por_pagar_cent')::bigint, 0);
-  v_ren := v_ren || jsonb_build_array(jsonb_build_object('clave', 'renta_omar', 'etiqueta', 'Renta de Omar', 'cent', v_c, 'piezas', (v_renta ->> 'piezas')::bigint));
+  v_ren := v_ren || jsonb_build_array(jsonb_build_object('clave', 'renta_omar', 'etiqueta', 'Renta de Omar', 'monto_cent', v_c, 'piezas', (v_renta ->> 'piezas')::bigint));
   v_total := v_total + v_c; v_fav := v_fav + greatest((v_renta ->> 'a_favor_cent')::bigint, 0);
   return jsonb_build_object('total_cent', v_total, 'a_favor_cent', v_fav, 'renglones', v_ren);
 end $$;
@@ -82,7 +82,7 @@ begin
   perform notificacion.exigir_sistema();
   v_pp := operacion.por_pagar_renglones();
   return jsonb_build_object('titulo', 'Por pagar', 'lineas',
-    (select coalesce(jsonb_agg(jsonb_build_object('etiqueta', x ->> 'etiqueta', 'centavos', (x ->> 'cent')::bigint) order by o), '[]'::jsonb) from jsonb_array_elements(v_pp -> 'renglones') with ordinality as t(x, o))
+    (select coalesce(jsonb_agg(jsonb_build_object('etiqueta', x ->> 'etiqueta', 'centavos', (x ->> 'monto_cent')::bigint) order by o), '[]'::jsonb) from jsonb_array_elements(v_pp -> 'renglones') with ordinality as t(x, o))
     || jsonb_build_array(jsonb_build_object('etiqueta', 'Total por pagar', 'centavos', (v_pp ->> 'total_cent')::bigint))
     || case when (v_pp ->> 'a_favor_cent')::bigint > 0
             then jsonb_build_array(jsonb_build_object('etiqueta', 'Nota', 'texto', 'Hay saldo a favor (proveedor o anticipo a Omar) que no se resta de otro renglon.')) else '[]'::jsonb end);
