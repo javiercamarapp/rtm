@@ -170,7 +170,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
         );
       })()}
 
-      <Rejilla dividir="8-4">
+      <Rejilla dividir="8-4" alinear="inicio">
         <Tarjeta titulo="Ventas por semana" descripcion={`Lo facturado en los pedidos enviados (cobrado + por cobrar), últimas ${n} semanas; la semana en curso va con trama`}>
           {hayPedidos ? (
             <ColumnasPeriodo
@@ -196,7 +196,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
         </Tarjeta>
       </Rejilla>
 
-      <Rejilla dividir="6-6">
+      <Rejilla dividir="6-6" alinear="inicio">
         <Tarjeta titulo="Por reponer primero" descripcion="Cobertura en días contra el tiempo de entrega" acciones={<Link href="/inventario">Inventario</Link>}>
           {reponer.length >= 1 && inv ? (
             <CoberturaDias
