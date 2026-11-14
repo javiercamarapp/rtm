@@ -25,7 +25,6 @@ export function ModeloMiniatura({ modelo, marca, tam = 's', testid }: { modelo: 
   return ruta ? (
     <span className="rtm-modelo-foto" data-tam={tam} data-testid={testid}>
       {/* Archivo estatico versionado en public/modelos: no pasa por el optimizador de imagenes (sin costo en Vercel). */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={ruta} alt={`Foto de ${nombre}`} loading="lazy" decoding="async" width={640} height={800} />
     </span>
   ) : (

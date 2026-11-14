@@ -125,7 +125,7 @@ for (const tema of TEMAS) {
       await sesionSocio(page, '/cuentas-por-cobrar');
       await abrirYCancelar(page, info, tema, page.getByTestId('nuevo-pago'), 'nuevo-pago');
       for (const chip of ['Todos', 'Solo vencido']) {
-        await page.getByRole('link', { name: chip, exact: true }).first().click();
+        await page.getByRole('button', { name: chip, exact: true }).first().click(); // control segmentado del filtro compartido
         await page.waitForLoadState('networkidle'); // la navegacion del chip debe terminar antes del siguiente goto
         await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
@@ -142,7 +142,7 @@ for (const tema of TEMAS) {
     test('Catalogo, Clientes e Inventario: busqueda, chips, modelo, disponibilidad y ficha (B-92 a B-99)', async ({ page }, info) => {
       await sesionSocio(page, '/catalogo');
       await page.getByRole('searchbox').or(page.getByRole('textbox', { name: /Buscar|modelo|marca/i })).first().fill('%');
-      await page.getByRole('button', { name: 'Buscar' }).click();
+      await page.waitForLoadState('networkidle'); // busqueda en vivo: sin boton, la URL se actualiza sola
       await expect(page.locator('main:not(.rtm-documento)')).not.toContainText(/Application error/i);
       await page.goto('/catalogo');
       for (const chip of ['Todos', 'Disponibles', 'Sin disponibilidad']) {

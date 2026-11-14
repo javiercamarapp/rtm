@@ -8,7 +8,9 @@ import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
 import { ModeloMiniatura } from '@/ui/componentes/modelo';
-import { BarraFiltros, Chip, ChipEstado } from '@/ui/componentes/controles';
+import { ChipEstado } from '@/ui/componentes/controles';
+import { FiltroCatalogo } from '@/ui/componentes/filtro-catalogo';
+import { atajosDeMarcas, marcasDeParam } from '@/dominio/catalogo/filtro';
 import { BarList } from '@/ui/componentes/datos';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
@@ -27,9 +29,9 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
   const todos = await lector.modelos();
   const q = normalizar(sp.q ?? '');
   const filtro = sp.estado === 'sin_disponibilidad' || sp.estado === 'disponible' ? sp.estado : null;
-  const marca = sp.marca ?? '';
+  const elegidas = marcasDeParam(sp.marca);
   const marcas = [...new Set(todos.map((m) => m.marca))].sort();
-  const modelos = todos.filter((m) => (!q || normalizar(`${m.marca} ${m.nombre} ${m.alias.join(' ')}`).includes(q)) && (!filtro || m.estado === filtro) && (!marca || m.marca === marca));
+  const modelos = todos.filter((m) => (!q || normalizar(`${m.marca} ${m.nombre} ${m.alias.join(' ')}`).includes(q)) && (!filtro || m.estado === filtro) && (elegidas.length === 0 || elegidas.includes(m.marca)));
   const sinDisp = todos.filter((m) => m.estado === 'sin_disponibilidad').length;
   const sinPrecio = todos.filter((m) => m.precios.clientes === 0).length;
   const supuestos = todos.flatMap((m) => m.costos).filter((c) => c.supuesto).length;
@@ -39,10 +41,13 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
   const precios = elegido ? await lector.preciosDeModelo(elegido.id) : [];
   const mayor = precios.reduce<bigint>((a, p) => (p.precioCent > a ? p.precioCent : a), 0n);
   const enlace = (c: Record<string, string>) => {
-    const u = new URLSearchParams({ ...(sp.q ? { q: sp.q } : {}), ...(filtro ? { estado: filtro } : {}), ...(marca ? { marca } : {}), ...c });
+    const u = new URLSearchParams({ ...(sp.q ? { q: sp.q } : {}), ...(filtro ? { estado: filtro } : {}), ...(elegidas.length ? { marca: elegidas.join(',') } : {}), ...c });
     for (const [k, v] of [...u.entries()]) if (!v) u.delete(k);
     return u.size ? `/catalogo?${u.toString()}` : '/catalogo';
   };
+  const opcionesMarca = marcas.map((nombre) => ({ nombre, cuenta: todos.filter((m) => m.marca === nombre).length }));
+  // Atajos: las marcas con mas clientes con precio en el tabulador (demanda observada en el catalogo), maximo 5.
+  const atajos = atajosDeMarcas(new Map(marcas.map((nombre) => [nombre, todos.filter((m) => m.marca === nombre).reduce((a, m) => a + m.precios.clientes, 0)])));
   const conRango = modelos.filter((m) => m.precios.maxCent !== null && m.precios.minCent !== null);
   const topeRango = conRango.reduce((a, m) => Math.max(a, aNumero(m.precios.maxCent!)), 0);
   const conMargen = modelos.flatMap((m) => {
@@ -59,18 +64,14 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
         acciones={<Link className="rtm-boton" href="/catalogo/costos" data-testid="ir-costos">Editar costos de Isaac y Karen</Link>}
         descripcion={`${sinDisp > 0 ? `${sinDisp} sin disponibilidad ahora · ` : ''}${sinPrecio} sin precio de cliente · ${supuestos} ${supuestos === 1 ? 'costo supuesto' : 'costos supuestos'}. Costos y márgenes solo los ven los socios.`}
       />
-      <BarraFiltros etiquetaAria="Filtrar el catálogo" extras={filtro || marca || sp.q ? <Chip href="/catalogo">Quitar filtros</Chip> : undefined}>
-        <form className="rtm-a1-buscar" method="get" role="search" aria-label="Búsqueda del catálogo">
-          <input className="rtm-campo" type="search" name="q" defaultValue={sp.q ?? ''} placeholder="Buscar marca, modelo o alias" aria-label="Buscar en el catálogo" />
-          {filtro && <input type="hidden" name="estado" value={filtro} />}
-          {marca && <input type="hidden" name="marca" value={marca} />}
-          <button type="submit" className="rtm-boton rtm-boton-chico">Buscar</button>
-        </form>
-        <Chip href={enlace({ estado: '' })} activo={!filtro}>Todos</Chip>
-        <Chip href={enlace({ estado: 'disponible' })} activo={filtro === 'disponible'}>Disponibles</Chip>
-        <Chip href={enlace({ estado: 'sin_disponibilidad' })} activo={filtro === 'sin_disponibilidad'} tono="atencion">Sin disponibilidad</Chip>
-        {marcas.map((m) => <Chip key={m} href={enlace({ marca: marca === m ? '' : m })} activo={marca === m}>{m}</Chip>)}
-      </BarraFiltros>
+      <FiltroCatalogo
+        etiquetaAria="Filtrar el catálogo"
+        etiquetaBusqueda="Buscar en el catálogo"
+        marcas={opcionesMarca}
+        atajos={atajos}
+        segmentos={{ parametro: 'estado', etiquetaAria: 'Disponibilidad', opciones: [{ valor: '', etiqueta: 'Todos' }, { valor: 'disponible', etiqueta: 'Disponibles' }, { valor: 'sin_disponibilidad', etiqueta: 'Sin disponibilidad' }] }}
+        limpiar={['modelo']}
+      />
       <KpiLinea
         etiquetaAria="Indicadores del catálogo"
         celdas={[

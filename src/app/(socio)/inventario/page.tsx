@@ -8,6 +8,9 @@ import type { EstadoCoberturaCodigo, ModeloInventario, SaborInventario } from '@
 import { etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Chip, ChipEstado, Pestanas } from '@/ui/componentes/controles';
+import { FiltroCatalogo } from '@/ui/componentes/filtro-catalogo';
+import { ModeloMiniatura } from '@/ui/componentes/modelo';
+import { atajosDeMarcas, marcasDeParam } from '@/dominio/catalogo/filtro';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable, type Columna } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
@@ -43,7 +46,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
   const sinMovimientos = inv.modelos.filter((x) => x.piezas === null);
   const filtro = FILTROS.find((f) => f.id === sp.estado) ?? null;
   const marcas = [...new Set(conDato.map((x) => x.marca))];
-  const marca = marcas.includes(textoParam(sp.marca) ?? '') ? textoParam(sp.marca)! : null;
+  const elegidas = marcasDeParam(sp.marca).filter((x) => marcas.includes(x));
   const soloCero = uno(sp.solo) === 'cero';
   const soloApartado = uno(sp.solo) === 'apartado';
   const q = textoParam(sp.q)?.toLowerCase() ?? null;
@@ -53,7 +56,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
   const detMod = new Map(detalle.modelos.map((d) => [d.modelo_id, d]));
   const detSku = new Map(detalle.sabores.map((d) => [d.sku_id, d]));
   const visibles = conDato
-    .filter((x) => (!filtro || (x.estado !== null && filtro.estados.includes(x.estado))) && (!marca || x.marca === marca) && (!soloCero || (x.piezas ?? 0) <= 0) && (!soloApartado || (x.reservado ?? 0) > 0)
+    .filter((x) => (!filtro || (x.estado !== null && filtro.estados.includes(x.estado))) && (elegidas.length === 0 || elegidas.includes(x.marca)) && (!soloCero || (x.piezas ?? 0) <= 0) && (!soloApartado || (x.reservado ?? 0) > 0)
       && (!q || `${x.marca} ${x.modelo} ${x.sabores.map((s) => s.sabor).join(' ')}`.toLowerCase().includes(q)))
     .sort((a, b) => URGENCIA_COBERTURA[a.estado ?? 'sin_historia'] - URGENCIA_COBERTURA[b.estado ?? 'sin_historia'] || Number((b.valor_cent ?? 0n) - (a.valor_cent ?? 0n)) || a.modelo.localeCompare(b.modelo, 'es'));
   const cuenta = (f: (typeof FILTROS)[number]) => conDato.filter((x) => x.estado !== null && f.estados.includes(x.estado)).length;
@@ -102,6 +105,9 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
   const salP = detalle.modelos.reduce((a, d) => a + d.salidas, 0);
   const merP = detalle.modelos.reduce((a, d) => a + d.mermas, 0);
   const rotGlobal = inv.totales.piezas > 0 ? dec(salP / ((detalle.modelos.reduce((a, d) => a + (d.piezas_inicial ?? 0), 0) + inv.totales.piezas) / 2 || 1), 2) : null;
+  const opcionesMarca = marcas.map((mc) => ({ nombre: mc, cuenta: conDato.filter((x) => x.marca === mc).length }));
+  // Atajos: las marcas con mas valor de inventario (maximo 5).
+  const atajos = atajosDeMarcas(new Map(porMarca.map((x) => [x.mc, Number(x.v)])));
   const sd = conDato.length === 0;
   const pie = `Corte: ${etiquetaFechaHora(inv.corte)} · Fuente: libro de movimientos`;
 
@@ -114,14 +120,6 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
         descripcion="Existencia por modelo y sabor a costo promedio, con semáforo de reposición. El inventario es de los socios; su ubicación es la Bodega Omar."
         acciones={<><a className="rtm-boton" href="/inventario/csv" data-testid="inventario-csv">CSV</a><ExportarInventario marcas={marcas} modelos={conDato.map((x) => ({ marca: x.marca, modelo: x.modelo }))} clientes={clientes.filter((c) => c.precios > 0 && c.activo).map((c) => ({ id: c.id, nombre: c.nombre }))} /></>}
       />
-      <PanelConcilia c={concilia} />
-      <Pestanas etiquetaAria="Vistas del inventario" items={[
-        { id: 'existencias', etiqueta: 'Existencias', href: enlace(base, sp, { vista: null }), activa: vista === 'existencias', contador: conDato.length },
-        { id: 'compras', etiqueta: 'Compras', href: enlace(base, sp, { vista: 'compras' }), activa: vista === 'compras', contador: inv.compras_recientes.length },
-        { id: 'documentos', etiqueta: 'Documentos', href: enlace(base, sp, { vista: 'documentos' }), activa: vista === 'documentos', contador: documentos.length },
-        { id: 'sin-movimientos', etiqueta: 'Sin movimientos', href: enlace(base, sp, { vista: 'sin-movimientos' }), activa: vista === 'sin-movimientos', contador: sinMovimientos.length },
-      ]} />
-
       <KpiLinea etiquetaAria="Resumen del inventario" celdas={[
         { id: 'valor', etiqueta: 'Valor del inventario', testid: 'inv-valor', categoria: 1, valor: sd ? null : <CifraComprobada texto={formatearMoneda(inv.totales.valor_cent)} cifra="inventario:valor" comprobacion={inv.comprobacion.valor_modelos_cent === inv.comprobacion.valor_sabores_cent ? 'cuadra' : 'no_cuadra'} />, nota: sd ? undefined : 'A costo promedio' },
         { id: 'piezas', etiqueta: 'Piezas en la bodega', testid: 'inv-piezas', categoria: 2, valor: sd ? null : formatearPiezas(inv.totales.piezas), nota: sd ? undefined : `${inv.totales.modelos_con_existencia} modelos con existencia` },
@@ -137,23 +135,20 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
         ]} />
       )}
 
+      {!sd && (
+        <FilaRatios etiqueta="Semáforo de reposición" items={(['urge', 'brevedad', 'siguiente', 'buena', 'excelente', 'sobrestock', 'sin_movimiento', 'sin_historia'] as EstadoCoberturaCodigo[]).map((e) => ({ etiqueta: PALABRA_COBERTURA[e], valor: String(conDato.filter((x) => x.estado === e).length) }))} />
+      )}
+      {!sd && (
+        <FilaRatios etiqueta="Valor y disponibilidad" items={[
+          { etiqueta: 'Valor medio por pieza', valor: inv.totales.piezas > 0 ? formatearMoneda(inv.totales.valor_cent / BigInt(Math.max(inv.totales.piezas, 1))) : null },
+          { etiqueta: 'Disponibles de las piezas', valor: inv.totales.piezas > 0 ? `${dec((conDato.reduce((a, x) => a + (x.disponible ?? 0), 0) / inv.totales.piezas) * 100, 1)} %` : null },
+          { etiqueta: 'Marcas con existencia', valor: String(marcas.length) },
+          { etiqueta: 'Marca con más valor', valor: porMarca[0] ? `${porMarca[0].mc} · ${pctTexto(partePct(porMarca[0].v, totalValor)) ?? ''}` : null },
+        ]} />
+      )}
+
       {vista === 'existencias' && (
         <>
-          <FiltrosUrl etiquetaAria="Filtros del inventario" restablecer={base}>
-            {marcas.length > 1 && <Campo etiqueta="Marca"><select name="marca" defaultValue={marca ?? ''}><option value="">Todas</option>{marcas.map((x) => <option key={x} value={x}>{x}</option>)}</select></Campo>}
-            <Campo etiqueta="Periodo"><select name="dias" defaultValue={String(per.dias ?? 'todo')}><option value="7">7 días</option><option value="30">30 días</option><option value="90">90 días</option></select></Campo>
-            <Campo etiqueta="Buscar"><input type="search" name="q" placeholder="Modelo o sabor" defaultValue={q ?? ''} data-noauto="" /></Campo>
-            {filtro && <input type="hidden" name="estado" value={filtro.id} />}
-            {soloCero && <input type="hidden" name="solo" value="cero" />}
-            {soloApartado && <input type="hidden" name="solo" value="apartado" />}
-            <span className="rtm-a2-tira" role="group" aria-label="Filtros del semáforo">
-              <Chip href={chipLink({ estado: null, solo: null })} activo={!filtro && !soloCero && !soloApartado}>Todos</Chip>
-              {FILTROS.map((f) => <Chip key={f.id} href={chipLink({ estado: f.id, solo: null })} activo={filtro?.id === f.id}>{f.etiqueta} ({cuenta(f)})</Chip>)}
-              <Chip href={chipLink({ solo: 'cero', estado: null })} activo={soloCero}>Cero o negativa ({agotados})</Chip>
-              <Chip href={chipLink({ solo: 'apartado', estado: null })} activo={soloApartado}>Con apartado</Chip>
-            </span>
-          </FiltrosUrl>
-
           {grafica.length >= 2 && (
             <Rejilla dividir="8-4">
               <CoberturaDias
@@ -173,6 +168,33 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
               </div>
             </Rejilla>
           )}
+        </>
+      )}
+      <Pestanas etiquetaAria="Vistas del inventario" items={[
+        { id: 'existencias', etiqueta: 'Existencias', href: enlace(base, sp, { vista: null }), activa: vista === 'existencias', contador: conDato.length },
+        { id: 'compras', etiqueta: 'Compras', href: enlace(base, sp, { vista: 'compras' }), activa: vista === 'compras', contador: inv.compras_recientes.length },
+        { id: 'documentos', etiqueta: 'Documentos', href: enlace(base, sp, { vista: 'documentos' }), activa: vista === 'documentos', contador: documentos.length },
+        { id: 'sin-movimientos', etiqueta: 'Sin movimientos', href: enlace(base, sp, { vista: 'sin-movimientos' }), activa: vista === 'sin-movimientos', contador: sinMovimientos.length },
+      ]} />
+
+      {vista === 'existencias' && (
+        <>
+          <FiltroCatalogo etiquetaAria="Buscar y filtrar por marca" placeholder="Buscar modelo, marca o sabor" marcas={opcionesMarca} atajos={atajos} />
+          <FiltrosUrl etiquetaAria="Filtros del inventario" restablecer={base}>
+            <Campo etiqueta="Periodo"><select name="dias" defaultValue={String(per.dias ?? 'todo')}><option value="7">7 días</option><option value="30">30 días</option><option value="90">90 días</option></select></Campo>
+            {elegidas.length > 0 && <input type="hidden" name="marca" value={elegidas.join(',')} />}
+            {q && <input type="hidden" name="q" value={q} />}
+            {filtro && <input type="hidden" name="estado" value={filtro.id} />}
+            {soloCero && <input type="hidden" name="solo" value="cero" />}
+            {soloApartado && <input type="hidden" name="solo" value="apartado" />}
+            <span className="rtm-a2-tira" role="group" aria-label="Filtros del semáforo">
+              <Chip href={chipLink({ estado: null, solo: null })} activo={!filtro && !soloCero && !soloApartado}>Todos</Chip>
+              {FILTROS.map((f) => <Chip key={f.id} href={chipLink({ estado: f.id, solo: null })} activo={filtro?.id === f.id}>{f.etiqueta} ({cuenta(f)})</Chip>)}
+              <Chip href={chipLink({ solo: 'cero', estado: null })} activo={soloCero}>Cero o negativa ({agotados})</Chip>
+              <Chip href={chipLink({ solo: 'apartado', estado: null })} activo={soloApartado}>Con apartado</Chip>
+            </span>
+          </FiltrosUrl>
+
           <Tarjeta plana className="rtm-a2-tabla" titulo="Existencias por modelo y sabor" descripcion={`${visibles.length} modelos · abre un modelo para ver sus sabores`}>
             <DataTable
               etiqueta="Existencia y semáforo de reposición por modelo y sabor"
@@ -188,7 +210,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
                   const x = fs[0]!.mod;
                   const d = detMod.get(x.modelo_id);
                   return {
-                    titulo: <span className="rtm-a2-nowrap"><Link href={`/inventario/kardex?modelo=${x.modelo_id}`}>{x.modelo}</Link><span className="rtm-a2-nota"> · {x.marca} · {x.sabores.length} sabores</span></span>,
+                    titulo: <span className="rtm-a2-nowrap rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={x.modelo} marca={x.marca} tam="xs" /><span><Link href={`/inventario/kardex?modelo=${x.modelo_id}`}>{x.modelo}</Link><span className="rtm-a2-nota"> · {x.marca} · {x.sabores.length} sabores</span></span></span>,
                     subtotales: {
                       p: <CifraComprobada texto={x.piezas === null ? null : formatearPiezas(x.piezas)} cifra={`existencia:modelo:${x.modelo_id}`} comprobacion="cuadra" />,
                       a: pzs(x.reservado), d: pzs(x.disponible), cu: x.costo_prom_cent === null || (x.piezas ?? 0) === 0 ? <SinDato /> : m(x.costo_prom_cent), v: m(x.valor_cent) ?? <SinDato />,
@@ -256,13 +278,14 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
             vacio={{ titulo: 'Todos los modelos tienen movimientos', texto: 'No hay modelos del catálogo sin historia en el libro.' }}
             columnas={[
               { id: 'marca', titulo: 'Marca', secundaria: true, celda: (x) => x.marca },
-              { id: 'm', titulo: 'Modelo', celda: (x) => x.modelo },
+              { id: 'm', titulo: 'Modelo', celda: (x) => <span className="rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={x.modelo} marca={x.marca} tam="xs" /><strong>{x.modelo}</strong></span> },
               { id: 'e', titulo: 'Existencia', numerica: true, celda: () => <SinDato /> },
               { id: 's', titulo: 'Semáforo', celda: () => <SinDato /> },
             ]}
           />
         </Tarjeta>
       )}
+      <PanelConcilia c={concilia} />
     </Pagina>
   );
 }

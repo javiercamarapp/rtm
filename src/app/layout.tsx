@@ -16,6 +16,7 @@ import '@/ui/estilos/omar.css';
 import '@/ui/estilos/bodega.css';
 import '@/ui/estilos/controles.css';
 import '@/ui/estilos/modelo.css';
+import '@/ui/estilos/filtros.css';
 
 export const metadata: Metadata = {
   title: { default: MARCA.nombre, template: `%s · ${MARCA.nombre}` },
