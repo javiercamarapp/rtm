@@ -59,23 +59,27 @@ export function FormularioSolicitud({ disponible, tope, caducaHoras, enviar }: P
 
   return (
     <form className="omar-form" onSubmit={alEnviar} aria-label="Solicitar piezas" data-testid="form-solicitud">
-      <label className="rtm-etiqueta-campo" htmlFor={`${id}-m`}>Modelo
-        <select id={`${id}-m`} className="rtm-campo" value={modelo} onChange={(e) => { setModelo(e.target.value); setSabor(saboresDe(disponible, e.target.value)[0]?.sabor ?? ''); }}>
-          {modelos.map((m) => <option key={m} value={m}>{m}</option>)}
-        </select>
-      </label>
+      <div className="omar-form-fila">
+        <label className="rtm-etiqueta-campo" htmlFor={`${id}-m`}>Modelo
+          <select id={`${id}-m`} className="rtm-campo" value={modelo} onChange={(e) => { setModelo(e.target.value); setSabor(saboresDe(disponible, e.target.value)[0]?.sabor ?? ''); }}>
+            {modelos.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </label>
+        <label className="rtm-etiqueta-campo" htmlFor={`${id}-s`}>Sabor
+          <select id={`${id}-s`} className="rtm-campo" value={saborValido} onChange={(e) => setSabor(e.target.value)}>
+            {sabores.map((s) => <option key={s.sabor} value={s.sabor}>{s.sabor} ({formatearPiezas(s.piezas)})</option>)}
+          </select>
+        </label>
+      </div>
       {modelo !== '' && <ModeloTarjeta modelo={modelo} tam="s" testid="solicitud-modelo" />}
-      <label className="rtm-etiqueta-campo" htmlFor={`${id}-s`}>Sabor
-        <select id={`${id}-s`} className="rtm-campo" value={saborValido} onChange={(e) => setSabor(e.target.value)}>
-          {sabores.map((s) => <option key={s.sabor} value={s.sabor}>{s.sabor} ({formatearPiezas(s.piezas)})</option>)}
-        </select>
-      </label>
-      <label className="rtm-etiqueta-campo" htmlFor={`${id}-c`}>Cantidad (hasta {maximo})
-        <input id={`${id}-c`} className="rtm-campo" type="number" inputMode="numeric" min={1} max={maximo} step={1} value={cantidad} onChange={(e) => setCantidad(e.target.value)} required />
-      </label>
-      <button type="submit" className="rtm-boton rtm-boton-primario" disabled={ocupado || maximo < 1 || !Number.isInteger(n) || n < 1 || n > maximo} aria-busy={ocupado || undefined} data-testid="enviar-solicitud">
-        {ocupado ? 'Enviando…' : 'Solicitar'}
-      </button>
+      <div className="omar-form-fila omar-form-fila-fin">
+        <label className="rtm-etiqueta-campo" htmlFor={`${id}-c`}>Cantidad (hasta {maximo})
+          <input id={`${id}-c`} className="rtm-campo" type="number" inputMode="numeric" min={1} max={maximo} step={1} value={cantidad} onChange={(e) => setCantidad(e.target.value)} required />
+        </label>
+        <button type="submit" className="rtm-boton rtm-boton-primario" disabled={ocupado || maximo < 1 || !Number.isInteger(n) || n < 1 || n > maximo} aria-busy={ocupado || undefined} data-testid="enviar-solicitud">
+          {ocupado ? 'Enviando…' : 'Solicitar'}
+        </button>
+      </div>
       <p className="rtm-nota">Cada solicitud admite hasta {tope} piezas y caduca a las {caducaHoras} h si nadie la autoriza.</p>
       {aviso?.tipo === 'ok' && <p className="omar-ok" role="status" data-testid="solicitud-ok">{aviso.texto}</p>}
       {aviso?.tipo === 'error' && <p className="rtm-error" role="alert" data-testid="solicitud-error">{aviso.texto}</p>}

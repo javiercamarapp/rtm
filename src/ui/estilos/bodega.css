@@ -15,15 +15,15 @@
 }
 .bodega-nav a[aria-current='page'] { background: var(--rtm-fill-active); color: var(--rtm-ink); font-weight: 600; }
 .bodega-barra-acciones { margin-left: auto; display: flex; align-items: center; gap: var(--rtm-e-2); }
-.bodega-previa { margin: 0; padding: var(--rtm-e-2) var(--rtm-e-4); text-align: center; font-size: 13px; border-bottom: 1px solid var(--rtm-line); background: var(--rtm-surface); color: var(--rtm-ink-2); }
+.bodega-previa { margin: 0; padding: var(--rtm-e-1) var(--rtm-e-4); text-align: center; font-size: 13px; border-bottom: 1px solid var(--rtm-line); background: var(--rtm-surface); color: var(--rtm-ink-2); }
 .bodega-contenido {
   width: 100%; max-width: 1240px; margin: 0 auto; flex: 1 1 auto; min-width: 0;
-  padding: var(--rtm-e-6) max(var(--rtm-e-4), env(safe-area-inset-left)) var(--rtm-e-8) max(var(--rtm-e-4), env(safe-area-inset-right));
+  padding: var(--rtm-e-3) max(var(--rtm-e-4), env(safe-area-inset-left)) var(--rtm-e-4) max(var(--rtm-e-4), env(safe-area-inset-right));
   display: flex; flex-direction: column; gap: var(--rtm-ritmo);
 }
-.bodega-pie { padding: var(--rtm-e-3) var(--rtm-e-4); text-align: center; font-size: 12px; color: var(--rtm-ink-3); }
+.bodega-pie { padding: var(--rtm-e-2) var(--rtm-e-4); text-align: center; font-size: 12px; color: var(--rtm-ink-3); }
 
-.bodega-lista { display: flex; flex-direction: column; gap: var(--rtm-e-3); margin: 0; padding: 0; list-style: none; }
+.bodega-lista { display: flex; flex-direction: column; gap: var(--rtm-v-gap-tarjeta); margin: 0; padding: 0; list-style: none; }
 .bodega-cliente { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-ctl); background: var(--rtm-surface); padding: 10px 12px; display: flex; flex-direction: column; gap: var(--rtm-e-2); min-width: 0; }
 .bodega-cliente-cab { display: flex; justify-content: space-between; align-items: baseline; gap: var(--rtm-e-3); }
 .bodega-cliente-nombre { margin: 0; font-size: 16px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
@@ -34,6 +34,23 @@
 .bodega-lineas li { display: flex; justify-content: space-between; gap: var(--rtm-e-3); font-variant-numeric: tabular-nums; min-width: 0; }
 .bodega-lineas li > span { min-width: 0; overflow-wrap: anywhere; }
 
+/* Movil (360 a 430): marca y acciones en una fila, secciones en otra que se desliza sin partirse. */
+@media (max-width: 767px) {
+  .bodega-barra { flex-wrap: wrap; row-gap: 0; padding-block: var(--rtm-e-1); }
+  .bodega-barra-acciones { order: 1; margin-left: auto; }
+  .bodega-barra > nav { order: 2; width: 100%; min-width: 0; }
+  .bodega-nav { scrollbar-width: none; }
+  .bodega-nav::-webkit-scrollbar { display: none; }
+  .bodega-nav a { min-height: 44px; }
+  .bodega-contenido { padding-block: var(--rtm-e-2) var(--rtm-e-3); }
+}
 @media (pointer: coarse) {
   .bodega-nav a { min-height: 44px; }
 }
+
+/* Compacto (14-nov): cada cliente o compra dentro de su Tarjeta es una fila con filete, no una tarjeta anidada con doble borde. */
+.rtm-tarjeta-v2 .bodega-lista { gap: 0; }
+.rtm-tarjeta-v2 .bodega-cliente { border-width: 1px 0 0; border-radius: 0; background: transparent; padding: var(--rtm-e-2) 0; }
+.rtm-tarjeta-v2 .bodega-lista > .bodega-cliente:first-child { border-top-width: 0; padding-top: 0; }
+.bodega-cliente-nombre { font-size: var(--rtm-t-seccion); }
+.bodega-cliente-total { font-size: var(--rtm-t-seccion); }
