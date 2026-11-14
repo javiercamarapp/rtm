@@ -26,13 +26,13 @@ select catalogo.fijar_precio('b82p1', 'B82 Cliente Uno', 'B82 Modelo 50K', 15000
 select catalogo.fijar_precio('b82p2', 'B82 Cliente Dos', 'B82 Modelo 50K', 15500, '2026-11-01', 'chat');
 select operacion.registrar_movimiento('b82m1', 'B82 Modelo 50K', 'Fresa', 'bodega_omar', 'entrada_compra', 30, 300000, '2026-11-01');
 select operacion.registrar_movimiento('b82m2', 'B82 Modelo 50K', 'Uva', 'bodega_omar', 'entrada_compra', 100, 1000000, '2026-11-01');
-select operacion.crear_pedido('b82a', (select id from catalogo.cliente where nombre_canonico = 'B82 Cliente Uno'), '[{"modelo":"B82 Modelo 50K","sabor":"Fresa","piezas":25},{"modelo":"B82 Modelo 50K","sabor":"Uva","piezas":20}]'::jsonb, 'bodega_omar', null, 30000, 0, 0, '2026-11-12', null, null, null, 'nota privada con dinero 999');
+select operacion.crear_pedido('b82a', (select id from catalogo.cliente where nombre_canonico = 'B82 Cliente Uno'), '[{"modelo":"B82 Modelo 50K","sabor":"Fresa","piezas":25},{"modelo":"B82 Modelo 50K","sabor":"Uva","piezas":20}]'::jsonb, 'bodega_omar', null, 30000, 0, 0, negocio.hoy() - 1, null, null, null, 'nota privada con dinero 999');
 select operacion.confirmar_pedido('b82ac', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'b82a'));
 select operacion.marcar_empacado('b82ae', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'b82a'));
-select operacion.crear_pedido('b82b', (select id from catalogo.cliente where nombre_canonico = 'B82 Cliente Dos'), '[{"modelo":"B82 Modelo 50K","sabor":"Fresa","piezas":10}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-13');
+select operacion.crear_pedido('b82b', (select id from catalogo.cliente where nombre_canonico = 'B82 Cliente Dos'), '[{"modelo":"B82 Modelo 50K","sabor":"Fresa","piezas":10}]'::jsonb, 'bodega_omar', null, 0, 0, 0, negocio.hoy());
 select operacion.confirmar_pedido('b82bc', (select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = 'b82b'));
 -- Un borrador y un pedido directo del proveedor NO son trabajo de bodega.
-select operacion.crear_pedido('b82d', (select id from catalogo.cliente where nombre_canonico = 'B82 Cliente Dos'), '[{"modelo":"B82 Modelo 50K","sabor":"Uva","piezas":22}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-13');
+select operacion.crear_pedido('b82d', (select id from catalogo.cliente where nombre_canonico = 'B82 Cliente Dos'), '[{"modelo":"B82 Modelo 50K","sabor":"Uva","piezas":22}]'::jsonb, 'bodega_omar', null, 0, 0, 0, negocio.hoy());
 select operacion.crear_compra('b82o1', 'Isaac', '[{"modelo":"B82 Modelo 50K","sabor":"Fresa","pagadas":60},{"modelo":"B82 Modelo 50K","sabor":"Uva","pagadas":40}]'::jsonb, 45000, 0, '2026-11-20', 'bodega', 'sociedad', 'Angelo');
 select operacion.confirmar_compra('b82o1c', (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'b82o1'));
 select operacion.marcar_compra_enviada('b82o1e', (select (resultado->>'compra_id')::bigint from seguridad.operacion where clave = 'b82o1'), '[{"paqueteria":"Castores","numero":"B82-GUIA-1"}]'::jsonb, '2026-11-20', '2026-11-13');

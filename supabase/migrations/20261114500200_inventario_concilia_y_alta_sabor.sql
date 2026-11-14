@@ -159,9 +159,8 @@ begin
     'ultimo_conteo', v_ult, 'estado_conteo', v_estado);
 end $$;
 
+-- Las funciones de catalogo no se exponen: solo se llegan por api.conteo_agregar_sabor (security definer) o por el servidor.
 revoke execute on function catalogo.distancia_edicion(text, text), catalogo.parecido(text, text), catalogo.sabores_parecidos(text, int), catalogo.nombre_alta_valido(text, int),
-  catalogo.alta_sabor(text, bigint, text, text, boolean) from public, anon;
-grant execute on function catalogo.distancia_edicion(text, text), catalogo.parecido(text, text), catalogo.sabores_parecidos(text, int), catalogo.nombre_alta_valido(text, int),
-  catalogo.alta_sabor(text, bigint, text, text, boolean) to authenticated;
+  catalogo.alta_sabor(text, bigint, text, text, boolean) from public, anon, authenticated;
 revoke execute on function api.conteo_agregar_sabor(text, bigint, text, boolean), api.inventario_concilia() from public, anon;
 grant execute on function api.conteo_agregar_sabor(text, bigint, text, boolean), api.inventario_concilia() to authenticated;
