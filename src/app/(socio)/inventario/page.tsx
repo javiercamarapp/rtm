@@ -8,7 +8,7 @@ import type { EstadoCoberturaCodigo, ModeloInventario, SaborInventario } from '@
 import { etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { CifraComprobada } from '@/ui/componentes/cifra';
-import { Chip, ChipEstado, Pestanas } from '@/ui/componentes/controles';
+import { ChipEstado, Pestanas } from '@/ui/componentes/controles';
 import { FiltroCatalogo } from '@/ui/componentes/filtro-catalogo';
 import { MenuFiltro } from '@/ui/componentes/menu-filtro';
 import { ModeloMiniatura } from '@/ui/componentes/modelo';
