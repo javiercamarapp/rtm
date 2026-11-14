@@ -6,9 +6,11 @@ import { inventarioDeSocio } from '@/composicion/inventario';
 import { PALABRA_COBERTURA, TONO_COBERTURA, URGENCIA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
 import type { EstadoCoberturaCodigo, ModeloInventario, SaborInventario } from '@/dominio/inventario/tipos';
 import { etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { CifraComprobada } from '@/ui/componentes/cifra';
-import { Chip, ChipEstado, Pestanas } from '@/ui/componentes/controles';
+import { ChipEstado, Pestanas } from '@/ui/componentes/controles';
 import { FiltroCatalogo } from '@/ui/componentes/filtro-catalogo';
+import { MenuFiltro } from '@/ui/componentes/menu-filtro';
 import { ModeloMiniatura } from '@/ui/componentes/modelo';
 import { atajosDeMarcas, marcasDeParam } from '@/dominio/catalogo/filtro';
 import { BarList } from '@/ui/componentes/datos';
@@ -23,6 +25,7 @@ import { acumularPorTramo, TRAMOS } from '../_a2/antiguedad';
 import { dec, diasEntre, enlace, m, partePct, periodo, pctTexto, pz, pzs, fechaCorta, textoParam, tonoChip, uno, type Params } from '../_a2/util';
 import { ExportarInventario } from './exportar-inventario';
 import { PanelConcilia } from './concilia';
+import '@/ui/estilos/barrido-b.css';
 
 export const metadata: Metadata = { title: 'Inventario' };
 
@@ -118,7 +121,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
         eyebrow={`Inventario · ${etiquetaHoy()}`}
         titulo={sd ? 'Todavía no hay existencias' : `${formatearPiezas(inv.totales.piezas)} en la bodega`}
         descripcion="Existencia por modelo y sabor a costo promedio, con semáforo de reposición. El inventario es de los socios; su ubicación es la Bodega Omar."
-        acciones={<><a className="rtm-boton" href="/inventario/csv" data-testid="inventario-csv">CSV</a><ExportarInventario marcas={marcas} modelos={conDato.map((x) => ({ marca: x.marca, modelo: x.modelo }))} clientes={clientes.filter((c) => c.precios > 0 && c.activo).map((c) => ({ id: c.id, nombre: c.nombre }))} /></>}
+        acciones={<BarraAcciones etiquetaAria="Acciones del inventario" primarias={<><a className="rtm-boton" href="/inventario/csv" data-testid="inventario-csv" title="Descargar el inventario en CSV">CSV</a><ExportarInventario marcas={marcas} modelos={conDato.map((x) => ({ marca: x.marca, modelo: x.modelo }))} clientes={clientes.filter((c) => c.precios > 0 && c.activo).map((c) => ({ id: c.id, nombre: c.nombre }))} /></>} />}
       />
       <KpiLinea etiquetaAria="Resumen del inventario" celdas={[
         { id: 'valor', etiqueta: 'Valor del inventario', testid: 'inv-valor', categoria: 1, valor: sd ? null : <CifraComprobada texto={formatearMoneda(inv.totales.valor_cent)} cifra="inventario:valor" comprobacion={inv.comprobacion.valor_modelos_cent === inv.comprobacion.valor_sabores_cent ? 'cuadra' : 'no_cuadra'} />, nota: sd ? undefined : 'A costo promedio' },
@@ -136,15 +139,16 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
       )}
 
       {!sd && (
+        <details className="rtm-bb-plegable" data-testid="inv-mas-razones">
+          <summary>Semáforo de reposición y valor</summary>
         <FilaRatios etiqueta="Semáforo de reposición" items={(['urge', 'brevedad', 'siguiente', 'buena', 'excelente', 'sobrestock', 'sin_movimiento', 'sin_historia'] as EstadoCoberturaCodigo[]).map((e) => ({ etiqueta: PALABRA_COBERTURA[e], valor: String(conDato.filter((x) => x.estado === e).length) }))} />
-      )}
-      {!sd && (
         <FilaRatios etiqueta="Valor y disponibilidad" items={[
           { etiqueta: 'Valor medio por pieza', valor: inv.totales.piezas > 0 ? formatearMoneda(inv.totales.valor_cent / BigInt(Math.max(inv.totales.piezas, 1))) : null },
           { etiqueta: 'Disponibles de las piezas', valor: inv.totales.piezas > 0 ? `${dec((conDato.reduce((a, x) => a + (x.disponible ?? 0), 0) / inv.totales.piezas) * 100, 1)} %` : null },
           { etiqueta: 'Marcas con existencia', valor: String(marcas.length) },
           { etiqueta: 'Marca con más valor', valor: porMarca[0] ? `${porMarca[0].mc} · ${pctTexto(partePct(porMarca[0].v, totalValor)) ?? ''}` : null },
         ]} />
+        </details>
       )}
 
       {vista === 'existencias' && (
@@ -187,12 +191,12 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
             {filtro && <input type="hidden" name="estado" value={filtro.id} />}
             {soloCero && <input type="hidden" name="solo" value="cero" />}
             {soloApartado && <input type="hidden" name="solo" value="apartado" />}
-            <span className="rtm-a2-tira" role="group" aria-label="Filtros del semáforo">
-              <Chip href={chipLink({ estado: null, solo: null })} activo={!filtro && !soloCero && !soloApartado}>Todos</Chip>
-              {FILTROS.map((f) => <Chip key={f.id} href={chipLink({ estado: f.id, solo: null })} activo={filtro?.id === f.id}>{f.etiqueta} ({cuenta(f)})</Chip>)}
-              <Chip href={chipLink({ solo: 'cero', estado: null })} activo={soloCero}>Cero o negativa ({agotados})</Chip>
-              <Chip href={chipLink({ solo: 'apartado', estado: null })} activo={soloApartado}>Con apartado</Chip>
-            </span>
+            <MenuFiltro nombre="Estado" testid="filtro-estado" opciones={[
+              { href: chipLink({ estado: null, solo: null }), etiqueta: 'Todos', activa: !filtro && !soloCero && !soloApartado },
+              ...FILTROS.map((f) => ({ href: chipLink({ estado: f.id, solo: null }), etiqueta: `${f.etiqueta} (${cuenta(f)})`, activa: filtro?.id === f.id })),
+              { href: chipLink({ solo: 'cero', estado: null }), etiqueta: `Cero o negativa (${agotados})`, activa: soloCero },
+              { href: chipLink({ solo: 'apartado', estado: null }), etiqueta: 'Con apartado', activa: soloApartado },
+            ]} />
           </FiltrosUrl>
 
           <Tarjeta plana className="rtm-a2-tabla" titulo="Existencias por modelo y sabor" descripcion={`${visibles.length} modelos · abre un modelo para ver sus sabores`}>

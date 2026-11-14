@@ -33,6 +33,7 @@ test('inventario: el semaforo de cobertura habla en palabras y la cobertura se e
   await fila.getByRole('button', { name: /d\. Explicar este número/ }).click();
   await expect(page.getByTestId('explicar-cajon')).toContainText('Cuadra');
   await page.keyboard.press('Escape');
+  await page.getByTestId('filtro-estado').click();
   await page.getByRole('link', { name: /Por reponer/ }).click();
   await expect(page.getByRole('row').filter({ hasText: URGE }).first()).toBeVisible();
   await expect(page.getByRole('row').filter({ hasText: SOBRE })).toHaveCount(0);

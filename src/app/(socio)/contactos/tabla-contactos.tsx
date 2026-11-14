@@ -3,10 +3,12 @@
 import { useState, useTransition } from 'react';
 import { etiquetaOrigen, telefonoLegible, type ContactoFila, type FiltroContactos } from '@/dominio/contactos/vista';
 import { formatearEntero } from '@/dominio/formato';
+import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { Aviso } from '@/ui/componentes/controles';
 import { DataTable } from '@/ui/componentes/data-table';
 import { exportarContactos, revelarTelefono } from './acciones';
+import '@/ui/estilos/barrido-b.css';
 
 interface Props {
   filas: ContactoFila[];
@@ -68,16 +70,20 @@ export function TablaContactos({ filas, total, filtro }: Props) {
 
   return (
     <>
-      <div className="rtm-acciones-contactos" role="group" aria-label="Acciones sobre la selección">
-        <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setSeleccion(todosEnPagina ? new Set() : new Set(filas.map((f) => f.id)))}>
+      <div className="rtm-bb-barra">
+        <label className="rtm-casilla">
+          <input type="checkbox" checked={todosEnPagina} onChange={() => setSeleccion(todosEnPagina ? new Set() : new Set(filas.map((f) => f.id)))} data-testid="contactos-pagina" />
           {todosEnPagina ? 'Quitar selección de la página' : 'Seleccionar la página'}
-        </button>
-        <button type="button" className="rtm-boton rtm-boton-chico" disabled={ocupado || seleccion.size === 0} onClick={() => exportar([...seleccion])}>
-          Exportar selección ({formatearEntero(seleccion.size)})
-        </button>
-        <button type="button" className="rtm-boton rtm-boton-chico" disabled={ocupado || total === 0} onClick={() => exportar(null)}>
-          Exportar todo el filtro ({formatearEntero(total)})
-        </button>
+        </label>
+        <BarraAcciones
+          etiquetaAria="Exportar contactos"
+          primarias={
+            <>
+              <button type="button" className="rtm-boton" disabled={ocupado || seleccion.size === 0} onClick={() => exportar([...seleccion])} title="Exportar los contactos elegidos">Exportar selección ({formatearEntero(seleccion.size)})</button>
+              <button type="button" className="rtm-boton" disabled={ocupado || total === 0} onClick={() => exportar(null)} title="Exportar todo el filtro actual">Exportar todo ({formatearEntero(total)})</button>
+            </>
+          }
+        />
       </div>
       {error && <Aviso tono="error">{error}</Aviso>}
       {aviso && <Aviso tono="info">{aviso}</Aviso>}

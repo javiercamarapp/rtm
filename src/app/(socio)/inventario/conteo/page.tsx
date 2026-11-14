@@ -9,6 +9,7 @@ import '@/ui/estilos/paginas-a2.css';
 import { etiquetaHoy } from '../../contexto';
 import { HojaConteo } from './hoja-conteo';
 import { PanelConcilia } from '../concilia';
+import '@/ui/estilos/barrido-b.css';
 
 export const metadata: Metadata = { title: 'Conteo físico' };
 
@@ -33,7 +34,7 @@ export default async function PaginaConteo() {
       ]} />
       <PanelConcilia c={concilia} />
       {hoja.length === 0 ? (
-        <div className="rtm-dt-aviso"><strong>Nada que contar todavía</strong><p>La hoja de conteo se arma con los sabores que ya tuvieron una entrada en la Bodega Omar.</p></div>
+        <div className="rtm-dt-aviso rtm-bb-compacto"><strong>Nada que contar todavía</strong><p>La hoja de conteo se arma con los sabores que ya tuvieron una entrada en la Bodega Omar.</p></div>
       ) : (
         <HojaConteo ubicacion="bodega_omar" hoja={hoja} />
       )}

@@ -1,0 +1,56 @@
+/* Barrido de UI compacta, area B (proveedores, inventario, catalogo, costos, contactos, apertura). Solo reglas con prefijo rtm-bb-; solo tokens. */
+
+/* Estado vacio compacto: una o dos lineas, sin recuadro alto. */
+.rtm-bb-vacio { margin: 0; padding: 6px 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-3); line-height: 1.4; }
+.rtm-bb-vacio strong { color: var(--rtm-ink-2); font-weight: var(--rtm-peso-medio); margin-right: 6px; }
+
+/* Fila de acciones de una linea dentro de una tarjeta o dialogo (se desplaza, nunca se parte en dos filas). */
+.rtm-bb-linea { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-v-acciones); min-width: 0; overflow-x: auto; }
+.rtm-bb-linea > * { flex: 0 0 auto; }
+.rtm-bb-linea[data-fin] { justify-content: flex-end; }
+
+/* Pie de tarjeta sin relleno de mas. */
+.rtm-bb-pie { padding: 4px var(--rtm-pad-tarjeta); border-top: var(--rtm-borde); }
+
+/* Pagina de Karen: estado vacio compacto y fila de campo dentro del desplegable de filtros. */
+.rtm-kr-vacio.rtm-bb-compacto { padding: var(--rtm-e-3) var(--rtm-e-4); gap: 4px; }
+.rtm-kr-vacio.rtm-bb-compacto .rtm-kr-vacio-marca { width: 28px; height: 28px; border-radius: var(--rtm-r-2); font-size: 14px; }
+.rtm-kr-vacio.rtm-bb-compacto h2 { font-size: var(--rtm-t-cuerpo); }
+.rtm-bb-campo-fila { display: grid !important; gap: 4px; }
+.rtm-bb-campo-fila select { width: 100%; }
+.rtm-kr-marcas input[type='checkbox'] { width: 18px; height: 18px; margin: 0; accent-color: var(--rtm-ink); }
+
+/* Menu de filtro desplegable (src/ui/componentes/menu-filtro.tsx). */
+.rtm-bb-menu-filtro { position: relative; display: inline-block; }
+.rtm-bb-menu-filtro > .rtm-boton { gap: 6px; }
+.rtm-bb-menu-panel { position: absolute; z-index: 40; left: 0; top: calc(100% + 6px); min-width: 220px; max-width: min(320px, 90vw); display: flex; flex-direction: column; gap: 1px; padding: 4px; box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: 10px; background: var(--rtm-surface); box-shadow: var(--rtm-sombra-flotante); }
+.rtm-bb-menu-panel[hidden] { display: none; }
+.rtm-bb-menu-panel > .rtm-boton-item[aria-current='true'] { background: var(--rtm-fill-active); font-weight: 600; }
+
+/* Exportar PDF del inventario como ventana flotante: no estira el encabezado de la pagina. */
+.rtm-ba .rtm-exportar-panel { position: absolute; z-index: 40; right: 0; top: calc(100% + 6px); margin-top: 0; width: min(560px, 92vw); max-height: 80vh; overflow: auto; box-shadow: var(--rtm-sombra-flotante); background: var(--rtm-surface); }
+@media (max-width: 767px) {
+  .rtm-ba .rtm-exportar-panel { position: fixed; z-index: 60; inset: auto 8px 8px 8px; width: auto; }
+}
+
+/* Bloque plegable cerrado por omision (razones secundarias): resumen de una linea. */
+.rtm-bb-plegable { margin: 0; }
+.rtm-bb-plegable > summary { display: flex; align-items: center; min-height: 28px; cursor: pointer; font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-2); }
+.rtm-bb-plegable > summary:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
+.rtm-bb-plegable[open] > summary { margin-bottom: 4px; }
+@media (pointer: coarse) { .rtm-bb-plegable > summary { min-height: 44px; } }
+
+/* Barra sobre una tabla: casilla a la izquierda y acciones a la derecha, una sola fila. */
+.rtm-bb-barra { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: var(--rtm-v-acciones); padding: 6px var(--rtm-pad-tarjeta); border-bottom: var(--rtm-borde); min-width: 0; }
+.rtm-bb-barra > .rtm-casilla { flex: 0 1 auto; min-width: 0; min-height: 32px; }
+@media (pointer: coarse) { .rtm-bb-barra > .rtm-casilla { min-height: 44px; } }
+@media (max-width: 767px) { .rtm-bb-barra { flex-wrap: wrap; } }
+
+/* Boton ajeno al sistema de items dentro del menu "Mas": se ve como una fila del menu. */
+.rtm-bb-items > .rtm-boton { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 32px; padding: 0 10px; border: 0; background: transparent; font-weight: 500; }
+.rtm-bb-items > .rtm-boton:hover:not(:disabled) { background: var(--rtm-tint); }
+@media (pointer: coarse) { .rtm-bb-items > .rtm-boton { min-height: 44px; } }
+
+/* Aviso de estado vacio de tabla/hoja: relleno compacto. */
+.rtm-dt-aviso.rtm-bb-compacto { padding: var(--rtm-e-3) var(--rtm-e-4); gap: 2px; }
+@media (pointer: coarse) { .rtm-kr-marcas label, .rtm-bb-menu-panel > .rtm-boton-item { min-height: 44px; } }
