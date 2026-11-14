@@ -25,6 +25,7 @@ import { valuacionDeSocios } from '@/composicion/valuacion-socios';
 import { tarjetaValuacion } from '@/dominio/socios/valuacion';
 import { Contador } from '@/ui/graficas';
 import '@/ui/estilos/socios-valuacion.css';
+import { BannerIgualar } from '@/ui/componentes/banner-igualar';
 
 export const metadata: Metadata = { title: 'Inicio' };
 
@@ -114,6 +115,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
           </>
         }
       />
+      {valuacion && <BannerIgualar banner={valuacion.cuenta.banner} yo={valuacion.yo} />}
       <KpiLinea etiquetaAria="Indicadores del pulso" celdas={pulsoConPorPagar} />
       <KpiLinea
         etiquetaAria="Indicadores de la operación"

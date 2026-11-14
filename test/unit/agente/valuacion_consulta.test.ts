@@ -25,6 +25,7 @@ describe('consulta "mi valuacion" / "como estamos" del bot', () => {
     expect(texto).toContain('10691039');
     expect(texto).toContain('Tienes $47,921.91 menos que Javier');
     expect(texto).toContain('entrega a la sociedad los $35,475.00 que tienes cobrados y aporta $12,446.91 con el siguiente pago');
+    expect(texto).toContain('Debes reponer $47,921.91 para igualar valuación (entregar $35,475.00 y aportar $12,446.91)');
     expect(texto).not.toMatch(/tel[eé]fono|whatsapp/i);
     const o = await n.consultar(c, {} as never, { persona: 'omar', rol: 'omar', telegramUserId: 2 } as never, new Date(0));
     expect(o.lineas).toEqual([]);

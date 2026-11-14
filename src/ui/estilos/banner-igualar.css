@@ -1,0 +1,21 @@
+/* Banner de igualacion de valuacion (Inicio). Blanco y negro, solo tokens; el rotulo y el borde grueso distinguen la variante sin depender del color. */
+.bi-banner { display: flex; flex-direction: column; gap: 10px; padding: var(--rtm-pad-tarjeta); background: var(--rtm-surface); border: 1px solid var(--rtm-line-strong); border-radius: var(--rtm-r-3); animation: bi-entra 320ms ease-out both; }
+.bi-banner[data-variante='repone'] { border-left: 5px solid var(--rtm-ink); }
+.bi-banner[data-variante='informa'] { border-left: 5px double var(--rtm-line-strong); background: var(--rtm-panel); }
+.bi-rotulo { margin: 0; font-size: var(--rtm-t-micro); letter-spacing: var(--rtm-trk-eyebrow); text-transform: uppercase; color: var(--rtm-ink-3); font-weight: var(--rtm-peso-medio); }
+.bi-titulo { margin: 2px 0 0; font-size: var(--rtm-t-seccion); font-weight: var(--rtm-peso-fuerte); letter-spacing: var(--rtm-trk-seccion); color: var(--rtm-ink); }
+.bi-partidas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.bi-partidas > li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; padding: 8px 0; border-top: var(--rtm-borde); font-size: var(--rtm-t-cuerpo); }
+.bi-partidas > li:first-child { border-top: 0; }
+.bi-monto { font-variant-numeric: tabular-nums; font-weight: var(--rtm-peso-fuerte); }
+.bi-nota { margin: 0; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); line-height: 1.45; }
+.bi-pista { display: block; width: 100%; height: 6px; border-radius: var(--rtm-r-pildora); background: var(--rtm-line); overflow: hidden; }
+.bi-relleno { display: block; height: 100%; background: var(--rtm-ink); border-radius: var(--rtm-r-pildora); transform-origin: left; animation: bi-llena 700ms ease-out both; }
+.bi-detalle summary { cursor: pointer; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); font-weight: var(--rtm-peso-medio); }
+.bi-detalle[open] summary { margin-bottom: 6px; }
+.bi-detalle ul { list-style: none; margin: 0; padding: 0; font-size: var(--rtm-t-pequeno); }
+.bi-detalle li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .bi-partidas > li { grid-template-columns: minmax(0, 1fr) auto; } .bi-ir { grid-column: 1 / -1; justify-self: start; } }
+@keyframes bi-entra { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes bi-llena { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .bi-banner, .bi-relleno { animation: none; } }

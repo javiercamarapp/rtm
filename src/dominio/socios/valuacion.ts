@@ -1,6 +1,8 @@
 // Tipos y view-models de api.cuenta_socios_valuacion (migracion 20261114300000). La base ya calculo cada cifra; aqui solo se nombran y se redactan los textos
 // (comparacion entre socios, accion para igualar). Nada aqui calcula reglas de dinero: solo elige que frase corresponde a lo que la base entrego.
 
+import { fraseBannerAgente, type BannerIgualacion } from './banner-igualar';
+
 export type Socio = 'Angelo' | 'Javier';
 
 export interface FilaSocioValuacion {
@@ -105,6 +107,8 @@ export interface CuentaSociosValuacion {
   total: { capital_aportado_cent: bigint; utilidades_acumuladas_cent: bigint; retirado_cent: bigint; fondos_en_poder_cent: bigint; subtotal_cent: bigint; valuacion_cent: bigint };
   comparacion: ComparacionSocios;
   igualacion: IgualacionValuacion;
+  /** Banner de igualacion (migracion 20261114800000): null con un corte historico; ausente en bases anteriores. */
+  banner?: BannerIgualacion | null;
   balance: { total_activo_cent: bigint; total_pasivo_cent: bigint; capital_contable_cent: bigint; cuadra: boolean };
   identidades: IdentidadSocios[];
   comprobaciones_libro: { id: string; nombre: string; a_nombre: string; a_cent: bigint; b_nombre: string; b_cent: bigint; ok: boolean; unidad?: 'n' }[];
@@ -253,6 +257,7 @@ export function puntosSerie(c: CuentaSociosValuacion, socio: Socio): { mes: stri
 export interface VistaValuacionAgente {
   socios: { socio: Socio; valuacion_cent: bigint; fondos_en_poder_cent: bigint; capital_aportado_cent: bigint }[];
   igualacion: IgualacionValuacion;
+  banner?: BannerIgualacion | null;
   retiros_desiguales: boolean;
   diferencia_retiros_cent: bigint;
   retiro_mas: Socio | null;
@@ -273,6 +278,8 @@ export function respuestaValuacionAgente(v: VistaValuacionAgente, yo: Socio, for
     textos.push({ etiqueta: 'Estado', texto: textoFaltan({ igualacion: ig }, formato) });
     const ind = indicacionesSocio({ igualacion: ig }, yo, formato);
     ind.forEach((t, i) => textos.push({ etiqueta: i === 0 ? 'Cómo igualar' : 'Además', texto: t }));
+    const frase = fraseBannerAgente(v.banner, yo, formato);
+    if (frase) textos.push({ etiqueta: 'Igualar valuación', texto: frase });
   }
   if (v.retiros_desiguales && v.retiro_mas) textos.push({ etiqueta: 'Retiros', texto: `${v.retiro_mas} se ha pagado ${formato(v.diferencia_retiros_cent)} más que ${otroSocio(v.retiro_mas)}` });
   return { valuacionCent: mia.valuacion_cent, textos };
