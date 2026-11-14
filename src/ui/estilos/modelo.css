@@ -1,0 +1,29 @@
+/* Miniatura y tarjeta de modelo: un solo diseno para Inventario, Catalogo, pedidos, compras y la cuenta de Omar. Blanco y negro: la foto va desaturada y recupera el color al pasar el cursor o enfocar. */
+.rtm-modelo-foto {
+  --rtm-modelo-w: 44px;
+  position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: var(--rtm-modelo-w); aspect-ratio: 4 / 5; overflow: hidden; box-sizing: border-box;
+  border-radius: var(--rtm-r-2, 6px); border: 1px solid var(--rtm-line-2); background: var(--rtm-tint);
+}
+.rtm-modelo-foto[data-tam='xs'] { --rtm-modelo-w: 32px; border-radius: 5px; }
+.rtm-modelo-foto[data-tam='s'] { --rtm-modelo-w: 44px; }
+.rtm-modelo-foto[data-tam='m'] { --rtm-modelo-w: 96px; border-radius: 8px; }
+.rtm-modelo-foto > img {
+  width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;
+  filter: grayscale(1) contrast(1.04); transition: filter 220ms ease, transform 320ms ease; animation: rtm-modelo-entra 260ms ease both;
+}
+.rtm-modelo-tarjeta:hover .rtm-modelo-foto > img, .rtm-modelo-foto:hover > img, .rtm-modelo-tarjeta:focus-within .rtm-modelo-foto > img { filter: none; transform: scale(1.03); }
+.rtm-modelo-foto[data-vacia] { flex-direction: column; gap: 2px; background: var(--rtm-tint); color: var(--rtm-ink-3); font-weight: 600; letter-spacing: 0.04em; }
+.rtm-modelo-foto[data-vacia] > span { font-size: calc(var(--rtm-modelo-w) * 0.3); line-height: 1; }
+.rtm-modelo-foto[data-vacia] > small { font-size: 11px; font-weight: 500; letter-spacing: 0; }
+@keyframes rtm-modelo-entra { from { opacity: 0; } to { opacity: 1; } }
+:root[data-movimiento='reduced'] .rtm-modelo-foto > img, :root[data-movimiento='off'] .rtm-modelo-foto > img { animation: none; transition: none; transform: none; }
+@media (prefers-reduced-motion: reduce) { .rtm-modelo-foto > img { animation: none; transition: none; transform: none !important; } }
+
+.rtm-modelo-tarjeta { display: flex; align-items: center; gap: var(--rtm-e-3); min-width: 0; }
+.rtm-modelo-texto { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.rtm-modelo-texto > small { font-size: 11px; line-height: 1.2; letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-ink-3); }
+.rtm-modelo-texto > strong { font-weight: 600; font-size: var(--rtm-ctl-fs); line-height: 1.25; color: var(--rtm-ink); overflow-wrap: anywhere; }
+.rtm-modelo-detalle { font-size: 12px; color: var(--rtm-ink-2); }
+.rtm-modelo-acciones { margin-left: auto; flex: none; }
+.rtm-modelo-tarjeta[data-tam='m'] { align-items: flex-start; gap: var(--rtm-e-4); }

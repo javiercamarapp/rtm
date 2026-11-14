@@ -7,6 +7,7 @@ import { formatearMoneda } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
+import { ModeloMiniatura } from '@/ui/componentes/modelo';
 import { BarraFiltros, Chip, ChipEstado } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
@@ -104,7 +105,7 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
           vacio={{ titulo: 'Sin resultados', texto: 'Ningún modelo coincide con el filtro.', accion: <Link className="rtm-boton" href="/catalogo">Quitar filtros</Link> }}
           columnas={[
             { id: 'marca', titulo: 'Marca', ancho: 'm', secundaria: true, celda: (m) => m.marca },
-            { id: 'modelo', titulo: 'Modelo', ancho: 'xl', celda: (m) => <Link href={`/catalogo?modelo=${m.id}#precios`}>{m.nombre}</Link> },
+            { id: 'modelo', titulo: 'Modelo', ancho: 'xl', celda: (m) => <span className="rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={m.nombre} marca={m.marca} tam="xs" /><Link href={`/catalogo?modelo=${m.id}#precios`}>{m.nombre}</Link></span> },
             { id: 'estado', titulo: 'Disponibilidad', ancho: 'l', celda: (m) => (m.estado === 'disponible' ? <ChipEstado tono="ok">Disponible</ChipEstado> : <ChipEstado tono="atencion">Sin disponibilidad</ChipEstado>) },
             { id: 'isaac', titulo: 'Costo Isaac', numerica: true, ancho: 'm', celda: (m) => { const c = costoDe(m, 'Isaac'); return c ? formatearMoneda(c.costoCent) : <SinDato />; } },
             { id: 'karen', titulo: 'Costo Karen', numerica: true, ancho: 'm', celda: (m) => { const c = costoDe(m, 'Karen'); return c ? <>{formatearMoneda(c.costoCent)} {c.supuesto && <EstadoTexto tono="atencion">supuesto</EstadoTexto>}</> : <SinDato />; } },

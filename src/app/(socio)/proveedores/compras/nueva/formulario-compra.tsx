@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { normalizar } from '@/dominio/catalogo/normalizar';
 import { formatearMoneda } from '@/dominio/formato';
+import { ModeloTarjeta } from '@/ui/componentes/modelo';
 import type { CatalogoCompra } from '@/dominio/operacion/tipos';
 import { centavosDeTexto, useAccion } from '../../../operacion/usar-accion';
 
@@ -74,6 +75,7 @@ export function FormularioCompra({ proveedor, catalogo, modeloInicial, disponibl
               {modelos.map((m) => <option key={m.modelo} value={m.modelo}>{m.marca} · {m.modelo}</option>)}
             </select>
           </label>
+          {modelo !== '' && <ModeloTarjeta modelo={modelo} marca={modelos.find((x) => x.modelo === modelo)?.marca} tam="s" testid="oc-modelo-elegido" />}
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Sabor
             <select className="rtm-campo" value={skuId} onChange={(e) => { const v = e.target.value === '' ? '' : Number(e.target.value); setSkuId(v); setCosto(textoPesos(catalogo.skus.find((s) => s.sku_id === v)?.costo_cent ?? null)); }} disabled={modelo === ''} data-testid="oc-sabor">
               <option value="">Elige un sabor</option>

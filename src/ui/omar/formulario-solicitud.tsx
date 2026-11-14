@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useId, useRef, useState, useTransition } from 'react';
+import { ModeloTarjeta } from '../componentes/modelo';
 import { maximoPara, modelosDe, saboresDe } from '@/dominio/omar/solicitud';
 import type { PiezaDisponible, ResultadoSolicitud } from '@/dominio/omar/tipos';
 import { formatearPiezas } from '@/dominio/formato';
@@ -63,6 +64,7 @@ export function FormularioSolicitud({ disponible, tope, caducaHoras, enviar }: P
           {modelos.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </label>
+      {modelo !== '' && <ModeloTarjeta modelo={modelo} tam="s" testid="solicitud-modelo" />}
       <label className="rtm-etiqueta-campo" htmlFor={`${id}-s`}>Sabor
         <select id={`${id}-s`} className="rtm-campo" value={saborValido} onChange={(e) => setSabor(e.target.value)}>
           {sabores.map((s) => <option key={s.sabor} value={s.sabor}>{s.sabor} ({formatearPiezas(s.piezas)})</option>)}
