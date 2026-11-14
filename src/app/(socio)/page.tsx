@@ -74,7 +74,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   const pulsoCeldas = pulsoBase.map((c) => c.id !== 'socios' || !tv ? c : {
     ...c, etiqueta: tv.titulo, href: '/socios', testid: 'inicio-valuacion', ayuda: 'Capital aportado más utilidades acumuladas, menos lo retirado y los fondos de la sociedad en tu poder. Compara contra el otro socio.', partes: undefined,
     valor: <span data-testid="inicio-valuacion-cifra"><Contador valor={Number(tv.valorCent)} tipo="moneda" /></span>,
-    nota: <span className="sv-inicio" data-testid="inicio-valuacion-nota"><span className="sv-linea" data-testid="inicio-valuacion-comparacion">{tv.comparacion}</span>{tv.accion && <span className="sv-accion" data-testid="inicio-valuacion-accion">{tv.accion}</span>}</span>,
+    nota: <span className="sv-inicio" data-testid="inicio-valuacion-nota"><span className="sv-linea" data-testid="inicio-valuacion-comparacion">{tv.comparacion}</span><span className="sv-accion" data-testid="inicio-valuacion-faltan">{tv.faltan}</span>{tv.indicaciones.length > 0 ? tv.indicaciones.map((t, i) => <span key={i} className="sv-accion" data-testid="inicio-valuacion-accion">{t}</span>) : tv.accion && <span className="sv-accion" data-testid="inicio-valuacion-accion">{tv.accion}</span>}</span>,
   });
 
   const reponer = (inv?.modelos ?? []).filter((m) => m.estado !== null && ['urge', 'brevedad', 'siguiente'].includes(m.estado)).sort((a, b) => URGENCIA_COBERTURA[a.estado!] - URGENCIA_COBERTURA[b.estado!] || (a.cobertura_dias ?? 0) - (b.cobertura_dias ?? 0)).slice(0, 6);

@@ -1,7 +1,8 @@
 import '@/ui/estilos/socios-valuacion.css';
 import type { ReactNode } from 'react';
 import { etiquetaMesCapital } from '@/dominio/capital/etiquetas';
-import { alertaRetiros, fraseIgualar, notaDiferencias, puntosSerie, otroSocio, TEXTO_VALUACION_SUBE, type CuentaSociosValuacion, type FilaSocioValuacion, type Socio } from '@/dominio/socios/valuacion';
+import Link from 'next/link';
+import { alertaRetiros, desgloseDiferencia, fraseIgualar, indicacionesSocio, textoFaltan, notaDiferencias, puntosSerie, otroSocio, TEXTO_VALUACION_SUBE, type CuentaSociosValuacion, type FilaSocioValuacion, type Socio } from '@/dominio/socios/valuacion';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Tarjeta } from '@/ui/componentes/pagina';
 import { AreaSerie, Contador } from '@/ui/graficas';
@@ -53,6 +54,45 @@ export function ComparativaValuaciones({ c, yo }: { c: CuentaSociosValuacion; yo
       {nota && <p className="sv-explica" data-testid="nota-diferencias">{nota}</p>}
       {alerta && <p className="sv-alerta" role="alert" data-testid="alerta-retiros">{alerta}</p>}
       <p className="sv-explica" data-testid="texto-sube">{TEXTO_VALUACION_SUBE} La valuación es lo que invertiste más las utilidades acumuladas, menos lo que te has pagado.</p>
+    </Tarjeta>
+  );
+}
+
+/** Desglose explicito de por que uno vale menos que el otro y que hace falta para estar identicos (la valuacion SI resta los fondos de la sociedad en su poder). Todo viene de la base. */
+export function DesgloseIgualacion({ c, yo }: { c: CuentaSociosValuacion; yo: Socio | null }) {
+  const ig = c.igualacion;
+  const filas = desgloseDiferencia(c, m);
+  const menor = ig.menor;
+  const cobros = menor ? (c.socios.find((s) => s.socio === menor)?.fondos_detalle ?? []) : [];
+  const indicaciones = (['Angelo', 'Javier'] as Socio[]).filter((s) => yo === null || s === yo).flatMap((s) => indicacionesSocio(c, s, m).map((t) => ({ s, t })));
+  return (
+    <Tarjeta titulo="Por qué hay diferencia y cómo igualar" descripcion="La valuación resta los fondos de la sociedad que cada uno tiene cobrados; siempre debemos estar idénticos" acciones={<Estado tono={ig.igualados ? 'ok' : 'atencion'}>{ig.igualados ? 'Igualados' : 'Por igualar'}</Estado>}>
+      <p className="sv-frase" data-testid="faltan-identicos">{textoFaltan(c, m)}</p>
+      {!ig.igualados && menor && ig.mayor && (
+        <ul className="sv-rubros" aria-label="Desglose de la diferencia de valuación" data-testid="desglose-diferencia">
+          {filas.map((f) => (
+            <li key={f.id} data-testid={`desglose-${f.id}`}><span>{f.texto}</span><span>{f.montoCent < 0n ? '−' : ''}{m(f.montoCent < 0n ? -f.montoCent : f.montoCent)}</span></li>
+          ))}
+          <li className="sv-total"><span>Diferencia de valuación ({ig.mayor} {m(c.socios.find((s) => s.socio === ig.mayor)?.valuacion_cent ?? 0n)} contra {menor} {m(c.socios.find((s) => s.socio === menor)?.valuacion_cent ?? 0n)})</span><span data-testid="desglose-total">{m(ig.faltan_cent)}</span></li>
+        </ul>
+      )}
+      {indicaciones.length > 0 && (
+        <ul className="sv-indicaciones" data-testid="indicaciones-igualar">
+          {indicaciones.map((i, k) => <li key={k} data-socio={i.s}>{yo === null ? `${i.s}: ` : ''}{i.t}</li>)}
+        </ul>
+      )}
+      {cobros.length > 0 && menor && (
+        <div data-testid="cobros-fondos">
+          <p className="sv-explica">Cobros de clientes que le pagaron a {menor} y siguen pendientes de entregar a la sociedad:</p>
+          <ul className="sv-rubros">
+            {cobros.map((f, k) => (
+              <li key={k}><span>{f.fecha}{f.cliente ? ` · ${f.cliente}` : ''}{f.motivo ? ` · ${f.motivo}` : ''}</span><span>{m(f.monto_cent)}</span></li>
+            ))}
+          </ul>
+          <p className="sv-explica"><Link href={`/socios/${menor}`}>Ver la cuenta de {menor} y esos cobros</Link></p>
+        </div>
+      )}
+      {ig.coincide_con_libro ? null : !ig.igualados && <p className="sv-explica">Con retiros desiguales, estos pasos igualan valuaciones; la diferencia de aportaciones del libro es {m(ig.diferencia_libro_cent)}.</p>}
     </Tarjeta>
   );
 }

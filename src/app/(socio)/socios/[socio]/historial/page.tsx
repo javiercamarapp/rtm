@@ -86,7 +86,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
       {sinH && <Aviso tono="info" titulo="Sin historial todavía.">Las cifras aparecen como «Sin dato» hasta que haya ventas, aportaciones o un acta firmada; nunca se muestra un cero inventado.</Aviso>}
       {t?.provisional && <Aviso tono="atencion" titulo="Utilidad provisional.">Hay guías sin costo real; la utilidad se ajusta cuando se costeen.</Aviso>}
 
-      {tv && !sinH && <Aviso tono={tv.estado === 'igual' ? 'info' : 'atencion'} titulo={`Valuación de ${socio} ${tv.valorTexto}: ${tv.comparacion}`}>{tv.accion ?? 'Las dos valuaciones son iguales.'} Misma cifra que la Cuenta de socios y el Balance.</Aviso>}
+      {tv && !sinH && <Aviso tono={tv.estado === 'igual' ? 'info' : 'atencion'} titulo={`Valuación de ${socio} ${tv.valorTexto}: ${tv.comparacion}`}>{tv.faltan}. {tv.indicaciones.length > 0 ? `${tv.indicaciones.join('. ')}.` : 'Las dos valuaciones son iguales.'} Misma cifra que la Cuenta de socios y el Balance.</Aviso>}
 
       <KpiLinea
         etiquetaAria="Cabecera del historial personal"
