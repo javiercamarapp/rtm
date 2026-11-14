@@ -18,15 +18,15 @@
 .omar-barra-acciones { margin-left: auto; display: flex; align-items: center; gap: var(--rtm-e-2); }
 .omar-contenido {
   width: 100%; max-width: 1120px; margin: 0 auto; flex: 1 1 auto; min-width: 0;
-  padding: var(--rtm-e-6) max(var(--rtm-e-4), env(safe-area-inset-left)) var(--rtm-e-8) max(var(--rtm-e-4), env(safe-area-inset-right));
-  display: flex; flex-direction: column; gap: var(--rtm-e-6);
+  padding: var(--rtm-e-3) max(var(--rtm-e-4), env(safe-area-inset-left)) var(--rtm-e-4) max(var(--rtm-e-4), env(safe-area-inset-right));
+  display: flex; flex-direction: column; gap: var(--rtm-ritmo);
 }
-.omar-pie { padding: var(--rtm-e-3) var(--rtm-e-4); text-align: center; font-size: 12px; color: var(--rtm-ink-3); }
+.omar-pie { padding: var(--rtm-e-2) var(--rtm-e-4); text-align: center; font-size: 12px; color: var(--rtm-ink-3); }
 
 /* Rejilla de bloques: 1 columna en el plegado cerrado, 2 desde ~640 px de contenido. */
-.omar-rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--rtm-e-6); align-items: start; }
+.omar-rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--rtm-ritmo); align-items: start; }
 .omar-rejilla > * { min-width: 0; }
-.omar-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: var(--rtm-e-3); }
+.omar-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: var(--rtm-ritmo); }
 .omar-cifra { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-3) var(--rtm-e-4); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .omar-cifra-valor { font-family: var(--rtm-fuente-ui); font-weight: 600; font-size: 24px; line-height: 28px; font-variant-numeric: tabular-nums; margin: 0; overflow-wrap: anywhere; }
 .omar-cifra-media { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 0; }
@@ -35,7 +35,7 @@
 .omar-estimado { border: 1px solid var(--rtm-ink); border-radius: var(--rtm-r-3); padding: var(--rtm-e-4); display: flex; flex-direction: column; gap: var(--rtm-e-2); background: var(--rtm-surface); }
 .omar-sello { align-self: flex-start; border: 1px solid var(--rtm-ink); border-radius: var(--rtm-r-pildora); padding: 0 var(--rtm-e-3); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 
-.omar-form { display: flex; flex-direction: column; gap: var(--rtm-e-3); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-4); }
+.omar-form { display: flex; flex-direction: column; gap: var(--rtm-v-gap-tarjeta); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-4); }
 .omar-form .rtm-etiqueta-campo { width: 100%; }
 .omar-form select, .omar-form input { width: 100%; }
 .omar-ok { margin: 0; font-size: 13px; color: var(--rtm-ok); }
@@ -44,11 +44,21 @@
 .omar-paquete-cab { display: flex; justify-content: space-between; align-items: baseline; gap: var(--rtm-e-3); flex-wrap: wrap; }
 .omar-paquete ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
 .omar-paquete li { display: flex; justify-content: space-between; gap: var(--rtm-e-3); font-variant-numeric: tabular-nums; }
-.omar-lista { display: flex; flex-direction: column; gap: var(--rtm-e-3); margin: 0; padding: 0; list-style: none; }
+.omar-lista { display: flex; flex-direction: column; gap: var(--rtm-v-gap-tarjeta); margin: 0; padding: 0; list-style: none; }
 
 @media (max-width: 480px) {
   .omar-cifra-valor { font-size: 22px; line-height: 26px; }
-  .omar-barra-acciones { margin-left: 0; }
+}
+/* Movil (360 a 430): una fila para marca y acciones y otra para las secciones, que se deslizan en una sola linea sin partirse.
+   Las acciones (apariencia, tema, salir) quedan a la derecha de la marca; nada baja a un tercer renglon. */
+@media (max-width: 767px) {
+  .omar-barra { flex-wrap: wrap; row-gap: 0; padding-block: var(--rtm-e-1); }
+  .omar-barra-acciones { order: 1; margin-left: auto; }
+  .omar-barra > nav { order: 2; width: 100%; min-width: 0; }
+  .omar-nav { scrollbar-width: none; }
+  .omar-nav::-webkit-scrollbar { display: none; }
+  .omar-nav a { min-height: 44px; }
+  .omar-contenido { padding-block: var(--rtm-e-2) var(--rtm-e-3); }
 }
 @media (pointer: coarse) {
   .omar-nav a { min-height: 44px; }
@@ -61,3 +71,17 @@
 .omar-buscador .rtm-campo { height: var(--rtm-h-ctl); width: 100%; }
 .omar-estimado { border-radius: var(--rtm-r-ctl); padding: 12px; gap: 6px; }
 .omar-paquete { border-radius: var(--rtm-r-ctl); padding: 10px 12px; }
+
+/* Compacto (14-nov): el formulario y la proyeccion ya viven dentro de una Tarjeta; sin su propio borde ni relleno no hay doble marco ni doble margen. */
+.rtm-tarjeta-v2 > :is(.omar-form, .omar-estimado) { border: 0; border-radius: 0; padding: 0; background: transparent; }
+.omar-form-fila { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--rtm-e-2); align-items: end; }
+.omar-form-fila > * { min-width: 0; }
+.omar-form-fila-fin { grid-template-columns: minmax(0, 1fr) auto; }
+.omar-form-fila-fin > .rtm-boton { min-width: 120px; }
+@media (max-width: 480px) {
+  .omar-form-fila:not(.omar-form-fila-fin) { grid-template-columns: minmax(0, 1fr); }
+}
+/* Paquetes dentro de su tarjeta: filas separadas por filete, no una tarjeta por paquete dentro de otra tarjeta. */
+.rtm-tarjeta-v2 .omar-lista { gap: 0; }
+.rtm-tarjeta-v2 .omar-paquete { border-width: 1px 0 0; border-radius: 0; background: transparent; padding: var(--rtm-e-2) 0; }
+.rtm-tarjeta-v2 .omar-lista > .omar-paquete:first-child { border-top-width: 0; padding-top: 0; }
