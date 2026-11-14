@@ -199,3 +199,32 @@ export function textoPregunta(nombreA: string, nombreB: string, ambiguo = false)
     ? `¿"${nombreA}" es lo mismo que "${nombreB}"? No estoy seguro: la equivalencia no es segura.`
     : `¿"${nombreA}" es lo mismo que "${nombreB}"?`;
 }
+
+// ---- Lo que la web y el bot reciben de api.duplicados_pendientes / api.duplicado_responder ----
+export interface LadoPregunta { id: number; nombre: string; skus: number; lineas_pedido: number; piezas: number }
+export interface PreguntaDuplicado {
+  id: number;
+  tipo: TipoDuplicado;
+  puntaje: number;
+  clase: Exclude<ClaseDuplicado, 'DISTINTO'>;
+  motivo: string;
+  ambiguo: boolean;
+  preguntado_at: string;
+  a: LadoPregunta;
+  b: LadoPregunta;
+  pregunta: string;
+  /** Canonico que propone la base (mas sku; a igual, el de id menor). El socio puede elegir el otro. */
+  canonico_sugerido: number;
+  /** Solo los sabores se unen hoy; modelos y clientes se detectan y se preguntan, pero no se unifican (fase posterior). */
+  se_puede_unir: boolean;
+}
+export type ResultadoRespuesta =
+  | { estado: 'unificado'; unificacion_id: number; origen: string; destino: string; skus_reasignados: number; skus_fusionados: number; pregunta_id: number }
+  | { estado: 'distinto' | 'confirmado_igual' | 'ya_contestada'; pregunta_id: number }
+  | { estado: 'bloqueado'; origen: string; destino: string; bloqueos: { sku_id: number; modelo: string; motivos: string[] }[]; ayuda: string };
+
+export const ETIQUETA_CLASE: Record<PreguntaDuplicado['clase'], string> = {
+  IGUAL_NORMALIZADO: 'Casi seguro: mismo nombre',
+  MUY_PROBABLE: 'Muy probable',
+  POSIBLE: 'Posible',
+};
