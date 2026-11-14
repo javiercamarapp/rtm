@@ -50,3 +50,7 @@
 .rtm-bb-items > .rtm-boton { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 32px; padding: 0 10px; border: 0; background: transparent; font-weight: 500; }
 .rtm-bb-items > .rtm-boton:hover:not(:disabled) { background: var(--rtm-tint); }
 @media (pointer: coarse) { .rtm-bb-items > .rtm-boton { min-height: 44px; } }
+
+/* Aviso de estado vacio de tabla/hoja: relleno compacto. */
+.rtm-dt-aviso.rtm-bb-compacto { padding: var(--rtm-e-3) var(--rtm-e-4); gap: 2px; }
+@media (pointer: coarse) { .rtm-kr-marcas label, .rtm-bb-menu-panel > .rtm-boton-item { min-height: 44px; } }
