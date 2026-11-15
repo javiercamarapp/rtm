@@ -16,6 +16,8 @@ import { crearEnviadorTelegram, type FetchLike } from '@/infra/agente/telegram_a
 import { manejarWebhook, type RespuestaWebhook } from '@/infra/agente/telegram_webhook';
 import { PuertoTareasDb, RepositorioEntregasDb } from '@/infra/notificaciones/postgres';
 import { enviadorTelegramDeLotes } from '@/infra/notificaciones/telegram_lotes';
+import { ejecutarPendientes, ejecutarResumenDiario } from '@/aplicacion/notificaciones/reportes_programados';
+import { PuertoReportesDb } from '@/infra/notificaciones/reportes_postgres';
 import { llamadaProveedoresServidor } from '@/infra/postgres/proveedores';
 import { sqlServidor, type Sql } from '@/infra/postgres/servidor';
 import { secretoValido } from '@/infra/agente/telegram_webhook';
@@ -144,6 +146,9 @@ export function manejadoresDeTareas(d: DepsProduccion): Record<string, Manejador
     'reporte-semanal': reporte('semanal'),
     'reporte-semanal-reintento': reporte('semanal'),
     'reporte-mensual': reporte('mensual'),
+    // Mensajes programados al grupo: plantilla sobre cifras SQL, emitidos por la puerta unica; con la regla o el maestro apagados quedan `omitida` y no sale nada.
+    'resumen-diario': () => ejecutarResumenDiario(new PuertoReportesDb(d.sql), ahoraDe(d)()),
+    'pendientes-diarios': () => ejecutarPendientes(new PuertoReportesDb(d.sql), ahoraDe(d)()),
   };
 }
 
