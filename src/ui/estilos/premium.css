@@ -442,22 +442,16 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-a1-sub dt { font-size: var(--rtm-t-micro); letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-ink-3); }
 .rtm-a1-sub dd { margin: 0; font-size: var(--rtm-cuerpo); font-weight: var(--rtm-peso-fuerte); }
 .rtm-a1-subtitulo { margin: 4px 0 0; font-size: var(--rtm-t-micro); letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-ink-3); }
-/* Etapa 3: pilas de tarjetas que comparten fila con una tarjeta alta (sin vacios) y listados que crecen para llenar la altura */
+/* Etapa 3: pilas de tarjetas que comparten fila con una tarjeta alta. Los bloques NO se estiran para llenar el vacio (pedido del dueno, 14-nov): el hueco se llena con contenido nuevo y util. */
 .rtm-pila-llena { display: flex; flex-direction: column; gap: var(--rtm-ritmo); min-width: 0; }
 .rtm-pila-llena > .rtm-tarjeta-v2, .a3-pila > .rtm-tarjeta-v2, .rtm-a2-apilado > .rtm-tarjeta-v2 { flex: 1 1 auto; }
-:is(.rtm-rejilla, .rtm-pila-llena, .a3-pila, .rtm-a2-apilado) > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos) { flex: 1 1 auto; }
-:is(.rtm-rejilla, .rtm-pila-llena, .a3-pila, .rtm-a2-apilado) > .rtm-tarjeta-v2 > .rtm-barlist:not([data-columnas='2']) > li { flex: 1 1 auto; max-height: 96px; display: flex; flex-direction: column; justify-content: center; }
+:is(.rtm-rejilla, .rtm-pila-llena, .a3-pila, .rtm-a2-apilado) > .rtm-tarjeta-v2 > .rtm-hallazgos { flex: 1 1 auto; }
 :is(.rtm-rejilla, .a3-pila) > .rtm-tarjeta-v2 > .rtm-hallazgos > li { flex: 1 1 auto; max-height: 76px; }
 .rtm-hallazgos { display: flex; flex-direction: column; }
 /* Envolturas de bloque (data-testid) como hijos de rejilla: la tarjeta de dentro estira; los estados vacios llenan la tarjeta */
 .rtm-rejilla > div[data-testid] { display: flex; flex-direction: column; min-width: 0; }
 .rtm-rejilla > div[data-testid] > .rtm-tarjeta-v2 { flex: 1 1 auto; }
 .rtm-tarjeta-v2 > :is(.a3-grafica-vacia, .rtm-g-aviso, .rtm-a1-estado-vacio) { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
-:is(.rtm-rejilla, .rtm-pila-llena, .a3-pila) > div[data-testid] > .rtm-tarjeta-v2 > :is(.rtm-barlist, .rtm-hallazgos) { flex: 1 1 auto; }
-:is(.rtm-rejilla, .rtm-pila-llena, .a3-pila) > div[data-testid] > .rtm-tarjeta-v2 > .rtm-barlist:not([data-columnas='2']) > li { flex: 1 1 auto; max-height: 96px; display: flex; flex-direction: column; justify-content: center; }
-.rtm-tarjeta-v2 > .rtm-a1-cuerpo { flex: 1 1 auto; }
-.rtm-tarjeta-v2 > .rtm-a1-cuerpo > .rtm-barlist { flex: 1 1 auto; }
-.rtm-tarjeta-v2 > .rtm-a1-cuerpo > .rtm-barlist:not([data-columnas='2']) > li { flex: 1 1 auto; max-height: 72px; display: flex; flex-direction: column; justify-content: center; }
 .rtm-tarjeta-v2 > .a3-acciones:last-child { margin-top: auto; }
 
 
