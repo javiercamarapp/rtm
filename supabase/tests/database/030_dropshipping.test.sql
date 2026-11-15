@@ -109,7 +109,7 @@ select is((select o->>'texto' from _o1) like '%*** ** 11%', true, 'la vista prev
 select is((select count(*) from entrega.revelacion where accion = 'orden'), 0::bigint, 'la vista previa no se audita como revelacion');
 create temp table _o2 as select api.ds_orden_proveedor(pg_temp.ped('ds-a:ped'), true) as o;
 select is((select o->>'texto' from _o2),
-$t$Pedido P-0001
+$t$Pedido DC-001
 
 DS Marca DS Modelo 25K (100 pzas)
 - Fresa x 40

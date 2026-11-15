@@ -72,7 +72,7 @@ select throws_ok($$ select agente.ejecutar_ext('mt:h1', 'pedido_menudeo', pg_tem
 select is((select count(*)::int from operacion.pedido), 0, '... y no deja nada');
 
 create temp table _p1 as select agente.ejecutar_ext('mt:p1', 'pedido_menudeo', pg_temp.pedido_args(negocio.hoy() + 2, '10:00') || jsonb_build_object('efecto_hash', (select j ->> 'efecto_hash' from _prev))) as j;
-select is((select j ->> 'folio' from _p1) ~ '^P-', true, 'pedido creado con folio P-');
+select is((select j ->> 'folio' from _p1) ~ '^[A-Z]{2}-[0-9]{3}$', true, 'pedido creado con folio por iniciales');
 select is((select tipo_venta from operacion.pedido_ds where pedido_id = (select (j ->> 'pedido_id')::bigint from _p1)), 'socio_a_costo', 'es un pedido a costo para un socio');
 select is((select s.nombre from operacion.pedido_ds d join catalogo.socio s on s.id = d.socio_id where d.pedido_id = (select (j ->> 'pedido_id')::bigint from _p1)), 'Angelo', '... de Angelo');
 select is((select estado from operacion.pedido where id = (select (j ->> 'pedido_id')::bigint from _p1)), 'confirmado', '... confirmado');
