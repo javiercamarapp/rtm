@@ -25,6 +25,9 @@ import { Comunicador, verificarMensajeOmar } from './comunicador';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
 import { cifrasDeIntencionAmpliada, foliosSinProcedencia, montosQueSeRepiten, textosConCifraAjena } from '@/dominio/agente/guardia_ampliada';
 import { montoARepetir, textoExtraidoSinPuerta } from './plantillas_interprete';
+import { MotorConversacion, type AlmacenConversacion, type EntornoConversacion, type OperacionCompleta as OperacionConversacion, type ResultadoRegistro, type ResumenPedidos, type Salida as SalidaConversacion } from './conversacion';
+import { instruccionDeIntencion, OPERACIONES_POR_CONVERSACION } from '@/dominio/agente/slots_desde_intencion';
+import { intencionDeSlots } from './slots_a_intencion';
 import * as P from './plantillas';
 import * as F from './plantillas_frenos';
 import { esMontoAbreviado } from '@/dominio/agente/monto_abreviado';
@@ -109,6 +112,11 @@ export interface DependenciasAgente {
   negocio: NegocioAgente;
   reloj: () => Date;
   config?: Partial<ConfigAgente>;
+  /**
+   * Conversacion (integracion 16-nov): con ella, lo que el interprete entiende de un mensaje de un socio alimenta los slots de la maquina de conversacion, que pregunta lo que falte
+   * y registra por `ejecutarOperacionCompleta` (frenos). Sin ella, el agente conserva su camino anterior.
+   */
+  conversacion?: { almacen: AlmacenConversacion; resumenes?: ResumenPedidos; entorno?: Omit<EntornoConversacion, 'catalogo'> };
 }
 
 export type ResultadoUpdate =
@@ -408,10 +416,16 @@ export class AgenteTelegram {
   private tally = { ok: 0, rechazadas: 0 };
   private readonly cfg: ConfigAgente;
   private readonly com: Comunicador;
+  private readonly motor: MotorConversacion | null;
+  /** El eco del ultimo registro hecho por la conversacion: lo publica `presentarSalida` con el mensaje rico y el boton Deshacer. */
+  private ecoPendiente: { estado: EstadoAccion; r: ResultadoEjecutado; grupo: ChatsRegistrados } | null = null;
 
   constructor(private readonly d: DependenciasAgente) {
     this.cfg = { ...CONFIG_POR_OMISION, ...d.config };
     this.com = new Comunicador(d.telegram, d.almacen);
+    this.motor = d.conversacion
+      ? new MotorConversacion(d.conversacion.almacen, { catalogo: d.catalogo, ...d.conversacion.entorno }, { ejecutarOperacionCompleta: (op) => this.registrarConversacion(op) }, d.conversacion.resumenes)
+      : null;
   }
 
   // ------------------------------------------------------------------ entrada
@@ -586,6 +600,15 @@ export class AgenteTelegram {
       if (espera) return this.responderEspera(espera, texto, autor, chats);
     }
     const cmd = parsearComando(texto);
+    // Conversacion abierta de este socio: su mensaje contesta la pregunta pendiente (o corrige un dato). Sin conversacion abierta, sigue el camino normal.
+    if (!cmd && this.motor !== null && autor.rol === 'socio' && !reenviado && !esEdicion) {
+      const s = await this.motor.procesar({ chatId: msg.chat.id, autor, ahora: this.d.reloj(), clave: `tg:${update.update_id}`, mensajeId: msg.message_id }, { tipo: 'texto', texto });
+      if (s.tipo === 'reprocesar') base.texto = s.texto;
+      else if (s.tipo !== 'sin_conversacion') {
+        await this.presentarSalida(autor, chats, msg.chat.id, s);
+        return { estado: 'procesado', acciones: 1 };
+      }
+    }
     if (cmd) {
       if (!cmd.ok) {
         await this.responder(autor, chats, P.uso(cmd.uso));
@@ -595,7 +618,7 @@ export class AgenteTelegram {
       return this.ejecutarAcciones([cmd.intencion], { ...base, fuente: 'comando', verificarCifras: false, sospecha: false });
     }
 
-    if (!debeProcesarConIa(texto)) {
+    if (!debeProcesarConIa(base.texto)) {
       await this.d.almacen.contarNoProcesado();
       return { estado: 'ignorado', motivo: 'prefiltro' };
     }
@@ -939,6 +962,17 @@ export class AgenteTelegram {
         await this.responder(ctx.autor, ctx.chats, textoExtraidoSinPuerta(declarada.tipo));
         continue;
       }
+      // Conversacion: el interprete alimenta los slots; la maquina pregunta lo que falte y registra por el carril de frenos.
+      // (El modo estricto con tarjeta de confirmacion, `confirmarMovimientos`, conserva el camino anterior.)
+      if (this.motor !== null && !this.cfg.confirmarMovimientos && ctx.fuente === 'texto' && ctx.autor.rol === 'socio') {
+        const ins = instruccionDeIntencion(declarada);
+        if (ins !== null && OPERACIONES_POR_CONVERSACION.has(ins.operacion)) {
+          const s = await this.motor.procesar({ chatId: ctx.chatId, autor: ctx.autor, ahora: this.d.reloj(), clave: `tg:${ctx.updateId}:${i}`, mensajeId: ctx.messageId }, { tipo: 'instruccion', operacion: ins.operacion, candidatos: ins.candidatos, cita: redactarContactos(ctx.texto).slice(0, 120) });
+          await this.presentarSalida(ctx.autor, ctx.chats, ctx.chatId, s);
+          hechas++;
+          continue;
+        }
+      }
       const estado: EstadoAccion = {
         intencion: declarada,
         overrides: {},
@@ -1099,12 +1133,7 @@ export class AgenteTelegram {
     switch (r.tipo) {
       case 'ejecutado': {
         if (r.repetido) return; // misma clave: ya se aplico y ya se aviso; no se duplica nada
-        const boton = await this.boton1('Deshacer', 'deshacer', ['socio'], grupo.grupoSocios, this.mas(this.cfg.ventanaDeshacerMin * 60_000), null, {
-          folio: r.folio,
-          ejecutadoEn: r.ejecutadoEn.toISOString(),
-          claveIdem: `${estado.claveIdem}:deshacer`,
-        } satisfies PayloadDeshacer);
-        await this.com.aGrupo(grupo, P.ecoEjecutado(r, estado.autor, estado.confirmadoPor), { botones: [[boton]] });
+        await this.publicarEco(estado, r, grupo, P.ecoEjecutado(r, estado.autor, estado.confirmadoPor));
         await this.despuesDeEjecutar(intencion, r, estado, grupo);
         await this.revisarAnomalia(grupo);
         return;
@@ -1124,6 +1153,99 @@ export class AgenteTelegram {
         await this.responder(estado.autor, grupo, P.rechazo(r.texto));
         return;
     }
+  }
+
+  /** El eco de un registro: el mensaje (el eco normal o el mensaje rico de la conversacion) con el boton Deshacer de 10 minutos. */
+  private async publicarEco(estado: EstadoAccion, r: ResultadoEjecutado, grupo: ChatsRegistrados, mensaje: MensajeListo): Promise<void> {
+    const boton = await this.boton1('Deshacer', 'deshacer', ['socio'], grupo.grupoSocios, this.mas(this.cfg.ventanaDeshacerMin * 60_000), null, {
+      folio: r.folio,
+      ejecutadoEn: r.ejecutadoEn.toISOString(),
+      claveIdem: `${estado.claveIdem}:deshacer`,
+    } satisfies PayloadDeshacer);
+    await this.com.aGrupo(grupo, mensaje, { botones: [[boton]] });
+  }
+
+  /**
+   * Punto de salida de la maquina de conversacion: recibe la operacion COMPLETA en slots, la traduce a la intencion del carril de frenos y la escribe con sus mismos frenos
+   * (interruptor de escritura, antiduplicado, sobrepago como pregunta, idempotencia). El eco NO se manda aqui: lo publica `presentarSalida` con el mensaje rico y Deshacer.
+   */
+  private async registrarConversacion(op: OperacionConversacion): Promise<ResultadoRegistro> {
+    const grupo = await this.d.almacen.chats();
+    if (this.d.almacen.escrituraEstado && !(await this.d.almacen.escrituraEstado()).activa) return { tipo: 'rechazado', texto: 'Estoy en solo lectura: la escritura esta apagada.' };
+    const tr = intencionDeSlots(op.operacion, op.slots, op.cita);
+    if (!tr.ok) return { tipo: 'rechazado', texto: tr.texto };
+    const sal = await resolverAccion(tr.intencion, op.autor, this.d.catalogo, tr.overrides, this.cfg.exigirSabor);
+    if (!sal.ok) return { tipo: 'rechazado', texto: 'No pude resolver los datos de la operacion contra el catalogo.' };
+    const conf = op.confirmaciones ?? [];
+    const estado: EstadoAccion = {
+      intencion: tr.intencion, overrides: tr.overrides, preguntasPrevias: 0, claveIdem: op.claveIdem, origen: { updateId: 0, chatId: op.chatId, messageId: 0 }, autor: op.autor,
+      confirmado: conf.includes('confirmado'), vistoBueno: true, confirmadoPor: null, refuerzo: false, efectoHash: null, tokenConfirmacion: null, cita: redactarContactos(op.cita).slice(0, 120),
+    };
+    let r: ResultadoNegocio;
+    try {
+      r = await this.d.negocio.ejecutar(sal.resuelta, {
+        autor: op.autor, claveIdem: op.claveIdem, origen: estado.origen, ahora: this.d.reloj(), confirmado: estado.confirmado, efectoHash: null, tokenBoton: null,
+        permitirDuplicado: conf.includes('duplicado'), confirmoExceso: conf.includes('exceso'),
+      });
+    } catch (e) {
+      await this.d.almacen.registrarEvento({ tipo: 'error_escritura', miembro: op.autor.telegramUserId, detalle: tr.intencion.tipo });
+      await this.revisarAnomalia(grupo);
+      throw e;
+    }
+    switch (r.tipo) {
+      case 'ejecutado': {
+        const pedidoId = typeof r.datos?.pedido_id === 'number' ? r.datos.pedido_id : undefined;
+        if (!r.repetido) this.ecoPendiente = { estado, r, grupo };
+        return { tipo: 'registrado', folio: r.folio, ...(pedidoId !== undefined ? { pedidoId } : {}), ...(pedidoId === undefined ? { mensaje: P.ecoEjecutado(r, op.autor) } : {}) };
+      }
+      case 'pregunta':
+        return { tipo: 'pregunta', motivo: r.clave === 'duplicado' ? 'duplicado' : 'otro', texto: P.preguntaNegocio(r.texto, r.cifras).texto, clave: r.clave === 'duplicado' || r.clave === 'exceso' ? r.clave : 'confirmado' };
+      case 'toma_pendiente':
+        await this.publicarTomaPendiente(r, grupo, op.autor);
+        return { tipo: 'registrado', folio: r.folio, mensaje: P.textoSimple(`Quedo pendiente de autorizacion como ${r.folio}.`) };
+      case 'rechazado':
+        return { tipo: 'rechazado', texto: r.texto };
+    }
+  }
+
+  /** Muestra lo que la maquina de conversacion decidio: la pregunta con sus botones, el registro con el eco rico y Deshacer, o el aviso de cancelacion. */
+  private async presentarSalida(autor: Miembro, chats: ChatsRegistrados, chatId: number, s: SalidaConversacion): Promise<void> {
+    switch (s.tipo) {
+      case 'pregunta': {
+        const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
+        const grupoExclusivo = `conv:${s.conversacionId}:${this.d.reloj().getTime()}`;
+        const botones: BotonEnLinea[] = [];
+        for (const b of s.botones) botones.push(await this.boton1(b.texto, 'conv', ['socio'], chats.grupoSocios, caduca, grupoExclusivo, { valor: b.valor, conversacionId: s.conversacionId }));
+        const filas: BotonEnLinea[][] = [];
+        for (let i = 0; i < botones.length; i += 2) filas.push(botones.slice(i, i + 2));
+        await this.com.aGrupo(chats, { texto: s.texto, registro: s.registro }, filas.length > 0 ? { botones: filas } : {});
+        return;
+      }
+      case 'registrado': {
+        const eco = this.ecoPendiente;
+        this.ecoPendiente = null;
+        if (eco === null) {
+          await this.com.aGrupo(chats, s.mensaje);
+          return;
+        }
+        await this.publicarEco(eco.estado, eco.r, eco.grupo, s.mensaje);
+        await this.despuesDeEjecutar(eco.estado.intencion, eco.r, eco.estado, eco.grupo);
+        await this.revisarAnomalia(eco.grupo);
+        return;
+      }
+      case 'cancelada':
+      case 'expirada':
+        await this.com.aGrupo(chats, { texto: s.texto, registro: s.registro });
+        return;
+      case 'rechazado':
+        await this.com.aGrupo(chats, { texto: s.texto, registro: s.registro });
+        return;
+      case 'reprocesar':
+      case 'sin_conversacion':
+        return;
+    }
+    void autor;
+    void chatId;
   }
 
   /** Lee el interruptor de escritura. Apagado: responde "Estoy en solo lectura desde HH:MM" y no se escribe nada (las consultas y el deshacer siguen). */
@@ -1550,6 +1672,21 @@ export class AgenteTelegram {
         if (!(await this.confirmaQuienDebe(e, miembro, chats, ctx, 'pregunta'))) return;
         await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Confirmado.'));
         await this.resolverYEjecutar({ ...e, confirmado: e.duplicadoOk === true || e.excesoOk === true ? e.confirmado : true }, chats);
+        return;
+      }
+      case 'conv': {
+        if (this.motor === null) return;
+        const p = payload as { valor: string };
+        const s = await this.motor.procesar({ chatId: ctx.chatId, autor: miembro, ahora: this.d.reloj(), clave: `tg:cb:${ctx.callbackId}`, mensajeId: ctx.messageId }, { tipo: 'boton', valor: p.valor });
+        if (s.tipo === 'sin_conversacion') {
+          await this.responder(miembro, chats, P.textoSimple('Esa pregunta ya no esta abierta o no es tuya.'));
+          return;
+        }
+        if (s.tipo === 'reprocesar') {
+          await this.conIa({ autor: miembro, chats, texto: s.texto, fuente: 'texto', updateId: this.d.reloj().getTime(), messageId: ctx.messageId, chatId: ctx.chatId, verificarCifras: true, sospecha: false });
+          return;
+        }
+        await this.presentarSalida(miembro, chats, ctx.chatId, s);
         return;
       }
       case 'deshacer': {

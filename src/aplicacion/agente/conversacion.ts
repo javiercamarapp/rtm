@@ -73,6 +73,9 @@ export interface EntornoConversacion {
   destinosDe?(clienteId: string): Promise<string[]>;
 }
 
+/** Pregunta del carril de frenos que el socio contesta con "si": duplicado, cobro mayor a lo que debe, o cualquier otra pregunta del negocio (precio, existencia...). */
+export type ConfirmacionFrenos = 'duplicado' | 'exceso' | 'confirmado';
+
 export interface OperacionCompleta {
   operacion: OperacionConv;
   /** Slots ya resueltos (ids de catalogo, centavos, dias, lineas por modelo y sabor). Nunca texto crudo del modelo. */
@@ -86,12 +89,14 @@ export interface OperacionCompleta {
   cita: string;
   /** El socio contesto "si, es otro" a la pregunta de antiduplicado. */
   permitirDuplicado: boolean;
+  /** Lo que el socio ya confirmo ("si") a las preguntas del carril de frenos en esta operacion: un duplicado, un cobro mayor a lo que debe el cliente. */
+  confirmaciones?: ReadonlyArray<ConfirmacionFrenos>;
 }
 
 export type ResultadoRegistro =
   | { tipo: 'registrado'; folio: string; pedidoId?: number; mensaje?: MensajeListo }
   /** El carril de frenos pregunta antes de registrar (por ejemplo posible duplicado): la conversacion queda completa y espera la respuesta. */
-  | { tipo: 'pregunta'; motivo: 'duplicado' | 'otro'; texto: string }
+  | { tipo: 'pregunta'; motivo: 'duplicado' | 'otro'; texto: string; /** Que bandera se manda si el socio dice que si (por omision, la de duplicado). */ clave?: ConfirmacionFrenos }
   | { tipo: 'rechazado'; texto: string };
 
 export interface EjecutorOperacion {
@@ -148,7 +153,7 @@ export type PendienteConv =
   | { tipo: 'monto_confirm'; slot: string; centavos: number }
   | { tipo: 'fecha_confirm'; slot: string; opciones: Array<{ fecha: string; hora: string | null }> }
   | { tipo: 'cancelar_previa'; texto: string }
-  | { tipo: 'duplicado' };
+  | { tipo: 'duplicado'; clave?: ConfirmacionFrenos };
 
 export interface ContextoConv {
   cita?: string;
@@ -167,6 +172,8 @@ export interface ContextoConv {
   destinos?: string[];
   /** La pregunta que estaba abierta cuando llego una instruccion nueva: se restaura si el socio decide seguir con la anterior. */
   previa?: { pendiente: PendienteConv | null; slot: string | null; texto: string | null; botones: BotonConv[] };
+  /** Preguntas del carril de frenos que el socio ya contesto con "si". */
+  confirmadas?: Array<ConfirmacionFrenos>;
 }
 
 // ---------------------------------------------------------------- utilidades
@@ -264,7 +271,7 @@ export class MotorConversacion {
     if (pend?.tipo === 'cancelar_previa') return this.respuestaCancelarPrevia(e, conv, ctx, pend, texto, r);
     if (pend?.tipo === 'duplicado') {
       const sn = respuestaSiNo(texto);
-      if (sn === 'si') return this.ejecutar(e, conv, true);
+      if (sn === 'si') return this.ejecutar(e, conv, [...(ctx.confirmadas ?? []), pend.clave ?? 'duplicado']);
       if (sn === 'no') return this.cancelar(e, conv, 'era un duplicado', r);
     }
 
@@ -778,7 +785,7 @@ export class MotorConversacion {
       const botones = extra?.botones ?? botonesDe(def.opciones);
       return this.preguntar(vista, { ...ctx, pendiente: { tipo: 'slot', slot: def.clave } }, def.clave, texto, botones, e, r, prefijo);
     }
-    return this.ejecutar(e, vista, false);
+    return this.ejecutar(e, vista, []);
   }
 
   private async banderas(conv: ConversacionVista, ctx: ContextoConv, r: RegistroCifras, guardar: Array<{ slot: string; valor: unknown }>): Promise<Extract<Paso, { estado: 'pregunta' }> | null> {
@@ -838,11 +845,11 @@ export class MotorConversacion {
 
   // ------------------------------------------------------------ registro
 
-  private async ejecutar(e: EntradaProceso, conv: ConversacionVista, permitirDuplicado: boolean): Promise<Salida> {
+  private async ejecutar(e: EntradaProceso, conv: ConversacionVista, confirmadas: Array<ConfirmacionFrenos>): Promise<Salida> {
     const r = new RegistroCifras();
     const op: OperacionCompleta = {
       operacion: conv.operacion, slots: { ...conv.slots }, conversacionId: conv.id, claveIdem: `conv:${conv.id}:registro`, autor: e.autor, chatId: e.chatId,
-      cita: (conv.contexto as ContextoConv).cita ?? '', permitirDuplicado,
+      cita: (conv.contexto as ContextoConv).cita ?? '', permitirDuplicado: confirmadas.includes('duplicado'), confirmaciones: confirmadas,
     };
     const res = await this.ejecutor.ejecutarOperacionCompleta(op);
     if (res.tipo === 'rechazado') {
@@ -851,8 +858,9 @@ export class MotorConversacion {
     }
     if (res.tipo === 'pregunta') {
       const t = r.servidor(res.texto);
-      await this.almacen.fijarPregunta({ clave: `${e.clave}:dup`, id: conv.id, slot: null, texto: t, opciones: [{ texto: 'Sí, es otro', valor: 'si' }, { texto: 'No, cancela', valor: 'no' }], contexto: { ...(conv.contexto as ContextoConv), pendiente: { tipo: 'duplicado' } } });
-      return { tipo: 'pregunta', texto: t, botones: [{ texto: 'Sí, es otro', valor: 'si' }, { texto: 'No, cancela', valor: 'no' }], registro: r, conversacionId: conv.id, slot: null };
+      const botonesPregunta: BotonConv[] = [{ texto: res.clave === 'exceso' ? 'Sí, es anticipo' : res.clave === 'confirmado' ? 'Sí, continuar' : 'Sí, es otro', valor: 'si' }, { texto: 'No, cancela', valor: 'no' }];
+      await this.almacen.fijarPregunta({ clave: `${e.clave}:dup`, id: conv.id, slot: null, texto: t, opciones: botonesPregunta, contexto: { ...(conv.contexto as ContextoConv), pendiente: { tipo: 'duplicado', ...(res.clave ? { clave: res.clave } : {}) }, confirmadas } });
+      return { tipo: 'pregunta', texto: t, botones: botonesPregunta, registro: r, conversacionId: conv.id, slot: null };
     }
     await this.almacen.registrada({ clave: `${e.clave}:reg`, id: conv.id, folio: res.folio });
     let mensaje = res.mensaje;

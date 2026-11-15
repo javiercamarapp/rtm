@@ -192,6 +192,7 @@ export interface EnviadorTelegram {
 export type AccionBoton =
   | 'deshacer'
   | 'deshacer_expreso'
+  | 'conv'
   | 'autorizar_toma'
   | 'rechazar_toma'
   | 'aclarar'

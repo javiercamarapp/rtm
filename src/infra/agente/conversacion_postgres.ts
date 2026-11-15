@@ -1,6 +1,7 @@
 // Adaptador de Postgres del estado de conversacion (rol `servidor`, funciones agente.conversacion_*). La base es la fuente de verdad: una conversacion viva por chat y autor,
 // caducidad de 30 minutos, idempotencia por clave y auditoria en agente.conversacion_evento.
-import type { AlmacenConversacion, BotonConv, ContextoConv, ConversacionVista, ResultadoAbrir } from '@/aplicacion/agente/conversacion';
+import type { ResumenPedidoSql } from '@/aplicacion/agente/mensaje_pedido';
+import type { AlmacenConversacion, ResumenPedidos, BotonConv, ContextoConv, ConversacionVista, ResultadoAbrir } from '@/aplicacion/agente/conversacion';
 import type { OperacionConv } from '@/dominio/agente/slots';
 import type { Sql } from '@/infra/postgres/servidor';
 
@@ -66,5 +67,14 @@ export class AlmacenConversacionDb implements AlmacenConversacion {
   async expirar(ahora: Date): Promise<{ estado: 'apagado' | 'activo'; expiradas: J[]; recordatorios: J[] }> {
     const j = (await this.f('conversacion_expirar', '$1::timestamptz, 15', [ahora.toISOString()]))!;
     return { estado: j.estado as 'apagado' | 'activo', expiradas: (j.expiradas as J[]) ?? [], recordatorios: (j.recordatorios as J[]) ?? [] };
+  }
+}
+
+/** Cifras del mensaje final de un pedido: las calcula SQL (agente.resumen_pedido_registrado); TypeScript solo les da formato. */
+export class ResumenPedidosDb implements ResumenPedidos {
+  constructor(private readonly sql: Sql) {}
+  async resumen(pedidoId: number): Promise<ResumenPedidoSql> {
+    const r = await this.sql<{ j: ResumenPedidoSql }>('select agente.resumen_pedido_registrado($1::bigint) as j', [pedidoId]);
+    return r[0]!.j;
   }
 }
