@@ -2,7 +2,7 @@
 
 Fotos de los 87 modelos activos del catalogo (lista leida de solo lectura de `catalogo.modelo` el 14-nov). Datos en `src/dominio/catalogo/fotos-modelos.ts` (cada modelo con su ruta de foto o `null` explicito, y su confianza); la misma tabla alimenta el catalogo, el inventario, pedidos, compras y el tablero del proveedor. Hay dos carpetas y un archivo nunca se duplica: `public/proveedores/karen/<clave>.webp` (fotos de la tienda del proveedor, 24 usadas de 49 descargadas) y `public/modelos/<slug>.webp` (fotos propias, 12). Todo es webp, 4:5 o proporcion original, ancho maximo 800 px, menos de 150 KB, sin metadatos. La prueba `test/unit/catalogo/fotos_modelos.test.ts` verifica que todo modelo tenga foto o declare que no la tiene, que cada archivo exista, sea webp y pese menos de 150 KB, y que este documento lo liste.
 
-Cobertura al 14-nov: 47 de 87 modelos con foto (32 exactas, 15 probables por confirmar) y 40 sin foto.
+Cobertura al 14-nov: 64 de 87 modelos con foto (49 exactas, 15 probables por confirmar) y 23 sin foto. Los 17 nuevos salen del diccionario de alias Waka confirmado por el dueno.
 
 ## Reglas y limites
 
@@ -66,6 +66,28 @@ Origen: catalogo publico de la tienda del proveedor, descargado una sola vez (di
 - Waka So Pro (Waka, id 155, exacto): `vape-waka-sopro-15-000.webp`
 - Waka Sopro 30K (Waka, id 87, probable): `waka-pro-30k.webp`
 
+## Fotos por alias confirmado (dueno, 14-nov)
+
+El dueno confirmo el diccionario de alias Waka (nombre de los socios = nombre por puffs; `scripts/catalogo/alias-waka.json`): son el mismo producto, asi que estos modelos usan la foto de la tienda de su equivalente. Confianza exacto por esa confirmacion.
+
+- Waka 15K (id 120): `vape-waka-sopro-15-000.webp`
+- Waka Icon (id 123): `waka-icon-50-000.webp`
+- Waka 30 (id 129): `waka-pro-30k.webp`
+- Burst (id 130): `waka-burst-36-000.webp`
+- Blade (id 131): `waka-blade-33-000.webp`
+- Waka 15 (id 132): `vape-waka-sopro-15-000.webp`
+- Smash Go (id 133): `waka-go-10-000.webp`
+- Slim (id 134): `waka-slim-12-000.webp`
+- Icon (id 135): `waka-icon-50-000.webp`
+- Elite (id 137): `waka-elite-40k.webp`
+- Waka 50 (id 141): `waka-icon-50-000.webp`
+- Go (id 142): `waka-go-10-000.webp`
+- Waka 36 (id 143): `waka-burst-36-000.webp`
+- Waka 30K (id 151): `waka-pro-30k.webp`
+- Waka 50K (id 152): `waka-icon-50-000.webp`
+- Waka 36K (id 156): `waka-burst-36-000.webp`
+- Waka 60K (id 160): `waka-steel.webp`
+
 ## Modelos sin foto (declarados explicitamente)
 
 - Adjust 40K (Adjust, id 109)
@@ -85,26 +107,9 @@ Origen: catalogo publico de la tienda del proveedor, descargado una sola vez (di
 - Nexa 50K (Nexa, id 104)
 - Nexa Ultra 50K (Nexa, id 157)
 - Rifbar Pro 40K (Rifbar, id 108)
-- Blade (Sin marca, id 131)
-- Burst (Sin marca, id 130)
-- Elite (Sin marca, id 137)
-- Go (Sin marca, id 142)
-- Icon (Sin marca, id 135)
 - Optimus (Sin marca, id 128)
-- Slim (Sin marca, id 134)
-- Smash Go (Sin marca, id 133)
 - Uno Mas X (Uno Mas, id 117)
 - Vhill 3K (Vhill, id 162)
 - Waka 100 (Waka, id 144)
-- Waka 15 (Waka, id 132)
-- Waka 15K (Waka, id 120)
-- Waka 30 (Waka, id 129)
-- Waka 30K (Waka, id 151)
-- Waka 36 (Waka, id 143)
-- Waka 36K (Waka, id 156)
-- Waka 50 (Waka, id 141)
-- Waka 50K (Waka, id 152)
-- Waka 60K (Waka, id 160)
 - Waka DM 15K (Waka, id 90)
-- Waka Icon (Waka, id 123)
 - Waka Titan 30K (Waka, id 154)
