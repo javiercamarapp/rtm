@@ -88,38 +88,66 @@ function numerosEnPalabras(texto: string): bigint[] {
   return hallados;
 }
 
-/**
- * Para CANTIDADES de piezas: se quitan del texto los numeros que no son cantidades (folios P-0012 / C-0004, fechas 15/11, porcentajes 10% y numeracion de lista "1)", "2)").
- * Hallazgo de la Fase 0a: cualquier numero del mensaje servia de procedencia para unas piezas.
- */
-function sinNumerosQueNoSonCantidades(t: string): string {
+const MESES = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre';
+
+/** Numeros que NUNCA son cantidades ni dinero: folios, guias y claves, fechas, horas, duraciones (plazos) y porcentajes. Se quitan antes de buscar procedencia. */
+function sinNumerosDeReferencia(t: string): string {
   return t
+    .replace(/\b(?:guia|rastreo|referencia|ref|folio|clave)s?\s*(?:no\.?|num\.?|numero|#|:)?\s*[a-z]{0,3}-?\d[a-z0-9-]*/g, ' ')
     .replace(/\b[a-z]{1,3}-\d+\b/g, ' ')
+    .replace(/\b\d{4}-\d{1,2}-\d{1,2}\b/g, ' ')
     .replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, ' ')
+    .replace(new RegExp(`\\b\\d{1,2}\\s+de\\s+(?:${MESES})(?:\\s+(?:de|del)\\s+\\d{4})?`, 'g'), ' ')
+    .replace(/\b\d{1,2}:\d{2}\b/g, ' ')
+    .replace(/\b\d{1,2}\s*(?:am|pm|a\.m\.|p\.m\.|hrs?|horas?)\b/g, ' ')
+    .replace(/\ba\s+las\s+\d{1,2}\b/g, ' ')
+    .replace(/\b\d+\s*(?:dias?|semanas?|sem|meses|mes|minutos?|min)\b/g, ' ')
     .replace(/\d+(?:[.,]\d+)?\s*%/g, ' ')
     .replace(/\b\d{1,2}\)/g, ' ');
 }
 
 /**
+ * Para CANTIDADES de piezas: se quitan del texto los numeros que no son cantidades (folios, guias, fechas, horas, plazos, porcentajes, numeracion de listas) y los que son DINERO
+ * ($ 500, 500 pesos, a 250 c/u). Hallazgo de la Fase 0a: cualquier numero del mensaje servia de procedencia para unas piezas.
+ */
+function sinNumerosQueNoSonCantidades(t: string): string {
+  return sinNumerosDeReferencia(t)
+    .replace(/\$\s*\d[\d.,]*(?:\s*(?:k|mil)\b)?/g, ' ')
+    .replace(/\d[\d.,]*\s*(?:k\s+)?(?:pesos|peso|mxn|usd|dolares|dlls|mn)\b/g, ' ')
+    .replace(/\d[\d.,]*\s*(?:c\/u|cu|cada\s+(?:uno|una|pieza))\b/g, ' ');
+}
+
+/** Para DINERO: se quitan folios, guias, fechas, horas, plazos y porcentajes, y las cantidades de piezas rotuladas ("20 piezas", "3 cajas"). */
+function sinNumerosQueNoSonDinero(t: string): string {
+  return sinNumerosDeReferencia(t).replace(/\b\d[\d.,]*\s*(?:piezas?|pzas?|pz|cajas?|unidades|vapes?)\b/g, ' ');
+}
+
+/**
  * Todos los valores numericos mencionados en un texto, en centesimas (cifras, "1.5k", "15 mil" y palabras en espanol).
  * Un numero con sufijo k/mil aporta SOLO su valor multiplicado: "20k" es 20,000 y no tambien 20.
- * Con `paraPiezas`: se ignoran folios, fechas, porcentajes y numeracion de listas, y un numero con sufijo `k` ("Zafiro 5K") es parte del nombre del modelo;
- * "mil" si multiplica ("2 mil" = 2,000).
+ * Con `paraPiezas`: se ignoran folios, fechas, plazos, dinero y numeracion de listas, y un numero con sufijo `k` ("Zafiro 5K") es parte del nombre del modelo;
+ * "mil" si multiplica ("2 mil" = 2,000). Con `paraDinero`: se ignoran folios, guias, fechas, plazos y cantidades de piezas rotuladas.
  */
-export function valoresDeTexto(texto: string, opciones: { paraPiezas?: boolean } = {}): Set<bigint> {
-  const valores = new Set<bigint>();
+export function valoresDeTexto(texto: string, opciones: { paraPiezas?: boolean; paraDinero?: boolean } = {}): Set<bigint> {
+  return new Set(conteoDeValores(texto, opciones).keys());
+}
+
+/** Igual que valoresDeTexto pero con el numero de veces que el texto dice cada valor (una ocurrencia por token): liga cada cifra a UNA mencion. */
+export function conteoDeValores(texto: string, opciones: { paraPiezas?: boolean; paraDinero?: boolean } = {}): Map<bigint, number> {
+  const cuenta = new Map<bigint, number>();
+  const sumar = (v: bigint) => cuenta.set(v, (cuenta.get(v) ?? 0) + 1);
   let t = sinAcentos(texto.toLowerCase());
   if (opciones.paraPiezas) t = sinNumerosQueNoSonCantidades(t);
+  else if (opciones.paraDinero) t = sinNumerosQueNoSonDinero(t);
   for (const m of t.matchAll(/(\d[\d.,]*)(?:\s*(k|mil|millones|millon)\b)?/g)) {
     if (opciones.paraPiezas && m[2] === 'k') continue;
     const mult = m[2] === undefined ? 1n : m[2] === 'k' || m[2] === 'mil' ? 1000n : 1_000_000n;
-    for (const v of interpretaciones(m[1]!)) {
-      if (mult === 1n) valores.add(v);
-      else valores.add(v * mult);
-    }
+    const propios = new Set<bigint>();
+    for (const v of interpretaciones(m[1]!)) propios.add(mult === 1n ? v : v * mult);
+    for (const v of propios) sumar(v);
   }
-  for (const v of numerosEnPalabras(t)) valores.add(v);
-  return valores;
+  for (const v of numerosEnPalabras(t)) sumar(v);
+  return cuenta;
 }
 
 export interface CifraExtraida {
@@ -132,11 +160,32 @@ export interface CifraExtraida {
   esPiezas?: boolean;
 }
 
-/** Devuelve los campos cuya cifra NO aparece en el mensaje fuente. Lista vacia = todo con procedencia. */
+const RE_REPARTO_IGUAL = /\bcada\b|c\/u|\bpor igual\b|\bambos\b|\blos dos\b/;
+
+/**
+ * Devuelve los campos cuya cifra NO tiene procedencia en el mensaje. Lista vacia = todo con procedencia.
+ * Cada cifra se LIGA a su clase y escala: las piezas solo se explican con cantidades (no con dinero, folios, fechas ni plazos), el dinero solo con montos (no con piezas rotuladas,
+ * folios, guias, fechas ni plazos), y "20k" vale 20,000 (nunca 20). Ademas el dinero se liga a UNA mencion: dos campos de dinero con el mismo valor exigen que el mensaje lo diga dos veces
+ * (salvo "cada uno", "c/u"), de modo que un monto que el mensaje dijo una vez no puede inventarse una segunda vez.
+ */
 export function cifrasSinProcedencia(fuente: string, extraidas: readonly CifraExtraida[]): string[] {
   const enFuente = valoresDeTexto(fuente);
   const enFuentePiezas = valoresDeTexto(fuente, { paraPiezas: true });
-  return extraidas.filter((c) => !(c.esPiezas === true ? enFuentePiezas : enFuente).has(c.valor)).map((c) => c.campo);
+  const dinero = conteoDeValores(fuente, { paraDinero: true });
+  const reparto = RE_REPARTO_IGUAL.test(sinAcentos(fuente.toLowerCase()));
+  const usadas = new Map<bigint, number>();
+  const sin: string[] = [];
+  for (const c of extraidas) {
+    if (c.esPiezas === true) {
+      if (!enFuentePiezas.has(c.valor)) sin.push(c.campo);
+    } else if (c.esDinero === true) {
+      const hay = dinero.get(c.valor) ?? 0;
+      const previas = usadas.get(c.valor) ?? 0;
+      usadas.set(c.valor, previas + 1);
+      if (hay === 0 || (!reparto && previas >= hay)) sin.push(c.campo);
+    } else if (!enFuente.has(c.valor)) sin.push(c.campo);
+  }
+  return sin;
 }
 
 export function cifrasDePiezas(campo: string, piezas: number): CifraExtraida {

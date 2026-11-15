@@ -20,6 +20,12 @@ describe('catalogo declarativo de intenciones', () => {
     for (const t of INTENCIONES_ESCRITURA) {
       const d = CATALOGO_INTENCIONES[t];
       if (t === 'deshacer') continue;
+      // Intenciones que atiende un modulo propio con su puerta SQL en el esquema agente (cobranza): sin hub generico.
+      if (d.hub === 'ninguno') {
+        expect(d.funcionesSql.length, t).toBeGreaterThan(0);
+        expect(d.funcionesSql.every((f) => /^agente\.[a-z_]+$/.test(f)), t).toBe(true);
+        continue;
+      }
       expect(['agente.ejecutar', 'agente.ejecutar_ext'], t).toContain(d.hub);
       expect(d.tipoHub, t).toMatch(/^[a-z_]+$/);
       expect(d.funcionesSql.length, t).toBeGreaterThan(0);
@@ -35,11 +41,14 @@ describe('catalogo declarativo de intenciones', () => {
   });
 
   it('lo que no se deshace por Telegram exige confirmacion reforzada o lo dice', () => {
-    for (const t of ['pedido_cancelar', 'conteo', 'acta_propuesta', 'acta_firma', 'lote_historico'] as const) {
+    for (const t of ['pedido_cancelar', 'conteo', 'lote_historico'] as const) {
       expect(CATALOGO_INTENCIONES[t].confirmacion, t).toBe('reforzada');
     }
-    expect(CATALOGO_INTENCIONES.devolucion.estado).toBe('contrato');
-    expect(CATALOGO_INTENCIONES.paquete_perdido.estado).toBe('contrato');
+    // Carril ventas-compras (16-nov): la devolucion y el paquete perdido ya tienen puerta (agente.ejecutar_ext) y se registran por conversacion.
+    expect(CATALOGO_INTENCIONES.devolucion.estado).toBe('activa');
+    expect(CATALOGO_INTENCIONES.paquete_perdido.estado).toBe('activa');
+    // Decision del dueno (14-nov): sin tarjeta ni boton generico; la firma del acta es el mensaje personal de cada socio (queda registrado en SQL).
+    for (const t of ['acta_propuesta', 'acta_firma'] as const) expect(CATALOGO_INTENCIONES[t].confirmacion, t).toBe('ninguna');
     expect(exigeConfirmacion('merma')).toBe(true);
   });
 

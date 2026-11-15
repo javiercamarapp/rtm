@@ -106,11 +106,13 @@ describe('paridad SQL y TypeScript', () => {
 });
 
 describe('webhook de Telegram contra la base', () => {
+  // El interruptor agente_escritura nace APAGADO (carril frenos): esta bateria ejerce la escritura.
+  beforeAll(async () => { await sql("update seguridad.interruptor set activo = true where clave = 'agente_escritura'"); });
   const tg = new EnviadorTelegramMemoria();
   const cont = new ContadorUpdates();
   const llm = new LlmGuionado([
     respuesta([{ tipo: 'gasto', gasto: 'uber', monto_centavos: 9000, pagado_por: 'javier', descripcion: null, fuente_cita: 'uber 90' }]),
-    respuesta([{ tipo: 'toma_omar', lineas: [{ modelo_texto: 'Int Modelo 10K', sabor_texto: 'Sandia', piezas: 3 }], fuente_cita: '3 sandia' }]),
+    respuesta([{ tipo: 'toma_omar', lineas: [{ modelo_texto: 'Int Modelo 10K', sabor_texto: 'Sandia', piezas: 3 }], fuente_cita: '3 int modelo 10K sandia' }]),
   ], 150_000n);
   // Esta bateria ensaya el camino directo (eco + Deshacer); el modo de confirmacion explicita de los socios se prueba en telegram_e2e.test.ts.
   const deps = (): DepsProduccion => ({ sql, telegram: tg, llm, ahora: () => new Date(), entorno: { TELEGRAM_WEBHOOK_SECRET: SECRETO }, configAgente: { confirmarMovimientos: false, limiteMensajesPorMinuto: 0 } });
@@ -173,7 +175,7 @@ describe('webhook de Telegram contra la base', () => {
   });
 
   it('Omar pide una toma: queda pendiente (reserva, sin kardex ni saldo), el grupo recibe la tarjeta y solo un socio autoriza, una vez', async () => {
-    await enviar(updateTexto(cont, { de: IDS.omar, chat: IDS.omar, texto: '3 sandia' }));
+    await enviar(updateTexto(cont, { de: IDS.omar, chat: IDS.omar, texto: '3 int modelo 10K sandia' }));
     const tarjeta = tg.aChat(IDS.grupo).filter((m) => m.botones).at(-1)!;
     expect(tarjeta.botones!.flat().map((b) => b.texto)).toEqual(['Autorizar', 'Rechazar']);
     expect((await sql<{ e: string }>("select estado as e from operacion.toma_omar order by id desc limit 1"))[0]!.e).toBe('pendiente');

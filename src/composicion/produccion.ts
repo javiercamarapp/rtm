@@ -1,5 +1,6 @@
 // Raiz de composicion de las integraciones con base de datos: webhook de Telegram, latido de tareas, inventario de proveedores y reportes.
 // Todo recibe sus dependencias externas por parametro (Telegram, IA, fuente de proveedores, Chromium, reloj): las pruebas usan dobles y NINGUNA llama a un servicio real.
+import { entornoVentasDb } from '@/infra/agente/entorno_ventas_postgres';
 import { AgenteTelegram } from '@/aplicacion/agente/agente';
 import { ErrorLlm, type ClienteLlm, type EnviadorTelegram } from '@/aplicacion/agente/puertos';
 import { despacharUnaVez } from '@/aplicacion/notificaciones/despachador';
@@ -15,6 +16,11 @@ import { crearEnviadorTelegram, type FetchLike } from '@/infra/agente/telegram_a
 import { manejarWebhook, type RespuestaWebhook } from '@/infra/agente/telegram_webhook';
 import { PuertoTareasDb, RepositorioEntregasDb } from '@/infra/notificaciones/postgres';
 import { enviadorTelegramDeLotes } from '@/infra/notificaciones/telegram_lotes';
+import { ejecutarPendientes, ejecutarResumenDiario } from '@/aplicacion/notificaciones/reportes_programados';
+import { PuertoReportesDb } from '@/infra/notificaciones/reportes_postgres';
+import { ejecutarRelojCobranza } from '@/aplicacion/agente/cobranza_reloj';
+import { ejecutarRelojAvisos } from '@/aplicacion/agente/avisos_inventario';
+import { PuertoRelojCobranzaDb } from '@/infra/agente/cobranza_postgres';
 import { llamadaProveedoresServidor } from '@/infra/postgres/proveedores';
 import { sqlServidor, type Sql } from '@/infra/postgres/servidor';
 import { secretoValido } from '@/infra/agente/telegram_webhook';
@@ -29,6 +35,13 @@ function urlAppOpcional(): string | null {
     return null;
   }
 }
+import { AlmacenConversacionDb, ResumenPedidosDb } from '@/infra/agente/conversacion_postgres';
+import { ModuloAprendizaje } from '@/aplicacion/agente/aprendizaje';
+import { ModuloCobranza } from '@/aplicacion/agente/cobranza';
+import { PuertoCobranzaDb } from '@/infra/agente/cobranza_postgres';
+import { PuertoAprendizajeDb } from '@/infra/agente/aprendizaje_postgres';
+import { ModuloInventarioBot } from '@/aplicacion/agente/avisos_inventario';
+import { PuertoAvisosInventarioDb } from '@/infra/agente/avisos_inventario_postgres';
 import { AvisosDb, ContextoNegocioDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
 import { lectorDesdeEntorno } from '@/infra/proveedores/lector_http';
 
@@ -45,6 +58,12 @@ export interface DepsProduccion {
   urlApp?: string | null;
   /** Ajustes del agente (por ejemplo el limite de frecuencia en las pruebas). */
   configAgente?: Partial<import('@/aplicacion/agente/agente').ConfigAgente>;
+  /** Maquina de conversacion (por omision encendida): el interprete alimenta los slots, el bot pregunta lo que falte y registra por el carril de frenos. `false` conserva el camino anterior. */
+  conversacion?: boolean;
+  /** Aprendizaje y alta asistida (por omision encendido): alias con confirmacion, sabores parecidos, altas de cliente, sabor y modelo, recargo sugerido. `false` lo apaga. */
+  aprendizaje?: boolean;
+  /** Cobranza (por omision encendida): respuestas del socio a lo que se debe. Escribe solo con agente_escritura encendido; el reloj y los avisos programados tienen su propio interruptor (cobranza_activa, apagado). `false` la quita. */
+  cobranza?: boolean;
   entorno?: Record<string, string | undefined>;
 }
 
@@ -72,6 +91,10 @@ export function crearAgenteProduccion(d: DepsProduccion): AgenteTelegram {
   return new AgenteTelegram({
     almacen: new AlmacenAgenteDb(d.sql), presupuesto: new AlmacenPresupuestoDb(d.sql), llm: llmDe(d), telegram: tg, tokens: new AlmacenTokensDb(d.sql),
     catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d), config: { exigirSabor: true, exigirPlazoPedido: true, ...d.configAgente },
+    ...(d.conversacion === false ? {} : { conversacion: { almacen: new AlmacenConversacionDb(d.sql), resumenes: new ResumenPedidosDb(d.sql), entorno: entornoVentasDb(d.sql) } }),
+    ...(d.cobranza === false ? {} : { cobranza: new ModuloCobranza(new PuertoCobranzaDb(d.sql), () => new CatalogoAgenteDb(d.sql).clientes(), ahoraDe(d)) }),
+    inventario: new ModuloInventarioBot(new PuertoAvisosInventarioDb(d.sql)),
+    ...(d.aprendizaje === false ? {} : { aprendizaje: new ModuloAprendizaje(new PuertoAprendizajeDb(d.sql), () => new CatalogoAgenteDb(d.sql).clientes()) }),
   });
 }
 
@@ -134,6 +157,35 @@ export function manejadoresDeTareas(d: DepsProduccion): Record<string, Manejador
     'reporte-semanal': reporte('semanal'),
     'reporte-semanal-reintento': reporte('semanal'),
     'reporte-mensual': reporte('mensual'),
+    // Mensajes programados al grupo: plantilla sobre cifras SQL, emitidos por la puerta unica; con la regla o el maestro apagados quedan `omitida` y no sale nada.
+    'resumen-diario': () => ejecutarResumenDiario(new PuertoReportesDb(d.sql), ahoraDe(d)()),
+    'pendientes-diarios': () => ejecutarPendientes(new PuertoReportesDb(d.sql), ahoraDe(d)()),
+    // Digest de cobranza y avisos de inventario: mismos interruptores de origen (apagados), mismo techo diario unico y mismo silencio nocturno que el reloj.
+    'cobranza-reloj': async () => {
+      const tg = telegramDe(d);
+      if (!tg) return { estado: 'omitida', detalle: 'sin transporte de Telegram' };
+      const puerto = new PuertoRelojCobranzaDb(d.sql);
+      const estados: string[] = [];
+      for (const tipo of ['am', 'cierre'] as const) estados.push((await ejecutarRelojCobranza(tipo, puerto, tg)).estado);
+      return { estado: 'ok', detalle: estados.join(',') };
+    },
+    'avisos-inventario': async () => {
+      const tg = telegramDe(d);
+      if (!tg) return { estado: 'omitida', detalle: 'sin transporte de Telegram' };
+      const ahora = ahoraDe(d)();
+      // Como el reloj y la cobranza: sin telegram_envio (o con cron_pausado) no se evalua ni se envia nada.
+      const sw = await d.sql<{ ok: boolean }>("select coalesce((select activo from seguridad.interruptor where clave = 'telegram_envio'), false) and not coalesce((select activo from seguridad.interruptor where clave = 'cron_pausado'), false) as ok");
+      if (!sw[0]?.ok) return { estado: 'omitida', detalle: 'telegram_envio apagado o cron pausado' };
+      await d.sql('select agente.avisos_inventario_evaluar(null::date, $1::text, $2::timestamptz)', ['emitir', ahora.toISOString()]);
+      const chats = await new PuertoRelojCobranzaDb(d.sql).chats();
+      const r = await ejecutarRelojAvisos(new PuertoAvisosInventarioDb(d.sql), {
+        aGrupo: async (texto) => {
+          if (!chats.grupoSocios) return false;
+          try { await tg.enviar({ chatId: chats.grupoSocios, texto, protegido: true }); return true; } catch { return false; }
+        },
+      }, ahora);
+      return { estado: 'ok', detalle: r.apagado ? 'apagado' : `enviados:${r.enviados.length}` };
+    },
   };
 }
 
@@ -145,6 +197,8 @@ async function propioDelLatido(d: DepsProduccion): Promise<void> {
     const agente = crearAgenteProduccion({ ...d, telegram: tg });
     try { await agente.caducarTomasVencidas(); } catch { /* una toma que no caduca hoy caduca en la siguiente pasada */ }
     // Recordatorios de pago de menudeo al GRUPO de socios: solo con el interruptor `telegram_envio` encendido; cada aviso se reclama en la base antes de enviarse (idempotente).
+    // Barrido de updates reclamados y no terminados (lease vencido) o fallidos: con `telegram_envio` apagado no hace nada; avisa una sola vez de los abandonados.
+    try { await agente.barrerUpdates(); } catch { /* el siguiente latido lo reintenta */ }
     try { await agente.enviarRecordatoriosMenudeo(); } catch { /* el siguiente latido lo reintenta: un aviso no reclamado sigue pendiente */ }
   }
   const tokens = new AlmacenTokensDb(d.sql);

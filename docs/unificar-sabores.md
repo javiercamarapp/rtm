@@ -89,7 +89,7 @@ Hecho:
 - Puertas SQL (rol `servidor`): `agente.sabor_pregunta()`, `agente.sabor_responder(clave, args)`, `agente.sabor_deshacer(clave, args)`. Verifican al socio por su id de Telegram, contestan por el mismo núcleo que la web (canal `telegram`) y devuelven el `aviso_grupo` ya redactado (unió, son distintos, bloqueado, deshizo). Sin tarjeta.
 - `src/dominio/agente/sabores.ts`: lector de "sí / no / no sé" en lenguaje natural sin IA (ante la duda devuelve `no_se`: no unifica ni descarta), textos de la pregunta, reglas para el prompt y la fila del catálogo de intenciones (`DEF_INTENCION_SABOR`: sin confirmación, solo socios, reversa directa).
 
-**Falta cablear** (deliberadamente no tocado: el extractor, los esquemas y el orquestador están muy cubiertos por pruebas y piden su propia ronda):
+**Cableado** en el carril aprendizaje (16-nov; ver docs/aprendizaje-alta-bot.md): pregunta por chat (`agente.sabor_preguntar_chat`), respuesta con el `pregunta_id` de la memoria del servidor (`agente.sabor_responder_chat`), aviso al grupo y deshacer en 10 minutos. Lista original de lo que faltaba:
 
 1. Agregar la intención `sabor_respuesta` a `intenciones.ts`, `esquemas.ts`, `catalogo_intenciones.ts` (con `DEF_INTENCION_SABOR`), `plantillas.ts` y `resolucion.ts`, y subir `VERSION_PROMPT` con `REGLAS_PROMPT_SABORES`.
 2. Memoria de "qué pregunta espera respuesta" por chat (guardar el `pregunta_id` que devolvió `agente.sabor_pregunta` al preguntar y consumirlo con la siguiente respuesta).

@@ -1,0 +1,267 @@
+[
+ {
+  "id": "n-059",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "regale 2 zafiro 5k menta a un cliente nuevo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "obsequio",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "menta",
+       "n": 2
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-060",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "obsequio: 3 orbita 20k uva y 2 orbita 20k fresa para Tienda La Esquina",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "obsequio",
+     "cliente": "tienda la esquina",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "uva",
+       "n": 3
+      },
+      {
+       "m": "orbita 20k",
+       "s": "fresa",
+       "n": 2
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-061",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "merma 3 zafiro 5k uva, vinieron chorreadas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "merma",
+     "modelo": "zafiro 5k",
+     "sabor": "uva",
+     "piezas": 3
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-062",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "se cayo la caja y se rompieron 4 nimbo 50k mango",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "merma",
+     "modelo": "nimbo 50k",
+     "sabor": "mango",
+     "piezas": 4
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-063",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "sabor nuevo uva helada de zafiro 5k",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "sabor_alta",
+     "modelo": "zafiro 5k",
+     "sabor": "uva helada"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-064",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "dame de alta el sabor mango tajin en cometa 30k",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "sabor_alta",
+     "modelo": "cometa 30k",
+     "sabor": "mango tajin"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-065",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "modelo nuevo Titan 40K marca Orbe",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "modelo_alta",
+     "marca": "orbe",
+     "modelo": "titan 40k",
+     "costo_pesos": null
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-066",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "modelo nuevo Rayo 10k, marca Zeta, costo 130 con Karen",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "modelo_alta",
+     "marca": "zeta",
+     "modelo": "rayo 10k",
+     "costo_pesos": 130,
+     "proveedor": "karen"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-067",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "el costo de zafiro 5k con Karen subio a 140",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "costo_lista",
+     "proveedor": "karen",
+     "modelo": "zafiro 5k",
+     "costo_pesos": 140
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-068",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "Isaac nos baja el costo de la nimbo 50k a 165",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "costo_lista",
+     "proveedor": "isaac",
+     "modelo": "nimbo 50k",
+     "costo_pesos": 165
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-069",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "alias: Memo es Guillermo Torres",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "alias_ensenar",
+     "clase": "cliente",
+     "alias": "memo",
+     "oficial": "guillermo torres"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-070",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "dile Lupita a Guadalupe Rios",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "alias_ensenar",
+     "clase": "cliente",
+     "alias": "lupita",
+     "oficial": "guadalupe rios"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-071",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "la azul es mora azul",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "alias_ensenar",
+     "clase": "sabor",
+     "alias": "la azul",
+     "oficial": "mora azul"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-072",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "vapemate es Karen",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "alias_ensenar",
+     "clase": "proveedor",
+     "alias": "vapemate",
+     "oficial": "karen"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-073",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "alta de cliente Tienda Nueva Demo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cliente_alta"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-074",
+  "categoria": "catalogo",
+  "autor": "javier",
+  "texto": "precio de Cliente Alfa en zafiro 5k: 250",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cliente_precio",
+     "cliente": "cliente alfa",
+     "monto_pesos": 250
+    }
+   ]
+  }
+ }
+]

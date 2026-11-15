@@ -6,9 +6,11 @@ export type FetchLike = (url: string, init: { method: 'POST'; headers: Record<st
 
 export class ErrorTelegram extends Error {
   constructor(
-    readonly codigo: 'rate_limit' | 'sin_destino' | 'servidor' | 'rechazado' | 'red',
+    readonly codigo: 'rate_limit' | 'sin_destino' | 'servidor' | 'rechazado' | 'red' | 'migrar',
     readonly status: number,
     readonly reintentarEnSeg: number | null = null,
+    /** El grupo paso a supergrupo: Telegram da el id nuevo en `parameters.migrate_to_chat_id`. */
+    readonly migrarA: number | null = null,
   ) {
     super(`Telegram: ${codigo} (${status})`);
     this.name = 'ErrorTelegram';
@@ -35,8 +37,9 @@ export function crearEnviadorTelegram(config: { token: string; fetch: FetchLike;
     } catch {
       throw new ErrorTelegram('red', 0);
     }
-    const datos = (await r.json().catch(() => null)) as { ok?: boolean; result?: T; parameters?: { retry_after?: number } } | null;
+    const datos = (await r.json().catch(() => null)) as { ok?: boolean; result?: T; parameters?: { retry_after?: number; migrate_to_chat_id?: number } } | null;
     if (r.ok && datos?.ok) return datos.result as T;
+    if (r.status === 400 && typeof datos?.parameters?.migrate_to_chat_id === 'number') throw new ErrorTelegram('migrar', 400, null, datos.parameters.migrate_to_chat_id);
     if (r.status === 429) throw new ErrorTelegram('rate_limit', 429, datos?.parameters?.retry_after ?? null);
     if (r.status === 403 || r.status === 400) throw new ErrorTelegram(r.status === 403 ? 'sin_destino' : 'rechazado', r.status);
     throw new ErrorTelegram(r.status >= 500 ? 'servidor' : 'rechazado', r.status);

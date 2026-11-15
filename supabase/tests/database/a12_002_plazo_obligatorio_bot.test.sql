@@ -1,5 +1,7 @@
 -- pgTAP: el bot exige plazo al crear un pedido (migracion 20261114700000). Datos sinteticos "A12B".
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 select agente.registrar_miembro(5120001, 'javier');
 select set_config('rtm.canal', 'importacion', true);

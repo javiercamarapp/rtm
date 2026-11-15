@@ -1,5 +1,7 @@
 -- pgTAP lane telegram-agente: pagos a socios, aportacion declarada, cobro, libro de hechos, deshacer, consultas y dependencias. Datos sinteticos.
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 select agente.registrar_miembro(5000001, 'angelo');
 select agente.registrar_miembro(5000002, 'javier');
@@ -31,8 +33,8 @@ select throws_ok($$ select agente.deshacer('tt:d2', (select folio from agente.he
 
 -- Cobro a un cliente
 select catalogo.asegurar_cliente('Tt Cliente', 'Javier');
-select is((agente.ejecutar('tt:c1', 'pago_cliente', jsonb_build_object('cuenta', 'efectivo', 'monto_cent', 700000, 'cliente_id', (select id from catalogo.cliente where nombre_canonico = 'Tt Cliente'), 'autor', 'angelo', 'telegram_user_id', 5000001, 'origen', 'Tt Cliente pago 7000')) ->> 'folio') is not null, true, 'cobro con folio');
-select throws_ok($$ select agente.ejecutar('tt:c2', 'pago_cliente', '{"cuenta":"banorte","monto_cent":100,"cliente_id":1,"autor":"angelo","telegram_user_id":5000001,"origen":"x"}') $$, 'P0460', null, 'cuenta desconocida: se pregunta, no se supone');
+select is((agente.ejecutar('tt:c1', 'pago_cliente', jsonb_build_object('cuenta', 'efectivo', 'monto_cent', 700000, 'confirmo_exceso', true, 'cliente_id', (select id from catalogo.cliente where nombre_canonico = 'Tt Cliente'), 'autor', 'angelo', 'telegram_user_id', 5000001, 'origen', 'Tt Cliente pago 7000')) ->> 'folio') is not null, true, 'cobro con folio');
+select throws_ok($$ select agente.ejecutar('tt:c2', 'pago_cliente', '{"cuenta":"banorte","monto_cent":100,"cliente_id":1,"confirmo_exceso":true,"autor":"angelo","telegram_user_id":5000001,"origen":"x"}') $$, 'P0460', null, 'cuenta desconocida: se pregunta, no se supone');
 select is((agente.deshacer('tt:c3', (select folio from agente.hecho where tipo = 'pago_cliente'), 'javier', 5000002) ->> 'deshecho')::boolean, true, 'deshacer un cobro');
 
 -- Dependencias de otras ramas

@@ -34,7 +34,7 @@ grant select on _antes to authenticated;
 select set_config('request.jwt.claim.sub', '61111111-1111-1111-1111-111111111111', true);
 set local role authenticated;
 select ok((api.crear_pedido('pdx1', (select (x->>'id')::bigint from jsonb_array_elements(api.clientes_lista()) x where x->>'nombre' = 'Pd Cliente'),
-  '[{"modelo":"Pd Modelo 50K","sabor":"Fresa","piezas":40}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-10', null, 30)->>'folio') ~ '^P-\d{4}$', 'se crea un pedido de bodega');
+  '[{"modelo":"Pd Modelo 50K","sabor":"Fresa","piezas":40}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-10', null, 30)->>'folio') ~ '^[A-Z]{2}-\d{3}$', 'se crea un pedido de bodega (folio por iniciales del cliente)');
 select lives_ok($$select api.confirmar_pedido('pdx1c', (select (x->>'id')::bigint from jsonb_array_elements(api.pedidos_lista()) x where x->>'cliente' = 'Pd Cliente' limit 1))$$, 'confirmar');
 select lives_ok($$select api.enviar_pedido('pdx1s', (select (x->>'id')::bigint from jsonb_array_elements(api.pedidos_lista()) x where x->>'cliente' = 'Pd Cliente' limit 1), null, null, '2026-11-10', true)$$, 'enviar');
 create temp table _d as select api.pedidos_desglose() as d;
