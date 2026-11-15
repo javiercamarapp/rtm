@@ -13,9 +13,9 @@ import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pag
 import { AntiguedadSaldos } from '@/ui/graficas';
 import { BotonAccion } from '../operacion/formulario-accion';
 import { Dos, Estado, Pie, abs, m, pct, suma } from '../_a3/util';
-import { AccionesSocios } from './formularios';
+import { AccionesSocios, type EfectosSocios } from './formularios';
 import { valuacionDeSocios } from '@/composicion/valuacion-socios';
-import { otroSocio } from '@/dominio/socios/valuacion';
+import { otroSocio, textoFaltan } from '@/dominio/socios/valuacion';
 import { ComparativaValuaciones, DesgloseIgualacion, PanelCuadra, SeccionDeudaProveedores, SerieValuacion, TarjetaValuacionSocio } from './valuacion';
 
 export const metadata: Metadata = { title: 'Cuenta de socios' };
@@ -24,6 +24,11 @@ export default async function PaginaSocios() {
   const { perfil } = await exigirSocio();
   const mio = perfil.socio_nombre === 'Angelo' || perfil.socio_nombre === 'Javier' ? perfil.socio_nombre : null;
   const [c, neta, { cuenta: val, yo }] = await Promise.all([(await operacionDeSocio()).cuentaSocios(), (await dropshippingDeSocio()).aportacionNeta(), valuacionDeSocios()]);
+  // Cifras para el panel "Asi quedara" de los dialogos: ya calculadas por la base, solo formateadas.
+  const efectos: EfectosSocios = {
+    socios: val.socios.map((f) => ({ socio: f.socio, valuacion: m(f.valuacion_cent), participacionPct: Number.isFinite(f.participacion_bp) ? f.participacion_bp / 100 : null, reembolsoPendiente: m(c.socios.find((s) => s.socio === f.socio)?.reembolso_pendiente_cent ?? 0n), fondos: m(f.fondos_en_poder_cent) })),
+    faltan: textoFaltan(val, m), igualados: val.igualacion.igualados,
+  };
   const orden = yo ? [yo, otroSocio(yo)] : (['Angelo', 'Javier'] as const);
   const d = c.javier_debe_a_angelo_cent;
   const parejo = d === 0n;
@@ -50,7 +55,7 @@ export default async function PaginaSocios() {
         eyebrow="Cuentas de socios"
         titulo="Cuenta de socios"
         descripcion="Valuación de cada socio: lo que invirtió más las utilidades acumuladas, menos lo que se ha pagado."
-        acciones={<AccionesSocios />}
+        acciones={<AccionesSocios efectos={efectos} />}
       />
       {!q.libro_conciliado && <Aviso tono="atencion" titulo="Revisar el libro: una identidad contable no se cumple.">{q.fallas} de {q.verificaciones.length} verificaciones no coinciden. Abre «Explicar este número» en el indicador Libro para ver cuáles y con qué cifras; el detalle está en Contabilidad, Comprobaciones.</Aviso>}
 

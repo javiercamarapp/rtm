@@ -226,7 +226,7 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
   // Regla del dueno (13-nov): el pago de la sociedad se bloquea sin saldo en su caja. Antes de pagar, Javier deposita 2,000.00 a la caja de la empresa (reembolso).
   await javier.goto('/socios');
   await javier.getByTestId('aportacion').click();
-  await javier.getByTestId('campo-p_socio').selectOption('Javier');
+  await javier.getByTestId('campo-p_socio-Javier').check();
   await javier.getByTestId('campo-p_monto_cent').fill('2000');
   await javier.getByTestId('campo-p_concepto').fill(`Aportacion demo ${d.sufijo}`);
   await javier.getByTestId('confirmar').click();
@@ -272,7 +272,7 @@ test('8 socios: aportacion, gasto de socio y reembolso', async () => {
   await page.goto('/socios');
   await page.waitForLoadState('networkidle');
   await page.getByTestId('gasto-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('400');
   await page.getByTestId('campo-p_categoria').fill(`envio demo ${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -280,9 +280,9 @@ test('8 socios: aportacion, gasto de socio y reembolso', async () => {
   await page.reload();
   await cap(page, 'socios-tras-gasto');
   await page.getByTestId('pago-a-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('400');
-  await page.getByTestId('campo-p_tipo').selectOption('reembolso');
+  await page.getByTestId('campo-p_tipo-reembolso').check();
   await page.getByTestId('confirmar').click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.reload();

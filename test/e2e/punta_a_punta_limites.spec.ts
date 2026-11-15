@@ -96,7 +96,7 @@ test('T05(c) corte de red tras el exito: la respuesta se pierde, el usuario rein
     await route.continue();
   });
   await abrirAportacion(page);
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
+  await page.getByTestId('campo-p_socio-Javier').check();
   await page.getByTestId('campo-p_monto_cent').fill('12');
   await page.getByTestId('campo-p_concepto').fill(concepto);
   await page.getByTestId('confirmar').click();
@@ -110,7 +110,7 @@ test('T05(d) repetir la MISMA intencion a proposito tras un exito crea dos asien
   const concepto = `Repetida a proposito ${d.sufijo}`;
   for (let i = 0; i < 2; i++) {
     await abrirAportacion(page);
-    await page.getByTestId('campo-p_socio').selectOption('Angelo');
+    await page.getByTestId('campo-p_socio-Angelo').check();
     await page.getByTestId('campo-p_monto_cent').fill('7');
     await page.getByTestId('campo-p_concepto').fill(concepto);
     await page.getByTestId('confirmar').click();
@@ -143,9 +143,9 @@ test('T10 teclado en los dialogos: foco inicial en Cancelar, el foco queda atrap
 test('T10 error de la base anunciado: un fallo aparece en un elemento con role=alert dentro del dialogo', async ({ page }) => {
   await sesionSocio(page, '/socios');
   await page.getByTestId('pago-a-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('99999999');
-  await page.getByTestId('campo-p_tipo').selectOption('reembolso');
+  await page.getByTestId('campo-p_tipo-reembolso').check();
   await page.getByTestId('confirmar').click();
   await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();
 });
@@ -189,7 +189,7 @@ test('T16 sesion vencida con un dialogo abierto: confirmar no pierde nada en sil
   await sesionSocio(page, '/socios');
   const antes = await contarEventos('aportacion_socio');
   await abrirAportacion(page);
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
+  await page.getByTestId('campo-p_socio-Javier').check();
   await page.getByTestId('campo-p_monto_cent').fill('5');
   await page.getByTestId('campo-p_concepto').fill(`Sesion vencida ${d.sufijo}`);
   await context.clearCookies();
