@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { calcularCargoMes, declaradoDeArgs, instantaneaDeFilas, parsearArgs, planificar, totales, ceilDiv, argsRegistrar, ejecutar } from '../../../scripts/costos/cargar-mes.mjs';
+import { calcularCargoMes, declaradoDeArgs, instantaneaDeFilas, parsearArgs, planificar, totales, ceilDiv, argsRegistrar, ejecutar, parsearCuota } from '../../../scripts/costos/cargar-mes.mjs';
 import { calcularCargo } from '@/dominio/costos/registro';
 import { ceilDiv as ceilDivDominio } from '@/dominio/dinero/techo';
 
@@ -41,25 +41,51 @@ describe('cargar-mes: aritmetica igual a la del dominio', () => {
 });
 
 describe('cargar-mes: plan del mes', () => {
-  it('con la base vacia y sin tipo de cambio todo lo que cuesta queda como dato faltante y nada se inventa', () => {
+  it('sin tipo de cambio nada se convierte ni se inventa: Claude Max queda en USD 20 pendiente y no hay datos faltantes', () => {
     const a = plan(snap(), decl(), null);
     expect(a.filter((x) => x.tipo === 'cargo')).toHaveLength(0);
-    expect(a.filter((x) => x.tipo === 'faltante').map((x) => x.slug).sort()).toEqual(['claude_max', 'dominio', 'openrouter', 'supabase']);
-    expect(totales(a, snap().servicios).alMenos).toBe(true);
+    const p = a.filter((x) => x.tipo === 'pendiente_tc');
+    expect(p.map((x) => x.slug)).toEqual(['claude_max']);
+    expect(p[0].usdMicro).toBe(20_000_000n);
+    expect(p[0].motivo).toContain('Sin tipo de cambio: falta capturarlo');
+    expect(a.filter((x) => x.tipo === 'faltante')).toHaveLength(0);
   });
-  it('vercel vale 0: sin cargo y sin dato faltante, aun con tipo de cambio', () => {
-    const a = plan();
-    expect(a.some((x) => x.slug === 'vercel' && x.tipo === 'cargo')).toBe(false);
-    expect(a.some((x) => x.slug === 'vercel' && x.tipo === 'faltante')).toBe(false);
-    expect(a.find((x) => x.slug === 'vercel')!.tipo).toBe('sin_cargo');
+  it('Claude Max es fijo de USD 20 por mes (no 200)', () => {
+    const c = plan().find((x) => x.slug === 'claude_max' && x.tipo === 'cargo')!.cargo;
+    expect(c.baseOrigMicro).toBe(20_000_000n);
+    expect(c.montoCent).toBe(40_000n);
   });
-  it('supabase cobra la cuota del documento como minimo y abre el faltante', () => {
+  it('vercel y supabase valen 0 sin consumo real: sin cargo y sin dato faltante', () => {
     const a = plan();
-    const v = a.find((x) => x.tipo === 'cargo' && x.slug === 'supabase')!;
-    expect(v.cargo.montoCent).toBe(50_000n);
-    expect(v.cargo.comoSeriaCent).toBe(50_000n);
-    expect(v.cargo.comoDeberiaCent).toBeNull();
-    expect(a.some((x) => x.tipo === 'faltante' && x.slug === 'supabase')).toBe(true);
+    for (const slug of ['vercel', 'supabase']) {
+      expect(a.some((x) => x.slug === slug && (x.tipo === 'cargo' || x.tipo === 'faltante'))).toBe(false);
+      expect(a.find((x) => x.slug === slug)!.tipo).toBe('sin_cargo');
+    }
+  });
+  it('dominio, openrouter sin libro y el resto valen 0 sin dato faltante', () => {
+    const a = plan();
+    for (const slug of ['dominio', 'openrouter', 'higgsfield', 'resend', 'telegram', 'github', 'transcripcion']) expect(a.find((x) => x.slug === slug)!.tipo).toBe('sin_cargo');
+    expect(a.filter((x) => x.tipo === 'faltante')).toHaveLength(0);
+  });
+  it('dominio con costo anual declarado devenga un doceavo', () => {
+    const c = plan(snap(), decl(['--dominio-anual-usd', '12']))!.find((x) => x.slug === 'dominio' && x.tipo === 'cargo')!.cargo;
+    expect(c.baseOrigMicro).toBe(1_000_000n);
+  });
+  it('regla menor: la cuota base es el tope del consumo real (cuota 20, consumo real 50 -> 20; consumo real 5 -> 5)', () => {
+    const alto = plan(snap(), decl(['--vercel-consumo', '1:1', '--vercel-factura-usd', '50'])).find((x) => x.slug === 'vercel' && x.tipo === 'cargo')!.cargo;
+    expect(alto.baseOrigMicro).toBe(20_000_000n);
+    expect(alto.comoSeriaCent).toBe(40_000n);
+    expect(alto.comoDeberiaCent).toBe(100_000n);
+    const bajo = plan(snap(), decl(['--vercel-consumo', '1:10', '--vercel-factura-usd', '50'])).find((x) => x.slug === 'vercel' && x.tipo === 'cargo')!.cargo;
+    expect(bajo.baseOrigMicro).toBe(50_000_000n);
+    expect(bajo.pctAplicadoPpm).toBe(100_000n);
+    expect(bajo.montoCent).toBe(10_000n);
+  });
+  it('regla mayor (cuota base como piso) con la fila vigente de la base', () => {
+    const s = snap({ cuotas: [{ slug: 'supabase', q: { regla: 'mayor', cuota_orig_micro: 25_000_000 } }] });
+    const c = plan(s, decl(['--supabase-horas', '1:10', '--supabase-factura-usd', '50'])).find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.cargo;
+    expect(c.baseOrigMicro).toBe(25_000_000n);
+    expect(c.montoCent).toBe(50_000n);
   });
   it('libro con llamadas: openrouter medido (sin audio), comision 5.5 %, transcripcion aparte, evidencia con sha', () => {
     const a = plan(snap({ ledger: [{ rol: 'texto', n: 3, micro: '1000000' }, { rol: 'audio', n: 1, micro: '500000' }] }));
@@ -85,13 +111,13 @@ describe('cargar-mes: plan del mes', () => {
     expect(plan(snap(), decl(['--claude-usd', '25'])).find((x) => x.slug === 'claude_max')!.cargo.baseOrigMicro).toBe(25_000_000n);
   });
   it('idempotente: un cargo vivo igual se omite y uno distinto es conflicto', () => {
-    const base = plan().find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.cargo;
-    const vivo = (monto: string) => ({ id: '7', folio: 'K-0007', slug: 'supabase', base: base.baseOrigMicro.toString(), pct: base.pctAplicadoPpm.toString(), tc: base.tcMicro.toString(), monto });
-    expect(plan(snap({ cargos: [vivo('50000')] })).find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.estadoPrevio).toBe('ya_registrado');
-    expect(plan(snap({ cargos: [vivo('60000')] })).find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.estadoPrevio).toBe('conflicto');
+    const base = plan().find((x) => x.slug === 'claude_max' && x.tipo === 'cargo')!.cargo;
+    const vivo = (monto: string) => ({ id: '7', folio: 'K-0007', slug: 'claude_max', base: base.baseOrigMicro.toString(), pct: base.pctAplicadoPpm.toString(), tc: base.tcMicro.toString(), monto });
+    expect(plan(snap({ cargos: [vivo('40000')] })).find((x) => x.slug === 'claude_max' && x.tipo === 'cargo')!.estadoPrevio).toBe('ya_registrado');
+    expect(plan(snap({ cargos: [vivo('60000')] })).find((x) => x.slug === 'claude_max' && x.tipo === 'cargo')!.estadoPrevio).toBe('conflicto');
   });
   it('los argumentos de registrar_cargo son los 24 de la funcion oficial', () => {
-    expect(argsRegistrar('2026-11', plan().find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.cargo)).toHaveLength(24);
+    expect(argsRegistrar('2026-11', plan().find((x) => x.slug === 'claude_max' && x.tipo === 'cargo')!.cargo)).toHaveLength(24);
   });
 });
 
@@ -101,13 +127,16 @@ describe('cargar-mes: linea de comandos', () => {
     expect(() => parsearArgs(['--mes', '2026-11', '--verificar', '--aplicar'])).toThrow();
     expect(() => parsearArgs(['--mes', '2026-11', '--aplicar', '--datos', 'x'])).toThrow();
     expect(() => declaradoDeArgs(parsearArgs(['--mes', '2026-11', '--supabase-horas', '1:2']))).toThrow(/factura/);
+    expect(() => declaradoDeArgs(parsearArgs(['--mes', '2026-11', '--vercel-consumo', '1:2']))).toThrow(/factura/);
+    expect(parsearCuota('vercel:menor:20:2026-12-01')).toEqual({ slug: 'vercel', regla: 'menor', cuotaMicro: 20_000_000n, desde: '2026-12-01' });
+    expect(() => parsearCuota('vercel:medio:20:2026-12-01')).toThrow(/--fijar-cuota/);
   });
   it('--verificar con instantanea no escribe y no imprime secretos', async () => {
     const out: string[] = [];
     const code = await ejecutar(['--mes', '2026-11', '--verificar', '--datos', 'snap.json', '--tc', '20'], { log: (t: string) => out.push(t), error: (t: string) => out.push(t) }, { leerArchivo: () => JSON.stringify(filas), ahora: new Date('2026-11-14T18:00:00Z') });
     expect(code).toBe(0);
     expect(out.join('\n')).toContain('no se escribio nada');
-    expect(out.join('\n')).toContain('al menos');
+    expect(out.join('\n')).toContain('Aportacion de capital de Javier');
   });
   it('--tc-sugerido solo imprime la instruccion', async () => {
     const out: string[] = [];

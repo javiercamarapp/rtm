@@ -13,15 +13,16 @@
 // Fuentes por servicio (ver docs/costos-carga-mensual.md):
 //   openrouter / openrouter_comision / transcripcion  libro propio ia.llamada del mes (liquidadas); el rol 'audio' es la transcripcion. Sin libro:
 //                                                      dato faltante, salvo --openrouter-usd (consumo declarado de la llave de RTM, queda 'capturado').
-//   vercel                  vale 0 por ahora (decision del dueno, 14-nov: plan sin costo): sin cargo y SIN dato faltante.
-//   supabase                cuota del documento (US$25) como MINIMO; la regla es el mayor entre cuota y consumo real. La API no desglosa por proyecto:
-//                           dato faltante, salvo --supabase-horas RTM:TOTAL --supabase-factura-usd N.
+//   vercel                  vale 0 por ahora (plan equivalente): sin cargo y SIN dato faltante; con --vercel-consumo/--vercel-factura-usd aplica la misma regla de cuota base.
+//   supabase                vale 0 sin consumo real declarado (14-nov). Con --supabase-horas RTM:TOTAL --supabase-factura-usd N se cobra lo MENOR (o lo mayor, segun la
+//                           regla vigente de costos.cuota_base) entre la cuota base y el consumo real.
 //   claude_max              FIJO en US$20 al mes (decision del dueno: 20 de 200 prorrateados; --claude-usd N lo cambia). No usa el conteo de tokens por carpeta.
-//   dominio                 --dominio-anual-usd N (devengo de un doceavo). Sin costo declarado: dato faltante.
+//   dominio                 administrado en Vercel; --dominio-anual-usd N (devengo de un doceavo). Sin costo declarado vale 0.
 //   higgsfield              --higgsfield-usd N (generaciones etiquetadas RTM). Sin dato: sin cargo.
 //   resend, telegram, github  gratuitos (declarado): sin cargo.
-// Tipo de cambio: --tc N [--tc-fecha AAAA-MM-DD] (manual), o el ultimo de costos.tipo_cambio, o Banxico FIX con BANXICO_TOKEN. Sin tipo de cambio: los
-// servicios en dolares quedan como dato faltante.
+// Tipo de cambio: --tc N [--tc-fecha AAAA-MM-DD] (manual), o el ultimo de costos.tipo_cambio, o Banxico FIX con BANXICO_TOKEN. Sin tipo de cambio NO se convierte nada:
+// el cargo en dolares se guarda como pendiente (costos.cargo_pendiente_tc) y la pagina dice "Sin tipo de cambio: falta capturarlo".
+// Cada cargo cobrable de Javier nace como APORTACION DE CAPITAL declarada (costos.parametro costos_como_capital): sin tocar la caja, con su fecha, servicio, TC y referencia.
 
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -131,13 +132,15 @@ export function calcularCargoMes(c, tc) {
   } else if (a.tipo === 'cuota_minima') {
     // Sin consumo real conocido: se cobra la cuota del documento ("como seria"); "como deberia ser" queda sin dato.
     comoSeria = calcularMonto({ baseOrigMicro: base, pctPpm: PPM_CIEN, tcMicro: t.tcMicro }).montoCent;
-  } else if (a.tipo === 'mayor') {
+  } else if (a.tipo === 'mayor' || a.tipo === 'menor') {
     const p = participacion(a.consumoRtm, a.consumoTotal);
     const nSeria = a.cuotaOrigMicro * PPM_CIEN * t.tcMicro;
     const nDeberia = c.baseOrigMicro * p.aplicadoPpm * t.tcMicro;
     comoSeria = montoDesdeNumerador(nSeria).montoCent;
     comoDeberia = montoDesdeNumerador(nDeberia).montoCent;
-    if (nSeria > nDeberia) base = a.cuotaOrigMicro;
+    // 'mayor': cuota base como piso; 'menor': cuota base como tope (lo menor entre la cuota y el consumo real).
+    const usaCuota = a.tipo === 'mayor' ? nSeria > nDeberia : nSeria < nDeberia;
+    if (usaCuota) base = a.cuotaOrigMicro;
     else {
       pctExacto = p.exactoPpm;
       pctAplicado = p.aplicadoPpm;
@@ -166,6 +169,19 @@ export function calcularCargoMes(c, tc) {
  *   faltantesAbiertos: {slug:string, motivo:string}[]}} Instantanea
  */
 
+/** Dolares atribuidos (micro) de un cargo antes del tipo de cambio: solo para mostrar el pendiente sin TC. */
+export function atribuidoUsdMicro(c) {
+  const a = c.atribucion;
+  const porPpm = (b, ppm) => (b * ppm) / PPM_CIEN;
+  if (a.tipo === 'tasa') return porPpm(c.baseOrigMicro, a.ppm);
+  if (a.tipo === 'participacion') return porPpm(c.baseOrigMicro, participacion(a.consumoRtm, a.consumoTotal).aplicadoPpm);
+  if (a.tipo === 'mayor' || a.tipo === 'menor') {
+    const real = porPpm(c.baseOrigMicro, participacion(a.consumoRtm, a.consumoTotal).aplicadoPpm);
+    return a.tipo === 'mayor' ? (a.cuotaOrigMicro > real ? a.cuotaOrigMicro : real) : a.cuotaOrigMicro < real ? a.cuotaOrigMicro : real;
+  }
+  return c.baseOrigMicro;
+}
+
 const sinCargo = (slug, motivo) => ({ tipo: 'sin_cargo', slug, motivo });
 const faltante = (slug, motivo) => ({ tipo: 'faltante', slug, motivo });
 
@@ -182,7 +198,8 @@ export function planificar({ mes, fecha, snap, declarado, tc }) {
     const s = servicio(slug);
     const comun = { slug, fase: s.fase, mes, fecha, moneda: s.moneda, cobrable: s.cobrable };
     if (usd(slug) && !tc) {
-      acciones.push(faltante(slug, 'sin tipo de cambio: declara --tc, registra uno en la pagina o configura BANXICO_TOKEN'));
+      // Sin tipo de cambio NO se convierte ni se inventa uno: el cargo queda en dolares y la pagina dice "Sin tipo de cambio: falta capturarlo".
+      acciones.push({ tipo: 'pendiente_tc', slug, mes, fecha, usdMicro: atribuidoUsdMicro(extra), motivo: 'Sin tipo de cambio: falta capturarlo (declara --tc, registralo en la pagina o configura BANXICO_TOKEN)' });
       return false;
     }
     acciones.push({ tipo: 'cargo', slug, cargo: calcularCargoMes({ ...comun, ...extra }, tc) });
@@ -205,7 +222,7 @@ export function planificar({ mes, fecha, snap, declarado, tc }) {
     openrouterBase = { micro, etiqueta: 'medido', tipo: 'libro', sha: h, nota: `Libro propio ia.llamada de ${mes}: ${llamadas - audio.n} llamadas liquidadas, sin el rol audio.` };
   }
   if (!openrouterBase) {
-    acciones.push(faltante('openrouter', `el libro propio ia.llamada no tiene llamadas liquidadas en ${mes}: sin consumo de RTM medido (declara --openrouter-usd con el consumo de la llave de RTM)`));
+    acciones.push(sinCargo('openrouter', `el libro propio ia.llamada no tiene llamadas liquidadas en ${mes}: sin consumo real medido vale 0 (declara --openrouter-usd con el consumo de la llave de RTM si hubo)`));
   } else if (openrouterBase.micro > 0n) {
     cargo('openrouter', { baseOrigMicro: openrouterBase.micro, atribucion: { tipo: 'directa' }, etiqueta: openrouterBase.etiqueta, evidenciaTipo: openrouterBase.tipo, evidenciaSha256: openrouterBase.sha, nota: openrouterBase.nota });
     if (snap.parametros.incluirComision && snap.parametros.comisionPpm > 0n) {
@@ -224,27 +241,24 @@ export function planificar({ mes, fecha, snap, declarado, tc }) {
     acciones.push(sinCargo('transcripcion', 'sin llamadas de audio en el libro propio'));
   }
 
-  // --- Plataformas compartidas: cuota del documento como minimo; mayor entre cuota y consumo real si se declara
-  acciones.push(sinCargo('vercel', 'plan sin costo por ahora, declarado por el dueno (14-nov): vale 0, sin dato faltante'));
-  for (const [slug, d] of [['supabase', declarado.supabase]]) {
+  // --- Plataformas compartidas (Vercel y Supabase): cuota base editable (costos.cuota_base, vigente_desde) y regla 'menor' o 'mayor' entre la cuota y el consumo real.
+  // Sin consumo declarado valen 0: sin cargo y sin dato faltante (decision del dueno, 14-nov). El consumo real = factura declarada x participacion (RTM:TOTAL).
+  for (const slug of ['vercel', 'supabase']) {
     const s = servicio(slug);
-    const cuota = s.cuotaMicro;
-    if (cuota === null) {
-      acciones.push(faltante(slug, 'el servicio no trae cuota del documento'));
+    const d = declarado[slug];
+    const q = snap.cuotas?.[slug] ?? (s.cuotaMicro === null ? null : { regla: 'menor', cuotaMicro: s.cuotaMicro });
+    if (!d?.consumo || d.facturaMicro === null) {
+      acciones.push(sinCargo(slug, `vale 0: sin consumo real declarado (decision del dueno, 14-nov); con --${slug}-${slug === 'supabase' ? 'horas' : 'consumo'} RTM:TOTAL --${slug}-factura-usd N se cobra lo ${q?.regla ?? 'menor'} entre la cuota base y el consumo real`));
       continue;
     }
-    if (d.consumo && d.facturaMicro !== null) {
-      cargo(slug, {
-        baseOrigMicro: d.facturaMicro, atribucion: { tipo: 'mayor', cuotaOrigMicro: cuota, consumoRtm: d.consumo.rtm, consumoTotal: d.consumo.total }, etiqueta: 'atribuido',
-        evidenciaTipo: 'captura', evidenciaSha256: null, nota: `Participacion declarada ${d.consumo.rtm}/${d.consumo.total} sobre factura declarada; se cobra el mayor entre cuota del documento y consumo real.`,
-      });
-    } else {
-      const hay = cargo(slug, {
-        baseOrigMicro: cuota, atribucion: { tipo: 'cuota_minima' }, etiqueta: 'proyeccion', evidenciaTipo: 'captura', evidenciaSha256: null,
-        nota: 'Cuota del documento como minimo: sin consumo real de RTM (la API del proveedor no desglosa por proyecto).',
-      });
-      if (hay) acciones.push(faltante(slug, `sin consumo real de RTM en Supabase (horas de computo de la organizacion compartida): se cobra la cuota del documento como minimo; el cargo real puede ser mayor`));
+    if (!q) {
+      acciones.push(faltante(slug, 'el servicio no trae cuota base: fijala con --fijar-cuota'));
+      continue;
     }
+    cargo(slug, {
+      baseOrigMicro: d.facturaMicro, atribucion: { tipo: q.regla, cuotaOrigMicro: q.cuotaMicro, consumoRtm: d.consumo.rtm, consumoTotal: d.consumo.total }, etiqueta: 'atribuido',
+      evidenciaTipo: 'captura', evidenciaSha256: null, nota: `Participacion declarada ${d.consumo.rtm}/${d.consumo.total} sobre factura declarada; se cobra lo ${q.regla} entre la cuota base de USD ${textoMicro(q.cuotaMicro)} y el consumo real.`,
+    });
   }
 
   // --- Claude Max (construccion, opcional): monto fijo declarado por el dueno
@@ -255,11 +269,11 @@ export function planificar({ mes, fecha, snap, declarado, tc }) {
 
   // --- Dominio (anual, devengo de un doceavo)
   if (declarado.dominioAnualMicro === null) {
-    acciones.push(faltante('dominio', 'costo anual del dominio no declarado (--dominio-anual-usd)'));
+    acciones.push(sinCargo('dominio', 'dominio administrado en Vercel, devengo de un doceavo: vale 0 hasta que el dueno declare el costo anual (--dominio-anual-usd)'));
   } else {
     cargo('dominio', {
       baseOrigMicro: ceilDiv(declarado.dominioAnualMicro, 12n), atribucion: { tipo: 'directa' }, etiqueta: 'capturado', evidenciaTipo: 'captura', evidenciaSha256: null,
-      nota: `Devengo de un doceavo de US$${textoMicro(declarado.dominioAnualMicro)} anuales declarados por el dueno.`,
+      nota: `Dominio administrado en Vercel: devengo de un doceavo de US$${textoMicro(declarado.dominioAnualMicro)} anuales declarados por el dueno.`,
     });
   }
 
@@ -281,6 +295,7 @@ export function planificar({ mes, fecha, snap, declarado, tc }) {
       const igual = previo.baseOrigMicro === a.cargo.baseOrigMicro && previo.pctAplicadoPpm === a.cargo.pctAplicadoPpm && previo.montoCent === a.cargo.montoCent;
       return { ...a, estadoPrevio: igual ? 'ya_registrado' : 'conflicto', previo };
     }
+    if (a.tipo === 'pendiente_tc' && previo) return { tipo: 'sin_cargo', slug: a.slug, motivo: `ya tiene cargo ${previo.folio}; no queda pendiente de tipo de cambio` };
     if (a.tipo === 'faltante' && previo) return { tipo: 'sin_cargo', slug: a.slug, motivo: `ya tiene cargo ${previo.folio}; el faltante (${a.motivo}) no se abre` };
     return a;
   });
@@ -304,7 +319,7 @@ export function totales(acciones, servicios) {
 // Argumentos
 // ---------------------------------------------------------------------------------------------------------------------------------------------
 const OPCIONES_CON_VALOR = ['mes', 'fecha', 'tc', 'tc-fecha', 'datos', 'claude-usd', 'openrouter-usd', 'dominio-anual-usd', 'higgsfield-usd',
-  'supabase-horas', 'supabase-factura-usd'];
+  'supabase-horas', 'supabase-factura-usd', 'vercel-consumo', 'vercel-factura-usd', 'fijar-cuota'];
 const OPCIONES_BANDERA = ['verificar', 'aplicar', 'si', 'reemplazar', 'ayuda', 'tc-sugerido'];
 export const CLAUDE_USD_POR_OMISION = 20_000_000n;
 
@@ -321,7 +336,7 @@ export function parsearArgs(argv) {
       o[k] = v;
     } else throw new Error(`Argumento desconocido: ${a}`);
   }
-  if (o.ayuda || o['tc-sugerido']) return o;
+  if (o.ayuda || o['tc-sugerido'] || o['fijar-cuota']) return o;
   if (!o.mes || !RE_MES.test(o.mes)) throw new Error('Falta --mes AAAA-MM.');
   if (o.verificar && o.aplicar) throw new Error('Elige --verificar o --aplicar, no los dos.');
   if (!o.verificar && !o.aplicar) o.verificar = true;
@@ -351,9 +366,10 @@ const usdOpcional = (v, nombre) => {
 export function declaradoDeArgs(o) {
   const plataforma = (consumo, factura, nc, nf) => ({ consumo: consumo ? par(consumo, nc) : null, facturaMicro: usdOpcional(factura, nf) });
   const s = plataforma(o['supabase-horas'], o['supabase-factura-usd'], '--supabase-horas', '--supabase-factura-usd');
-  for (const [d, n] of [[s, 'supabase']]) if (Boolean(d.consumo) !== (d.facturaMicro !== null)) throw new Error(`Para ${n} declara el consumo (RTM:TOTAL) Y la factura del mes en dolares, o ninguno.`);
+  const v = plataforma(o['vercel-consumo'], o['vercel-factura-usd'], '--vercel-consumo', '--vercel-factura-usd');
+  for (const [d, n] of [[s, 'supabase'], [v, 'vercel']]) if (Boolean(d.consumo) !== (d.facturaMicro !== null)) throw new Error(`Para ${n} declara el consumo (RTM:TOTAL) Y la factura del mes en dolares, o ninguno.`);
   return {
-    openrouterMicro: usdOpcional(o['openrouter-usd'], '--openrouter-usd'), supabase: s, claudeUsdMicro: usdOpcional(o['claude-usd'], '--claude-usd') ?? CLAUDE_USD_POR_OMISION,
+    openrouterMicro: usdOpcional(o['openrouter-usd'], '--openrouter-usd'), supabase: s, vercel: v, claudeUsdMicro: usdOpcional(o['claude-usd'], '--claude-usd') ?? CLAUDE_USD_POR_OMISION,
     dominioAnualMicro: usdOpcional(o['dominio-anual-usd'], '--dominio-anual-usd'), higgsfieldMicro: usdOpcional(o['higgsfield-usd'], '--higgsfield-usd'),
   };
 }
@@ -366,6 +382,7 @@ export const SQL_LECTURA = {
   parametros: "select clave, valor from costos.parametro where clave in ('openrouter_comision_ppm', 'openrouter_incluir_comision', 'fecha_inicio_mantenimiento')",
   ledger: "select rol, count(*)::int as n, coalesce(sum(costo_usd_micro), 0)::text as micro from ia.llamada where estado = 'liquidada' and to_char((ts at time zone 'UTC') - interval '6 hours', 'YYYY-MM') = $1 group by rol",
   tc: 'select costos.tipo_cambio_del_dia($1::date) as tc',
+  cuotas: "select s.slug, costos.cuota_base_vigente(s.slug, $1::date) as q from costos.servicio s where s.slug in ('vercel', 'supabase')",
   cargos: 'select c.id::text as id, c.folio, s.slug, c.base_orig_micro::text as base, c.pct_aplicado_ppm::text as pct, c.tc_micro::text as tc, c.monto_cent::text as monto from costos.cargo c join costos.servicio s on s.id = c.servicio_id where c.mes = $1 and c.reversa_de is null and not exists (select 1 from costos.cargo r where r.reversa_de = c.id)',
   faltantes: 'select s.slug, f.motivo from costos.dato_faltante f join costos.servicio s on s.id = f.servicio_id where f.mes = $1 and f.resuelto_at is null',
 };
@@ -381,6 +398,7 @@ export function instantaneaDeFilas(f) {
     parametros: { comisionPpm: BigInt(p.openrouter_comision_ppm ?? 0), incluirComision: p.openrouter_incluir_comision === true || p.openrouter_incluir_comision === 'true', inicioMantenimiento: p.fecha_inicio_mantenimiento ?? '2026-11-01' },
     ledger: (f.ledger ?? []).map((r) => ({ rol: r.rol, n: Number(r.n), micro: BigInt(r.micro) })),
     tc,
+    cuotas: Object.fromEntries((f.cuotas ?? []).filter((r) => r.q).map((r) => [r.slug, { regla: r.q.regla, cuotaMicro: BigInt(r.q.cuota_orig_micro) }])),
     cargosVivos: (f.cargos ?? []).map((r) => ({ id: String(r.id), folio: r.folio, slug: r.slug, baseOrigMicro: BigInt(r.base), pctAplicadoPpm: BigInt(r.pct), tcMicro: BigInt(r.tc), montoCent: BigInt(r.monto) })),
     faltantesAbiertos: f.faltantes ?? [],
   };
@@ -393,6 +411,7 @@ export async function leerFilas(client, mes, fecha) {
     parametros: await q(SQL_LECTURA.parametros),
     ledger: await q(SQL_LECTURA.ledger, [mes]),
     tc: (await q(SQL_LECTURA.tc, [fecha]))[0]?.tc ?? null,
+    cuotas: await q(SQL_LECTURA.cuotas, [fecha]),
     cargos: await q(SQL_LECTURA.cargos, [mes]),
     faltantes: await q(SQL_LECTURA.faltantes, [mes]),
   };
@@ -438,6 +457,8 @@ export function resumenTexto({ mes, fecha, snap, acciones, tc, tcOrigen }) {
       L.push(`${w(a.slug, 20)} ${est}`);
       L.push(`${w('', 20)} ${c.moneda} ${textoMicro(c.baseOrigMicro, 2)} x ${(Number(c.pctAplicadoPpm) / 10_000).toFixed(2)} % x TC ${textoMicro(c.tcMicro, 4)} = exacto ${pesosDeExactoE6(c.exactoMxnE6)} -> ${pesos(c.montoCent)} (techo al peso)`);
       L.push(`${w('', 20)} ${c.etiqueta} / ${c.estado} / evidencia ${c.evidenciaTipo}${c.evidenciaSha256 ? ' (sha)' : ' (sin sha)'}${c.comoSeriaCent !== null ? ` / como seria ${pesos(c.comoSeriaCent)}` : ''}${c.comoDeberiaCent !== null ? ` / como deberia ser ${pesos(c.comoDeberiaCent)}` : ''}`);
+    } else if (a.tipo === 'pendiente_tc') {
+      L.push(`${w(a.slug, 20)} USD ${textoMicro(a.usdMicro, 2)} - ${a.motivo}`);
     } else if (a.tipo === 'faltante') {
       L.push(`${w(a.slug, 20)} DATO FALTANTE: ${a.motivo}`);
     } else {
@@ -452,7 +473,10 @@ export function resumenTexto({ mes, fecha, snap, acciones, tc, tcOrigen }) {
   L.push(`Gasto total con construccion${t.alMenos ? ' (al menos)' : ''}: exacto ${pesosDeExactoE6(t.conConstruccion.e6)} -> redondeado ${pesos(t.conConstruccion.cent)}`);
   const nuevos = acciones.filter((a) => a.tipo === 'cargo' && !a.estadoPrevio).length;
   const faltantes = acciones.filter((a) => a.tipo === 'faltante').length;
-  L.push(`Cargos nuevos: ${nuevos} | datos faltantes por abrir: ${faltantes}`);
+  const aportacion = acciones.filter((a) => a.tipo === 'cargo' && a.estadoPrevio !== 'ya_registrado').reduce((x, a) => x + a.cargo.montoCent, 0n);
+  L.push(`Aportacion de capital de Javier que se generara por estos cargos (sin tocar la caja): ${pesos(aportacion)}`);
+  const sinTc = acciones.filter((a) => a.tipo === 'pendiente_tc').length;
+  L.push(`Cargos nuevos: ${nuevos} | datos faltantes por abrir: ${faltantes} | en dolares sin tipo de cambio: ${sinTc}`);
   return L.join('\n');
 }
 
@@ -494,8 +518,12 @@ export async function aplicarPlan(client, { mes, fecha, acciones, tc, tcOrigen, 
         }
         const r = (await client.query(SQL_REGISTRAR, argsRegistrar(mes, a.cargo))).rows[0].r;
         await client.query('select costos.resolver_dato_faltante($1, $2)', [a.slug, mes]);
+        await client.query('select costos.resolver_pendiente_tc($1, $2)', [a.slug, mes]);
         log(`${a.slug}: ${r.folio} ${pesos(a.cargo.montoCent)}${r.repetido ? ' (ya existia la clave)' : ''}`);
         n += 1;
+      } else if (a.tipo === 'pendiente_tc') {
+        await client.query('select costos.registrar_pendiente_tc($1, $2, $3::date, $4::bigint, $5)', [a.slug, mes, a.fecha, a.usdMicro.toString(), a.motivo]);
+        log(`${a.slug}: USD ${textoMicro(a.usdMicro)} guardado sin convertir (falta el tipo de cambio).`);
       } else if (a.tipo === 'faltante') {
         await client.query('select costos.registrar_dato_faltante($1, $2, $3)', [a.slug, mes, a.motivo]);
         log(`${a.slug}: dato faltante abierto.`);
@@ -521,13 +549,54 @@ const AYUDA = `Uso: node scripts/costos/cargar-mes.mjs --mes AAAA-MM [--verifica
   --tc-sugerido                 solo imprime como declarar el tipo de cambio
   --openrouter-usd N            consumo de la llave de RTM en OpenRouter (si el libro ia.llamada esta vacio)
   --dominio-anual-usd N         costo anual del dominio;  --higgsfield-usd N  generaciones etiquetadas RTM
-  --supabase-horas RTM:TOTAL --supabase-factura-usd N    horas de computo y factura real de Supabase
+  --supabase-horas RTM:TOTAL --supabase-factura-usd N    horas de computo y factura real de Supabase (consumo real; sin ellos vale 0)
+  --vercel-consumo RTM:TOTAL --vercel-factura-usd N       consumo y factura real de Vercel (sin ellos vale 0)
+  --fijar-cuota SLUG:REGLA:USD:AAAA-MM-DD   cuota base de vercel o supabase con vigente_desde; REGLA = menor | mayor entre la cuota y el consumo real
   --reemplazar                  anula (con reversa) y vuelve a registrar un cargo vivo con cifra distinta
   --si                          no pedir la confirmacion escrita en --aplicar`;
 
 function confirmar(texto) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((r) => rl.question(texto, (x) => { rl.close(); r(x.trim()); }));
+}
+
+/** --fijar-cuota SLUG:REGLA:USD:AAAA-MM-DD  fila nueva de costos.cuota_base (regla menor|mayor entre la cuota base y el consumo real); nunca edita una anterior. */
+export function parsearCuota(texto) {
+  const m = /^([a-z][a-z0-9_]*):(menor|mayor):([0-9.,]+):(\d{4}-\d{2}-\d{2})$/.exec(String(texto));
+  const micro = m ? microDeTexto(m[3]) : null;
+  if (!m || micro === null) throw new Error('--fijar-cuota debe ser SLUG:REGLA:USD:AAAA-MM-DD (por ejemplo vercel:menor:20:2026-12-01).');
+  return { slug: m[1], regla: m[2], cuotaMicro: micro, desde: m[4] };
+}
+
+async function fijarCuota(o, io, deps) {
+  const c = parsearCuota(o['fijar-cuota']);
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('Falta DATABASE_URL (rol propietario de la base de RTM).');
+  if (!o.si) {
+    const r = await (deps.confirmar ?? confirmar)(`Se va a ESCRIBIR una cuota base: ${c.slug}, lo ${c.regla} entre USD ${textoMicro(c.cuotaMicro)} y el consumo real, desde ${c.desde}. Escribe APLICAR: `);
+    if (r !== 'APLICAR') {
+      io.log('Cancelado: no se escribio nada.');
+      return 1;
+    }
+  }
+  const { default: pg } = await import('pg');
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    const socio = (await client.query("select id from seguridad.usuario where rol = 'socio' and activo and socio_nombre = 'Javier'")).rows[0]?.id;
+    if (!socio) throw new Error('No hay un usuario socio activo para Javier.');
+    await client.query('begin');
+    await client.query("select set_config('request.jwt.claim.sub', $1, true)", [socio]);
+    await client.query('select costos.fijar_cuota_base($1, $2, $3::bigint, $4::date, $5)', [c.slug, c.regla, c.cuotaMicro.toString(), c.desde, 'Fijada con cargar-mes.mjs --fijar-cuota']);
+    await client.query('commit');
+    io.log(`Cuota base de ${c.slug}: lo ${c.regla} entre USD ${textoMicro(c.cuotaMicro)} y el consumo real, desde ${c.desde}.`);
+    return 0;
+  } catch (e) {
+    await client.query('rollback').catch(() => {});
+    throw e;
+  } finally {
+    await client.end().catch(() => {});
+  }
 }
 
 export async function ejecutar(argv, io = { log: console.log, error: console.error }, deps = {}) {
@@ -537,6 +606,7 @@ export async function ejecutar(argv, io = { log: console.log, error: console.err
       io.log(AYUDA);
       return 0;
     }
+    if (o['fijar-cuota']) return await fijarCuota(o, io, deps);
     if (o['tc-sugerido']) {
       io.log('Tipo de cambio: este script no inventa ni consulta uno sin credenciales. Declaralo con --tc N --tc-fecha AAAA-MM-DD (MXN por USD, FIX de Banxico del dia o el del recibo),\no define BANXICO_TOKEN para leer el FIX. Sin tipo de cambio nada en dolares se cobra: queda como dato faltante.');
       return 0;
@@ -580,7 +650,7 @@ export async function ejecutar(argv, io = { log: console.log, error: console.err
         io.log('\nModo --verificar: no se escribio nada.');
         return 0;
       }
-      const porEscribir = acciones.filter((a) => (a.tipo === 'cargo' && a.estadoPrevio !== 'ya_registrado') || a.tipo === 'faltante').length;
+      const porEscribir = acciones.filter((a) => (a.tipo === 'cargo' && a.estadoPrevio !== 'ya_registrado') || a.tipo === 'faltante' || a.tipo === 'pendiente_tc').length;
       if (porEscribir === 0) {
         io.log('\nNada que escribir: todo esta registrado.');
         return 0;
