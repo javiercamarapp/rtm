@@ -14,7 +14,7 @@ beforeAll(simularDialogo);
 afterEach(() => { while (montajes.length) montajes.pop()!.desmontar(); refresh.mockClear(); ejecutar.mockReset(); });
 
 async function abrir() {
-  const m = montar(<PagoSocioProveedor proveedor="Isaac" />, 'reduced');
+  const m = montar(<PagoSocioProveedor proveedor="Isaac" />, 'off');
   montajes.push(m);
   await clic(porTestid(m.cont, 'pago-socio'));
   return m;
