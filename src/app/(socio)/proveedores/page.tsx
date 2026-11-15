@@ -85,7 +85,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
       <EncabezadoPagina
         eyebrow="Proveedores"
         titulo={`Cuenta con ${proveedor}`}
-        descripcion={`${pos.titular}${pos.pedidosSocio.hay && cuenta.posicion.menudeo_pendiente_cent > 0n ? ` · aparte, pedidos de ${socioMenudeo} pendientes ${pos.pedidosSocio.pendiente}` : ''} · hoja de la semana del ${etiquetaFecha(hoja.semana_ini)} al ${etiquetaFecha(hoja.semana_fin)}`}
+        descripcion={`${pos.titular}${pos.pedidosSocio.hay && cuenta.posicion.menudeo_pendiente_cent > 0n ? ` · aparte, pedidos de ${socioMenudeo} pendientes ${pos.pedidosSocio.pendiente}` : ''} · hoja del ${etiquetaFecha(hoja.semana_ini)} al ${etiquetaFecha(hoja.semana_fin)}`}
         acciones={
           <BarraAcciones
             etiquetaAria="Acciones del proveedor"

@@ -17,7 +17,7 @@ import { ColumnasPeriodo } from '@/ui/graficas';
 import '@/ui/estilos/paginas-a1.css';
 import { ESTADO_PEDIDO, ORIGEN } from '../operacion/etiquetas';
 import { columnasSemana, deltaSemanal, NUMERO_SEMANAS, semanasDe, sparkSemanal } from '../_a1/comun';
-import { DesglosePedidosTabla, filasDeGrupo, GRUPOS, PROVEEDORES, TIPOS_VENTA, buscarFila } from './desglose';
+import { DesglosePedidosTabla, GRUPOS, PROVEEDORES, TIPOS_VENTA, buscarFila } from './desglose';
 import { etiquetaHoy } from '../contexto';
 
 export const metadata: Metadata = { title: 'Pedidos y notas' };
@@ -32,10 +32,6 @@ function totalFacturado(f: DesglosePedidos | undefined): string {
   return f && f.enviados ? ` · ${formatearMoneda(f.facturado_cent)}` : '';
 }
 
-function itemDesglose(f: DesglosePedidos | undefined, id: string, etiqueta: string, total: number, href: string) {
-  const util = f && f.utilidad_cent !== null ? ` · utilidad ${formatearMoneda(f.utilidad_cent)}${f.utilidad_provisional ? ' (provisional)' : ''}` : '';
-  return { id, etiqueta, href, texto: String(f?.pedidos ?? 0), pct: porcentaje(f?.pedidos ?? 0, total), nota: f ? `${f.enviados} enviados · facturado ${f.enviados ? formatearMoneda(f.facturado_cent) : 'sin dato'}${util}` : undefined };
-}
 
 export default async function PaginaPedidos({ searchParams }: { searchParams: Promise<{ estado?: string; aviso?: string; semanas?: string; surtido?: string; prov?: string; tipo?: string }> }) {
   const { estado = '', aviso = '', semanas: sem, surtido: surtidoQ = '', prov: provQ = '', tipo: tipoQ = '' } = await searchParams;
@@ -131,19 +127,6 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
           <div className="rtm-a1-cuerpo">
             <p className="rtm-a1-subtitulo">Por estado</p>
             <BarList etiquetaAria="Pedidos por estado" items={cuentaEstado.map((c) => ({ id: c.clave, etiqueta: ESTADO_PEDIDO[c.clave as EstadoPedido].texto, texto: String(c.n), pct: porcentaje(c.n, todos.length), tono: c.clave === 'anulado' ? ('malo' as const) : c.clave === 'confirmado' ? ('atencion' as const) : undefined }))} />
-            <p className="rtm-a1-subtitulo">Bodega y dropshipping</p>
-            <BarList etiquetaAria="Pedidos por bodega o dropshipping" items={GRUPOS.map((g) => itemDesglose(buscarFila(desglose, 'surtido', g.clave), g.clave, g.texto, todos.length, enlace({ surtido: g.clave, prov: '', tipo: '' })))} />
-            {GRUPOS.map((g) => {
-              const total = buscarFila(desglose, 'surtido', g.clave)?.pedidos ?? 0;
-              const filasG = filasDeGrupo(desglose, g.clave);
-              if (!filasG.length) return null;
-              return (
-                <div key={g.clave}>
-                  <p className="rtm-a1-subtitulo">{g.texto}: por {g.clave === 'dropshipping' ? 'proveedor y tipo de venta' : 'origen'}</p>
-                  <BarList etiquetaAria={`${g.texto}: pedidos por origen`} items={filasG.map((r) => itemDesglose(r.fila, r.id, r.texto, total, enlace(r.nivel === 'proveedor' ? { surtido: g.clave, prov: r.clave, tipo: '' } : { surtido: g.clave, tipo: r.clave, prov: '' })))} />
-                </div>
-              );
-            })}
           </div>
         </Tarjeta>
       </Rejilla>
