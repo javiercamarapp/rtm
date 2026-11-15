@@ -1,5 +1,5 @@
 // Definicion DECLARATIVA de los datos obligatorios (slots) de cada operacion que el bot registra (decision del dueno, 14-nov: el bot pregunta lo que falte hasta cerrar la operacion).
-// Espejo SQL: agente.operacion_slot (supabase/migrations/20261116200000_agente_conversacion.sql); la prueba test/unit/agente/conversacion_slots.test.ts verifica que coincidan.
+// Espejo SQL: agente.operacion_slot (supabase/migrations/20261116200010_agente_conversacion.sql); la prueba test/unit/agente/conversacion_slots.test.ts verifica que coincidan.
 // Los textos de las preguntas salen de MACHOTES-Y-ESQUELETO-RTM (espanol neutro, sin emojis). Nada aqui calcula dinero.
 import type { OpcionSlot } from './slots_tipos';
 import { OPERACIONES_SOCIOS, OPERACIONES_SOCIOS_CONV } from './slots_socios';
