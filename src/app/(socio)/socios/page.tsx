@@ -6,7 +6,7 @@ import { operacionDeSocio } from '@/composicion/operacion';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, CeldaPersona } from '@/ui/componentes/controles';
-import { BarList } from '@/ui/componentes/datos';
+import { BarList, ListaClaveValor } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
@@ -84,6 +84,9 @@ export default async function PaginaSocios() {
           {hayAportes ? (
             <AntiguedadSaldos tramos={['Capital', 'Reembolsable', 'Fuera de la sociedad']} titulo="Lo que puso cada socio" descripcion={`Angelo puso ${m(c.angelo.aportado_cent)} y Javier ${m(c.javier.aportado_cent)}, separado por capital, reembolsable y fuera de la sociedad.`} procedencia="observado" pie={`Corte: ${etiquetaFecha(c.hoy)} · Fuente: libro de la cuenta de socios`} filas={filasAportado} />
           ) : <p className="a3-grafica-vacia"><strong>Nadie ha puesto dinero</strong>Las aportaciones y gastos pagados por un socio aparecerán aquí.</p>}
+          {hayAportes && (
+            <ListaClaveValor items={c.socios.map((s) => ({ k: `Aportado por ${s.socio}`, v: m(s.aportado_cent) }))} />
+          )}
         </Tarjeta>
         <Tarjeta titulo="Posición neta de cada socio" descripcion="Positivo: a su favor. Negativo: tiene fondos de la sociedad en su poder, que reducen su aportación neta">
           <BarList etiquetaAria="Posición neta por socio" items={c.socios.map((s) => ({ id: s.socio, etiqueta: s.socio, href: `/socios/${s.socio}`, texto: m(s.neto_cent, true), pct: maxNeto > 0n ? pct(abs(s.neto_cent), maxNeto) : null, nota: s.neto_cent > 0n ? 'A su favor' : s.neto_cent < 0n ? 'Fondos de la sociedad en su poder' : 'En paz', tono: s.neto_cent < 0n ? 'atencion' : undefined }))} />

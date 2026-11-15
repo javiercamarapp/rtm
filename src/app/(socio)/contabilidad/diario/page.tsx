@@ -55,7 +55,7 @@ export default async function PaginaDiario({ searchParams }: { searchParams: Pro
       <KpiLinea
         etiquetaAria="Indicadores del diario"
         celdas={[
-          { id: 'total', etiqueta: 'Asientos en el periodo', valor: String(d.total), categoria: 1, nota: <span data-testid="diario-total">{d.total === 0 ? 'Sin asientos todavía.' : `Se muestran los ${d.asientos.length} más recientes (el total del libro no cambia)${ini || fin ? ' del periodo' : ''}.`}</span> },
+          { id: 'total', etiqueta: 'Asientos en el periodo', valor: String(d.total), categoria: 1, ayuda: 'Se muestran los asientos más recientes; el total del libro no cambia.', nota: <span data-testid="diario-total">{d.total === 0 ? 'Sin asientos todavía.' : `Últimos ${d.asientos.length}${ini || fin ? ' del periodo' : ''}`}</span> },
           { id: 'debe', etiqueta: 'Debe mostrado', valor: d.total === 0 ? null : m(debe), categoria: 2, nota: `${lineas.length} líneas` },
           { id: 'haber', etiqueta: 'Haber mostrado', valor: d.total === 0 ? null : m(haber), categoria: 6, nota: d.total === 0 ? undefined : <Estado tono={debe === haber ? 'ok' : 'malo'}>{debe === haber ? 'Cuadra con el debe' : 'No cuadra'}</Estado> },
           { id: 'rev', etiqueta: 'Reversas', valor: d.total === 0 ? null : String(reversas), categoria: 4, nota: `${manuales} asientos manuales` },

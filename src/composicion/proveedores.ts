@@ -3,6 +3,7 @@ import { prepararListaParaCliente, type PeticionLista } from '@/aplicacion/prove
 import type { ResultadoLista } from '@/dominio/proveedores/lista_cliente';
 import { ContextoNegocioDb, DatosListaDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
 import { llamadaProveedoresSocio, pantallaProveedores, tableroKaren, type PantallaProveedores } from '@/infra/supabase/proveedores';
+import { sinLineaBase } from '@/dominio/proveedores/stock';
 import { bloqueoDeActualizar, type DatosTablero } from '@/dominio/proveedores/tablero';
 import { lecturaManualDeProveedores } from './produccion';
 import { exigirSocio } from './acceso';
@@ -21,7 +22,8 @@ export async function listaParaClienteDeSocio(peticion: PeticionLista): Promise<
 
 export async function tableroDeSocio(): Promise<DatosTablero> {
   await exigirSocio();
-  return tableroKaren();
+  const t = await tableroKaren();
+  return { ...t, modelos: sinLineaBase(t.modelos) };
 }
 
 export type ResultadoActualizar =

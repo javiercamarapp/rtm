@@ -13,7 +13,7 @@ afterEach(() => { while (montajes.length) montajes.pop()!.desmontar(); });
 // Datos ficticios.
 const sab = (n: string, d: boolean) => ({ variante_id: `v-${n}`, sabor: n, disponible: d, inestable: false, sabor_canonico_id: '1', ventas_60d: 0, existencia_propia: 0, cambio_en: '2026-11-14T10:00:00Z', cambio_tipo: d ? 'sabor_regreso' : 'sabor_agotado' });
 const M = (id: string, o: Partial<ModeloTablero> = {}): ModeloTablero => ({
-  producto_id: id, handle: `modelo-${id}`, marca: id === '1' ? 'Marca A' : 'Marca B', titulo: id === '1' ? 'Alfa 8000' : 'Beta', puffs: 8000, estado: 'activo', primera_vez: '2026-11-13T00:00:00Z', nuevo_semana: id === '2', mapeo: 'confirmado',
+  producto_id: id, handle: `modelo-${id}`, marca: id === '1' ? 'Marca A' : 'Marca B', titulo: id === '1' ? 'Alfa 8000' : 'Beta', puffs: 8000, estado: 'activo', primera_vez: id === '2' ? '2026-11-14T09:00:00Z' : '2026-11-13T00:00:00Z', nuevo_semana: id === '2', mapeo: 'confirmado',
   canonico_id: id === '1' ? '1' : null, canonico_nombre: id === '1' ? 'Alfa' : null, sin_sabores: false, nuevo_sin_costo: false, ventas_60d: 0, ventas_30d: 0, vendemos: false, existencia_propia: id === '1' ? 3 : 0, cobertura_dias: null,
   sabores: id === '1' ? [sab('Sandía', true), sab('Mango', false)] : [sab('Uva', false)], eventos: [], ...o,
 });
@@ -42,6 +42,16 @@ describe('StockKaren', () => {
     expect(render(props({ busqueda: { disp: 'agotados' } })).cont.querySelectorAll('[data-testid^="stock-"]').length).toBe(1);
     expect(render(props({ busqueda: { nuevos: '1' } })).cont.querySelectorAll('[data-testid^="stock-"]').length).toBe(1);
     expect(render(props({ busqueda: { q: 'zzz' } })).cont.querySelector('[data-testid="vacio-sin-resultados-stock"]')).toBeTruthy();
+  });
+  it('la linea base (primera lectura) no cuenta como nuevo ni aparece en cambios', () => {
+    const base = (id: string) => M(id, { primera_vez: '2026-11-13T00:00:00Z', nuevo_semana: true });
+    const m = render(props({ modelos: [base('1'), base('2')], eventos: [{ clave: 'g0', tipo: 'modelo_nuevo', en: '2026-11-13T00:00:00Z', antes: null, despues: null, modelo: 'Beta' }] }));
+    const kpi = [...m.cont.querySelectorAll('.rtm-st-kpi')].find((x) => x.textContent?.startsWith('Nuevos esta semana'));
+    expect(kpi?.querySelector('b')?.textContent).toBe('0');
+    expect(porTestid(m.cont, 'linea-base-stock')?.textContent).toContain('Línea base cargada el');
+    expect(m.cont.querySelector('[data-testid="linea-tiempo-stock"]')).toBeNull();
+    expect(m.cont.textContent).toContain('Sin cambios todavía');
+    expect(m.cont.querySelector('.rtm-kr-insignia')).toBeNull();
   });
   it('sin lecturas muestra el estado vacio; sin dato donde falta', () => {
     expect(render(props({ modelos: [] })).cont.querySelector('[data-testid="vacio-karen"]')).toBeTruthy();
