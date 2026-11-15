@@ -45,6 +45,13 @@ export function planificar(items, catalogo, { aliasWaka = new Map(), propuestas 
     if (alta) { nuevo.push({ ...it, titulo: alta.nombre, puffs: alta.puffs, forzarNuevo: true, ligarHandle: it.clave }); continue; }
     const lig = ligaduras.get(it.clave);
     if (lig && porId.has(lig.catalogoId)) { coincide.push({ item: it, modeloId: lig.catalogoId, via: 'ligadura del dueno', ligadura: lig }); continue; }
+    // Mismo producto que otro modelo (confirmado por el dueno): un solo canonico; se crea una vez con el nombre canonico si no existe.
+    if (it.mismoQue) {
+      const igual = catalogo.find((m) => compacta(m.n) === compacta(nombreModelo(it.mismoQue)));
+      if (igual) coincide.push({ item: it, modeloId: igual.id, via: 'mismo producto confirmado por el dueno' });
+      else nuevo.push({ ...it, titulo: it.mismoQue, marca: it.marcaMismoQue ?? it.marca, forzarNuevo: true });
+      continue;
+    }
     // Decision explicita del dueno: modelo aparte. Solo se reutiliza si el nombre ya existe tal cual.
     if (it.forzarNuevo) {
       const igual = catalogo.find((m) => compacta(m.n) === compacta(nombreModelo(it.titulo)));
@@ -112,7 +119,7 @@ export function itemsDeIsaac(json) {
   return json.modelos.map((m) => ({
     clave: compacta(m.titulo), titulo: m.titulo, marca: m.marca, puffs: m.puffs ?? null,
     sabores: m.sabores.map((s) => ({ nombre: s, disponible: true })),
-    ...(m.forzar_nuevo ? { forzarNuevo: true } : {}), ...(m.costo_isaac_mxn ? { costoMxn: m.costo_isaac_mxn } : {}),
+    ...(m.forzar_nuevo ? { forzarNuevo: true } : {}), ...(m.mismo_que ? { mismoQue: m.mismo_que, marcaMismoQue: m.marca_mismo_que } : {}), ...(m.costo_isaac_mxn ? { costoMxn: m.costo_isaac_mxn } : {}),
   }));
 }
 

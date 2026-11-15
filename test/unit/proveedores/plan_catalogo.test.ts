@@ -109,10 +109,16 @@ describe('catalogo Remate de Isaac', () => {
     expect(items).toHaveLength(24);
     expect(items.find((x: { titulo: string }) => x.titulo === 'WAKA BLAST 45K')).toMatchObject({ forzarNuevo: true, sabores: [] });
     expect(items.every((x: { sabores: unknown[] }) => Array.isArray(x.sabores))).toBe(true);
-    // Decision del dueno: FUNKY REPUBLIC 7K y EBDESIGN TE6000 son modelos propios (nada queda por confirmar en Isaac).
-    const p = planificar(items, [{ id: 3, marca: 'Funky Republic', n: 'Funky Republic Fi 3K', al: [] }, { id: 4, marca: 'Elf Bar', n: 'Elf Bar TE6000', al: [] }], { modo: 'isaac' });
+    // Decision del dueno: FUNKY REPUBLIC 7K es modelo propio; EBDESIGN TE6000 es el mismo producto que Elf Bar TE6000 (un solo canonico).
+    const cat = [{ id: 3, marca: 'Funky Republic', n: 'Funky Republic Fi 3K', al: [] }, { id: 4, marca: 'Elf Bar', n: 'Elf Bar TE6000', al: [] }];
+    const p = planificar(items, cat, { modo: 'isaac' });
     expect(p.porConfirmar).toHaveLength(0);
-    expect(p.nuevo.map((x: { titulo: string }) => x.titulo)).toEqual(expect.arrayContaining(['FUNKY REPUBLIC 7K', 'EBDESIGN TE6000']));
+    expect(p.nuevo.map((x: { titulo: string }) => x.titulo)).toContain('FUNKY REPUBLIC 7K');
+    expect(p.coincide.find((x: { item: { titulo: string } }) => x.item.titulo === 'EBDESIGN TE6000')?.modeloId).toBe(4);
+    // Si el canonico aun no existe, se crea una sola vez con el nombre canonico.
+    const q = planificar(items, [], { modo: 'isaac' });
+    expect(q.nuevo.map((x: { titulo: string }) => x.titulo)).toContain('Elf Bar TE6000');
+    expect(q.nuevo.map((x: { titulo: string }) => x.titulo)).not.toContain('EBDESIGN TE6000');
     expect(JSON.stringify(json.modelos.map((m: { sabores: string[] }) => m.sabores))).not.toMatch(/\$|\d+\.\d{2}/);
   });
 });

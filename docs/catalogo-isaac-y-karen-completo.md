@@ -14,12 +14,12 @@ Rama `feat/catalogo-isaac-y-karen-completo`. Nada se aplico a produccion ni se h
 
 El PDF trae 23 modelos (24 hojas con la portada), leidos a ojo pagina por pagina: `scripts/catalogo/isaac-remate.json` (289 sabores). Ningun modelo del PDF viene sin sabor. Mas **Waka Blast 45K** por instruccion del dueno: modelo APARTE (no se une a Waka Blast ni a Waka Blast 50K), de Isaac, sin sabores (se registra sin sabor) y con costo de lista de Isaac **210 registrado como SUPUESTO** (confirmar si 210 es costo o precio).
 
-Decisiones del dueno (15-nov, relevadas por otra sesion): FUNKY REPUBLIC es de 7K puffs y modelo propio (`FUNKY REPUBLIC 7K`, no es Funky Republic Fi 3K); EBDESIGN TE6000 es modelo propio distinto de ELFBAR BC5000. **Por confirmar: su relacion con Elf Bar TE6000 de Karen** (no se fusiona).
+Decisiones del dueno (15-nov, relevadas por otra sesion): FUNKY REPUBLIC es de 7K puffs y modelo propio (`FUNKY REPUBLIC 7K`, no es Funky Republic Fi 3K); EBDESIGN TE6000 es distinto de ELFBAR BC5000 y ES el mismo producto que Elf Bar TE6000 de Karen: un solo modelo canonico (`Elf Bar TE6000`) con los 27 sabores de Isaac conciliados (9 coinciden con los de Karen; da igual cual carga se corra primero, el resultado es el mismo).
 
 | Cifra | Valor |
 | --- | --- |
-| Modelos en la fuente y registrados | 24 (23 del PDF y Waka Blast 45K); por confirmar: 0 |
-| Sabores del PDF / skus registrados | 289 / 289, todos con existencia 0 y todos disponibles en el stock de Isaac |
+| Modelos en la fuente | 24 (23 del PDF y Waka Blast 45K); por confirmar: 0. Modelos nuevos: 23 (EBDESIGN TE6000 comparte el canonico Elf Bar TE6000 con Karen) |
+| Sabores del PDF / skus registrados | 289 / 289 en el stock de Isaac, existencia 0 (280 skus nuevos si Karen carga primero: 9 ya existian por Karen) |
 
 Stock disponible de Isaac: tablas `proveedores.stock_isaac_modelo` y `proveedores.stock_isaac_sabor` (migracion aditiva `20261120000000_stock_isaac.sql`, sin columnas de dinero, pgTAP `c1_001_stock_isaac`), `api.prov_tablero_isaac()` y la pestana Isaac de `/proveedores/stock`. Sin foto por ahora: el PDF solo trae banners.
 

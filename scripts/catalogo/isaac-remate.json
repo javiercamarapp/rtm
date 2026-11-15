@@ -150,8 +150,9 @@
     "Ice Mint",
     "Clear"
    ],
-   "forzar_nuevo": true,
-   "nota": "Decision del dueno (15-nov): modelo distinto de ELFBAR BC5000, modelo propio. Su relacion con Elf Bar TE6000 de Karen queda POR CONFIRMAR (no se fusiona)."
+   "nota": "Decision del dueno (15-nov): EBDESIGN TE6000 ES el mismo producto que Elf Bar TE6000 de Karen: un solo modelo canonico (Elf Bar TE6000), con los 27 sabores de Isaac conciliados (iguales se fusionan, parecidos a la cola). Distinto de ELFBAR BC5000.",
+   "mismo_que": "Elf Bar TE6000",
+   "marca_mismo_que": "Elfbar"
   },
   {
    "pagina": 7,
