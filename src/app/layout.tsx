@@ -17,6 +17,7 @@ import '@/ui/estilos/omar.css';
 import '@/ui/estilos/bodega.css';
 import '@/ui/estilos/controles.css';
 import '@/ui/estilos/modelo.css';
+import '@/ui/estilos/modelos-sabores.css';
 import '@/ui/estilos/filtros.css';
 import '@/ui/estilos/karen.css';
 
