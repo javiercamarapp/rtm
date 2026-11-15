@@ -89,10 +89,15 @@ describe('barras de filtros: una sola linea', () => {
 describe('barras compactas', () => {
   const controles = readFileSync(join(ESTILOS, 'controles.css'), 'utf8');
   const premium = readFileSync(join(ESTILOS, 'premium.css'), 'utf8');
-  it('las pestanas con filtros laterales van en un solo renglon y solo se apilan en telefono', () => {
+  it('las pestanas con filtros laterales van en una linea cuando caben; si no, los filtros bajan a un segundo renglon y las pestanas nunca se recortan', () => {
     const linea = reglas.find((r) => r.selector === '.rtm-pestanas-linea')!;
     expect(linea.cuerpo).toMatch(/display:\s*flex/);
-    expect(linea.cuerpo).not.toMatch(/flex-wrap:\s*wrap/);
+    expect(linea.cuerpo).toMatch(/flex-wrap:\s*wrap/);
+    const tira = reglas.find((r) => r.selector === '.rtm-pestanas-linea > .rtm-pestanas')!;
+    expect(tira.cuerpo).toMatch(/flex:\s*0 0 auto/);
+    const lateral = reglas.find((r) => r.selector === '.rtm-pestanas-lateral')!;
+    expect(lateral.cuerpo).not.toMatch(/max-width:\s*[1-9]\d?%/);
+    expect(lateral.cuerpo).toMatch(/flex:\s*1 1 auto/);
     expect(controles).toMatch(/@media \(max-width: 767px\) \{\s*\.rtm-pestanas-linea \{ flex-direction: column; \}/);
   });
   it('el componente Pestanas acepta `lateral` y lo monta junto a la tira', () => {
