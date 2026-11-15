@@ -212,7 +212,7 @@ test('F04 pedido de 50 piezas donde salen 40: total 6,300.00, utilidad 1,950.00 
   const dialogo = page.getByRole('dialog');
   await dialogo.getByLabel(/Surtidas de/).fill('40');
   await dialogo.getByLabel('Número de guía').fill(`QA-P1-${d.sufijo}`);
-  await dialogo.getByLabel('Paquetería').fill('Castores');
+  await dialogo.getByLabel('Paquetería').selectOption('Castores');
   await dialogo.getByLabel('Costo real de la guía').fill('180');
   await page.getByTestId('confirmar').click();
   await expect(page.getByTestId('estado-pedido')).toContainText('Enviado');

@@ -38,8 +38,9 @@ describe('catalogo declarativo de intenciones', () => {
     for (const t of ['pedido_cancelar', 'conteo', 'acta_propuesta', 'acta_firma', 'lote_historico'] as const) {
       expect(CATALOGO_INTENCIONES[t].confirmacion, t).toBe('reforzada');
     }
-    expect(CATALOGO_INTENCIONES.devolucion.estado).toBe('contrato');
-    expect(CATALOGO_INTENCIONES.paquete_perdido.estado).toBe('contrato');
+    // Carril ventas-compras (16-nov): la devolucion y el paquete perdido ya tienen puerta (agente.ejecutar_ext) y se registran por conversacion.
+    expect(CATALOGO_INTENCIONES.devolucion.estado).toBe('activa');
+    expect(CATALOGO_INTENCIONES.paquete_perdido.estado).toBe('activa');
     expect(exigeConfirmacion('merma')).toBe(true);
   });
 

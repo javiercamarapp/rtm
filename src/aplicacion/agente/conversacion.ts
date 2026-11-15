@@ -14,6 +14,7 @@ import { debeProcesarConIa } from '@/dominio/agente/entrada';
 import { dijoSinFecha, formatearFechaPago, interpretarFechaPago } from '@/dominio/agente/fecha_pago';
 import { interpretarMonto, montoDeExtraccion, respuestaSiNo, type MontoInterpretado } from '@/dominio/agente/monto_conversacion';
 import { interpretarPlazo } from '@/dominio/agente/plazo_pedido';
+import { emparejarGuias, parsearFolios, parsearGuiasTexto, textoDudasGuias, normalizarFolio, type PedidoCandidato, type RenglonGuia } from '@/dominio/agente/guias';
 import { resolverCliente, resolverModelo, resolverProveedor, resolverSabor, type Candidato, type EntradaCatalogo, type Resolucion } from '@/dominio/agente/resolutor';
 import { OPERACIONES, defSlot, slotsFaltantes, type DefSlot, type OperacionConv, type OpcionSlot } from '@/dominio/agente/slots';
 import type { Miembro } from '@/dominio/agente/tipos';
@@ -71,6 +72,10 @@ export interface EntornoConversacion {
   saldoCliente?(clienteId: string): Promise<bigint | null>;
   pedidosAbiertos?(clienteId: string): Promise<Array<{ folio: string; saldoCent: bigint }>>;
   destinosDe?(clienteId: string): Promise<string[]>;
+  /** Pedidos confirmados que todavia no salen (para validar los folios de un envio en lote). */
+  pedidosPorEnviar?(): Promise<PedidoCandidato[]>;
+  /** Pedidos enviados que esperan su guia (para emparejar las guias que llegan despues). */
+  pedidosSinGuia?(): Promise<PedidoCandidato[]>;
 }
 
 /** Pregunta del carril de frenos que el socio contesta con "si": duplicado, cobro mayor a lo que debe, o cualquier otra pregunta del negocio (precio, existencia...). */
@@ -174,6 +179,8 @@ export interface ContextoConv {
   previa?: { pendiente: PendienteConv | null; slot: string | null; texto: string | null; botones: BotonConv[] };
   /** Preguntas del carril de frenos que el socio ya contesto con "si". */
   confirmadas?: Array<ConfirmacionFrenos>;
+  /** Guias ya emparejadas mientras se aclaran las dudosas (captura de guias en lote). */
+  guiasOk?: Array<{ folio: string; guia: string }>;
 }
 
 // ---------------------------------------------------------------- utilidades
@@ -574,9 +581,65 @@ export class MotorConversacion {
         ctx.borrador = borrador;
         return this.resolverLineas(conv, ctx, def, r);
       }
+      case 'folios':
+        return this.aplicarFolios(conv, ctx, def, crudo, texto, r, fallo);
+      case 'guias':
+        return this.aplicarGuias(conv, ctx, def, crudo, texto, r);
       case 'bandera':
         return { estado: 'ok' };
     }
+  }
+
+  /** Folios de los pedidos que salen: lista libre o arreglo del interprete. Si la base informa cuales esperan salir, un folio desconocido se pregunta. */
+  private async aplicarFolios(conv: ConversacionVista, ctx: ContextoConv, def: DefSlot, crudo: unknown, texto: string | null, r: RegistroCifras, fallo: (t: string, b?: BotonConv[]) => Paso): Promise<Paso> {
+    const pend = this.entorno.pedidosPorEnviar ? await this.entorno.pedidosPorEnviar() : null;
+    let folios: string[] = [];
+    if (Array.isArray(crudo)) folios = crudo.flatMap((x) => parsearFolios(String(x)));
+    else if (texto !== null && /^\s*(todos|todo)\b/i.test(texto) && pend !== null) folios = pend.map((p) => normalizarFolio(p.folio));
+    else if (texto !== null) folios = parsearFolios(texto);
+    folios = [...new Set(folios)];
+    if (folios.length === 0) return fallo(r.servidor(def.pregunta), []);
+    if (pend !== null) {
+      const conocidos = new Set(pend.map((p) => normalizarFolio(p.folio)));
+      const faltan = folios.filter((f) => !conocidos.has(f));
+      if (faltan.length > 0) {
+        const lista = pend.slice(0, 10).map((p) => `${p.folio} ${p.cliente}`).join('; ');
+        return fallo(r.servidor(`No encuentro como pedido por enviar: ${faltan.join(', ')}.${lista ? ` Esperan salir: ${lista}.` : ' No hay pedidos confirmados por enviar.'} Escribe los folios de nuevo.`), []);
+      }
+    }
+    await this.fijar(conv, def.clave, folios, ctx, true);
+    return { estado: 'ok' };
+  }
+
+  /** Guias que llegan despues: se emparejan por folio, folio del proveedor o cliente; si hay duda se pregunta (nunca se adivina) y lo ya emparejado se conserva. */
+  private async aplicarGuias(conv: ConversacionVista, ctx: ContextoConv, def: DefSlot, crudo: unknown, texto: string | null, r: RegistroCifras): Promise<Paso> {
+    let renglones: RenglonGuia[] = [];
+    if (Array.isArray(crudo)) {
+      renglones = crudo.map((x) => {
+        const o = x as { pedido_folio?: string | null; cliente_texto?: string | null; guia_texto?: string; guia?: string };
+        return { pedidoFolio: o.pedido_folio ? normalizarFolio(String(o.pedido_folio)) : null, clienteTexto: o.cliente_texto ? String(o.cliente_texto) : null, guia: String(o.guia_texto ?? o.guia ?? '').trim() };
+      }).filter((x) => x.guia !== '');
+    } else if (texto !== null) renglones = parsearGuiasTexto(texto);
+    const previas = ctx.guiasOk ?? [];
+    const preguntar = (t: string): Paso => ({ estado: 'pregunta', texto: r.servidor(t), botones: [], pendiente: { tipo: 'slot', slot: def.clave } });
+    if (renglones.length === 0) return preguntar(def.pregunta);
+    const pendientes = this.entorno.pedidosSinGuia ? (await this.entorno.pedidosSinGuia()).filter((p) => !previas.some((g) => normalizarFolio(g.folio) === normalizarFolio(p.folio))) : null;
+    if (pendientes === null) {
+      // Sin lista de la base solo se aceptan renglones con folio explicito.
+      const sinFolio = renglones.filter((x) => x.pedidoFolio === null);
+      if (sinFolio.length > 0) return preguntar('Dime a qué pedido va cada guía: escríbelas como «FOLIO GUÍA», por ejemplo MG-001 5551234.');
+      await this.fijar(conv, def.clave, [...previas, ...renglones.map((x) => ({ folio: x.pedidoFolio!, guia: x.guia }))], ctx, true);
+      return { estado: 'ok' };
+    }
+    const res = emparejarGuias(renglones, pendientes);
+    const todas = [...previas, ...res.emparejadas];
+    if (res.dudas.length > 0) {
+      ctx.guiasOk = todas;
+      return preguntar(textoDudasGuias(res.dudas, todas));
+    }
+    delete ctx.guiasOk;
+    await this.fijar(conv, def.clave, todas, ctx, true);
+    return { estado: 'ok' };
   }
 
   private elegirOpcion(def: DefSlot, texto: string): string | null {

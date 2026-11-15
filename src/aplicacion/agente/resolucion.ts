@@ -146,7 +146,7 @@ async function consulta(c: IConsulta, autor: Miembro, catalogo: CatalogoAgente, 
     if (!p.ok) return p;
     res.proveedorId = p.id;
   }
-  if (c.sujeto_texto !== null && (c.consulta === 'saldo' || c.consulta === 'precio' || c.consulta === 'pedido') && !KEYWORDS_SUJETO.has(normalizar(c.sujeto_texto))) {
+  if (c.sujeto_texto !== null && (c.consulta === 'saldo' || c.consulta === 'precio' || c.consulta === 'pedido' || c.consulta === 'pedidos') && !KEYWORDS_SUJETO.has(normalizar(c.sujeto_texto))) {
     const k = await cliente(c.sujeto_texto, autor, catalogo, overrides);
     if (!k.ok) return k;
     res.clienteId = k.id;
@@ -273,6 +273,15 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
       if (!ls.ok) return ls;
       return { ok: true, resuelta: { intencion, resoluciones: { ...res, lineas: ls.lineas } } };
     }
+    case 'pedido_ds': {
+      // Dropshipping a un cliente: surte el proveedor, se aceptan todos los sabores del modelo. El destinatario NO se resuelve aqui (se captura en la web).
+      const k = await cliente(intencion.cliente_texto, autor, catalogo, overrides);
+      if (!k.ok) return k;
+      if (k.id === ID_TOMA_OMAR_BODEGA) return { ok: false, pregunta: { tipo: 'no_encontrado', clave: 'cliente', campo: 'cliente', textoUsuario: intencion.cliente_texto, sugerencias: [] } };
+      const ls = await lineas(intencion.lineas, catalogo, overrides, true, true);
+      if (!ls.ok) return ls;
+      return { ok: true, resuelta: { intencion, resoluciones: { ...res, clienteId: k.id, lineas: ls.lineas } } };
+    }
     case 'consulta':
       return consulta(intencion, autor, catalogo, overrides);
     case 'pago_pedido_menudeo':
@@ -291,7 +300,6 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
     case 'deshacer':
     case 'aclarar':
     case 'ninguna': // fin de las intenciones base; siguen las ampliadas (carril interprete, estado 'extraido': su resolucion de catalogo y su puerta las construyen otros carriles)
-    case 'pedido_ds':
     case 'envio_lote':
     case 'guias_lote':
     case 'plazo_acordar':

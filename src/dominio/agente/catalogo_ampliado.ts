@@ -7,17 +7,17 @@
 import type { DefIntencion, QuienPuede, Reversa } from './catalogo_intenciones';
 import type { IntencionAmpliada } from './intenciones_ampliadas';
 
-type Fila = Pick<DefIntencion, 'descripcion' | 'tipoHub' | 'funcionesSql'> & { reversa?: Reversa; quien?: QuienPuede; hub?: DefIntencion['hub'] };
+type Fila = Pick<DefIntencion, 'descripcion' | 'tipoHub' | 'funcionesSql'> & { reversa?: Reversa; quien?: QuienPuede; hub?: DefIntencion['hub']; estado?: DefIntencion['estado'] };
 
 const F = (f: Fila): DefIntencion => ({ hub: 'agente.ejecutar_ext', confirmacion: 'ninguna', quien: 'socios', reversa: 'ninguna', estado: 'extraido', ...f });
 
 export const CATALOGO_AMPLIADO: Record<IntencionAmpliada['tipo'], DefIntencion> = {
-  pedido_ds: F({ descripcion: 'Pedido de dropshipping a un cliente, a contado o a credito con plazo (el proveedor envia; precio, costo, margen e interes los calcula SQL)', tipoHub: 'pedido_ds', funcionesSql: ['operacion.ds_crear_pedido', 'operacion.confirmar_pedido', 'operacion.acordar_plazo'], reversa: 'directa' }),
-  envio_lote: F({ descripcion: 'Primer tiempo del envio: varios pedidos salen con una paqueteria del catalogo cerrado (Castores, Pitic, DHL, Estafeta)', tipoHub: 'envio_lote', funcionesSql: ['operacion.enviar_pedido'], reversa: 'software' }),
-  guias_lote: F({ descripcion: 'Segundo tiempo del envio: captura en lote de las guias que llegan despues, agrupadas por pedido', tipoHub: 'guias_lote', funcionesSql: ['operacion.enviar_pedido', 'operacion.fijar_costo_guia'], reversa: 'software' }),
+  pedido_ds: F({ descripcion: 'Pedido de dropshipping a un cliente, a contado o a credito con plazo (el proveedor envia; precio, costo, margen e interes los calcula SQL)', tipoHub: 'pedido_ds', funcionesSql: ['operacion.ds_crear_pedido', 'operacion.confirmar_pedido', 'operacion.acordar_plazo'], reversa: 'directa', estado: 'activa' }),
+  envio_lote: F({ descripcion: 'Primer tiempo del envio: varios pedidos salen con una paqueteria del catalogo cerrado (Castores, Pitic, DHL, Estafeta)', tipoHub: 'envio_lote', funcionesSql: ['operacion.enviar_pedido'], reversa: 'software', estado: 'activa' }),
+  guias_lote: F({ descripcion: 'Segundo tiempo del envio: captura en lote de las guias que llegan despues, agrupadas por pedido', tipoHub: 'guias_lote', funcionesSql: ['operacion.capturar_guia_pedido'], reversa: 'software', estado: 'activa' }),
   plazo_acordar: F({ descripcion: 'Acordar o cambiar el plazo de pago de un pedido (dias o fecha; lo interpreta el codigo)', tipoHub: 'plazo_acordar', funcionesSql: ['operacion.acordar_plazo'], reversa: 'software' }),
   recargo_credito: F({ descripcion: 'Aplicar el recargo de credito: 10 % simple por semana completa de atraso, calculado por SQL; lo decide el socio dueno del cliente', tipoHub: 'recargo_credito', funcionesSql: ['operacion.registrar_recargo_credito'], reversa: 'software' }),
-  compra_cierre: F({ descripcion: 'Cerrar la recepcion de una compra con faltante', tipoHub: 'compra_cierre', funcionesSql: ['operacion.cerrar_recepcion_compra'], reversa: 'software' }),
+  compra_cierre: F({ descripcion: 'Cerrar la recepcion de una compra con faltante', tipoHub: 'compra_cierre', funcionesSql: ['operacion.cerrar_recepcion_compra'], reversa: 'software', estado: 'activa' }),
   entrega_fondos: F({ descripcion: 'Un socio entrega a la sociedad o a un proveedor fondos que cobro en su cuenta', tipoHub: 'entrega_fondos', funcionesSql: ['operacion.registrar_entrega_socio'], reversa: 'directa' }),
   liquidacion_socios: F({ descripcion: 'Liquidacion de un socio al otro', tipoHub: 'liquidacion_socios', funcionesSql: ['operacion.registrar_liquidacion_entre_socios'], reversa: 'directa' }),
   retiro_capital: F({ descripcion: 'Retiro de capital de un socio (lo declara el propio socio)', tipoHub: 'retiro_capital', funcionesSql: ['operacion.proponer_retiro_capital', 'operacion.confirmar_retiro_capital'], reversa: 'software' }),

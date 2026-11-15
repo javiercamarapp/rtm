@@ -252,6 +252,20 @@ export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string)
     case 'pedido_menudeo':
       return { hub: 'ejecutar_ext', tipo: 'pedido_menudeo', titulo: 'Pedido a costo de menudeo creado y confirmado',
         args: { ...base, lineas: lineasSku(), origen_pedido: i.proveedor_origen ?? 'karen_directo', fecha_compromiso: i.fecha_compromiso ?? null, hora_compromiso: i.hora_compromiso ?? null } };
+    case 'pedido_ds':
+      // Plazo en dias calculado por el codigo (0 = contado). Sin destinatario: los datos de entrega se capturan en la web (nunca por Telegram).
+      return { hub: 'ejecutar_ext', tipo: 'pedido_ds', titulo: 'Pedido de dropshipping creado y confirmado',
+        args: { ...base, cliente_id: Number(a.resoluciones.clienteId), lineas: lineasSku().map((l) => ({ ...l, precio_cent: null })), origen_pedido: i.proveedor_origen ?? 'karen_directo', plazo_dias: i.plazo_dias ?? null, envio_cent: i.envio_cobrado_centavos ?? 0, folio_externo: i.folio_proveedor_texto } };
+    case 'envio_lote':
+      return { hub: 'ejecutar_ext', tipo: 'envio_lote', titulo: 'Pedidos enviados', args: { ...base, folios: i.folios, paqueteria: i.paqueteria, aceptar_avisos: ctx.confirmado } };
+    case 'guias_lote':
+      return { hub: 'ejecutar_ext', tipo: 'guias_lote', titulo: 'Guías capturadas', args: { ...base, paqueteria: i.paqueteria, guias: i.guias.map((g) => ({ pedido_folio: g.pedido_folio, guia: g.guia_texto })) } };
+    case 'compra_cierre':
+      return { hub: 'ejecutar_ext', tipo: 'compra_cierre', titulo: 'Compra cerrada con faltante', args: { ...base, compra_folio: i.compra_folio, motivo: i.motivo } };
+    case 'devolucion':
+      return { hub: 'ejecutar_ext', tipo: 'devolucion', titulo: 'Devolución de cliente registrada', args: { ...base, pedido_folio: i.pedido_folio, lineas: lineasSku(), destino: i.destino ?? 'inventario', motivo: i.motivo } };
+    case 'paquete_perdido':
+      return { hub: 'ejecutar_ext', tipo: 'paquete_perdido', titulo: i.incidente === 'danado' ? 'Paquete dañado reportado' : 'Paquete perdido reportado', args: { ...base, pedido_folio: i.pedido_folio, incidente: i.incidente, detalle: i.detalle } };
     case 'pago_pedido_menudeo':
       return { hub: 'ejecutar_ext', tipo: 'pago_pedido_menudeo', titulo: 'Pago de pedido de menudeo avisado',
         args: { ...base, pedido_folio: i.pedido_folio, monto_cent: i.monto_centavos, referencia: i.referencia ?? '', fecha: i.fecha_pago ?? null, metodo: i.metodo ?? 'transferencia', via: i.via ?? 'proveedor' } };
@@ -325,6 +339,14 @@ function lineasDeResultado(j: ResultadoSql): CifraServidor[] {
   if (typeof j.pendiente_cent === 'number') salida.push({ tipo: 'pesos', etiqueta: 'Pendiente de pago del pedido', centavos: BigInt(j.pendiente_cent) });
   if (j.comprobante_telegram === true) salida.push({ tipo: 'texto', etiqueta: 'Comprobante', texto: 'adjunto (solo se guarda su huella; no se lee)' });
   if (Array.isArray(j.folios)) salida.push({ tipo: 'texto', etiqueta: 'Folios', texto: (j.folios as string[]).join(', ') });
+  // Envio y guias en lote: lo que salio, lo que se capturo y lo que NO se pudo (nunca se pierde un renglon en silencio).
+  if (typeof j.paqueteria === 'string') salida.push({ tipo: 'texto', etiqueta: 'Paquetería', texto: j.paqueteria });
+  if (Array.isArray(j.enviados)) salida.push({ tipo: 'texto', etiqueta: 'Enviados', texto: (j.enviados as string[]).join(', ') });
+  if (Array.isArray(j.capturadas)) salida.push({ tipo: 'texto', etiqueta: 'Guías capturadas', texto: (j.capturadas as Array<{ folio: string; guia: string }>).map((g) => `${g.folio}: ${g.guia}`).join('; ') });
+  for (const k of ['fallidos', 'fallidas'] as const) {
+    if (Array.isArray(j[k]) && (j[k] as unknown[]).length > 0) salida.push({ tipo: 'texto', etiqueta: 'No se pudo', texto: (j[k] as Array<{ folio: string; error: string }>).map((g) => `${g.folio} (${g.error})`).join('; ') });
+  }
+  pesos('valor_cent', 'Valor');
   // Lo que la base REALMENTE registro (no una plantilla): una linea por aportacion que dejo la operacion.
   for (const c of aClasificaciones(j.clasificaciones)) salida.push({ tipo: 'pesos', etiqueta: `Registrado como ${nombreClasificacion(c.clasificacion)} (${c.socio})`, centavos: BigInt(c.montoCent) });
   return salida;
@@ -380,7 +402,7 @@ export class NegocioAgenteDb implements NegocioAgente {
   async ejecutar(a: AccionResuelta, ctx: ContextoEjecucion): Promise<ResultadoNegocio> {
     const i = a.intencion;
     try {
-      const prep = i.tipo === 'toma_omar' || i.tipo === 'devolucion' || i.tipo === 'paquete_perdido' ? null : preparar(a, ctx, hoyDe(ctx.ahora));
+      const prep = i.tipo === 'toma_omar' ? null : preparar(a, ctx, hoyDe(ctx.ahora));
       if (prep) {
         const j = (await F(this.sql, prep.hub, [ctx.claveIdem, prep.tipo, JSON.stringify(prep.args)], ['text', 'text', 'jsonb'])) as ResultadoSql;
         // Frenos de la base: no escribio nada y pregunta (duplicado u cobro mayor a lo que debe el cliente). Sin tope: la respuesta afirmativa del socio lo registra.
@@ -417,9 +439,6 @@ export class NegocioAgenteDb implements NegocioAgente {
         const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'pago_proveedor', JSON.stringify({ proveedor: a.resoluciones.proveedorId, monto_cent: i.monto_centavos, pagado_por: i.pagado_por, cliente_id: a.resoluciones.clienteId === null ? null : Number(a.resoluciones.clienteId), origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; repetido?: boolean };
         return { tipo: 'ejecutado', folio: j.folio, titulo: 'Pago a proveedor registrado', lineas: [{ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(i.monto_centavos) }], comprobacion: [], saldos: [], advertencias: [], ejecutadoEn: ctx.ahora, repetido: j.repetido === true };
       }
-      if (i.tipo === 'devolucion' || i.tipo === 'paquete_perdido') {
-        return { tipo: 'rechazado', codigo: 'dependencia_pendiente', texto: 'Eso todavía no lo registro desde Telegram: depende de la rama de devoluciones y paquetes. Hazlo en el software.' };
-      }
       if (i.tipo === 'toma_omar') {
         const folios: string[] = [];
         const lineas: CifraServidor[] = [];
@@ -438,6 +457,8 @@ export class NegocioAgenteDb implements NegocioAgente {
     } catch (e) {
       const cod = (e as { code?: string }).code;
       if (cod === 'P0463') return { tipo: 'rechazado', codigo: 'solo_lectura', texto: (e as Error).message };
+      // Avisos sin aceptar en un envio: el bot PREGUNTA si los envia de todos modos (la respuesta afirmativa vuelve a mandar con aceptar_avisos).
+      if (cod === 'P0427') return { tipo: 'pregunta', motivo: 'otro', texto: `${(e as Error).message}. ¿Los envío de todos modos, aceptando esos avisos?`, cifras: [] };
       if (cod === 'P0460' || cod === 'P0422' || cod === 'P0423' || esErrorDeNegocio(e)) return { tipo: 'rechazado', codigo: cod ?? 'error', texto: (e as Error).message };
       throw e;
     }
@@ -483,6 +504,11 @@ export class NegocioAgenteDb implements NegocioAgente {
       const resp = respuestaValuacionAgente(v, yo, formatearMoneda);
       if (!resp) return { titulo: 'Todavía no hay valuación para comparar', lineas: [] };
       return { titulo: 'Tu valuación', lineas: [{ tipo: 'pesos', etiqueta: 'Tu valuación', centavos: resp.valuacionCent }, ...resp.textos.map((t) => ({ tipo: 'texto' as const, etiqueta: t.etiqueta, texto: t.texto }))] };
+    }
+    // Ventas: vencimientos de los pedidos a credito y pedidos abiertos de un cliente (cifras de SQL).
+    if (c.consulta === 'vencimientos' || (c.consulta === 'pedidos' && r.clienteId)) {
+      j = (await F(this.sql, 'consulta_ventas', [c.consulta === 'vencimientos' ? 'vencimientos' : 'pedidos_cliente', r.clienteId ? Number(r.clienteId) : null], ['text', 'bigint'])) as Cons;
+      return { titulo: j.titulo, lineas: aCifras(j.lineas) };
     }
     if (CONSULTAS_EXT.has(c.consulta) && !(c.consulta === 'saldo')) {
       if (c.consulta === 'reporte') j = await qx('reporte', null, c.periodo ?? 'semana');

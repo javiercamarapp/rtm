@@ -1,5 +1,6 @@
 'use client';
 
+import { PAQUETERIAS_CATALOGO } from '@/dominio/agente/guias';
 import { useId, useState } from 'react';
 import { formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { CampoMonto } from '@/ui/componentes/campos-dialogo';
@@ -40,10 +41,12 @@ export function DialogoEnviar({ pedidoId, folio, renglones, avisosPendientes, et
     if (avisosPendientes > 0 && !acepto) return setLocal('El pedido tiene avisos: marca "Enviar de todos modos" para aceptarlos.');
     const c = costo.trim() === '' ? null : centavosDeTexto(costo);
     if (costo.trim() !== '' && c === null) return setLocal('El costo de la guía debe ser un monto como 180 o 180.00.');
+    if (numero.trim() && !paqueteria) return setLocal('Elige la paquetería de la guía: Castores, Pitic, DHL o Estafeta.');
+    if (costo.trim() !== '' && !numero.trim()) return setLocal('Para anotar el costo de la guía captura primero su número (o déjalo para después).');
     setLocal(null);
     correr('enviar_pedido', {
       p_pedido: pedidoId, p_surtido: lista, p_aceptar_avisos: acepto, p_falta_tipo: faltante,
-      p_guia: numero.trim() ? { paqueteria: paqueteria.trim() || 'Paquetería', numero: numero.trim(), ...(c !== null ? { costo_cent: c } : {}), ...(pagaGuia ? { pagada_por: pagaGuia } : {}) } : null,
+      p_guia: paqueteria || numero.trim() ? { paqueteria, numero: numero.trim(), ...(c !== null ? { costo_cent: c } : {}), ...(pagaGuia ? { pagada_por: pagaGuia } : {}) } : null,
     }, () => celebrar(() => setAbierto(false)));
   };
 
@@ -70,7 +73,13 @@ export function DialogoEnviar({ pedidoId, folio, renglones, avisosPendientes, et
           </div>
           <div className="rtm-hoja-seccion rtm-i-1">
             <h3 className="rtm-hoja-seccion-titulo" aria-hidden="true">Guía</h3>
-            <label className="rtm-etiqueta-campo">Paquetería<input className="rtm-campo" value={paqueteria} onChange={(e) => setPaqueteria(e.target.value)} placeholder="Castores" /></label>
+            <label className="rtm-etiqueta-campo">Paquetería
+              <select className="rtm-campo" value={paqueteria} onChange={(e) => setPaqueteria(e.target.value)} aria-label="Paquetería">
+                <option value="">Sin indicar</option>
+                {PAQUETERIAS_CATALOGO.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </label>
+            <p className="rtm-nota rtm-hoja-ancho">La guía puede llegar después: marca enviado con la paquetería y captura el número cuando lo tengas.</p>
             <label className="rtm-etiqueta-campo">Guía<input className="rtm-campo" value={numero} onChange={(e) => setNumero(e.target.value)} aria-label="Número de guía" /></label>
             <div className="rtm-hoja-campo">
               <label htmlFor={`${idCosto}-c`}>Costo real de la guía</label>

@@ -79,7 +79,7 @@ describe('folio por iniciales (espejo de SQL)', () => {
 });
 
 describe('slots: espejo SQL', () => {
-  const sql = readFileSync('supabase/migrations/20261116200000_agente_conversacion.sql', 'utf8');
+  const sql = readFileSync('supabase/migrations/20261116200000_agente_conversacion.sql', 'utf8') + readFileSync('supabase/migrations/20261116300100_ventas_bot_puertas.sql', 'utf8');
   const filas = [...sql.matchAll(/\('([a-z_]+)', (\d+), '([a-z_]+)', true, (null|'[a-z_]+'), (null|array\[[^\]]*\])\)/g)].map((m) => ({
     operacion: m[1]!, orden: Number(m[2]), slot: m[3]!, si_slot: m[4] === 'null' ? null : m[4]!.slice(1, -1),
     si_valor: m[5] === 'null' ? null : [...m[5]!.matchAll(/'([a-z_]+)'/g)].map((x) => x[1]!),
