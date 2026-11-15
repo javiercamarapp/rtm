@@ -305,6 +305,8 @@ describe('una conversacion simulada por operacion', () => {
   it('hay un caso por cada operacion definida (ninguna queda sin conversacion simulada)', () => {
     const cubiertas = new Set<string>(casos.map((c) => c.op));
     for (const k of ['pedido_bodega', 'cobro_cliente']) cubiertas.add(k);
+    // Carril ventas-compras: sus conversaciones simuladas viven en test/unit/agente/ventas_conversacion.test.ts (necesitan entorno de la base simulado).
+    for (const k of ['orden_compra', 'compra_estado', 'compra_cierre', 'envio_lote', 'guias_lote', 'paquete_perdido']) cubiertas.add(k);
     expect([...OPERACIONES_CONV].filter((o) => !cubiertas.has(o))).toEqual([]);
   });
 });

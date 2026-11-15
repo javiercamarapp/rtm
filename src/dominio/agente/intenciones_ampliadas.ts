@@ -25,6 +25,8 @@ export interface IPedidoDs {
   forma_pago: FormaPago | null;
   /** Frase del plazo copiada tal cual; los DIAS los calcula plazo_pedido.ts. */
   plazo_texto: string | null;
+  /** Dias para pagar calculados por el CODIGO (0 = contado); lo pone la maquina de conversacion, jamas el modelo. */
+  plazo_dias?: number | null;
   envio_cobrado_centavos: number | null;
   /** Folio del proveedor si el socio lo dicta (sus digitos deben estar en el mensaje). */
   folio_proveedor_texto: string | null;

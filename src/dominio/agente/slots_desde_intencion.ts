@@ -12,6 +12,8 @@ export interface InstruccionConversacion {
 /** Operaciones que la conversacion registra de punta a punta por el carril de frenos. El resto de las intenciones sigue su camino anterior. */
 export const OPERACIONES_POR_CONVERSACION: ReadonlySet<OperacionConv> = new Set<OperacionConv>([
   'pedido_bodega', 'cobro_cliente', 'pago_proveedor', 'pago_redirigido', 'gasto', 'aportacion', 'reembolso', 'retiro', 'conteo', 'alta_cliente',
+  // Carril ventas-compras (16-nov)
+  'pedido_dropshipping', 'pedido_a_costo', 'compra', 'orden_compra', 'recepcion_compra', 'compra_estado', 'compra_cierre', 'devolucion', 'paquete_perdido', 'envio_lote', 'guias_lote',
 ]);
 
 function limpiar(o: Record<string, unknown>): Record<string, unknown> {
@@ -64,6 +66,40 @@ export function instruccionDeIntencion(i: Intencion): InstruccionConversacion | 
       return { operacion: 'conteo', candidatos: limpiar({ lineas: lineas(i.lineas) }) };
     case 'cliente_alta':
       return { operacion: 'alta_cliente', candidatos: limpiar({ nombre: i.nombre }) };
+    case 'pedido_ds': {
+      const dias = i.plazo_texto ?? null;
+      return {
+        operacion: 'pedido_dropshipping',
+        candidatos: limpiar({
+          cliente: i.cliente_texto, origen: i.proveedor_origen, lineas: lineas(i.lineas),
+          // Sin forma de pago dicha, la maquina pregunta; el plazo lo interpreta el codigo (plazo_pedido.ts) desde la frase del socio.
+          modalidad: i.forma_pago, plazo: i.forma_pago === 'contado' ? null : dias, envio: i.envio_cobrado_centavos, folio_proveedor: i.folio_proveedor_texto,
+        }),
+      };
+    }
+    case 'pedido_menudeo':
+      return { operacion: 'pedido_a_costo', candidatos: limpiar({ lineas: lineas(i.lineas), origen: i.proveedor_origen, fecha_pago: i.sin_fecha === true ? 'sin fecha' : i.cuando_texto }) };
+    case 'compra':
+      return { operacion: 'compra', candidatos: limpiar({ proveedor: i.proveedor_texto, lineas: lineas(i.lineas), guia: i.guia_centavos !== null && i.guia_centavos > 0 ? i.guia_centavos : null, guia_pagada_por: i.guia_centavos !== null && i.guia_centavos > 0 ? i.pagado_por : null }) };
+    case 'orden_compra':
+      return { operacion: 'orden_compra', candidatos: limpiar({ proveedor: i.proveedor_texto, lineas: lineas(i.lineas) }) };
+    case 'compra_recepcion':
+      return { operacion: 'recepcion_compra', candidatos: limpiar({ folio_compra: i.compra_folio, alcance: i.lineas.length === 0 ? 'total' : 'parcial', lineas: i.lineas.length === 0 ? null : lineas(i.lineas) }) };
+    case 'compra_estado':
+      return { operacion: 'compra_estado', candidatos: limpiar({ folio_compra: i.compra_folio, estado_compra: i.estado }) };
+    case 'compra_cierre':
+      return { operacion: 'compra_cierre', candidatos: limpiar({ folio_compra: i.compra_folio, motivo: i.motivo }) };
+    case 'devolucion':
+      return { operacion: 'devolucion', candidatos: limpiar({ cliente: i.cliente_texto, pedido_folio: i.pedido_folio, lineas: lineas(i.lineas), destino_piezas: i.destino, motivo: i.motivo }) };
+    case 'paquete_perdido':
+      return { operacion: 'paquete_perdido', candidatos: limpiar({ pedido_folio: i.pedido_folio, incidente: i.incidente, detalle: i.detalle }) };
+    case 'envio_lote':
+      return { operacion: 'envio_lote', candidatos: limpiar({ folios: i.folios.length > 0 ? i.folios : null, paqueteria: i.paqueteria }) };
+    case 'guias_lote':
+      return { operacion: 'guias_lote', candidatos: limpiar({ guias: i.guias.length > 0 ? i.guias.map((g) => ({ pedido_folio: g.pedido_folio, cliente_texto: g.cliente_texto, guia_texto: g.guia_texto })) : null, paqueteria: i.paqueteria }) };
+    case 'pedido_envio':
+      // Un envio sin guia dictada pasa por el catalogo cerrado de paqueterias; con guia dictada conserva su camino anterior (la base valida la paqueteria).
+      return i.estado === 'enviado' && i.guia_texto === null ? { operacion: 'envio_lote', candidatos: limpiar({ folios: i.pedido_folio === null ? null : [i.pedido_folio], paqueteria: i.paqueteria_texto }) } : null;
     default:
       return null;
   }

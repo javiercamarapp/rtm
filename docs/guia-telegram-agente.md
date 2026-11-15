@@ -253,3 +253,16 @@ Consulta determinista (`consulta: valuacion`): la valuación de quien pregunta, 
 
 Hecho y verificado: el núcleo de base para SABORES, `catalogo.alta_sabor` (validación del nombre como dato, parecidos por distancia de edición con umbral documentado, idempotencia, topes de 10 por hora y 30 por día por actor, auditoría con origen), usado por el botón «Crear sabor nuevo» de la hoja de conteo web. El canal `telegram` está admitido por la función pero NINGUNA ruta del bot la llama todavía.
 Pendiente (no activado): tarjeta con botones en el grupo para sabor, modelo y cliente desconocidos, alta de modelo (marca obligatoria, puffs por omisión) y de cliente (solo nombre y tipo; el teléfono nunca pasa por el modelo), reanudar el pedido que originó la mención, simulador y pgTAP de esos flujos. Ver `docs/alta-asistida-pendiente.md`.
+
+## Ventas, compras, cobros y guias por conversacion (carril bot/ventas-compras, 16-nov)
+
+Todo pasa por la maquina de conversacion y el carril de frenos: el bot pregunta lo que falte, registra solo con todos los datos, avisa al grupo con lo registrado y deja Deshacer 10 minutos (salvo lo no reversible). No hay topes ni tarjeta de confirmacion; la escritura nace apagada.
+
+- Pedido de dropshipping a un cliente (`pedido_ds`): cliente, modelos con sabor y cantidad, proveedor (Karen directo, Karen via Isaac o Isaac directo), contado o credito (el credito exige plazo: P0436), envio y folio del proveedor opcional. Usa `operacion.ds_crear_pedido` y el folio por iniciales. El mensaje final trae cuentas por cobrar del cliente y por pagar al proveedor (cifras de `agente.resumen_pedido_registrado`). El destinatario NO se captura por Telegram (decision vigente: exige direccion completa, vive cifrado con la llave del servidor y el bot no la tiene): se captura en la web.
+- Pedido a costo del socio de menudeo (`pedido_a_costo`): lineas, proveedor y fecha de pago; solo el socio de menudeo.
+- Compras: `compra`, `orden_compra` (borrador), `compra_estado` (en trayecto o llego a Merida), `recepcion_compra` (total o parcial, guarda P0435), `compra_cierre` (cierre con faltante: baja la cuenta del proveedor).
+- Cobros: `cobro_cliente` pregunta a cual de los pedidos abiertos se aplica (lo lee de la base), la cuenta, y si el monto es mayor a lo que debe pregunta si es anticipo (guarda de exceso, sin tope). `pago_redirigido` para pagos a Isaac o Karen.
+- Devolucion de cliente y paquete perdido o danado: ya se registran desde el chat (antes respondian P0461).
+- Envio y guias en dos tiempos: `envio_lote` marca enviados varios pedidos con una paqueteria del catalogo cerrado (Castores, Pitic, DHL o Estafeta) SIN exigir guia; `guias_lote` captura las guias despues y las empareja por folio, folio del proveedor o cliente; si hay duda pregunta y conserva lo ya emparejado. Una guia ya capturada no se reescribe (se cambia en el software). En la web, el dialogo de envio ahora tiene selector de paqueteria y la guia es opcional.
+- Consultas: `vencimientos` (por vencer y vencidos), `pedidos` de un cliente y `cartera` (cuanto debe cada cliente).
+- No reversibles por Telegram (se corrigen con un movimiento inverso o en el software): `envio_lote`, `guias_lote`, `compra_cierre`, `devolucion`, `paquete_perdido`. El pedido de dropshipping si se deshace mientras no salga.

@@ -112,7 +112,8 @@ select is((select titulo from (select case when (r->>'piezas_ahora') is not null
 -- La migracion 20261114700000 (plazo obligatorio) envuelve de nuevo: la cadena es _ejecutar_ext_base -> _sin_plazo (esta migracion) -> _sin_parcial.
 select ok((select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base_sin_plazo(text,text,jsonb)'::regprocedure) like '%recibir_compra_parcial%'
   and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base_sin_plazo(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_parcial%'
-  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_plazo%', 'agente._ejecutar_ext_base conserva la recepcion parcial y delega el resto (por la capa del plazo)');
+  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base_sin_ventas(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_plazo%'
+  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_ventas%', 'agente._ejecutar_ext_base conserva la recepcion parcial y delega el resto (por las capas de ventas y del plazo)');
 select ok((select prosrc from pg_proc where oid = 'agente._efecto(text,jsonb)'::regprocedure) like '%piezas_ahora%', 'agente._efecto conserva las piezas de la llegada en el hash');
 
 select * from finish();

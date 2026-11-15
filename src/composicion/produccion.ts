@@ -1,5 +1,6 @@
 // Raiz de composicion de las integraciones con base de datos: webhook de Telegram, latido de tareas, inventario de proveedores y reportes.
 // Todo recibe sus dependencias externas por parametro (Telegram, IA, fuente de proveedores, Chromium, reloj): las pruebas usan dobles y NINGUNA llama a un servicio real.
+import { entornoVentasDb } from '@/infra/agente/entorno_ventas_postgres';
 import { AgenteTelegram } from '@/aplicacion/agente/agente';
 import { ErrorLlm, type ClienteLlm, type EnviadorTelegram } from '@/aplicacion/agente/puertos';
 import { despacharUnaVez } from '@/aplicacion/notificaciones/despachador';
@@ -75,7 +76,7 @@ export function crearAgenteProduccion(d: DepsProduccion): AgenteTelegram {
   return new AgenteTelegram({
     almacen: new AlmacenAgenteDb(d.sql), presupuesto: new AlmacenPresupuestoDb(d.sql), llm: llmDe(d), telegram: tg, tokens: new AlmacenTokensDb(d.sql),
     catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d), config: { exigirSabor: true, exigirPlazoPedido: true, ...d.configAgente },
-    ...(d.conversacion === false ? {} : { conversacion: { almacen: new AlmacenConversacionDb(d.sql), resumenes: new ResumenPedidosDb(d.sql) } }),
+    ...(d.conversacion === false ? {} : { conversacion: { almacen: new AlmacenConversacionDb(d.sql), resumenes: new ResumenPedidosDb(d.sql), entorno: entornoVentasDb(d.sql) } }),
   });
 }
 

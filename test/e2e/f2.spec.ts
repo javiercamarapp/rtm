@@ -50,7 +50,7 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   const dialogo = page.getByRole('dialog');
   await dialogo.getByLabel(/Surtidas de/).fill('40');
   await dialogo.getByLabel('Número de guía').fill('GUIA-E2E-1');
-  await dialogo.getByLabel('Paquetería').fill('Castores');
+  await dialogo.getByLabel('Paquetería').selectOption('Castores');
   await dialogo.getByLabel('Costo real de la guía').fill('180');
   await page.getByTestId('confirmar').click();
   await expect(page.getByTestId('estado-pedido')).toContainText('Enviado');

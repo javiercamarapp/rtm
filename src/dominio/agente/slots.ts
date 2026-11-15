@@ -8,10 +8,12 @@ export type { OpcionSlot } from './slots_tipos';
 export const OPERACIONES_CONV = [
   'pedido_bodega', 'pedido_dropshipping', 'pedido_a_costo', 'cobro_cliente', 'pago_redirigido', 'pago_proveedor', 'compra', 'recepcion_compra', 'gasto',
   'aportacion', 'deposito', 'reembolso', 'retiro', 'entrega_fondos', 'liquidacion', 'conteo', 'merma', 'obsequio', 'devolucion', 'alta_cliente', 'alta_sabor', 'alta_modelo',
+  // Carril ventas-compras (16-nov)
+  'orden_compra', 'compra_estado', 'compra_cierre', 'envio_lote', 'guias_lote', 'paquete_perdido',
 ] as const;
 export type OperacionConv = (typeof OPERACIONES_CONV)[number];
 
-export type TipoSlot = 'cliente' | 'proveedor' | 'monto' | 'opcion' | 'texto' | 'fecha_pago' | 'plazo' | 'lineas' | 'folio' | 'bandera';
+export type TipoSlot = 'cliente' | 'proveedor' | 'monto' | 'opcion' | 'texto' | 'fecha_pago' | 'plazo' | 'lineas' | 'folio' | 'bandera' | 'folios' | 'guias';
 
 /** Obligatorio solo si el slot `slot` vale alguno de `valores`; sin `valores`, si esta presente. */
 export interface CondicionSlot {
@@ -41,6 +43,7 @@ export interface DefOperacion {
   avisoFinal?: string;
 }
 
+const PAQUETERIAS_OPC: readonly OpcionSlot[] = [{ valor: 'Castores', texto: 'Castores' }, { valor: 'Pitic', texto: 'Pitic' }, { valor: 'DHL', texto: 'DHL' }, { valor: 'Estafeta', texto: 'Estafeta' }];
 const MONTO = '¿De cuánto fue? Escribe la cifra completa, por ejemplo 12,500.';
 const SOCIOS: readonly OpcionSlot[] = [{ valor: 'angelo', texto: 'Angelo' }, { valor: 'javier', texto: 'Javier' }];
 const VIA: readonly OpcionSlot[] = [{ valor: 'transferencia', texto: 'Transferencia' }, { valor: 'efectivo', texto: 'Efectivo' }];
@@ -147,6 +150,36 @@ export const OPERACIONES: Readonly<Record<OperacionConv, DefOperacion>> = {
       lineas('¿Qué modelo, sabor y cuántas piezas devolvió?'),
       { clave: 'destino_piezas', tipo: 'opcion', obligatorio: true, pregunta: '¿Las piezas regresan al inventario o van a merma?', opciones: [{ valor: 'inventario', texto: 'Al inventario' }, { valor: 'merma', texto: 'A merma' }], sinonimos: ['destino'] },
       motivo('¿Cuál fue el motivo de la devolución?')],
+  },
+  orden_compra: {
+    clave: 'orden_compra', titulo: 'Orden de compra (borrador)',
+    slots: [proveedor(), lineas()],
+  },
+  compra_estado: {
+    clave: 'compra_estado', titulo: 'Estado de una compra',
+    slots: [{ clave: 'folio_compra', tipo: 'folio', obligatorio: true, pregunta: '¿De qué compra es? Escribe el folio (por ejemplo C-0001).', sinonimos: ['folio', 'compra'] },
+      { clave: 'estado_compra', tipo: 'opcion', obligatorio: true, pregunta: '¿Salió el paquete (en trayecto) o ya llegó a Mérida?', opciones: [{ valor: 'enviada', texto: 'Ya salió (en trayecto)' }, { valor: 'llego_merida', texto: 'Llegó a Mérida' }], sinonimos: ['estado'] }],
+  },
+  compra_cierre: {
+    clave: 'compra_cierre', titulo: 'Cierre de compra con faltante',
+    slots: [{ clave: 'folio_compra', tipo: 'folio', obligatorio: true, pregunta: '¿Qué compra cierras con faltante? Escribe el folio (por ejemplo C-0001).', sinonimos: ['folio', 'compra'] }, opcional('motivo', '¿Qué pasó con lo que no llegó? (opcional)')],
+  },
+  envio_lote: {
+    clave: 'envio_lote', titulo: 'Envío de pedidos',
+    slots: [{ clave: 'folios', tipo: 'folios', obligatorio: true, pregunta: '¿Qué pedidos salen? Escribe sus folios, por ejemplo MG-001, LS-002.', sinonimos: ['pedidos', 'folios'] },
+      { clave: 'paqueteria', tipo: 'opcion', obligatorio: true, pregunta: '¿Con qué paquetería salen: Castores, Pitic, DHL o Estafeta?', opciones: PAQUETERIAS_OPC, sinonimos: ['paqueteria'] }],
+    avisoFinal: 'La guía puede llegar después: cuando la tengas, mándame las guías con su pedido.',
+  },
+  guias_lote: {
+    clave: 'guias_lote', titulo: 'Captura de guías',
+    slots: [{ clave: 'guias', tipo: 'guias', obligatorio: true, pregunta: '¿Cuáles son las guías? Escribe una por línea con su pedido, por ejemplo «MG-001 5551234».', sinonimos: ['guias', 'guia'] },
+      opcional('paqueteria', '¿De qué paquetería son?')],
+  },
+  paquete_perdido: {
+    clave: 'paquete_perdido', titulo: 'Paquete perdido o dañado',
+    slots: [{ clave: 'pedido_folio', tipo: 'folio', obligatorio: true, pregunta: '¿De qué pedido es el paquete? Escribe el folio.', sinonimos: ['pedido', 'folio'] },
+      { clave: 'incidente', tipo: 'opcion', obligatorio: true, pregunta: '¿Se perdió o llegó dañado?', opciones: [{ valor: 'perdido', texto: 'Se perdió' }, { valor: 'danado', texto: 'Llegó dañado' }], sinonimos: ['incidente', 'tipo'] },
+      { clave: 'detalle', tipo: 'texto', obligatorio: true, pregunta: '¿Qué pasó? Dame el detalle en una frase.', sinonimos: ['detalle', 'motivo'] }],
   },
   alta_cliente: {
     clave: 'alta_cliente', titulo: 'Alta de cliente',

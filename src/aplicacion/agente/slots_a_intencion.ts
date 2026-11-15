@@ -4,6 +4,8 @@
 import type { Intencion, TipoGasto, QuienPaga, SocioNombre } from '@/dominio/agente/intenciones';
 import type { OperacionConv } from '@/dominio/agente/slots';
 import type { Overrides } from './resolucion';
+import type { OrigenDs } from '@/dominio/agente/intenciones_ampliadas';
+import { paqueteriaDeCatalogo } from '@/dominio/agente/guias';
 
 export interface LineaSlot { modeloId: string; modelo: string; saborId: string | null; sabor: string | null; piezas: number }
 
@@ -88,6 +90,85 @@ export function intencionDeSlots(operacion: OperacionConv, s: Readonly<Record<st
     case 'alta_cliente':
       if (txt(s.nombre) === null) return { ok: false, texto: 'Falta el nombre.' };
       return { ok: true, intencion: { tipo: 'cliente_alta', nombre: String(s.nombre), fuente_cita: c }, overrides: {} };
+    case 'pedido_dropshipping': {
+      const cli = idDe(s.cliente);
+      const dias = s.modalidad === 'contado' ? 0 : num(s.plazo);
+      const origen = txt(s.origen) as OrigenDs | null;
+      if (cli === null || ls.length === 0 || dias === null || origen === null) return { ok: false, texto: 'Falta el cliente, el proveedor, las piezas o el plazo.' };
+      const fp = txt(s.folio_proveedor);
+      return {
+        ok: true,
+        intencion: {
+          tipo: 'pedido_ds', cliente_texto: nombreDe(s.cliente), proveedor_origen: origen, lineas: lineasTxt.map((l) => ({ modelo_texto: l.modelo_texto, sabor_texto: l.sabor_texto, piezas: l.piezas })),
+          forma_pago: dias === 0 ? 'contado' : 'credito', plazo_texto: null, plazo_dias: dias, envio_cobrado_centavos: num(s.envio) ?? 0,
+          folio_proveedor_texto: fp !== null && /\d/.test(fp) ? fp : null, fuente_cita: c,
+        },
+        overrides: { cliente: cli, ...overridesDeLineas(ls) },
+      };
+    }
+    case 'pedido_a_costo': {
+      const origen = txt(s.origen) as OrigenDs | null;
+      const f = s.fecha_pago !== null && typeof s.fecha_pago === 'object' ? (s.fecha_pago as { fecha: string | null; hora: string | null; sinFecha: boolean }) : null;
+      if (ls.length === 0 || origen === null || f === null) return { ok: false, texto: 'Faltan las piezas, el proveedor o la fecha de pago.' };
+      return {
+        ok: true,
+        intencion: { tipo: 'pedido_menudeo', proveedor_origen: origen, lineas: lineasTxt, cuando_texto: null, fecha_compromiso: f.fecha, hora_compromiso: f.hora, sin_fecha: f.sinFecha === true, fuente_cita: c },
+        overrides: overridesDeLineas(ls),
+      };
+    }
+    case 'compra':
+    case 'orden_compra': {
+      const prov = idDe(s.proveedor);
+      if (prov === null || ls.length === 0) return { ok: false, texto: 'Falta el proveedor o las piezas.' };
+      const base = { proveedor_texto: nombreDe(s.proveedor), lineas: lineasTxt, fuente_cita: c };
+      const intencion = operacion === 'compra'
+        ? { tipo: 'compra' as const, ...base, guia_centavos: num(s.guia), pagado_por: (txt(s.guia_pagada_por) as QuienPaga | null) }
+        : { tipo: 'orden_compra' as const, ...base, aplicar_saldo: false };
+      return { ok: true, intencion, overrides: { proveedor: prov, ...overridesDeLineas(ls) } };
+    }
+    case 'recepcion_compra': {
+      const folio = txt(s.folio_compra);
+      if (folio === null) return { ok: false, texto: 'Falta el folio de la compra.' };
+      const parcial = s.alcance === 'parcial';
+      if (parcial && ls.length === 0) return { ok: false, texto: 'Faltan las piezas que llegaron.' };
+      return { ok: true, intencion: { tipo: 'compra_recepcion', compra_folio: folio, lineas: parcial ? lineasTxt : [], fuente_cita: c }, overrides: parcial ? overridesDeLineas(ls) : {} };
+    }
+    case 'compra_estado': {
+      const folio = txt(s.folio_compra);
+      const est = txt(s.estado_compra);
+      if (folio === null || (est !== 'enviada' && est !== 'llego_merida')) return { ok: false, texto: 'Falta el folio de la compra o su estado.' };
+      return { ok: true, intencion: { tipo: 'compra_estado', compra_folio: folio, estado: est, fuente_cita: c }, overrides: {} };
+    }
+    case 'compra_cierre': {
+      const folio = txt(s.folio_compra);
+      if (folio === null) return { ok: false, texto: 'Falta el folio de la compra.' };
+      return { ok: true, intencion: { tipo: 'compra_cierre', compra_folio: folio, motivo: txt(s.motivo), fuente_cita: c }, overrides: {} };
+    }
+    case 'devolucion': {
+      const cli = idDe(s.cliente);
+      const folio = txt(s.pedido_folio);
+      const destino = s.destino_piezas === 'merma' ? 'merma' : s.destino_piezas === 'inventario' ? 'inventario' : null;
+      if (cli === null || folio === null || ls.length === 0 || destino === null || txt(s.motivo) === null) return { ok: false, texto: 'Falta el cliente, el pedido, las piezas, su destino o el motivo.' };
+      return { ok: true, intencion: { tipo: 'devolucion', cliente_texto: nombreDe(s.cliente), pedido_folio: folio, lineas: lineasTxt, destino, motivo: txt(s.motivo), fuente_cita: c }, overrides: { cliente: cli, ...overridesDeLineas(ls) } };
+    }
+    case 'paquete_perdido': {
+      const folio = txt(s.pedido_folio);
+      const inc = s.incidente === 'danado' ? 'danado' : s.incidente === 'perdido' ? 'perdido' : null;
+      if (folio === null || inc === null || txt(s.detalle) === null) return { ok: false, texto: 'Falta el pedido, si se perdio o llego danado, o el detalle.' };
+      return { ok: true, intencion: { tipo: 'paquete_perdido', pedido_folio: folio, cliente_texto: null, incidente: inc, detalle: txt(s.detalle), fuente_cita: c }, overrides: {} };
+    }
+    case 'envio_lote': {
+      const folios = Array.isArray(s.folios) ? (s.folios as unknown[]).map(String) : [];
+      const paq = paqueteriaDeCatalogo(txt(s.paqueteria));
+      if (folios.length === 0 || paq === null) return { ok: false, texto: 'Faltan los pedidos o una paqueteria del catalogo (Castores, Pitic, DHL o Estafeta).' };
+      return { ok: true, intencion: { tipo: 'envio_lote', paqueteria: paq.toLowerCase() as 'castores' | 'pitic' | 'dhl' | 'estafeta', folios, fuente_cita: c }, overrides: {} };
+    }
+    case 'guias_lote': {
+      const gs = Array.isArray(s.guias) ? (s.guias as Array<{ folio: string; guia: string }>) : [];
+      if (gs.length === 0) return { ok: false, texto: 'Faltan las guias.' };
+      const paq = paqueteriaDeCatalogo(txt(s.paqueteria));
+      return { ok: true, intencion: { tipo: 'guias_lote', paqueteria: paq === null ? null : (paq.toLowerCase() as 'castores' | 'pitic' | 'dhl' | 'estafeta'), guias: gs.map((g) => ({ pedido_folio: g.folio, cliente_texto: null, guia_texto: g.guia })), fuente_cita: c }, overrides: {} };
+    }
     default:
       return { ok: false, texto: 'Esta operacion todavia no se registra por conversacion.' };
   }
