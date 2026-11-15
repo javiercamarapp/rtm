@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import type { ResultadoLista } from '@/dominio/proveedores/lista_cliente';
+import { marcaMayus } from '@/dominio/formato';
 import { prepararLista } from './acciones';
 
 export function CopiarLista({ marcas, clientes, bloqueada }: { marcas: string[]; clientes: { id: number; nombre: string }[]; bloqueada: boolean }) {
@@ -39,7 +40,7 @@ export function CopiarLista({ marcas, clientes, bloqueada }: { marcas: string[];
     <div className="rtm-copiable-bloque" data-testid="copiar-lista">
       <div className="rtm-form-fila">
         <label className="rtm-etiqueta-campo">Marca
-          <select className="rtm-campo" value={marca} onChange={(e) => setMarca(e.target.value)} data-testid="lista-marca"><option value="">Todas</option>{marcas.map((m) => <option key={m} value={m}>{m}</option>)}</select>
+          <select className="rtm-campo" value={marca} onChange={(e) => setMarca(e.target.value)} data-testid="lista-marca"><option value="">Todas</option>{marcas.map((m) => <option key={m} value={m}>{marcaMayus(m)}</option>)}</select>
         </label>
         <label className="rtm-etiqueta-campo">Precios de este cliente
           <select className="rtm-campo" value={cliente} onChange={(e) => setCliente(e.target.value)} data-testid="lista-cliente"><option value="">Sin precios</option>{clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select>

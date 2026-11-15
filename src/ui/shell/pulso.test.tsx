@@ -9,6 +9,8 @@ import { Pulso } from '@/ui/shell/pulso';
 
 const vacio: EntradasPulso = { isaac: null, cxc: null, socios: null, existencia: null };
 const mov = { evento: 'e', canal: 'web', hora: '2026-11-10T10:00:00Z', mensaje_origen: null, autor: null, id: 1, fecha_neg: '2026-11-10', concepto: 'x', monto_cent: 1n, saldo_corrido_cent: 1n, compra: null, pago: null, cliente: null, cuenta_origen: null, nota: null };
+const cuenta = (proveedor: 'Isaac' | 'Karen') => (posicion: bigint, movimientos: unknown[] = [mov], saldo = 0n, pendienteSocio = 0n) => ({ id: 7, proveedor, modalidad: 'semanal_viernes', saldo_cent: saldo, posicion_cent: posicion, etiqueta: 'Se debe', puente_cent: 0n, movimientos, posicion: { posicion_cent: posicion, posicion_empresa_cent: posicion + pendienteSocio, menudeo_pendiente_cent: pendienteSocio } }) as unknown as CuentaProveedor;
+const karen = cuenta('Karen');
 const isaac = (posicion: bigint, movimientos: unknown[] = [mov], saldo = 0n, pendienteSocio = 0n) => ({ id: 7, proveedor: 'Isaac', modalidad: 'semanal_viernes', saldo_cent: saldo, posicion_cent: posicion, etiqueta: 'Se debe', puente_cent: 0n, movimientos, posicion: { posicion_cent: posicion, posicion_empresa_cent: posicion + pendienteSocio, menudeo_pendiente_cent: pendienteSocio } }) as unknown as CuentaProveedor;
 const cxc = (total: bigint, filas = 1) => ({ hoy: '2026-11-11', filas: new Array(filas).fill({}), total_cent: total, saldos_a_favor: [], pagos_sin_identificar: [] }) as unknown as CuentasPorCobrar;
 const socios = (d: bigint, hayMovs = true) => ({ hoy: '2026-11-11', costo_cent: hayMovs ? 100n : 0n, javier_debe_a_angelo_cent: d, movimientos: hayMovs ? [{}] : [] }) as unknown as CuentaSocios;
@@ -84,12 +86,41 @@ describe('armarPulso', () => {
   });
 });
 
+describe('armarPulso: alternancia Isaac y Karen', () => {
+  it('Karen: deuda de la empresa y, aparte, lo que Angelo le pide para su menudeo, con la misma convencion que Isaac', () => {
+    const k = armarPulso({ ...vacio, karen: karen(-53250n - 120000n, [mov], 0n, 120000n) }).chips[0]!.alterno!;
+    expect(k.clave).toBe('karen');
+    expect(k.etiqueta).toBe('Por pagar a Karen');
+    expect(k.texto).toBe('$532.50');
+    expect(k.detalle).toBe('deuda de la empresa · aparte $1,200.00 de pedidos del socio');
+    expect(k.cifra).toBe('proveedor:deuda:Karen');
+  });
+  it('Karen sin lectura o sin movimientos: Sin dato (nunca un cero) y enlace a su cuenta', () => {
+    expect(armarPulso(vacio).chips[0]!.alterno!.texto).toBeNull();
+    expect(armarPulso(vacio).chips[0]!.alterno!.href).toBe('/proveedores?p=Karen');
+    expect(armarPulso({ ...vacio, karen: karen(0n, []) }).chips[0]!.alterno!.texto).toBeNull();
+  });
+  it('la cuenta de Karen cuenta para el corte aunque Isaac no tenga dato', () => {
+    expect(armarPulso({ ...vacio, cxc: cxc(0n, 0) }).corte).toBeNull();
+    expect(armarPulso({ ...vacio, karen: karen(-100n), cxc: cxc(0n, 0) }).corte).toBe('11 nov 2026');
+  });
+});
+
 describe('Pulso (componente)', () => {
   const explicar = () => Promise.reject(new Error('no se usa'));
   it('escribe "Sin dato" con enlace al detalle cuando no hay datos', () => {
     const html = renderToStaticMarkup(<ExplicarProvider explicar={explicar}><Pulso chips={armarPulso(vacio).chips} /></ExplicarProvider>);
     expect(html.match(/Sin dato/g)).toHaveLength(4);
     expect(html).toContain('href="/cuentas-por-cobrar"');
+  });
+  it('el indicador de proveedor arranca en Isaac con dos puntos para ver cual cuenta se muestra y cambiar a mano', () => {
+    const html = renderToStaticMarkup(<ExplicarProvider explicar={explicar}><Pulso chips={armarPulso({ ...vacio, isaac: isaac(-123450n), karen: karen(-5000n) }).chips} /></ExplicarProvider>);
+    expect(html).toContain('data-testid="pulso-proveedor"');
+    expect(html).toContain('$1,234.50');
+    expect(html).not.toContain('$50.00');
+    expect(html).toContain('data-testid="pulso-punto-isaac"');
+    expect(html).toContain('data-testid="pulso-punto-karen"');
+    expect(html).toContain('aria-pressed="true"');
   });
   it('con datos muestra la cifra como boton "Explicar este número"', () => {
     const html = renderToStaticMarkup(<ExplicarProvider explicar={explicar}><Pulso chips={armarPulso({ ...vacio, cxc: cxc(980000n) }).chips} /></ExplicarProvider>);

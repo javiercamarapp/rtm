@@ -6,7 +6,7 @@ import { inventarioDeSocio, notificacionesDeSocio } from '@/composicion/inventar
 import { operacionDeSocio } from '@/composicion/operacion';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { fechaNeg } from '@/dominio/calendario';
-import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas, nombreVape } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas, marcaMayus, nombreVape } from '@/dominio/formato';
 import { URGENCIA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
 import { destinoAviso } from '@/dominio/notificaciones/tipos';
 import { aNumero, contarPor, porcentaje, sumarPorSemana, ultimasSemanas } from '@/dominio/tablero/agregados';
@@ -252,7 +252,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
         </Tarjeta>
         <Tarjeta titulo="Inventario por marca" descripcion={inv ? `${formatearPiezas(inv.totales.piezas)} · ${formatearMoneda(inv.totales.valor_cent)} a costo promedio` : undefined}>
           {marcas.length > 0 ? (
-            <BarList etiquetaAria="Valor del inventario por marca" items={marcas.map(([m, v]) => ({ id: m, etiqueta: m, texto: formatearMoneda(v), pct: porcentaje(aNumero(v), aNumero(totalMarcas)) }))} />
+            <BarList etiquetaAria="Valor del inventario por marca" items={marcas.map(([m, v]) => ({ id: m, etiqueta: marcaMayus(m), texto: formatearMoneda(v), pct: porcentaje(aNumero(v), aNumero(totalMarcas)) }))} />
           ) : <p className="rtm-a1-estado-vacio">Sin existencia registrada.</p>}
         </Tarjeta>
         </div>

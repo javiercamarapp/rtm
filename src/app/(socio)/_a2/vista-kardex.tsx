@@ -64,7 +64,7 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
       <span className={f.k.es_reversa ? 'rtm-a2-reversa' : 'rtm-a2-etiqueta-tipo'} data-testid={f.k.es_reversa ? 'kardex-reversa' : undefined}>{TIPO_MOV[f.k.tipo] ?? f.k.tipo}</span>
     )) },
     ...(vS ? [] : unico
-      ? [{ id: 's', titulo: 'Sabor', ancho: 'm' as const, prioridadMovil: 'detalle' as const, celda: (f: Fila) => cel(f, (x) => x.sabor) }]
+      ? [{ id: 's', titulo: 'Sabor', ancho: 'm' as const, prioridadMovil: 'detalle' as const, celda: (f: Fila) => cel(f, (x) => saborMayus(x.sabor)) }]
       : [{ id: 'mo', titulo: 'Modelo › sabor', ancho: 'l' as const, truncar: 'm' as const, prioridadMovil: 'detalle' as const, celda: (f: Fila) => cel(f, (x) => <span className="rtm-a2-nowrap">{nombreVape(x.modelo)}<span className="rtm-a2-nota"> › {saborMayus(x.sabor)}</span></span>) }]),
     { id: 'ec', prioridadMovil: 'normal' as const, etiquetaMovil: 'Entra pzs', titulo: 'Piezas', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_piezas === null ? '' : pzs(x.entra_piezas))) },
     { id: 'eu', prioridadMovil: 'oculta' as const, ocultarBajo: 1360 as const, titulo: 'V. unit.', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_unit_cent === null ? '' : m(x.entra_unit_cent))) },

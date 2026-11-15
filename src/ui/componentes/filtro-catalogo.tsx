@@ -85,7 +85,7 @@ export function FiltroCatalogo({ etiquetaAria, placeholder = 'Buscar marca, mode
         )}
         {nombresAtajo.length > 0 && (
           <div className="rtm-fc-atajos" role="group" aria-label="Marcas destacadas">
-            {nombresAtajo.map((m) => <button key={m} type="button" className="rtm-fc-atajo" aria-pressed={seleccion.includes(m)} onClick={() => alternarMarca(m)}>{m}</button>)}
+            {nombresAtajo.map((m) => <button key={m} type="button" className="rtm-fc-atajo" aria-pressed={seleccion.includes(m)} onClick={() => alternarMarca(m)}><span className="rtm-may-marca">{m}</span></button>)}
           </div>
         )}
         <div className="rtm-fc-marcas">
