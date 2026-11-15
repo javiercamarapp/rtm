@@ -4,7 +4,7 @@ import { serieSemanalDeSocio } from '@/composicion/contabilidad-serie';
 import { fechaNeg } from '@/dominio/calendario';
 import { rangoDeConsulta } from '@/dominio/contabilidad/rangos';
 import { etiquetaFecha } from '@/dominio/formato';
-import { BarList } from '@/ui/componentes/datos';
+import { BarList, ListaClaveValor } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
@@ -68,6 +68,14 @@ export default async function PaginaFlujo({ searchParams }: { searchParams: Prom
           <Rejilla dividir="6-6">
             <Tarjeta titulo="Del saldo inicial al final" descripcion="Operación y financiamiento">
               <Cascada titulo="Cascada del flujo de efectivo" descripcion={`Saldo inicial ${m(f.saldo_inicial_cent)}; operación ${m(f.flujo_operacion_cent, true)}; financiamiento ${m(f.flujo_financiamiento_cent, true)}; saldo final ${m(f.saldo_final_cent)}.`} pasos={pasos} unidad="Pesos" />
+                          <ListaClaveValor items={[
+                { k: 'Saldo inicial', v: m(f.saldo_inicial_cent) },
+                { k: 'Flujo de operación', v: m(f.flujo_operacion_cent, true) },
+                { k: 'Flujo de financiamiento', v: m(f.flujo_financiamiento_cent, true) },
+                { k: 'Variación neta', v: m(f.variacion_cent, true) },
+                { k: 'Saldo final', v: <strong>{m(f.saldo_final_cent)}</strong> },
+              ]} />
+            
             </Tarjeta>
             <Tarjeta titulo="Por concepto" descripcion="Magnitud de cada concepto de fondos">
               <BarList etiquetaAria="Conceptos de fondos" items={f.directo.map((x) => ({ id: x.categoria, etiqueta: x.categoria, texto: m(x.monto_cent, true), pct: maxMov > 0n ? pct(abs(x.monto_cent), maxMov) : null, tono: x.monto_cent < 0n ? ('malo' as const) : undefined }))} />
