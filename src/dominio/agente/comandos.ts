@@ -85,7 +85,7 @@ function fallo(clave: string): ResultadoComando {
 function monto(texto: string): number | null {
   try {
     const c = centavosDesdeTexto(texto);
-    return c > 0n && c <= 100_000_000_00n ? Number(c) : null;
+    return c > 0n && c <= 10_000_000_000_000n ? Number(c) : null;
   } catch {
     return null;
   }

@@ -23,9 +23,11 @@ import { interpretarPlazo } from '@/dominio/agente/plazo_pedido';
 import { normalizar } from '@/dominio/catalogo/normalizar';
 import { Comunicador, verificarMensajeOmar } from './comunicador';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
+import { cifrasDeIntencionAmpliada, foliosSinProcedencia, montosQueSeRepiten, textosConCifraAjena } from '@/dominio/agente/guardia_ampliada';
+import { montoARepetir, textoExtraidoSinPuerta } from './plantillas_interprete';
 import * as P from './plantillas';
 import type { MensajeListo } from './plantillas';
-import { MAX_TOKENS_SALIDA_R1, SISTEMA_R1, VERSION_PROMPT, construirUsuarioR1, estimarTokensSolicitud } from './prompt';
+import { SISTEMA_R1, VERSION_PROMPT, construirUsuarioR1, estimarTokensSolicitud, maxTokensSalidaPara } from './prompt';
 import type {
   AccionBoton,
   AccionResuelta,
@@ -272,6 +274,8 @@ export function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
       if (a.tipo === 'compra' && a.guia_centavos !== null && a.guia_centavos > 0) salida.push(cifrasDeMonto('guia', a.guia_centavos));
       break;
     default:
+      // Intenciones ampliadas (carril interprete): pedido_ds, obsequio, entrega_fondos, renta_omar...
+      salida.push(...cifrasDeIntencionAmpliada(a));
       break;
   }
   return salida;
@@ -513,11 +517,19 @@ export class AgenteTelegram {
     }
 
     const sin = await this.d.almacen.modoSinIa();
+    const ctxIa: ContextoMensaje = { ...base, fuente: reenviado ? 'reenviado' : 'texto', verificarCifras: true, sospecha: false };
+    if (sin.activo && sin.motivo === 'tope_presupuesto') {
+      // El modo sin IA por tope de presupuesto NO es permanente (auditoria P1-10): la reserva decide. Si el dia o el mes rotaron y ya cabe, el modelo vuelve solo; si sigue agotado,
+      // la reserva falla otra vez (no se llama al modelo ni se gasta nada) y el aviso no se repite.
+      const r = await this.conIa(ctxIa);
+      if (r.estado !== 'sin_ia') await this.d.almacen.fijarModoSinIa(false, null);
+      return r;
+    }
     if (sin.activo) {
       await this.avisarModoSinIa(chats);
       return { estado: 'sin_ia' };
     }
-    return this.conIa({ ...base, fuente: reenviado ? 'reenviado' : 'texto', verificarCifras: true, sospecha: false });
+    return this.conIa(ctxIa);
   }
 
   /** Identidad por id de Telegram. Devuelve el miembro solo si el chat de origen es el que le corresponde. */
@@ -618,7 +630,8 @@ export class AgenteTelegram {
   private async llamar(claveReserva: string, usuario: string, autor: Miembro): Promise<RespuestaLlm | 'presupuesto' | 'llm'> {
     const cadena = cadenaParaRol('texto');
     const esquemaJson = esquemaJsonDeRespuesta();
-    const reserva = peorCasoTokens(cadena, estimarTokensSolicitud(SISTEMA_R1, usuario, esquemaJson), MAX_TOKENS_SALIDA_R1);
+    const maxSalida = maxTokensSalidaPara(usuario);
+    const reserva = peorCasoTokens(cadena, estimarTokensSolicitud(SISTEMA_R1, usuario, esquemaJson), maxSalida);
     const ahora = this.d.reloj();
     const dec = await this.d.presupuesto.reservar({ clave: claveReserva, rol: 'texto', microUsd: reserva, fechaNeg: fechaNeg(ahora) });
     if (!dec.ok) return 'presupuesto';
@@ -630,7 +643,7 @@ export class AgenteTelegram {
         modelos: cadena.map((m) => m.slug),
         sistema: SISTEMA_R1,
         usuario,
-        maxTokensSalida: MAX_TOKENS_SALIDA_R1,
+        maxTokensSalida: maxSalida,
         esquemaJson,
       });
     } catch (e) {
@@ -699,10 +712,17 @@ export class AgenteTelegram {
       }
 
       if (ctx.verificarCifras) {
-        const faltan = [...cifrasSinProcedencia(ctx.texto, cifrasDeIntencion(a)), ...cifrasDePrecios(a, ctx.texto)];
+        const faltan = [...cifrasSinProcedencia(ctx.texto, cifrasDeIntencion(a)), ...cifrasDePrecios(a, ctx.texto), ...foliosSinProcedencia(a, ctx.texto), ...textosConCifraAjena(a, ctx.texto)];
         if (faltan.length > 0) {
           await this.d.almacen.registrarEvento({ tipo: 'cifra_sin_procedencia', miembro: ctx.autor.telegramUserId, detalle: faltan.join(',') });
           await this.responder(ctx.autor, ctx.chats, P.cifraSinProcedencia(ctx.texto.slice(0, 120), faltan));
+          continue;
+        }
+        // Decision del dueno (14-nov): un monto escrito con k, con mil, con letra o de forma aproximada se REPITE completo y se pregunta antes de registrar.
+        const repetir = montosQueSeRepiten(ctx.texto, cifrasDeIntencion(a));
+        if (repetir.length > 0 && esEscritura(a.tipo)) {
+          await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `monto_abreviado:${repetir.map((x) => x.campo).join(',')}`.slice(0, 280) });
+          await this.responder(ctx.autor, ctx.chats, montoARepetir(repetir));
           continue;
         }
         // BAJO-1: un monto que solo se explica con un formato ambiguo ("1.250") se pregunta en TODAS las intenciones con dinero, no solo en el precio de un pedido.
@@ -743,6 +763,12 @@ export class AgenteTelegram {
             continue;
           }
         }
+      }
+      // Intenciones ampliadas aun sin puerta de ejecucion (estado 'extraido'): se entendio, se valido y NO se registra nada (jamas se inventa una escritura).
+      if (CATALOGO_INTENCIONES[declarada.tipo].estado === 'extraido') {
+        await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `extraido_sin_puerta:${declarada.tipo}` });
+        await this.responder(ctx.autor, ctx.chats, textoExtraidoSinPuerta(declarada.tipo));
+        continue;
       }
       const estado: EstadoAccion = {
         intencion: declarada,

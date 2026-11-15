@@ -4,15 +4,24 @@ import { normalizar } from '@/dominio/catalogo/normalizar';
 import { envolverMensaje, nombreSeguro, redactarContactos } from '@/dominio/agente/entrada';
 import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type { FuenteMensaje, Persona } from '@/dominio/agente/tipos';
+import { REGLAS_AMPLIADAS } from './prompt_ampliado';
 
 /** Cambia con cualquier edicion del prompt o del esquema: forma parte de la clave de la corrida guardada. */
-export const VERSION_PROMPT = 'r5-2026-11-14.4';
+export const VERSION_PROMPT = 'r6-2026-11-14.1';
 
 /**
  * Tope de tokens de la respuesta. 700 truncaba un conteo de 40 sabores (cada renglon pesa ~28 tokens: 40 renglones + envoltura ~1,300; 60 renglones ~1,900).
  * El peor caso reservado crece (2,500 x US$0.50/M = 1,250 micro-USD), pero el costo real sigue siendo el que reporta el proveedor.
  */
 export const MAX_TOKENS_SALIDA_R1 = 2500;
+
+/**
+ * Decision del dueno (14-nov): sin tope oculto de tokens. La salida crece con el mensaje (un renglon de conteo ~28 tokens por ~11 caracteres; cada accion ~100 tokens de envoltura):
+ * piso de MAX_TOKENS_SALIDA_R1 y techo de 16,000 (solo por costo: la reserva del peor caso sube y el costo real sigue siendo el que reporta el proveedor).
+ */
+export function maxTokensSalidaPara(textoMensaje: string): number {
+  return Math.min(16_000, Math.max(MAX_TOKENS_SALIDA_R1, 400 + 3 * textoMensaje.length));
+}
 
 export const SISTEMA_R1 = [
   'Eres el lector de mensajes del grupo de Angelo, Javier y Omar (mayoreo de vapes). Solo interpretas.',
@@ -52,11 +61,12 @@ export const SISTEMA_R1 = [
   '20. "Yo" es el autor del mensaje: "pague", "puse", "me aventé", "le mande" sin otro nombre significan que pagado_por o socio es el autor (autor="javier" => javier). No preguntes quien pago.',
   '21. "Fulano pago X", "me paso X", "cayeron X de Fulano" = pago con cuenta_destino_texto null; no preguntes la cuenta. Si no hay cifra ("ya pago", "me pago lo que debia", "pague todo"), intencion "aclarar"; jamas pongas monto 1 ni inventes.',
   '22. Un cliente que mando dinero a un proveedor ("Cliente Norte mando 30,500 a Karen") es pago_proveedor con cliente_texto. Cargos de Vercel, OpenRouter y similares son gasto_servicio, nunca gasto.',
-  '23. Pedido a costo para el menudeo del socio: "dropshipping", "pedido a costo", "pedido menudeo" o "pide a Karen/Isaac para mi menudeo" con renglones = pedido_menudeo (plazo en cuando_texto). "Surtido" es un sabor valido: copialo. Si a algun renglon le falta la cantidad, intencion "aclarar"; nunca pongas piezas 1 por omision. El destinatario o a quien se envia no va en ningun campo. Varios pedidos a costo en un mensaje (enumerados 1) 2) 3) o "dos pedidos") son UNA accion pedido_menudeo por pedido, cada una con su propio cuando_texto; nunca los unas.',
+  '23. Pedido a costo para el menudeo del socio (sin cliente que deba pagar): "pedido a costo", "pedido menudeo", "dropshipping a costo" o "pide a Karen/Isaac para mi menudeo" con renglones = pedido_menudeo (plazo en cuando_texto). "Surtido" es un sabor valido: copialo. Si a algun renglon le falta la cantidad, intencion "aclarar"; nunca pongas piezas 1 por omision. El destinatario o a quien se envia no va en ningun campo. Varios pedidos a costo en un mensaje (enumerados 1) 2) 3) o "dos pedidos") son UNA accion pedido_menudeo por pedido, cada una con su propio cuando_texto; nunca los unas.',
   '24. recibi o recibimos una compra con folio C- = compra_recepcion (sin renglones = completa, con renglones = parcial). "va en camino" o "ya salio" = compra_estado enviada; "llego a Merida" = compra_estado llego_merida.',
   '25. No preguntes el precio de un pedido: lo pone el tabulador (precio_texto null salvo que el mensaje traiga un precio). Las cifras con palabras ("quince mil") valen: conviertelas. "deshaz" sin folio es deshacer con folio null.',
   '26. "puse X" o "meti X" sin concepto de gasto = aportacion del autor (intencion null salvo que diga capital); no preguntes si es capital. "pague X de guia, uber o envio" = gasto. "compra a Isaac: renglones" = compra; "orden de compra" = orden_compra.',
   '27. "Fulano pago X por transferencia a Isaac" o "a la cuenta de Javier" = pago con cuenta_destino_texto. "Fulano mando X a Karen" (dinero del cliente directo al proveedor) = pago_proveedor con cliente_texto. Varios clientes en un mensaje = una accion pedido por cliente; no preguntes si los registras por separado.',
+  ...REGLAS_AMPLIADAS,
 ].join('\n');
 
 function puntuar(texto: string, e: EntradaCatalogo): number {
@@ -87,6 +97,8 @@ export interface EntradaPrompt {
   texto: string;
   clientes: readonly EntradaCatalogo[];
   modelos: readonly EntradaCatalogo[];
+  /** Ultima pregunta del bot que espera respuesta, tomada de la MEMORIA DEL SERVIDOR (nunca del modelo). Sin ella el modelo no emite respuestas a preguntas. */
+  preguntaPendiente?: string | null;
 }
 
 export function construirUsuarioR1(e: EntradaPrompt): string {
@@ -97,6 +109,7 @@ export function construirUsuarioR1(e: EntradaPrompt): string {
     envolverMensaje(e.autor, e.fuente, limpio),
     `candidatos_clientes: ${JSON.stringify(clientes)}`,
     `candidatos_modelos: ${JSON.stringify(modelos)}`,
+    ...(e.preguntaPendiente ? [`pregunta_pendiente_del_bot: ${JSON.stringify(nombreSeguro(e.preguntaPendiente, 240))}`] : []),
   ].join('\n');
 }
 

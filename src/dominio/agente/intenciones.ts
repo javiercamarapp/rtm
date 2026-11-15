@@ -1,5 +1,7 @@
 // Catalogo de intenciones del agente. El modelo devuelve TEXTOS tal como se dijeron (nunca ids ni importes calculados);
 // el codigo resuelve alias y calcula. Los esquemas estrictos (zod) viven en aplicacion/agente/esquemas.ts y deben coincidir con estos tipos.
+import type { IntencionAmpliada } from './intenciones_ampliadas';
+import { ESCRITURA_AMPLIADA } from './intenciones_ampliadas';
 
 export const TIPOS_GASTO = ['guia', 'envio', 'uber', 'comision_terminal', 'servicio', 'otro'] as const;
 export type TipoGasto = (typeof TIPOS_GASTO)[number];
@@ -331,6 +333,12 @@ export const TIPOS_CONSULTA = [
   'por_pagar',
   /** Valuacion de quien pregunta y del otro socio, y como igualar (agente.valuacion_socios). */
   'valuacion',
+  /** Total por cobrar de los clientes (agente.consulta 'por_cobrar'). */
+  'por_cobrar',
+  /** Pedidos a credito por vencer y vencidos, con su fecha. */
+  'vencimientos',
+  /** Que modelos y sabores se estan vendiendo mas (ventas por modelo del periodo). */
+  'que_se_vende',
 ] as const;
 export type TipoConsulta = (typeof TIPOS_CONSULTA)[number];
 
@@ -390,7 +398,8 @@ export type Intencion =
   | IConsulta
   | IDeshacer
   | IAclarar
-  | INinguna;
+  | INinguna
+  | IntencionAmpliada;
 
 export type TipoIntencion = Intencion['tipo'];
 
@@ -401,15 +410,20 @@ export interface RespuestaExtractor {
   baja_certeza: boolean;
 }
 
-export const MAX_ACCIONES = 6;
-export const MAX_LINEAS = 30;
+/**
+ * Decision del dueno (14-nov): sin topes ocultos. MAX_ACCIONES y MAX_LINEAS son solo limites TECNICOS de cordura del esquema (una salida de 50 acciones o 200 renglones ya es un lote,
+ * y la salida se acota con los tokens proporcionales al mensaje); antes eran 6 y 30. Un mensaje que no quepa se divide por lineas (bloques_mensaje.ts) y el bot avisa cuantas leyo.
+ */
+export const MAX_ACCIONES = 50;
+export const MAX_LINEAS = 200;
 /** Un conteo fisico puede traer toda la lista de sabores de un modelo (la prueba de la Fase 0a uso 40): tope propio para no truncar ni partir el conteo en dos acciones. */
-export const MAX_LINEAS_CONTEO = 60;
+export const MAX_LINEAS_CONTEO = 200;
 
 /** Intenciones que escriben (todo lo demas es lectura o meta). Derivado del catalogo declarativo. */
 export const INTENCIONES_ESCRITURA: readonly TipoIntencion[] = [
   'pedido', 'pago', 'pago_proveedor', 'gasto', 'aportacion', 'reembolso_socio', 'retiro_utilidad', 'devolucion', 'paquete_perdido', 'compra', 'orden_compra', 'toma_omar', 'deshacer',
   'pedido_envio', 'pedido_cancelar', 'compra_recepcion', 'compra_estado', 'compra_aprobar', 'gasto_servicio', 'merma', 'conteo', 'cliente_alta', 'cliente_precio', 'acta_propuesta', 'acta_firma', 'lote_historico', 'pedido_menudeo', 'pago_pedido_menudeo',
+  ...ESCRITURA_AMPLIADA,
 ];
 
 /** Escrituras que mueven dinero o cuentas: se muestran en un resumen y exigen confirmacion explicita ANTES de registrarse. La toma de Omar ya exige la autorizacion de un socio; deshacer tiene su propio flujo. */

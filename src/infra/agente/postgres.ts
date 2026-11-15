@@ -423,7 +423,7 @@ export class NegocioAgenteDb implements NegocioAgente {
     else if (c.consulta === 'saldo_proveedor' && r.proveedorId) j = await q('proveedor', null, r.proveedorId);
     else if (c.consulta === 'estado_cuenta_socio') j = await q('estado_socio', null, c.sujeto_texto);
     else if (c.consulta === 'utilidad') j = await q('utilidad', null, c.periodo ?? 'mes');
-    else if (c.consulta === 'cartera') j = await q('cartera', null, null);
+    else if (c.consulta === 'cartera' || c.consulta === 'por_cobrar') j = await q('cartera', null, null);
     else if (c.consulta === 'por_pagar') j = await q('por_pagar', null, null);
     if (!j) return { titulo: 'Eso todavía no lo consulto desde Telegram', lineas: [{ tipo: 'texto', etiqueta: 'Dónde verlo', texto: 'En el software, en la sección correspondiente.' }] };
     return { titulo: j.titulo, lineas: aCifras(j.lineas) };
