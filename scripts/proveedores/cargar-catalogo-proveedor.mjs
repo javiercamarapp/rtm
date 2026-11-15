@@ -44,7 +44,7 @@ async function intentar(c, nombre, fn) {
   }
 }
 
-export async function cargar(c, { fuente, items, modo, aplicar, aliasWaka, propuestas, hoy }) {
+export async function cargar(c, { fuente, items, modo, aliasWaka, propuestas, hoy }) {
   const { catalogo, marcas } = await leerCatalogo(c);
   const plan = planificar(items, catalogo, { aliasWaka, propuestas, modo });
   const resumen = { fuente, modelosEnFuente: items.length, coinciden: plan.coincide.length, modelosCreados: 0, saboresEnFuente: 0, skusCreados: 0, skusYaExistian: 0, saboresNuevos: 0, porConfirmar: [], rechazados: [], costos: 0 };
@@ -95,6 +95,40 @@ export async function cargar(c, { fuente, items, modo, aplicar, aliasWaka, propu
   return resumen;
 }
 
+/** Una corrida completa en UNA transaccion con identidad de socio y canal 'importacion'. aplicar=false revierte. Devuelve el resumen. */
+export async function ejecutar({ url, fuente, items, aplicar, aliasWaka, propuestas }) {
+  const { default: pg } = await import('pg');
+  const c = new pg.Client({ connectionString: url });
+  await c.connect();
+  try {
+    await c.query('begin');
+    const socio = (await c.query("select id from seguridad.usuario where rol = 'socio' and activo order by id limit 1")).rows[0];
+    if (!socio) throw new Error('no hay un usuario socio activo');
+    await c.query("select set_config('request.jwt.claim.sub', $1, true), set_config('rtm.canal', 'importacion', true)", [socio.id]);
+    const hoy = (await c.query('select negocio.hoy() as d')).rows[0].d;
+    const r = await cargar(c, { fuente, items, modo: fuente, aplicar, aliasWaka, propuestas, hoy });
+    await c.query(aplicar ? 'commit' : 'rollback');
+    return r;
+  } catch (e) {
+    await c.query('rollback').catch(() => {});
+    throw e;
+  } finally {
+    await c.end().catch(() => {});
+  }
+}
+
+export function leerReglas() {
+  const aliasWaka = cargarAliasWaka(join(RAIZ, 'scripts', 'catalogo', 'alias-waka.json'));
+  const propuestas = new Map(JSON.parse(readFileSync(join(RAIZ, 'scripts', 'catalogo', 'marcas-modelos.json'), 'utf8')).modelos.map((m) => [m.id, m.marca]));
+  return { aliasWaka, propuestas };
+}
+
+export function imprimir(r, aplicar) {
+  console.log(`${aplicar ? 'APLICADO' : 'VERIFICADO (revertido)'}: ${JSON.stringify({ ...r, porConfirmar: r.porConfirmar.length, rechazados: r.rechazados.length })}`);
+  for (const p of r.porConfirmar) console.log(`  POR CONFIRMAR ${p.fuente}: ${p.motivo}; candidatos ${p.candidatos.join(', ')}`);
+  for (const p of r.rechazados) console.log(`  RECHAZADO (${p.tipo}) ${p.fuente}: ${p.motivo}`);
+}
+
 function argumentos(av) {
   const v = (n) => av.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
   return { aplicar: av.includes('--aplicar'), verificar: av.includes('--verificar'), fuente: v('fuente'), tienda: v('tienda') };
@@ -108,29 +142,12 @@ async function principal() {
   }
   if (!process.env.RTM_DB_URL) { console.error('Falta RTM_DB_URL.'); return 2; }
   const items = a.fuente === 'karen' ? itemsDeTienda(JSON.parse(readFileSync(a.tienda, 'utf8'))) : itemsDeIsaac(JSON.parse(readFileSync(join(RAIZ, 'scripts', 'catalogo', 'isaac-remate.json'), 'utf8')));
-  const aliasWaka = cargarAliasWaka(join(RAIZ, 'scripts', 'catalogo', 'alias-waka.json'));
-  const propuestas = new Map(JSON.parse(readFileSync(join(RAIZ, 'scripts', 'catalogo', 'marcas-modelos.json'), 'utf8')).modelos.map((m) => [m.id, m.marca]));
-  const { default: pg } = await import('pg');
-  const c = new pg.Client({ connectionString: process.env.RTM_DB_URL });
-  await c.connect();
   try {
-    await c.query('begin');
-    const socio = (await c.query("select id from seguridad.usuario where rol = 'socio' and activo order by id limit 1")).rows[0];
-    if (!socio) throw new Error('no hay un usuario socio activo');
-    await c.query("select set_config('request.jwt.claim.sub', $1, true), set_config('rtm.canal', 'importacion', true)", [socio.id]);
-    const hoy = (await c.query('select negocio.hoy() as d')).rows[0].d;
-    const r = await cargar(c, { fuente: a.fuente, items, modo: a.fuente, aplicar: a.aplicar, aliasWaka, propuestas, hoy });
-    await c.query(a.aplicar ? 'commit' : 'rollback');
-    console.log(`${a.aplicar ? 'APLICADO' : 'VERIFICADO (revertido)'}: ${JSON.stringify({ ...r, porConfirmar: r.porConfirmar.length, rechazados: r.rechazados.length })}`);
-    for (const p of r.porConfirmar) console.log(`  POR CONFIRMAR ${p.fuente}: ${p.motivo}; candidatos ${p.candidatos.join(', ')}`);
-    for (const p of r.rechazados) console.log(`  RECHAZADO (${p.tipo}) ${p.fuente}: ${p.motivo}`);
+    imprimir(await ejecutar({ url: process.env.RTM_DB_URL, fuente: a.fuente, items, aplicar: a.aplicar, ...leerReglas() }), a.aplicar);
     return 0;
   } catch (e) {
-    await c.query('rollback').catch(() => {});
     console.error(`Error: ${String(e.message ?? e).split('\n')[0]}`);
     return 1;
-  } finally {
-    await c.end().catch(() => {});
   }
 }
 
