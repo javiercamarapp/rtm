@@ -194,7 +194,7 @@ body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { widt
 .rtm-aviso-linea[data-tono='error'] { border-color: color-mix(in srgb, var(--rtm-bad) 25%, transparent); background: var(--rtm-tinte-bad); }
 .rtm-aviso-linea > strong { flex: none; font-weight: var(--rtm-peso-fuerte); }
 .rtm-aviso-linea > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.rtm-aviso-linea > .rtm-aviso-v2-marca { width: 14px; height: 14px; font-size: 10px; }
+.rtm-aviso-linea > .rtm-aviso-v2-marca { width: 14px; height: 14px; font-size: 11px; }
 .rtm-barra-filtros-v2 > .rtm-aviso-linea + .rtm-aviso-linea, .rtm-barra-filtros-v2 > .rtm-aviso-linea + .rtm-chip-v2 { margin-left: 0; }
 /* Razones dentro de la barra de filtros: texto chico, una fila y sin caja. */
 .rtm-barra-filtros-v2 .rtm-ratios { flex-wrap: nowrap; white-space: nowrap; gap: 0 14px; font-size: var(--rtm-t-pequeno); }
