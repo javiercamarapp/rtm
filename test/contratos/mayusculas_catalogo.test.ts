@@ -38,12 +38,25 @@ describe('mayusculas de marcas, modelos y sabores en la interfaz', () => {
     expect(fallas, `Pasa el nombre por nombreVape, marcaMayus o saborMayus (src/dominio/formato):\n${fallas.join('\n')}`).toEqual([]);
   });
 
+  it('los filtros y selectores de marca no pintan el nombre como hijo suelto de una lista de marcas', () => {
+    // Lista de marcas en un .map con el nombre como hijo directo ({m}) o como etiqueta cruda, sin formateador ni clase de presentacion.
+    const SUELTO = /(?:marcas|nombresAtajo|atajos|seleccion|elegidas)\.map\(\((\w+)\) =>[^\n]*(?:>\{\1\}<|etiqueta: \1[,}])/;
+    const fallas: string[] = [];
+    for (const f of tsx) {
+      readFileSync(f, 'utf8').split('\n').forEach((linea, i) => {
+        if (IDENTIDAD.test(linea) && !/aria-pressed/.test(linea)) return;
+        if (SUELTO.test(linea) && !/rtm-may|marcaMayus/.test(linea)) fallas.push(`${relative(RAIZ, f)}:${i + 1} ${linea.trim().slice(0, 120)}`);
+      });
+    }
+    expect(fallas, `Marca sin mayusculas en un filtro:\n${fallas.join('\n')}`).toEqual([]);
+  });
+
   it('los componentes compartidos de modelo y marca aplican el formateador o la clase de presentacion', () => {
     const modelo = readFileSync(join(RAIZ, 'src/ui/componentes/modelo.tsx'), 'utf8');
     expect(modelo).toMatch(/nombreVape\(modelo\)/);
     expect(modelo).toMatch(/marcaMayus\(marca\)/);
     const filtro = readFileSync(join(RAIZ, 'src/ui/componentes/filtro-catalogo.tsx'), 'utf8');
-    expect(filtro.match(/rtm-may-marca/g)?.length ?? 0).toBeGreaterThanOrEqual(2); // lista de marcas y chips seleccionados
+    expect(filtro.match(/rtm-may-marca/g)?.length ?? 0).toBeGreaterThanOrEqual(3); // atajos, lista de marcas y chips seleccionados
   });
 
   it('la hoja de mayusculas existe, usa uppercase y se carga en el layout', () => {

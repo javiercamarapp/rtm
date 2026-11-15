@@ -39,8 +39,8 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
       <KpiLinea etiquetaAria="Resumen por marca" celdas={[
         { id: 'n', etiqueta: 'Marcas activas', valor: sd ? null : String(r.marcas.length), categoria: 1, nota: sd ? undefined : `${r.marcas.reduce((a, x) => a + x.modelos, 0)} modelos con existencia` },
         { id: 'v', etiqueta: 'Valor total', valor: sd ? null : m(total), categoria: 2, nota: sd ? undefined : `${pz(piezas)} piezas` },
-        { id: 'may', etiqueta: 'Marca de mayor valor', valor: mayor ? mayor.marca : null, categoria: 3, nota: mayor ? `${m(mayor.valor_cent)} · ${pctTexto(partePct(mayor.valor_cent, total)) ?? ''}` : undefined },
-        { id: 'cov', etiqueta: 'Marca con menor cobertura', valor: menorCob ? menorCob.marca : null, categoria: 4, nota: menorCob ? textoDias(menorCob.cobertura_media_dias) : undefined },
+        { id: 'may', etiqueta: 'Marca de mayor valor', valor: mayor ? marcaMayus(mayor.marca) : null, categoria: 3, nota: mayor ? `${m(mayor.valor_cent)} · ${pctTexto(partePct(mayor.valor_cent, total)) ?? ''}` : undefined },
+        { id: 'cov', etiqueta: 'Marca con menor cobertura', valor: menorCob ? marcaMayus(menorCob.marca) : null, categoria: 4, nota: menorCob ? textoDias(menorCob.cobertura_media_dias) : undefined },
         { id: 'deu', etiqueta: 'Deuda con proveedores', valor: r.cuentas_proveedor.length === 0 ? null : m(deuda), categoria: 5, nota: 'Deuda de la empresa; sin pedidos del socio pendientes' },
       ]} />
       {!sd && (

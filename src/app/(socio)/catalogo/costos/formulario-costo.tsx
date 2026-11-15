@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { ResultadoAlta, SolicitudCosto } from '@/aplicacion/catalogo/alta';
 import { PROVEEDORES, validarCosto, type CampoCosto } from '@/dominio/catalogo/alta';
-import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, nombreVape } from '@/dominio/formato';
 import { Campo, Casilla, EcoResultado } from '@/ui/componentes/campo';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
 import { usarAlta } from '../../alta/usar-alta';
@@ -60,7 +60,7 @@ export function FormularioCosto({ modelos, hoy, modeloInicial, proveedorInicial 
       <div className="rtm-form-fila">
         <Campo etiqueta="Proveedor" control="seleccion" requerido valor={v.proveedor} onCambio={cambia('proveedor')} error={errores.proveedor} testid="campo-proveedor" opciones={PROVEEDORES.map((p) => ({ valor: p, texto: p }))} />
         <div className="rtm-campo-ancho">
-          <Campo etiqueta="Modelo" control="seleccion" requerido valor={v.modeloId} onCambio={cambia('modeloId')} error={errores.modelo} testid="campo-modelo" opciones={modelos.map((m) => ({ valor: String(m.id), texto: m.nombre }))} />
+          <Campo etiqueta="Modelo" control="seleccion" requerido valor={v.modeloId} onCambio={cambia('modeloId')} error={errores.modelo} testid="campo-modelo" opciones={modelos.map((m) => ({ valor: String(m.id), texto: nombreVape(m.nombre) }))} />
         </div>
       </div>
       <p className="rtm-nota" data-testid="costo-vigente">

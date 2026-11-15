@@ -84,6 +84,18 @@
 .rtm-chip-detalle { font-size: 11px; color: var(--rtm-chip-texto); }
 .rtm-chip .rtm-sin-dato { font-weight: 400; color: var(--rtm-chip-texto); }
 .rtm-pulso .rtm-chip, .rtm-pulso-movil .rtm-chip { flex: none; }
+/* Indicador que alterna Isaac y Karen: misma pildora, con dos puntos que dicen cual se ve. */
+.rtm-chip-rotativo { display: inline-flex; align-items: center; gap: var(--rtm-e-1); flex: none; }
+.rtm-chip-rotativo-vista[data-fase='sale'] { animation: rtm-chip-sale 160ms ease-in forwards; }
+.rtm-chip-rotativo-vista[data-fase='entra'] { animation: rtm-chip-entra 220ms ease-out; }
+.rtm-chip-rotativo-puntos { display: inline-flex; align-items: center; gap: 2px; }
+.rtm-chip-punto { position: relative; width: 14px; height: 14px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.rtm-chip-punto::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 1px solid var(--rtm-chip-texto); background: transparent; }
+.rtm-chip-punto[aria-pressed='true']::after { background: var(--rtm-ink); border-color: var(--rtm-ink); }
+.rtm-chip-punto:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 1px; border-radius: 50%; }
+@keyframes rtm-chip-sale { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-4px); } }
+@keyframes rtm-chip-entra { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rtm-chip-rotativo-vista[data-fase] { animation: none; } }
 .rtm-barra-acciones { display: flex; align-items: center; gap: var(--rtm-e-2); flex: none; }
 .rtm-menu-movil { display: none; }
 
