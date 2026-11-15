@@ -1,11 +1,14 @@
 import Link from 'next/link';
+import { Logo } from '@/ui/logo/logo';
 
-/** Pantalla de carga: una sola linea de texto con un punto discreto. Sin bloques vacios ni altura reservada, para que no haya saltos de layout. */
-export function PaginaCargando({ etiqueta = 'Cargando' }: { etiqueta?: string }) {
+/** Pantalla de carga: el logo de RTM centrado con una animacion sutil (pulso y brillo; estatico con movimiento reducido). Sin texto visible: la etiqueta solo la lee el lector de pantalla.
+ *  Aparece tras ~150 ms (retardo en CSS), asi que una carga rapida no parpadea. `completa` cubre toda la ventana (arranque de la app); sin ella centra en el area de contenido. */
+export function PaginaCargando({ etiqueta = 'Cargando', completa = false }: { etiqueta?: string; completa?: boolean }) {
   return (
-    <p className="rtm-cargando" role="status" aria-live="polite" aria-busy="true" data-testid="pagina-cargando">
-      <span className="rtm-punto-carga" aria-hidden="true" />{etiqueta}…
-    </p>
+    <div className="rtm-cargando" data-completa={completa || undefined} role="status" aria-live="polite" aria-busy="true" data-testid="pagina-cargando">
+      <span className="rtm-cargando-logo" aria-hidden="true"><Logo alto={36} /></span>
+      <span className="rtm-solo-lectores">{etiqueta}</span>
+    </div>
   );
 }
 

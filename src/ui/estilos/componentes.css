@@ -113,7 +113,16 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
   .rtm-campo { font-size: 16px; min-height: 44px; }
 }
 
-.rtm-cargando { margin: 0; padding: var(--rtm-e-2) 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); }
+/* Pantalla de carga con el logo de RTM: aparece tras 150 ms (sin parpadeo en cargas rapidas), pulso y brillo suaves. */
+.rtm-cargando { display: grid; place-items: center; min-height: min(60dvh, 420px); margin: 0; padding: var(--rtm-e-6) 0; color: var(--rtm-ink); background: transparent; opacity: 0; animation: rtm-carga-aparece 200ms ease-out 150ms both; }
+.rtm-cargando[data-completa] { position: fixed; inset: 0; z-index: var(--rtm-z-carga); min-height: 0; padding: 0; background: var(--rtm-chrome); }
+.rtm-cargando-logo { position: relative; display: inline-flex; overflow: hidden; border-radius: var(--rtm-r-2); animation: rtm-carga-pulso 1600ms ease-in-out infinite; }
+.rtm-cargando-logo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, color-mix(in srgb, var(--rtm-chrome) 70%, transparent) 50%, transparent 65%); transform: translateX(-100%); animation: rtm-carga-brillo 1600ms ease-in-out infinite; }
+@keyframes rtm-carga-aparece { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rtm-carga-pulso { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.72; transform: scale(0.97); } }
+@keyframes rtm-carga-brillo { 0% { transform: translateX(-100%); } 60%, 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .rtm-cargando-logo, .rtm-cargando-logo::after { animation: none; } .rtm-cargando { animation-duration: 1ms; } }
+:root[data-movimiento='reduced'] .rtm-cargando-logo, :root[data-movimiento='off'] .rtm-cargando-logo, :root[data-movimiento='reduced'] .rtm-cargando-logo::after, :root[data-movimiento='off'] .rtm-cargando-logo::after { animation: none; }
 
 /* Estados de los campos: placeholder legible (>= 4.5:1), foco visible con borde de tinta y deshabilitado reconocible sin depender solo del color. */
 .rtm-campo::placeholder { color: var(--rtm-ink-3); opacity: 1; }
