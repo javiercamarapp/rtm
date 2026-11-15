@@ -69,7 +69,7 @@ export function clavesTotalesHuerfanas(columnas: readonly { id: string }[], celd
   return Object.keys(celdas).filter((k) => !ids.has(k));
 }
 
-/** Tabla de datos con roles ARIA (nunca la etiqueta de tabla cruda): cifras a la derecha, estados de carga (esqueleto con la forma final), vacio y error con accion.
+/** Tabla de datos con roles ARIA (nunca la etiqueta de tabla cruda): cifras a la derecha, estados de carga (una linea de texto), vacio y error con accion.
  *  v2 enterprise (todo opcional): densidad, encabezado y primera columna fijos, bloques de columnas, grupos colapsables, pie de totales, resaltado de cero y negativos,
  *  pestanas con contador, busqueda, paginacion y exportacion. */
 export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo', vacio, error, densidad = 'normal', plana, pegajosa, primeraFija, totales, agrupar, pestanas, interactiva }: Props<T>) {
@@ -127,15 +127,7 @@ export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo
 
   let cuerpo: ReactNode;
   if (cargando) {
-    cuerpo = [0, 1, 2, 3, 4].map((i) => (
-      <div key={i} className="rtm-dt-fila" role="row" data-esqueleto="true">
-        {columnas.map((c) => (
-          <div key={c.id} role="cell" className="rtm-dt-celda" {...atributosCelda(c)}>
-            <span className="rtm-esqueleto" aria-hidden="true" />
-          </div>
-        ))}
-      </div>
-    ));
+    cuerpo = <p className="rtm-dt-cargando" data-cargando="true"><span className="rtm-punto-carga" aria-hidden="true" />Cargando…</p>;
   } else if (agrupar) {
     const grupos = new Map<string, T[]>();
     for (const f of filas) {

@@ -3,11 +3,13 @@
 // Contenido del panel "Explicar este numero": encabezado compacto y secciones colapsables con indice. Solo pinta lo que armarVista entrego (sin secciones vacias).
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ordenarDetalle, paginar, csvDeDetalle, nombreArchivoCsv, POR_PAGINA, type ClaveOrden, type Sentido } from '@/dominio/explicar/tabla';
-import { descripcionSerie, TITULOS, type FilaDetalle, type IdSeccion, type Modo, type Vista } from '@/dominio/explicar/vista';
+import { compactoMxn, descripcionSerie, nombresSimilares, TITULOS, type FilaDetalle, type IdSeccion, type Modo, type Vista } from '@/dominio/explicar/vista';
 import { AreaSerie, Cascada, BarrasDelta } from '@/ui/graficas';
+import { leerModoMovimiento } from '@/ui/movimiento/cliente';
 import { GraficaLinea } from '@/ui/graficas/linea';
 
-const ABIERTAS_AL_INICIO: readonly IdSeccion[] = ['definicion', 'origen', 'visual', 'comprobacion', 'detalle', 'supuestos'];
+/** Al abrir: la primera seccion y, si existen, 'De donde sale' y 'Comprobacion'. El resto queda cerrado. */
+const ABIERTAS_SIEMPRE: readonly IdSeccion[] = ['origen', 'comprobacion'];
 
 const Chevron = ({ abierta }: { abierta: boolean }) => (
   <svg className="xp-chevron" data-abierta={abierta} width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -17,8 +19,9 @@ export function IconoCerrar() {
   return <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
 }
 
-/** Encabezado: cifra grande, nombre, definicion en una linea, periodo o corte y estado en palabra. */
+/** Encabezado compacto: estado y corte en una linea, cifra de 30 px y UN solo nombre (si nombre y definicion son casi iguales, solo la definicion corta y el nombre completo en title). */
 export function EncabezadoCifra({ vista, idTitulo }: { vista: Vista; idTitulo: string }) {
+  const repetido = vista.definicion !== null && nombresSimilares(vista.titulo, vista.definicion);
   return (
     <div className="xp-cifra-bloque">
       <div className="xp-meta">
@@ -27,8 +30,8 @@ export function EncabezadoCifra({ vista, idTitulo }: { vista: Vista; idTitulo: s
         {vista.corte && <span className="xp-periodo">Corte {vista.corte}</span>}
       </div>
       <p className="xp-cifra rtm-num" data-testid="explicar-cifra">{vista.valorTexto ?? <span className="xp-sin-dato">Sin dato</span>}</p>
-      <h2 id={idTitulo} className="xp-titulo">{vista.titulo}</h2>
-      {vista.definicion && <p className="xp-definicion-corta">{vista.definicion}</p>}
+      <h2 id={idTitulo} className="xp-titulo" title={vista.titulo}>{repetido ? vista.definicion : vista.titulo}</h2>
+      {vista.definicion && !repetido && <p className="xp-definicion-corta">{vista.definicion}</p>}
     </div>
   );
 }
@@ -43,7 +46,9 @@ function Seccion({ id, abierta, alternar, children, cuenta }: { id: IdSeccion; a
           <Chevron abierta={abierta} />
         </button>
       </h3>
-      <div className="xp-seccion-c" id={`xp-${id}-c`} hidden={!abierta}>{children}</div>
+      <div className="xp-seccion-env" aria-hidden={!abierta || undefined} {...(abierta ? {} : { inert: true })}>
+        <div className="xp-seccion-c" id={`xp-${id}-c`}>{children}</div>
+      </div>
     </section>
   );
 }
@@ -87,7 +92,7 @@ function VisualCifra({ vista }: { vista: Vista }) {
   const v = vista.visual;
   if (!v) return null;
   if (v.tipo === 'cascada') {
-    return <Cascada titulo={v.titulo} descripcion={`De ${v.pasos.length - 1} partidas a ${vista.valorTexto ?? 'la cifra'}`} unidad={v.unidad} pasos={v.pasos} procedencia="observado" pie="Los importes son los de la base; el puente solo los acomoda." />;
+    return <Cascada titulo={v.titulo} descripcion={`De ${v.pasos.length - 1} partidas a ${vista.valorTexto ?? 'la cifra'}`} unidad={v.unidad} pasos={v.pasos.map((p) => ({ ...p, textoCompacto: compactoMxn(p.valor, p.tipo === 'delta') }))} procedencia="observado" pie="Los importes son los de la base; el puente solo los acomoda." />;
   }
   if (v.tipo === 'barras') {
     return (<>
@@ -172,21 +177,42 @@ function TablaDetalle({ filas, cifra }: { filas: FilaDetalle[]; cifra: string })
 
 /** Cuerpo del panel: indice corto de secciones y secciones colapsables. */
 export function CuerpoCifra({ vista, modo }: { vista: Vista; modo: Modo }) {
-  const [abiertas, setAbiertas] = useState<ReadonlySet<IdSeccion>>(() => new Set(ABIERTAS_AL_INICIO.filter((s) => vista.secciones.includes(s))));
+  const [abiertas, setAbiertas] = useState<ReadonlySet<IdSeccion>>(() => new Set([vista.secciones[0], ...ABIERTAS_SIEMPRE.filter((x) => vista.secciones.includes(x))].filter((x): x is IdSeccion => x !== undefined)));
+  const [activa, setActiva] = useState<IdSeccion | null>(vista.secciones[0] ?? null);
   const raiz = useRef<HTMLDivElement>(null);
   const alternar = useCallback((id: IdSeccion) => setAbiertas((a) => { const n = new Set(a); if (n.has(id)) n.delete(id); else n.add(id); return n; }), []);
+  // Chip: abre la seccion si estaba cerrada, la marca como activa y baja a ella con scroll suave (sin animar con movimiento reducido).
   const ir = useCallback((id: IdSeccion) => {
     setAbiertas((a) => new Set(a).add(id));
-    requestAnimationFrame(() => raiz.current?.querySelector<HTMLElement>(`#xp-${id}`)?.scrollIntoView?.({ block: 'start' }));
+    setActiva(id);
+    requestAnimationFrame(() => raiz.current?.querySelector<HTMLElement>(`#xp-${id}`)?.scrollIntoView?.({ block: 'start', behavior: leerModoMovimiento() === 'full' ? 'smooth' : 'auto' }));
   }, []);
   useEffect(() => { raiz.current?.scrollTo?.({ top: 0 }); }, [vista.cifra]);
+  // El chip activo sigue a la seccion que va pasando bajo el indice.
+  useEffect(() => {
+    const cont = raiz.current;
+    if (!cont || typeof IntersectionObserver === 'undefined') return;
+    const visibles = new Set<IdSeccion>();
+    const obs = new IntersectionObserver((entradas) => {
+      for (const e of entradas) {
+        const id = e.target.id.replace(/^xp-/, '') as IdSeccion;
+        if (e.isIntersecting) visibles.add(id); else visibles.delete(id);
+      }
+      const primera = vista.secciones.find((x) => visibles.has(x));
+      if (primera) setActiva(primera);
+    }, { root: cont, rootMargin: '-48px 0px -55% 0px', threshold: 0 });
+    for (const id of vista.secciones) { const el = cont.querySelector(`#xp-${id}`); if (el) obs.observe(el); }
+    return () => obs.disconnect();
+  }, [vista.secciones]);
   const s = (id: IdSeccion) => vista.secciones.includes(id);
   const ab = (id: IdSeccion) => abiertas.has(id);
   return (
-    <div className="xp-cuerpo" ref={raiz} data-testid="explicar-cuerpo">
+    <div className="xp-cuerpo" ref={raiz} data-testid="explicar-cuerpo" tabIndex={0} aria-label="Contenido de la explicación">
       {vista.secciones.length > 2 && (
         <nav className="xp-indice" aria-label="Secciones de esta explicación">
-          {vista.secciones.map((id) => <button key={id} type="button" className="xp-chip" onClick={() => ir(id)}>{TITULOS[id]}</button>)}
+          <div className="xp-indice-lista">
+            {vista.secciones.map((id) => <button key={id} type="button" className="xp-chip" aria-current={activa === id ? 'true' : undefined} onClick={() => ir(id)}>{TITULOS[id]}</button>)}
+          </div>
         </nav>
       )}
       {s('definicion') && (
