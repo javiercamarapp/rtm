@@ -346,5 +346,18 @@ begin
 end $$;
 
 -- Habilita las extensiones solo si estan disponibles y deja los jobs creados pero desactivados. (La verificacion de pg_cron/pg_net no aborta la migracion.)
-select reloj.preparar_extensiones();
-select reloj.sembrar_jobs();
+-- Inline: el rol de `supabase db push` no es 'servidor' ni 'postgres', asi que no puede pasar por la guardia exigir_sistema().
+-- Los jobs se siembran DESACTIVADOS y la sincronizacion con pg_cron la hace reloj.sembrar_jobs() desde el servidor al encender.
+do $reloj_ini$
+begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_net') then
+    begin create extension if not exists pg_net; exception when others then raise notice 'pg_net no se pudo habilitar: %', sqlerrm; end;
+  end if;
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    begin create extension if not exists pg_cron; exception when others then raise notice 'pg_cron no se pudo habilitar: %', sqlerrm; end;
+  end if;
+  insert into reloj.job (clave, expresion_cron, comando, descripcion, activo) values
+    ('rtm_reloj_latido', '*/5 * * * *', 'select reloj.tick(''pg_cron'')', 'Cuenta la ejecucion y, con reloj_http encendido, pide el latido de la app', false),
+    ('rtm_reloj_vigia', '*/15 * * * *', 'select reloj.verificar()', 'Detecta el reloj caido (segundo job, independiente del tick)', false)
+    on conflict (clave) do update set expresion_cron = excluded.expresion_cron, comando = excluded.comando, descripcion = excluded.descripcion;
+end $reloj_ini$;
