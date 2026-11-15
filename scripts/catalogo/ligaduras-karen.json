@@ -42,43 +42,47 @@
    "tienda": "iPlay X-Box Pro",
    "catalogoId": 98,
    "catalogo": "IPLAY Box Pro 15K",
-   "revisar": true,
+   "revisar": false,
    "candidatosSecundarios": [
     100
-   ]
+   ],
+   "confirmadaPorDueno": "15-nov"
   },
   {
    "handle": "lost-mary-ultra-sonic-35k",
    "tienda": "Lost Mary Ultrasonic 35K",
    "catalogoId": 105,
    "catalogo": "Lost Mary 35K",
-   "revisar": true,
+   "revisar": false,
    "candidatosSecundarios": [
     149
-   ]
+   ],
+   "confirmadaPorDueno": "15-nov"
   },
   {
    "handle": "waka-pro-30k",
    "tienda": "Waka Pro 30K",
    "catalogoId": 151,
    "catalogo": "Waka 30K",
-   "revisar": true,
+   "revisar": false,
    "candidatosSecundarios": [
     87,
     154,
     155
-   ]
+   ],
+   "confirmadaPorDueno": "15-nov"
   },
   {
    "handle": "vape-waka-sopro-15-000",
    "tienda": "Waka Sopro 15,000",
    "catalogoId": 120,
    "catalogo": "Waka 15K",
-   "revisar": true,
+   "revisar": false,
    "candidatosSecundarios": [
     90
    ],
-   "nota": "segun el diccionario Waka (sopro = 15K); Waka DM 15K (90) queda como candidato secundario"
+   "nota": "segun el diccionario Waka (sopro = 15K); Waka DM 15K (90) queda como candidato secundario",
+   "confirmadaPorDueno": "15-nov"
   }
  ],
  "altas": [

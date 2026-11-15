@@ -203,7 +203,8 @@
     "Dragon Fruit Banana Berry",
     "Apple Peach",
     "Pineapple Coconut Ice"
-   ]
+   ],
+   "nota": "\"Tropical Spoal\" se deja tal cual: el banner trae ese nombre (verificado por el dueno)."
   },
   {
    "pagina": 9,
@@ -346,12 +347,13 @@
    "puffs": 6000,
    "sabores": [
     "Rainbow Sugar",
-    "Los Ice",
+    "Lush Ice",
     "Blue Razz",
     "Peach Mint Iced Tea",
     "Aloe Grape",
     "Rose Lychee"
-   ]
+   ],
+   "nota": "El banner escribe \"Los Ice\"; el dueno confirmo (15-nov) que es LUSH ICE."
   },
   {
    "pagina": 17,

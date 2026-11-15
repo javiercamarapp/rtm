@@ -58,11 +58,11 @@ describe('ligaduras de Karen confirmadas por el dueno', () => {
     expect(r.nuevo).toHaveLength(0);
     expect(r.porConfirmar).toHaveLength(0);
   });
-  it('el archivo liga 9 modelos, marca 4 por revisar y da de alta IPLAY BIG MAX aparte', () => {
+  it('el archivo liga 9 modelos, todos confirmados por el dueno, y da de alta IPLAY BIG MAX aparte', () => {
     const j = JSON.parse(readFileSync(new URL('../../../scripts/catalogo/ligaduras-karen.json', import.meta.url), 'utf8'));
     expect(j.ligaduras).toHaveLength(9);
     expect(j.altas[0]).toMatchObject({ handle: 'big-max', nombre: 'IPLAY BIG MAX', puffs: 1000 });
-    expect(j.ligaduras.filter((l: { revisar: boolean }) => l.revisar)).toHaveLength(4);
+    expect(j.ligaduras.filter((l: { revisar: boolean }) => l.revisar)).toHaveLength(0);
   });
 });
 
@@ -95,6 +95,13 @@ describe('sabores y marcas', () => {
 });
 
 describe('catalogo Remate de Isaac', () => {
+  it('Geek Bar 6000 trae Lush Ice (no Los Ice) y Aroma King no agrega el sabor de la botella', () => {
+    const j = JSON.parse(readFileSync(new URL('../../../scripts/catalogo/isaac-remate.json', import.meta.url), 'utf8'));
+    const g = j.modelos.find((m: { titulo: string }) => m.titulo === 'GEEK BAR 6000');
+    expect(g.sabores).toContain('Lush Ice');
+    expect(g.sabores).not.toContain('Los Ice');
+    expect(j.modelos.find((m: { titulo: string }) => m.titulo === 'AROMA KING 3000').sabores).not.toContain('Cool Mint');
+  });
   const json = JSON.parse(readFileSync(new URL('../../../scripts/catalogo/isaac-remate.json', import.meta.url), 'utf8'));
   it('trae los 23 modelos del PDF y Waka Blast 45K aparte, sin precios en los datos', () => {
     expect(json.modelos.filter((m: { pagina: number | null }) => m.pagina !== null)).toHaveLength(23);
