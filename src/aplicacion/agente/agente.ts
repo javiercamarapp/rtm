@@ -29,6 +29,7 @@ import { mensajeSaldosSocios, textoTicketDuplicado, textoTicketLigado } from './
 import { MotorConversacion, type AlmacenConversacion, type EntornoConversacion, type OperacionCompleta as OperacionConversacion, type ResultadoRegistro, type ResumenPedidos, type Salida as SalidaConversacion } from './conversacion';
 import { instruccionDeIntencion, OPERACIONES_POR_CONVERSACION } from '@/dominio/agente/slots_desde_intencion';
 import { listoParaGrupo, type ModuloAprendizaje, type SalidaAprendizaje } from './aprendizaje';
+import type { ModuloCobranza } from './cobranza';
 import { intencionDeSlots } from './slots_a_intencion';
 import * as P from './plantillas';
 import * as F from './plantillas_frenos';
@@ -121,6 +122,8 @@ export interface DependenciasAgente {
   conversacion?: { almacen: AlmacenConversacion; resumenes?: ResumenPedidos; entorno?: Omit<EntornoConversacion, 'catalogo'> };
   /** Aprendizaje y alta asistida (alias, jerga, ejemplos anonimizados, sabores parecidos, altas, recargo sugerido). Sin el, el agente conserva su camino anterior. */
   aprendizaje?: ModuloAprendizaje;
+  /** Cobranza por Telegram: respuestas del socio a lo que se debe (pago, promesa, atraso, disputa, pausa), con la pregunta que el servidor recuerda. Sin el, el agente conserva su camino anterior. */
+  cobranza?: ModuloCobranza;
 }
 
 export type ResultadoUpdate =
@@ -629,6 +632,14 @@ export class AgenteTelegram {
         return { estado: 'procesado', acciones: 1 };
       }
     }
+    // Cobranza: atajos del servidor y la respuesta a la pregunta que el SERVIDOR dejo abierta (cuenta, cifra, fecha, dias, motivo); nunca llama a la IA.
+    if (!cmd && this.d.cobranza && autor.rol === 'socio' && !reenviado && !esEdicion) {
+      const s = await this.d.cobranza.interceptar({ chatId: msg.chat.id, autor, texto, clave: `tg:${update.update_id}` });
+      if (s !== null) {
+        await this.publicarAprendizaje(chats, s);
+        return { estado: 'procesado', acciones: s.textos.length };
+      }
+    }
     // Aprendizaje: respuestas si/no a una pregunta que el SERVIDOR recuerda en este chat (sabores parecidos, alias, recargo) y atajos del codigo; sin conversacion abierta ni comando.
     if (!cmd && this.d.aprendizaje && autor.rol === 'socio' && !reenviado && !esEdicion) {
       const s = await this.d.aprendizaje.interceptar({ chatId: msg.chat.id, autor, texto, clave: `tg:${update.update_id}` });
@@ -984,6 +995,12 @@ export class AgenteTelegram {
             continue;
           }
         }
+      }
+      if (this.d.cobranza?.maneja(declarada.tipo) && ctx.autor.rol === 'socio' && ctx.fuente === 'texto') {
+        const s = await this.d.cobranza.manejarIntencion(declarada, { chatId: ctx.chatId, autor: ctx.autor, texto: ctx.texto, clave: `tg:${ctx.updateId}:${i}` });
+        await this.publicarAprendizaje(ctx.chats, s);
+        hechas++;
+        continue;
       }
       // Intenciones ampliadas aun sin puerta de ejecucion (estado 'extraido'): se entendio, se valido y NO se registra nada (jamas se inventa una escritura).
       if (this.d.aprendizaje?.maneja(declarada.tipo) && ctx.autor.rol === 'socio' && ctx.fuente === 'texto') {

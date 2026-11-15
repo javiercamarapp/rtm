@@ -280,7 +280,8 @@ begin
             jsonb_strip_nulls(jsonb_build_object('pedidos', to_jsonb(v_ped), 'monto_cent', v_monto, 'cuenta', v_cuenta, 'fecha', coalesce(v_fecha, (select max(promesa_fecha) from cobranza.seguimiento where pedido_id = any (v_ped) and v_accion in ('prometio', 'se_atrasa'))),
               'dias', v_dias, 'motivo', v_motivo)), v_antes, p_autor, left(p_args ->> 'cita', 200), p_clave, v_pgfolio) returning id into v_id;
   if v_accion = 'extender_plazo' then update cobranza.extension_plazo set respuesta_id = v_id where respuesta_id is null and pedido_id = any (v_ped) and creado_at >= v_t0; end if;
-  v_res := jsonb_build_object('estado', 'ok', 'folio', v_cob, 'respuesta_id', v_id, 'accion', v_accion, 'aviso_grupo', v_aviso, 'siguiente', v_sig, 'cliente', v_nombre, 'pago_folio', v_pgfolio);
+  v_res := jsonb_build_object('estado', 'ok', 'folio', v_cob, 'respuesta_id', v_id, 'accion', v_accion, 'aviso_grupo', v_aviso, 'siguiente', v_sig, 'cliente', v_nombre, 'pago_folio', v_pgfolio,
+    'promesa_fecha', case when v_accion in ('prometio', 'se_atrasa') then (select max(promesa_fecha) from cobranza.seguimiento where pedido_id = any (v_ped)) end);
   perform seguridad.terminar_operacion(p_clave, v_res);
   return v_res;
 end $$;

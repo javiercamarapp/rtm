@@ -32,6 +32,8 @@ function urlAppOpcional(): string | null {
 }
 import { AlmacenConversacionDb, ResumenPedidosDb } from '@/infra/agente/conversacion_postgres';
 import { ModuloAprendizaje } from '@/aplicacion/agente/aprendizaje';
+import { ModuloCobranza } from '@/aplicacion/agente/cobranza';
+import { PuertoCobranzaDb } from '@/infra/agente/cobranza_postgres';
 import { PuertoAprendizajeDb } from '@/infra/agente/aprendizaje_postgres';
 import { AvisosDb, ContextoNegocioDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
 import { lectorDesdeEntorno } from '@/infra/proveedores/lector_http';
@@ -53,6 +55,8 @@ export interface DepsProduccion {
   conversacion?: boolean;
   /** Aprendizaje y alta asistida (por omision encendido): alias con confirmacion, sabores parecidos, altas de cliente, sabor y modelo, recargo sugerido. `false` lo apaga. */
   aprendizaje?: boolean;
+  /** Cobranza (por omision encendida): respuestas del socio a lo que se debe. Escribe solo con agente_escritura encendido; el reloj y los avisos programados tienen su propio interruptor (cobranza_activa, apagado). `false` la quita. */
+  cobranza?: boolean;
   entorno?: Record<string, string | undefined>;
 }
 
@@ -81,6 +85,7 @@ export function crearAgenteProduccion(d: DepsProduccion): AgenteTelegram {
     almacen: new AlmacenAgenteDb(d.sql), presupuesto: new AlmacenPresupuestoDb(d.sql), llm: llmDe(d), telegram: tg, tokens: new AlmacenTokensDb(d.sql),
     catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d), config: { exigirSabor: true, exigirPlazoPedido: true, ...d.configAgente },
     ...(d.conversacion === false ? {} : { conversacion: { almacen: new AlmacenConversacionDb(d.sql), resumenes: new ResumenPedidosDb(d.sql), entorno: entornoVentasDb(d.sql) } }),
+    ...(d.cobranza === false ? {} : { cobranza: new ModuloCobranza(new PuertoCobranzaDb(d.sql), () => new CatalogoAgenteDb(d.sql).clientes(), ahoraDe(d)) }),
     ...(d.aprendizaje === false ? {} : { aprendizaje: new ModuloAprendizaje(new PuertoAprendizajeDb(d.sql), () => new CatalogoAgenteDb(d.sql).clientes()) }),
   });
 }

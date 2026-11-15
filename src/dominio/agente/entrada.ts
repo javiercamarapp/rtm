@@ -59,6 +59,7 @@ const PALABRAS_DE_NEGOCIO = new Set([
   'cobertura', 'reporte', 'llego', 'aprobar', 'aprueba', 'servicio', 'openrouter', 'vercel', 'lote', 'historico', 'cuentas', 'socios', 'faltan', 'falta', 'valuacion', 'estamos', 'igualar', 'igualados',
   // Operaciones ampliadas (carril interprete, 14-nov): credito y plazo, dropshipping, paqueterias, renta, obsequio, altas, alias y correcciones.
   'credito', 'contado', 'fiado', 'plazo', 'recargo', 'interes', 'dropshipping', 'envio', 'salieron', 'salio', 'guias', 'paqueteria', 'castores', 'pitic', 'dhl', 'estafeta', 'entregue', 'liquidacion', 'liquide',
+  'cobranza', 'paga', 'pagan', 'pagaran', 'pagara', 'pagado', 'pagar', 'atrasa', 'atraso', 'atrasado', 'prometio', 'promete', 'prometieron', 'disputa', 'reclama', 'depositaron', 'liquido', 'silenciar', 'pausa', 'extender', 'extiendele', 'debe', 'adeuda', 'vencido',
   'renta', 'regale', 'obsequio', 'regalo', 'sabor', 'sabores', 'modelo', 'costo', 'alias', 'apodo', 'cancela', 'olvidalo', 'dejalo', 'corrige', 'corrijo', 'perdon', 'equivoque', 'vencimientos', 'vence', 'cobrar',
 ]);
 

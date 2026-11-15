@@ -39,6 +39,7 @@ const EJEMPLOS: ReadonlyArray<{ mensaje: string; intencion: Intencion }> = [
   { mensaje: 'a credito', intencion: { tipo: 'slot_respuesta', valor_texto: 'a credito' } },
   { mensaje: 'no, eran 20', intencion: { tipo: 'correccion', campo: 'piezas', valor_texto: '20', folio: null } },
   { mensaje: 'cancela eso, olvidalo', intencion: { tipo: 'cancelar' } },
+  { mensaje: 'Beta dice que paga el jueves', intencion: { tipo: 'cobranza_respuesta', accion: 'prometio', cliente_texto: 'Beta', pedidos_texto: [], monto_texto: null, cuenta: null, cuando_texto: 'el jueves', duracion_texto: null, motivo: null, fuente_cita: C } },
 ];
 
 const RESP = (acciones: unknown[]) => ({ acciones, sospecha_inyeccion: false, baja_certeza: false });
@@ -177,7 +178,7 @@ describe('prompt versionado y salida sin tope oculto', () => {
   it('la version cambio y el prompt trae las reglas nuevas y la regla de dropshipping a cliente', () => {
     expect(VERSION_PROMPT).toMatch(/^r6-2026-11-\d+\.\d+$/);
     expect(SISTEMA_R1).not.toMatch(/maximo 6/);
-    for (const palabra of ['pedido_ds', 'envio_lote', 'guias_lote', 'plazo_acordar', 'recargo_credito', 'entrega_fondos', 'renta_omar', 'obsequio', 'sabor_alta', 'alias_ensenar', 'sabor_respuesta', 'slot_respuesta', 'correccion', 'cancelar', 'Sin topes']) {
+    for (const palabra of ['pedido_ds', 'envio_lote', 'guias_lote', 'plazo_acordar', 'recargo_credito', 'entrega_fondos', 'renta_omar', 'obsequio', 'sabor_alta', 'alias_ensenar', 'cobranza_respuesta', 'sabor_respuesta', 'slot_respuesta', 'correccion', 'cancelar', 'Sin topes']) {
       expect(SISTEMA_R1, palabra).toContain(palabra);
     }
     expect(SISTEMA_R1).not.toMatch(/pregunta_id/);
@@ -224,7 +225,7 @@ describe('el id de la pregunta sale de la memoria del servidor', () => {
 
 describe('conversaciones simuladas por operacion nueva (LLM guionado, transporte falso)', () => {
   // Intenciones ya activas (carriles ventas-compras y socios-gastos): sus conversaciones viven en sus propias pruebas.
-  const ACTIVAS_CARRILES = ['pedido_ds', 'envio_lote', 'guias_lote', 'compra_cierre', 'entrega_fondos', 'liquidacion_socios', 'retiro_capital', 'renta_omar'];
+  const ACTIVAS_CARRILES = ['pedido_ds', 'envio_lote', 'guias_lote', 'compra_cierre', 'entrega_fondos', 'liquidacion_socios', 'retiro_capital', 'renta_omar', 'cobranza_respuesta'];
   for (const ej of EJEMPLOS.filter((x) => !ACTIVAS_CARRILES.includes(x.intencion.tipo))) {
     it(`${ej.intencion.tipo}: el mensaje pasa las guardias y el bot dice con claridad que no registro nada`, async () => {
       const e = escenario([unaAccion(ej.intencion)]);

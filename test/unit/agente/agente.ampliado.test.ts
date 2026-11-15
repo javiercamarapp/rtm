@@ -20,6 +20,12 @@ describe('catalogo declarativo de intenciones', () => {
     for (const t of INTENCIONES_ESCRITURA) {
       const d = CATALOGO_INTENCIONES[t];
       if (t === 'deshacer') continue;
+      // Intenciones que atiende un modulo propio con su puerta SQL en el esquema agente (cobranza): sin hub generico.
+      if (d.hub === 'ninguno') {
+        expect(d.funcionesSql.length, t).toBeGreaterThan(0);
+        expect(d.funcionesSql.every((f) => /^agente\.[a-z_]+$/.test(f)), t).toBe(true);
+        continue;
+      }
       expect(['agente.ejecutar', 'agente.ejecutar_ext'], t).toContain(d.hub);
       expect(d.tipoHub, t).toMatch(/^[a-z_]+$/);
       expect(d.funcionesSql.length, t).toBeGreaterThan(0);

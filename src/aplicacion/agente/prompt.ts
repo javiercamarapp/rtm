@@ -8,7 +8,7 @@ import { REGLAS_AMPLIADAS } from './prompt_ampliado';
 import { REGLAS_APRENDIZAJE } from './prompt_aprendizaje';
 
 /** Cambia con cualquier edicion del prompt o del esquema: forma parte de la clave de la corrida guardada. */
-export const VERSION_PROMPT = 'r6-2026-11-16.6';
+export const VERSION_PROMPT = 'r6-2026-11-16.7';
 
 /**
  * Tope de tokens de la respuesta. 700 truncaba un conteo de 40 sabores (cada renglon pesa ~28 tokens: 40 renglones + envoltura ~1,300; 60 renglones ~1,900).

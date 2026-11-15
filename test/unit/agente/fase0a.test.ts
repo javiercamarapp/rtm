@@ -34,12 +34,12 @@ describe('esquema para el proveedor', () => {
     if (o && typeof o === 'object') return Object.entries(o).some(([k, v]) => k === clave || contiene(v, clave));
     return false;
   };
-  it('no lleva oneOf ni $schema (Anthropic via Vertex rechaza oneOf) y conserva las 51 variantes por tipo (31 base + 20 ampliadas)', () => {
+  it('no lleva oneOf ni $schema (Anthropic via Vertex rechaza oneOf) y conserva las 52 variantes por tipo (31 base + 21 ampliadas)', () => {
     const e = esquemaJsonDeRespuesta();
     expect(contiene(e, 'oneOf')).toBe(false);
     expect(contiene(e, '$schema')).toBe(false);
     const variantes = (e as { properties: { acciones: { items: { anyOf: unknown[] } } } }).properties.acciones.items.anyOf;
-    expect(variantes).toHaveLength(51);
+    expect(variantes).toHaveLength(52);
   });
   it('sinRangos quita minLength/maxLength/minimum/maximum/minItems/maxItems/pattern y zod los sigue exigiendo', () => {
     const e = adaptarEsquemaParaProveedor(esquemaJsonDeRespuesta(), { sinRangos: true });

@@ -314,6 +314,7 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
     case 'modelo_alta':
     case 'costo_lista':
     case 'alias_ensenar':
+    case 'cobranza_respuesta':
     case 'alias_respuesta':
     case 'sabor_respuesta':
     case 'slot_respuesta':
