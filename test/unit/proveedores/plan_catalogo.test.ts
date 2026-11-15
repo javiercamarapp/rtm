@@ -49,6 +49,34 @@ describe('plan de catalogo (Isaac)', () => {
   });
 });
 
+describe('ligaduras de Karen confirmadas por el dueno', () => {
+  const cat = [{ id: 82, marca: 'IPLAY', n: 'IPLAY Box Pro Max 50K', al: [] }, { id: 120, marca: 'Waka', n: 'Waka 15K', al: [] }, { id: 90, marca: 'Waka', n: 'Waka DM 15K', al: [] }];
+  const ligaduras = new Map([['x-box', { catalogoId: 82, revisar: false }], ['sopro', { catalogoId: 120, revisar: true }]]);
+  it('concilia contra el modelo ligado, sin crear ni dejar por confirmar', () => {
+    const r = planificar([item('iPlay X-Box Pro Max 50,000', 'IPlay', { clave: 'x-box' }), item('Waka Sopro 15,000', 'WAKA', { clave: 'sopro' })], cat, { ligaduras });
+    expect(r.coincide.map((x: { modeloId: number }) => x.modeloId)).toEqual([82, 120]);
+    expect(r.nuevo).toHaveLength(0);
+    expect(r.porConfirmar).toHaveLength(0);
+  });
+  it('el archivo liga 9 modelos, marca 4 por revisar y da de alta IPLAY BIG MAX aparte', () => {
+    const j = JSON.parse(readFileSync(new URL('../../../scripts/catalogo/ligaduras-karen.json', import.meta.url), 'utf8'));
+    expect(j.ligaduras).toHaveLength(9);
+    expect(j.altas[0]).toMatchObject({ handle: 'big-max', nombre: 'IPLAY BIG MAX', puffs: 1000 });
+    expect(j.ligaduras.filter((l: { revisar: boolean }) => l.revisar)).toHaveLength(4);
+  });
+});
+
+describe('iPlay Big Max es modelo nuevo (no IPLAY Max)', () => {
+  it('se da de alta como IPLAY BIG MAX de 1000 puffs aunque exista IPLAY Max', () => {
+    const cat = [{ id: 111, marca: 'IPLAY', n: 'IPLAY Max', al: [] }];
+    const altas = new Map([['big-max', { nombre: 'IPLAY BIG MAX', puffs: 1000 }]]);
+    const r = planificar([item('iPlay Big Max', 'IPlay', { clave: 'big-max' })], cat, { altas });
+    expect(r.coincide).toHaveLength(0);
+    expect(r.porConfirmar).toHaveLength(0);
+    expect(r.nuevo[0]).toMatchObject({ titulo: 'IPLAY BIG MAX', puffs: 1000, ligarHandle: 'big-max' });
+  });
+});
+
 describe('sabores y marcas', () => {
   it('los repetidos exactos de un modelo se juntan', () => {
     const s = saboresUnicos({ sabores: [{ nombre: 'Blue Razz', disponible: false }, { nombre: 'blue  razz', disponible: true }, { nombre: 'Uva', disponible: false }] });
@@ -74,6 +102,10 @@ describe('catalogo Remate de Isaac', () => {
     expect(items).toHaveLength(24);
     expect(items.find((x: { titulo: string }) => x.titulo === 'WAKA BLAST 45K')).toMatchObject({ forzarNuevo: true, sabores: [] });
     expect(items.every((x: { sabores: unknown[] }) => Array.isArray(x.sabores))).toBe(true);
+    // Decision del dueno: FUNKY REPUBLIC 7K y EBDESIGN TE6000 son modelos propios (nada queda por confirmar en Isaac).
+    const p = planificar(items, [{ id: 3, marca: 'Funky Republic', n: 'Funky Republic Fi 3K', al: [] }, { id: 4, marca: 'Elf Bar', n: 'Elf Bar TE6000', al: [] }], { modo: 'isaac' });
+    expect(p.porConfirmar).toHaveLength(0);
+    expect(p.nuevo.map((x: { titulo: string }) => x.titulo)).toEqual(expect.arrayContaining(['FUNKY REPUBLIC 7K', 'EBDESIGN TE6000']));
     expect(JSON.stringify(json.modelos.map((m: { sabores: string[] }) => m.sabores))).not.toMatch(/\$|\d+\.\d{2}/);
   });
 });

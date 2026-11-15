@@ -12,35 +12,36 @@ Rama `feat/catalogo-isaac-y-karen-completo`. Nada se aplico a produccion ni se h
 
 ## Isaac (PDF Catalogo_Remate.pdf)
 
-El PDF trae 23 modelos (24 hojas con la portada), leidos a ojo pagina por pagina: `scripts/catalogo/isaac-remate.json` (289 sabores). Ningun modelo del PDF viene sin sabor (Lush TFN 2500 y Hyppe Bar 300 traen uno solo, Fogx 320 trae tres). Mas **Waka Blast 45K** por instruccion del dueno: modelo APARTE (no se une a Waka Blast ni a Waka Blast 50K), de Isaac, sin sabores (se registra sin sabor) y con costo de lista de Isaac **210 registrado como SUPUESTO** (dato de palabra; confirmar si 210 es costo o precio).
+El PDF trae 23 modelos (24 hojas con la portada), leidos a ojo pagina por pagina: `scripts/catalogo/isaac-remate.json` (289 sabores). Ningun modelo del PDF viene sin sabor. Mas **Waka Blast 45K** por instruccion del dueno: modelo APARTE (no se une a Waka Blast ni a Waka Blast 50K), de Isaac, sin sabores (se registra sin sabor) y con costo de lista de Isaac **210 registrado como SUPUESTO** (confirmar si 210 es costo o precio).
+
+Decisiones del dueno (15-nov, relevadas por otra sesion): FUNKY REPUBLIC es de 7K puffs y modelo propio (`FUNKY REPUBLIC 7K`, no es Funky Republic Fi 3K); EBDESIGN TE6000 es modelo propio distinto de ELFBAR BC5000. **Por confirmar: su relacion con Elf Bar TE6000 de Karen** (no se fusiona).
 
 | Cifra | Valor |
 | --- | --- |
-| Modelos en la fuente | 24 (23 del PDF y Waka Blast 45K) |
-| Modelos que se registran | 22 (21 del PDF y Waka Blast 45K) |
-| Por confirmar | 2: FUNKY REPUBLIC (sin puffs en la hoja; la caja dice Ti7000; el catalogo ya tiene Funky Republic Fi 3K) y EBDESIGN TE6000 (misma linea que Elf Bar TE6000 de Karen) |
-| Sabores en el PDF | 289 (los de los dos modelos por confirmar, 27, quedan fuera hasta que se decida) |
-| Sabores / skus registrados | 262 skus, todos con existencia 0 y todos disponibles en el stock de Isaac |
+| Modelos en la fuente y registrados | 24 (23 del PDF y Waka Blast 45K); por confirmar: 0 |
+| Sabores del PDF / skus registrados | 289 / 289, todos con existencia 0 y todos disponibles en el stock de Isaac |
 
-Stock disponible de Isaac: tablas `proveedores.stock_isaac_modelo` y `proveedores.stock_isaac_sabor` (migracion aditiva `20261120000000_stock_isaac.sql`, sin columnas de dinero, pgTAP `c1_001_stock_isaac`), `api.prov_tablero_isaac()` y la pestana Isaac de `/proveedores/stock` con el mismo formato que Karen. Sin foto por ahora: el PDF solo trae banners con la lista de sabores.
+Stock disponible de Isaac: tablas `proveedores.stock_isaac_modelo` y `proveedores.stock_isaac_sabor` (migracion aditiva `20261120000000_stock_isaac.sql`, sin columnas de dinero, pgTAP `c1_001_stock_isaac`), `api.prov_tablero_isaac()` y la pestana Isaac de `/proveedores/stock`. Sin foto por ahora: el PDF solo trae banners.
 
-Notas de lectura: "Tropical Spoal", "Osk Ice", "Spoal Cloudd", "Los Ice" (Geek Bar 6000) y "Pomo Brzz" se transcribieron tal como estan impresos; si son erratas del catalogo, corregirlas en el JSON antes de cargar. Aroma King 700 y 3000 muestran una botella con un sabor que no esta en su lista (Watermelon Ice, Cool Mint): no se agregaron. Puff XXL se registra bajo la marca PUFF BAR.
+Notas de lectura: "Tropical Spoal", "Osk Ice", "Spoal Cloudd", "Los Ice" (Geek Bar 6000) y "Pomo Brzz" se transcribieron como estan impresos. Aroma King 700 y 3000 muestran una botella con un sabor que no esta en su lista: no se agrego. Puff XXL se registra bajo la marca PUFF BAR.
 
 ## Mr Cactus (Karen)
 
-Fuente: lectura de la tienda del 14-nov 21:42 (49 modelos). La direccion privada no esta disponible en esta sesion, asi que no se hizo una lectura nueva; la pasada horaria (abajo) la repite.
+Fuente: lectura de la tienda del 14-nov 21:42 (49 modelos); la direccion privada no esta disponible en esta sesion, la pasada horaria repite la lectura.
 
 | Cifra | Valor |
 | --- | --- |
 | Modelos en la tienda | 49 |
-| Sabores (todos, disponibles y agotados) | 1,020 (242 disponibles, 778 agotados) |
-| Fotos de modelo cargadas | 49 de 49 (`public/proveedores/karen`, mapa `src/config/fotos_karen.ts`); faltan 0 |
-| Modelos que se registran en el catalogo | 39: 17 ya existian (15 exactos y Waka Steel e Icon Slim por el diccionario Waka) y 22 modelos nuevos |
-| Sabores / skus registrados | 779 (tras juntar repetidos exactos), todos en 0; 438 sabores nuevos |
-| Por confirmar (NO se unifican ni asignan) | 10 modelos con 241 sabores: los 9 dudosos de la seccion 3 de `docs/conciliacion-marcas-mrcactus.md` y ademas Waka Sopro 15,000, que tiene dos candidatos (Waka 15K y Waka DM 15K) |
-| Parecidos de sabores en la cola de duplicados | 207 preguntas de Karen y 117 de Isaac en la base de prueba (los socios deciden; nunca se unen solos) |
+| Sabores (disponibles y agotados) | 1,020 (242 disponibles, 778 agotados) |
+| Fotos de modelo | 49 de 49 cargadas; faltan 0 |
+| Modelos conciliados contra el catalogo | 26 (17 ya conciliados + 9 ligados por el dueno) |
+| Modelos nuevos | 23 (22 de la conciliacion + IPLAY BIG MAX, 1,000 puffs) |
+| Por confirmar | 0 |
+| Skus registrados (sabores unicos, existencia 0) | 1,019 |
 
-La disponibilidad y la foto por sabor/modelo las guarda el vigilante en `proveedores.modelo` y `proveedores.variante` (la pagina `/proveedores/stock` las muestra); el catalogo propio solo recibe modelo y sabor.
+Ligaduras confirmadas por el dueno (`scripts/catalogo/ligaduras-karen.json`; se escriben en `proveedores.modelo.canonico_id` con `proveedores.ligar_modelo_karen`, migracion `20261120000100`; no se crean ni unifican modelos ni se borran candidatos): X-Box Pro Max 50K -> 82; Fifty Bar -> 146; Snowwolf -> 147; Instabar Be 70K -> 145; iPlay X-Box -> 100 (IPLAY Box 4K; "IPLAY Box" es lo mismo que "iPlay X-Box"); y **por revisar** (eran ambiguos): iPlay X-Box Pro -> 98, Lost Mary Ultrasonic 35K -> 105, Waka Pro 30K -> 151, Waka Sopro 15K -> 120 (Waka DM 15K, 90, queda de candidato secundario). Correcciones del dueno: **iPlay Big Max NO es IPLAY Max (111)**: IPLAY Max es de 300 puffs y Big Max de 1,000; se da de alta como modelo nuevo IPLAY BIG MAX. **138 X-Box 50k: nombre/puffs por corregir** (en realidad es de 4K puffs y marca IPLAY), posible duplicado del 100; decide el dueno, no se renombra ni se fusiona ni se usa en ninguna ligadura. Las ligaduras a 82 y 98 son coherentes con esto.
+
+Los sabores de los modelos ligados se concilian contra el modelo ligado: iguales se fusionan, parecidos a la cola de duplicados (256 preguntas de Karen y 122 de Isaac en la base de prueba; los socios deciden). Fotos: los modelos ligados ya tenian la foto de Karen asignada en `fotos-modelos.ts` salvo 138 y 105 (con foto "probable" de otra fuente, no se cambio); IPLAY BIG MAX se muestra con la foto de la tienda por su identificador (`big-max`) y su foto canonica por id se asigna con la siguiente pasada del vigilante.
 
 ## Actualizacion horaria (lista, sin builds de Vercel)
 

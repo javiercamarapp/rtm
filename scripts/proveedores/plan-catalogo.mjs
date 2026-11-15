@@ -34,12 +34,17 @@ function aItemTienda(it) {
  * `modo`: 'karen' respeta la conciliacion tal cual; 'isaac' ademas trata como modelos distintos los que tienen puffs explicitos diferentes.
  * Devuelve { coincide: [{item, modeloId, via}], nuevo: [item], porConfirmar: [{item, candidatos, motivo}] }.
  */
-export function planificar(items, catalogo, { aliasWaka = new Map(), propuestas = new Map(), modo = 'karen' } = {}) {
+export function planificar(items, catalogo, { aliasWaka = new Map(), propuestas = new Map(), modo = 'karen', ligaduras = new Map(), altas = new Map() } = {}) {
   const porId = new Map(catalogo.map((m) => [m.id, m]));
   const coincide = [], nuevo = [], porConfirmar = [];
   const lineasCatalogo = catalogo.map((m) => ({ m, linea: claveLinea(m.n, m.marca) }));
   for (const it of items) {
     const r = conciliar([aItemTienda(it)], catalogo, aliasWaka, propuestas);
+    // Ligadura confirmada por el dueno (handle de la tienda -> id del catalogo): se concilia contra ese modelo, sin crear ni unificar nada.
+    const alta = altas.get(it.clave);
+    if (alta) { nuevo.push({ ...it, titulo: alta.nombre, puffs: alta.puffs, forzarNuevo: true, ligarHandle: it.clave }); continue; }
+    const lig = ligaduras.get(it.clave);
+    if (lig && porId.has(lig.catalogoId)) { coincide.push({ item: it, modeloId: lig.catalogoId, via: 'ligadura del dueno', ligadura: lig }); continue; }
     // Decision explicita del dueno: modelo aparte. Solo se reutiliza si el nombre ya existe tal cual.
     if (it.forzarNuevo) {
       const igual = catalogo.find((m) => compacta(m.n) === compacta(nombreModelo(it.titulo)));
@@ -76,7 +81,6 @@ export function planificar(items, catalogo, { aliasWaka = new Map(), propuestas 
     }
     nuevo.push(it);
   }
-  void porId;
   return { coincide, nuevo, porConfirmar };
 }
 

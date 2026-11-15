@@ -44,18 +44,25 @@ async function intentar(c, nombre, fn) {
   }
 }
 
-export async function cargar(c, { fuente, items, modo, aliasWaka, propuestas, hoy }) {
+export async function cargar(c, { fuente, items, modo, aliasWaka, propuestas, ligaduras, altas, hoy }) {
   const { catalogo, marcas } = await leerCatalogo(c);
-  const plan = planificar(items, catalogo, { aliasWaka, propuestas, modo });
-  const resumen = { fuente, modelosEnFuente: items.length, coinciden: plan.coincide.length, modelosCreados: 0, saboresEnFuente: 0, skusCreados: 0, skusYaExistian: 0, saboresNuevos: 0, porConfirmar: [], rechazados: [], costos: 0 };
+  const plan = planificar(items, catalogo, { aliasWaka, propuestas, modo, ligaduras, altas });
+  const resumen = { ligados: 0, ligadosPorRevisar: [], fuente, modelosEnFuente: items.length, coinciden: plan.coincide.length, modelosCreados: 0, saboresEnFuente: 0, skusCreados: 0, skusYaExistian: 0, saboresNuevos: 0, porConfirmar: [], rechazados: [], costos: 0 };
   for (const p of plan.porConfirmar) resumen.porConfirmar.push({ tipo: 'modelo', fuente: p.item.titulo, candidatos: p.candidatos, motivo: p.motivo });
 
   const aCargar = plan.coincide.map((x) => ({ item: x.item, id: x.modeloId, nombre: catalogo.find((m) => m.id === x.modeloId).n, nuevo: false }));
+  // Ligaduras confirmadas por el dueno: proveedores.modelo.canonico_id (si el vigilante ya leyo el modelo). Sin crear ni unificar modelos.
+  for (const x of plan.coincide.filter((y) => y.ligadura)) {
+    await c.query('select proveedores.ligar_modelo_karen($1, $2)', [x.item.clave, x.modeloId]);
+    resumen.ligados += 1;
+    if (x.ligadura.revisar) resumen.ligadosPorRevisar.push({ tienda: x.item.titulo, catalogoId: x.modeloId, secundarios: x.ligadura.candidatosSecundarios ?? [] });
+  }
   for (const it of plan.nuevo) {
     const nombre = nombreModelo(it.titulo);
     const r = await intentar(c, 'sp_modelo', async () => (await c.query('select catalogo.asegurar_modelo($1, $2, $3, $4, $5, $6) as id', [marcaFinal(it.marca, marcas), nombre, it.puffs ?? puffsExactos(it.titulo), 'ambas', 'disponible', null])).rows[0].id);
     if (!r.ok) { resumen.rechazados.push({ tipo: 'modelo', fuente: it.titulo, motivo: r.error }); continue; }
-    resumen.modelosCreados += 1;
+    if (!catalogo.some((m) => compacta(m.n) === compacta(nombre))) resumen.modelosCreados += 1;
+    if (it.ligarHandle) { await c.query('select proveedores.ligar_modelo_karen($1, $2)', [it.ligarHandle, Number(r.valor)]); resumen.ligados += 1; }
     aCargar.push({ item: it, id: Number(r.valor), nombre, nuevo: true });
   }
 
@@ -96,7 +103,7 @@ export async function cargar(c, { fuente, items, modo, aliasWaka, propuestas, ho
 }
 
 /** Una corrida completa en UNA transaccion con identidad de socio y canal 'importacion'. aplicar=false revierte. Devuelve el resumen. */
-export async function ejecutar({ url, fuente, items, aplicar, aliasWaka, propuestas }) {
+export async function ejecutar({ url, fuente, items, aplicar, aliasWaka, propuestas, ligaduras, altas }) {
   const { default: pg } = await import('pg');
   const c = new pg.Client({ connectionString: url });
   await c.connect();
@@ -106,7 +113,7 @@ export async function ejecutar({ url, fuente, items, aplicar, aliasWaka, propues
     if (!socio) throw new Error('no hay un usuario socio activo');
     await c.query("select set_config('request.jwt.claim.sub', $1, true), set_config('rtm.canal', 'importacion', true)", [socio.id]);
     const hoy = (await c.query('select negocio.hoy() as d')).rows[0].d;
-    const r = await cargar(c, { fuente, items, modo: fuente, aplicar, aliasWaka, propuestas, hoy });
+    const r = await cargar(c, { fuente, items, modo: fuente, aliasWaka, propuestas, ligaduras, altas, hoy });
     await c.query(aplicar ? 'commit' : 'rollback');
     return r;
   } catch (e) {
@@ -120,11 +127,14 @@ export async function ejecutar({ url, fuente, items, aplicar, aliasWaka, propues
 export function leerReglas() {
   const aliasWaka = cargarAliasWaka(join(RAIZ, 'scripts', 'catalogo', 'alias-waka.json'));
   const propuestas = new Map(JSON.parse(readFileSync(join(RAIZ, 'scripts', 'catalogo', 'marcas-modelos.json'), 'utf8')).modelos.map((m) => [m.id, m.marca]));
-  return { aliasWaka, propuestas };
+  const ligaduras = new Map(JSON.parse(readFileSync(join(RAIZ, 'scripts', 'catalogo', 'ligaduras-karen.json'), 'utf8')).ligaduras.map((l) => [l.handle, l]));
+  const altas = new Map(JSON.parse(readFileSync(join(RAIZ, 'scripts', 'catalogo', 'ligaduras-karen.json'), 'utf8')).altas.map((l) => [l.handle, l]));
+  return { aliasWaka, propuestas, ligaduras, altas };
 }
 
 export function imprimir(r, aplicar) {
-  console.log(`${aplicar ? 'APLICADO' : 'VERIFICADO (revertido)'}: ${JSON.stringify({ ...r, porConfirmar: r.porConfirmar.length, rechazados: r.rechazados.length })}`);
+  console.log(`${aplicar ? 'APLICADO' : 'VERIFICADO (revertido)'}: ${JSON.stringify({ ...r, porConfirmar: r.porConfirmar.length, rechazados: r.rechazados.length, ligadosPorRevisar: r.ligadosPorRevisar.length })}`);
+  for (const p of r.ligadosPorRevisar) console.log(`  LIGADURA POR REVISAR ${p.tienda} -> modelo ${p.catalogoId} (otros candidatos ${p.secundarios.join(', ') || 'ninguno'})`);
   for (const p of r.porConfirmar) console.log(`  POR CONFIRMAR ${p.fuente}: ${p.motivo}; candidatos ${p.candidatos.join(', ')}`);
   for (const p of r.rechazados) console.log(`  RECHAZADO (${p.tipo}) ${p.fuente}: ${p.motivo}`);
 }

@@ -149,7 +149,9 @@
     "Hawaii Punch",
     "Ice Mint",
     "Clear"
-   ]
+   ],
+   "forzar_nuevo": true,
+   "nota": "Decision del dueno (15-nov): modelo distinto de ELFBAR BC5000, modelo propio. Su relacion con Elf Bar TE6000 de Karen queda POR CONFIRMAR (no se fusiona)."
   },
   {
    "pagina": 7,
@@ -279,10 +281,10 @@
   },
   {
    "pagina": 13,
-   "titulo": "FUNKY REPUBLIC",
+   "titulo": "FUNKY REPUBLIC 7K",
    "marca": "FUNKY REPUBLIC",
-   "puffs": null,
-   "nota": "la caja dice Ti7000 pero el titulo de la pagina no trae puffs: se registra sin puffs",
+   "puffs": 7000,
+   "nota": "Decision del dueno (15-nov): es de 7K puffs, modelo propio; NO es Funky Republic Fi 3K.",
    "sabores": [
     "Blue Red Mint",
     "Watermelon Ice",
@@ -299,7 +301,8 @@
     "Tropical Island",
     "Peach Pie",
     "Blue Razz Ice"
-   ]
+   ],
+   "forzar_nuevo": true
   },
   {
    "pagina": 14,
