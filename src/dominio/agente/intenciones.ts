@@ -333,6 +333,8 @@ export const TIPOS_CONSULTA = [
   'por_pagar',
   /** Valuacion de quien pregunta y del otro socio, y como igualar (agente.valuacion_socios). */
   'valuacion',
+  /** Cierre mensual en consulta: periodo sugerido, lo disponible y actas pendientes de firma (agente.consulta_cierre_mensual). */
+  'cierre_mensual',
   /** Total por cobrar de los clientes (agente.consulta 'por_cobrar'). */
   'por_cobrar',
   /** Pedidos a credito por vencer y vencidos, con su fecha. */

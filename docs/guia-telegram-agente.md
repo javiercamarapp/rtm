@@ -253,3 +253,17 @@ Consulta determinista (`consulta: valuacion`): la valuación de quien pregunta, 
 
 Hecho y verificado: el núcleo de base para SABORES, `catalogo.alta_sabor` (validación del nombre como dato, parecidos por distancia de edición con umbral documentado, idempotencia, topes de 10 por hora y 30 por día por actor, auditoría con origen), usado por el botón «Crear sabor nuevo» de la hoja de conteo web. El canal `telegram` está admitido por la función pero NINGUNA ruta del bot la llama todavía.
 Pendiente (no activado): tarjeta con botones en el grupo para sabor, modelo y cliente desconocidos, alta de modelo (marca obligatoria, puffs por omisión) y de cliente (solo nombre y tipo; el teléfono nunca pasa por el modelo), reanudar el pedido que originó la mención, simulador y pgTAP de esos flujos. Ver `docs/alta-asistida-pendiente.md`.
+
+## Dinero entre socios, gastos, renta y valuacion por bot (carril socios y gastos)
+
+Sin topes y sin tarjeta: el bot pregunta lo que falte (que socio, cuanto, a quien, por transferencia o efectivo, la intencion) y registra cuando tiene todo. El modelo de IA no calcula dinero.
+
+- Aportacion o deposito: la INTENCION se pregunta siempre. Reembolso es lo que queda si el socio no declara capital; capital solo si el socio lo declara y lo registra quien lo pone.
+- Entrega de fondos: el socio entrega a la sociedad (se deshace 10 minutos) o a Isaac o Karen (no se deshace). Baja los fondos de la sociedad que tiene en su poder; NO es aportacion.
+- Liquidacion entre socios, retiro de utilidad y reembolso: se deshacen 10 minutos.
+- Retiro de capital: lo propone quien retira y lo confirma el OTRO socio con su propio mensaje (mismo monto). No se deshace.
+- Renta de Omar: la paga un socio; un pago mayor a lo que se debe se pregunta como anticipo.
+- Gasto: pagado por un socio (un gasto de la empresa y un reembolso) o con la caja de la sociedad. Con foto del ticket: la foto queda como evidencia (solo su huella) ligada al gasto; el monto lo escribe el socio; la misma foto no respalda dos gastos.
+- Cargo de servicio con tipo de cambio: pregunta moneda, monto, quien pago y el tipo de cambio.
+- Acta de corte: `/cierre` consulta el periodo; `/acta` propone; la firma es el mensaje personal de cada socio (`/firmaracta` o "firmo el acta"), queda registrado en SQL y no hay boton generico.
+- Valuacion e igualacion: `/valuacion`, "como estamos" y `/igualar angelo|javier` ("cuanto debe Angelo para igualar") con la misma frase del banner (entregar fondos mas aportar). Despues de cada movimiento entre socios el bot avisa al grupo con los saldos de AMBOS.

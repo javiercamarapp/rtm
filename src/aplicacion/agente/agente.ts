@@ -25,6 +25,7 @@ import { Comunicador, verificarMensajeOmar } from './comunicador';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
 import { cifrasDeIntencionAmpliada, foliosSinProcedencia, montosQueSeRepiten, textosConCifraAjena } from '@/dominio/agente/guardia_ampliada';
 import { montoARepetir, textoExtraidoSinPuerta } from './plantillas_interprete';
+import { mensajeSaldosSocios, textoTicketDuplicado, textoTicketLigado } from './socios_gastos';
 import { MotorConversacion, type AlmacenConversacion, type EntornoConversacion, type OperacionCompleta as OperacionConversacion, type ResultadoRegistro, type ResumenPedidos, type Salida as SalidaConversacion } from './conversacion';
 import { instruccionDeIntencion, OPERACIONES_POR_CONVERSACION } from '@/dominio/agente/slots_desde_intencion';
 import { intencionDeSlots } from './slots_a_intencion';
@@ -156,7 +157,7 @@ interface EstadoAccion {
  * Operaciones que conservan su tarjeta aunque `confirmarMovimientos` sea falso: la base exige un boton consumido por el socio (firma personal del acta; segundo socio del lote historico).
  * No es una confirmacion de monto: es la firma, que SQL no acepta sin el boton.
  */
-export const TARJETA_POR_FIRMA: ReadonlySet<TipoIntencion> = new Set<TipoIntencion>(['acta_firma', 'lote_historico']);
+export const TARJETA_POR_FIRMA: ReadonlySet<TipoIntencion> = new Set<TipoIntencion>(['lote_historico']);
 
 /**
  * POLITICA DE QUIEN CONFIRMA (MEDIO-2).
@@ -219,6 +220,21 @@ interface PayloadRecordatorio {
 }
 
 const BOTONES_QUE_ESCRIBEN: ReadonlySet<AccionBoton> = new Set<AccionBoton>(['autorizar_toma', 'rechazar_toma', 'confirmar_pago', 'rechazar_pago', 'recordatorio_pagado', 'confirmar_reprogramar']);
+
+/** Movimientos de dinero ENTRE socios (o que cambian lo que la sociedad le debe a un socio): avisan al grupo con ambos saldos. */
+export function esMovimientoEntreSocios(i: Intencion): boolean {
+  switch (i.tipo) {
+    case 'entrega_fondos':
+    case 'liquidacion_socios':
+    case 'retiro_capital':
+    case 'renta_omar':
+      return true;
+    case 'gasto':
+      return i.pagado_por !== 'sociedad';
+    default:
+      return false;
+  }
+}
 
 /** Movimientos que cambian la aportacion neta de un socio: despues de ellos el bot comenta la igualacion. */
 export function esMovimientoDeAportacion(i: Intencion): boolean {
@@ -1121,6 +1137,7 @@ export class AgenteTelegram {
         tokenBoton: estado.tokenConfirmacion,
         permitirDuplicado: estado.duplicadoOk === true,
         confirmoExceso: estado.excesoOk === true,
+        cita: estado.cita,
       });
     } catch (e) {
       await this.d.almacen.registrarEvento({ tipo: 'error_escritura', miembro: estado.autor.telegramUserId, detalle: intencion.tipo });
@@ -1185,7 +1202,7 @@ export class AgenteTelegram {
     try {
       r = await this.d.negocio.ejecutar(sal.resuelta, {
         autor: op.autor, claveIdem: op.claveIdem, origen: estado.origen, ahora: this.d.reloj(), confirmado: estado.confirmado, efectoHash: null, tokenBoton: null,
-        permitirDuplicado: conf.includes('duplicado'), confirmoExceso: conf.includes('exceso'),
+        permitirDuplicado: conf.includes('duplicado'), confirmoExceso: conf.includes('exceso'), cita: estado.cita,
       });
     } catch (e) {
       await this.d.almacen.registrarEvento({ tipo: 'error_escritura', miembro: op.autor.telegramUserId, detalle: tr.intencion.tipo });
@@ -1278,7 +1295,33 @@ export class AgenteTelegram {
         await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: estado.autor.telegramUserId, detalle: 'tarjeta_pago_reportado' });
       }
     }
-    if (esMovimientoDeAportacion(intencion)) await this.comentarIgualacion(chats);
+    // Carril socios y gastos: ambos saldos (y la frase de igualacion del banner) en el mismo aviso; el ticket del gasto queda ligado a su foto.
+    if (esMovimientoEntreSocios(intencion) && this.d.negocio.saldosSocios) {
+      await this.avisarSaldosSocios(chats);
+    } else if (esMovimientoDeAportacion(intencion)) {
+      await this.comentarIgualacion(chats);
+    }
+    if ((intencion.tipo === 'gasto' || intencion.tipo === 'gasto_servicio') && this.d.negocio.ligarTicket && r.folio !== '') await this.ligarTicketDelGasto(estado, r.folio, chats);
+  }
+
+  /** Aviso al grupo con los saldos de AMBOS socios tras mover dinero entre ellos. Si la lectura falla, el movimiento ya registrado no se afecta. */
+  private async avisarSaldosSocios(chats: ChatsRegistrados): Promise<void> {
+    try {
+      await this.com.aGrupo(chats, mensajeSaldosSocios(await this.d.negocio.saldosSocios!()));
+    } catch {
+      await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: null, detalle: 'saldos_socios_no_disponible' });
+    }
+  }
+
+  /** La foto del ticket (si el socio la mando) queda como evidencia con huella del gasto; el monto es el que tecleo el socio. */
+  private async ligarTicketDelGasto(estado: EstadoAccion, folio: string, chats: ChatsRegistrados): Promise<void> {
+    try {
+      const t = await this.d.negocio.ligarTicket!(estado.autor.telegramUserId, folio);
+      if (t.ligada) await this.com.aGrupo(chats, textoTicketLigado(folio));
+      else if (t.duplicada && t.gastoPrevio !== null) await this.com.aGrupo(chats, textoTicketDuplicado(t.gastoPrevio));
+    } catch {
+      await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: estado.autor.telegramUserId, detalle: 'ticket_no_ligado' });
+    }
   }
 
   /**

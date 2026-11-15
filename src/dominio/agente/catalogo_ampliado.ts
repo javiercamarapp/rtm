@@ -7,7 +7,7 @@
 import type { DefIntencion, QuienPuede, Reversa } from './catalogo_intenciones';
 import type { IntencionAmpliada } from './intenciones_ampliadas';
 
-type Fila = Pick<DefIntencion, 'descripcion' | 'tipoHub' | 'funcionesSql'> & { reversa?: Reversa; quien?: QuienPuede; hub?: DefIntencion['hub'] };
+type Fila = Pick<DefIntencion, 'descripcion' | 'tipoHub' | 'funcionesSql'> & { reversa?: Reversa; quien?: QuienPuede; hub?: DefIntencion['hub']; estado?: DefIntencion['estado'] };
 
 const F = (f: Fila): DefIntencion => ({ hub: 'agente.ejecutar_ext', confirmacion: 'ninguna', quien: 'socios', reversa: 'ninguna', estado: 'extraido', ...f });
 
@@ -18,10 +18,10 @@ export const CATALOGO_AMPLIADO: Record<IntencionAmpliada['tipo'], DefIntencion> 
   plazo_acordar: F({ descripcion: 'Acordar o cambiar el plazo de pago de un pedido (dias o fecha; lo interpreta el codigo)', tipoHub: 'plazo_acordar', funcionesSql: ['operacion.acordar_plazo'], reversa: 'software' }),
   recargo_credito: F({ descripcion: 'Aplicar el recargo de credito: 10 % simple por semana completa de atraso, calculado por SQL; lo decide el socio dueno del cliente', tipoHub: 'recargo_credito', funcionesSql: ['operacion.registrar_recargo_credito'], reversa: 'software' }),
   compra_cierre: F({ descripcion: 'Cerrar la recepcion de una compra con faltante', tipoHub: 'compra_cierre', funcionesSql: ['operacion.cerrar_recepcion_compra'], reversa: 'software' }),
-  entrega_fondos: F({ descripcion: 'Un socio entrega a la sociedad o a un proveedor fondos que cobro en su cuenta', tipoHub: 'entrega_fondos', funcionesSql: ['operacion.registrar_entrega_socio'], reversa: 'directa' }),
-  liquidacion_socios: F({ descripcion: 'Liquidacion de un socio al otro', tipoHub: 'liquidacion_socios', funcionesSql: ['operacion.registrar_liquidacion_entre_socios'], reversa: 'directa' }),
-  retiro_capital: F({ descripcion: 'Retiro de capital de un socio (lo declara el propio socio)', tipoHub: 'retiro_capital', funcionesSql: ['operacion.proponer_retiro_capital', 'operacion.confirmar_retiro_capital'], reversa: 'software' }),
-  renta_omar: F({ descripcion: 'Pago de la renta de Omar (2 pesos por pieza enviada; devengado y exceso los calcula SQL)', tipoHub: 'renta_omar', funcionesSql: ['api.registrar_pago_renta'], reversa: 'directa' }),
+  entrega_fondos: F({ descripcion: 'Un socio entrega a la sociedad o a un proveedor fondos que cobro en su cuenta', tipoHub: 'entrega_fondos', funcionesSql: ['operacion.registrar_entrega_socio'], reversa: 'directa' , estado: 'activa'}),
+  liquidacion_socios: F({ descripcion: 'Liquidacion de un socio al otro', tipoHub: 'liquidacion_socios', funcionesSql: ['operacion.registrar_liquidacion_entre_socios'], reversa: 'directa' , estado: 'activa'}),
+  retiro_capital: F({ descripcion: 'Retiro de capital de un socio (lo declara el propio socio)', tipoHub: 'retiro_capital', funcionesSql: ['operacion.proponer_retiro_capital', 'operacion.confirmar_retiro_capital'], reversa: 'ninguna' , estado: 'activa'}),
+  renta_omar: F({ descripcion: 'Pago de la renta de Omar (2 pesos por pieza enviada; devengado y exceso los calcula SQL)', tipoHub: 'renta_omar', funcionesSql: ['api.registrar_pago_renta'], reversa: 'directa' , estado: 'activa'}),
   obsequio: F({ descripcion: 'Obsequio de piezas: salen del inventario como merma con motivo obsequio', tipoHub: 'obsequio', funcionesSql: ['operacion.registrar_movimiento'], reversa: 'directa' }),
   sabor_alta: F({ descripcion: 'Alta de un sabor nuevo de un modelo (con revision de parecidos)', tipoHub: 'sabor_alta', funcionesSql: ['catalogo.alta_sabor'] }),
   modelo_alta: F({ descripcion: 'Alta de un modelo nuevo con su marca y costo de lista', tipoHub: 'modelo_alta', funcionesSql: ['catalogo.fijar_costo'] }),

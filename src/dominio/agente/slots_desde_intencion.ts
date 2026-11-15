@@ -12,6 +12,8 @@ export interface InstruccionConversacion {
 /** Operaciones que la conversacion registra de punta a punta por el carril de frenos. El resto de las intenciones sigue su camino anterior. */
 export const OPERACIONES_POR_CONVERSACION: ReadonlySet<OperacionConv> = new Set<OperacionConv>([
   'pedido_bodega', 'cobro_cliente', 'pago_proveedor', 'pago_redirigido', 'gasto', 'aportacion', 'reembolso', 'retiro', 'conteo', 'alta_cliente',
+  // Carril socios y gastos (16-nov): dinero entre socios, renta de Omar y cargo de servicio.
+  'entrega_fondos', 'liquidacion', 'retiro_capital', 'renta_omar', 'gasto_servicio',
 ]);
 
 function limpiar(o: Record<string, unknown>): Record<string, unknown> {
@@ -53,13 +55,30 @@ export function instruccionDeIntencion(i: Intencion): InstruccionConversacion | 
         }),
       };
     case 'gasto':
-      return { operacion: 'gasto', candidatos: limpiar({ tipo_gasto: i.gasto, monto: i.monto_centavos, pagado_por: i.pagado_por === 'sociedad' ? null : i.pagado_por, referencia: i.descripcion }) };
+      return { operacion: 'gasto', candidatos: limpiar({ tipo_gasto: i.gasto, monto: i.monto_centavos, pagado_por: i.pagado_por, referencia: i.descripcion }) };
     case 'aportacion':
       return { operacion: 'aportacion', candidatos: limpiar({ socio: i.socio, monto: i.monto_centavos, intencion: i.intencion, motivo: i.motivo }) };
     case 'reembolso_socio':
       return { operacion: 'reembolso', candidatos: limpiar({ socio: i.socio, monto: i.monto_centavos, via: i.via }) };
     case 'retiro_utilidad':
       return { operacion: 'retiro', candidatos: limpiar({ socio: i.socio, monto: i.monto_centavos, via: i.via }) };
+    case 'entrega_fondos':
+      return { operacion: 'entrega_fondos', candidatos: limpiar({ socio: i.socio, monto: i.monto_centavos, destino: i.destino, via: i.via }) };
+    case 'liquidacion_socios':
+      return { operacion: 'liquidacion', candidatos: limpiar({ socio: i.de_socio, contraparte: i.a_socio, monto: i.monto_centavos, via: i.via }) };
+    case 'retiro_capital':
+      return { operacion: 'retiro_capital', candidatos: limpiar({ socio: i.socio, monto: i.monto_centavos }) };
+    case 'renta_omar':
+      return { operacion: 'renta_omar', candidatos: limpiar({ monto: i.monto_centavos, pagado_por: i.pagado_por === 'sociedad' ? null : i.pagado_por, via: i.via }) };
+    case 'gasto_servicio':
+      return {
+        operacion: 'gasto_servicio',
+        candidatos: limpiar({
+          servicio: i.servicio_texto, moneda: i.monto_usd_centavos !== null ? 'usd' : i.monto_mxn_centavos !== null ? 'mxn' : null, monto: i.monto_usd_centavos ?? i.monto_mxn_centavos,
+          pagado_por: i.pagado_por === 'sociedad' ? null : i.pagado_por,
+          tipo_cambio: i.tipo_cambio_micro !== null ? String(i.tipo_cambio_micro / 1_000_000) : null,
+        }),
+      };
     case 'conteo':
       return { operacion: 'conteo', candidatos: limpiar({ lineas: lineas(i.lineas) }) };
     case 'cliente_alta':

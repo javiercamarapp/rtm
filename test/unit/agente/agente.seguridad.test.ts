@@ -117,18 +117,20 @@ describe('MEDIO-2: quien confirma y el efecto confirmado', () => {
     expect(ctxs[0]!.efectoHash).toBe('hash-de-la-vista-previa');
   });
 
-  it('la firma del acta lleva el token del boton "Si, estoy seguro" que pulso el autor', async () => {
+  it('la firma del acta es el mensaje personal de cada socio (sin boton generico): la base recibe SU texto y su id, no un token', async () => {
     const negocio = new NegocioSimulado();
     const ctxs: ContextoEjecucion[] = [];
     const n = negocio as unknown as NegocioAgente;
     const ejecutar = n.ejecutar.bind(n);
     n.ejecutar = async (a, ctx) => { ctxs.push(ctx); return ejecutar(a, ctx); };
-    const e = escenario(NINGUNA, { ...ESTRICTO, negocio });
+    const e = escenario(NINGUNA, { negocio });
     await e.socio('javier', '/firmaracta');
-    await e.pulsar(IDS.javier, IDS.grupoSocios, e.ultimoGrupo(), 0, 0);
-    const refuerzo = e.ultimoGrupo();
-    await e.pulsar(IDS.javier, IDS.grupoSocios, refuerzo, 0, 0);
-    expect(ctxs.at(-1)!.tokenBoton).toBe(refuerzo.botones![0]![0]!.callbackData);
+    const ctx = ctxs.at(-1)!;
+    expect(ctx.tokenBoton ?? null).toBeNull();
+    expect(ctx.cita).toContain('/firmaracta');
+    expect(ctx.autor.persona).toBe('javier');
+    // Ningun mensaje con botones: la firma no pasa por una tarjeta de confirmacion generica.
+    expect(e.grupo().some((m) => (m.botones ?? []).some((f) => f.some((b) => /seguro|confirmar/i.test(b.texto ?? ''))))).toBe(false);
   });
 });
 

@@ -85,7 +85,7 @@ describe('catalogo ampliado: sin tarjeta, solo socios, sin SQL generado', () => 
       expect(CATALOGO_INTENCIONES[t as keyof typeof CATALOGO_INTENCIONES], t).toBe(d);
       expect(d.confirmacion, t).toBe('ninguna');
       expect(d.quien, t).toBe('socios');
-      expect(d.estado, t).toBe('extraido');
+      expect(['extraido', 'activa'], t).toContain(d.estado);
       if (d.hub !== 'ninguno') expect(d.tipoHub, t).toMatch(/^[a-z_]+$/);
       for (const f of d.funcionesSql) expect(f, t).toMatch(/^[a-z_]+\.[a-z_]+$/);
     }
@@ -222,7 +222,8 @@ describe('el id de la pregunta sale de la memoria del servidor', () => {
 });
 
 describe('conversaciones simuladas por operacion nueva (LLM guionado, transporte falso)', () => {
-  for (const ej of EJEMPLOS) {
+  // entrega_fondos, liquidacion_socios, retiro_capital y renta_omar ya estan activas (carril socios y gastos): sus conversaciones viven en socios_gastos.test.ts.
+  for (const ej of EJEMPLOS.filter((x) => !['entrega_fondos', 'liquidacion_socios', 'retiro_capital', 'renta_omar'].includes(x.intencion.tipo))) {
     it(`${ej.intencion.tipo}: el mensaje pasa las guardias y el bot dice con claridad que no registro nada`, async () => {
       const e = escenario([unaAccion(ej.intencion)]);
       const r = await e.socio('javier', ej.mensaje);
@@ -243,7 +244,8 @@ describe('conversaciones simuladas por operacion nueva (LLM guionado, transporte
     expect(e.ultimoGrupo().texto).toContain('$400.00');
     expect(e.ultimoGrupo().texto).toMatch(/cifra completa/);
     await e.socio('javier', 'pague 400 de renta a Omar');
-    expect(e.ultimoGrupo().texto).toMatch(/no registre nada; hazla desde el software|todavia no esta conectada/);
+    // Con la cifra completa pasa a la conversacion: pregunta lo que falta (la via) en lugar de repetir el monto.
+    expect(e.ultimoGrupo().texto).toMatch(/transferencia o en efectivo|no se ejecuta aqui/);
   });
 
   it('una cifra de piezas tomada de un plazo se bloquea y pregunta', async () => {

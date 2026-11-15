@@ -2,12 +2,14 @@
 // Espejo SQL: agente.operacion_slot (supabase/migrations/20261116200000_agente_conversacion.sql); la prueba test/unit/agente/conversacion_slots.test.ts verifica que coincidan.
 // Los textos de las preguntas salen de MACHOTES-Y-ESQUELETO-RTM (espanol neutro, sin emojis). Nada aqui calcula dinero.
 import type { OpcionSlot } from './slots_tipos';
+import { OPERACIONES_SOCIOS, OPERACIONES_SOCIOS_CONV } from './slots_socios';
 
 export type { OpcionSlot } from './slots_tipos';
 
 export const OPERACIONES_CONV = [
   'pedido_bodega', 'pedido_dropshipping', 'pedido_a_costo', 'cobro_cliente', 'pago_redirigido', 'pago_proveedor', 'compra', 'recepcion_compra', 'gasto',
   'aportacion', 'deposito', 'reembolso', 'retiro', 'entrega_fondos', 'liquidacion', 'conteo', 'merma', 'obsequio', 'devolucion', 'alta_cliente', 'alta_sabor', 'alta_modelo',
+  ...OPERACIONES_SOCIOS_CONV,
 ] as const;
 export type OperacionConv = (typeof OPERACIONES_CONV)[number];
 
@@ -66,6 +68,7 @@ const banderas = (...claves: string[]): DefSlot[] => claves.map((clave) => ({ cl
 const opcional = (clave: string, pregunta: string, tipo: TipoSlot = 'texto'): DefSlot => ({ clave, tipo, obligatorio: false, pregunta });
 
 export const OPERACIONES: Readonly<Record<OperacionConv, DefOperacion>> = {
+  ...OPERACIONES_SOCIOS,
   pedido_bodega: {
     clave: 'pedido_bodega', titulo: 'Pedido de bodega',
     slots: [cliente(), lineas(), modalidad(), plazo(), envio(),
@@ -117,7 +120,7 @@ export const OPERACIONES: Readonly<Record<OperacionConv, DefOperacion>> = {
     clave: 'gasto', titulo: 'Gasto',
     slots: [{ clave: 'tipo_gasto', tipo: 'opcion', obligatorio: true, pregunta: '¿Qué tipo de gasto es: guía, envío, Uber, comisión de terminal, servicio u otro?',
       opciones: [{ valor: 'guia', texto: 'Guía' }, { valor: 'envio', texto: 'Envío' }, { valor: 'uber', texto: 'Uber' }, { valor: 'comision_terminal', texto: 'Comisión de terminal' }, { valor: 'servicio', texto: 'Servicio' }, { valor: 'otro', texto: 'Otro' }], sinonimos: ['tipo', 'tipo de gasto'] },
-    monto(), { clave: 'pagado_por', tipo: 'opcion', obligatorio: true, pregunta: '¿Quién pagó el gasto, Angelo o Javier?', opciones: SOCIOS, sinonimos: ['pagado por', 'quien pago'] },
+    monto(), { clave: 'pagado_por', tipo: 'opcion', obligatorio: true, pregunta: '¿Quién pagó el gasto: Angelo, Javier o la sociedad (caja)?', opciones: PAGADO_POR, sinonimos: ['pagado por', 'quien pago'] },
     opcional('referencia', '¿Es de algún pedido o compra? Escribe el folio o «ninguno».'), opcional('comprobante', '¿Tienes el comprobante?')],
   },
   aportacion: {
