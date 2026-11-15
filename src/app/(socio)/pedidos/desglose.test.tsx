@@ -61,7 +61,8 @@ async function pagina(sp: Record<string, string>) {
   const { default: P } = await import('./page');
   return renderToStaticMarkup((await (P as unknown as (p: unknown) => Promise<React.ReactNode>)({ searchParams: Promise.resolve(sp) })) as React.ReactElement);
 }
-const folios = (html: string) => [...html.matchAll(/href="\/pedidos\/\d+">(P-\d+)</g)].map((m) => m[1]);
+// Solo el libro: la mini lista de ultimos pedidos de la tarjeta Estados y surtido repite folios a proposito.
+const folios = (html: string) => [...html.replace(/<ul class="rtm-a1-ultimos"[\s\S]*?<\/ul>/, '').matchAll(/href="\/pedidos\/\d+">(P-\d+)</g)].map((m) => m[1]);
 
 describe('pagina de pedidos: Bodega / Dropshipping', () => {
   it('ya no trae el desplegable "Mas" ni chips de origen; trae el segmentado y el conmutador de avisos', async () => {
@@ -70,6 +71,7 @@ describe('pagina de pedidos: Bodega / Dropshipping', () => {
     expect(html).not.toContain('origen=');
     for (const id of ['surtido-todos', 'surtido-inventario', 'surtido-dropshipping', 'filtro-avisos', 'desglose-pedidos']) expect(html).toContain(`data-testid="${id}"`);
     expect(folios(html).sort()).toEqual(['P-1', 'P-2', 'P-3', 'P-4']);
+    for (const t of ['Por estado', 'Surtido de piezas', 'Origen del pedido', 'Clientes con más facturado', 'Últimos pedidos']) expect(html).toContain(t);
   });
   it('filtra por grupo, proveedor y tipo desde la URL', async () => {
     expect(folios(await pagina({ surtido: 'inventario_merida' }))).toEqual(['P-1']);

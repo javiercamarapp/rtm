@@ -40,3 +40,12 @@
 .rtm-desglose-ped a:hover { text-decoration: underline; }
 .rtm-desglose-ped a:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; border-radius: 2px; }
 .rtm-desglose-ped a[aria-current='true'] { text-decoration: underline; text-underline-offset: 3px; font-weight: 700; }
+
+/* Pedidos, tarjeta "Estados y surtido": cada bloque ocupa su alto natural; el contenido (no el estiramiento) llena la tarjeta. */
+.rtm-a1-ultimos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.rtm-a1-ultimos li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px; align-items: center; font-size: var(--rtm-t-cuerpo); }
+.rtm-a1-ultimos a { color: var(--rtm-ink); text-decoration: none; }
+.rtm-a1-ultimos a:hover { text-decoration: underline; }
+.rtm-a1-ultimos a:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; border-radius: 2px; }
+.rtm-a1-ultimos-cliente { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtm-a1-ultimos-total { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
