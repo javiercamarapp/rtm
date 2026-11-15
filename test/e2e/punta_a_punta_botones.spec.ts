@@ -95,7 +95,6 @@ for (const tema of TEMAS) {
     test('Pedido enviado: registrar pago, emitir correccion, anular, vistas de la nota, copiar texto y PDF (B-58 a B-75)', async ({ page }, info) => {
       await sesionSocio(page, `/pedidos/${d.pedidoBodegaId}`);
       for (const [id, nombre] of [['registrar-pago', 'registrar-pago'], ['corregir-nota', 'corregir-nota'], ['anular-pedido', 'anular-pedido']] as const) {
-        if (id !== 'registrar-pago') await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
         await abrirYCancelar(page, info, tema, page.getByTestId(id), nombre);
       }
       for (const vista of ['Nota', 'Hoja interna', 'Versiones']) {
@@ -176,9 +175,7 @@ for (const tema of TEMAS) {
       await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page.getByTestId('nueva-oc')).toBeVisible();
       await abrirYCancelar(page, info, tema, page.getByTestId('pago-socio'), 'pago-socio');
-      await page.getByTestId('barra-mas').click();
       await abrirYCancelar(page, info, tema, page.getByTestId('pago-sociedad'), 'pago-sociedad');
-      await page.getByTestId('barra-mas').click();
       await abrirYCancelar(page, info, tema, page.getByTestId('ajuste-proveedor'), 'ajuste-proveedor');
       await page.getByTestId('abrir-liquidacion').click();
       await page.waitForURL('**/proveedores/liquidacion**');

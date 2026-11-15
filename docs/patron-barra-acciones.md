@@ -4,23 +4,27 @@ Para el barrido por todas las paginas. Todo vive en componentes y CSS compartido
 
 ## Botones (`src/ui/estilos/controles.css`, seccion Botones)
 
-- Variantes por clase: `rtm-boton` (secundaria, contorno fino), `rtm-boton rtm-boton-primario` (negro solido), `rtm-boton rtm-boton-terciario` (texto), `rtm-boton rtm-boton-peligro` (destructiva sobria), `rtm-boton-item` (fila dentro de un menu), `rtm-boton-chico`.
+- Variantes por clase: `rtm-boton` (secundaria, contorno fino), `rtm-boton rtm-boton-primario` (negro solido), `rtm-boton rtm-boton-terciario` (texto), `rtm-boton rtm-boton-peligro` (destructiva sobria), `rtm-boton-item` (fila dentro de un menu de filtro), `rtm-boton-chico`.
 - Alto 32 px (token `--rtm-boton-alto`), radio `--rtm-ctl-r`, 13 px con peso medio. En pantallas tactiles se conserva el minimo de 44 px (regla de accesibilidad del proyecto).
 - Estados: hover, `:focus-visible` (contorno de 2 px), `:active`, `:disabled` y cargando con `aria-busy="true"` (el texto se oculta y aparece un indicador). Respeta `prefers-reduced-motion` y `data-movimiento`.
 - Iconos opcionales: un `<svg>` de 14 px dentro del boton.
 
 ## BarraAcciones (`src/ui/componentes/barra-acciones.tsx`)
 
-Una sola fila siempre (sin `flex-wrap`). Reglas:
+Una sola fila siempre, SIN menu desplegable ni boton "Mas" (pedido del dueno, 14-nov: "quita el boton de Mas"). Orden de izquierda a derecha: `vistas` (segmentado), `secundarias` (botones terciarios) y `primarias`. Reglas:
 
-1. Maximo 1 o 2 acciones primarias visibles (`primarias`), con etiqueta corta; el texto largo va en `title` (ejemplo: "Registrar deposito", title "Registrar deposito de un socio").
-2. Las demas acciones van agrupadas en el menu "Mas" (`secundarias`, hijos con clase `rtm-boton-item` o `variante="item"` en `FormularioAccion`). El menu abre con clic o Enter, se recorre con flechas arriba y abajo, cierra con Escape y devuelve el foco al boton. Los dialogos de sus acciones siguen funcionando porque el panel permanece montado.
-3. La navegacion entre vistas relacionadas (`vistas`) es un segmentado compacto; con menos de 1100 px pasa al menu y en movil el menu queda como icono.
-4. Uso: `<EncabezadoPagina acciones={<BarraAcciones primarias={...} secundarias={...} vistas={[...]} />} />`.
+1. Maximo 1 o 2 acciones primarias (`primarias`), con etiqueta corta; el texto largo va en `title` (ejemplo: "Deposito", title "Registrar deposito de un socio").
+2. Las demas acciones (`secundarias`) se muestran visibles como botones compactos terciarios de 32 px: clase `rtm-boton rtm-boton-terciario`, o `variante="terciario"` en `FormularioAccion`, `DialogoSimple`, `BotonAccion` (ambos), `FormularioGuia`. Etiqueta corta ("Gasto", "Pago", "Anular") y descripcion larga en `title` (`descripcion` en los componentes). Los dialogos siguen funcionando igual: el boton y su dialogo se montan en la misma fila.
+3. Si una barra reune mas de 5 acciones, la navegacion entre vistas va como segmentado (`vistas`) y las acciones de registro como terciarias con etiqueta corta (Cuenta de socios: 4 vistas, Gasto, Pago, Liquidacion y la primaria Deposito).
+4. La fila no se parte: `flex-wrap: nowrap` en `.rtm-ba`, `.rtm-ba-sec` y `.rtm-ba-primarias`. En escritorio el encabezado baja la barra completa a su propia linea si no cabe junto al titular. Con 1100 px o menos, si ni sola cabe, se desliza en horizontal con la barra de desplazamiento oculta y un desvanecido en el borde derecho (`controles.css`). La barra con un panel flotante (Inventario, `.rtm-exportar`) queda sin recorte.
+5. Uso: `<EncabezadoPagina acciones={<BarraAcciones primarias={...} secundarias={...} vistas={[...]} />} />`.
+6. No existe `data-testid="barra-mas"`: los e2e pulsan la accion directo por su `data-testid`. El contrato `test/contratos/barra_acciones_sin_mas.test.ts` falla si reaparece `barra-mas`, las clases del menu retirado o un boton rotulado "Mas".
 
-Aplicada en: Cuenta de socios (`socios`), historial de socio, acta de reparto, Cliente (`clientes/[id]`), Pedido (`pedidos/[id]`, acciones primarias visibles y el resto en "Mas"), Proveedores (`proveedores`), orden de compra (`proveedores/compras/[id]`), liquidacion semanal, Inventario (CSV y exportar PDF; el panel de exportar flota) y Contactos (exportacion). Pendiente: las filas `rtm-acciones-fila` de cuentas por cobrar, apertura y cascada. Los e2e que hacian clic en una accion que ahora vive en "Mas" abren primero `data-testid="barra-mas"`.
+Aplicada en: Cuenta de socios (`socios`), historial de socio, acta de reparto, Cliente (`clientes/[id]`), Pedido (`pedidos/[id]`), Proveedores (`proveedores`), orden de compra (`proveedores/compras/[id]`), liquidacion semanal, Inventario (CSV y exportar PDF; el panel de exportar flota) y Contactos (exportacion). Pendiente: las filas `rtm-acciones-fila` de cuentas por cobrar, apertura y cascada.
 
-Dentro de "Mas" todo debe ser una fila de menu: usa `variante="item"` en `FormularioAccion`, `DialogoSimple`, `BotonAccion` (ambos), `FormularioGuia`, o un enlace/boton con `rtm-boton-item`. No se envuelve el contenido en clases propias. `controles.css` conserva una red de seguridad para un `.rtm-boton` suelto dentro del panel, pero es respaldo, no el camino. `PagoSocioProveedor` se queda como accion primaria de Proveedores (sus e2e lo pulsan directo), por eso no usa la variante.
+Pendiente de revisar en navegador: que en telefono (<= 767 px) las secundarias se vuelvan iconos. Hoy no hay un icono por accion; la fila se desliza en horizontal con el mismo texto corto.
+
+`rtm-boton-item` sigue existiendo solo para las filas de `MenuFiltro` (desplegable de enlaces de filtro), no para acciones.
 
 ## Filtros plegables (`src/ui/componentes/filtros-plegables.tsx`)
 
