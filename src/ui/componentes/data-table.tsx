@@ -53,8 +53,8 @@ interface Props<T> {
   pegajosa?: boolean;
   /** v2: primera columna fija al desplazar en horizontal. */
   primeraFija?: boolean;
-  /** v2: fila de totales fija abajo; los totales deben ser los del filtro completo, no los de la pagina. */
-  totales?: { etiqueta: string; celdas: Record<string, ReactNode> };
+  /** v2: fila de totales al final de la tabla, en el flujo (nunca sticky); los totales deben ser los del filtro completo, no los de la pagina. */
+  totales?: { etiqueta: string; /** Complemento del rotulo (p. ej. "de los enviados"): va como ayuda y para lectores, no ensancha el pie. */ detalle?: string; celdas: Record<string, ReactNode> };
   /** v2: grupos colapsables con subtotal en la fila del grupo. */
   agrupar?: AgrupacionTabla<T>;
   /** v2: pestanas de filtro con contador sobre la tabla. */
@@ -195,7 +195,7 @@ export function DataTable<T>({ etiqueta, columnas, filas, clave, estado = 'listo
             <div className="rtm-dt-fila" role="row">
               {columnas.map((c, i) => (
                 <div key={c.id} role="cell" className="rtm-dt-celda" {...atributosCelda(c)}>
-                  {i === 0 ? <strong>{totales.etiqueta}</strong> : (totales.celdas[c.id] ?? null)}
+                  {i === 0 ? <strong title={totales.detalle ? `${totales.etiqueta} ${totales.detalle}` : undefined}>{totales.etiqueta}{totales.detalle && <span className="rtm-solo-lectores"> {totales.detalle}</span>}</strong> : (totales.celdas[c.id] ?? null)}
                 </div>
               ))}
             </div>

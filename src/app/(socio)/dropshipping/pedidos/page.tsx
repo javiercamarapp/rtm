@@ -79,7 +79,7 @@ export default async function PaginaPedidosDs({ searchParams }: { searchParams: 
           interactiva={{ porPagina: 50, exportar: 'dropshipping-pedidos' }}
           clave={(f) => f.pedido_id}
           filas={filas}
-          totales={filas.length ? { etiqueta: 'Totales de los enviados', celdas: { v: formatearMoneda(suma((x) => x.venta_cent)), c: formatearMoneda(suma((x) => x.costo_total_cent)), m: formatearMoneda(suma((x) => x.margen_cent)) } } : undefined}
+          totales={filas.length ? { etiqueta: 'Totales', detalle: 'de los enviados', celdas: { v: formatearMoneda(suma((x) => x.venta_cent)), c: formatearMoneda(suma((x) => x.costo_total_cent)), m: formatearMoneda(suma((x) => x.margen_cent)) } } : undefined}
           vacio={{ titulo: origen === 'dropshipping' ? 'Sin pedidos de dropshipping todavía' : 'Ningún pedido coincide', texto: 'Captura el primero en Nuevo pedido: eliges los renglones, el destinatario y el sistema arma la orden para el proveedor.', accion: <Link className="rtm-boton" href="/dropshipping/nuevo">Nuevo pedido</Link> }}
           columnas={[
             { id: 'f', titulo: 'Folio', prioridadMovil: 'normal', ancho: 'm', celda: (f) => <Link className="rtm-mono" href={`/dropshipping/pedidos/${f.pedido_id}`}>{f.folio}</Link> },
