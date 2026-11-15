@@ -1,0 +1,342 @@
+[
+ {
+  "id": "n-015",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "ya salieron P-0012 y P-0013 por Castores",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "envio_lote",
+     "paqueteria": "castores",
+     "folios": [
+      "P-0012",
+      "P-0013"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-016",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "se enviaron el P-0020, P-0021 y P-0022 con Pitic",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "envio_lote",
+     "paqueteria": "pitic",
+     "folios": [
+      "P-0020",
+      "P-0021",
+      "P-0022"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-017",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "P-0030 y P-0031 salieron hoy por DHL",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "envio_lote",
+     "paqueteria": "dhl",
+     "folios": [
+      "P-0030",
+      "P-0031"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-018",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "mande el P-0040 por Estafeta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_envio",
+     "folio": "P-0040",
+     "estado": "enviado"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "envio_lote",
+      "paqueteria": "estafeta",
+      "folios": [
+       "P-0040"
+      ]
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "n-019",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "guias Estafeta: P-0012 4501, P-0013 4502",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "guias_lote",
+     "paqueteria": "estafeta",
+     "guias": [
+      [
+       "P-0012",
+       "4501"
+      ],
+      [
+       "P-0013",
+       "4502"
+      ]
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-020",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "ya llegaron las guias de Castores: P-0020 CA88123, P-0021 CA88124, P-0022 CA88125",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "guias_lote",
+     "paqueteria": "castores",
+     "guias": [
+      [
+       "P-0020",
+       "CA88123"
+      ],
+      [
+       "P-0021",
+       "CA88124"
+      ],
+      [
+       "P-0022",
+       "CA88125"
+      ]
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-021",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "la guia del P-0030 es DHL 99887766",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_envio",
+     "folio": "P-0030"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "guias_lote",
+      "paqueteria": "dhl",
+      "guias": [
+       [
+        "P-0030",
+        "99887766"
+       ]
+      ]
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "n-022",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "P-0050 y P-0051 salieron por Fedex",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "envio_lote",
+     "paqueteria": "otra",
+     "folios": [
+      "P-0050",
+      "P-0051"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-023",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "mande P-0060 y P-0061 por paqueteria",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "envio_lote",
+     "paqueteria": null,
+     "folios": [
+      "P-0060",
+      "P-0061"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-024",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "P-0070 entregado, P-0071 entregado",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_envio",
+     "folio": "P-0070",
+     "estado": "entregado"
+    },
+    {
+     "tipo": "pedido_envio",
+     "folio": "P-0071",
+     "estado": "entregado"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-025",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "las guias de hoy por Pitic: Cliente Alfa 7788, Cliente Beta 7789",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "guias_lote",
+     "paqueteria": "pitic",
+     "guias": [
+      [
+       null,
+       "7788"
+      ],
+      [
+       null,
+       "7789"
+      ]
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-026",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "ya salio todo por Castores",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "ninguna"
+     }
+    ]
+   ],
+   "nota": "sin folios"
+  }
+ },
+ {
+  "id": "n-027",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "ya envie el P-0080 con guia 4401 por Estafeta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_envio",
+     "folio": "P-0080",
+     "estado": "enviado"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "guias_lote",
+      "paqueteria": "estafeta",
+      "guias": [
+       [
+        "P-0080",
+        "4401"
+       ]
+      ]
+     }
+    ],
+    [
+     {
+      "tipo": "envio_lote",
+      "paqueteria": "estafeta",
+      "folios": [
+       "P-0080"
+      ]
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "n-028",
+  "categoria": "envios",
+  "autor": "javier",
+  "texto": "recibi las guias: P-0090 5512 DHL, P-0091 5513 DHL, P-0092 5514 DHL, P-0093 5515 DHL, P-0094 5516 DHL, P-0095 5517 DHL",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "guias_lote",
+     "paqueteria": "dhl",
+     "guias": [
+      [
+       "P-0090",
+       "5512"
+      ],
+      [
+       "P-0091",
+       "5513"
+      ],
+      [
+       "P-0092",
+       "5514"
+      ],
+      [
+       "P-0093",
+       "5515"
+      ],
+      [
+       "P-0094",
+       "5516"
+      ],
+      [
+       "P-0095",
+       "5517"
+      ]
+     ]
+    }
+   ]
+  }
+ }
+]

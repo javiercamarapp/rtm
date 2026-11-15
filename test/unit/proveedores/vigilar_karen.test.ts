@@ -34,10 +34,10 @@ describe('conciliacion (solo lectura, nunca unifica)', () => {
     expect(r.soloCatalogo.map((m: { id: number }) => m.id).sort()).toEqual([4, 6]);
     expect(aMarkdown(r, '2026-11-14')).not.toMatch(/https?:/);
   });
-  it('el diccionario Waka del repo trae los 13 alias y 80K para Optimus queda por confirmar', () => {
+  it('el diccionario Waka del repo trae los 13 alias y Optimus = 100K (corregido por el dueno)', () => {
     const mapa = cargarAliasWaka(new URL('../../../scripts/catalogo/alias-waka.json', import.meta.url));
     expect(mapa.get('steel')).toBe(60);
-    expect(mapa.get('optimus')).toBe(80);
+    expect(mapa.get('optimus')).toBe(100);
     expect(mapa.size).toBe(13);
   });
 });

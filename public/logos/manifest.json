@@ -6,10 +6,6 @@
       "sha256": "6d53db4be375e899c937c26cf16684a80d6e869b1928d72b37748bef2560e219",
       "origen": "https://www.anthropic.com/press-kit (zip: Claude logos/3 Claude Spark/SVG/Claude Spark - Clay.svg)"
     },
-    "dominio.svg": {
-      "sha256": "e6b37b24bfe947777c388c2febcedf79df8a46381dd59b05a4b96bad27265082",
-      "origen": "Icono generico (globo), basado en Lucide (ISC); no es una marca"
-    },
     "github.svg": {
       "sha256": "693d7abe6f899646cc2e96856723b45e95f71885a54910b2749f6decdf7e1ee1",
       "origen": "https://brand.github.com/GitHub_Logos.zip (GitHub Logos/SVG/GitHub_Invertocat_Black.svg)"

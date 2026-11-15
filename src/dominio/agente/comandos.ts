@@ -17,7 +17,7 @@ import {
 
 export const USO_COMANDOS: Readonly<Record<string, string>> = {
   pedido: '/pedido Cliente | modelo 28 | 24 modelo | envio 150 | plazo contado (o plazo 15 dias)',
-  pago: '/pago Cliente | 7000',
+  pago: '/pago Cliente | 7000 [| cuenta]',
   gasto: '/gasto guia 500 angelo',
   aporte: '/aporte javier 1000 [capital|reembolso] [motivo]',
   reembolso: '/reembolso javier 1000 [transferencia|efectivo]',
@@ -55,6 +55,8 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
   lote: '/lote etiqueta  [total 1500]  (una linea por movimiento: 2026-10-03 gasto javier 500 uber | 2026-10-04 cobro Cliente 7000 efectivo)',
   pedidomenudeo: '/pedidomenudeo [karen|isaac] | modelo/sabor 24 | modelo/sabor 10 | cuando el viernes 5pm  (o: sin fecha)',
   pagopedido: '/pagopedido P-0001 | 1000 | [transferencia|deposito|efectivo] | [proveedor|sociedad] | [ref CLAVE] | [ayer]',
+  cierre: '/cierre',
+  igualar: '/igualar [angelo|javier]',
   cuadra: '/cuadra',
   balance: '/balance',
   diario: '/diario',
@@ -64,19 +66,21 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
   pedidos: '/pedidos',
   sinia: '/sinia',
   conia: '/conia',
+  lectura: '/lectura',
+  escritura: '/escritura',
   ayuda: '/ayuda',
 };
 
 export const LISTA_COMANDOS =
-  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes, /enviado, /entregado, /cancelar, /aprobar, /enviada, /llego, /recibir, /servicio, /merma, /conteo, /cliente, /precio, /acta, /firmaracta, /lote, /pedidomenudeo, /pagopedido, /cuadra, /balance, /diario, /cobertura, /reporte, /compras, /pedidos, /socios, /valuacion';
+  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes, /enviado, /entregado, /cancelar, /aprobar, /enviada, /llego, /recibir, /servicio, /merma, /conteo, /cliente, /precio, /acta, /firmaracta, /lote, /pedidomenudeo, /pagopedido, /cuadra, /balance, /diario, /cobertura, /reporte, /compras, /pedidos, /socios, /valuacion, /cierre, /igualar, /lectura, /escritura';
 
 export type ResultadoComando =
   | { ok: true; tipo: 'intencion'; intencion: Intencion }
-  | { ok: true; tipo: 'control'; control: 'sinia' | 'conia' }
+  | { ok: true; tipo: 'control'; control: 'sinia' | 'conia' | 'lectura' | 'escritura' }
   | { ok: false; error: 'comando_desconocido' | 'formato'; uso: string };
 
 const PIEZAS_MIN = 1;
-const PIEZAS_MAX = 2000;
+const PIEZAS_MAX = 1_000_000;
 
 function fallo(clave: string): ResultadoComando {
   return { ok: false, error: 'formato', uso: USO_COMANDOS[clave] ?? LISTA_COMANDOS };
@@ -85,7 +89,7 @@ function fallo(clave: string): ResultadoComando {
 function monto(texto: string): number | null {
   try {
     const c = centavosDesdeTexto(texto);
-    return c > 0n && c <= 100_000_000_00n ? Number(c) : null;
+    return c > 0n && c <= 10_000_000_000_000n ? Number(c) : null;
   } catch {
     return null;
   }
@@ -202,6 +206,8 @@ export function parsearComando(texto: string): ResultadoComando | null {
       return consulta('ayuda');
     case 'sinia':
     case 'conia':
+    case 'lectura':
+    case 'escritura':
       return { ok: true, tipo: 'control', control: nombre };
     case 'pendientes':
       return consulta('pendientes');
@@ -265,10 +271,11 @@ export function parsearComando(texto: string): ResultadoComando | null {
       return { ok: true, tipo: 'intencion', intencion: { tipo: 'pedido', cliente_texto: cliente, destino_texto: null, lineas, envio_cobrado_centavos: envio, plazo_texto: plazo, fuente_cita: cita } };
     }
     case 'pago': {
-      const [cliente, importe] = partes;
+      const [cliente, importe, cuenta] = partes;
       const c = importe === undefined ? null : monto(importe);
       if (!cliente || c === null) return fallo('pago');
-      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pago', cliente_texto: cliente, monto_centavos: c, cuenta_destino_texto: null, pedido_folio: null, fuente_cita: cita } };
+      // La cuenta es opcional en el comando: si falta, el bot la PREGUNTA antes de escribir (no hay tarjeta de confirmacion).
+      return { ok: true, tipo: 'intencion', intencion: { tipo: 'pago', cliente_texto: cliente, monto_centavos: c, cuenta_destino_texto: cuenta ?? null, pedido_folio: null, fuente_cita: cita } };
     }
     case 'gasto': {
       const t = resto.split(/\s+/);
@@ -524,6 +531,12 @@ export function parsearComando(texto: string): ResultadoComando | null {
     case 'valuacion':
     case 'estamos':
       return consulta('valuacion');
+    case 'cierre':
+      return consulta('cierre_mensual');
+    case 'igualar': {
+      const p = normalizar(resto);
+      return p === '' ? consulta('valuacion') : p === 'angelo' || p === 'javier' ? consulta('valuacion', { sujeto_texto: p }) : fallo('igualar');
+    }
     case 'cobertura':
       return consulta('cobertura', { modelo_texto: resto === '' ? null : resto });
     case 'reporte': {

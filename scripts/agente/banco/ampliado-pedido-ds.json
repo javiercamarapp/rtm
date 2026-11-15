@@ -1,0 +1,364 @@
+[
+ {
+  "id": "n-001",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "dropshipping para Cliente Alfa: 300 zafiro 5k mango a 8 dias, por Karen directo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente alfa",
+     "origen": "karen_directo",
+     "forma_pago": "credito",
+     "plazo": [
+      "8 dias"
+     ],
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 300
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-002",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "Pedido de Karen para Memo Ficticio, 200 nimbo 50k mora azul, de contado",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "memo ficticio",
+     "origen": "karen_directo",
+     "forma_pago": "contado",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "mora azul",
+       "n": 200
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-003",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "Mandale a Vapes Demo Centro 200 orbita 20k fresa por Isaac, fiado a 15 dias",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "vapes demo centro",
+     "origen": "isaac_directo",
+     "forma_pago": "credito",
+     "plazo": [
+      "15 dias"
+     ],
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "fresa",
+       "n": 200
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-004",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "pedido por Isaac para Lupita Muestra, 150 vega 9k uva, de contado, folio 7001",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "lupita muestra",
+     "origen": "isaac_directo",
+     "forma_pago": "contado",
+     "folio_proveedor": "7001",
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "uva",
+       "n": 150
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-005",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "Cliente Beta pide por dropshipping 40 cometa 30k mango y 40 cometa 30k menta, Karen via Isaac, me paga el viernes",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente beta",
+     "origen": "karen_via_isaac",
+     "forma_pago": "credito",
+     "plazo": [
+      "viernes"
+     ],
+     "lineas": [
+      {
+       "m": "cometa 30k",
+       "s": "mango",
+       "n": 40
+      },
+      {
+       "m": "cometa 30k",
+       "s": "menta",
+       "n": 40
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-006",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "dropshipping para Cliente Gamma: 25 zafiro 5k sandia, envio 150, a credito 2 semanas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente gamma",
+     "forma_pago": "credito",
+     "plazo": [
+      "2 semanas"
+     ],
+     "envio_pesos": 150,
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 25
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-007",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "pidele a Karen 60 nimbo 50k uva hielo para Tienda La Esquina, a credito",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "tienda la esquina",
+     "origen": "karen_directo",
+     "forma_pago": "credito",
+     "plazo": [],
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "uva hielo",
+       "n": 60
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-008",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "dropshipping Cliente Delta 100 vega 9k menta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente delta",
+     "forma_pago": null,
+     "plazo": [],
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "menta",
+       "n": 100
+      }
+     ]
+    }
+   ],
+   "nota": "sin forma de pago ni plazo: el modelo deja null y el servidor pregunta"
+  }
+ },
+ {
+  "id": "n-009",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "venta por dropshipping a Cliente Norte: 12 orbita 20k cereza, 12 orbita 20k coco, 12 orbita 20k limon, de contado, envio al cliente: Rodrigo Ficticio",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente norte",
+     "forma_pago": "contado",
+     "sin_destinatario": "rodrigo",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "cereza",
+       "n": 12
+      },
+      {
+       "m": "orbita 20k",
+       "s": "coco",
+       "n": 12
+      },
+      {
+       "m": "orbita 20k",
+       "s": "limon",
+       "n": 12
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-010",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "Para Cliente Sur pidele a Isaac 80 zafiro 5k durazno, a 30 dias",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente sur",
+     "origen": "isaac_directo",
+     "forma_pago": "credito",
+     "plazo": [
+      "30 dias"
+     ],
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "durazno",
+       "n": 80
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-011",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "pedido ds Cliente Beta: 500 cometa 30k surtido, karen directo, plazo 3 semanas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente beta",
+     "origen": "karen_directo",
+     "forma_pago": "credito",
+     "plazo": [
+      "3 semanas"
+     ],
+     "lineas": [
+      {
+       "m": "cometa 30k",
+       "s": "surtido",
+       "n": 500
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-012",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "Memo Ficticio quiere 1,200 vega 9k fresa, que se lo mande Karen, a credito a 10 dias",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "memo ficticio",
+     "origen": "karen_directo",
+     "forma_pago": "credito",
+     "plazo": [
+      "10 dias"
+     ],
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "fresa",
+       "n": 1200
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-013",
+  "categoria": "pedido_ds",
+  "autor": "javier",
+  "texto": "pedido de Cliente Gamma para entregar a Tomas Ejemplo en Cancun: 24 nimbo 50k mango por dropshipping, de contado",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente gamma",
+     "forma_pago": "contado",
+     "sin_destinatario": "tomas",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "mango",
+       "n": 24
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-014",
+  "categoria": "pedido_ds",
+  "autor": "angelo",
+  "texto": "pedido a costo para mi menudeo: 20 zafiro 5k uva, pago el sabado",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_menudeo",
+     "plazo": [
+      "sabado"
+     ],
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "uva",
+       "n": 20
+      }
+     ]
+    }
+   ],
+   "nota": "control: a costo para el menudeo sigue siendo pedido_menudeo"
+  }
+ }
+]

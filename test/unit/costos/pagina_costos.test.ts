@@ -10,6 +10,7 @@ vi.mock('@/app/(socio)/operacion/usar-accion', () => ({
   useAccion: () => ({ correr: async () => undefined, ocupado: false, error: null, aviso: null }),
   centavosDeTexto: () => null,
 }));
+vi.mock('@/ui/componentes/explicar', () => ({ useExplicar: () => ({ abrir: () => undefined }) }));
 vi.mock('next/link', () => ({ default: ({ href, children }: { href: string; children?: unknown }) => createElement('a', { href: String(href) }, children as never) }));
 
 const servicio = (slug: string, nombre: string, extra: Partial<ServicioVista> = {}): ServicioVista => ({
@@ -35,6 +36,7 @@ function lector(resumen: ResumenMesVista, cargos: CargoVista[]) {
     resumen: async () => resumen,
     cargos: async () => cargos,
     cuenta: async () => resumen.cuenta_javier,
+    aportaciones: async () => ({ socio: 'javier', total_cent: 0n, aportaciones: [], declaracion: null }),
     tipoCambio: async () => null,
     explicar: async (id: number) => ({
       cargo: cargos.find((c) => c.id === id)!, metodo: 'Cuota del documento', atribuido_orig_micro: 20_000_000,
@@ -72,5 +74,23 @@ describe('pagina de costos del sistema', () => {
     expect(h).toContain('$900.00');
     expect(h).toContain('(al menos)');
     expect(h).toContain('OpenRouter (sin consumo medido)');
+  });
+
+  it('muestra el razonamiento, a donde llega el dinero, la validacion y los USD sin tipo de cambio', async () => {
+    const r: ResumenMesVista = {
+      ...resumenVacio,
+      servicios: [{ slug: 'claude_max', servicio: 'Claude Max', logo_slug: null, fase: 'construccion', opcional: true, categoria: 'software', redondeado_cent: 0n, exacto_e6: 0, exacto_puro_e6: 0, usd_micro: 0, cargos: 0,
+        como_seria_cent: null, como_deberia_cent: null, ultima_etiqueta: null, ultimo_estado: null, acumulado_cent: 0n, usd_sin_tc_micro: 20_000_000 }],
+      validacion: { mes: '2026-11', cargos_cent: 47_200n, aportado_cent: 47_200n, mayor_cent: 47_200n, cargos: 1, cuadra: true, por_servicio: [], via1: 'a', via2: 'b', via3: 'c',
+        pendientes_tc: [{ slug: 'claude_max', servicio: 'Claude Max', mes: '2026-11', usd_micro: 20_000_000, fecha_neg: '2026-11-14', nota: '', motivo: 'Sin tipo de cambio: falta capturarlo' }] },
+    };
+    estado.lector = lector(r, []);
+    const h = await html('2026-11');
+    expect(h).toContain('Sin tipo de cambio: falta capturarlo');
+    expect(h).toContain('USD 20.00');
+    expect(h).toContain('A dónde llega el dinero');
+    expect(h).toContain('aportación de capital');
+    expect(h).toContain('cuadra');
+    expect(h).toContain('razon-vercel');
   });
 });

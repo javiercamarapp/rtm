@@ -1,5 +1,6 @@
-// Entrada del webhook de Telegram: secreto en tiempo constante, limite de cuerpo, validacion del update y respuesta 200 pase lo que pase
-// (un 5xx hace que Telegram reintente durante horas; el fallo se registra, no se devuelve). Esta funcion es independiente de Next:
+// Entrada del webhook de Telegram: secreto en tiempo constante, limite de cuerpo, validacion del update. Responde 200 SOLO despues de registrar el update (reclamo con lease en SQL);
+// si el registro mismo falla (base caida) responde 500 y Telegram reintenta con el mismo update_id (el agente lo reclama de nuevo: nuevo o reprocesar). Un fallo DENTRO del proceso
+// ya queda registrado como 'fallido' y se reprocesa en el barrido; no se devuelve un 5xx por eso. Esta funcion es independiente de Next:
 // la ruta app/api/telegram/webhook (otra ola) solo le pasa cabecera, cuerpo y el agente.
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
@@ -30,6 +31,8 @@ const mensaje = z.object({
   photo: z.array(z.unknown()).optional(),
   document: z.unknown().optional(),
   voice: z.unknown().optional(),
+  migrate_to_chat_id: z.number().int().optional(),
+  migrate_from_chat_id: z.number().int().optional(),
   audio: z.unknown().optional(),
   video_note: z.unknown().optional(),
 });
@@ -53,6 +56,8 @@ function aMensaje(m: z.infer<typeof mensaje>): TgMensaje {
   if (m.text !== undefined) salida.text = m.text;
   if (m.caption !== undefined) salida.caption = m.caption;
   if (m.edit_date !== undefined) salida.edit_date = m.edit_date;
+  if (m.migrate_to_chat_id !== undefined) salida.migrate_to_chat_id = m.migrate_to_chat_id;
+  if (m.migrate_from_chat_id !== undefined) salida.migrate_from_chat_id = m.migrate_from_chat_id;
   if (m.forward_origin !== undefined) salida.forward_origin = m.forward_origin;
   if (m.photo !== undefined) salida.has_photo = true;
   // Solo los ids (nunca el contenido): la foto mas grande de la lista, o el archivo adjunto.
@@ -91,8 +96,8 @@ export function leerUpdate(cuerpo: string): LecturaUpdate {
 }
 
 export interface RespuestaWebhook {
-  status: 200 | 401;
-  detalle: 'secreto_invalido' | 'ignorado' | 'procesado' | 'error';
+  status: 200 | 401 | 500;
+  detalle: 'secreto_invalido' | 'ignorado' | 'procesado' | 'error' | 'no_registrado';
 }
 
 /**
@@ -135,6 +140,7 @@ export async function manejarWebhook(entrada: {
     await entrada.procesar(lectura.update);
     return { status: 200, detalle: 'procesado' };
   } catch {
-    return { status: 200, detalle: 'error' };
+    // El update no se pudo registrar (o el agente fallo antes de reclamarlo): 5xx para que Telegram lo reintente. El reclamo es idempotente por update_id.
+    return { status: 500, detalle: 'no_registrado' };
   }
 }

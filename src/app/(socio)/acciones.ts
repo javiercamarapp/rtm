@@ -8,6 +8,7 @@ import { explicarCapital, leerCifraCapital } from '@/dominio/capital/explicar';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { CIFRA_CUADRE_SOCIOS, explicarCuadreSocios } from '@/dominio/operacion/cuadre';
 import { historialDeSocio } from '@/composicion/historial';
+import { costosDeSocio } from '@/composicion/costos';
 import { escritorNotificacionesDeSocio, notificacionesDeSocio } from '@/composicion/inventario';
 import type { Disponibilidad, Explicacion } from '@/dominio/catalogo/tipos';
 import type { ListaCampana } from '@/dominio/notificaciones/tipos';
@@ -29,6 +30,8 @@ export async function explicarCifra(cifra: string): Promise<Explicacion> {
     if (!e) throw new Error('cifra no explicable');
     return e;
   }
+  // Aportacion por costos del sistema: funcion propia de la base (dos vias), no pasa por la cadena de explicar_cifra.
+  if (/^costos:aportacion:(total|\d{4}-(0[1-9]|1[0-2]))$/.test(cifra)) return (await costosDeSocio()).explicarCifra(cifra);
   if (CIFRA_DS.test(cifra)) return (await dropshippingDeSocio()).explicar(cifra);
   // Cifras del historial personal y del acta (funcion propia de la base; no pasa por la cadena de explicar_cifra).
   if (/^historial:(invertido|retirado|utilidad|valor|neta):(Angelo|Javier)$|^historial:parte:\d+:(Angelo|Javier)$/.test(cifra)) return (await historialDeSocio()).explicar(cifra);

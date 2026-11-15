@@ -189,7 +189,7 @@ test('5 venta: pedido con nota, empacar, enviar con guia', async () => {
   const dialogo = page.getByRole('dialog');
   await dialogo.getByLabel(/Surtidas de/).fill('20');
   await dialogo.getByLabel('Número de guía').fill(`CUADRE-P-${d.sufijo}`);
-  await dialogo.getByLabel('Paquetería').fill('Castores');
+  await dialogo.getByLabel('Paquetería').selectOption('Castores');
   await dialogo.getByLabel('Costo real de la guía').fill('180');
   await page.getByTestId('confirmar').click();
   await page.waitForTimeout(2500);

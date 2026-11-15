@@ -1,5 +1,7 @@
 -- pgTAP a12_002: puertas del agente de Telegram para la unificacion de sabores (el socio verificado contesta si o no; el aviso al grupo y deshacer salen de la base).
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 update catalogo.config set vigente_desde = '2020-01-01' where vigente_desde > '2020-01-01';
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('ug.jav@example.test', 'socio', 'Javier', true);

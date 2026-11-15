@@ -21,6 +21,7 @@ import type {
   RespuestaConsulta,
   Resoluciones,
   ResultadoDeshacer,
+  EcoRico,
   ResultadoEjecutado,
   ResultadoNegocio,
   ResultadoTomaResuelta,
@@ -213,7 +214,76 @@ export class NegocioSimulado implements NegocioAgente {
 
   // ---- escritura
 
+  /** Frenos de la base (espejo de agente._frenos_antes/_frenos_despues): antiduplicado por huella de contenido en 10 minutos y pregunta de sobrepago. */
+  /** Apagadas por omision para no alterar las pruebas anteriores al carril; las pruebas de frenos las encienden. */
+  readonly guardas = { duplicados: false, exceso: false };
+  private readonly huellas: Array<{ huella: string; folio: string; autor: string; at: Date; anulada: boolean; eco: EcoRico }> = [];
+
+  private huellaDe(a: AccionResuelta): string | null {
+    const i = a.intencion;
+    const r = a.resoluciones;
+    switch (i.tipo) {
+      case 'pago': return JSON.stringify(['pago', i.monto_centavos, r.clienteId, normalizar(i.cuenta_destino_texto ?? '')]);
+      case 'pago_proveedor': return JSON.stringify(['pago_proveedor', i.monto_centavos, r.proveedorId, r.clienteId, i.pagado_por, i.intencion ?? null]);
+      case 'gasto': return JSON.stringify(['gasto', i.monto_centavos, i.pagado_por, i.gasto]);
+      case 'aportacion': return JSON.stringify(['aportacion', i.monto_centavos, i.socio, i.intencion ?? null]);
+      case 'reembolso_socio': case 'retiro_utilidad': return JSON.stringify([i.tipo, i.monto_centavos, i.socio, i.via]);
+      case 'pedido': return JSON.stringify(['pedido', r.clienteId, r.lineas.map((l, n) => [l.modeloId, l.saborId, i.lineas[n]!.piezas]).sort()]);
+      default: return null;
+    }
+  }
+
+  private frenosAntes(a: AccionResuelta, ctx: ContextoEjecucion): ResultadoNegocio | null {
+    const h = this.huellaDe(a);
+    if (this.guardas.duplicados && h !== null && !ctx.permitirDuplicado) {
+      const previo = [...this.huellas].reverse().find((x) => x.huella === h && !x.anulada && ctx.ahora.getTime() - x.at.getTime() <= 10 * 60_000);
+      if (previo) {
+        const minutos = Math.floor((ctx.ahora.getTime() - previo.at.getTime()) / 60_000);
+        const cifras: CifraServidor[] = [{ tipo: 'folio', etiqueta: 'Registrado antes', folio: previo.folio }, { tipo: 'piezas', etiqueta: 'Minutos desde entonces', piezas: minutos }];
+        if (previo.eco.montoCent !== undefined) cifras.push(pesos('Monto', previo.eco.montoCent));
+        if (previo.eco.cliente) cifras.push({ tipo: 'texto', etiqueta: 'Cliente', texto: previo.eco.cliente });
+        return { tipo: 'pregunta', motivo: 'posible_duplicado', clave: 'duplicado', texto: `Ya se registro un movimiento igual por ${previo.autor === 'angelo' ? 'Angelo' : 'Javier'}. ¿Es otro distinto?`, cifras };
+      }
+    }
+    const i = a.intencion;
+    if (this.guardas.exceso && !ctx.confirmoExceso && a.resoluciones.clienteId && (i.tipo === 'pago' || (i.tipo === 'pago_proveedor' && i.cliente_texto !== null))) {
+      const cliente = this.clientes.get(a.resoluciones.clienteId);
+      const debe = this.saldoCliente(a.resoluciones.clienteId);
+      const monto = BigInt(i.monto_centavos);
+      if (cliente && monto > (debe > 0n ? debe : 0n)) {
+        return { tipo: 'pregunta', motivo: 'cobro_mayor_a_lo_que_debe', clave: 'exceso', texto: 'El cobro es mayor que lo que debe el cliente. ¿Es un anticipo a su favor?', cifras: [{ tipo: 'texto', etiqueta: 'Cliente', texto: cliente.nombre }, pesos('Cobro dicho', monto), pesos('Lo que debe el cliente', debe > 0n ? debe : 0n)] };
+      }
+    }
+    return null;
+  }
+
   async ejecutar(a: AccionResuelta, ctx: ContextoEjecucion): Promise<ResultadoNegocio> {
+    const previo0 = this.porClave.get(ctx.claveIdem);
+    if (!previo0) {
+      const corte = this.frenosAntes(a, ctx);
+      if (corte) return corte;
+    }
+    const clienteAntes = a.resoluciones.clienteId ? this.saldoCliente(a.resoluciones.clienteId) : null;
+    const r = await this.ejecutarSinFrenos(a, ctx);
+    if (r.tipo !== 'ejecutado' || r.repetido) return r;
+    const i = a.intencion;
+    const cliente = a.resoluciones.clienteId ? this.clientes.get(a.resoluciones.clienteId) : undefined;
+    const eco: EcoRico = {};
+    if (cliente && (i.tipo === 'pago' || i.tipo === 'pago_proveedor' || i.tipo === 'pedido')) {
+      eco.cliente = cliente.nombre;
+      if (clienteAntes !== null) eco.saldoAntesCent = clienteAntes;
+      eco.saldoDespuesCent = this.saldoCliente(cliente.id);
+    }
+    if (i.tipo === 'pago' && i.cuenta_destino_texto) eco.cuenta = i.cuenta_destino_texto;
+    if ((i.tipo === 'pago' || i.tipo === 'pago_proveedor') ) eco.montoCent = BigInt(i.monto_centavos);
+    if ((i.tipo === 'pago_proveedor') && a.resoluciones.proveedorId) eco.proveedor = a.resoluciones.proveedorId === 'karen' ? 'Karen' : 'Isaac';
+    if (i.tipo === 'gasto' || i.tipo === 'aportacion' || i.tipo === 'reembolso_socio' || i.tipo === 'retiro_utilidad') eco.montoCent = BigInt(i.monto_centavos);
+    const h = this.huellaDe(a);
+    if (h !== null) this.huellas.push({ huella: h, folio: r.folio, autor: ctx.autor.persona, at: ctx.ahora, anulada: false, eco });
+    return { ...r, eco };
+  }
+
+  private async ejecutarSinFrenos(a: AccionResuelta, ctx: ContextoEjecucion): Promise<ResultadoNegocio> {
     const previo = this.porClave.get(ctx.claveIdem);
     if (previo) return { ...previo, repetido: true };
     const tomaPrevia = [...this.tomas.values()].find((t) => this.tomaClave.get(t.folio) === ctx.claveIdem);
@@ -969,17 +1039,21 @@ export class NegocioSimulado implements NegocioAgente {
     return { cantidad: pagos.length, descripcion: pagos.map((f) => ({ tipo: 'folio' as const, etiqueta: 'Pago aplicado despues', folio: f })) };
   }
 
-  async deshacer(e: { folio: string; autor: Miembro; claveIdem: string }): Promise<ResultadoDeshacer> {
+  async deshacer(e: { folio: string; autor: Miembro; claveIdem: string; ahora?: Date }): Promise<ResultadoDeshacer> {
     const previo = this.deshechosPorClave.get(e.claveIdem);
     if (previo) return previo.tipo === 'deshecho' ? { ...previo, repetido: true } : previo;
     const h = this.hechos.get(e.folio);
     if (!h) return { tipo: 'rechazado', codigo: 'no_existe', texto: 'No existe ese folio.' };
     if (h.deshecho) return { tipo: 'rechazado', codigo: 'ya_deshecho', texto: `El folio ${e.folio} ya estaba deshecho.` };
+    // Decision del dueno (14-nov): 10 minutos para todos, el autor tambien (la base lo aplica en agente._puede_deshacer).
+    if (e.ahora && (e.ahora.getTime() - h.ejecutadoEn.getTime()) / 60_000 > 10) return { tipo: 'rechazado', codigo: 'P0464', texto: `pasaron mas de 10 minutos desde el folio ${e.folio}: ya no se deshace desde Telegram. Corrigelo con un movimiento inverso o desde el software` };
     const importe = h.hecho.lineas.reduce((acc, l) => acc + (l.centavos < 0n ? -l.centavos : l.centavos), 0n);
     const folioContra = this.folio('X');
     const contra = contramovimiento(h.hecho, folioContra, e.claveIdem);
     h.revertir();
     h.deshecho = true;
+    const huella = this.huellas.find((x) => x.folio === e.folio);
+    if (huella) huella.anulada = true;
     this.hechos.set(folioContra, { ...h, hecho: contra, deshecho: false, revertir: () => undefined });
     this.aplicaciones.push(`${contra.tipo}:${folioContra}`);
     const res: ResultadoDeshacer = {
@@ -988,6 +1062,7 @@ export class NegocioSimulado implements NegocioAgente {
       titulo: `Contramovimiento de ${e.folio}`,
       lineas: [pesos('Importe revertido', importe)],
       repetido: false,
+      ...(huella ? { eco: huella.eco } : {}),
     };
     this.deshechosPorClave.set(e.claveIdem, res);
     return res;

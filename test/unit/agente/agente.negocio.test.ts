@@ -147,7 +147,7 @@ describe('deshacer: contramovimiento con ventana de 10 minutos', () => {
     expect(e.negocio.aplicaciones).toEqual(['pedido:P-0001', 'contra_pedido:X-0001']);
   });
 
-  it('fuera de la ventana (11 min): pide indicacion expresa y solo entonces deshace', async () => {
+  it('fuera de la ventana (11 min): ya no se deshace desde Telegram, ni el autor (decision 14-nov)', async () => {
     const e = escenario([unaAccion(pedido('Cliente Norte', [['jupiter', 28]]))]);
     await e.socio('angelo', 'Cliente Norte 28 jupiter');
     const eco = e.ultimoGrupo();
@@ -157,9 +157,9 @@ describe('deshacer: contramovimiento con ventana de 10 minutos', () => {
     await e.socio('angelo', '/deshacer');
     const q = e.ultimoGrupo();
     expect(q.texto).toContain('Pasaron mas de 10 minutos desde P-0001');
+    expect(q.texto).toContain('movimiento inverso');
+    expect(q.botones ?? []).toHaveLength(0); // sin boton "de todos modos"
     expect(e.negocio.existenciaDe('m3')).toBe(72);
-    await e.pulsar(IDS.angelo, IDS.grupoSocios, q, 0, 0);
-    expect(e.negocio.existenciaDe('m3')).toBe(100);
   });
 
   it('con dependencias (un pago aplicado despues): las muestra y pide indicacion expresa', async () => {

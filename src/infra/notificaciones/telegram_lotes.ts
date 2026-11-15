@@ -37,6 +37,7 @@ export function enviadorTelegramDeLotes(tg: EnviadorTelegram, tokens: AlmacenTok
         if (e instanceof ErrorTelegram) {
           if (e.codigo === 'rate_limit') return { resultado: '429', retryAfter: e.reintentarEnSeg ?? 30 };
           if (e.codigo === 'sin_destino') return { resultado: '403', codigo: 'sin_destino' };
+          if (e.codigo === 'migrar' && e.migrarA !== null) return { resultado: '400_migrar', migrarA: e.migrarA };
           if (e.codigo === 'rechazado') return { resultado: '400_formato', codigo: String(e.status) };
           if (e.codigo === 'servidor') return { resultado: '5xx', codigo: String(e.status) };
           return { resultado: 'red', incierto: true };

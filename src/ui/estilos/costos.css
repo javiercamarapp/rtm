@@ -38,3 +38,15 @@
 .rtm-logo-serv-mono { background: var(--rtm-tint); border-color: var(--rtm-line-2); color: var(--rtm-ink-2); font-size: var(--rtm-t-pequeno); font-weight: var(--rtm-peso-fuerte); letter-spacing: 0; line-height: 1; }
 .rtm-logo-serv-fila { display: inline-flex; align-items: center; gap: var(--rtm-e-3); min-width: 0; }
 .rtm-logo-serv-nombre { min-width: 0; font-weight: var(--rtm-peso-fuerte); }
+
+/* Razonamiento por servicio: una fila compacta (logo, nombre, texto en dos lineas como maximo). */
+.rtm-razon { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rtm-razon > li { display: grid; grid-template-columns: 36px minmax(120px, 0.7fr) minmax(0, 3fr); column-gap: var(--rtm-e-3); align-items: center; padding-block: 8px; border-top: var(--rtm-borde); }
+.rtm-razon > li:first-child { border-top: 0; }
+.rtm-razon-nombre { font-weight: var(--rtm-peso-fuerte); min-width: 0; }
+.rtm-razon-texto { min-width: 0; color: var(--rtm-ink-2); font-size: var(--rtm-t-pequeno); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rtm-razon-texto strong { color: var(--rtm-ink); font-weight: var(--rtm-peso-medio); }
+@media (max-width: 767px) {
+  .rtm-razon > li { grid-template-columns: 36px minmax(0, 1fr); row-gap: 2px; }
+  .rtm-razon-texto { grid-column: 1 / -1; -webkit-line-clamp: 4; }
+}

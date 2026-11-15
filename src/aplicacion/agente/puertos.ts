@@ -32,12 +32,18 @@ export interface EventoAgente {
     | 'error_llm'
     | 'validacion_fallida'
     | 'recordatorio_error'
-    | 'menudeo_otro_socio';
+    | 'menudeo_otro_socio'
+    | 'duplicado_bloqueado'
+    | 'error_escritura'
+    | 'escritura_cambio'
+    | 'chat_migrado'
+    | 'chat_ajeno_socio'
+    | 'update_fallido';
   miembro: number | null;
   detalle: string;
 }
 
-export interface AlmacenAgente {
+export interface AlmacenAgente extends Partial<AlmacenAgenteFrenos> {
   /** INSERT ... ON CONFLICT DO NOTHING por update_id, ANTES de gastar IA. true = es nuevo. */
   reclamarUpdate(updateId: number): Promise<boolean>;
   /** Reclamo por (chat, mensaje). true = es nuevo. Un reenvio con otro update_id no se vuelve a ejecutar. */
@@ -61,6 +67,35 @@ export interface AlmacenAgente {
   esperaTomar(chatId: number, telegramUserId: number, ahora: Date): Promise<{ tipo: TipoEspera; payload: unknown } | null>;
   /** Comprobante (foto o archivo) de un socio: se guarda SOLO su huella y su file_id. El bot no lo descarga ni lo lee; la IA nunca lo ve. */
   guardarEvidencia(e: { chatId: number; mensajeId: number; telegramUserId: number; fileId: string; fileUniqueId: string }): Promise<{ id: number; huella: string }>;
+}
+
+/** Estado del interruptor `agente_escritura` (solo lectura / escritura). Lo lee y lo cambia SQL; TypeScript solo lo consulta y responde. */
+export interface EstadoEscritura {
+  activa: boolean;
+  /** Desde cuando esta en el estado actual (null si nunca cambio). */
+  desde: Date | null;
+  /** Quien lo cambio: 'angelo' | 'javier' | 'sistema'. */
+  por: string | null;
+  motivo: string | null;
+}
+
+/** Reclamo de un update: 'nuevo' | 'reprocesar' (lease vencido o fallido, con intentos) | 'duplicado' (terminado, en curso o abandonado). */
+export type ReclamoUpdate = 'nuevo' | 'reprocesar' | 'duplicado';
+
+export interface AlmacenAgenteFrenos {
+  escrituraEstado(): Promise<EstadoEscritura>;
+  /** Solo un socio verificado (SQL lo exige). Devuelve true si el estado cambio. */
+  fijarEscritura(activa: boolean, autor: Miembro, motivo: string | null): Promise<boolean>;
+  /** La deteccion de anomalias vive en SQL y SOLO puede apagar. */
+  revisarAnomalia(): Promise<{ apagado: boolean; motivo?: string }>;
+  /** Reclamo con lease y cuerpo guardado para poder reprocesar. */
+  reclamarUpdate2(updateId: number, cuerpo: unknown): Promise<ReclamoUpdate>;
+  terminarUpdate(updateId: number, estado: 'terminado' | 'fallido', error?: string): Promise<void>;
+  updatesPendientes(limite: number): Promise<Array<{ updateId: number; cuerpo: unknown; intentos: number }>>;
+  /** Updates que ya no se reintentan; se devuelven una sola vez para avisar. */
+  updatesAbandonados(): Promise<Array<{ updateId: number; recibidoAt: Date }>>;
+  /** El grupo paso a supergrupo: una sola fuente de verdad del chat. true si habia un chat registrado con ese id. */
+  migrarChat(viejo: number, nuevo: number): Promise<boolean>;
 }
 
 export type TipoEspera = 'fecha_pago' | 'fecha_reprogramar';
@@ -157,6 +192,7 @@ export interface EnviadorTelegram {
 export type AccionBoton =
   | 'deshacer'
   | 'deshacer_expreso'
+  | 'conv'
   | 'autorizar_toma'
   | 'rechazar_toma'
   | 'aclarar'
@@ -241,6 +277,12 @@ export interface ContextoEjecucion {
   efectoHash?: string | null;
   /** Boton "Si, estoy seguro" consumido por el autor (la firma del acta lo exige en la base). */
   tokenBoton?: string | null;
+  /** El socio dijo que SI es otro movimiento (el antiduplicado de la base no lo vuelve a bloquear). */
+  permitirDuplicado?: boolean;
+  /** El socio confirmo que el cobro mayor a lo que debe el cliente es un anticipo. */
+  confirmoExceso?: boolean;
+  /** Mensaje real del socio (redactado, 120 caracteres): la firma del acta lo guarda como su confirmacion personal. */
+  cita?: string;
 }
 
 export type MotivoPreguntaNegocio =
@@ -252,6 +294,8 @@ export type MotivoPreguntaNegocio =
   | 'monto_parecido_a_saldo'
   | 'baja_confianza'
   | 'falta_destino'
+  | 'posible_duplicado'
+  | 'cobro_mayor_a_lo_que_debe'
   | 'otro';
 
 export interface ResultadoEjecutado {
@@ -267,11 +311,27 @@ export interface ResultadoEjecutado {
   repetido: boolean;
   /** Datos estructurados que devolvio la base (ids y banderas para encadenar tarjetas); jamas se imprimen tal cual. */
   datos?: Record<string, unknown>;
+  /** Eco rico (cifras de SQL): a que cliente, cuenta, pedido y proveedor se aplico y como quedan los saldos. */
+  eco?: EcoRico;
+}
+
+/** Lo que la base dice del movimiento recien registrado (`eco_rico`); TypeScript solo le da formato. */
+export interface EcoRico {
+  cliente?: string;
+  cuenta?: string;
+  proveedor?: string;
+  socio?: string;
+  via?: string;
+  montoCent?: bigint;
+  pedidosAplicados?: Array<{ folio: string; montoCent: bigint }>;
+  saldoAntesCent?: bigint;
+  saldoDespuesCent?: bigint;
+  aFavorCent?: bigint;
 }
 
 export type ResultadoNegocio =
   | ResultadoEjecutado
-  | { tipo: 'pregunta'; motivo: MotivoPreguntaNegocio; texto: string; cifras: CifraServidor[] }
+  | { tipo: 'pregunta'; motivo: MotivoPreguntaNegocio; texto: string; cifras: CifraServidor[]; /** Que se vuelve a mandar si el socio contesta que si: duplicado o exceso de cobro (por omision, la confirmacion general). */ clave?: 'duplicado' | 'exceso' }
   | { tipo: 'toma_pendiente'; folio: string; titulo: string; lineas: CifraServidor[]; resumen: CifraServidor[] }
   | { tipo: 'rechazado'; codigo: string; texto: string };
 
@@ -290,7 +350,7 @@ export interface DependenciasDeFolio {
   descripcion: CifraServidor[];
 }
 
-export type ResultadoDeshacer = { tipo: 'deshecho'; folioContra: string; titulo: string; lineas: CifraServidor[]; repetido: boolean } | { tipo: 'rechazado'; codigo: string; texto: string };
+export type ResultadoDeshacer = { tipo: 'deshecho'; folioContra: string; titulo: string; lineas: CifraServidor[]; repetido: boolean; /** Lo que se revirtio (cifras de SQL). */ eco?: EcoRico } | { tipo: 'rechazado'; codigo: string; texto: string };
 
 export type ResultadoTomaResuelta =
   | { tipo: 'resuelta'; folio: string; estado: 'autorizada' | 'rechazada'; lineas: CifraServidor[]; saldoSemanal: CifraServidor | null; repetido: boolean }
@@ -323,12 +383,16 @@ export interface NegocioAgente {
   /** Ultimo hecho aplicado por el autor, o el folio dado. */
   localizarParaDeshacer(autor: Miembro, folio: string | null): Promise<{ folio: string; ejecutadoEn: Date } | null>;
   dependenciasDe(folio: string): Promise<DependenciasDeFolio>;
-  deshacer(entrada: { folio: string; autor: Miembro; claveIdem: string }): Promise<ResultadoDeshacer>;
+  deshacer(entrada: { folio: string; autor: Miembro; claveIdem: string; ahora?: Date }): Promise<ResultadoDeshacer>;
   autorizarToma(entrada: { folio: string; socio: Miembro; autorizar: boolean; claveIdem: string }): Promise<ResultadoTomaResuelta>;
   /** Pendientes con mas de `horas` sin decision: pasan a caducadas y liberan su reserva. */
   caducarTomas(ahora: Date, horas: number): Promise<TomaCaducada[]>;
   /** Comentario de igualacion: lo que la base dice (api.socios_aportacion_neta); el agente solo lo cuenta. */
   igualacion(): Promise<Igualacion>;
+  /** Carril socios y gastos (opcional: el negocio simulado no lo implementa). Ambos saldos y la frase de igualacion tras un movimiento entre socios (cifras de SQL). */
+  saldosSocios?(): Promise<import('./socios_gastos').VistaSaldosSocios>;
+  /** Liga la foto del ticket (solo su huella) al gasto recien registrado; el monto lo tecleo el socio. */
+  ligarTicket?(telegramUserId: number, folio: string): Promise<{ ligada: boolean; duplicada: boolean; gastoPrevio: string | null }>;
   /** Socio de menudeo configurado (por omision Angelo). */
   socioMenudeo(): Promise<'angelo' | 'javier'>;
   /** Interruptor `telegram_envio`: con el apagado el latido no envia recordatorios. */

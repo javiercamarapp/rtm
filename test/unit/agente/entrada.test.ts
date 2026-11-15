@@ -6,8 +6,11 @@ describe('sanitizar', () => {
     expect(sanitizar('  Vi​l\u0000la   28 jupiter  ')).toBe('Villa 28 jupiter');
     expect(sanitizar('ＡＢＣ')).toBe('ABC');
   });
-  it('limita a 2,000 caracteres', () => {
-    expect(sanitizar('a'.repeat(5000))).toHaveLength(MAX_CARACTERES);
+  it('no recorta en silencio (decision del dueno: sin topes ocultos); solo el tope tecnico', () => {
+    expect(sanitizar('a'.repeat(5000))).toHaveLength(5000);
+    const lote = Array.from({ length: 120 }, (_, i) => `Cliente ${i}: 10 zafiro 5k mango`).join('\n');
+    expect(sanitizar(lote)).toBe(lote);
+    expect(sanitizar('a'.repeat(MAX_CARACTERES + 50))).toHaveLength(MAX_CARACTERES);
   });
   it('colapsa saltos de linea excesivos', () => {
     expect(sanitizar('a\n\n\n\n\nb')).toBe('a\n\nb');
