@@ -171,9 +171,10 @@ body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { widt
 
 /* ---- Compacto (14-nov, pedido del dueno): pestanas + filtros en UNA linea, tira de KPI baja, razones junto a los filtros. ---- */
 /* Pestanas a la izquierda y filtros a la derecha en el mismo renglon; la linea inferior corre por debajo de ambos. En telefono los filtros bajan a su propio renglon. */
-.rtm-pestanas-linea { display: flex; align-items: stretch; min-width: 0; }
-.rtm-pestanas-linea > .rtm-pestanas { flex: 1 1 auto; min-width: 0; }
-.rtm-pestanas-lateral { flex: none; display: flex; align-items: center; justify-content: flex-end; max-width: 70%; padding-inline-start: 8px; border-bottom: var(--rtm-borde); }
+/* Una linea cuando cabe; si los filtros no caben junto a las pestanas bajan completos a un segundo renglon. Las pestanas nunca se recortan (solo se deslizan si ellas solas exceden el ancho). */
+.rtm-pestanas-linea { display: flex; flex-wrap: wrap; align-items: stretch; min-width: 0; }
+.rtm-pestanas-linea > .rtm-pestanas { flex: 0 0 auto; max-width: 100%; min-width: 0; }
+.rtm-pestanas-lateral { flex: 1 1 auto; display: flex; align-items: center; justify-content: flex-end; max-width: 100%; min-width: 0; padding-inline-start: 8px; border-bottom: var(--rtm-borde); }
 .rtm-pestanas-lateral > .rtm-barra-filtros-v2 { min-height: 0; }
 @media (max-width: 767px) {
   .rtm-pestanas-linea { flex-direction: column; }
