@@ -31,7 +31,7 @@ export default async function PaginaUtilidadDs({ searchParams }: { searchParams:
         titulo={t.pedidos ? `Utilidad de ${t.pedidos} ${t.pedidos === 1 ? 'pedido' : 'pedidos'}: ${formatearMoneda(t.utilidad_cent)}` : 'Sin utilidad de dropshipping todavía'}
         descripcion="Utilidad = venta (con el envío cobrado) menos todo el costo del pedido: producto, envío del proveedor y costos directos. Mitad para cada socio."
       />
-      <PestanasDs activa="utilidad" sinFolio={resumen.sin_folio_externo} />
+      <PestanasDs activa="utilidad" sinFolio={resumen.sin_folio_externo} filtros={(
       <BarraFiltros etiquetaAria="Periodo" extras={desde || hasta ? <Chip href="/dropshipping/utilidad">Quitar filtros</Chip> : undefined}>
         <form className="rtm-ds-filtros-linea" method="get" aria-label="Periodo">
           <FiltrosPlegables etiqueta="Periodo" titulo="Filtrar por periodo (desde y hasta)" activos={(desde ? 1 : 0) + (hasta ? 1 : 0)}>
@@ -41,6 +41,7 @@ export default async function PaginaUtilidadDs({ searchParams }: { searchParams:
           </FiltrosPlegables>
         </form>
       </BarraFiltros>
+      )} />
       {t.pedidos > 0 && t.reinvertida_cent < t.utilidad_cent && <Aviso tono="info" titulo="Parte de la utilidad no está en el proveedor.">{formatearMoneda(t.fuera_proveedor_cent)} de la utilidad está por cobrar o en poder de un socio; solo lo depositado por encima del costo en la cuenta del proveedor cuenta como reinvertido.</Aviso>}
       <KpiLinea
         etiquetaAria="Utilidad del periodo"

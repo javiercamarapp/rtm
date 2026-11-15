@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { exigirSocio } from '@/composicion/acceso';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
-import { etiquetaFecha, formatearMoneda, formatearPiezas, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, BarraFiltros, Chip, ChipEstado } from '@/ui/componentes/controles';
 import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
+import { RenglonesTabla } from '@/ui/componentes/renglones-tabla';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import '@/ui/estilos/paginas-a1.css';
 import { etiquetaHoy } from '../contexto';
@@ -85,7 +86,8 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
             { id: 'r', titulo: 'Vapes (renglones)', ancho: 'xl', prioridadMovil: 'detalle', celda: (f) => (
               <details data-testid={`renglones-${f.pedido_id}`}>
                 <summary>{f.renglones.length} {f.renglones.length === 1 ? 'renglón' : 'renglones'} · {formatearPiezas(f.piezas)}</summary>
-                <ul className="rtm-lineas-form">{f.renglones.map((r, i) => <li key={`${r.sabor}-${i}`}>{marcaMayus(r.marca)} · {nombreVape(r.modelo)} · {saborMayus(r.sabor)} · {formatearPiezas(r.piezas)} a {formatearMoneda(r.costo_unit_cent)} = {formatearMoneda(r.costo_cent)}</li>)}</ul>
+                <RenglonesTabla etiqueta={`Renglones de ${f.folio}`} precios etiquetaPrecio="Costo unit." etiquetaImporte="Costo" testid={`renglones-tabla-${f.pedido_id}`}
+                  renglones={f.renglones.map((r, i) => ({ clave: `${r.sabor}-${i}`, marca: r.marca, modelo: r.modelo, sabor: r.sabor, piezas: r.piezas, precioCent: r.costo_unit_cent, importeCent: r.costo_cent }))} />
               </details>
             ) },
             { id: 'pv', titulo: 'Proveedor', ancho: 'm', prioridadMovil: 'normal', celda: (f) => f.proveedor ?? '' },

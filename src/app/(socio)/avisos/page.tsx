@@ -45,12 +45,14 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
         titulo={todas.length === 0 ? 'No hay avisos' : `Tienes ${lista.sin_leer} ${lista.sin_leer === 1 ? 'aviso sin leer' : 'avisos sin leer'}`}
         descripcion="La campana es la fuente de verdad: Telegram solo la espeja." ayudaResumen="Leído y resuelto" ayuda="Leído y resuelto son cosas distintas: un aviso con acción sigue pendiente hasta que la condición deja de existir."
       />
-      <BarraFiltros etiquetaAria="Filtros de avisos" extras={sev ? <Chip href={enlace(pestana, 0, '')}>Quitar severidad</Chip> : undefined}>
+      <BarraFiltros etiquetaAria="Filtros de avisos" extras={<>{sev && <Chip href={enlace(pestana, 0, '')}>Quitar severidad</Chip>}
+        <FilaRatios etiqueta="Razones de los avisos" items={[{ etiqueta: 'Informativas', valor: String(por('F')) }, { etiqueta: 'Leídas', valor: todas.length ? `${(((todas.length - todas.filter((a) => !a.leida).length) / todas.length) * 100).toFixed(0)} %` : null }, { etiqueta: 'Repetidos', valor: String(todas.filter((a) => a.conteo > 1).length) }, { etiqueta: 'Telegram no salió', valor: String(sinTelegram) }]} /></>}>
         <Chip href={enlace('todas')} activo={pestana === 'todas'}>Todas</Chip>
         <Chip href={enlace('sin_leer')} activo={pestana === 'sin_leer'}>{`Sin leer ${lista.sin_leer}`}</Chip>
         {(['C', 'I', 'F'] as const).map((s) => <Chip key={s} tono={TONO[s]} href={enlace(pestana, 0, sev === s ? '' : s)} activo={sev === s}>{`${SEVERIDAD[s]!.texto} ${por(s)}`}</Chip>)}
       </BarraFiltros>
       <KpiLinea
+        compacta
         etiquetaAria="Avisos por severidad"
         celdas={[
           { id: 'sinleer', etiqueta: 'Sin leer', valor: String(lista.sin_leer), categoria: 1, nota: `${todas.length} en esta lista` },
@@ -59,7 +61,6 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
           { id: 'accion', etiqueta: 'Piden una acción', valor: String(accion.length), categoria: 3, nota: 'Siguen pendientes hasta que se resuelvan' },
         ]}
       />
-      <FilaRatios etiqueta="Razones de los avisos" items={[{ etiqueta: 'Informativas', valor: String(por('F')) }, { etiqueta: 'Leídas', valor: todas.length ? `${(((todas.length - todas.filter((a) => !a.leida).length) / todas.length) * 100).toFixed(0)} %` : null }, { etiqueta: 'Repetidos', valor: String(todas.filter((a) => a.conteo > 1).length) }, { etiqueta: 'Telegram no salió', valor: String(sinTelegram) }]} />
 
       <Rejilla dividir="6-6">
         <Tarjeta titulo="Pendientes por atender" descripcion="Avisos abiertos, de mayor a menor severidad">

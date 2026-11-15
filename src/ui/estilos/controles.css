@@ -37,8 +37,8 @@ textarea.rtm-campo { height: auto; min-height: 72px; padding: 8px var(--rtm-ctl-
 .rtm-boton-primario:disabled { background: var(--rtm-ink); border-color: var(--rtm-ink); opacity: 0.4; }
 .rtm-boton-chico { border-radius: var(--rtm-ctl-r); }
 .rtm-segmentado { border-radius: var(--rtm-r-pildora); }
-.rtm-seg > a { height: calc(var(--rtm-ctl-alto) - 6px); }
-.rtm-seg[data-tamano='chico'] > a { height: calc(var(--rtm-ctl-alto-chico) - 6px); }
+.rtm-seg > a { height: calc(var(--rtm-ctl-alto-chico) - 6px); }
+.rtm-seg[data-tamano='chico'] > a { height: var(--rtm-h-segmento); }
 
 /* ---- Barra de filtros unificada: rejilla flexible con hueco uniforme y todo alineado al pie del renglon ---- */
 .rtm-form-fila, .rtm-a1-buscar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--rtm-ctl-gap); min-width: 0; }
@@ -46,8 +46,9 @@ textarea.rtm-campo { height: auto; min-height: 72px; padding: 8px var(--rtm-ctl-
 .rtm-a2-filtros, .a3-filtros-form { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: var(--rtm-ctl-gap); min-width: 0; }
 .rtm-a2-filtros > :is(.rtm-boton, .rtm-boton-chico), .a3-filtros-form > :is(.rtm-boton, .rtm-boton-chico), .rtm-filtros-linea > :is(.rtm-boton, .rtm-boton-chico), .rtm-a1-buscar > .rtm-boton { height: var(--rtm-ctl-alto); font-size: var(--rtm-ctl-fs); padding: 0 var(--rtm-e-3); }
 .a3-filtros-form { align-items: center; }
-.rtm-barra-filtros-v2 { gap: var(--rtm-ctl-gap); min-height: var(--rtm-ctl-alto); }
-.rtm-barra-filtros-v2 .rtm-chip-v2 { height: var(--rtm-ctl-alto-chico); padding-block: 0; }
+.rtm-barra-filtros-v2 { gap: 6px; min-height: var(--rtm-ctl-alto-chico); }
+.rtm-barra-filtros-v2 .rtm-chip-v2 { height: var(--rtm-h-chip); padding-block: 0; }
+@media (pointer: coarse) { .rtm-barra-filtros-v2 { min-height: var(--rtm-ctl-alto-chico); } .rtm-barra-filtros-v2 .rtm-chip-v2 { height: var(--rtm-ctl-alto-chico); } }
 .rtm-filtros-linea { display: flex; flex-wrap: nowrap; gap: var(--rtm-ctl-gap); align-items: end; min-width: 0; }
 .rtm-filtros-linea > .rtm-etiqueta-campo { flex: 1 1 auto; width: 168px; min-width: 140px; max-width: 360px; }
 .rtm-filtros-linea .rtm-etiqueta-campo > .rtm-campo { width: 100%; max-width: none; min-width: 0; }
@@ -167,3 +168,22 @@ body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { widt
 }
 /* Tactil en tableta o telefono: la fila desliza dentro de un contenedor con overflow, que recortaria el area de toque de 44 px; se reserva con relleno y margen negativo (sin sumar alto a la pagina). */
 @media (pointer: coarse) and (max-width: 1100px) { .rtm-ba { padding: 8px 2px; margin: -8px -2px; } }
+
+/* ---- Compacto (14-nov, pedido del dueno): pestanas + filtros en UNA linea, tira de KPI baja, razones junto a los filtros. ---- */
+/* Pestanas a la izquierda y filtros a la derecha en el mismo renglon; la linea inferior corre por debajo de ambos. En telefono los filtros bajan a su propio renglon. */
+.rtm-pestanas-linea { display: flex; align-items: stretch; min-width: 0; }
+.rtm-pestanas-linea > .rtm-pestanas { flex: 1 1 auto; min-width: 0; }
+.rtm-pestanas-lateral { flex: none; display: flex; align-items: center; justify-content: flex-end; max-width: 70%; padding-inline-start: 8px; border-bottom: var(--rtm-borde); }
+.rtm-pestanas-lateral > .rtm-barra-filtros-v2 { min-height: 0; }
+@media (max-width: 767px) {
+  .rtm-pestanas-linea { flex-direction: column; }
+  .rtm-pestanas-lateral { max-width: none; justify-content: flex-start; padding: 4px 0; }
+  .rtm-pestanas-lateral > .rtm-barra-filtros-v2 { width: 100%; }
+}
+/* KPI compacta: una tira baja de 36 px (etiqueta y cifra en un renglon; la nota queda en el title de la celda). */
+.rtm-kpi-linea[data-compacta] > .rtm-kpi-celda { flex-direction: row; align-items: baseline; justify-content: space-between; flex-wrap: nowrap; gap: 8px; padding: 6px 12px; }
+.rtm-kpi-linea[data-compacta] .rtm-kpi-cifra { font-size: 18px; }
+.rtm-kpi-linea[data-compacta] .rtm-kpi-nota { display: none; }
+/* Razones dentro de la barra de filtros: texto chico, una fila y sin caja. */
+.rtm-barra-filtros-v2 .rtm-ratios { flex-wrap: nowrap; white-space: nowrap; gap: 0 14px; font-size: var(--rtm-t-pequeno); }
+.rtm-barra-filtros-v2 .rtm-ratios > div { gap: 4px; }

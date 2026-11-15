@@ -54,7 +54,7 @@ function BarraPartes({ partes }: { partes: ParteBarra[] }) {
   );
 }
 
-function Celda({ c }: { c: KpiCelda }) {
+function Celda({ c, compacta }: { c: KpiCelda; compacta?: boolean }) {
   const sinDato = c.valor === null || c.valor === undefined;
   const cuerpo = (
     <>
@@ -81,18 +81,18 @@ function Celda({ c }: { c: KpiCelda }) {
   );
   const atributos = {
     className: 'rtm-kpi-celda',
-    title: c.ayuda,
+    title: c.ayuda ?? (compacta && typeof c.nota === 'string' ? c.nota : undefined),
     'data-testid': c.testid,
     'data-categoria': c.categoria,
   };
   return c.href ? <Link href={c.href} {...atributos} data-enlace="true">{cuerpo}</Link> : <div {...atributos}>{cuerpo}</div>;
 }
 
-/** Tira de indicadores. `linea`: UNA tarjeta con celdas separadas por filete (4 o 5). `tarjetas`: tarjetas sueltas para metricas de dominios distintos. */
-export function KpiLinea({ celdas, variante = 'linea', etiquetaAria }: { celdas: KpiCelda[]; variante?: 'linea' | 'tarjetas'; etiquetaAria: string }) {
+/** Tira de indicadores. `linea`: UNA tarjeta con celdas separadas por filete (4 o 5). `tarjetas`: tarjetas sueltas para metricas de dominios distintos. `compacta`: tira baja de un renglon (etiqueta y cifra lado a lado, sin nota visible; la nota pasa al title). */
+export function KpiLinea({ celdas, variante = 'linea', etiquetaAria, compacta }: { celdas: KpiCelda[]; variante?: 'linea' | 'tarjetas'; etiquetaAria: string; compacta?: boolean }) {
   return (
-    <section className="rtm-kpi-linea rtm-entra rtm-i-1" data-variante={variante} data-n={Math.min(6, Math.max(2, celdas.length))} aria-label={etiquetaAria}>
-      {celdas.map((c) => <Celda key={c.id} c={c} />)}
+    <section className="rtm-kpi-linea rtm-entra rtm-i-1" data-variante={variante} data-n={Math.min(6, Math.max(2, celdas.length))} data-compacta={compacta || undefined} aria-label={etiquetaAria}>
+      {celdas.map((c) => <Celda key={c.id} c={c} compacta={compacta} />)}
     </section>
   );
 }
