@@ -72,11 +72,12 @@ describe('cargar-mes: plan del mes', () => {
     expect(c.baseOrigMicro).toBe(1_000_000n);
   });
   it('regla menor: la cuota base es el tope del consumo real (cuota 20, consumo real 50 -> 20; consumo real 5 -> 5)', () => {
-    const alto = plan(snap(), decl(['--vercel-consumo', '1:1', '--vercel-factura-usd', '50'])).find((x) => x.slug === 'vercel' && x.tipo === 'cargo')!.cargo;
+    const snapMenor = snap({ cuotas: [{ slug: 'vercel', q: { regla: 'menor', cuota_orig_micro: 20_000_000 } }] });
+    const alto = plan(snapMenor, decl(['--vercel-consumo', '1:1', '--vercel-factura-usd', '50'])).find((x) => x.slug === 'vercel' && x.tipo === 'cargo')!.cargo;
     expect(alto.baseOrigMicro).toBe(20_000_000n);
     expect(alto.comoSeriaCent).toBe(40_000n);
     expect(alto.comoDeberiaCent).toBe(100_000n);
-    const bajo = plan(snap(), decl(['--vercel-consumo', '1:10', '--vercel-factura-usd', '50'])).find((x) => x.slug === 'vercel' && x.tipo === 'cargo')!.cargo;
+    const bajo = plan(snapMenor, decl(['--vercel-consumo', '1:10', '--vercel-factura-usd', '50'])).find((x) => x.slug === 'vercel' && x.tipo === 'cargo')!.cargo;
     expect(bajo.baseOrigMicro).toBe(50_000_000n);
     expect(bajo.pctAplicadoPpm).toBe(100_000n);
     expect(bajo.montoCent).toBe(10_000n);
