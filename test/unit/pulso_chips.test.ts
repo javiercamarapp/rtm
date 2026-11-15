@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Pulso } from '@/dominio/notificaciones/tipos';
 import { centavosABigint } from '@/dominio/operacion/json';
-import { chipsPulso } from '@/ui/shell/pulso';
+import { chipsPulso } from '@/ui/shell/pulso-chips';
 
 const real = { por_pagar_isaac_cent: 1250000, por_cobrar_cent: 842000, entre_socios: { socio: 'Angelo', diferencia_cent: 31050 }, en_bodega: { piezas: 1524, valor_cent: 13951645 } };
 
