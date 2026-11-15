@@ -33,7 +33,7 @@ describe('ModelosSabores', () => {
     const m = abrir(montar(<ModelosSabores renglones={sabores(5)} />, 'reduced'));
     expect(m.cont.querySelector('details')!.open).toBe(false);
     const filas = [...m.cont.querySelectorAll('.rtm-ms-sabor')].map((x) => x.textContent);
-    expect(filas[0]).toBe('Sabor 5');
+    expect(filas[0]).toBe('SABOR 5');
     expect(await auditar(m.cont)).toEqual([]);
   });
   it('32 sabores en celda: una sola linea de resumen con scroll interno y axe limpio', async () => {
