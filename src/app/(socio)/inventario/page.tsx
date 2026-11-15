@@ -5,7 +5,7 @@ import { datosDeSocio } from '@/composicion/datos';
 import { inventarioDeSocio } from '@/composicion/inventario';
 import { PALABRA_COBERTURA, TONO_COBERTURA, URGENCIA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
 import type { EstadoCoberturaCodigo, ModeloInventario, SaborInventario } from '@/dominio/inventario/tipos';
-import { etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFechaHora, formatearMoneda, formatearPiezas, marcaMayus, nombreVape } from '@/dominio/formato';
 import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { ChipEstado, Pestanas } from '@/ui/componentes/controles';
@@ -159,7 +159,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
                 titulo="¿A quién le toca reponer primero?"
                 descripcion={`Cobertura en días de ${grafica.length} modelos contra el tiempo de entrega y el objetivo; los que se acaban primero van arriba.`}
                 pie={pie}
-                filas={grafica.map((x) => ({ id: String(x.modelo_id), etiqueta: x.modelo, dias: x.cobertura_dias, textoDias: textoDias(x.cobertura_dias), estado: x.estado ?? 'sin_historia' }))}
+                filas={grafica.map((x) => ({ id: String(x.modelo_id), etiqueta: nombreVape(x.modelo), dias: x.cobertura_dias, textoDias: textoDias(x.cobertura_dias), estado: x.estado ?? 'sin_historia' }))}
                 umbrales={[{ id: 'lt', etiqueta: 'Entrega', dias: ltMin }, { id: 'ciclo', etiqueta: 'Siguiente ciclo', dias: ltMin + p.ciclo_dias }, { id: 'obj', etiqueta: 'Objetivo', dias: p.objetivo_dias }]}
               />
               <div className="rtm-a2-apilado">
@@ -216,7 +216,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
                   const x = fs[0]!.mod;
                   const d = detMod.get(x.modelo_id);
                   return {
-                    titulo: <span className="rtm-a2-nowrap rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={x.modelo} marca={x.marca} tam="xs" /><span><Link href={`/inventario/kardex?modelo=${x.modelo_id}`}>{x.modelo}</Link><span className="rtm-a2-nota"> · {x.marca} · {x.sabores.length} sabores</span></span></span>,
+                    titulo: <span className="rtm-a2-nowrap rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={x.modelo} marca={x.marca} tam="xs" /><span><Link href={`/inventario/kardex?modelo=${x.modelo_id}`}>{nombreVape(x.modelo)}</Link><span className="rtm-a2-nota"> · {marcaMayus(x.marca)} · {x.sabores.length} sabores</span></span></span>,
                     subtotales: {
                       p: <CifraComprobada texto={x.piezas === null ? null : formatearPiezas(x.piezas)} cifra={`existencia:modelo:${x.modelo_id}`} comprobacion="cuadra" />,
                       a: pzs(x.reservado), d: pzs(x.disponible), cu: x.costo_prom_cent === null || (x.piezas ?? 0) === 0 ? <SinDato /> : m(x.costo_prom_cent), v: m(x.valor_cent) ?? <SinDato />,
@@ -283,8 +283,8 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
             etiqueta="Modelos del catálogo sin movimientos" clave={(x) => x.modelo_id} filas={sinMovimientos} densidad="densa" plana
             vacio={{ titulo: 'Todos los modelos tienen movimientos', texto: 'No hay modelos del catálogo sin historia en el libro.' }}
             columnas={[
-              { id: 'marca', titulo: 'Marca', secundaria: true, celda: (x) => x.marca },
-              { id: 'm', titulo: 'Modelo', celda: (x) => <span className="rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={x.modelo} marca={x.marca} tam="xs" /><strong>{x.modelo}</strong></span> },
+              { id: 'marca', titulo: 'Marca', secundaria: true, celda: (x) => marcaMayus(x.marca) },
+              { id: 'm', titulo: 'Modelo', celda: (x) => <span className="rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={x.modelo} marca={x.marca} tam="xs" /><strong>{nombreVape(x.modelo)}</strong></span> },
               { id: 'e', titulo: 'Existencia', numerica: true, celda: () => <SinDato /> },
               { id: 's', titulo: 'Semáforo', celda: () => <SinDato /> },
             ]}

@@ -3,7 +3,7 @@ import { ColumnasPesos } from '../_a3/graficas-pesos';
 import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { sumarDias } from '@/dominio/calendario';
-import { etiquetaFecha, etiquetaFechaHora, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, Segmentado } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
@@ -105,7 +105,7 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
         </Tarjeta>
         <div className="a3-pila">
           <Tarjeta titulo="Renta por modelo" descripcion="Piezas surtidas desde la bodega de Omar en la semana">
-            {porModelo.length > 0 ? <BarList etiquetaAria="Renta por modelo" items={porModelo.map((x) => ({ id: x.modelo, etiqueta: x.modelo, texto: m(x.monto), pct: pct(x.monto, o.renta_cent), nota: formatearPiezas(x.piezas) }))} /> : <p className="a3-grafica-vacia"><strong>Sin renta</strong>Aún no sale ninguna pieza de la bodega esta semana.</p>}
+            {porModelo.length > 0 ? <BarList etiquetaAria="Renta por modelo" items={porModelo.map((x) => ({ id: x.modelo, etiqueta: nombreVape(x.modelo), texto: m(x.monto), pct: pct(x.monto, o.renta_cent), nota: formatearPiezas(x.piezas) }))} /> : <p className="a3-grafica-vacia"><strong>Sin renta</strong>Aún no sale ninguna pieza de la bodega esta semana.</p>}
           </Tarjeta>
           <Tarjeta titulo="Renta devengada por semana" descripcion="La semana abierta va con trama">
             {colRenta.length >= 2 ? (
@@ -125,7 +125,7 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
           <DataTable etiqueta="Tomas pendientes" densidad="densa" plana clave={(t) => t.id} filas={o.pendientes}
             columnas={[
               { id: 'f', titulo: 'Toma', ancho: 'm', celda: (t) => <span className="rtm-mono">{t.folio}</span> },
-              { id: 'm', titulo: 'Pieza', ancho: 'xl', celda: (t) => `${t.modelo} · ${t.sabor}` },
+              { id: 'm', titulo: 'Pieza', ancho: 'xl', celda: (t) => `${nombreVape(t.modelo)} · ${saborMayus(t.sabor)}` },
               { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', celda: (t) => formatearPiezas(t.piezas) },
               { id: 'r', titulo: 'Precio', numerica: true, ancho: 'm', secundaria: true, celda: (t) => (t.precio_cent === null ? <Estado tono="atencion">Falta precio</Estado> : m(t.precio_cent)) },
               { id: 'c', titulo: 'Caduca', ancho: 'l', secundaria: true, celda: (t) => etiquetaFechaHora(t.caduca_at) },
@@ -142,7 +142,7 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
             columnas={[
               { id: 'f', titulo: 'Pedido', ancho: 'm', celda: (r) => <span className="rtm-mono">{r.folio}</span> },
               { id: 'd', titulo: 'Fecha', ancho: 's', celda: (r) => etiquetaFecha(r.fecha) },
-              { id: 'm', titulo: 'Modelo y sabor', ancho: 'xl', celda: (r) => `${r.modelo}${r.sabores ? ` · ${r.sabores}` : ''}` },
+              { id: 'm', titulo: 'Modelo y sabor', ancho: 'xl', celda: (r) => `${nombreVape(r.modelo)}${r.sabores ? ` · ${r.sabores}` : ''}` },
               { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', celda: (r) => formatearPiezas(r.piezas) },
               { id: 't', titulo: 'Tarifa', numerica: true, ancho: 'm', secundaria: true, celda: (r) => (r.tarifa_cent === null ? <SinDato /> : m(r.tarifa_cent)) },
               { id: 's', titulo: 'Subtotal', numerica: true, ancho: 'm', celda: (r) => m(r.monto_cent, r.monto_cent < 0n) },
@@ -155,7 +155,7 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
             columnas={[
               { id: 'f', titulo: 'Toma', ancho: 'm', celda: (t) => <span className="rtm-mono">{t.folio}</span> },
               { id: 'd', titulo: 'Fecha', ancho: 's', celda: (t) => etiquetaFecha(t.fecha) },
-              { id: 'm', titulo: 'Pieza', ancho: 'xl', celda: (t) => <Dos a={t.modelo} b={t.sabor} /> },
+              { id: 'm', titulo: 'Pieza', ancho: 'xl', celda: (t) => <Dos a={nombreVape(t.modelo)} b={saborMayus(t.sabor)} /> },
               { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', celda: (t) => formatearPiezas(t.piezas) },
               { id: 'r', titulo: 'Precio', numerica: true, ancho: 'm', secundaria: true, celda: (t) => (t.precio_cent === null ? <Estado tono="atencion">Falta precio</Estado> : m(t.precio_cent)) },
               { id: 's', titulo: 'Subtotal', numerica: true, ancho: 'm', celda: (t) => (t.subtotal_cent === null ? <SinDato /> : m(t.subtotal_cent)) },

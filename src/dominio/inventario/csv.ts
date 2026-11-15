@@ -1,4 +1,5 @@
 // Exportacion del kardex a CSV con las columnas del Excel (entradas, salidas y existencias, cada una con cantidad, unitario y total) mas hora, tipo, referencia, autor y mensaje original.
+import { marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import type { Cent, Kardex } from './tipos';
 
 function pesos(c: Cent | null): string {
@@ -23,8 +24,8 @@ export const COLUMNAS_KARDEX = [
 
 export function kardexCsv(k: Kardex): string {
   const filas = k.movimientos.map((m) => [
-    m.fecha_neg, m.hora, m.tipo.replaceAll('_', ' '), m.referencia, m.sabor, m.entra_piezas, pesos(m.entra_unit_cent), pesos(m.entra_total_cent), m.sale_piezas, pesos(m.sale_unit_cent), pesos(m.sale_total_cent),
+    m.fecha_neg, m.hora, m.tipo.replaceAll('_', ' '), m.referencia, saborMayus(m.sabor), m.entra_piezas, pesos(m.entra_unit_cent), pesos(m.entra_total_cent), m.sale_piezas, pesos(m.sale_unit_cent), pesos(m.sale_total_cent),
     m.saldo_piezas, pesos(m.saldo_valor_cent), pesos(m.costo_prom_cent), m.saldo_sabor_piezas, m.evento, m.canal, m.autor, m.mensaje_origen, m.reversa_de,
   ].map((v) => celda(v)).join(','));
-  return [`Kardex de ${k.modelo.marca} ${k.modelo.nombre}`, COLUMNAS_KARDEX.join(','), ...filas].join('\r\n') + '\r\n';
+  return [`Kardex de ${marcaMayus(k.modelo.marca)} ${nombreVape(k.modelo.nombre)}`, COLUMNAS_KARDEX.join(','), ...filas].join('\r\n') + '\r\n';
 }

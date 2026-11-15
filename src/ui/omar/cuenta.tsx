@@ -1,5 +1,5 @@
 import { comprobarLiquidacion, estadoPago, pagosRecibidos, rentaAcumulada, rentaPorDia, resumenSemana, saldoAcumulado, tomasDeCuenta, type ResultadoProyeccion } from '@/dominio/omar/cuenta';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, formatearPiezas, nombreVape } from '@/dominio/formato';
 import type { Lectura, LiquidacionOmar, MovimientoCuenta } from '@/dominio/omar/tipos';
 import { CifraComprobada } from '../componentes/cifra';
 import { DataTable } from '../componentes/data-table';
@@ -80,7 +80,7 @@ export function TablaTransacciones({ movs }: { movs: MovimientoCuenta[] }) {
       columnas={[
         { id: 'r', titulo: 'Toma', prioridadMovil: 'titulo', celda: (m) => <span className="rtm-mono">{m.referencia}</span> },
         { id: 'f', titulo: 'Fecha', secundaria: true, celda: (m) => etiquetaFecha(m.fecha) },
-        { id: 'p', titulo: 'Pieza', celda: (m) => `${m.modelo ?? ''}` },
+        { id: 'p', titulo: 'Pieza', celda: (m) => nombreVape(m.modelo ?? '') },
         { id: 'n', titulo: 'Piezas', numerica: true, celda: (m) => formatearPiezas(m.piezas ?? 0) },
         { id: 'i', titulo: 'Importe', numerica: true, prioridadMovil: 'principal', celda: (m) => formatearMoneda(-m.importe) },
       ]} />

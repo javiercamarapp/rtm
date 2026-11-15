@@ -1,7 +1,7 @@
 // Modelo de vista de "Explicar este numero": convierte la Explicacion que entrega la base (o el armador de Omar/capital/cuadre) en secciones ya formateadas.
 // Aqui solo se ordena, se nombra y se da formato: NINGUN importe se calcula en TypeScript. Una seccion sin datos no existe (sin secciones vacias).
 import type { Explicacion } from '@/dominio/catalogo/tipos';
-import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas, saborMayus } from '@/dominio/formato';
 import { enlaceDePartida, fichaDe, nombreDeCuenta, periodoDe, type Enlace, type Ficha } from './fichas';
 import { terminosDe, type Termino } from './glosario';
 
@@ -82,7 +82,7 @@ export function armarVista(d: Explicacion, modo: Modo = 'socio'): Vista {
   const detalle: FilaDetalle[] = [
     ...d.movimientos.map((m, i): FilaDetalle => ({
       id: `m-${m.evento}-${i}`, folio: m.evento, fecha: m.hora, fechaTexto: etiquetaFechaHora(m.hora),
-      concepto: `${m.tipo.replaceAll('_', ' ')} · ${m.sabor} · ${m.ubicacion}`, monto: m.cantidad, montoTexto: formatearPiezas(m.cantidad), saldoTexto: formatearPiezas(m.saldo),
+      concepto: `${m.tipo.replaceAll('_', ' ')} · ${saborMayus(m.sabor)} · ${m.ubicacion}`, monto: m.cantidad, montoTexto: formatearPiezas(m.cantidad), saldoTexto: formatearPiezas(m.saldo),
       origen: m.autor ? `${m.autor} · ${m.canal}` : m.canal, nota: m.mensajeOrigen,
     })),
     ...d.renglones.filter((r) => r.hora !== null).map((r, i): FilaDetalle => ({

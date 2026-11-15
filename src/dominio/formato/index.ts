@@ -101,3 +101,5 @@ export function formatearPesosCorto(cent: bigint, forzarCentavos = false): strin
   const cuerpo = `${agrupar((abs / 100n).toString())}${forzarCentavos || abs % 100n !== 0n ? `.${(abs % 100n).toString().padStart(2, '0')}` : ''}`;
   return negativo ? `-${cuerpo}` : cuerpo;
 }
+
+export { nombreVape, marcaMayus, saborMayus, nombreVapeCompleto } from './nombres';

@@ -1,3 +1,4 @@
+import { nombreVape, saborMayus } from '@/dominio/formato';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { datosDeSocio } from '@/composicion/datos';
@@ -60,7 +61,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           etiqueta="Antigüedad y rotación por sabor" clave={(f) => f.id} filas={filas} densidad="densa" pegajosa primeraFija plana
           vacio={{ titulo: 'Sin existencias', texto: 'Aparece con la primera compra recibida y contada.' }}
           columnas={[
-            { id: 's', titulo: 'Modelo › sabor', ancho: 'l', celda: (f) => <><Link href={`/inventario/kardex/sabor?modelo=${f.mid}&sku=${f.sku_id}`}>{f.sabor}</Link><span className="rtm-a2-nota"> · {f.modelo}</span></> },
+            { id: 's', titulo: 'Modelo › sabor', ancho: 'l', celda: (f) => <><Link href={`/inventario/kardex/sabor?modelo=${f.mid}&sku=${f.sku_id}`}>{saborMayus(f.sabor)}</Link><span className="rtm-a2-nota"> · {nombreVape(f.modelo)}</span></> },
             { id: 'p', titulo: 'Existencia', numerica: true, ancho: 's', celda: (f) => pzs(f.piezas) },
             { id: 'ue', titulo: 'Última entrada', ancho: 'm', celda: (f) => fechaCorta(dS.get(f.sku_id)?.ultima_entrada) ?? <SinDato /> },
             { id: 'd', titulo: 'Días', numerica: true, ancho: 's', celda: (f) => (f.dias === null ? <SinDato /> : String(f.dias)) },

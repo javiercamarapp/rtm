@@ -4,7 +4,7 @@ import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { notFound } from 'next/navigation';
 import { lectorDeSocio } from '@/composicion/catalogo';
 import { operacionDeSocio } from '@/composicion/operacion';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, formatearPiezas, nombreVape } from '@/dominio/formato';
 import { aNumero, porcentaje } from '@/dominio/tablero/agregados';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Chip, ChipEstado } from '@/ui/componentes/controles';
@@ -103,7 +103,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
         </Tarjeta>
         <Tarjeta titulo="Margen por pieza contra Isaac" descripcion="Precio menos costo de Isaac por modelo">
           {margenIsaac.length > 0 ? (
-            <BarList etiquetaAria="Margen por modelo" items={margenIsaac.map((m) => ({ id: m.modelo, etiqueta: m.modelo, texto: formatearMoneda(m.margen), pct: maxMargen > 0 ? porcentaje(Math.max(0, aNumero(m.margen)), maxMargen) : null, nota: margenKaren.find((k) => k.modelo === m.modelo) ? `Karen ${formatearMoneda(margenKaren.find((k) => k.modelo === m.modelo)!.margen)}${margenKaren.find((k) => k.modelo === m.modelo)!.supuesto ? ' (supuesto)' : ''}` : undefined }))} />
+            <BarList etiquetaAria="Margen por modelo" items={margenIsaac.map((m) => ({ id: m.modelo, etiqueta: nombreVape(m.modelo), texto: formatearMoneda(m.margen), pct: maxMargen > 0 ? porcentaje(Math.max(0, aNumero(m.margen)), maxMargen) : null, nota: margenKaren.find((k) => k.modelo === m.modelo) ? `Karen ${formatearMoneda(margenKaren.find((k) => k.modelo === m.modelo)!.margen)}${margenKaren.find((k) => k.modelo === m.modelo)!.supuesto ? ' (supuesto)' : ''}` : undefined }))} />
           ) : <p className="rtm-a1-estado-vacio">Sin costos de Isaac para estos modelos.</p>}
         </Tarjeta>
       </Rejilla>
@@ -114,7 +114,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
           clave={(t) => t.modeloId} filas={f.tabulador}
           vacio={{ titulo: 'Sin tabulador', texto: 'Este cliente todavía no tiene precios por modelo.' }}
           columnas={[
-            { id: 'm', titulo: 'Modelo', ancho: 'xl', celda: (t) => <>{t.modelo}{t.estado === 'sin_disponibilidad' && <> <EstadoTexto tono="atencion">sin disponibilidad</EstadoTexto></>}</> },
+            { id: 'm', titulo: 'Modelo', ancho: 'xl', celda: (t) => <>{nombreVape(t.modelo)}{t.estado === 'sin_disponibilidad' && <> <EstadoTexto tono="atencion">sin disponibilidad</EstadoTexto></>}</> },
             { id: 'p', titulo: 'Precio', numerica: true, ancho: 'm', celda: (t) => formatearMoneda(t.precioCent) },
             { id: 'mi', titulo: 'Margen vs Isaac', numerica: true, ancho: 'm', celda: (t) => { const m = t.margenes.find((x) => x.proveedor === 'Isaac'); return m ? <CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${f.id}:${t.modeloId}`} comprobacion="cuadra" /> : <SinDato />; } },
             { id: 'mk', titulo: 'Margen vs Karen', numerica: true, ancho: 'm', celda: (t) => { const m = t.margenes.find((x) => x.proveedor === 'Karen'); return m ? <><CifraComprobada texto={formatearMoneda(m.margenCent)} cifra={`margen:${f.id}:${t.modeloId}`} comprobacion="cuadra" /> {m.supuesto && <EstadoTexto tono="atencion">supuesto</EstadoTexto>}</> : <SinDato />; } },
@@ -145,7 +145,7 @@ export default async function PaginaCliente({ params }: { params: Promise<{ id: 
             clave={(h) => `${h.modelo}-${h.desde}-${h.precioCent}-${h.externo}`} filas={f.historial}
             vacio={{ titulo: 'Sin historial', texto: 'Aún no se ha registrado ningún precio.' }}
             columnas={[
-              { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (h) => h.modelo },
+              { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (h) => nombreVape(h.modelo) },
               { id: 'p', titulo: 'Precio', numerica: true, ancho: 'm', celda: (h) => formatearMoneda(h.precioCent) },
               { id: 'd', titulo: 'Desde', ancho: 'm', celda: (h) => etiquetaFecha(h.desde) },
               { id: 'h', titulo: 'Hasta', ancho: 'm', secundaria: true, celda: (h) => (h.hasta ? etiquetaFecha(h.hasta) : '—') },

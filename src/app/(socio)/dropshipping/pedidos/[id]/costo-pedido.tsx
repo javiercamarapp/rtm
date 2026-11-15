@@ -1,5 +1,6 @@
 'use client';
 
+import { nombreVape, saborMayus } from '@/dominio/formato';
 import { useState } from 'react';
 import { validarEvidencia } from '@/dominio/dropshipping/evidencia';
 import type { CostoRenglon } from '@/dominio/dropshipping/tipos';
@@ -54,7 +55,7 @@ export function CapturarCosto({ pedidoId, renglones }: { pedidoId: number; rengl
         <label className="rtm-etiqueta-campo">Costo real por pieza<input className="rtm-campo rtm-campo-num" inputMode="decimal" value={unico} onChange={(e) => setUnico(e.target.value)} data-testid="costo-unico" /></label>
       ) : (
         renglones.map((r) => (
-          <label key={r.linea_id} className="rtm-etiqueta-campo">{r.modelo} · {r.sabor} (catálogo {r.costo_catalogo_cent === null ? 'sin dato' : `$${(Number(r.costo_catalogo_cent) / 100).toFixed(2)}`})
+          <label key={r.linea_id} className="rtm-etiqueta-campo">{nombreVape(r.modelo)} · {saborMayus(r.sabor)} (catálogo {r.costo_catalogo_cent === null ? 'sin dato' : `$${(Number(r.costo_catalogo_cent) / 100).toFixed(2)}`})
             <input className="rtm-campo rtm-campo-num" inputMode="decimal" value={porLinea[r.linea_id] ?? ''} onChange={(e) => setPorLinea((x) => ({ ...x, [r.linea_id]: e.target.value }))} data-testid={`costo-linea-${r.linea_id}`} />
           </label>
         ))

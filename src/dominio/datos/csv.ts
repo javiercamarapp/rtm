@@ -1,4 +1,5 @@
 // CSV del kardex consolidado: las columnas del Excel (entradas, salidas y existencias con cantidad, unitario y total) mas modelo, sabor, valor del sabor, autor y mensaje original.
+import { marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import type { FilaKardex, KardexConsolidado } from './tipos';
 
 function pesos(c: bigint | null): string {
@@ -22,7 +23,7 @@ export const COLUMNAS_KARDEX_CONSOLIDADO = [
 
 export function kardexConsolidadoCsv(k: KardexConsolidado, filas: FilaKardex[]): string {
   const cuerpo = filas.map((m) => [
-    m.fecha_neg, m.hora, m.tipo.replaceAll('_', ' '), m.referencia, m.marca, m.modelo, m.sabor, m.entra_piezas, pesos(m.entra_unit_cent), pesos(m.entra_total_cent), m.sale_piezas, pesos(m.sale_unit_cent), pesos(m.sale_total_cent),
+    m.fecha_neg, m.hora, m.tipo.replaceAll('_', ' '), m.referencia, marcaMayus(m.marca), nombreVape(m.modelo), saborMayus(m.sabor), m.entra_piezas, pesos(m.entra_unit_cent), pesos(m.entra_total_cent), m.sale_piezas, pesos(m.sale_unit_cent), pesos(m.sale_total_cent),
     m.saldo_piezas, pesos(m.saldo_valor_cent), pesos(m.costo_prom_cent), m.saldo_sabor_piezas, pesos(m.saldo_sabor_valor_cent), m.evento, m.canal, m.autor, m.mensaje_origen, m.reversa_de,
   ].map((v) => celda(v)).join(','));
   const pie = ['', '', 'Totales del filtro', '', '', '', '', k.totales.entradas_piezas, '', pesos(k.totales.entradas_valor_cent), k.totales.salidas_piezas, '', pesos(k.totales.salidas_valor_cent), k.final.piezas, pesos(k.final.valor_cent)].map((v) => celda(v)).join(',');

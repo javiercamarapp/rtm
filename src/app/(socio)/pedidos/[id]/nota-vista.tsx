@@ -1,4 +1,4 @@
-import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, nombreVape, saborMayus } from '@/dominio/formato';
 import type { NotaPedido } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { MARCA } from '@/config/marca';
@@ -25,9 +25,9 @@ export function NotaCliente({ nota, pedidoId }: { nota: NotaPedido; pedidoId: nu
         <div role="row" className="rtm-nota-fila rtm-nota-cabecera"><span role="columnheader">PRODUCTO</span><span role="columnheader">SABOR</span><span role="columnheader">CANTIDAD</span><span role="columnheader">PRECIO</span><span role="columnheader">TOTAL</span></div>
         {c.grupos.map((g) => (
           <div key={g.modelo} role="rowgroup">
-            <div role="row" className="rtm-nota-fila rtm-nota-modelo"><span role="cell">{g.modelo}</span><span role="cell" /><span role="cell">{g.piezas}</span><span role="cell" /><span role="cell">{formatearMoneda(g.subtotal_cent)}</span></div>
+            <div role="row" className="rtm-nota-fila rtm-nota-modelo"><span role="cell">{nombreVape(g.modelo)}</span><span role="cell" /><span role="cell">{g.piezas}</span><span role="cell" /><span role="cell">{formatearMoneda(g.subtotal_cent)}</span></div>
             {g.sabores.map((s) => (
-              <div role="row" className="rtm-nota-fila" key={`${g.modelo}-${s.sabor}-${s.precio_cent}`}><span role="cell" /><span role="cell">{s.sabor}</span><span role="cell">{s.piezas}</span><span role="cell">{formatearMoneda(s.precio_cent)}</span><span role="cell">{formatearMoneda(s.total_cent)}</span></div>
+              <div role="row" className="rtm-nota-fila" key={`${g.modelo}-${s.sabor}-${s.precio_cent}`}><span role="cell" /><span role="cell">{saborMayus(s.sabor)}</span><span role="cell">{s.piezas}</span><span role="cell">{formatearMoneda(s.precio_cent)}</span><span role="cell">{formatearMoneda(s.total_cent)}</span></div>
             ))}
           </div>
         ))}

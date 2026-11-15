@@ -1,3 +1,4 @@
+import { marcaMayus } from '@/dominio/formato';
 import type { Metadata } from 'next';
 import { datosDeSocio } from '@/composicion/datos';
 import { operacionDeSocio } from '@/composicion/operacion';
@@ -44,8 +45,8 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
       ]} />
       {!sd && (
         <Rejilla dividir="4-4-4">
-          <Tarjeta titulo="Valor por marca" descripcion="Parte del valor a costo"><BarList etiquetaAria="Valor por marca" items={r.marcas.map((x) => ({ id: String(x.marca_id), etiqueta: x.marca, texto: m(x.valor_cent) ?? '', pct: partePct(x.valor_cent, total) }))} /></Tarjeta>
-          <Tarjeta titulo="Piezas por marca" descripcion="Contra la marca con más piezas"><BarList etiquetaAria="Piezas por marca" items={r.marcas.map((x) => ({ id: String(x.marca_id), etiqueta: x.marca, texto: pz(x.piezas) ?? '', pct: maxPz > 0 ? Math.round((x.piezas / maxPz) * 100) : null }))} mostrarPct={false} /></Tarjeta>
+          <Tarjeta titulo="Valor por marca" descripcion="Parte del valor a costo"><BarList etiquetaAria="Valor por marca" items={r.marcas.map((x) => ({ id: String(x.marca_id), etiqueta: marcaMayus(x.marca), texto: m(x.valor_cent) ?? '', pct: partePct(x.valor_cent, total) }))} /></Tarjeta>
+          <Tarjeta titulo="Piezas por marca" descripcion="Contra la marca con más piezas"><BarList etiquetaAria="Piezas por marca" items={r.marcas.map((x) => ({ id: String(x.marca_id), etiqueta: marcaMayus(x.marca), texto: pz(x.piezas) ?? '', pct: maxPz > 0 ? Math.round((x.piezas / maxPz) * 100) : null }))} mostrarPct={false} /></Tarjeta>
           <Tarjeta>
             {r.compras_semana.length >= 2 ? (
               <ColumnasPeriodo titulo="Compras por semana" descripcion={`Valor de las entradas de compra en ${r.compras_semana.length} semanas.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140}
@@ -59,7 +60,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           etiqueta="Inventario por marca y proveedor" clave={(x) => x.marca_id} filas={r.marcas} densidad="densa" pegajosa primeraFija plana
           vacio={{ titulo: 'Sin existencias por marca', texto: 'Aparecen con la primera compra recibida y contada.' }}
           columnas={[
-            { id: 'm', titulo: 'Marca', ancho: 'l', celda: (x) => x.marca },
+            { id: 'm', titulo: 'Marca', ancho: 'l', celda: (x) => marcaMayus(x.marca) },
             { id: 'p', titulo: 'Proveedor', ancho: 'm', celda: (x) => x.proveedor ?? <SinDato /> },
             { id: 'mo', titulo: 'Modelos', numerica: true, ancho: 's', celda: (x) => `${x.modelos} de ${x.modelos_catalogo}` },
             { id: 'sa', titulo: 'Sabores', numerica: true, ancho: 's', celda: (x) => String(x.sabores) },

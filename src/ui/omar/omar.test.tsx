@@ -58,7 +58,7 @@ describe('armazon de Omar', () => {
 describe('disponible', () => {
   it('lista modelo, sabor y piezas; sin precios, costos ni totales', async () => {
     m = montar(<ListaDisponible lectura={ok(DISPONIBLE)} />);
-    expect(m.cont.textContent).toContain('Elux Legend 3.5K');
+    expect(m.cont.textContent).toContain('ELUX LEGEND 3.5K');
     expect(m.cont.textContent).toContain('12 pz');
     expect(m.cont.textContent).not.toMatch(/\$|costo|margen|precio|total/i);
     expect(await auditar(m.cont)).toEqual([]);
@@ -66,7 +66,7 @@ describe('disponible', () => {
   it('el buscador filtra y muestra estado vacio sin coincidencias', () => {
     m = montar(<ListaDisponible lectura={ok(DISPONIBLE)} />);
     cambiar(m.cont.querySelector('input')!, 'mango');
-    expect(m.cont.textContent).toContain('Waka Blast 50K');
+    expect(m.cont.textContent).toContain('WAKA BLAST 50K');
     expect(m.cont.textContent).not.toContain('Elux');
     cambiar(m.cont.querySelector('input')!, 'zzz');
     expect(m.cont.textContent).toContain('Sin coincidencias');

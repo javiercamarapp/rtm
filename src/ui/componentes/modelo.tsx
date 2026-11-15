@@ -1,3 +1,4 @@
+import { nombreVape, marcaMayus } from '@/dominio/formato';
 import type { ReactNode } from 'react';
 import { rutaFotoModelo } from '@/dominio/catalogo/fotos-modelos';
 
@@ -41,8 +42,8 @@ export function ModeloTarjeta({ modelo, marca, tam = 's', detalle, acciones, tes
     <div className="rtm-modelo-tarjeta" data-tam={tam} data-testid={testid}>
       <ModeloMiniatura modelo={modelo} marca={marca} tam={tam} />
       <span className="rtm-modelo-texto">
-        {marca && marca !== 'Sin marca' && <small>{marca}</small>}
-        <strong>{modelo}</strong>
+        {marca && marca !== 'Sin marca' && <small>{marcaMayus(marca)}</small>}
+        <strong>{nombreVape(modelo)}</strong>
         {detalle && <span className="rtm-modelo-detalle">{detalle}</span>}
       </span>
       {acciones && <span className="rtm-modelo-acciones">{acciones}</span>}

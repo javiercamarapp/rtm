@@ -1,4 +1,4 @@
-import { formatearEntero } from '@/dominio/formato';
+import { formatearEntero, marcaMayus } from '@/dominio/formato';
 import { disponibles, estadoDisponibilidad, hace, iniciales, nombreVisible, type EstadoDisponibilidad, type ModeloTablero } from '@/dominio/proveedores/tablero';
 
 export const TEXTO_DISPONIBILIDAD: Record<EstadoDisponibilidad, string> = { disponible: 'Disponible', poca: 'Poca variedad', agotado: 'Agotado', sin_dato: 'Sin detalle de sabores' };
@@ -48,7 +48,7 @@ export function TarjetaVape({ modelo: m, foto, caladas, ahora, abierta, indice, 
           {m.nuevo_semana && <b className="rtm-kr-insignia" data-tipo="nuevo">Nuevo</b>}
           {m.vendemos && <b className="rtm-kr-insignia">Lo vendes</b>}
         </span>
-        <span className="rtm-kr-marca">{m.marca}{caladas && m.puffs ? ` · ${formatearEntero(m.puffs)} caladas` : ''}</span>
+        <span className="rtm-kr-marca">{marcaMayus(m.marca)}{caladas && m.puffs ? ` · ${formatearEntero(m.puffs)} caladas` : ''}</span>
         <strong className="rtm-kr-nombre">{nombre}</strong>
         <span className="rtm-kr-sabores">
           {total ? <><b>{d}</b> de {total} sabores</> : 'Sin sabores leídos'}

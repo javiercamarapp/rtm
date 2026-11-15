@@ -1,6 +1,6 @@
 // PDF de la nota de credito de un cliente y de la devolucion a un proveedor. Mismo motor que la nota (huella estable, una sola tinta, fuentes incrustadas).
 // La nota de credito NO lleva costos ni utilidad; la devolucion a proveedor lleva el credito acordado (valor), nunca precios de venta.
-import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, nombreVape, saborMayus } from '@/dominio/formato';
 import type { FuenteDevolucion } from '@/dominio/operacion/tipos';
 import { Hoja, M, UTIL, nuevoDocumento, pie, sinAzar } from './nota';
 
@@ -43,8 +43,8 @@ export async function pdfDevolucion(fuente: FuenteDevolucion): Promise<Uint8Arra
     cabecera();
     for (const l of s.lineas) {
       h.asegurar(16, cabecera);
-      h.texto(l.modelo, X.prod, 10, { ancho: 190 });
-      h.texto(l.sabor + (l.destino === 'merma' ? ' (dañado)' : ''), X.sabor, 10, { ancho: 165 });
+      h.texto(nombreVape(l.modelo), X.prod, 10, { ancho: 190 });
+      h.texto(saborMayus(l.sabor) + (l.destino === 'merma' ? ' (dañado)' : ''), X.sabor, 10, { ancho: 165 });
       h.texto(String(l.piezas), X.cant, 10, { derecha: true });
       if (esCliente && l.precio_cent !== undefined) h.texto(formatearMoneda(l.precio_cent), X.precio, 10, { derecha: true });
       h.texto(formatearMoneda((esCliente ? l.total_cent : l.valor_cent) ?? 0n), X.total, 10, { derecha: true });

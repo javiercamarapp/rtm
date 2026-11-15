@@ -6,7 +6,7 @@ import { exigirSocio } from '@/composicion/acceso';
 import { historialDeSocio } from '@/composicion/historial';
 import { calcularRatios, estacionalidadSemanal, estadisticasMeses, proyeccionPersonal } from '@/dominio/historial/ratios';
 import type { FilaSerie } from '@/dominio/historial/tipos';
-import { etiquetaFecha, formatearDecimal } from '@/dominio/formato';
+import { etiquetaFecha, formatearDecimal, nombreVape } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, Segmentado } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
@@ -242,7 +242,7 @@ export default async function PaginaHistorial({ params, searchParams }: { params
             etiqueta="Margen por modelo" densidad="densa" plana clave={(x) => x.modelo} filas={h.por_modelo}
             vacio={{ titulo: 'Sin modelos', texto: 'Aparecen con el primer pedido enviado.' }}
             columnas={[
-              { id: 'm', titulo: 'Modelo', ancho: 'l', truncar: 'm', celda: (x) => x.modelo },
+              { id: 'm', titulo: 'Modelo', ancho: 'l', truncar: 'm', celda: (x) => nombreVape(x.modelo) },
               { id: 'pz', titulo: 'Piezas', numerica: true, ancho: 's', celda: (x) => formatearDecimal(Number(x.piezas), 0) },
               { id: 'v', titulo: 'Venta', numerica: true, ancho: 'm', celda: (x) => m(x.venta_cent) },
               { id: 'c', titulo: 'Costo', numerica: true, ancho: 'm', secundaria: true, celda: (x) => m(x.costo_cent) },

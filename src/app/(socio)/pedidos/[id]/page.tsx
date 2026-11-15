@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { operacionDeSocio } from '@/composicion/operacion';
-import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
@@ -67,7 +67,7 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
             puedeEmpacar={p.origen === 'bodega_omar' || p.origen === 'castores'} avisosPendientes={avisosPendientes} cuentas={cuentas} saldoCent={p.saldo_cent}
             fichaDs={origenSurtido(p.origen) === 'dropshipping' ? `/dropshipping/pedidos/${p.id}` : undefined}
             renglones={p.lineas.map((l) => ({ linea_id: l.id, modelo: l.modelo, sabor: l.sabor, piezas: l.piezas_pedidas, disponible: l.disponible }))}
-            lineasNota={p.lineas.filter((l) => l.piezas_surtidas > 0).map((l) => ({ id: l.id, etiqueta: `${l.modelo} ${l.sabor}`, precio_cent: l.precio_cent }))}
+            lineasNota={p.lineas.filter((l) => l.piezas_surtidas > 0).map((l) => ({ id: l.id, etiqueta: `${nombreVape(l.modelo)} ${saborMayus(l.sabor)}`, precio_cent: l.precio_cent }))}
           />
         }
         descripcion={`${ORIGEN[p.origen]} · creado el ${etiquetaFecha(p.fecha_neg)}${p.fecha_envio ? ` · enviado el ${etiquetaFecha(p.fecha_envio)}` : ''}. Nada se descuenta ni devenga renta antes de marcarlo enviado.`}
@@ -139,8 +139,8 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
           clave={(l) => l.id}
           filas={p.lineas}
           columnas={[
-            { id: 'm', titulo: 'Modelo', celda: (l) => l.modelo },
-            { id: 's', titulo: 'Sabor', celda: (l) => l.sabor },
+            { id: 'm', titulo: 'Modelo', celda: (l) => nombreVape(l.modelo) },
+            { id: 's', titulo: 'Sabor', celda: (l) => saborMayus(l.sabor) },
             { id: 'p', titulo: 'Pedidas', numerica: true, celda: (l) => formatearPiezas(l.piezas_pedidas) },
             { id: 'u', titulo: 'Surtidas', numerica: true, celda: (l) => (enviado || anulado ? formatearPiezas(l.piezas_surtidas) : <SinDato />) },
             { id: 'e', titulo: 'Disponible', numerica: true, secundaria: true, celda: (l) => (enviado || anulado ? '' : formatearPiezas(Math.max(l.disponible, 0))) },
@@ -204,7 +204,7 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
                 clave={(m) => m.modelo}
                 filas={verNota.interno.por_modelo}
                 columnas={[
-                  { id: 'm', titulo: 'Modelo', celda: (m) => m.modelo },
+                  { id: 'm', titulo: 'Modelo', celda: (m) => nombreVape(m.modelo) },
                   { id: 'p', titulo: 'Piezas', numerica: true, celda: (m) => formatearPiezas(m.piezas) },
                   { id: 'v', titulo: 'Venta', numerica: true, celda: (m) => formatearMoneda(m.venta_cent) },
                   { id: 'c', titulo: 'Costo', numerica: true, celda: (m) => formatearMoneda(m.costo_cent) },

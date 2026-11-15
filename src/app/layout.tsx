@@ -21,6 +21,7 @@ import '@/ui/estilos/modelos-sabores.css';
 import '@/ui/estilos/filtros.css';
 import '@/ui/estilos/karen.css';
 import '@/ui/estilos/hoja.css';
+import '@/ui/estilos/mayusculas.css';
 
 export const metadata: Metadata = {
   title: { default: MARCA.nombre, template: `%s · ${MARCA.nombre}` },

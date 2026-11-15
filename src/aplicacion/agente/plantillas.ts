@@ -1,5 +1,6 @@
 // Plantillas de mensajes. Todo texto con cifras se arma aqui, SOLO con valores del servidor registrados en un RegistroCifras;
 // el comunicador audita el texto final antes de enviarlo. Sin emojis.
+import { nombreVape } from '@/dominio/formato';
 import { LISTA_COMANDOS } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN } from '@/dominio/agente/deshacer';
 import { RegistroCifras } from '@/dominio/agente/cifras';
@@ -52,7 +53,7 @@ export function preguntaResolucion(entrada: { campo: string; textoUsuario: strin
 export function preguntaNoEncontrado(entrada: { campo: string; textoUsuario: string; cita: string; sugerencias: readonly string[] }): MensajeListo {
   const r = new RegistroCifras();
   const base = `En "${r.citaUsuario(entrada.cita)}", no encontre ${entrada.campo} "${r.citaUsuario(entrada.textoUsuario)}".`;
-  const sug = entrada.sugerencias.length > 0 ? ` ¿Quisiste decir ${entrada.sugerencias.map((s) => r.servidor(s)).join(' o ')}?` : ' Escribe el nombre completo.';
+  const sug = entrada.sugerencias.length > 0 ? ` ¿Quisiste decir ${entrada.sugerencias.map((s) => r.servidor(entrada.campo === 'modelo' || entrada.campo === 'sabor' ? nombreVape(s) : s)).join(' o ')}?` : ' Escribe el nombre completo.';
   return { texto: base + sug, registro: r };
 }
 
@@ -241,7 +242,7 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
   const r = new RegistroCifras();
   const l: string[] = [`Resumen para confirmar. Todavia no se registro nada. Lo pidio ${nombrePersona(d.autor.persona)}.`, `Movimiento: ${TITULO_RESUMEN[i.tipo] ?? i.tipo}`];
   const monto = (c: number) => `Monto: ${r.pesos(BigInt(c))}`;
-  const lineasDe = (ls: readonly { piezas: number }[]) => ls.map((x, n) => `- ${r.servidor(d.lineas[n] ?? 'modelo')}: ${r.piezas(x.piezas)} piezas`);
+  const lineasDe = (ls: readonly { piezas: number }[]) => ls.map((x, n) => `- ${r.servidor(nombreVape(d.lineas[n] ?? 'modelo'))}: ${r.piezas(x.piezas)} piezas`);
   switch (i.tipo) {
     case 'pago':
       l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, monto(i.monto_centavos), `Cuenta donde entro: ${r.citaUsuario(i.cuenta_destino_texto ?? '')}`);
@@ -310,7 +311,7 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
       if (i.tipo_cambio_micro !== null) l.push(`Tipo de cambio dicho: ${r.citaUsuario(String(i.tipo_cambio_micro / 1_000_000))}`);
       break;
     case 'merma':
-      l.push(`Modelo: ${r.servidor(d.lineas[0] ?? 'modelo')}`, `Sabor: ${r.citaUsuario(i.sabor_texto ?? '')}`, `Piezas: ${r.piezas(i.piezas)}`, `Motivo: ${r.citaUsuario(i.motivo ?? '')}`);
+      l.push(`Modelo: ${r.servidor(nombreVape(d.lineas[0] ?? 'modelo'))}`, `Sabor: ${r.citaUsuario(i.sabor_texto ?? '')}`, `Piezas: ${r.piezas(i.piezas)}`, `Motivo: ${r.citaUsuario(i.motivo ?? '')}`);
       break;
     case 'conteo':
       l.push('Piezas contadas (el sistema ajusta la existencia a este conteo):', ...lineasDe(i.lineas));
@@ -319,7 +320,7 @@ export function resumenConfirmacion(i: Intencion, d: DatosResumen): MensajeListo
       l.push(`Nombre: ${r.citaUsuario(i.nombre)}`, 'Sin telefonos: los contactos viven aparte.');
       break;
     case 'cliente_precio':
-      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, `Modelo: ${r.servidor(d.modelo ?? i.modelo_texto)}`, `Precio nuevo: ${r.pesos(BigInt(i.precio_centavos))}`);
+      l.push(`Cliente: ${r.servidor(d.cliente ?? i.cliente_texto)}`, `Modelo: ${r.servidor(nombreVape(d.modelo ?? i.modelo_texto))}`, `Precio nuevo: ${r.pesos(BigInt(i.precio_centavos))}`);
       break;
     case 'acta_propuesta':
       l.push(`Periodo: ${r.citaUsuario(i.mes ?? 'el mes anterior')}`);

@@ -6,7 +6,7 @@ import {
   type DatosTablero, type EventoGlobal, type FiltrosKaren, type OrdenTablero,
 } from '@/dominio/proveedores/tablero';
 import { fotoDeModelo } from '@/config/fotos_karen';
-import { etiquetaFechaHora } from '@/dominio/formato';
+import { etiquetaFechaHora, marcaMayus, nombreVape } from '@/dominio/formato';
 import { PanelVape } from './panel-vape';
 import { TarjetaVape } from './tarjeta-vape';
 import '@/ui/estilos/barrido-b.css';
@@ -81,7 +81,7 @@ export function TableroKaren(p: PropsTablero) {
             {marcas.map((m) => (
               <label key={m.marca}>
                 <input type="checkbox" checked={f.marcas.includes(m.marca)} onChange={(e) => aplicar({ marcas: e.target.checked ? [...f.marcas, m.marca] : f.marcas.filter((x) => x !== m.marca) })} />
-                <span>{m.marca}</span><small>{m.n}</small>
+                <span>{marcaMayus(m.marca)}</span><small>{m.n}</small>
               </label>
             ))}
             {f.marcas.length > 0 && <button type="button" className="rtm-kr-enlace" onClick={() => aplicar({ marcas: [] })}>Quitar marcas</button>}
@@ -140,7 +140,7 @@ export function TableroKaren(p: PropsTablero) {
             <ol className="rtm-kr-linea" data-testid="linea-tiempo">
               {p.eventos.slice(0, 12).map((e) => (
                 <li key={e.clave} data-tono={tonoDeEvento(e.tipo)}>
-                  <span>{ETIQUETA_EVENTO[e.tipo] ?? e.tipo}{e.modelo ? `: ${e.modelo}` : ''}{e.despues && e.tipo.startsWith('sabor') ? ` (${e.despues})` : ''}</span>
+                  <span>{ETIQUETA_EVENTO[e.tipo] ?? e.tipo}{e.modelo ? `: ${nombreVape(e.modelo)}` : ''}{e.despues && e.tipo.startsWith('sabor') ? ` (${e.despues})` : ''}</span>
                   <time dateTime={e.en}>{hace(e.en, ahora)}</time>
                 </li>
               ))}

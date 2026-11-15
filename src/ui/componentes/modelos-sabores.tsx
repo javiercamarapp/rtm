@@ -1,4 +1,4 @@
-import { formatearPiezas } from '@/dominio/formato';
+import { formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { ModeloMiniatura, nombreCompletoModelo } from './modelo';
 
 /** Un renglon de modelo y sabor. A proposito NO tiene campos de costo ni precio: el componente no puede mostrarlos (Omar y Bodega lo usan igual). */
@@ -24,15 +24,15 @@ export function agruparPorModelo(renglones: readonly RenglonSabor[]): GrupoModel
 }
 
 const textoSabores = (n: number) => `${n} ${n === 1 ? 'sabor' : 'sabores'}`;
-const resumen = (g: GrupoModelo) => `${nombreCompletoModelo(g.modelo, g.marca)} · ${formatearPiezas(g.piezas)} · ${textoSabores(g.sabores.length)}`;
+const resumen = (g: GrupoModelo) => `${nombreCompletoModelo(nombreVape(g.modelo), g.marca)} · ${formatearPiezas(g.piezas)} · ${textoSabores(g.sabores.length)}`;
 
 function ListaSabores({ g }: { g: GrupoModelo }) {
   return (
-    <div className="rtm-ms-scroll" role="group" tabIndex={0} aria-label={`Sabores de ${g.modelo}`}>
+    <div className="rtm-ms-scroll" role="group" tabIndex={0} aria-label={`Sabores de ${nombreVape(g.modelo)}`}>
       <ul className="rtm-ms-sabores">
         {g.sabores.map((s) => (
-          <li key={s.sabor} title={`${s.sabor}: ${formatearPiezas(s.piezas)}`}>
-            <span className="rtm-ms-sabor">{s.sabor}</span>
+          <li key={s.sabor} title={`${saborMayus(s.sabor)}: ${formatearPiezas(s.piezas)}`}>
+            <span className="rtm-ms-sabor">{saborMayus(s.sabor)}</span>
             <span className="rtm-ms-piezas">{formatearPiezas(s.piezas)}</span>
           </li>
         ))}
@@ -46,7 +46,7 @@ function CabeceraModelo({ g, tam }: { g: GrupoModelo; tam: 'xs' | 's' }) {
     <>
       <ModeloMiniatura modelo={g.modelo} marca={g.marca} tam={tam} />
       <span className="rtm-ms-texto">
-        <strong className="rtm-ms-nombre">{g.modelo}</strong>
+        <strong className="rtm-ms-nombre">{nombreVape(g.modelo)}</strong>
         <span className="rtm-ms-meta">{formatearPiezas(g.piezas)} · {textoSabores(g.sabores.length)}</span>
       </span>
     </>

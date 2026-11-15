@@ -1,5 +1,6 @@
 'use client';
 
+import { nombreVape, marcaMayus } from '@/dominio/formato';
 import { useRef, useState, useTransition } from 'react';
 import { enlaceWhatsApp } from '@/dominio/inventario/compartir';
 import type { VersionInventario } from '@/dominio/inventario/tipos';
@@ -93,13 +94,13 @@ export function ExportarInventario({ marcas, modelos, clientes }: Props) {
             <label className="rtm-etiqueta-campo">Marca
               <select className="rtm-campo" value={marca} onChange={(e) => { setMarca(e.target.value); setModelo(''); }} data-testid="exportar-marca">
                 <option value="">Todas</option>
-                {marcas.map((m) => <option key={m} value={m}>{m}</option>)}
+                {marcas.map((m) => <option key={m} value={m}>{marcaMayus(m)}</option>)}
               </select>
             </label>
             <label className="rtm-etiqueta-campo">Modelo
               <select className="rtm-campo" value={modelo} onChange={(e) => setModelo(e.target.value)} data-testid="exportar-modelo">
                 <option value="">Todos</option>
-                {modelosDeMarca.map((m) => <option key={`${m.marca}-${m.modelo}`} value={m.modelo}>{m.modelo}</option>)}
+                {modelosDeMarca.map((m) => <option key={`${m.marca}-${m.modelo}`} value={m.modelo}>{nombreVape(m.modelo)}</option>)}
               </select>
             </label>
             {version === 'clientes' && (

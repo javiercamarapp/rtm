@@ -3,7 +3,7 @@
 import { PALABRA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
 import { marcasDelDocumento, tituloDisponible } from '@/dominio/inventario/compartir';
 import type { ModeloDocumento, SnapshotInventario } from '@/dominio/inventario/tipos';
-import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas, nombreVape, saborMayus, marcaMayus } from '@/dominio/formato';
 import { Hoja, M, UTIL, nuevoDocumento, pie, sinAzar } from './nota';
 
 function piezasDe(m: ModeloDocumento): number {
@@ -72,7 +72,7 @@ export async function pdfInventario(s: SnapshotInventario, folio: string, huella
       for (const m of modelos) {
         h.asegurar(16 + 13 * Math.max(m.sabores.length, 1), cabecera);
         const puffs = s.parametros.con_caladas && m.puffs ? ` · ${formatearPiezas(m.puffs).replace(/\s*pz$/, '')} caladas` : '';
-        h.texto(`${m.modelo}${puffs}`, X.modelo, 10, { fuente: f.negrita, ancho: interna ? 225 : 340 });
+        h.texto(`${nombreVape(m.modelo)}${puffs}`, X.modelo, 10, { fuente: f.negrita, ancho: interna ? 225 : 340 });
         if (interna) {
           h.texto(String(m.piezas ?? 0), X.pzs, 10, { fuente: f.negrita, derecha: true });
           h.texto(String(piezasDe(m)), X.disp, 10, { fuente: f.negrita, derecha: true });
@@ -88,7 +88,7 @@ export async function pdfInventario(s: SnapshotInventario, folio: string, huella
         h.bajar(14);
         for (const sa of m.sabores) {
           h.asegurar(14, cabecera);
-          h.texto(sa.sabor, X.sabor, 10, { ancho: interna ? 128 : 150 });
+          h.texto(saborMayus(sa.sabor), X.sabor, 10, { ancho: interna ? 128 : 150 });
           if (interna) {
             h.texto(String(sa.piezas ?? 0), X.pzs, 10, { derecha: true });
             h.texto(String(typeof sa.disponible === 'number' ? sa.disponible : 0), X.disp, 10, { derecha: true });
@@ -110,7 +110,7 @@ export async function pdfInventario(s: SnapshotInventario, folio: string, huella
         h.asegurar(30, cabecera);
         h.linea();
         h.bajar(13);
-        h.texto(`Subtotal ${marca}`, X.modelo, 10, { fuente: f.negrita });
+        h.texto(`Subtotal ${marcaMayus(marca)}`, X.modelo, 10, { fuente: f.negrita });
         h.texto(String(subPz), X.pzs, 10, { fuente: f.negrita, derecha: true });
         h.texto(formatearMoneda(subValor), X.valor, 10, { fuente: f.negrita, derecha: true });
         h.bajar(20);

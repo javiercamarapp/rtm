@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
-import { formatearEntero } from '@/dominio/formato';
+import { formatearEntero, marcaMayus, saborMayus } from '@/dominio/formato';
 import { disponibles, estadoDisponibilidad, ETIQUETA_EVENTO, hace, nombreVisible, tonoDeEvento, type ModeloTablero, type Recomendacion } from '@/dominio/proveedores/tablero';
 import { FotoVape, IndicadorDisponibilidad } from './tarjeta-vape';
 
@@ -32,7 +32,7 @@ export function PanelVape({ modelo: m, foto, caladas, ahora, recomendacion, onCe
           <header className="rtm-kr-panel-cab">
             <FotoVape src={foto} marca={m.marca} nombre={nombre} tamano="grande" />
             <div>
-              <p className="rtm-eyebrow">{m.marca}</p>
+              <p className="rtm-eyebrow">{marcaMayus(m.marca)}</p>
               <h2 id={`${id}-t`} className="rtm-kr-panel-titulo">{nombre}</h2>
               <IndicadorDisponibilidad estado={estadoDisponibilidad(m)} />
               <p className="rtm-nota">{disponibles(m)} de {m.sabores.length} sabores disponibles{m.puffs ? ` · ${formatearEntero(m.puffs)} caladas` : ''}</p>
@@ -73,7 +73,7 @@ export function PanelVape({ modelo: m, foto, caladas, ahora, recomendacion, onCe
                   <li key={s.variante_id} data-agotado={!s.disponible} data-testid={`sabor-${s.variante_id}`}>
                     <span className="rtm-kr-sabor-nombre">
                       <i className="rtm-kr-punto" data-ok={s.disponible} aria-hidden="true" />
-                      {s.sabor}
+                      {saborMayus(s.sabor)}
                       <span className="rtm-kr-sabor-estado">{s.disponible ? 'Disponible' : 'Agotado'}{s.inestable ? ' · inestable' : ''}</span>
                     </span>
                     <span className="rtm-kr-sabor-datos">
@@ -93,7 +93,7 @@ export function PanelVape({ modelo: m, foto, caladas, ahora, recomendacion, onCe
               <ol className="rtm-kr-linea">
                 {m.eventos.map((e) => (
                   <li key={e.clave} data-tono={tonoDeEvento(e.tipo)}>
-                    <span>{ETIQUETA_EVENTO[e.tipo] ?? e.tipo}{e.sabor ? `: ${e.sabor}` : ''}</span>
+                    <span>{ETIQUETA_EVENTO[e.tipo] ?? e.tipo}{e.sabor ? `: ${saborMayus(e.sabor)}` : ''}</span>
                     <time dateTime={e.en}>{hace(e.en, ahora)}</time>
                   </li>
                 ))}

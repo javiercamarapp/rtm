@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState, type CSSProperties } from 'react';
-import { formatearPiezas } from '@/dominio/formato';
+import { formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { CampoMonto } from '@/ui/componentes/campos-dialogo';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
 import { useExito } from '@/ui/componentes/dialogo-enterprise';
@@ -57,7 +57,7 @@ export function DialogoEnviar({ pedidoId, folio, renglones, avisosPendientes, et
             <p className="rtm-nota rtm-hoja-ancho">Escribe las piezas que realmente salieron. El cliente solo paga lo surtido; lo demás queda pendiente.</p>
             {renglones.map((r) => (
               <label key={r.linea_id} className="rtm-etiqueta-campo">
-                {r.modelo} · {r.sabor} (pedidas {formatearPiezas(r.piezas)}, disponibles {formatearPiezas(Math.max(r.disponible, 0))})
+                {nombreVape(r.modelo)} · {saborMayus(r.sabor)} (pedidas {formatearPiezas(r.piezas)}, disponibles {formatearPiezas(Math.max(r.disponible, 0))})
                 <input className="rtm-campo rtm-campo-num" inputMode="numeric" value={surtido[r.linea_id] ?? ''} onChange={(e) => setSurtido((s) => ({ ...s, [r.linea_id]: e.target.value }))} aria-label={`Surtidas de ${r.modelo} ${r.sabor}`} />
               </label>
             ))}

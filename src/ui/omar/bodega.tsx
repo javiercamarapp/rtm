@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { formatearPiezas } from '@/dominio/formato';
+import { formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { etiquetaFechaHora } from '@/dominio/formato';
 import { estadoVisible, ETIQUETA_ESTADO, TONO_ESTADO, tiempoRestante } from '@/dominio/omar/solicitud';
 import type { Lectura, PiezaDisponible, Solicitud } from '@/dominio/omar/tipos';
@@ -33,8 +33,8 @@ export function ListaDisponible({ lectura }: { lectura: Lectura<PiezaDisponible[
       <DataTable plana densidad="densa" etiqueta="Disponible en tu bodega" clave={(p) => `${p.modelo}|${p.sabor}`} filas={filas}
         vacio={{ titulo: lectura.datos.length === 0 ? 'Bodega vacía' : 'Sin coincidencias', texto: lectura.datos.length === 0 ? 'No hay piezas en tu bodega ahora mismo.' : 'Ningún modelo o sabor coincide con la búsqueda.' }}
         columnas={[
-          { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (p) => <span className="rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={p.modelo} tam="xs" /><span className="rtm-modelo-texto"><strong>{p.modelo}</strong></span></span> },
-          { id: 's', titulo: 'Sabor', celda: (p) => p.sabor },
+          { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (p) => <span className="rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={p.modelo} tam="xs" /><span className="rtm-modelo-texto"><strong>{nombreVape(p.modelo)}</strong></span></span> },
+          { id: 's', titulo: 'Sabor', celda: (p) => saborMayus(p.sabor) },
           { id: 'p', titulo: 'Disponible', numerica: true, prioridadMovil: 'principal', celda: (p) => formatearPiezas(p.piezas) },
         ]} />
     </div>
@@ -50,7 +50,7 @@ export function ListaSolicitudes({ lectura, ahoraIso }: { lectura: Lectura<Solic
       vacio={{ titulo: 'Sin solicitudes', texto: 'Todavía no has solicitado piezas desde aquí.' }}
       columnas={[
         { id: 'f', titulo: 'Solicitud', prioridadMovil: 'titulo', celda: (s) => <span className="rtm-mono">{s.folio}</span> },
-        { id: 'p', titulo: 'Pieza', celda: (s) => <>{s.modelo} · {s.sabor}<span className="rtm-celda-sub">{etiquetaFechaHora(s.solicitada_at)}</span></> },
+        { id: 'p', titulo: 'Pieza', celda: (s) => <>{nombreVape(s.modelo)} · {saborMayus(s.sabor)}<span className="rtm-celda-sub">{etiquetaFechaHora(s.solicitada_at)}</span></> },
         { id: 'n', titulo: 'Piezas', numerica: true, prioridadMovil: 'principal', celda: (s) => formatearPiezas(s.piezas) },
         {
           id: 'e', titulo: 'Estado',
