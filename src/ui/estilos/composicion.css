@@ -1,4 +1,4 @@
-/* Composicion animada (barra apilada + leyenda) y relleno de tarjetas que comparten fila con una mas alta. Solo tokens; sin flex-basis ni estilos en linea. */
+/* Composicion animada (barra apilada + leyenda) y relleno de tarjetas que comparten fila con una mas alta. Solo tokens; sin bases flex ni estilos en linea. */
 .rtm-comp { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-around; gap: 16px; min-height: 0; }
 .rtm-comp-grupo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .rtm-comp-grupo > .rtm-a1-subtitulo { margin: 0; }
@@ -22,8 +22,7 @@
   :root:not([data-movimiento='reduced']):not([data-movimiento='off']) .rtm-comp-seg:nth-child(4) { animation-delay: 270ms; }
 }
 
-/* ---- Relleno sistemico: una tarjeta que comparte fila se estira a la altura de su vecina y su contenido ocupa y reparte ese alto ---- */
-.rtm-rejilla[data-alinear='inicio'] { align-items: stretch; }
+/* ---- Relleno sistemico: en una rejilla que estira (por omision) el contenido de la tarjeta corta ocupa y reparte el alto de su vecina. alinear="inicio" se reserva para formularios y tablas largas junto a tarjetas cortas. ---- */
 .rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-g, .rtm-grafica, .rtm-a1-cuerpo, .rtm-comp) { flex: 1 1 auto; }
 .rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-g, .rtm-grafica) { display: flex; flex-direction: column; justify-content: center; }
 .rtm-rejilla > .rtm-tarjeta-v2 > .rtm-a1-cuerpo { justify-content: space-around; }

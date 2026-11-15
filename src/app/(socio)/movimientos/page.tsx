@@ -73,7 +73,7 @@ export default async function PaginaBandeja({ searchParams }: { searchParams: Pr
           </div>
         </Tarjeta>
       </Rejilla>
-      <Rejilla dividir="6-6" alinear="inicio">
+      <Rejilla dividir="6-6">
         <>
           <Tarjeta titulo="Por estado" descripcion="Cantidad de movimientos">
             <BarList etiquetaAria="Movimientos por estado" items={ESTADOS.map((e) => ({ id: e, etiqueta: ETIQUETA_ESTADO[e], texto: String(n(e)), pct: pct(n(e)), tono: e === 'sin_clasificar' && n(e) > 0 ? ('atencion' as const) : undefined, href: href(e) }))} />

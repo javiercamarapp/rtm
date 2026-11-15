@@ -131,7 +131,7 @@ export default async function PaginaContactos({ searchParams }: { searchParams: 
           </nav>
         </Tarjeta>
       </Rejilla>
-      <Rejilla dividir="6-6" alinear="inicio">
+      <Rejilla dividir="6-6">
         <>
           <Tarjeta titulo="Por origen" descripcion="Un clic filtra la lista">
             <BarList etiquetaAria="Contactos por origen" items={resumen.porOrigen.map((o) => ({ id: o.origen, etiqueta: etiquetaOrigen(o.origen), texto: formatearEntero(o.contactos), pct: pctDe(o.contactos), href: sinPagina(o.origen) }))} />
