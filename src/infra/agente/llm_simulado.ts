@@ -32,7 +32,7 @@ export class LlmGuionado implements ClienteLlm {
 }
 
 /** Construye una respuesta valida del extractor. */
-export function respuesta(acciones: Intencion[], extra: Partial<Pick<RespuestaExtractor, 'sospecha_inyeccion' | 'baja_certeza'>> = {}): RespuestaExtractor {
+export function respuesta(acciones: Intencion[], extra: Partial<Pick<RespuestaExtractor, 'sospecha_inyeccion' | 'baja_certeza' | 'texto_sospechoso'>> = {}): RespuestaExtractor {
   return { acciones, sospecha_inyeccion: false, baja_certeza: false, ...extra };
 }
 

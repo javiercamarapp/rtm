@@ -205,6 +205,8 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
 export const EsquemaRespuesta = z.strictObject({
   acciones: z.array(EsquemaIntencion).max(MAX_ACCIONES),
   sospecha_inyeccion: z.boolean(),
+  /** El modelo vio texto tipo instruccion (o marcas de texto omitido). Opcional para respuestas guardadas antes de r6-2026-11-19.1. */
+  texto_sospechoso: z.boolean().optional(),
   baja_certeza: z.boolean(),
 });
 

@@ -197,6 +197,7 @@ export type AccionBoton =
   | 'rechazar_toma'
   | 'aclarar'
   | 'confirmar_accion'
+  | 'confirmar_lote'
   | 'confirmar_resumen'
   | 'confirmar_refuerzo'
   | 'completar'
