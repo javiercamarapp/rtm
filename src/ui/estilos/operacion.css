@@ -197,16 +197,6 @@
   .rtm-campana-panel { position: fixed; left: var(--rtm-e-4); right: var(--rtm-e-4); top: 56px; width: auto; max-height: calc(100dvh - 72px); }
 }
 
-/* Costos del sistema: marcas oficiales sin alterar (un <img> por tema; la clase decide cual se ve). */
-.rtm-marca { display: inline-flex; align-items: center; gap: var(--rtm-e-2); min-width: 0; }
-.rtm-marca-h18 { height: 18px; width: auto; }
-.rtm-marca-h20 { height: 20px; width: auto; }
-.rtm-marca-h22 { height: 22px; width: auto; }
-.rtm-marca img { display: block; max-width: 100%; object-fit: contain; }
-.rtm-marca .rtm-marca-oscuro { display: none; }
-:root[data-tema='oscuro'] .rtm-marca .rtm-marca-claro { display: none; }
-:root[data-tema='oscuro'] .rtm-marca .rtm-marca-oscuro { display: block; }
-.rtm-marca-texto { font-size: 13px; font-weight: 600; color: var(--rtm-ink); }
 .rtm-tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--rtm-e-3); list-style: none; margin: 0; padding: 0; }
 .rtm-tarjeta-costo { border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-surface); padding: var(--rtm-e-4); display: flex; flex-direction: column; gap: var(--rtm-e-2); min-width: 0; }
 .rtm-tarjeta-costo header { min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: var(--rtm-e-2); }

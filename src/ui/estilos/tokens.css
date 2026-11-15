@@ -10,6 +10,9 @@
   --rtm-fill-active: #ecece4;
   /* Indicadores del pulso (chips de arriba): blanco en claro, gris que contrasta en oscuro. */
   --rtm-chip-fondo: #ffffff;
+  /* Avatar circular de logos de servicios: fondo claro FIJO en ambos temas (los logos oficiales son oscuros o de color) y anillo fino. */
+  --rtm-logo-fondo: #ffffff;
+  --rtm-logo-anillo: #d9d7d0;
   --rtm-chip-borde: #d9d7d0;
   --rtm-chip-texto: #555555;
   --rtm-line: #ecebe6;

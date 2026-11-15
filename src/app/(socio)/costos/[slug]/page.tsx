@@ -10,7 +10,7 @@ import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
-import { LogoMarca } from '@/ui/marcas/logo-marca';
+import { LogoServicio } from '@/ui/componentes/logo-servicio';
 import { PIE_DE_MARCAS } from '@/dominio/marcas';
 import { FormularioCargo } from '../formulario-cargo';
 import '@/ui/estilos/costos.css';
@@ -45,7 +45,7 @@ export default async function PaginaServicioCostos({ params, searchParams }: { p
         eyebrow={`${ETIQUETA_CATEGORIA[categoria]} · ${mes}`}
         titulo={s.servicio}
         descripcion={def.metodo_atribucion}
-        acciones={<span className="rtm-serv-ficha-cab" data-testid="servicio-logo"><LogoMarca slug={s.logo_slug} nombre={s.servicio} alto={22} /></span>}
+        acciones={<span className="rtm-serv-ficha-cab" data-testid="servicio-logo"><LogoServicio slug={s.slug} logoSlug={s.logo_slug} nombre={s.servicio} tamano={40} /></span>}
       />
       <KpiLinea
         etiquetaAria={`Resumen de ${s.servicio}`}
