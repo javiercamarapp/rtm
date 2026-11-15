@@ -1,7 +1,7 @@
 # Guion de ejemplo (datos ilustrativos). Reproducir con: npx tsx scripts/agente/simulador.mts scripts/agente/guion-ejemplo.txt
 # 1) Pedido con alias ambiguo: pregunta, se elige una variante y se registra con eco, comprobacion y Deshacer.
 angelo> Cliente Norte 28 waka 50
-boton angelo 3
+boton angelo 1
 # El agente muestra el resumen y espera Confirmar; solo entonces registra.
 boton angelo 1
 # 2) Pago redirigido al proveedor y consulta de saldo.

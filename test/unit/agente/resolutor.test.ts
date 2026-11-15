@@ -24,13 +24,13 @@ const CLIENTES: EntradaCatalogo[] = [
 const SOCIO = { rol: 'socio' as const };
 const OMAR = { rol: 'omar' as const };
 
-describe('Waka 50: SIEMPRE pregunta', () => {
-  it.each(['Waka 50', 'waka 50k', 'WAKA   50', 'waka-50'])('"%s" -> varios con las tres variantes', (t) => {
+describe('Waka 50: SIEMPRE pregunta (Jupiter o Icon)', () => {
+  it.each(['Waka 50', 'waka 50k', 'WAKA   50', 'waka-50'])('"%s" -> varios con Icon y Jupiter', (t) => {
     const r = resolverModelo(t, MODELOS);
     expect(r.estado).toBe('varios');
     if (r.estado === 'varios') {
       expect(r.motivo).toBe('regla');
-      expect(r.candidatos.map((c) => c.id).sort()).toEqual(['m1', 'm2', 'm3']);
+      expect(r.candidatos.map((c) => c.id).sort()).toEqual(['m1', 'm3']);
     }
   });
   it('aunque el catalogo solo tenga una variante, pregunta igual', () => {
@@ -39,6 +39,21 @@ describe('Waka 50: SIEMPRE pregunta', () => {
   });
   it('sin ninguna variante en el catalogo, no inventa: ninguno', () => {
     expect(resolverModelo('waka 50', [MODELOS[7]!]).estado).toBe('ninguno');
+  });
+  it('"waka 15k" pregunta SoPro o DM; "waka sopro 30k" pregunta Waka 30K o Titan 30K', () => {
+    const cat: EntradaCatalogo[] = [
+      { id: 'a', nombre: 'Waka 15K', alias: [] },
+      { id: 'b', nombre: 'Waka DM 15K', alias: [] },
+      { id: 'c', nombre: 'Waka 30K', alias: [] },
+      { id: 'd', nombre: 'Waka Titan 30K', alias: [] },
+      { id: 'e', nombre: 'Waka Sopro 30K', alias: ['titan'] },
+    ];
+    const r = resolverModelo('Waka 15K', cat);
+    expect(r).toMatchObject({ estado: 'varios', motivo: 'regla' });
+    if (r.estado === 'varios') expect(r.candidatos).toEqual([{ id: 'a', nombre: 'Waka SoPro 15K' }, { id: 'b', nombre: 'Waka DM 15K' }]);
+    const t = resolverModelo('waka sopro 30k', cat);
+    if (t.estado === 'varios') expect(t.candidatos.map((c) => c.id)).toEqual(['c', 'd']);
+    else throw new Error('debia preguntar');
   });
   it('un alias propio ("jupiter") si resuelve', () => {
     expect(resolverModelo('jupiter', MODELOS)).toMatchObject({ estado: 'unico', id: 'm3' });
