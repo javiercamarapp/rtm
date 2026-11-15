@@ -17,10 +17,10 @@ describe('ModeloMiniatura y ModeloTarjeta', () => {
     expect(m.cont.querySelector('[style]')).toBeNull();
   });
   it('sin foto: estado vacio con monograma y etiqueta accesible', () => {
-    const m = abrir(montar(<ModeloMiniatura modelo="Waka Titan 30K" marca="Waka" tam="m" />));
+    const m = abrir(montar(<ModeloMiniatura modelo="Waka Modelo Nuevo 99K" marca="Waka" tam="m" />));
     expect(m.cont.querySelector('img')).toBeNull();
     const v = m.cont.querySelector('[data-vacia]')!;
-    expect(v.getAttribute('aria-label')).toBe('Sin foto de Waka Titan 30K');
+    expect(v.getAttribute('aria-label')).toBe('Sin foto de Waka Modelo Nuevo 99K');
     expect(v.textContent).toContain('WA');
   });
   it('el nombre no repite la marca', () => {
