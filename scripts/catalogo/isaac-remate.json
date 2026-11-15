@@ -1,5 +1,5 @@
 {
- "fuente": "Catalogo_Remate.pdf de Isaac (23 modelos, 24 paginas con portada), leido a ojo pagina por pagina el 15-nov-2026. Sin precios.",
+ "fuente": "Catalogo_Remate.pdf de Isaac (23 modelos, 24 paginas con portada) mas Waka Blast 45K por instruccion del dueno, leido a ojo pagina por pagina el 15-nov-2026. Sin precios.",
  "proveedor": "Isaac",
  "modelos": [
   {
@@ -475,6 +475,16 @@
     "Tropical Fruit",
     "Jewel Mint"
    ]
+  },
+  {
+   "pagina": null,
+   "titulo": "WAKA BLAST 45K",
+   "marca": "WAKA",
+   "puffs": 45000,
+   "sabores": [],
+   "forzar_nuevo": true,
+   "costo_isaac_mxn": 210,
+   "nota": "Instruccion del dueno (15-nov): Waka Blast = Waka 45K, precio 210, es de Isaac y es un modelo APARTE (no se une a Waka Blast ni a Waka Blast 50K). Sin sabores en el catalogo: se registra sin sabor. El 210 se registra como costo de lista de Isaac SUPUESTO (dato de palabra) hasta confirmar."
   }
  ]
 }
