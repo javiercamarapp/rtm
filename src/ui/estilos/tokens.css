@@ -95,6 +95,7 @@
   --rtm-v-gap-tarjeta: 6px;     /* entre titulo y cuerpo dentro de una tarjeta */
   --rtm-v-encabezado: 6px 16px; /* fila x columna del encabezado de pagina */
   --rtm-v-acciones: 6px;        /* entre botones de una barra de acciones */
+  --rtm-ba-alto: 28px; --rtm-ba-px: 10px; --rtm-ba-fs: 12.5px; --rtm-ba-gap: 4px; /* botones densos de la barra de acciones (alto visual fijo tambien en tactil) */
   --rtm-boton-alto: 32px;       /* altura del boton compacto (44 en pantallas tactiles) */
   --rtm-ancho-tablero: 1280px; --rtm-ancho-normal: 1120px; --rtm-ancho-formulario: 880px; --rtm-ancho-nota: 720px;
 

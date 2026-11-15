@@ -39,6 +39,14 @@ describe('BarraAcciones', () => {
     const m = abrir(montar(<BarraAcciones primarias={<button type="button" className="rtm-boton">Exportar</button>} />));
     expect(m.cont.querySelectorAll('.rtm-ba > *').length).toBe(1);
   });
+  it('las secundarias van juntas en un solo grupo y la primaria separada a la derecha', () => {
+    const m = abrir(montar(barra()));
+    const ba = m.cont.querySelector('.rtm-ba')!;
+    const hijos = [...ba.children];
+    expect(hijos.indexOf(ba.querySelector('.rtm-ba-sec')!)).toBeLessThan(hijos.indexOf(ba.querySelector('.rtm-ba-primarias')!));
+    expect(ba.querySelectorAll('.rtm-ba-sec > button').length).toBe(2);
+    expect(ba.querySelector('.rtm-ba-primarias > button.rtm-boton-primario')).not.toBeNull();
+  });
   it('sin violaciones de axe', async () => {
     const m = abrir(montar(barra(), 'reduced'));
     expect(await auditar(m.cont)).toEqual([]);
