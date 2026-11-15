@@ -18,12 +18,12 @@ describe('rotulos que no pueden divergir entre pantallas', () => {
     expect(chip.texto).toBe('$294,403.09');
     expect(chip.detalle).toContain('deuda de la empresa');
     expect(chip.cifra).toBe('proveedor:deuda:Isaac');
-    const ayuda = leer('src/ui/shell/pulso.tsx');
+    const ayuda = leer('src/ui/shell/pulso-chips.ts');
     expect(ayuda).toContain('Deuda de la empresa con Isaac');
     expect(ayuda).toContain('Proveedores');
   });
   it('Capital por socio es la unica pantalla que rotula la valuacion personal del socio', () => {
-    const t = leer('src/app/(socio)/dropshipping/utilidad/page.tsx') + leer('src/ui/shell/pulso.tsx');
+    const t = leer('src/app/(socio)/dropshipping/utilidad/page.tsx') + leer('src/ui/shell/pulso-chips.ts');
     expect(t).not.toMatch(/Valuaci[oó]n del socio/);
   });
 });
