@@ -2,7 +2,7 @@ import type {
   AmbitoHoja, CascadaProyeccion, CierreReparto, CuentaSocios, EstadoCuentaSocio, HojaProveedor, LiquidacionProveedor, OmarCuenta,
   CatalogoCompra, CatalogoPedido, CompraDetalle, CompraResumen, ContextoPagos, CuentaProveedor, CuentasPorCobrar, CxcCliente, DocumentoGuardado, EstadoSocio, ListaAvisos,
   NotaFuente, PaqueteEnTransito, PaquetesIncidentes, SalidaLineaIncidente, PaquetesPorHacer, UmbralesPaquetes, PedidoDetalle, PedidoResumen, DesglosePedidos,
-  RecepcionCompra, DevolucionesLista, PedidoDevoluciones, CatalogoDevolucionProveedor, FuenteDevolucion,
+  AvisoVigente, RecepcionCompra, DevolucionesLista, PedidoDevoluciones, CatalogoDevolucionProveedor, FuenteDevolucion,
 } from '@/dominio/operacion/tipos';
 
 /** Lo que la web lee de pedidos, compras, pagos, paquetes y avisos. Cada lectura es una funcion de la base; la interfaz no calcula dinero. */
@@ -10,6 +10,8 @@ export interface LectorOperacion {
   pedidos(): Promise<PedidoResumen[]>;
   pedidosDesglose(): Promise<DesglosePedidos[]>;
   pedido(id: number): Promise<PedidoDetalle | null>;
+  /** Avisos del pedido cuya causa sigue hoy, agrupados por causa (la base los evalúa contra el tabulador vigente). */
+  avisosVigentesPedido(id: number): Promise<AvisoVigente[]>;
   catalogoPedido(clienteId: number): Promise<CatalogoPedido>;
   notaFuente(notaId: number): Promise<NotaFuente | null>;
   documento(notaId: number, variante: 'cliente_pdf' | 'interna_pdf'): Promise<DocumentoGuardado | null>;

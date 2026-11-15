@@ -21,6 +21,10 @@ export interface LineaPedido {
   motivo_precio: string | null; costo_unit_cent: Cent | null; renta_cent: Cent; disponible: number; existencia: number;
 }
 export interface AvisoPedido { id: number; codigo: string; nt: string | null; detalle: string; decidido_por: string | null; decidido_at: string | null }
+/** Un aviso del pedido que sigue vigente hoy (api.avisos_vigentes_pedido): los renglones con la misma causa vienen juntos en uno solo. */
+export interface AvisoVigente {
+  codigo: string; nt: string | null; detalle: string; renglones: number; modelos: string[]; avisos: number; aceptados: number; decidido_por: string[]; decidido_at: string | null;
+}
 export interface EventoInfo { evento: string; canal: string; hora: string; mensaje_origen: string | null; autor: string | null; tipo?: string }
 
 export interface NotaClienteSnap {

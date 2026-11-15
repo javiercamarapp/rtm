@@ -3,7 +3,7 @@ import type { AccionOperacion, EscritorOperacion, LectorOperacion } from '@/apli
 import { decisionesABigint } from '@/dominio/historial/tipos';
 import { centavosABigint } from '@/dominio/operacion/json';
 import { cabecerasLlave } from '@/config/llave_destinatario';
-import type { CierreReparto } from '@/dominio/operacion/tipos';
+import type { CierreReparto, PedidoResumen } from '@/dominio/operacion/tipos';
 import { crearClienteServidor } from './cliente-servidor';
 
 async function leer<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -21,9 +21,14 @@ export class ErrorDeNegocio extends Error {
 
 export function lectorOperacionSupabase(): LectorOperacion {
   return {
-    pedidos: () => leer('pedidos_lista'),
+    // El conteo de avisos de cada pedido es el de las causas vigentes hoy (api.pedidos_avisos_vigentes), no la foto de cuando se capturó.
+    pedidos: async () => {
+      const [lista, vigentes] = await Promise.all([leer<PedidoResumen[]>('pedidos_lista'), leer<Record<string, number>>('pedidos_avisos_vigentes')]);
+      return lista.map((p) => ({ ...p, avisos: vigentes[String(p.id)] ?? 0 }));
+    },
     pedidosDesglose: () => leer('pedidos_desglose'),
     pedido: (id) => leer('pedido_detalle', { p_pedido: id }),
+    avisosVigentesPedido: (id) => leer('avisos_vigentes_pedido', { p_pedido: id }),
     catalogoPedido: (c) => leer('pedido_catalogo', { p_cliente_id: c }),
     notaFuente: (id) => leer('nota_fuente', { p_nota: id }),
     documento: (id, v) => leer('nota_documento', { p_nota: id, p_variante: v }),
