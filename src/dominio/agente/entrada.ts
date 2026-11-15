@@ -1,6 +1,7 @@
 // Capas L2 y L3 del agente: limpieza de la entrada, deteccion de inyeccion y prefiltro sin IA.
 import { normalizar } from '../catalogo/normalizar';
 import { valoresDeTexto } from './cifras';
+import { idsDeSospecha } from './inyeccion';
 import type { FuenteMensaje, Persona } from './tipos';
 
 /** Tope TECNICO (el webhook ya rechaza mas de 10,000): un mensaje largo NO se recorta en silencio; el agente lo procesa por partes y avisa. */
@@ -29,24 +30,9 @@ export function nombreSeguro(texto: string, max = 60): string {
   return sanitizar(texto).slice(0, MAX_CARACTERES).replace(/</g, '‹').replace(/>/g, '›').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
-const PATRONES_INYECCION: ReadonlyArray<readonly [string, RegExp]> = [
-  ['ignora_instrucciones', /\b(ignora|olvida|descarta)\b.{0,30}\b(instrucciones|reglas|indicaciones|prompt)\b/],
-  ['ignora_lo_anterior', /\b(ignora|olvida|descarta|ignore|forget|disregard)\b.{0,20}\b(lo anterior|todo lo anterior|lo de arriba|everything above|all previous)\b/],
-  ['ignore_previous', /\bignore\b.{0,30}\b(previous|prior|above|all)\b.{0,20}\b(instructions|rules|prompt)\b/],
-  ['revelar_prompt', /\b(revela|muestra|imprime|dime|reveal|show|print)\b.{0,30}\b(prompt|instrucciones del sistema|system prompt|tus reglas)\b/],
-  ['etiqueta_system', /<\s*\/?\s*(system|sistema|assistant|instructions)\s*>/],
-  ['modo_desarrollador', /\b(modo desarrollador|developer mode|jailbreak|modo dios|dan mode)\b/],
-  ['borrar_todo', /\b(borra|elimina|anula|cancela)\b.{0,15}\b(todo|todos|todas)\b/],
-  ['marcar_pagado', /\bmarca\b.{0,20}\bcomo (pagado|pagada|liquidado|liquidada)\b/],
-  ['cambiar_precio', /\bcambia\b.{0,20}\bel precio de\b/],
-  ['actua_como', /\b(act[uú]a|compórtate|comportate|you are now|ahora eres)\b.{0,20}\b(como|as|un|una)\b/],
-];
-
-/** Ids de los patrones de inyeccion que aciertan. Un acierto NO bloquea por si solo: marca la sospecha. */
+/** Ids de los patrones de inyeccion que aciertan (ver inyeccion.ts). Un acierto NO bloquea por si solo: marca la sospecha. */
 export function detectarInyeccion(texto: string): string[] {
-  const t = texto.normalize('NFKC').toLowerCase();
-  const sinAcentos = t.normalize('NFD').replace(/[̀-ͯ]/g, '');
-  return PATRONES_INYECCION.filter(([, re]) => re.test(t) || re.test(sinAcentos)).map(([id]) => id);
+  return idsDeSospecha(texto).filter((id) => id !== 'enlace');
 }
 
 const PALABRAS_DE_NEGOCIO = new Set([

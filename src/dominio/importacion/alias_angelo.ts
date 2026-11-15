@@ -5,7 +5,7 @@
 export interface ReglaAlias { alias: string; destinos: string[]; nota: string }
 
 export const ALIAS_MODELOS_ANGELO: readonly ReglaAlias[] = [
-  { alias: 'Waka 50', destinos: ['Waka Icon 50K', 'Waka Blast 50K', 'Waka Jupiter 50K'], nota: 'El precio del cliente aplica a los tres; el costo depende de cual sale. Obliga a preguntar.' },
+  { alias: 'Waka 50', destinos: ['Waka Icon 50K', 'Waka Jupiter 50K'], nota: 'Waka 50K = Jupiter o Icon (decision del dueno, 14-nov; Blast ya no se ofrece). El costo depende de cual sale. Obliga a preguntar; alineado con TEXTOS_AMBIGUOS_MODELO.' },
   { alias: 'Waka Sopro', destinos: ['Waka Sopro 30K'], nota: 'Waka Sopro = Titan = Waka 30 = Pro 30K' },
   { alias: 'Titan', destinos: ['Waka Sopro 30K'], nota: 'Waka Sopro = Titan = Waka 30 = Pro 30K' },
   { alias: 'Pro 30K', destinos: ['Waka Sopro 30K'], nota: 'Waka Sopro = Titan = Waka 30 = Pro 30K' },

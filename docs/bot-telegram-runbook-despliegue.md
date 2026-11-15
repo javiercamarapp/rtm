@@ -39,6 +39,7 @@ Comparar contra la nube con `supabase migration list --linked` (solo lectura). L
 | 20261116800200 | `avisos_inventario_digest_consultas` |
 | 20261116900000 | `emision_unificada` |
 | 20261117000000 | `cierre_bot_cobro_candados_rls` |
+| 20261119000000 | `retiro_capital_caduca_10_min` (create or replace de `agente._socios_ejecutar`, aditiva) |
 
 `20261117000000_cierre_bot_cobro_candados_rls` corrige los hallazgos de la revision independiente (cobro al pedido elegido, candados antiduplicado y sobrepago, cobro sin cliente, freno de anomalias, RLS de avisos de inventario). Todas son aditivas o `create or replace`; el analizador de `desplegar.mjs` aborta ante DROP o RENAME destructivos: las migraciones de frenos usan `alter function ... rename` de funciones internas, que el analizador puede marcar; en ese caso se revisa a mano y solo con orden expresa se usa `--permitir-destructivas`. El respaldo cifrado previo lo hace el flujo oficial.
 
