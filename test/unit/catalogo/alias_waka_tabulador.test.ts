@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bloqueosReales, cargarPares, paresDeDiccionario, sqlAplicar as sqlAlias } from '../../../scripts/catalogo/unificar-alias-waka.mjs';
+import { ambiguosDeDiccionario, bloqueosReales, cargarPares, paresDeDiccionario, sqlAplicar as sqlAlias } from '../../../scripts/catalogo/unificar-alias-waka.mjs';
 import { aCentavos, clasificar, proponer, sqlAplicar as sqlTab, validarDatos } from '../../../scripts/catalogo/cargar-tabulador.mjs';
 
 // Datos ficticios: nada de clientes, precios ni ventas reales.
@@ -9,11 +9,38 @@ describe('unificar alias Waka', () => {
     const pares = paresDeDiccionario({ alias: [{ alias: 'Waka Zeta', tambien: ['Zeta', 'Waka Zeta 10K'], destino: 'Waka Zeta 10K' }] });
     expect(pares).toEqual([{ origen: 'Waka Zeta', destino: 'Waka Zeta 10K' }, { origen: 'Zeta', destino: 'Waka Zeta 10K' }]);
   });
-  it('el diccionario real: Optimus va a 100K, SoPro a 15K y ningun origen se repite', () => {
+  it('el diccionario real: Optimus va a 100K y ningun origen se repite', () => {
     const pares = cargarPares();
     expect(pares.find((p: { origen: string }) => p.origen === 'Optimus')?.destino).toBe('Waka Optimus 100K');
-    expect(pares.find((p: { origen: string }) => p.origen === 'Waka SoPro')?.destino).toBe('Waka 15K');
     expect(new Set(pares.map((p: { origen: string }) => p.origen.toLowerCase())).size).toBe(pares.length);
+  });
+  it('v3: Burst, Waka Burst y Waka Burst 36K van a Waka 36K', () => {
+    const pares = cargarPares();
+    for (const o of ['Waka Burst', 'Burst', 'Waka Burst 36K']) expect(pares.find((p: { origen: string }) => p.origen === o)?.destino).toBe('Waka 36K');
+  });
+  it('v3: los destinos ambiguos (Waka 50K, Waka 15K, Waka Sopro 30K) no son destino ni origen de ninguna union', () => {
+    const pares = cargarPares();
+    const prohibidos = ['waka 50k', 'waka 15k', 'waka sopro 30k'];
+    for (const p of pares as { origen: string; destino: string }[]) {
+      expect(prohibidos).not.toContain(p.destino.toLowerCase());
+      expect(prohibidos).not.toContain(p.origen.toLowerCase());
+    }
+    expect(pares.find((p: { origen: string }) => p.origen === 'Waka Icon')?.destino).toBe('Waka Icon 50K');
+    expect(pares.find((p: { origen: string }) => p.origen === 'Waka SoPro')).toBeUndefined();
+    expect(ambiguosDeDiccionario(JSON.parse(readFileSync(new URL('../../../scripts/catalogo/alias-waka.json', import.meta.url), 'utf8'))).map((a: { texto: string }) => a.texto))
+      .toEqual(['Waka 50K', 'Waka 15K', 'Waka Sopro 30K']);
+  });
+  it('v3: Blade (costo 200) va antes que Waka Blade, cuyo costo queda como historia', () => {
+    const pares = cargarPares();
+    const iBlade = pares.findIndex((p: { origen: string }) => p.origen === 'Blade');
+    const iWaka = pares.findIndex((p: { origen: string }) => p.origen === 'Waka Blade');
+    expect(iBlade).toBeGreaterThanOrEqual(0);
+    expect(iBlade).toBeLessThan(iWaka);
+    expect(pares[iWaka]).toMatchObject({ destino: 'Waka Blade 33K', costoHistorico: true });
+    expect(pares[iBlade]!.costoHistorico).toBeUndefined();
+  });
+  it('un alias sin destino no se une', () => {
+    expect(paresDeDiccionario({ alias: [{ alias: 'X', destino: null, tambien: ['Y'] }] })).toEqual([]);
   });
   it('los bloqueos de precio y costo vigentes se heredan; los demas siguen bloqueando', () => {
     expect(bloqueosReales(['tiene existencia', 'tiene un precio de cliente vigente que el destino no tiene: fijalo primero en el destino', 'tiene un costo de lista vigente que el destino no tiene: x'])).toEqual(['tiene existencia']);
@@ -27,6 +54,11 @@ describe('unificar alias Waka', () => {
     expect(sql).toContain('catalogo.unificar_modelo(');
     expect(sql).not.toMatch(/\b(insert into|update|delete from)\s+(operacion|contabilidad)\./i);
     expect(sqlAlias([{ origen: 'A', destino: 'B' }], { omitirBloqueados: true })).toContain('v_omitir boolean := true');
+  });
+  it('el costo historico no se hereda ni bloquea', () => {
+    const sql = sqlAlias([{ origen: 'A', destino: 'B', costoHistorico: true }]);
+    expect(sql).toContain("('A', 'B', true)");
+    expect(sql).toContain('not r.costo_historico');
   });
   it("escapa comillas en los nombres", () => {
     expect(sqlAlias([{ origen: "O'Brien", destino: 'B' }])).toContain("'O''Brien'");
