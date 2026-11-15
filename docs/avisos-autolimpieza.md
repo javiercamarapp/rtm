@@ -18,7 +18,7 @@ Pedido del dueño (14-nov): los avisos se borran cuando se solucionan o se atien
 | Aviso (código) | Sigue mientras | Se resuelve cuando | Referencia |
 |---|---|---|---|
 | conteo_con_diferencia | hay una línea con diferencia sin explicar que ningún conteo posterior de la ubicación confirmó (cuadre en cero del SKU) | todas las diferencias quedaron explicadas o un conteo posterior las confirmó | conteo posterior |
-| pedido_enviado_con_excepcion | el pedido sigue enviado, algún precio aceptado sigue distinto del tabulador, bajo costo o sin precio de catálogo (según la última nota) y tiene saldo por cobrar | se corrigió la nota, se cobró por completo (`aviso_excepcion_cierra_al_cobrar`) o el pedido se anuló | nota o aplicación de pago |
+| pedido_enviado_con_excepcion | el pedido sigue enviado, algún precio aceptado sigue distinto del tabulador, bajo costo o sin precio de catálogo vigente (según la última nota) y tiene saldo por cobrar | se corrigió la nota, se cargó el precio de lista y lo cobrado no es menor, se cobró por completo (`aviso_excepcion_cierra_al_cobrar`) o el pedido se anuló | nota, precio de lista o aplicación de pago |
 | pieza_no_llego_saldo | el cliente tiene saldo a favor (saldo del cliente < 0) | el saldo se aplicó o se devolvió | pedido |
 | paquete_por_empacar | pedido confirmado y sin empacar | se empacó, envió o canceló | pedido |
 | sabor_faltante_antes_empacar | pedido sin empacar y existencia en Bodega Omar menor a lo pedido | hay existencia o ya no espera empaque | pedido |
@@ -40,6 +40,20 @@ Pedido del dueño (14-nov): los avisos se borran cuando se solucionan o se atien
 | Informativos: paquete_enviado_con_guia, guia_registrada_trayecto, oc_confirmada_dinero_aplicado, nota_corregida_o_anulada, periodo_cascada_cerrado, saldo_proveedor_cruza_cero, posicion_socios_cambia, usuario_alta_o_rol, accion_fuerte_o_periodo, paquete_incidente_resuelto, freno_tormenta y los tipos del catálogo sin acción | no tienen causa persistente | leídos por todos o 7 días | no aplica |
 
 Los avisos que ya se cerraban por evento (`operacion.resolver_avisos`, llamado por pagos, recepciones, envíos, firmas) siguen igual y ahora también guardan motivo.
+
+## Regla de "sin precio de catálogo" (migración `20261118600000_avisos_precio_tabulador_vigente`)
+
+`pedido_linea.precio_tabulador_cent` es una foto inmutable del renglón al capturarlo: si el precio de lista se cargó después (`catalogo.tabulador_precio`, por ejemplo origen `lista_javier`), la foto sigue vacía y el aviso no cerraba aunque el problema ya estuviera resuelto. La condición ahora mira el tabulador **vigente hoy** del cliente y el modelo (siguiendo `modelo.unificado_en` hasta el modelo vigente), solo cuando la foto está vacía:
+
+| Situación del renglón | Efecto en el aviso |
+|---|---|
+| Hay precio de lista vigente y lo cobrado es igual o mayor | la causa ya no existe (se resuelve solo) |
+| Hay precio de lista vigente y lo cobrado es menor | sigue, como "precio bajo tabulador" (otro motivo que persiste) |
+| No hay precio de lista vigente | sigue, sin precio de catálogo |
+
+Lo cobrado es el precio de la última nota (o el del renglón si no hay nota). Con foto no vacía todo sigue como antes. Las condiciones de bajo costo, existencia y mínimo no cambian, ni `aviso_excepcion_cierra_al_cobrar`. No se modifica ninguna línea, nota ni tabla inmutable: la foto del renglón queda vacía y el aviso se resuelve por lectura. Si después la lista sube por encima de lo cobrado (fila nueva con `vigente_desde` hoy o anterior), el barrido reabre el aviso cerrado por el sistema.
+
+Efecto esperado en producción (14-nov): hay 23 avisos abiertos `pedido_enviado_con_excepcion`; Javier cargó la lista de 31 combinaciones cliente por modelo cuyos precios cobrados coinciden. Tras aplicar la migración, `node scripts/notificaciones/resolver-vigentes.mjs --verificar` debe listar como "por resolver" los avisos cuyos renglones con alerta están todos cubiertos por esa lista con precio cobrado no menor; hasta 23. Siguen abiertos los que tengan otra causa viva: combinaciones sin precio de lista (11 aún sin cargar), cobrado por debajo de la lista, venta bajo costo, o diferencia con foto no vacía. Medición de solo lectura sobre producción al momento de escribir esto: 11 avisos `pedido_enviado_con_excepcion` abiertos, 5 se resolverían con la regla nueva (sin contar los que ya cierra el cobro completo ni modelos unificados) y 6 siguen por otra causa; el número exacto se confirma con `--verificar`.
 
 ## Parámetros (`catalogo.config`)
 
