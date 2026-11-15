@@ -145,7 +145,7 @@ body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { widt
 .rtm-ba-vistas > a:hover { background: var(--rtm-surface); color: var(--rtm-ink); }
 .rtm-ba-vistas > a:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 1px; }
 @media (max-width: 1100px) {
-  .rtm-ba { justify-content: flex-start; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 2px; margin: -2px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); }
+  .rtm-ba { justify-content: flex-start; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 2px; margin: -2px; -webkit-mask-image: linear-gradient(to right, black calc(100% - 20px), transparent); mask-image: linear-gradient(to right, black calc(100% - 20px), transparent); }
   .rtm-ba::-webkit-scrollbar { display: none; }
   /* La barra de inventario abre un panel flotante (absoluto o fijo): sin overflow para que no se recorte. */
   .rtm-ba:has(.rtm-exportar) { overflow: visible; -webkit-mask-image: none; mask-image: none; }
