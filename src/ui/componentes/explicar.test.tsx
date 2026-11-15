@@ -100,7 +100,7 @@ describe('ExplicarProvider (panel premium)', () => {
     montajes.push(m);
     await clicAbrir(m.cont.querySelector<HTMLButtonElement>('button.rtm-cifra')!);
     expect(panel()!.querySelector('[role="alert"]')!.textContent).toContain('No se pudo explicar');
-    expect(panel()!.querySelector('.xp-estado button')!.textContent).toBe('Reintentar');
+    expect(panel()!.querySelector('.xp-aviso button')!.textContent).toBe('Reintentar');
   });
   it('modo Omar: sin cuentas del libro ni enlaces a paginas de socios', async () => {
     const { boton } = abrir({ ...utilidad, cifra: 'omar:saldo' }, 'omar');
@@ -115,5 +115,76 @@ describe('ExplicarProvider (panel premium)', () => {
       expect(await auditar(panel()!)).toEqual([]);
       teclear(window as unknown as Element, 'Escape');
     }
+  });
+  it('por omision solo queda abierta la primera seccion mas "De donde sale" y "Comprobacion"', async () => {
+    const { boton } = abrir(utilidad);
+    await clicAbrir(boton);
+    const secciones = [...panel()!.querySelectorAll<HTMLElement>('.xp-seccion')];
+    const abiertas = secciones.filter((e) => e.getAttribute('data-abierta') === 'true').map((e) => e.id.replace('xp-', ''));
+    const permitidas = new Set([secciones[0]!.id.replace('xp-', ''), 'origen', 'comprobacion']);
+    expect(abiertas.length).toBeGreaterThan(0);
+    for (const id of abiertas) expect(permitidas.has(id), id).toBe(true);
+    // las cerradas no se pueden enfocar (inert) y las abiertas si.
+    for (const e of secciones) expect(e.querySelector('.xp-seccion-env')!.hasAttribute('inert')).toBe(e.getAttribute('data-abierta') !== 'true');
+  });
+  it('cada chip del indice abre su seccion cerrada, la marca como activa y no deja dos activos', async () => {
+    const { boton } = abrir(utilidad);
+    await clicAbrir(boton);
+    const chips = [...panel()!.querySelectorAll<HTMLButtonElement>('.xp-chip')];
+    expect(chips.length).toBeGreaterThan(2);
+    for (const chip of chips) {
+      act(() => chip.click());
+      const id = [...panel()!.querySelectorAll<HTMLElement>('.xp-seccion')].find((e) => e.querySelector('.xp-seccion-b span')!.textContent === chip.textContent)!;
+      expect(id.querySelector('.xp-seccion-b')!.getAttribute('aria-expanded'), chip.textContent ?? '').toBe('true');
+      expect(chip.getAttribute('aria-current')).toBe('true');
+      expect(panel()!.querySelectorAll('.xp-chip[aria-current="true"]')).toHaveLength(1);
+    }
+  });
+  it('cada recuadro abre y cierra con su boton', async () => {
+    const { boton } = abrir(utilidad);
+    await clicAbrir(boton);
+    for (const b of panel()!.querySelectorAll<HTMLButtonElement>('.xp-seccion-b')) {
+      const antes = b.getAttribute('aria-expanded');
+      act(() => b.click());
+      expect(b.getAttribute('aria-expanded')).not.toBe(antes);
+      act(() => b.click());
+      expect(b.getAttribute('aria-expanded')).toBe(antes);
+    }
+  });
+  it('encabezado: un solo nombre, estado como pildora con punto y texto en la misma caja', async () => {
+    const { boton } = abrir(utilidad);
+    await clicAbrir(boton);
+    const p = panel()!;
+    expect(p.querySelectorAll('h2.xp-titulo')).toHaveLength(1);
+    expect(p.querySelector('h2.xp-titulo')!.getAttribute('title')).toBe('Utilidad neta del periodo');
+    const est = p.querySelector('[data-testid="explicar-estado"]')!;
+    expect(est.children).toHaveLength(0); // solo texto: el punto es un ::before, nunca una caja aparte
+    expect(est.hasAttribute('style')).toBe(false);
+  });
+  it('cerrar con la X y los enlaces a paginas fuente existen y apuntan a rutas internas', async () => {
+    const { boton } = abrir(utilidad);
+    await clicAbrir(boton);
+    for (const a of panel()!.querySelectorAll<HTMLAnchorElement>('a.xp-enlace')) expect(a.getAttribute('href')).toMatch(/^\//);
+    act(() => panel()!.querySelector<HTMLButtonElement>('.xp-cerrar')!.click());
+    expect(panel()).toBeNull();
+    expect(document.activeElement).toBe(boton);
+  });
+  it('reintentar vuelve a pedir la cifra y la muestra', async () => {
+    let n = 0;
+    const m = montar(<ExplicarProvider explicar={() => (++n === 1 ? Promise.reject(new Error('x')) : Promise.resolve(utilidad))}><CifraComprobada texto="$1.00" cifra="a:b" /></ExplicarProvider>, 'off');
+    montajes.push(m);
+    await clicAbrir(m.cont.querySelector<HTMLButtonElement>('button.rtm-cifra')!);
+    await clicAbrir(panel()!.querySelector<HTMLButtonElement>('.xp-aviso button')!);
+    expect(n).toBe(2);
+    expect(panel()!.querySelector('[data-testid="explicar-cifra"]')).not.toBeNull();
+  });
+  it('mientras carga solo hay una linea de texto: sin cajas ni esqueletos', async () => {
+    const m = montar(<ExplicarProvider explicar={() => new Promise(() => undefined)}><CifraComprobada texto="$1.00" cifra="a:b" /></ExplicarProvider>, 'off');
+    montajes.push(m);
+    await clicAbrir(m.cont.querySelector<HTMLButtonElement>('button.rtm-cifra')!);
+    const aviso = panel()!.querySelector('.xp-aviso')!;
+    expect(aviso.textContent).toContain('Buscando los movimientos');
+    expect(aviso.querySelectorAll('span:not(.rtm-punto-carga)')).toHaveLength(0);
+    expect(panel()!.querySelector('.xp-esq, .rtm-esqueleto')).toBeNull();
   });
 });
