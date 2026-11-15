@@ -64,7 +64,7 @@ class Sala {
     return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
   };
 
-  configAgente: DepsProduccion['configAgente'] = { limiteMensajesPorMinuto: 0 };
+  configAgente: DepsProduccion['configAgente'] = { limiteMensajesPorMinuto: 0, confirmarMovimientos: true };
   deps = (): DepsProduccion => ({ configAgente: this.configAgente, sql, ahora: () => this.ahora, llm: this.llm, fetchFn: this.fetchFalso, entorno: { TELEGRAM_BOT_TOKEN: TOKEN_FALSO, TELEGRAM_WEBHOOK_SECRET: SECRETO } });
   webhook = (u: unknown, secreto: string | null = SECRETO) => procesarWebhook(this.deps(), secreto, JSON.stringify(u));
 
@@ -111,6 +111,8 @@ const rojas = async () => {
 beforeAll(async () => {
   await c.connect();
   await c.query('begin');
+  // El interruptor agente_escritura nace APAGADO (solo lectura); estas pruebas ejercen la escritura con tarjeta (modo estricto por configuracion).
+  await c.query("update seguridad.interruptor set activo = true where clave = 'agente_escritura'");
   await c.query("select set_config('rtm.canal', 'importacion', true)");
   for (const [id, p] of [[ID.angelo, 'angelo'], [ID.javier, 'javier'], [ID.omar, 'omar']] as const) await q('select agente.registrar_miembro($1::bigint, $2::text)', [id, p]);
   await q("select agente.registrar_chat('grupo_socios', $1::bigint)", [ID.grupo]);
@@ -245,7 +247,7 @@ describe('casos por intencion: feliz, faltante, suma que no cuadra, sin permiso,
   });
 
   it('limite de frecuencia: con el tope bajo, el mensaje de mas se ignora y se avisa', async () => {
-    sala.configAgente = { limiteMensajesPorMinuto: 2 };
+    sala.configAgente = { limiteMensajesPorMinuto: 2, confirmarMovimientos: true };
     const r1 = await sala.escribir('javier', '/cuadra');
     const r2 = await sala.escribir('javier', '/cuadra');
     const antes = sala.enviados.length;
@@ -254,7 +256,7 @@ describe('casos por intencion: feliz, faltante, suma que no cuadra, sin permiso,
     expect(r2.status).toBe(200);
     expect(sala.ultimo().texto).toContain('Demasiados mensajes seguidos');
     expect(sala.enviados.length).toBe(antes + 1);
-    sala.configAgente = { limiteMensajesPorMinuto: 0 };
+    sala.configAgente = { limiteMensajesPorMinuto: 0, confirmarMovimientos: true };
   });
 
   it('doble envio: el mismo update_id y el mismo mensaje no se procesan dos veces', async () => {

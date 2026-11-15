@@ -64,7 +64,8 @@ export function pedido(cliente: string, lineas: Array<[string, number] | [string
   };
 }
 
-export const pago = (cliente: string, centavos: number): Intencion => ({ tipo: 'pago', cliente_texto: cliente, monto_centavos: centavos, cuenta_destino_texto: null, pedido_folio: null, fuente_cita: 'cita' });
+/** Sin tarjeta, un cobro sin cuenta se PREGUNTA antes de escribir (decision 14-nov); las pruebas que no tratan ese dato mandan la cuenta completa. */
+export const pago = (cliente: string, centavos: number, cuenta: string | null = 'Efectivo'): Intencion => ({ tipo: 'pago', cliente_texto: cliente, monto_centavos: centavos, cuenta_destino_texto: cuenta, pedido_folio: null, fuente_cita: 'cita' });
 export const toma = (lineas: Array<[string, number, string | null]>): Intencion => ({
   tipo: 'toma_omar',
   lineas: lineas.map(([m, p, s]) => ({ modelo_texto: m, sabor_texto: s, piezas: p })),

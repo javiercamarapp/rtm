@@ -401,10 +401,11 @@ export interface RespuestaExtractor {
   baja_certeza: boolean;
 }
 
-export const MAX_ACCIONES = 6;
-export const MAX_LINEAS = 30;
+/** Topes TECNICOS (no de negocio): el lote se procesa por partes y cada linea recibe su resultado; nada se descarta en silencio. */
+export const MAX_ACCIONES = 500;
+export const MAX_LINEAS = 500;
 /** Un conteo fisico puede traer toda la lista de sabores de un modelo (la prueba de la Fase 0a uso 40): tope propio para no truncar ni partir el conteo en dos acciones. */
-export const MAX_LINEAS_CONTEO = 60;
+export const MAX_LINEAS_CONTEO = 500;
 
 /** Intenciones que escriben (todo lo demas es lectura o meta). Derivado del catalogo declarativo. */
 export const INTENCIONES_ESCRITURA: readonly TipoIntencion[] = [

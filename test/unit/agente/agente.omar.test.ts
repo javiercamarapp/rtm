@@ -189,9 +189,9 @@ describe('identidad y chats', () => {
     expect(e.telegram.enviados).toHaveLength(0);
   });
 
-  it('el bot abandona cualquier grupo que no sea el registrado', async () => {
+  it('el bot abandona un grupo ajeno al que lo agrego alguien que no es socio (un socio NO lo hace salir)', async () => {
     const e = escenario();
-    await e.agente.procesarUpdate({ update_id: 901, message: { message_id: 1, from: { id: IDS.angelo }, chat: { id: -999, type: 'group' }, date: 1, text: 'hola 1' } });
+    await e.agente.procesarUpdate({ update_id: 901, message: { message_id: 1, from: { id: IDS.extrano }, chat: { id: -999, type: 'group' }, date: 1, text: 'hola 1' } });
     expect(e.telegram.salidas).toEqual([-999]);
     expect(e.telegram.enviados).toHaveLength(0);
   });

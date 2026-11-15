@@ -23,6 +23,10 @@ export interface TgMensaje {
   has_audio?: boolean;
   /** Comprobante (foto o archivo): solo ids de Telegram. El agente guarda su huella; no descarga ni lee el archivo. */
   foto?: { fileId: string; fileUniqueId: string };
+  /** Servicio de Telegram: el grupo paso a supergrupo (el id viejo es `chat.id`; el nuevo, este). */
+  migrate_to_chat_id?: number;
+  /** Primer mensaje del supergrupo nuevo: trae el id del grupo viejo. */
+  migrate_from_chat_id?: number;
 }
 
 export interface TgCallback {

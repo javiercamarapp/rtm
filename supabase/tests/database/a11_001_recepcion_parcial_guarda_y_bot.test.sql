@@ -3,6 +3,8 @@
 -- Compra A: 100 Mango a 100.00 + guia 200.00 => costo puesto 10,200.00 (1,020,000). 60 pz => 612,000; luego 40 pz => 408,000 (resto exacto).
 -- Compra B (bot): 100 Mango + 50 Uva a 100.00 sin guia. Compra C (bot): 100 Mango; llegan 88 y se cierra: faltante 12 pz = 120,000.
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('rp.parcial@example.test', 'socio', 'Angelo', true);

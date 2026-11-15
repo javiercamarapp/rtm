@@ -5,8 +5,10 @@ import { MAX_ACCIONES, MAX_LINEAS, MAX_LINEAS_CONTEO, TIPOS_CONSULTA, TIPOS_GAST
 
 const texto = (max: number) => z.string().min(1).max(max);
 const textoONulo = (max: number) => z.string().min(1).max(max).nullable();
-const piezas = z.number().int().min(1).max(2000);
-const monto = z.number().int().min(1).max(100_000_000);
+// Sin topes de negocio (decision del dueno, 14-nov): solo un techo TECNICO de cordura (10^12 centavos) que evita desbordes; los cobros mayores a lo que debe el cliente se resuelven como pregunta en SQL.
+const TECHO_CENTAVOS = 1_000_000_000_000;
+const piezas = z.number().int().min(1).max(1_000_000);
+const monto = z.number().int().min(1).max(TECHO_CENTAVOS);
 const quienPaga = z.enum(['angelo', 'javier', 'sociedad']);
 const cita = texto(120);
 
@@ -30,7 +32,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     cliente_texto: texto(60),
     destino_texto: textoONulo(40),
     lineas: z.array(lineaPedido).min(1).max(MAX_LINEAS),
-    envio_cobrado_centavos: z.number().int().min(0).max(200_000).nullable(),
+    envio_cobrado_centavos: z.number().int().min(0).max(TECHO_CENTAVOS).nullable(),
     plazo_texto: textoONulo(60).optional(),
     fuente_cita: cita,
   }),
@@ -102,7 +104,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     tipo: z.literal('compra'),
     proveedor_texto: texto(40),
     lineas: z.array(lineaCompra).min(1).max(MAX_LINEAS),
-    guia_centavos: z.number().int().min(0).max(1_000_000).nullable(),
+    guia_centavos: z.number().int().min(0).max(TECHO_CENTAVOS).nullable(),
     pagado_por: quienPaga.nullable(),
     fuente_cita: cita,
   }),
@@ -115,7 +117,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
   }),
   z.strictObject({
     tipo: z.literal('toma_omar'),
-    lineas: z.array(z.strictObject({ modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas: z.number().int().min(1).max(200) })).min(1).max(MAX_LINEAS),
+    lineas: z.array(z.strictObject({ modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas: z.number().int().min(1).max(1_000_000) })).min(1).max(MAX_LINEAS),
     fuente_cita: cita,
   }),
   z.strictObject({ tipo: z.literal('pedido_envio'), pedido_folio: textoONulo(20), estado: z.enum(['enviado', 'entregado']), paqueteria_texto: textoONulo(40), guia_texto: textoONulo(40), fuente_cita: cita }),
@@ -133,7 +135,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     fuente_cita: cita,
   }),
   z.strictObject({ tipo: z.literal('merma'), modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas, motivo: textoONulo(100), fuente_cita: cita }),
-  z.strictObject({ tipo: z.literal('conteo'), lineas: z.array(z.strictObject({ modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas: z.number().int().min(0).max(5000) })).min(1).max(MAX_LINEAS_CONTEO), fuente_cita: cita }),
+  z.strictObject({ tipo: z.literal('conteo'), lineas: z.array(z.strictObject({ modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas: z.number().int().min(0).max(1_000_000) })).min(1).max(MAX_LINEAS_CONTEO), fuente_cita: cita }),
   z.strictObject({ tipo: z.literal('cliente_alta'), nombre: texto(60), fuente_cita: cita }),
   z.strictObject({ tipo: z.literal('cliente_precio'), cliente_texto: texto(60), modelo_texto: texto(60), precio_centavos: monto, fuente_cita: cita }),
   z.strictObject({

@@ -61,7 +61,7 @@ class Sala {
     return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
   };
 
-  deps = (): DepsProduccion => ({ configAgente: { limiteMensajesPorMinuto: 0 }, sql, ahora: () => this.ahora, llm: this.llm, fetchFn: this.fetchFalso, entorno: { TELEGRAM_BOT_TOKEN: TOKEN_FALSO, TELEGRAM_WEBHOOK_SECRET: SECRETO } });
+  deps = (): DepsProduccion => ({ configAgente: { limiteMensajesPorMinuto: 0, confirmarMovimientos: true }, sql, ahora: () => this.ahora, llm: this.llm, fetchFn: this.fetchFalso, entorno: { TELEGRAM_BOT_TOKEN: TOKEN_FALSO, TELEGRAM_WEBHOOK_SECRET: SECRETO } });
   webhook = (u: unknown) => procesarWebhook(this.deps(), SECRETO, JSON.stringify(u));
 
   async escribir(quien: 'angelo' | 'javier', texto: string, extra: { updateId?: number; messageId?: number; foto?: boolean } = {}) {
@@ -120,6 +120,8 @@ const pendiente = async (folio: string) => Number((await q<{ s: string }>('selec
 beforeAll(async () => {
   await c.connect();
   await c.query('begin');
+  // El interruptor agente_escritura nace APAGADO (solo lectura); estas pruebas ejercen la escritura con tarjeta (modo estricto por configuracion).
+  await c.query("update seguridad.interruptor set activo = true where clave = 'agente_escritura'");
   await c.query("select set_config('rtm.canal', 'importacion', true)");
   for (const [id, p] of [[ID.angelo, 'angelo'], [ID.javier, 'javier'], [ID.omar, 'omar']] as const) await q('select agente.registrar_miembro($1::bigint, $2::text)', [id, p]);
   await q("select agente.registrar_chat('grupo_socios', $1::bigint)", [ID.grupo]);

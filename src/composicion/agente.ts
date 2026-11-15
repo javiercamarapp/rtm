@@ -47,6 +47,7 @@ export function crearAgenteEnMemoria(op: OpcionesAgenteEnMemoria = {}) {
   const negocio = op.negocio ?? new NegocioSimulado();
   const reloj = op.reloj ?? new RelojManual(INICIO_SIMULADO);
   const almacen = new AlmacenAgenteMemoria(MIEMBROS_SIMULADOS, { grupoSocios: IDS_SIMULADOS.grupoSocios, privadoOmar: IDS_SIMULADOS.privadoOmar });
+  almacen.reloj = reloj.ahora;
   const presupuesto = new AlmacenPresupuestoMemoria(op.presupuestoInicial);
   const telegram = new EnviadorTelegramMemoria();
   const tokens = new AlmacenTokensMemoria();

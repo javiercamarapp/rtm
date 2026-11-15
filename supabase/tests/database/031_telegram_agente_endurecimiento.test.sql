@@ -1,6 +1,8 @@
 -- pgTAP lane telegram-agente (revision de seguridad): autor verificado en SQL (ALTO-1), deshacer con solicitante (MEDIO-1), hash del efecto (MEDIO-2),
 -- folios de la vista previa sin huecos (B2) y privilegios del esquema agente (B6). Datos sinteticos.
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 select set_config('rtm.canal', 'importacion', true);
 select agente.registrar_miembro(5000001, 'angelo');
@@ -19,7 +21,7 @@ create function pg_temp.mid() returns bigint language sql as $$ select id from c
 create function pg_temp.sid(n text) returns bigint language sql as $$ select id from catalogo.sabor where nombre_canonico = n $$;
 create function pg_temp.cid() returns bigint language sql as $$ select id from catalogo.cliente where nombre_canonico = 'Tg Cliente' $$;
 create function pg_temp.pedido(p_autor text, p_id bigint) returns jsonb language sql as $$
-  select jsonb_build_object('plazo_dias', 0, 'autor', p_autor, 'telegram_user_id', p_id, 'origen', 'x', 'cliente_id', pg_temp.cid(),
+  select jsonb_build_object('permitir_duplicado', true, 'plazo_dias', 0, 'autor', p_autor, 'telegram_user_id', p_id, 'origen', 'x', 'cliente_id', pg_temp.cid(),
     'lineas', jsonb_build_array(jsonb_build_object('modelo_id', pg_temp.mid(), 'sabor_id', pg_temp.sid('Uva'), 'piezas', 10))) $$;
 
 -- ------------------------------------------------------------------ ALTO-1: el autor del JSON no basta
@@ -76,9 +78,9 @@ select is((select autor from agente.hecho where clave_idem = 'v:a1'), 'angelo', 
 select is(current_setting('rtm.actor'), 'javier', 'el actor de la anulacion es el solicitante, no el autor del hecho');
 select agente.ejecutar('v:a2', 'aportacion', '{"socio":"angelo","monto_cent":200000,"autor":"angelo","telegram_user_id":5000001,"origen":"puse 2000"}');
 update agente.hecho set creado_at = now() - interval '11 minutes' where clave_idem = 'v:a2';
-select throws_like($$ select agente.deshacer('v:d4', (select folio from agente.hecho where clave_idem = 'v:a2'), 'javier', 5000002) $$, '%solo el puede deshacerlo%', 'pasados 10 minutos el hecho de Angelo no lo deshace Javier');
+select throws_like($$ select agente.deshacer('v:d4', (select folio from agente.hecho where clave_idem = 'v:a2'), 'javier', 5000002) $$, '%pasaron mas de 10 minutos%', 'pasados 10 minutos nadie deshace desde Telegram (decision 14-nov)');
 select is((select deshecho_at from agente.hecho where clave_idem = 'v:a2'), null::timestamptz, 'sigue vigente');
-select is((agente.deshacer('v:d5', (select folio from agente.hecho where clave_idem = 'v:a2'), 'angelo', 5000001) ->> 'deshecho_por'), 'angelo', 'su autor lo deshace cuando quiera');
+select throws_like($$ select agente.deshacer('v:d5', (select folio from agente.hecho where clave_idem = 'v:a2'), 'angelo', 5000001) $$, '%pasaron mas de 10 minutos%', 'ni su autor lo deshace pasados 10 minutos (decision 14-nov: 10 minutos para todos)');
 
 -- ------------------------------------------------------------------ MEDIO-2: el efecto confirmado es el que se ejecuta
 create temp table _sim as select agente.simular('ejecutar_ext', 'pedido_crear', pg_temp.pedido('javier', 5000002)) as j;

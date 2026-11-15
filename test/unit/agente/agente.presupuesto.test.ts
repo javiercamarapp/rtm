@@ -120,7 +120,7 @@ describe('criterio: el modo sin IA responde a los comandos', () => {
     expect(e.ultimoGrupo().texto).toContain('Total: $10,750.00');
     expect(e.negocio.saldoCliente('c1')).toBe(1_075_000n);
 
-    await e.socio('javier', '/pago Cliente Norte | 5000');
+    await e.socio('javier', '/pago Cliente Norte | 5000 | efectivo');
     expect(e.ultimoGrupo().texto).toContain('Saldo de Cliente Norte: $5,750.00');
 
     await e.socio('angelo', '/gasto guia 500 angelo');
@@ -156,7 +156,7 @@ describe('criterio: el modo sin IA responde a los comandos', () => {
   it('un comando mal escrito devuelve el formato de uso, sin ejecutar', async () => {
     const e = escenario();
     await e.socio('angelo', '/pago Cliente Norte');
-    expect(e.ultimoGrupo().texto).toBe('Formato: /pago Cliente | 7000');
+    expect(e.ultimoGrupo().texto).toBe('Formato: /pago Cliente | 7000 [| cuenta]');
     await e.socio('angelo', '/borrartodo');
     expect(e.ultimoGrupo().texto).toContain('Formato: /pedido, /pago');
     expect(e.negocio.numeroDeHechos()).toBe(0);
@@ -167,7 +167,7 @@ describe('criterio: el modo sin IA responde a los comandos', () => {
     const e = escenario([unaAccion(pago('Cliente Norte', 100_000))], { presupuestoInicial: casiLleno });
     await e.socio('angelo', 'pago Cliente Norte 1,000');
     expect(e.negocio.numeroDeHechos()).toBe(0);
-    await e.socio('angelo', '/pago Cliente Norte | 1000');
+    await e.socio('angelo', '/pago Cliente Norte | 1000 | efectivo');
     expect(e.negocio.numeroDeHechos()).toBe(1);
     expect(e.llmGuionado.llamadas).toBe(0);
   });
