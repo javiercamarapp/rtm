@@ -56,7 +56,7 @@ select operacion.ds_crear_pedido('cp-b', pg_temp.cli(), '[
 -- Pedido C: 30 piezas, mercancia 4,250.00 y recargo de credito 450.00 aparte.
 select operacion.ds_crear_pedido('cp-c', pg_temp.cli(), '[
   {"modelo":"CP Modelo Cuatro","sabor":"Fresa","piezas":10,"precio_cent":14166},{"modelo":"CP Modelo Cinco","sabor":"Fresa","piezas":20,"precio_cent":14167}]'::jsonb,
-  'isaac_directo', null, '{"interes_cent": 45000}'::jsonb, 'cliente', null, null, 0, 0, negocio.hoy() - 2);
+  'isaac_directo', null, '{"interes_cent": 45000, "semanas": 2}'::jsonb, 'cliente', null, null, 0, 0, negocio.hoy() - 2);
 -- Pedido D: sin enviar (para el rechazo).
 select operacion.ds_crear_pedido('cp-d', pg_temp.cli(), '[{"modelo":"CP Modelo Cinco","sabor":"Fresa","piezas":5,"precio_cent":10000}]'::jsonb, 'isaac_directo', null, null, 'cliente', null, null, 0, 0, negocio.hoy() - 2);
 select operacion.confirmar_pedido('cp-ac', pg_temp.ped('cp-a:ped')); select operacion.enviar_pedido('cp-ae', pg_temp.ped('cp-a:ped'), null, null, null, true);
