@@ -116,6 +116,12 @@ select is(agente.consulta_ventas('pedidos_cliente', pg_temp.cli('BV Memo Garcia'
 select ok(jsonb_array_length(agente.consulta_ventas('pedidos_cliente', pg_temp.cli('BV Memo Garcia')) -> 'lineas') >= 2, 'incluye sus pedidos y el por cobrar');
 select throws_ok($$select agente.consulta_ventas('otra')$$, '22023', null, 'consulta desconocida');
 
+-- ---------------------------------------------------------------- lecturas de la conversacion (a que pedido se aplica un cobro)
+select is(jsonb_array_length(agente.pedidos_abiertos_cliente(pg_temp.cli('BV Lupita Soto'))), 1, 'pedidos abiertos de un cliente: solo los enviados con saldo');
+select is((agente.pedidos_abiertos_cliente(pg_temp.cli('BV Lupita Soto')) -> 0 ->> 'folio'), pg_temp.folio('bv:b1'), 'pedidos abiertos: trae el folio');
+select is(agente.saldo_cliente_agente(pg_temp.cli('BV Lupita Soto')), operacion.saldo_cliente(pg_temp.cli('BV Lupita Soto')), 'saldo del cliente: el mismo que el libro');
+select is(has_function_privilege('authenticated', 'agente.pedidos_abiertos_cliente(bigint)', 'execute'), false, 'la web no lee las lecturas del bot');
+
 -- ---------------------------------------------------------------- interruptor de escritura
 update seguridad.interruptor set activo = false where clave = 'agente_escritura';
 select throws_ok($$select agente.ejecutar_ext('bv:z1', 'envio_lote', pg_temp.args(jsonb_build_object('paqueteria', 'DHL', 'folios', jsonb_build_array(pg_temp.folio('bv:b3')))))$$, 'P0463', null, 'solo lectura: el envio en lote no escribe');

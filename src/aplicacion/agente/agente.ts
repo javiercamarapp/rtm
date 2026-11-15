@@ -1194,7 +1194,8 @@ export class AgenteTelegram {
     }
     switch (r.tipo) {
       case 'ejecutado': {
-        const pedidoId = typeof r.datos?.pedido_id === 'number' ? r.datos.pedido_id : undefined;
+        // Solo los pedidos NUEVOS arman el mensaje final de pedido; una devolucion o un paquete perdido tambien traen pedido_id pero no son un pedido registrado.
+        const pedidoId = op.operacion.startsWith('pedido') && typeof r.datos?.pedido_id === 'number' ? r.datos.pedido_id : undefined;
         if (!r.repetido) this.ecoPendiente = { estado, r, grupo };
         return { tipo: 'registrado', folio: r.folio, ...(pedidoId !== undefined ? { pedidoId } : {}), ...(pedidoId === undefined ? { mensaje: P.ecoEjecutado(r, op.autor) } : {}) };
       }

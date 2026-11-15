@@ -94,9 +94,8 @@ end $$;
 
 revoke all on function operacion.paqueteria_nombre(text) from public, anon, authenticated;
 revoke all on function operacion._enviar_pedido_sin_catalogo(text, bigint, jsonb, jsonb, date, boolean, text) from public, anon, authenticated;
-revoke all on function operacion.enviar_pedido(text, bigint, jsonb, jsonb, date, boolean, text) from public, anon;
-grant execute on function operacion.enviar_pedido(text, bigint, jsonb, jsonb, date, boolean, text) to authenticated;
-revoke all on function operacion.capturar_guia_pedido(text, bigint, text, text) from public, anon;
-grant execute on function operacion.capturar_guia_pedido(text, bigint, text, text) to authenticated;
+-- Las funciones de operacion.* no se conceden a la web (la web entra por api.*; el bot, por agente.*).
+revoke all on function operacion.enviar_pedido(text, bigint, jsonb, jsonb, date, boolean, text) from public, anon, authenticated;
+revoke all on function operacion.capturar_guia_pedido(text, bigint, text, text) from public, anon, authenticated;
 revoke all on function agente.pedidos_para_envio(text) from public, anon, authenticated;
 grant execute on function agente.pedidos_para_envio(text) to servidor;
