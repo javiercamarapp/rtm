@@ -36,8 +36,11 @@ describe('criterio: ningun numero que no venga del servidor llega a una respuest
     ]);
     await e.socio('angelo', 'Cliente Norte 28pz jupiter');
     await e.socio('angelo', 'pago Cliente Norte 7 mil');
+    // Decision del dueno (14-nov): un monto abreviado ("7 mil") se repite con la cifra completa antes de registrar; las palabras y "28pz" siguen valiendo.
+    expect(e.negocio.numeroDeHechos()).toBe(1);
+    expect(e.ultimoGrupo().texto).toContain('cifra completa');
     await e.socio('angelo', 'Cliente Sur veinticuatro nexa');
-    expect(e.negocio.numeroDeHechos()).toBe(3);
+    expect(e.negocio.numeroDeHechos()).toBe(2);
   });
 
   it('el eco solo trae cifras que registro el servidor (se audita cada mensaje del grupo)', async () => {

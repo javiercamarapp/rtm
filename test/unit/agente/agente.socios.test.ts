@@ -255,8 +255,8 @@ describe('comandos de los socios (modo sin IA)', () => {
 });
 
 describe('simulador completo con el modelo heuristico y la configuracion de produccion', () => {
-  it('frases de WhatsApp: confirmar registra, sin confirmar no', async () => {
-    const h = crearAgenteEnMemoria();
+  it('frases de WhatsApp: confirmar registra, sin confirmar no (modo estricto con tarjeta, aun disponible por configuracion)', async () => {
+    const h = crearAgenteEnMemoria({ config: { confirmarMovimientos: true } });
     const t = await ejecutarGuion(
       ['javier> pague 500 de guia', 'angelo> utilidad del mes', 'javier> meti 20,000 de capital para invertir', 'boton angelo 2', 'javier> deshaz'],
       h,
