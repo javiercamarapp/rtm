@@ -2,6 +2,7 @@
 // Ningun esquema trae pregunta_id, fechas calculadas, dias ni intereses: eso lo pone el servidor o el codigo, nunca el modelo.
 import { z } from 'zod';
 import { MAX_LINEAS } from '@/dominio/agente/intenciones';
+import { ACCIONES_COBRANZA, CUENTAS_COBRANZA } from '@/dominio/agente/cobranza';
 import { CAMPOS_CORRECCION, CLASES_ALIAS, PAQUETERIAS_MODELO } from '@/dominio/agente/intenciones_ampliadas';
 
 const texto = (max: number) => z.string().min(1).max(max);
@@ -48,6 +49,7 @@ export const VARIANTES_AMPLIADAS = [
   z.strictObject({ tipo: z.literal('sabor_alta'), modelo_texto: texto(60), sabor_texto: texto(40), fuente_cita: cita }),
   z.strictObject({ tipo: z.literal('modelo_alta'), marca_texto: textoONulo(40), modelo_texto: texto(60), costo_centavos: monto.nullable(), proveedor_texto: textoONulo(40), fuente_cita: cita }),
   z.strictObject({ tipo: z.literal('costo_lista'), proveedor_texto: texto(40), modelo_texto: texto(60), costo_centavos: monto, fuente_cita: cita }),
+  z.strictObject({ tipo: z.literal('cobranza_respuesta'), accion: z.enum(ACCIONES_COBRANZA), cliente_texto: texto(60), pedidos_texto: z.array(texto(20)).max(20), monto_texto: textoONulo(40), cuenta: z.enum(CUENTAS_COBRANZA).nullable(), cuando_texto: textoONulo(60), duracion_texto: textoONulo(40), motivo: textoONulo(200), fuente_cita: cita }),
   z.strictObject({ tipo: z.literal('alias_ensenar'), clase: z.enum(CLASES_ALIAS), alias_texto: texto(60), oficial_texto: texto(60), fuente_cita: cita }),
   z.strictObject({ tipo: z.literal('alias_respuesta'), respuesta: siNo }),
   z.strictObject({ tipo: z.literal('sabor_respuesta'), respuesta: siNo }),

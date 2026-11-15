@@ -1,0 +1,194 @@
+[
+ {
+  "id": "cb-001",
+  "categoria": "cobranza",
+  "autor": "javier",
+  "texto": "Beta ya pagó todo, le depositó directo a Isaac",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "pago_total",
+     "cliente": "beta",
+     "cuenta": "isaac"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-002",
+  "categoria": "cobranza",
+  "autor": "angelo",
+  "texto": "Gama me depositó 20 mil a mi cuenta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "pago_parcial",
+     "cliente": "gama",
+     "monto": "20 mil",
+     "cuenta": "angelo"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-003",
+  "categoria": "cobranza",
+  "autor": "javier",
+  "texto": "Alfa depositó 4,500 en efectivo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "pago_parcial",
+     "cliente": "alfa",
+     "monto": "4,500",
+     "cuenta": "efectivo"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-004",
+  "categoria": "cobranza",
+  "autor": "javier",
+  "texto": "dice Beta que paga el jueves",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "prometio",
+     "cliente": "beta",
+     "cuando": "el jueves"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-005",
+  "categoria": "cobranza",
+  "autor": "angelo",
+  "texto": "Delta prometió pagar el 25",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "prometio",
+     "cliente": "delta",
+     "cuando": "el 25"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-006",
+  "categoria": "cobranza",
+  "autor": "javier",
+  "texto": "Gama se atrasa una semana",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "se_atrasa",
+     "cliente": "gama",
+     "duracion": "una semana"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-007",
+  "categoria": "cobranza",
+  "autor": "angelo",
+  "texto": "Alfa pide 3 días más",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "se_atrasa",
+     "cliente": "alfa",
+     "duracion": "3 días"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-008",
+  "categoria": "cobranza",
+  "autor": "javier",
+  "texto": "Beta todavía no paga, no contesta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "aun_no",
+     "cliente": "beta"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-009",
+  "categoria": "cobranza",
+  "autor": "javier",
+  "texto": "Delta disputa el pedido, dice que le faltaron 5 piezas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "disputa",
+     "cliente": "delta",
+     "motivo": "le faltaron 5 piezas"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-010",
+  "categoria": "cobranza",
+  "autor": "angelo",
+  "texto": "no le cobremos a Gama por 15 días",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "pausa",
+     "cliente": "gama",
+     "duracion": "15 días"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-011",
+  "categoria": "cobranza",
+  "autor": "javier",
+  "texto": "a Alfa dale más plazo hasta el viernes 27",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "extender_plazo",
+     "cliente": "alfa",
+     "cuando": "el viernes 27"
+    }
+   ]
+  }
+ },
+ {
+  "id": "cb-012",
+  "categoria": "cobranza",
+  "autor": "javier",
+  "texto": "reanuda la cobranza de Delta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cobranza_respuesta",
+     "accion": "reanudar",
+     "cliente": "delta"
+    }
+   ]
+  }
+ }
+]

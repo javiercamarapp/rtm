@@ -154,6 +154,23 @@ export interface ICostoLista {
   fuente_cita: string;
 }
 
+/**
+ * Respuesta del socio a la cobranza ("ya pago", "ya me deposito 20 mil", "dice que paga el jueves", "se atrasa una semana", "disputa: faltaron piezas"). El modelo copia las frases TAL CUAL
+ * (monto_texto, cuando_texto, duracion_texto): el monto lo lee el codigo (k o mil se repiten y se preguntan), la fecha la resuelve el codigo y el saldo lo pone SQL.
+ */
+export interface ICobranzaRespuesta {
+  tipo: 'cobranza_respuesta';
+  accion: 'pago_total' | 'pago_parcial' | 'prometio' | 'se_atrasa' | 'aun_no' | 'disputa' | 'pausa' | 'reanudar' | 'extender_plazo';
+  cliente_texto: string;
+  pedidos_texto: string[];
+  monto_texto: string | null;
+  cuenta: 'angelo' | 'javier' | 'isaac' | 'karen' | 'efectivo' | null;
+  cuando_texto: string | null;
+  duracion_texto: string | null;
+  motivo: string | null;
+  fuente_cita: string;
+}
+
 export const CLASES_ALIAS = ['cliente', 'sabor', 'modelo', 'marca', 'proveedor'] as const;
 export type ClaseAlias = (typeof CLASES_ALIAS)[number];
 
@@ -223,6 +240,7 @@ export type IntencionAmpliada =
   | IModeloAlta
   | ICostoLista
   | IAliasEnsenar
+  | ICobranzaRespuesta
   | IAliasRespuesta
   | ISaborRespuesta
   | ISlotRespuesta
@@ -232,5 +250,5 @@ export type IntencionAmpliada =
 /** Intenciones nuevas que escriben en la base (las de respuesta y control no escriben por si solas: cierran una pregunta o una operacion del servidor). */
 export const ESCRITURA_AMPLIADA: readonly IntencionAmpliada['tipo'][] = [
   'pedido_ds', 'envio_lote', 'guias_lote', 'plazo_acordar', 'recargo_credito', 'compra_cierre', 'entrega_fondos', 'liquidacion_socios', 'retiro_capital', 'renta_omar', 'obsequio',
-  'sabor_alta', 'modelo_alta', 'costo_lista', 'alias_ensenar', 'alias_respuesta', 'sabor_respuesta', 'correccion',
+  'sabor_alta', 'modelo_alta', 'costo_lista', 'alias_ensenar', 'alias_respuesta', 'sabor_respuesta', 'correccion', 'cobranza_respuesta',
 ];
