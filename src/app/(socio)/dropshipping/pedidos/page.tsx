@@ -52,7 +52,7 @@ export default async function PaginaPedidosDs({ searchParams }: { searchParams: 
         descripcion="Busca por folio del proveedor (por ejemplo el número de pedido de Karen), por folio propio o por cliente."
         acciones={<Link className="rtm-boton rtm-boton-primario" href="/dropshipping/nuevo">Nuevo pedido</Link>}
       />
-      <PestanasDs activa="pedidos" sinFolio={resumen.sin_folio_externo} />
+      <PestanasDs activa="pedidos" sinFolio={resumen.sin_folio_externo} filtros={(
       <BarraFiltros etiquetaAria="Filtros de pedidos" extras={hayFiltros ? <Chip href="/dropshipping/pedidos">Quitar filtros</Chip> : undefined}>
         <Segmentado etiquetaAria="Origen" tamano="chico" opciones={[
           { valor: 'dropshipping', etiqueta: 'Dropshipping', href: enlace({ origen: '' }), activa: origen === 'dropshipping' }, { valor: 'inventario_merida', etiqueta: 'Inventario en Mérida', href: enlace({ origen: 'inventario_merida' }), activa: origen === 'inventario_merida' },
@@ -71,6 +71,7 @@ export default async function PaginaPedidosDs({ searchParams }: { searchParams: 
           </FiltrosPlegables>
         </form>
       </BarraFiltros>
+      )} />
 
       <Tarjeta plana titulo="Pedidos" descripcion={`${formatearPiezas(piezas)} piezas · ${enviados.length} enviados`}>
         <DataTable

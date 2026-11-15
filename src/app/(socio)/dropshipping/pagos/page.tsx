@@ -36,8 +36,7 @@ export default async function PaginaPagosDs({ searchParams }: { searchParams: Pr
         descripcion="Costo de los pedidos enviados, pagos (completos o parciales) y saldo. Los pagos parciales amortizan primero el costo."
         acciones={<FormularioPagoProveedor proveedor={proveedor} pedidos={pedidosAbiertos.map((p) => ({ id: p.pedido_id, texto: `${p.folio} · ${p.cliente}${p.folio_externo ? ` · ${p.folio_externo}` : ''}` }))} clientes={clientes.filter((x) => x.activo && !x.esBodega).map((x) => ({ id: x.id, texto: x.nombre }))} />}
       />
-      <PestanasDs activa="pagos" sinFolio={resumen.sin_folio_externo} />
-      <Segmentado etiquetaAria="Proveedor" tamano="chico" opciones={['Karen', 'Isaac'].map((p) => ({ valor: p, etiqueta: p, href: `/dropshipping/pagos?proveedor=${p}`, activa: p === proveedor, testid: `ds-prov-${p}` }))} />
+      <PestanasDs activa="pagos" sinFolio={resumen.sin_folio_externo} filtros={<Segmentado etiquetaAria="Proveedor" tamano="chico" opciones={['Karen', 'Isaac'].map((p) => ({ valor: p, etiqueta: p, href: `/dropshipping/pagos?proveedor=${p}`, activa: p === proveedor, testid: `ds-prov-${p}` }))} />} />
       {c.anticipo_cent > 0n && <Aviso tono="atencion" titulo="Anticipo al proveedor.">{formatearMoneda(c.anticipo_cent)} del saldo a favor con {proveedor} no está respaldado por utilidad de pedidos: es un anticipo, no utilidad reinvertida. Se aplica a los próximos pedidos.</Aviso>}
       <KpiLinea
         etiquetaAria={`Cuenta con ${proveedor}`}
