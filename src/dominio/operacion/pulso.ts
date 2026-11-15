@@ -5,7 +5,7 @@ import { tarjetaValuacion, type CuentaSociosValuacion, type Socio } from '../soc
 import type { CuentaProveedor, CuentaSocios, CuentasPorCobrar } from './tipos';
 
 export interface ChipPulso {
-  clave: 'isaac' | 'cobrar' | 'socios' | 'bodega';
+  clave: 'isaac' | 'karen' | 'cobrar' | 'socios' | 'bodega';
   etiqueta: string;
   /** null = no hay datos: la interfaz escribe "Sin dato". */
   texto: string | null;
@@ -15,12 +15,16 @@ export interface ChipPulso {
   href: string | null;
   /** Aclaracion corta ("a favor", "se debe"). */
   detalle: string | null;
+  /** Segunda cuenta que alterna con esta en la barra (Isaac y Karen comparten el mismo lugar). Sin ella el indicador es fijo. */
+  alterno?: ChipPulso;
 }
 
 export interface Pulso { chips: ChipPulso[]; corte: string | null }
 
 export interface EntradasPulso {
   isaac: CuentaProveedor | null;
+  /** Cuenta con Karen: alterna con Isaac en el mismo indicador. Angelo le pide a Karen para su menudeo (pedidos a costo del socio, aparte). */
+  karen?: CuentaProveedor | null;
   cxc: CuentasPorCobrar | null;
   socios: CuentaSocios | null;
   /** Valuacion de los socios (api.cuenta_socios_valuacion) y el socio con sesion: alimenta el chip personal 'Tu valuacion'. */
@@ -28,11 +32,11 @@ export interface EntradasPulso {
   existencia: Existencia | null;
 }
 
-/** Por pagar a Isaac: DEUDA DE LA EMPRESA con el proveedor = el total del Mayor (cuenta 2110) menos los pedidos a costo del socio de menudeo que aun no paga (a su cuenta, no son deuda de la empresa; van aparte en el detalle). Misma cifra que 'Deuda de la empresa' en Proveedores. Sin movimientos ni posicion no hay dato. */
-function chipIsaac(c: CuentaProveedor | null): ChipPulso {
-  const base: ChipPulso = { clave: 'isaac', etiqueta: 'Por pagar a Isaac', texto: null, cifra: null, href: '/proveedores?p=Isaac', detalle: null };
+/** Por pagar a un proveedor (Isaac o Karen): DEUDA DE LA EMPRESA con el proveedor = el total del Mayor (cuenta 2110) menos los pedidos a costo del socio de menudeo que aun no paga (a su cuenta, no son deuda de la empresa; van aparte en el detalle). Misma cifra que 'Deuda de la empresa' en Proveedores. Sin movimientos ni posicion no hay dato. */
+function chipProveedor(c: CuentaProveedor | null, nombre: 'Isaac' | 'Karen'): ChipPulso {
+  const base: ChipPulso = { clave: nombre === 'Isaac' ? 'isaac' : 'karen', etiqueta: `Por pagar a ${nombre}`, texto: null, cifra: null, href: `/proveedores?p=${nombre}`, detalle: null };
   if (!c || (c.movimientos.length === 0 && c.posicion_cent === 0n)) return base;
-  const cifra = 'proveedor:deuda:Isaac';
+  const cifra = `proveedor:deuda:${nombre}`;
   const emp = c.posicion.posicion_empresa_cent;
   const aparte = c.posicion.menudeo_pendiente_cent > 0n ? ` · aparte ${formatearMoneda(c.posicion.menudeo_pendiente_cent)} de pedidos del socio` : '';
   if (emp < 0n) return { ...base, texto: formatearMoneda(-emp), cifra, href: null, detalle: `deuda de la empresa${aparte}` };
@@ -68,8 +72,8 @@ function chipBodega(e: Existencia | null): ChipPulso {
 }
 
 export function armarPulso(e: EntradasPulso): Pulso {
-  const chips = [chipIsaac(e.isaac), chipCobrar(e.cxc), chipSocios(e.valuacion), chipBodega(e.existencia)];
+  const chips = [{ ...chipProveedor(e.isaac, 'Isaac'), alterno: chipProveedor(e.karen ?? null, 'Karen') }, chipCobrar(e.cxc), chipSocios(e.valuacion), chipBodega(e.existencia)];
   const fecha = e.cxc?.hoy ?? e.socios?.hoy ?? null;
-  const hayDatos = chips.some((c) => c.texto !== null);
+  const hayDatos = chips.some((c) => c.texto !== null || c.alterno?.texto != null);
   return { chips, corte: hayDatos && fecha ? etiquetaFecha(fecha) : null };
 }
