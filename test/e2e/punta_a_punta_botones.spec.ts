@@ -79,8 +79,7 @@ for (const tema of TEMAS) {
         if (estado) await expect(page).toHaveURL(new RegExp(`estado=`));
         await expect(page.locator('main:not(.rtm-documento)')).toBeVisible();
       }
-      await page.getByTestId('filtros-plegables').click(); // "Más": avisos y origen viven en el desplegable
-      await page.getByRole('link', { name: /Con aviso/ }).first().click();
+      await page.getByTestId('filtro-avisos').click(); // conmutador simple junto a los estados (ya no hay desplegable "Más")
       await page.waitForLoadState('networkidle'); // WebKit: la navegacion suave debe terminar antes del siguiente paso
       await expect(page).toHaveURL(/aviso=1/);
       await page.goto(`/pedidos/nuevo?cliente=${d.clienteId}`);

@@ -5,9 +5,15 @@ export type Origen = 'bodega_omar' | 'karen_directo' | 'karen_via_isaac' | 'isaa
 export type EstadoCompra = 'borrador' | 'confirmada' | 'enviada' | 'en_trayecto' | 'llego_merida' | 'recibida_parcial' | 'recibida' | 'cerrada' | 'anulada';
 
 export interface PedidoResumen {
-  id: number; folio: string; fecha_neg: string; cliente_id: number; cliente: string; duenio: 'Angelo' | 'Javier'; origen: Origen; estado: EstadoPedido;
+  id: number; folio: string; fecha_neg: string; cliente_id: number; cliente: string; duenio: 'Angelo' | 'Javier'; origen: Origen; estado: EstadoPedido; tipo_venta?: 'cliente' | 'socio_a_costo' | null;
   piezas_pedidas: number; piezas_surtidas: number; cobrado_cent: Cent; saldo_cent: Cent | null; utilidad_cent: Cent | null; utilidad_provisional: boolean | null;
   avisos: number; empacado: boolean; plazo_dias: number | null;
+}
+
+/** Una fila de api.pedidos_desglose(): cifras ya calculadas en la base (la interfaz solo da formato). Niveles: total, surtido, proveedor (bodega_omar, castores, karen, isaac) y tipo (cliente, socio_a_costo; solo dropshipping). */
+export interface DesglosePedidos {
+  nivel: 'total' | 'surtido' | 'proveedor' | 'tipo'; surtido: 'dropshipping' | 'inventario_merida' | null; clave: string;
+  pedidos: number; enviados: number; piezas: number; facturado_cent: Cent; por_cobrar_cent: Cent; utilidad_cent: Cent | null; utilidad_provisional: boolean; con_avisos: number;
 }
 
 export interface LineaPedido {
