@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { cuentaDeOmar } from '@/composicion/omar';
 import { fechaNeg, semanaOmar } from '@/dominio/calendario';
-import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, nombreVape } from '@/dominio/formato';
 import { Aviso } from '@/ui/componentes/controles';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { BloqueProyeccion, CifrasCuenta, TablaLiquidaciones, TablaPagos, TablaRentaDia, TablaTransacciones } from '@/ui/omar/cuenta';
@@ -45,7 +45,7 @@ export default async function PaginaMiCuenta() {
         acciones={movs ? (
           <ExportarCuenta nombre={`mi-cuenta-${semana.inicio}.csv`} filas={[
             ['Tipo', 'Fecha', 'Referencia', 'Pieza', 'Piezas', 'Importe'],
-            ...movs.map((m) => [m.concepto, m.fecha, m.referencia, m.modelo ?? '', m.piezas === null ? '' : String(m.piezas), formatearMoneda(m.importe)]),
+            ...movs.map((m) => [m.concepto, m.fecha, m.referencia, nombreVape(m.modelo ?? ''), m.piezas === null ? '' : String(m.piezas), formatearMoneda(m.importe)]),
           ]} />
         ) : undefined}
       >

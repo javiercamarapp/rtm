@@ -1,5 +1,6 @@
 // Reglas puras de captura de devoluciones y de recepcion parcial. El dinero NO se calcula aqui: la base calcula credito, costo y asientos;
 // esto solo valida que lo que se manda sea coherente (enteros, tope de piezas) y arma el JSON de la accion.
+import { nombreVape, saborMayus } from '@/dominio/formato';
 import type { PedidoDevoluciones, RecepcionCompra } from './tipos';
 
 export type DestinoDevolucion = 'inventario' | 'merma';
@@ -23,7 +24,7 @@ export function armarDevolucionCliente(origen: PedidoDevoluciones['renglones'], 
     if (n === 0) continue;
     const r = origen.find((x) => x.linea_id === c.linea_id && x.sku_id === c.sku_id);
     if (!r) return { ok: false, error: 'Un renglón no pertenece al pedido.' };
-    if (n > r.disponibles_devolver) return { ok: false, error: `De ${r.modelo} ${r.sabor} solo se pueden devolver ${r.disponibles_devolver} piezas (surtidas ${r.surtidas}, ya devueltas ${r.devueltas}).` };
+    if (n > r.disponibles_devolver) return { ok: false, error: `De ${nombreVape(r.modelo)} ${saborMayus(r.sabor)} solo se pueden devolver ${r.disponibles_devolver} piezas (surtidas ${r.surtidas}, ya devueltas ${r.devueltas}).` };
     salida.push({ linea_id: c.linea_id, sku_id: c.sku_id, piezas: n, destino: c.destino });
   }
   if (salida.length === 0) return { ok: false, error: 'Escribe cuántas piezas se devuelven.' };
@@ -40,7 +41,7 @@ export function armarDevolucionProveedor(disponibles: { sku_id: number; modelo: 
     if (n === 0) continue;
     const s = disponibles.find((x) => x.sku_id === c.sku_id);
     if (!s) return { ok: false, error: 'Ese sabor no tiene disponible.' };
-    if (n > s.disponible) return { ok: false, error: `De ${s.modelo} ${s.sabor} solo hay ${s.disponible} disponibles.` };
+    if (n > s.disponible) return { ok: false, error: `De ${nombreVape(s.modelo)} ${saborMayus(s.sabor)} solo hay ${s.disponible} disponibles.` };
     salida.push({ sku_id: c.sku_id, piezas: n });
   }
   if (salida.length === 0) return { ok: false, error: 'Escribe cuántas piezas se devuelven.' };
@@ -63,7 +64,7 @@ export function armarLlegada(lineas: RecepcionCompra['lineas'], capturas: Captur
   if (salida.length === 0) return { ok: false, error: 'Escribe las piezas que llegaron.' };
   for (const [id, n] of porLinea) {
     const l = lineas.find((x) => x.linea_id === id)!;
-    if (n > l.pendientes) return { ok: false, error: `${l.modelo} ${l.sabor}: no se recibe más de lo pedido. Llegan ${n} y solo faltan ${l.pendientes}.` };
+    if (n > l.pendientes) return { ok: false, error: `${nombreVape(l.modelo)} ${saborMayus(l.sabor)}: no se recibe más de lo pedido. Llegan ${n} y solo faltan ${l.pendientes}.` };
   }
   return { ok: true, valor: salida, avisos: [] };
 }

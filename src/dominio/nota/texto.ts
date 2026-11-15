@@ -1,3 +1,4 @@
+import { nombreVape } from '@/dominio/formato';
 import { formatearPesosCorto } from '../formato';
 import type { NotaClienteSnap } from '../operacion/tipos';
 
@@ -7,7 +8,7 @@ import type { NotaClienteSnap } from '../operacion/tipos';
  */
 export function textoNota(n: NotaClienteSnap): string {
   const l: string[] = [`Nota ${n.cliente}`];
-  for (const x of n.lineas_texto) l.push(`${x.modelo} ${x.piezas}pz x $${formatearPesosCorto(x.precio_cent)} = ${formatearPesosCorto(x.total_cent)}`);
+  for (const x of n.lineas_texto) l.push(`${nombreVape(x.modelo)} ${x.piezas}pz x $${formatearPesosCorto(x.precio_cent)} = ${formatearPesosCorto(x.total_cent)}`);
   if (n.envio_cent > 0n) l.push(`Envío $${formatearPesosCorto(n.envio_cent)}`);
   if (n.recargo_cent > 0n) l.push(`Recargo $${formatearPesosCorto(n.recargo_cent)}`);
   if (n.descuento_cent > 0n) l.push(`Descuento -$${formatearPesosCorto(n.descuento_cent)}`);

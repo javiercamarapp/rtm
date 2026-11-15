@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
-import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, nombreVape, saborMayus } from '@/dominio/formato';
 import type { NotaFuente } from '@/dominio/operacion/tipos';
 
 export const ANCHO = 612;
@@ -177,12 +177,12 @@ export async function pdfNotaCliente(n: NotaFuente): Promise<Uint8Array> {
     cabecera();
     for (const g of c.grupos) {
       h.asegurar(16 + 14 * g.sabores.length, cabecera);
-      h.texto(g.modelo, X.prod, 10, { fuente: f.negrita, ancho: 330 });
+      h.texto(nombreVape(g.modelo), X.prod, 10, { fuente: f.negrita, ancho: 330 });
       h.texto(String(g.piezas), X.cant, 10, { fuente: f.negrita, derecha: true });
       h.texto(formatearMoneda(g.subtotal_cent), X.total, 10, { fuente: f.negrita, derecha: true });
       h.bajar(14);
       for (const s of g.sabores) {
-        h.texto(s.sabor, X.sabor, 10, { ancho: 165 });
+        h.texto(saborMayus(s.sabor), X.sabor, 10, { ancho: 165 });
         h.texto(String(s.piezas), X.cant, 10, { derecha: true });
         h.texto(formatearMoneda(s.precio_cent), X.precio, 10, { derecha: true });
         h.texto(formatearMoneda(s.total_cent), X.total, 10, { derecha: true });
@@ -255,7 +255,7 @@ export async function pdfHojaInterna(n: NotaFuente): Promise<Uint8Array> {
     cab('POR MODELO');
     for (const m of i.por_modelo) {
       h.asegurar(16, () => cab('POR MODELO'));
-      h.texto(m.modelo, x.a, 10, { ancho: 215 });
+      h.texto(nombreVape(m.modelo), x.a, 10, { ancho: 215 });
       h.texto(String(m.piezas), x.c, 10, { derecha: true });
       h.texto(formatearMoneda(m.venta_cent), x.d, 10, { derecha: true });
       h.texto(formatearMoneda(m.costo_cent), x.e, 10, { derecha: true });
@@ -309,7 +309,7 @@ export async function pdfHojaInterna(n: NotaFuente): Promise<Uint8Array> {
     det();
     for (const l of i.lineas) {
       h.asegurar(16, det);
-      h.texto(`${l.modelo} · ${l.sabor}`, x.a, 9, { ancho: 215 });
+      h.texto(`${nombreVape(l.modelo)} · ${saborMayus(l.sabor)}`, x.a, 9, { ancho: 215 });
       h.texto(String(l.piezas), x.c, 9, { derecha: true });
       h.texto(formatearMoneda(l.precio_cent), x.d, 9, { derecha: true });
       h.texto(formatearMoneda(l.costo_unit_cent), x.e, 9, { derecha: true });

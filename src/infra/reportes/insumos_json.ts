@@ -1,5 +1,6 @@
 // Convierte lo que entregan `rep.insumos_semanal` y `rep.insumos_mensual` (jsonb, claves snake_case, centavos `*_cent` como numeros enteros) a los tipos del motor.
 // Es la unica conversion: ningun calculo de negocio ocurre aqui.
+import { nombreVape, saborMayus } from '@/dominio/formato';
 import type { ComparacionProveedor, ConteoInsumo, FlujoInsumo, GastoInsumo, HistoriaCliente, InsumosMensual, InsumosSemanal, LineaPedido, LiquidacionProveedor, ModeloInventario, PartidaCartera, PedidoInsumo, RenglonResultados, SemanaHistoria, SociosInsumo } from '@/dominio/reportes/insumos';
 import type { ResultadoComprobacion } from '@/dominio/reportes/tipos';
 
@@ -12,7 +13,7 @@ const bigArr = (v: unknown): bigint[] => (Array.isArray(v) ? v.map(big) : []);
 
 function linea(j: J): LineaPedido {
   return {
-    modelo: txt(j.modelo), ...(j.sabor ? { sabor: txt(j.sabor) } : {}), piezas: num(j.piezas), precioCent: big(j.precio_cent), costoCent: big(j.costo_cent),
+    modelo: nombreVape(txt(j.modelo)), ...(j.sabor ? { sabor: saborMayus(txt(j.sabor)) } : {}), piezas: num(j.piezas), precioCent: big(j.precio_cent), costoCent: big(j.costo_cent),
     ...(j.precio_tabulador_cent !== null && j.precio_tabulador_cent !== undefined ? { precioTabuladorCent: big(j.precio_tabulador_cent) } : {}), ...(j.con_excepcion === true ? { conExcepcion: true } : {}),
   };
 }
@@ -40,10 +41,10 @@ function cliente(j: J): HistoriaCliente {
 function modelo(j: J): ModeloInventario {
   const lt = j.lead_time as J;
   return {
-    modelo: txt(j.modelo), existencia: num(j.existencia), enTransito: num(j.en_transito), costoPromCent: big(j.costo_prom_cent), ventasSemanales: ((j.ventas_semanales as unknown[]) ?? []).map(num),
+    modelo: nombreVape(txt(j.modelo)), existencia: num(j.existencia), enTransito: num(j.en_transito), costoPromCent: big(j.costo_prom_cent), ventasSemanales: ((j.ventas_semanales as unknown[]) ?? []).map(num),
     contribPorPiezaCent: big(j.contrib_por_pieza_cent), diasSinVenta: num(j.dias_sin_venta), proveedor: j.proveedor === 'Karen' ? 'Karen' : 'Isaac', costoReposicionCent: big(j.costo_reposicion_cent),
     leadTime: { dias: num(lt.dias), reposiciones: num(lt.reposiciones), declarado: lt.declarado === true }, piezasPorCaja: Math.max(1, num(j.piezas_por_caja)),
-    sabores: arr(j.sabores).map((s) => ({ sabor: txt(s.sabor), existencia: num(s.existencia), vendidas28: num(s.vendidas28), diasAgotado: num(s.dias_agotado) })),
+    sabores: arr(j.sabores).map((s) => ({ sabor: saborMayus(txt(s.sabor)), existencia: num(s.existencia), vendidas28: num(s.vendidas28), diasAgotado: num(s.dias_agotado) })),
   };
 }
 
@@ -84,7 +85,7 @@ export function insumosMensualDeJson(j: J): InsumosMensual {
   return {
     ...insumosSemanalDeJson(j), mes: txt(j.mes), mesAnterior: arr(j.pedidos_anterior).map(pedido), resultados: arr(j.resultados).map(renglon), utilidadNetaCent: big(j.utilidad_neta_cent),
     ...(cs ? { costosSistema: { cargoSociedadCent: big(cs.cargo_sociedad_cent), comoSeriaCent: big(cs.como_seria_cent), comoDeberiaSerCent: big(cs.como_deberia_cent), bolsilloJavierCent: big(cs.bolsillo_javier_cent), reembolsadoCent: big(cs.reembolsado_cent), pendienteCent: big(cs.pendiente_cent) } } : {}),
-    ventasMensualesCent: bigArr(j.ventas_mensuales_cent), clienteSabor: arr(j.cliente_sabor).map((c) => ({ cliente: txt(c.cliente), sabor: txt(c.sabor), piezas: num(c.piezas) })),
+    ventasMensualesCent: bigArr(j.ventas_mensuales_cent), clienteSabor: arr(j.cliente_sabor).map((c) => ({ cliente: txt(c.cliente), sabor: saborMayus(txt(c.sabor)), piezas: num(c.piezas) })),
     rankSemanalClientes: arr(j.rank_semanal_clientes).map((r) => ({ cliente: txt(r.cliente), rank: ((r.rank as unknown[]) ?? []).map(num) })), dsoDias: num(j.dso_dias), tendenciaCarteraBp: bigArr(j.tendencia_cartera_bp),
   };
 }
