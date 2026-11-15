@@ -25,9 +25,9 @@
 .rtm-texto-copiable { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* Pedidos: desglose compacto Bodega / Dropshipping (filtra la lista). */
-.rtm-desglose-ped { overflow-x: auto; border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); }
-.rtm-desglose-ped-tabla { min-width: 640px; font-size: var(--rtm-t-pequeno); }
-.rtm-desglose-ped-fila { display: grid; grid-template-columns: minmax(170px, 1.7fr) repeat(5, minmax(76px, 1fr)); align-items: baseline; }
+.rtm-desglose-ped { overflow-x: auto; border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-ctl); }
+.rtm-desglose-ped-tabla { min-width: 720px; font-size: var(--rtm-t-pequeno); }
+.rtm-desglose-ped-fila { display: grid; grid-template-columns: minmax(170px, 1.7fr) repeat(4, minmax(76px, 1fr)) minmax(132px, 1.4fr); align-items: baseline; }
 .rtm-desglose-ped-fila > * { padding: 3px 10px; white-space: nowrap; text-align: left; }
 .rtm-desglose-ped-fila > .rtm-num { text-align: right; font-variant-numeric: tabular-nums; }
 .rtm-desglose-ped-vacio { grid-column: 2 / -1; text-align: right !important; }
