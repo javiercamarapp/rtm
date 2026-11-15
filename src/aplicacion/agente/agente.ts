@@ -9,7 +9,8 @@
 import { cifrasDeMonto, cifrasDePiezas, cifrasSinProcedencia, esMontoAmbiguo, parsearPrecio, valoresDeTexto, type CifraExtraida } from '@/dominio/agente/cifras';
 import { parsearComando } from '@/dominio/agente/comandos';
 import { VENTANA_DESHACER_MIN, evaluarDeshacer } from '@/dominio/agente/deshacer';
-import { debeProcesarConIa, declaraCapitalExpreso, detectarInyeccion, redactarContactos, sanitizar } from '@/dominio/agente/entrada';
+import { debeProcesarConIa, declaraCapitalExpreso, redactarContactos, sanitizar } from '@/dominio/agente/entrada';
+import { analizarTexto } from '@/dominio/agente/inyeccion';
 import { CATALOGO_INTENCIONES, confirmacionDe } from '@/dominio/agente/catalogo_intenciones';
 import { esEscritura, exigeConfirmacion, type IPedido, type IPedidoMenudeo, type Intencion, type RespuestaExtractor, type TipoIntencion } from '@/dominio/agente/intenciones';
 import { cadenaParaRol, peorCasoTokens } from '@/dominio/agente/modelos';
@@ -287,6 +288,8 @@ interface ContextoMensaje {
   /** Las cifras vienen del modelo: exigen procedencia en el mensaje. Los comandos no (son tecleadas por el socio). */
   verificarCifras: boolean;
   sospecha: boolean;
+  /** Cuantas oraciones del mensaje parecian instrucciones (se omitieron para el modelo). */
+  oracionesSospechosas?: number;
 }
 
 const MENSAJE_MONTO_AMBIGUO = 'el monto sin ambiguedad: con coma para los miles y punto para los centavos (un punto seguido de tres cifras puede leerse de dos maneras)';
@@ -786,6 +789,7 @@ export class AgenteTelegram {
     const acciones: Intencion[] = [];
     const fallos: Array<'presupuesto' | 'llm' | 'validacion'> = [];
     let sospechaModelo = false;
+    let textoSospechosoModelo = false;
     let sinEntender = 0;
     let bajaCerteza = false;
     for (let i = 0; i < partes.length; i++) {
@@ -797,6 +801,7 @@ export class AgenteTelegram {
         continue;
       }
       sospechaModelo = sospechaModelo || r.valor.sospecha_inyeccion;
+      textoSospechosoModelo = textoSospechosoModelo || r.valor.texto_sospechoso === true;
       if (r.valor.baja_certeza && r.valor.acciones.some((a) => esEscritura(a.tipo))) {
         bajaCerteza = true;
         sinEntender += parte.lineas;
@@ -813,11 +818,17 @@ export class AgenteTelegram {
       await this.responder(ctx.autor, ctx.chats, P.avisoSinIaMensaje());
       return bajaCerteza && fallos.length === 0 ? { estado: 'procesado', acciones: 0 } : { estado: 'sin_ia' };
     }
-    const sospecha = sospechaModelo || detectarInyeccion(ctx.texto).length > 0;
+    const analisis = analizarTexto(ctx.texto);
+    const sospecha = sospechaModelo || textoSospechosoModelo || analisis.bloqueaEscritura;
     if (sospecha || ctx.fuente === 'reenviado') {
-      await this.d.almacen.registrarEvento({ tipo: 'sospecha_inyeccion', miembro: ctx.autor.telegramUserId, detalle: sospecha ? 'patron_o_modelo' : 'reenviado' });
+      const ids = [...new Set(analisis.hallazgos.filter((h) => h.categoria !== 'enlace').map((h) => h.id))].join(',');
+      await this.d.almacen.registrarEvento({ tipo: 'sospecha_inyeccion', miembro: ctx.autor.telegramUserId, detalle: sospecha ? `patron_o_modelo:${ids || 'modelo'}`.slice(0, 280) : 'reenviado' });
     }
-    const r = await this.ejecutarAcciones(acciones, { ...ctx, sospecha }, { lineas: totalLineas, partes: partes.length, sinEntender });
+    const r = await this.ejecutarAcciones(acciones, { ...ctx, sospecha, oracionesSospechosas: analisis.textoSospechoso.length }, { lineas: totalLineas, partes: partes.length, sinEntender });
+    // Texto con forma de instruccion y nada que registrar ni preguntar: se avisa una vez (no se ejecuta nada y no se queda en silencio).
+    if (sospecha && r.estado === 'procesado' && r.acciones === 0) {
+      await this.responder(ctx.autor, ctx.chats, P.textoSimple('Marque ese mensaje como sospechoso: trae texto que parece una instruccion dirigida al bot. Lo ignore y no registre nada. Escribe solo los datos de la operacion.'));
+    }
     if (fallos.includes('presupuesto')) {
       await this.d.almacen.fijarModoSinIa(true, 'tope_presupuesto');
       await this.avisarModoSinIa(ctx.chats);
@@ -939,7 +950,9 @@ export class AgenteTelegram {
       }
 
       if (ctx.sospecha && esEscritura(a.tipo)) {
-        await this.responder(ctx.autor, ctx.chats, P.textoSimple('Marque ese mensaje como sospechoso y no ejecute nada. Reescribelo con tus palabras o usa el comando.'));
+        await this.responder(ctx.autor, ctx.chats, P.textoSimple(ctx.oracionesSospechosas !== undefined && ctx.oracionesSospechosas > 0
+          ? 'Ese mensaje mezcla datos de una operacion con texto que parece una instruccion dirigida al bot; lo marque como sospechoso y no ejecute nada. ¿Que operacion quieres registrar? Escribe solo los datos, o usa el comando.'
+          : 'Marque ese mensaje como sospechoso y no ejecute nada. Reescribelo con tus palabras o usa el comando.'));
         continue;
       }
 

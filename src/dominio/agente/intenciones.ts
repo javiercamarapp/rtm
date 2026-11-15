@@ -409,6 +409,7 @@ export type TipoIntencion = Intencion['tipo'];
 export interface RespuestaExtractor {
   acciones: Intencion[];
   sospecha_inyeccion: boolean;
+  texto_sospechoso?: boolean | undefined;
   baja_certeza: boolean;
 }
 
