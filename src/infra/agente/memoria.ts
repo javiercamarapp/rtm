@@ -19,6 +19,8 @@ import type {
   CatalogoAgente,
   EnviadorTelegram,
   EstadoModoSinIa,
+  EstadoEscritura,
+  ReclamoUpdate,
   EventoAgente,
   MensajeSalida,
   NuevoToken,
@@ -39,7 +41,7 @@ export class AlmacenAgenteMemoria implements AlmacenAgente {
 
   constructor(
     private readonly miembros: readonly Miembro[],
-    private readonly chatsRegistrados: ChatsRegistrados,
+    private chatsRegistrados: ChatsRegistrados,
   ) {}
 
   async reclamarUpdate(updateId: number): Promise<boolean> {
@@ -50,6 +52,83 @@ export class AlmacenAgenteMemoria implements AlmacenAgente {
 
   /** Doble de pruebas: la memoria no lleva reloj de frecuencia; las pruebas lo reemplazan. */
   mensajesRecientes?: (chatId: number, segundos: number) => Promise<number>;
+
+  // ---- frenos de escritura y lease de updates (espejo en memoria de las funciones SQL del carril frenos)
+  /** La simulacion arranca con la escritura ENCENDIDA (las pruebas ejercen las puertas); produccion nace apagada en SQL. */
+  private escritura: EstadoEscritura = { activa: true, desde: null, por: null, motivo: null };
+  readonly cambiosEscritura: Array<{ activa: boolean; por: string }> = [];
+  /** Cuenta de eventos que dispararian la anomalia (la regla real vive en SQL: aqui un umbral equivalente). */
+  umbralAnomalia = 10;
+  async escrituraEstado(): Promise<EstadoEscritura> { return { ...this.escritura }; }
+  async fijarEscritura(activa: boolean, autor: Miembro, motivo: string | null): Promise<boolean> {
+    if (autor.rol !== 'socio') throw new Error('permiso denegado: solo un socio cambia la escritura');
+    const cambio = this.escritura.activa !== activa;
+    if (cambio) {
+      this.escritura = { activa, desde: this.reloj(), por: autor.persona, motivo };
+      this.cambiosEscritura.push({ activa, por: autor.persona });
+    }
+    return cambio;
+  }
+  /** Prueba: el sistema apaga por anomalia (solo puede apagar). */
+  apagarPorAnomalia(motivo: string): void {
+    if (!this.escritura.activa) return;
+    this.escritura = { activa: false, desde: this.reloj(), por: 'sistema', motivo };
+    this.cambiosEscritura.push({ activa: false, por: 'sistema' });
+  }
+  async revisarAnomalia(): Promise<{ apagado: boolean; motivo?: string }> {
+    if (!this.escritura.activa) return { apagado: false };
+    const errores = this.eventos.filter((e) => e.tipo === 'error_escritura').length;
+    if (errores >= this.umbralAnomalia) {
+      this.apagarPorAnomalia(`${errores} errores de escritura`);
+      return { apagado: true, motivo: `${errores} errores de escritura` };
+    }
+    return { apagado: false };
+  }
+  reloj: () => Date = () => new Date(0);
+  private readonly estadoUpdates = new Map<number, { estado: 'reclamado' | 'terminado' | 'fallido' | 'abandonado'; intentos: number; cuerpo: unknown; leaseVencido: boolean; avisado: boolean; recibidoAt: Date }>();
+  /** Prueba: el lease de un update en curso vence (la funcion murio a mitad). */
+  vencerLease(updateId: number): void { const u = this.estadoUpdates.get(updateId); if (u) u.leaseVencido = true; }
+  estadoDeUpdate(updateId: number): string | undefined { return this.estadoUpdates.get(updateId)?.estado; }
+  async reclamarUpdate2(updateId: number, cuerpo: unknown): Promise<ReclamoUpdate> {
+    const u = this.estadoUpdates.get(updateId);
+    if (!u) {
+      this.estadoUpdates.set(updateId, { estado: 'reclamado', intentos: 1, cuerpo, leaseVencido: false, avisado: false, recibidoAt: this.reloj() });
+      this.updates.add(updateId);
+      return 'nuevo';
+    }
+    if (u.estado === 'terminado' || u.estado === 'abandonado') return 'duplicado';
+    if (u.estado === 'reclamado' && !u.leaseVencido) return 'duplicado';
+    if (u.intentos >= 3) { u.estado = 'abandonado'; return 'duplicado'; }
+    u.estado = 'reclamado';
+    u.intentos++;
+    u.leaseVencido = false;
+    return 'reprocesar';
+  }
+  async terminarUpdate(updateId: number, estado: 'terminado' | 'fallido'): Promise<void> {
+    const u = this.estadoUpdates.get(updateId);
+    if (!u) return;
+    u.estado = estado;
+    if (estado === 'terminado') u.cuerpo = null;
+  }
+  async updatesPendientes(limite: number) {
+    return [...this.estadoUpdates.entries()]
+      .filter(([, u]) => u.cuerpo !== null && u.intentos < 3 && (u.estado === 'fallido' || (u.estado === 'reclamado' && u.leaseVencido)))
+      .slice(0, limite)
+      .map(([updateId, u]) => ({ updateId, cuerpo: u.cuerpo, intentos: u.intentos }));
+  }
+  async updatesAbandonados() {
+    const salida: Array<{ updateId: number; recibidoAt: Date }> = [];
+    for (const [updateId, u] of this.estadoUpdates) {
+      if (u.intentos >= 3 && (u.estado === 'fallido' || (u.estado === 'reclamado' && u.leaseVencido))) u.estado = 'abandonado';
+      if (u.estado === 'abandonado' && !u.avisado) { u.avisado = true; salida.push({ updateId, recibidoAt: u.recibidoAt }); }
+    }
+    return salida;
+  }
+  async migrarChat(viejo: number, nuevo: number): Promise<boolean> {
+    if (this.chatsRegistrados.grupoSocios !== viejo) return false;
+    this.chatsRegistrados = { ...this.chatsRegistrados, grupoSocios: nuevo };
+    return true;
+  }
 
   async reclamarMensaje(chatId: number, messageId: number): Promise<boolean> {
     const k = `${chatId}:${messageId}`;

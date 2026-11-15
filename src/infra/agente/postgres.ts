@@ -10,6 +10,9 @@ import type {
   ContextoEjecucion,
   DependenciasDeFolio,
   EstadoModoSinIa,
+  EstadoEscritura,
+  EcoRico,
+  ReclamoUpdate,
   EventoAgente,
   NegocioAgente,
   NuevoToken,
@@ -70,6 +73,29 @@ export class AlmacenAgenteDb implements AlmacenAgente {
   async esperaTomar(chatId: number, telegramUserId: number, ahora: Date) {
     return ((await F(this.sql, 'espera_tomar', [chatId, telegramUserId, ahora.toISOString()], ['bigint', 'bigint', 'timestamptz'])) as { tipo: TipoEspera; payload: unknown } | null) ?? null;
   }
+  // ---- frenos de escritura y robustez del webhook (carril frenos)
+  async escrituraEstado(): Promise<EstadoEscritura> {
+    const j = (await F(this.sql, 'escritura_estado')) as { activa: boolean; desde: string | null; por: string | null; motivo: string | null };
+    return { activa: j.activa === true, desde: j.desde ? new Date(j.desde) : null, por: j.por ?? null, motivo: j.motivo ?? null };
+  }
+  async fijarEscritura(activa: boolean, autor: Miembro, motivo: string | null): Promise<boolean> {
+    const j = (await F(this.sql, 'fijar_escritura', [activa, autor.persona, autor.telegramUserId, motivo], ['boolean', 'text', 'bigint', 'text'])) as { cambio: boolean };
+    return j.cambio === true;
+  }
+  async revisarAnomalia() { return (await F(this.sql, 'revisar_anomalia')) as { apagado: boolean; motivo?: string }; }
+  async reclamarUpdate2(updateId: number, cuerpo: unknown): Promise<ReclamoUpdate> {
+    return (await F(this.sql, 'reclamar_update2', [updateId, JSON.stringify(cuerpo ?? null), 120], ['bigint', 'jsonb', 'int'])) as ReclamoUpdate;
+  }
+  async terminarUpdate(updateId: number, estado: 'terminado' | 'fallido', error?: string) { await F(this.sql, 'terminar_update', [updateId, estado, error ?? null], ['bigint', 'text', 'text']); }
+  async updatesPendientes(limite: number) {
+    const j = ((await F(this.sql, 'updates_pendientes', [limite], ['int'])) as Array<{ update_id: number; cuerpo: unknown; intentos: number }>) ?? [];
+    return j.map((x) => ({ updateId: Number(x.update_id), cuerpo: x.cuerpo, intentos: x.intentos }));
+  }
+  async updatesAbandonados() {
+    const j = ((await F(this.sql, 'updates_abandonados')) as Array<{ update_id: number; recibido_at: string }>) ?? [];
+    return j.map((x) => ({ updateId: Number(x.update_id), recibidoAt: new Date(x.recibido_at) }));
+  }
+  async migrarChat(viejo: number, nuevo: number) { return ((await F(this.sql, 'migrar_chat', [viejo, nuevo], ['bigint', 'bigint'])) as { migrado: boolean }).migrado === true; }
   async guardarEvidencia(e: { chatId: number; mensajeId: number; telegramUserId: number; fileId: string; fileUniqueId: string }) {
     const j = (await F(this.sql, 'evidencia_guardar', [e.chatId, e.mensajeId, e.telegramUserId, e.fileId, e.fileUniqueId], ['bigint', 'bigint', 'bigint', 'text', 'text'])) as { id: number; huella: string };
     return { id: Number(j.id), huella: j.huella };
@@ -165,6 +191,9 @@ export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string)
     telegram_user_id: ctx.autor.telegramUserId,
     ...(ctx.efectoHash ? { efecto_hash: ctx.efectoHash } : {}),
     ...(ctx.tokenBoton ? { token_boton: ctx.tokenBoton } : {}),
+    // Las dos respuestas afirmativas del socio a las preguntas de los frenos (la base las exige para registrar).
+    ...(ctx.permitirDuplicado ? { permitir_duplicado: true } : {}),
+    ...(ctx.confirmoExceso ? { confirmo_exceso: true } : {}),
   };
   const lineasSku = () => a.resoluciones.lineas.map((r, n) => ({ modelo_id: Number(r.modeloId), sabor_id: r.saborId === null ? null : Number(r.saborId), piezas: (i as { lineas: { piezas: number }[] }).lineas[n]!.piezas }));
   switch (i.tipo) {
@@ -242,7 +271,25 @@ function precioDeTexto(t: string): number | null {
 }
 
 type ClasificacionSql = { clasificacion: string; monto_cent: number; socio: string };
-type ResultadoSql = Record<string, unknown> & { folio?: string; repetido?: boolean; eco?: Parameters<typeof eco>[0]; clasificaciones?: ClasificacionSql[] };
+type ResultadoSql = Record<string, unknown> & { folio?: string; repetido?: boolean; eco_rico?: EcoRicoSql; posible_duplicado?: boolean; pregunta_exceso?: boolean; eco?: Parameters<typeof eco>[0]; clasificaciones?: ClasificacionSql[] };
+
+type EcoRicoSql = { cliente?: string; cuenta?: string; proveedor?: string; socio?: string; via?: string; monto_cent?: number; pedidos_aplicados?: Array<{ folio: string; monto_cent: number }>; saldo_antes_cent?: number; saldo_despues_cent?: number; a_favor_cent?: number };
+/** `eco_rico` de la base a tipos de TypeScript: solo cambia la forma, nunca una cifra. */
+export function aEcoRico(e: EcoRicoSql | undefined | null): EcoRico | undefined {
+  if (!e) return undefined;
+  const salida: EcoRico = {};
+  if (e.cliente) salida.cliente = e.cliente;
+  if (e.cuenta) salida.cuenta = e.cuenta;
+  if (e.proveedor) salida.proveedor = e.proveedor;
+  if (e.socio) salida.socio = e.socio;
+  if (e.via) salida.via = e.via;
+  if (typeof e.monto_cent === 'number') salida.montoCent = BigInt(e.monto_cent);
+  if (Array.isArray(e.pedidos_aplicados) && e.pedidos_aplicados.length > 0) salida.pedidosAplicados = e.pedidos_aplicados.map((p) => ({ folio: p.folio, montoCent: BigInt(p.monto_cent) }));
+  if (typeof e.saldo_antes_cent === 'number') salida.saldoAntesCent = BigInt(e.saldo_antes_cent);
+  if (typeof e.saldo_despues_cent === 'number') salida.saldoDespuesCent = BigInt(e.saldo_despues_cent);
+  if (typeof e.a_favor_cent === 'number') salida.aFavorCent = BigInt(e.a_favor_cent);
+  return salida;
+}
 
 const aClasificaciones = (c: ClasificacionSql[] | undefined): ClasificacionReal[] => (c ?? []).map((x) => ({ clasificacion: x.clasificacion, montoCent: x.monto_cent, socio: x.socio }));
 const nombreClasificacion = (c: string): string => (c === 'capital' ? 'capital' : 'reembolso');
@@ -305,6 +352,27 @@ function efectoDeSimulacion(e: Record<string, unknown>): CifraServidor[] {
   return salida;
 }
 
+type DuplicadoSql = { folio_previo: string | null; autor_previo: string; tipo: string; hace_min: number; resumen?: EcoRicoSql };
+type ExcesoSql = { monto_cent: number; debe_cent: number; cliente?: string };
+
+/** Pregunta (no tope) cuando la base detecta el mismo movimiento hace menos de 10 minutos. Las cifras son las de la base. */
+export function preguntaDuplicado(d: DuplicadoSql): ResultadoNegocio {
+  const cifras: CifraServidor[] = [];
+  if (d.folio_previo) cifras.push({ tipo: 'folio', etiqueta: 'Registrado antes', folio: d.folio_previo });
+  cifras.push({ tipo: 'piezas', etiqueta: 'Minutos desde entonces', piezas: d.hace_min });
+  if (typeof d.resumen?.monto_cent === 'number') cifras.push({ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(d.resumen.monto_cent) });
+  if (d.resumen?.cliente) cifras.push({ tipo: 'texto', etiqueta: 'Cliente', texto: d.resumen.cliente });
+  return { tipo: 'pregunta', motivo: 'posible_duplicado', clave: 'duplicado', texto: `Ya se registro un movimiento igual por ${d.autor_previo === 'angelo' ? 'Angelo' : 'Javier'}. ¿Es otro distinto?`, cifras };
+}
+
+/** Pregunta (no tope) cuando un cobro excede lo que debe el cliente: el socio confirma que el resto es un anticipo. */
+export function preguntaExceso(x: ExcesoSql): ResultadoNegocio {
+  const cifras: CifraServidor[] = [];
+  if (x.cliente) cifras.push({ tipo: 'texto', etiqueta: 'Cliente', texto: x.cliente });
+  cifras.push({ tipo: 'pesos', etiqueta: 'Cobro dicho', centavos: BigInt(x.monto_cent) }, { tipo: 'pesos', etiqueta: 'Lo que debe el cliente', centavos: BigInt(x.debe_cent) });
+  return { tipo: 'pregunta', motivo: 'cobro_mayor_a_lo_que_debe', clave: 'exceso', texto: 'El cobro es mayor que lo que debe el cliente. ¿Es un anticipo a su favor?', cifras };
+}
+
 /** Escribe con las funciones de negocio de siempre (sin atajos): gasto, aportacion y toma de Omar. Lo demas se rechaza con un motivo claro. */
 export class NegocioAgenteDb implements NegocioAgente {
   constructor(private readonly sql: Sql) {}
@@ -315,12 +383,15 @@ export class NegocioAgenteDb implements NegocioAgente {
       const prep = i.tipo === 'toma_omar' || i.tipo === 'devolucion' || i.tipo === 'paquete_perdido' ? null : preparar(a, ctx, hoyDe(ctx.ahora));
       if (prep) {
         const j = (await F(this.sql, prep.hub, [ctx.claveIdem, prep.tipo, JSON.stringify(prep.args)], ['text', 'text', 'jsonb'])) as ResultadoSql;
+        // Frenos de la base: no escribio nada y pregunta (duplicado u cobro mayor a lo que debe el cliente). Sin tope: la respuesta afirmativa del socio lo registra.
+        if (j.posible_duplicado === true) return preguntaDuplicado(j as unknown as DuplicadoSql);
+        if (j.pregunta_exceso === true) return preguntaExceso(j as unknown as ExcesoSql);
         const ls = lineasDeResultado(j);
         // El monto que el socio dicto (ya validado contra su mensaje) se muestra aunque la funcion de negocio no lo devuelva.
         if (!ls.some((l) => l.etiqueta === 'Monto') && typeof prep.args.monto_cent === 'number') ls.unshift({ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(prep.args.monto_cent) });
         const adv = i.tipo === 'pedido_menudeo' ? ['Cuando el proveedor lo envie marcalo con /enviado; los datos de entrega se capturan en la web, nunca por Telegram.'] : [];
         if (i.tipo === 'pedido_menudeo') ls.push({ tipo: 'texto', etiqueta: 'Fecha comprometida de pago', texto: i.fecha_compromiso ? formatearFechaPago(i.fecha_compromiso, i.hora_compromiso ?? null) : 'sin fecha comprometida (queda como alerta)' });
-        return { tipo: 'ejecutado', folio: j.folio ?? '', titulo: prep.tipo === 'compra_recepcion' ? tituloRecepcion(j, prep.titulo) : prep.titulo, lineas: ls, ...eco(j.eco), advertencias: adv, ejecutadoEn: ctx.ahora, repetido: j.repetido === true, datos: j };
+        return { tipo: 'ejecutado', folio: j.folio ?? '', titulo: prep.tipo === 'compra_recepcion' ? tituloRecepcion(j, prep.titulo) : prep.titulo, lineas: ls, ...eco(j.eco), advertencias: adv, ejecutadoEn: ctx.ahora, repetido: j.repetido === true, datos: j, ...(aEcoRico(j.eco_rico) ? { eco: aEcoRico(j.eco_rico)! } : {}) };
       }
       if (i.tipo === 'gasto') {
         const j = (await F(this.sql, 'ejecutar', [ctx.claveIdem, 'gasto', JSON.stringify({ pagado_por: i.pagado_por, monto_cent: i.monto_centavos, categoria: CATEGORIA_GASTO[i.gasto] ?? 'otro', nota: i.descripcion, origen: i.fuente_cita, autor: ctx.autor.persona })], ['text', 'text', 'jsonb'])) as { folio: string; eco?: Parameters<typeof eco>[0]; repetido?: boolean };
@@ -366,6 +437,7 @@ export class NegocioAgenteDb implements NegocioAgente {
       return { tipo: 'rechazado', codigo: 'no_soportado', texto: NO_SOPORTADO };
     } catch (e) {
       const cod = (e as { code?: string }).code;
+      if (cod === 'P0463') return { tipo: 'rechazado', codigo: 'solo_lectura', texto: (e as Error).message };
       if (cod === 'P0460' || cod === 'P0422' || cod === 'P0423' || esErrorDeNegocio(e)) return { tipo: 'rechazado', codigo: cod ?? 'error', texto: (e as Error).message };
       throw e;
     }
@@ -442,8 +514,9 @@ export class NegocioAgenteDb implements NegocioAgente {
   async deshacer(e: { folio: string; autor: Miembro; claveIdem: string }): Promise<ResultadoDeshacer> {
     try {
       // El solicitante viaja verificado (id de Telegram): la base lo usa como actor, aplica la politica de quien puede deshacer y deja `deshecho_por`.
-      await F(this.sql, 'deshacer', [e.claveIdem, e.folio, e.autor.persona, e.autor.telegramUserId], ['text', 'text', 'text', 'bigint']);
-      return { tipo: 'deshecho', folioContra: `Contramovimiento de ${e.folio}`, titulo: `Se deshizo ${e.folio}`, lineas: [], repetido: false };
+      const j = (await F(this.sql, 'deshacer', [e.claveIdem, e.folio, e.autor.persona, e.autor.telegramUserId], ['text', 'text', 'text', 'bigint'])) as { revertido?: EcoRicoSql } | null;
+      const eco = aEcoRico(j?.revertido);
+      return { tipo: 'deshecho', folioContra: `Contramovimiento de ${e.folio}`, titulo: `Se deshizo ${e.folio}`, lineas: [], repetido: false, ...(eco ? { eco } : {}) };
     } catch (err) {
       return { tipo: 'rechazado', codigo: (err as { code?: string }).code ?? 'error', texto: (err as Error).message };
     }

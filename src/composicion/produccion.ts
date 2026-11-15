@@ -145,6 +145,8 @@ async function propioDelLatido(d: DepsProduccion): Promise<void> {
     const agente = crearAgenteProduccion({ ...d, telegram: tg });
     try { await agente.caducarTomasVencidas(); } catch { /* una toma que no caduca hoy caduca en la siguiente pasada */ }
     // Recordatorios de pago de menudeo al GRUPO de socios: solo con el interruptor `telegram_envio` encendido; cada aviso se reclama en la base antes de enviarse (idempotente).
+    // Barrido de updates reclamados y no terminados (lease vencido) o fallidos: con `telegram_envio` apagado no hace nada; avisa una sola vez de los abandonados.
+    try { await agente.barrerUpdates(); } catch { /* el siguiente latido lo reintenta */ }
     try { await agente.enviarRecordatoriosMenudeo(); } catch { /* el siguiente latido lo reintenta: un aviso no reclamado sigue pendiente */ }
   }
   const tokens = new AlmacenTokensDb(d.sql);

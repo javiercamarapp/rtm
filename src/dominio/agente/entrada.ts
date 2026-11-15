@@ -3,13 +3,14 @@ import { normalizar } from '../catalogo/normalizar';
 import { valoresDeTexto } from './cifras';
 import type { FuenteMensaje, Persona } from './tipos';
 
-export const MAX_CARACTERES = 2000;
+/** Tope TECNICO (el webhook ya rechaza mas de 10,000): un mensaje largo NO se recorta en silencio; el agente lo procesa por partes y avisa. */
+export const MAX_CARACTERES = 10_000;
 
 // Controles C0/C1, ancho cero y separadores de linea/parrafo Unicode (se escriben con escapes para no depender del editor).
 // eslint-disable-next-line no-control-regex
 const CONTROLES = new RegExp('[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f-\\u009f\\u200b-\\u200f\\u2028-\\u202e\\u2060-\\u2064\\ufeff]', 'g');
 
-/** NFKC, sin caracteres de control ni de ancho cero, espacios colapsados, maximo 2,000 caracteres. */
+/** NFKC, sin caracteres de control ni de ancho cero, espacios colapsados, hasta el tope tecnico de MAX_CARACTERES. */
 export function sanitizar(texto: string): string {
   const limpio = texto
     .normalize('NFKC')

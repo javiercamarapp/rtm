@@ -7,6 +7,7 @@ import type { Intencion } from '@/dominio/agente/intenciones';
 import type { CifraServidor, Miembro, Persona } from '@/dominio/agente/tipos';
 import type { Reversa } from '@/dominio/agente/catalogo_intenciones';
 import { formatearFechaPago, type OpcionFecha } from '@/dominio/agente/fecha_pago';
+import { lineasEco } from './plantillas_frenos';
 import type { Igualacion, RecordatorioMenudeo, RespuestaConsulta, ResultadoEjecutado, ResultadoSimulacion } from './puertos';
 
 export interface MensajeListo {
@@ -28,6 +29,7 @@ export function ecoEjecutado(res: ResultadoEjecutado, autor: Miembro, confirmado
   const r = new RegistroCifras();
   const quien = confirmadoPor !== null && confirmadoPor !== autor.persona ? `${nombrePersona(autor.persona)}, confirmado por ${nombrePersona(confirmadoPor)}` : nombrePersona(autor.persona);
   const partes: string[] = [`Registrado ${r.folio(res.folio)} por ${quien}`, r.servidor(res.titulo), ...listar(r, res.lineas)];
+  if (res.eco) partes.push('Aplicado a:', ...lineasEco(r, res.eco));
   if (res.comprobacion.length > 0) partes.push('Comprobacion:', ...listar(r, res.comprobacion));
   if (res.saldos.length > 0) partes.push('Saldo resultante:', ...listar(r, res.saldos));
   for (const a of res.advertencias) partes.push(`Aviso: ${r.servidor(a)}`);
