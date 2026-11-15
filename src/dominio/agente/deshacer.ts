@@ -52,3 +52,15 @@ export function sumaNeta(hechos: readonly HechoAplicado[]): { piezas: number; ce
   }
   return { piezas, centavos };
 }
+
+/**
+ * El pago a proveedor hecho por un socio con dinero propio (pagado_por angelo o javier, sin cliente) NO se deshace por Telegram: SQL lo guarda sin referencia anulable
+ * (agente.hecho sin ref_tipo) y `agente.deshacer` responde que se corrija desde el software. Decision (19-nov): el eco no ofrece el boton y lo dice; la correccion es un
+ * movimiento inverso o la pantalla de pagos a proveedor. El pago de la sociedad y el de un cliente directo al proveedor SI tienen reversa directa.
+ */
+export function seDeshaceEnTelegram(i: { tipo: string; pagado_por?: string; cliente_texto?: string | null }): boolean {
+  if (i.tipo !== 'pago_proveedor') return true;
+  return i.cliente_texto !== null && i.cliente_texto !== undefined ? true : i.pagado_por === 'sociedad';
+}
+
+export const AVISO_SIN_DESHACER = 'Este pago NO se deshace por Telegram: si hay un error, se corrige desde el software con un movimiento inverso.';

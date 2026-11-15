@@ -8,7 +8,7 @@
 //   7. permisos por rol, resolucion de alias (pregunta ante duda), ejecucion idempotente, eco.
 import { cifrasDeMonto, cifrasDePiezas, cifrasSinProcedencia, esMontoAmbiguo, parsearPrecio, valoresDeTexto, type CifraExtraida } from '@/dominio/agente/cifras';
 import { parsearComando } from '@/dominio/agente/comandos';
-import { VENTANA_DESHACER_MIN, evaluarDeshacer } from '@/dominio/agente/deshacer';
+import { AVISO_SIN_DESHACER, VENTANA_DESHACER_MIN, evaluarDeshacer, seDeshaceEnTelegram } from '@/dominio/agente/deshacer';
 import { debeProcesarConIa, declaraCapitalExpreso, redactarContactos, sanitizar } from '@/dominio/agente/entrada';
 import { analizarTexto } from '@/dominio/agente/inyeccion';
 import { CATALOGO_INTENCIONES, confirmacionDe } from '@/dominio/agente/catalogo_intenciones';
@@ -1245,6 +1245,12 @@ export class AgenteTelegram {
 
   /** El eco de un registro: el mensaje (el eco normal o el mensaje rico de la conversacion) con el boton Deshacer de 10 minutos. */
   private async publicarEco(estado: EstadoAccion, r: ResultadoEjecutado, grupo: ChatsRegistrados, mensaje: MensajeListo): Promise<void> {
+    if (!seDeshaceEnTelegram(estado.intencion as { tipo: string; pagado_por?: string; cliente_texto?: string | null })) {
+      // Pago a proveedor con dinero propio de un socio: sin boton y con el aviso en lugar de "Deshacer disponible".
+      const lineas = mensaje.texto.split('\n').filter((l) => !l.startsWith('Deshacer disponible'));
+      await this.com.aGrupo(grupo, { ...mensaje, texto: [...lineas, AVISO_SIN_DESHACER].join('\n') });
+      return;
+    }
     const boton = await this.boton1('Deshacer', 'deshacer', ['socio'], grupo.grupoSocios, this.mas(this.cfg.ventanaDeshacerMin * 60_000), null, {
       folio: r.folio,
       ejecutadoEn: r.ejecutadoEn.toISOString(),
