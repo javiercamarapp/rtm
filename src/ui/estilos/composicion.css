@@ -1,0 +1,30 @@
+/* Composicion animada (barra apilada + leyenda) y relleno de tarjetas que comparten fila con una mas alta. Solo tokens; sin bases flex ni estilos en linea. */
+.rtm-comp { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-around; gap: 16px; min-height: 0; }
+.rtm-comp-grupo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.rtm-comp-grupo > .rtm-a1-subtitulo { margin: 0; }
+.rtm-comp-barra { display: block; border-radius: var(--rtm-r-pildora); background: var(--rtm-line); overflow: hidden; }
+.rtm-comp-seg { fill: var(--rtm-ink); transform-box: fill-box; transform-origin: left center; }
+.rtm-comp-seg[data-tono='2'] { opacity: 0.62; } .rtm-comp-seg[data-tono='3'] { opacity: 0.38; } .rtm-comp-seg[data-tono='4'] { opacity: 0.2; }
+.rtm-comp-leyenda { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.rtm-comp-leyenda li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; font-size: var(--rtm-t-cuerpo); }
+.rtm-comp-marca { width: 10px; height: 10px; border-radius: 2px; background: var(--rtm-ink); align-self: center; }
+.rtm-comp-marca[data-tono='2'] { opacity: 0.62; } .rtm-comp-marca[data-tono='3'] { opacity: 0.38; } .rtm-comp-marca[data-tono='4'] { opacity: 0.2; }
+.rtm-comp-nombre { min-width: 0; overflow-wrap: anywhere; font-weight: var(--rtm-peso-medio); display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; }
+.rtm-comp-nombre small { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); font-weight: var(--rtm-peso-normal); }
+.rtm-comp-pct { color: var(--rtm-ink-3); font-size: var(--rtm-t-pequeno); text-align: right; min-width: 3.2ch; }
+.rtm-comp-texto { font-weight: var(--rtm-peso-fuerte); text-align: right; white-space: nowrap; }
+
+@keyframes rtm-comp-crece { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-movimiento='reduced']):not([data-movimiento='off']) .rtm-comp-seg { animation: rtm-comp-crece 700ms var(--rtm-mov-curva) both; }
+  :root:not([data-movimiento='reduced']):not([data-movimiento='off']) .rtm-comp-seg:nth-child(2) { animation-delay: 90ms; }
+  :root:not([data-movimiento='reduced']):not([data-movimiento='off']) .rtm-comp-seg:nth-child(3) { animation-delay: 180ms; }
+  :root:not([data-movimiento='reduced']):not([data-movimiento='off']) .rtm-comp-seg:nth-child(4) { animation-delay: 270ms; }
+}
+
+/* ---- Relleno sistemico: en una rejilla que estira (por omision) el contenido de la tarjeta corta ocupa y reparte el alto de su vecina. alinear="inicio" se reserva para formularios y tablas largas junto a tarjetas cortas. ---- */
+.rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-g, .rtm-grafica, .rtm-a1-cuerpo, .rtm-comp) { flex: 1 1 auto; }
+.rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-g, .rtm-grafica) { display: flex; flex-direction: column; justify-content: center; }
+.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-a1-cuerpo { justify-content: space-around; }
+.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-a1-sub { margin-top: auto; }
+.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-a1-estado-vacio { flex: 1 1 auto; display: flex; align-items: center; }

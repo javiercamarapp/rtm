@@ -54,7 +54,7 @@ export default async function PaginaEnTrayecto() {
       />
       <FilaRatios etiqueta="Razones del trayecto" items={[{ etiqueta: 'Sin guía registrada', valor: String(sinGuia) }, { etiqueta: 'Piezas por orden', valor: lista.length ? String(Math.round(piezas / lista.length)) : null }, { etiqueta: 'Costo por pieza', valor: piezas > 0 ? formatearMoneda(valor / BigInt(piezas)) : null }, { etiqueta: 'Días de gracia', valor: `${umbral.trayecto_dias_extra} d` }, { etiqueta: 'Perdidos o dañados por resolver', valor: String(incAbiertos) }]} />
 
-      <Rejilla dividir="8-4" alinear="inicio">
+      <Rejilla dividir="8-4">
         <Tarjeta titulo="Días en camino contra el plazo" descripcion="La marca es el plazo del proveedor más los días de gracia">
           {lista.length ? (
             <BarList

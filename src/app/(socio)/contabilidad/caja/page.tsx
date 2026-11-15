@@ -56,7 +56,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           {semanas.length >= 2 && semanas.some((x) => x.salidas_cent > 0n) ? <ColumnasPeriodo titulo="Salidas por semana" descripcion={`Salidas de fondos en ${semanas.length} semanas.`} unidad="Pesos" procedencia="observado" pie={pie} alto={140} datos={semanas.map((x) => ({ id: x.semana, etiqueta: semanaEtiqueta(x.semana), valor: Number(x.salidas_cent) / 100, texto: m(x.salidas_cent) ?? '' }))} /> : <p className="rtm-a2-nota">Sin salidas de fondos en el periodo, o menos de dos semanas de movimiento: no se dibuja la serie.</p>}
         </Tarjeta>
       </Rejilla>
-      <Rejilla dividir="8-4" alinear="inicio">
+      <Rejilla dividir="8-4">
         <Tarjeta plana className="rtm-a2-tabla" titulo="Por lugar o persona" descripcion="Cada cuenta de fondos con su saldo al corte">
           <DataTable
             etiqueta="Saldo de caja por lugar o persona" clave={(x) => x.codigo} filas={cuentas} densidad="densa" plana

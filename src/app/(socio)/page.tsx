@@ -11,6 +11,7 @@ import { URGENCIA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
 import { destinoAviso } from '@/dominio/notificaciones/tipos';
 import { aNumero, contarPor, porcentaje, sumarPorSemana, ultimasSemanas } from '@/dominio/tablero/agregados';
 import { Aviso, ChipEstado, Segmentado } from '@/ui/componentes/controles';
+import { Composicion, type GrupoComposicion } from '@/ui/componentes/composicion';
 import { BarList, ListaHallazgos } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
@@ -96,6 +97,29 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   for (const x of conCobertura) { const a = sumaCob.get(x.marca) ?? { n: 0, d: 0 }; sumaCob.set(x.marca, { n: a.n + 1, d: a.d + (x.cobertura_dias ?? 0) }); }
   const coberturaMarca = [...sumaCob.entries()].map(([marca, v]) => [marca, v.d / v.n] as const).sort((a, b) => b[1] - a[1]).slice(0, 4);
 
+  // Rellenos animados: solo con cifras que la pagina ya tiene (cobranza e inventario).
+  const modelosInv = inv?.modelos ?? [];
+  const nEstados = (...e: string[]) => modelosInv.filter((m) => m.estado !== null && e.includes(m.estado)).length;
+  const gruposInventario: GrupoComposicion[] = [
+    { id: 'estado-modelos', titulo: 'Modelos por estado de cobertura', segmentos: [
+      { id: 'pedir', etiqueta: 'Pedir ya o a la brevedad', valor: nEstados('urge', 'brevedad'), texto: String(nEstados('urge', 'brevedad')) },
+      { id: 'siguiente', etiqueta: 'En el siguiente pedido', valor: nEstados('siguiente'), texto: String(nEstados('siguiente')) },
+      { id: 'bien', etiqueta: 'Cobertura buena o excelente', valor: nEstados('buena', 'excelente'), texto: String(nEstados('buena', 'excelente')) },
+      { id: 'otros', etiqueta: 'Sobrestock, sin movimiento o sin historia', valor: nEstados('sobrestock', 'sin_movimiento', 'sin_historia'), texto: String(nEstados('sobrestock', 'sin_movimiento', 'sin_historia')) },
+    ] },
+    ...(inv ? [{ id: 'piezas-estado', titulo: 'Piezas en bodega: libres y apartadas', segmentos: [
+      { id: 'libres', etiqueta: 'Libres', valor: Math.max(0, inv.totales.piezas - inv.totales.reservado), texto: formatearPiezas(Math.max(0, inv.totales.piezas - inv.totales.reservado)) },
+      { id: 'apartadas', etiqueta: 'Apartadas para pedidos', valor: inv.totales.reservado, texto: formatearPiezas(inv.totales.reservado) },
+    ] }] : []),
+  ];
+  const gruposCobranza: GrupoComposicion[] = cxc && cxc.total_cent > 0n ? [
+    { id: 'vigencia', titulo: 'Saldo por cobrar: vigente y vencido', segmentos: [
+      { id: 'vigente', etiqueta: 'Vigente', valor: aNumero(cxc.total_cent - cxc.vencido_cent), texto: formatearMoneda(cxc.total_cent - cxc.vencido_cent) },
+      { id: 'vencido', etiqueta: 'Vencido', valor: aNumero(cxc.vencido_cent), texto: formatearMoneda(cxc.vencido_cent) },
+    ] },
+    { id: 'pedidos-estado', titulo: 'Pedidos del libro por estado', segmentos: contarPor(pedidos ?? [], (p) => p.estado).slice(0, 4).map((c) => ({ id: c.clave, etiqueta: ESTADO_PEDIDO[c.clave as keyof typeof ESTADO_PEDIDO].texto, valor: c.n, texto: String(c.n) })) },
+  ] : [];
+
   const vencidoPct = cxc ? porcentaje(aNumero(cxc.vencido_cent), aNumero(cxc.total_cent)) : null;
   const asuntos = turno.items.length;
   const subtitulo = hayPedidos
@@ -170,7 +194,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
         );
       })()}
 
-      <Rejilla dividir="8-4" alinear="inicio">
+      <Rejilla dividir="8-4">
         <Tarjeta titulo="Ventas por semana" descripcion={`Lo facturado en los pedidos enviados (cobrado + por cobrar), últimas ${n} semanas; la semana en curso va con trama`}>
           {hayPedidos ? (
             <ColumnasPeriodo
@@ -193,10 +217,11 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
               items={(['0_7', '8_14', '15_30', 'mas_30'] as const).map((k) => ({ id: k, etiqueta: CUBETA[k]!, texto: formatearMoneda(cxc.antiguedad_cent[k]), pct: porcentaje(aNumero(cxc.antiguedad_cent[k]), aNumero(cxc.total_cent)), tono: k === 'mas_30' ? ('malo' as const) : k === '15_30' ? ('atencion' as const) : undefined }))}
             />
           ) : <p className="rtm-a1-estado-vacio">{cxc ? 'Nada por cobrar: no hay saldos abiertos.' : 'Sin dato de cobranza.'}</p>}
+          {gruposCobranza.length > 0 && <Composicion etiquetaAria="Composición de la cobranza" grupos={gruposCobranza} />}
         </Tarjeta>
       </Rejilla>
 
-      <Rejilla dividir="6-6" alinear="inicio">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Por reponer primero" descripcion="Cobertura en días contra el tiempo de entrega" acciones={<Link href="/inventario">Inventario</Link>}>
           {reponer.length >= 1 && inv ? (
             <CoberturaDias
@@ -211,6 +236,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
               <BarList etiquetaAria="Cobertura media por marca" items={coberturaMarca.map(([marca, dias]) => ({ id: marca, etiqueta: marca, texto: textoDias(dias), pct: porcentaje(dias, coberturaMarca[0]![1]) }))} />
             </div>
           )}
+          {inv && modelosInv.length > 0 && <Composicion etiquetaAria="Composición del inventario" grupos={gruposInventario} />}
         </Tarjeta>
         <div className="rtm-a1-pila rtm-pila-llena">
         <Tarjeta titulo="Mayores saldos" descripcion="Cliente, saldo y lo vencido" acciones={<Link href="/clientes">Clientes</Link>}>

@@ -82,7 +82,7 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
         ]}
       />
 
-      <Rejilla dividir="6-6" alinear="inicio">
+      <Rejilla dividir="6-6">
         <Tarjeta titulo="Concentración de ventas" descripcion="Ventas facturadas por cliente y porcentaje acumulado">
           {conPedidos.length >= 4 ? (
             <Pareto
