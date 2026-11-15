@@ -1,5 +1,7 @@
 -- pgTAP lane telegram-agente (segunda entrega): agente.ejecutar_ext, agente.simular, agente.consulta_ext, deshacer ampliado, actor del canal telegram. Datos sinteticos.
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 select agente.registrar_miembro(5000001, 'angelo');
 select agente.registrar_miembro(5000002, 'javier');

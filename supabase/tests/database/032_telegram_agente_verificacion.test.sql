@@ -1,6 +1,8 @@
 -- pgTAP lane telegram-agente (verificacion independiente): clasificacion REAL en vista previa y resultado, candado del segundo socio en SQL (lote historico),
 -- capital propio, resolver_toma verificado, privilegios por funcion y origen sin prefijo duplicado. Datos sinteticos.
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 select set_config('rtm.canal', 'importacion', true);
 select agente.registrar_miembro(5000001, 'angelo');

@@ -2,6 +2,8 @@
 -- Solo el socio de menudeo (Angelo por omision) mete pedidos a costo, avisa pagos y reprograma; el otro socio confirma o rechaza. La fecha la fija el codigo, nunca la IA.
 -- El comprobante se guarda solo como huella (el bot no lo lee). Ninguna funcion nueva se concede a authenticated. Datos sinteticos; sin envios reales.
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 select set_config('rtm.canal', 'importacion', true);
 select agente.registrar_miembro(5800001, 'angelo');
