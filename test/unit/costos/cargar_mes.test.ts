@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { calcularCargoMes, declaradoDeArgs, instantaneaDeFilas, parsearArgs, planificar, totales, ceilDiv, argsRegistrar, ejecutar, parsearCuota } from '../../../scripts/costos/cargar-mes.mjs';
+import { calcularCargoMes, declaradoDeArgs, instantaneaDeFilas, parsearArgs, planificar, ceilDiv, argsRegistrar, ejecutar, parsearCuota } from '../../../scripts/costos/cargar-mes.mjs';
 import { calcularCargo } from '@/dominio/costos/registro';
 import { ceilDiv as ceilDivDominio } from '@/dominio/dinero/techo';
 
