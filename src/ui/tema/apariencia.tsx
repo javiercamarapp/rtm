@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useRef, useState, useSyncExternalStore } from 'react';
+import { useColision } from '../componentes/colision';
 import { aplicarModoMovimiento, type ModoMovimiento } from '../movimiento';
 import { IconoAjustes } from '../iconos';
 
@@ -21,6 +22,8 @@ const leerMovimiento = (): ModoMovimiento => {
 /** Popover de apariencia: acento (neutro | lila) y movimiento (completo | reducido | sin). */
 export function Apariencia() {
   const [abierto, setAbierto] = useState(false);
+  const panel = useRef<HTMLDivElement>(null);
+  useColision(abierto, panel, 'der');
   const acento = useSyncExternalStore(suscribir, leerAcento, () => 'neutro' as Acento);
   const movimiento = useSyncExternalStore(suscribir, leerMovimiento, () => 'full' as ModoMovimiento);
 
@@ -39,7 +42,7 @@ export function Apariencia() {
         <IconoAjustes />
       </button>
       {abierto && (
-        <div id="rtm-apariencia" className="rtm-popover" role="dialog" aria-label="Apariencia">
+        <div id="rtm-apariencia" ref={panel} className="rtm-popover" data-flota role="dialog" aria-label="Apariencia">
           <fieldset className="rtm-grupo">
             <legend>Acento</legend>
             <div className="rtm-segmentos">

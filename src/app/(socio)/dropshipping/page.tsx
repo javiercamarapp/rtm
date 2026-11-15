@@ -5,7 +5,7 @@ import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { DimensionDesglose, FilaDesglose, OrigenSurtido } from '@/dominio/dropshipping/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { BarraFiltros, Segmentado, Chip } from '@/ui/componentes/controles';
-import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
+import { FiltroPeriodo } from '@/ui/componentes/filtro-periodo';
 import { Composicion, type GrupoComposicion } from '@/ui/componentes/composicion';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
@@ -54,6 +54,13 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
   const porPagarPedidos = dsCol?.por_pagar_cent ?? 0n;
   const difPuente = deudaLibro - porPagarPedidos;
   const semanas = porSemana.slice(-12);
+  // Pedidos a costo ya registrados (sin filtro de periodo): los 5 mas recientes y cuanto de lo cobrado esta pagado o pendiente. Solo cifras del libro.
+  const ultimosCosto = [...menudeo.filas].sort((a, b) => (a.fecha_neg < b.fecha_neg ? 1 : a.fecha_neg > b.fecha_neg ? -1 : b.pedido_id - a.pedido_id)).slice(0, 5);
+  const tCosto = menudeo.totales;
+  const gruposCosto: GrupoComposicion = { id: 'costo-pagado', titulo: `Cobro de los ${tCosto.pedidos} ${tCosto.pedidos === 1 ? 'pedido' : 'pedidos'} a costo`, segmentos: [
+    { id: 'pagado', etiqueta: 'Pagado', valor: tCosto.pedidos > 0 ? aNum(tCosto.pagado_cent) : null, texto: tCosto.pedidos > 0 ? formatearMoneda(tCosto.pagado_cent) : 'Sin dato' },
+    { id: 'pendiente', etiqueta: 'Pendiente de pago', valor: tCosto.pedidos > 0 ? aNum(tCosto.pendiente_cent) : null, texto: tCosto.pedidos > 0 ? formatearMoneda(tCosto.pendiente_cent) : 'Sin dato' },
+  ] };
   // Relleno animado bajo la grafica semanal: solo cifras que el resumen ya trae.
   const gruposComp: GrupoComposicion[] = [
     { id: 'venta-origen', titulo: 'Venta por origen del surtido', segmentos: [{ id: 'ds', etiqueta: ORIGEN_SURTIDO.dropshipping, valor: dsCol ? aNum(dsCol.venta_cent) : null, texto: dsCol ? formatearMoneda(dsCol.venta_cent) : 'Sin dato' }, { id: 'inv', etiqueta: ORIGEN_SURTIDO.inventario_merida, valor: invCol ? aNum(invCol.venta_cent) : null, texto: invCol ? formatearMoneda(invCol.venta_cent) : 'Sin dato' }] },
@@ -72,11 +79,7 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
       <PestanasDs activa="resumen" sinFolio={r.sin_folio_externo} filtros={(
       <BarraFiltros etiquetaAria="Periodo y origen" extras={desde || hasta || origen ? <Chip href="/dropshipping">Quitar filtros</Chip> : undefined}>
         <form className="rtm-ds-filtros-linea" method="get" aria-label="Periodo">
-          <FiltrosPlegables etiqueta="Periodo" titulo="Filtrar por periodo (desde y hasta)" activos={(desde ? 1 : 0) + (hasta ? 1 : 0)}>
-            <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
-            <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
-            <button type="submit" className="rtm-boton rtm-boton-primario">Aplicar</button>
-          </FiltrosPlegables>
+          <FiltroPeriodo desde={desde} hasta={hasta} />
         </form>
         <Segmentado etiquetaAria="Origen del surtido" tamano="chico" opciones={[{ valor: '', etiqueta: 'Todos', href: enlace({ origen: '' }), activa: !origen }, { valor: 'dropshipping', etiqueta: 'Dropshipping', href: enlace({ origen: 'dropshipping' }), activa: origen === 'dropshipping' }, { valor: 'inventario_merida', etiqueta: 'Inventario en Mérida', href: enlace({ origen: 'inventario_merida' }), activa: origen === 'inventario_merida' }]} />
       </BarraFiltros>
@@ -128,6 +131,27 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
             {pm.por_proveedor.length ? <BarList etiquetaAria="Piezas por proveedor" items={pm.por_proveedor.map((p) => ({ id: p.proveedor, etiqueta: p.proveedor, texto: formatearPiezas(p.piezas), pct: pm.total > 0 ? (p.piezas / pm.total) * 100 : null, nota: `${p.pedidos} ${p.pedidos === 1 ? 'pedido' : 'pedidos'}` }))} /> : <p className="rtm-a1-estado-vacio">Sin pedidos de dropshipping todavía.</p>}
             <p className="rtm-a1-subtitulo">Por socio (a costo)</p>
             {pm.por_socio.length ? <BarList etiquetaAria="Piezas a costo por socio" items={pm.por_socio.map((s) => ({ id: s.socio, etiqueta: s.socio, texto: formatearPiezas(s.piezas), pct: pm.a_costo_socios > 0 ? (s.piezas / pm.a_costo_socios) * 100 : null, nota: `${s.pedidos} ${s.pedidos === 1 ? 'pedido' : 'pedidos'} · cobrado ${formatearMoneda(s.costo_cent)} (solo costo)` }))} /> : <p className="rtm-a1-estado-vacio">Ningún socio ha pedido a costo todavía.</p>}
+            {pm.por_socio.length > 0 && (
+              <>
+                <p className="rtm-a1-subtitulo">Pagado y pendiente de los pedidos a costo</p>
+                <Composicion etiquetaAria="Pagado y pendiente de los pedidos a costo" grupos={[gruposCosto]} />
+                <p className="rtm-a1-subtitulo">Últimos pedidos a costo</p>
+                <DataTable
+                  etiqueta="Últimos pedidos a costo"
+                  densidad="densa" plana
+                  clave={(f) => f.pedido_id}
+                  filas={ultimosCosto}
+                  vacio={{ titulo: 'Sin pedidos a costo', texto: 'Cuando un socio pida a costo aparecerán aquí.' }}
+                  columnas={[
+                    { id: 'f', titulo: 'Folio', ancho: 'm', prioridadMovil: 'titulo', celda: (f) => <Link className="rtm-mono" href={`/dropshipping/pedidos/${f.pedido_id}`}>{f.folio}</Link> },
+                    { id: 'z', titulo: 'Piezas', numerica: true, ancho: 's', prioridadMovil: 'normal', celda: (f) => formatearPiezas(f.piezas) },
+                    { id: 'c', titulo: 'Costo', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (f) => formatearMoneda(f.costo_cent) },
+                    { id: 'g', titulo: 'Pagado', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (f) => formatearMoneda(f.pagado_cent) },
+                    { id: 'p', titulo: 'Pendiente', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (f) => formatearMoneda(f.pendiente_cent) },
+                  ]}
+                />
+              </>
+            )}
           </div>
         </Tarjeta>
       </Rejilla>
