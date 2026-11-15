@@ -71,13 +71,13 @@
    horizontal con barra oculta y desvanecido a la derecha; los desplegables pasan a position: fixed para no recortarse con el desplazamiento. */
 .rtm-fc-barra > .rtm-fc-extra, .rtm-fc-barra > .rtm-ba-barra-filtros { flex: none; }
 @media (max-width: 767px) {
-  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form) {
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-st-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form) {
     overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain;
     }
   /* Desvanecido a la derecha: pseudo-elemento pegajoso (una mascara recortaria tambien los desplegables). */
-  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form)::after { content: ''; flex: none; position: sticky; right: 0; align-self: stretch; width: 24px; margin-inline-start: -24px; pointer-events: none; background: linear-gradient(to right, transparent, var(--rtm-chrome)); }
-  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form)::-webkit-scrollbar { display: none; }
-  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form) > * { flex-shrink: 0; }
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-st-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form)::after { content: ''; flex: none; position: sticky; right: 0; align-self: stretch; width: 24px; margin-inline-start: -24px; pointer-events: none; background: linear-gradient(to right, transparent, var(--rtm-chrome)); }
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-st-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form)::-webkit-scrollbar { display: none; }
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-st-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form) > * { flex-shrink: 0; }
   :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-kr-barra-filtros) :is(.rtm-fc-panel, .rtm-bb-menu-panel, .rtm-ba-fp-panel, .rtm-kr-marcas fieldset) {
     position: fixed; top: auto; left: 8px; right: 8px; width: auto; max-width: none; margin-top: 6px;
   }

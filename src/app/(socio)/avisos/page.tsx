@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notificacionesDeSocio } from '@/composicion/inventario';
+import { escritorNotificacionesDeSocio, notificacionesDeSocio } from '@/composicion/inventario';
 import { etiquetaFechaHora } from '@/dominio/formato';
 import { destinoAviso } from '@/dominio/notificaciones/tipos';
+import { filtroDeAvisos, motivoResuelto } from '@/dominio/notificaciones/vigencia';
 import { contarPor, porcentaje } from '@/dominio/tablero/agregados';
 import { BarraFiltros, Chip, ChipEstado } from '@/ui/componentes/controles';
 import { BarList, ListaHallazgos, Paginador } from '@/ui/componentes/datos';
@@ -22,10 +23,13 @@ const TIPOS: Record<string, string> = { pedido: 'Pedidos', compra: 'Compras', co
 
 export default async function PaginaAvisos({ searchParams }: { searchParams: Promise<{ pestana?: string; pagina?: string; sev?: string }> }) {
   const sp = await searchParams;
-  const pestana = sp.pestana === 'sin_leer' ? 'sin_leer' : 'todas';
+  const pestana = filtroDeAvisos(sp.pestana);
   const pagina = Number(sp.pagina) > 0 ? Math.floor(Number(sp.pagina)) : 0;
   const sev = sp.sev === 'C' || sp.sev === 'I' || sp.sev === 'F' ? sp.sev : '';
+  // Antes de leer: cierra lo que ya no tiene causa (idempotente). Si el barrido falla la bandeja igual filtra por la condicion vigente.
+  try { await (await escritorNotificacionesDeSocio()).depurar(); } catch { /* la lectura no depende del barrido */ }
   const lista = await (await notificacionesDeSocio()).mis(pestana, pagina);
+  const resumen = lista.resumen;
   const todas = lista.notificaciones;
   const filas = sev ? todas.filter((a) => a.severidad === sev) : todas;
   const enlace = (p: string, n = 0, s = sev) => {
@@ -34,6 +38,9 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
   };
   const por = (s: string) => todas.filter((a) => a.severidad === s).length;
   const accion = todas.filter((a) => a.requiere_accion && a.estado === 'abierta');
+  const nAccion = resumen?.piden_accion ?? accion.length;
+  const nCriticas = resumen?.criticas ?? por('C');
+  const nImportantes = resumen?.importantes ?? por('I');
   const porTipo = contarPor(todas, (a) => (a.entidad_tipo && TIPOS[a.entidad_tipo] ? a.entidad_tipo : 'otros'));
   const porEstado = contarPor(todas, (a) => a.estado);
   const sinTelegram = todas.filter((a) => a.telegram_no_salio).length;
@@ -42,23 +49,24 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
     <Pagina ancho="tablero">
       <EncabezadoPagina
         eyebrow={`Avisos · ${etiquetaHoy()}`}
-        titulo={todas.length === 0 ? 'No hay avisos' : `Tienes ${lista.sin_leer} ${lista.sin_leer === 1 ? 'aviso sin leer' : 'avisos sin leer'}`}
-        descripcion="La campana es la fuente de verdad: Telegram solo la espeja." ayudaResumen="Leído y resuelto" ayuda="Leído y resuelto son cosas distintas: un aviso con acción sigue pendiente hasta que la condición deja de existir."
+        titulo={pestana === 'resueltos' ? 'Avisos resueltos recientes' : todas.length === 0 ? 'No hay avisos pendientes' : `Tienes ${lista.sin_leer} ${lista.sin_leer === 1 ? 'aviso sin leer' : 'avisos sin leer'}`}
+        descripcion="Solo lo que sigue vigente. La campana es la fuente de verdad: Telegram solo la espeja." ayudaResumen="Cuándo desaparece un aviso" ayuda="Un aviso sigue mientras su causa exista. Cuando la causa desaparece se resuelve solo, con su motivo, y pasa a Resueltos recientes; nada se borra. Los informativos se retiran al leerse o a los 7 días."
       />
       <BarraFiltros etiquetaAria="Filtros de avisos" extras={<>{sev && <Chip href={enlace(pestana, 0, '')}>Quitar severidad</Chip>}
         <FilaRatios etiqueta="Razones de los avisos" items={[{ etiqueta: 'Informativas', valor: String(por('F')) }, { etiqueta: 'Leídas', valor: todas.length ? `${(((todas.length - todas.filter((a) => !a.leida).length) / todas.length) * 100).toFixed(0)} %` : null }, { etiqueta: 'Repetidos', valor: String(todas.filter((a) => a.conteo > 1).length) }, { etiqueta: 'Telegram no salió', valor: String(sinTelegram) }]} /></>}>
-        <Chip href={enlace('todas')} activo={pestana === 'todas'}>Todas</Chip>
+        <Chip href={enlace('todas')} activo={pestana === 'todas'}>{`Vigentes ${resumen?.vigentes ?? ''}`.trim()}</Chip>
         <Chip href={enlace('sin_leer')} activo={pestana === 'sin_leer'}>{`Sin leer ${lista.sin_leer}`}</Chip>
-        {(['C', 'I', 'F'] as const).map((s) => <Chip key={s} tono={TONO[s]} href={enlace(pestana, 0, sev === s ? '' : s)} activo={sev === s}>{`${SEVERIDAD[s]!.texto} ${por(s)}`}</Chip>)}
+        <Chip href={enlace('resueltos')} activo={pestana === 'resueltos'}>{`Resueltos recientes ${resumen?.resueltos_recientes ?? ''}`.trim()}</Chip>
+        {(['C', 'I', 'F'] as const).map((s) => <Chip key={s} tono={TONO[s]} href={enlace(pestana, 0, sev === s ? '' : s)} activo={sev === s}>{`${SEVERIDAD[s]!.texto} ${s === 'C' ? nCriticas : s === 'I' ? nImportantes : por(s)}`}</Chip>)}
       </BarraFiltros>
       <KpiLinea
         compacta
         etiquetaAria="Avisos por severidad"
         celdas={[
-          { id: 'sinleer', etiqueta: 'Sin leer', valor: String(lista.sin_leer), categoria: 1, nota: `${todas.length} en esta lista` },
-          { id: 'criticas', etiqueta: 'Críticas', valor: String(por('C')), categoria: 4, nota: por('C') ? 'Atiéndelas primero' : 'Ninguna crítica' },
-          { id: 'importantes', etiqueta: 'Importantes', valor: String(por('I')), categoria: 6 },
-          { id: 'accion', etiqueta: 'Piden una acción', valor: String(accion.length), categoria: 3, nota: 'Siguen pendientes hasta que se resuelvan' },
+          { id: 'sinleer', etiqueta: 'Sin leer', valor: String(lista.sin_leer), categoria: 1, nota: `${todas.length} en esta página` },
+          { id: 'criticas', etiqueta: 'Críticas', valor: String(nCriticas), categoria: 4, nota: nCriticas ? 'Atiéndelas primero' : 'Ninguna crítica' },
+          { id: 'importantes', etiqueta: 'Importantes', valor: String(nImportantes), categoria: 6 },
+          { id: 'accion', etiqueta: 'Piden una acción', valor: String(nAccion), categoria: 3, nota: 'Siguen mientras exista su causa' },
         ]}
       />
 
@@ -85,7 +93,7 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
         <DataTable
           etiqueta="Avisos" densidad="densa" plana pegajosa primeraFija interactiva={{ busqueda: 'Buscar aviso', exportar: 'avisos' }}
           clave={(a) => a.id} filas={filas}
-          vacio={{ titulo: pestana === 'sin_leer' ? 'No tienes avisos sin leer' : 'Sin avisos', texto: 'Los avisos aparecen cuando una operación necesita atención: una diferencia de recepción, un paquete por empacar, un pago sin identificar, un conteo con diferencia...' }}
+          vacio={{ titulo: pestana === 'sin_leer' ? 'No tienes avisos sin leer' : pestana === 'resueltos' ? 'Nada resuelto en los últimos días' : 'Sin avisos pendientes', texto: 'Los avisos aparecen cuando una operación necesita atención: una diferencia de recepción, un paquete por empacar, un pago sin identificar, un conteo con diferencia...' }}
           columnas={[
             { id: 's', titulo: 'Severidad', prioridadMovil: 'principal', ancho: 'm', celda: (a) => <ChipEstado tono={TONO[a.severidad]}>{SEVERIDAD[a.severidad]!.texto}</ChipEstado> },
             { id: 't', titulo: 'Aviso', prioridadMovil: 'titulo', ancho: 'xl', celda: (a) => {
@@ -93,8 +101,8 @@ export default async function PaginaAvisos({ searchParams }: { searchParams: Pro
               return <>{d ? <Link href={d}>{a.titulo}</Link> : a.titulo}<br /><span className="rtm-nota">{a.nt}{a.conteo > 1 ? ` · ${a.conteo} veces` : ''}{a.requiere_accion && a.botones.length > 0 ? ` · ${a.botones.join(' / ')}` : ''}{a.telegram_no_salio ? ' · Telegram no salió' : ''}</span></>;
             } },
             { id: 'h', titulo: 'Cuándo', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (a) => etiquetaFechaHora(a.creado_at) },
-            { id: 'e', titulo: 'Estado', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (a) => ESTADOS[a.estado] ?? a.estado },
-            { id: 'a', titulo: 'Acción', prioridadMovil: 'normal', ancho: 'm', celda: (a) => (a.leida ? <span className="rtm-nota">Leído</span> : <BotonLeido avisoId={a.id} />) },
+            { id: 'e', titulo: pestana === 'resueltos' ? 'Cómo se resolvió' : 'Estado', prioridadMovil: 'normal', ancho: 'm', secundaria: true, celda: (a) => (pestana === 'resueltos' ? <>{motivoResuelto(a.estado, a.resuelto_motivo)}<br /><span className="rtm-nota">{a.resuelto_at ? etiquetaFechaHora(a.resuelto_at) : ''}</span></> : ESTADOS[a.estado] ?? a.estado) },
+            { id: 'a', titulo: 'Acción', prioridadMovil: 'normal', ancho: 'm', celda: (a) => (a.estado !== 'abierta' ? <span className="rtm-nota">Cerrado</span> : a.leida ? <span className="rtm-nota">Leído</span> : <BotonLeido avisoId={a.id} />) },
           ]}
         />
         <Paginador mostrados={filas.length} anterior={pagina > 0 ? enlace(pestana, pagina - 1) : undefined} siguiente={lista.hay_mas ? enlace(pestana, pagina + 1) : undefined} />

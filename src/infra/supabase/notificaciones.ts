@@ -1,5 +1,5 @@
 // Implementa los puertos de notificaciones con las funciones api.* (sesion del usuario, llave publica; nunca la de servicio).
-import type { EscritorNotificaciones, LectorNotificaciones } from '@/aplicacion/notificaciones/puertos';
+import type { EscritorNotificaciones, LectorNotificaciones, ResultadoDepuracion } from '@/aplicacion/notificaciones/puertos';
 import { centavosABigint } from '@/dominio/operacion/json';
 import { crearClienteServidor } from './cliente-servidor';
 
@@ -23,5 +23,6 @@ export function escritorNotificacionesSupabase(): EscritorNotificaciones {
   return {
     async marcarLeida(avisoId) { await llamar('marcar_leida', { p_aviso: avisoId }); },
     async marcarTodasLeidas() { await llamar('marcar_todas_leidas'); },
+    depurar: () => llamar<ResultadoDepuracion>('depurar_avisos'),
   };
 }

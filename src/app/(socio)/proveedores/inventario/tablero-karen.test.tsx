@@ -68,7 +68,7 @@ describe('TableroKaren', () => {
     await clic(porTestid(m.cont, 'modelo-1'));
     const panel = porTestid(m.cont, 'panel-modelo')!;
     expect(panel.hasAttribute('open')).toBe(true);
-    expect(panel.textContent).toContain('Sandía');
+    expect(panel.textContent).toContain('SANDÍA');
     expect(panel.textContent).toContain('Agotado');
     expect(panel.textContent).toContain('Vendes 10 pz');
     expect(panel.textContent).toContain('Recomendación');
