@@ -6,6 +6,8 @@ create function pg_temp.fk(n int) returns text language sql as $$ select 'K-' ||
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('cos.javier@example.test', 'socio', 'Javier', true);
 insert into auth.users (id, instance_id, aud, role, email) values ('88888888-8888-8888-8888-888888888881', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'cos.javier@example.test');
 select set_config('request.jwt.claim.sub', '88888888-8888-8888-8888-888888888881', true);
+-- Esta prueba cubre el camino reembolsable; la declaracion de capital del dueno (025) se apaga dentro de la transaccion.
+delete from costos.parametro where clave = 'costos_como_capital';
 
 select is(costos.techo(23587.5::numeric * 1000000, 1000000, 100), 23600::numeric, 'techo: 235.875 pesos sube al peso entero');
 select is(costos.techo(-23587.5::numeric * 1000000, 1000000, 100), -23500::numeric, 'techo hacia +infinito en negativos');
