@@ -103,7 +103,7 @@ export async function optimizar(sharp, bytes) {
 /**
  * Corre el proceso. `fetchFn`, `sharp` y `dormir` se inyectan para las pruebas; `log` nunca recibe la direccion de la fuente.
  */
-export async function ejecutar({ base, fetchFn = fetch, sharp, dormir = (ms) => new Promise((r) => setTimeout(r, ms)), dirFotos, archivoMapa, seco = false, limite = Infinity, log = console.log }) {
+export async function ejecutar({ base, fetchFn = fetch, sharp, dormir = (ms) => new Promise((r) => setTimeout(r, ms)), dirFotos, archivoMapa, seco = false, limite = Infinity, log = console.log, modelosPrecargados = null, escribirMapa = true }) {
   const origen = new URL(base);
   let ultima = 0;
   let peticiones = 0;
@@ -128,11 +128,15 @@ export async function ejecutar({ base, fetchFn = fetch, sharp, dormir = (ms) => 
     return robotsPorOrigen.get(u.origin)(u.pathname + u.search);
   };
 
-  const rutaCatalogo = new URL('/products.json?limit=250', origen).toString();
-  if (!(await permite(rutaCatalogo))) { log('robots.txt no permite leer el catalogo: no se baja nada.'); return { estado: 'robots', descargadas: 0, peticiones }; }
-  const r = await pedir(rutaCatalogo, 'application/json');
-  if (r.status !== 200) { log(`El catalogo respondio ${r.status}: se detiene (sin reintentos).`); return { estado: `http_${r.status}`, descargadas: 0, peticiones }; }
-  const modelos = extraerModelos(await r.json());
+  let modelos;
+  if (modelosPrecargados) modelos = modelosPrecargados; // el vigilante ya leyo el catalogo en su pasada: no se pide otra vez
+  else {
+    const rutaCatalogo = new URL('/products.json?limit=250', origen).toString();
+    if (!(await permite(rutaCatalogo))) { log('robots.txt no permite leer el catalogo: no se baja nada.'); return { estado: 'robots', descargadas: 0, peticiones }; }
+    const r = await pedir(rutaCatalogo, 'application/json');
+    if (r.status !== 200) { log(`El catalogo respondio ${r.status}: se detiene (sin reintentos).`); return { estado: `http_${r.status}`, descargadas: 0, peticiones }; }
+    modelos = extraerModelos(await r.json());
+  }
   log(`Modelos con imagen: ${modelos.length}.`);
   if (seco) return { estado: 'seco', descargadas: 0, peticiones, modelos: modelos.length };
 
@@ -141,6 +145,7 @@ export async function ejecutar({ base, fetchFn = fetch, sharp, dormir = (ms) => 
   for (const f of readdirSync(dirFotos)) if (f.endsWith('.webp')) mapa[f.slice(0, -5)] = `/proveedores/karen/${f}`;
   let descargadas = 0;
   const fallos = [];
+  const nuevas = [];
   for (const m of modelos) {
     if (mapa[m.clave]) continue; // ya esta: una sola vez
     if (descargadas >= limite) break;
@@ -152,16 +157,17 @@ export async function ejecutar({ base, fetchFn = fetch, sharp, dormir = (ms) => 
       const salida = await optimizar(sharp, Buffer.from(await img.arrayBuffer()));
       writeFileSync(join(dirFotos, `${m.clave}.webp`), salida);
       mapa[m.clave] = `/proveedores/karen/${m.clave}.webp`;
+      nuevas.push(m.clave);
       descargadas += 1;
     } catch (e) {
       fallos.push(`${m.clave}: ${e instanceof Error ? e.message.replace(/https?:\/\/\S+/g, '[direccion]') : 'error'}`);
     }
   }
-  writeFileSync(archivoMapa, renderMapa(mapa));
+  if (escribirMapa) writeFileSync(archivoMapa, renderMapa(mapa));
   log(`Descargadas ${descargadas}; en el mapa ${Object.keys(mapa).length}; fallos ${fallos.length}. Peticiones hechas: ${peticiones}.`);
   for (const f of fallos) log(`  - ${f}`);
   log('REVISION MANUAL OBLIGATORIA antes de confirmar los archivos: abrir cada .webp y comprobar que no muestra precios, telefonos, direcciones ni rostros.');
-  return { estado: 'ok', descargadas, peticiones, fallos };
+  return { estado: 'ok', descargadas, peticiones, fallos, nuevas };
 }
 
 function leerVariable(archivo) {

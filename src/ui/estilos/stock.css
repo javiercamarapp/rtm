@@ -1,0 +1,46 @@
+/* Stock disponible de proveedores (/proveedores/stock). Blanco y negro con tokens; sin tablas; animacion apagada con movimiento reducido. */
+.rtm-st-pestanas { display: flex; gap: var(--rtm-e-2); }
+.rtm-st-pestanas a { display: inline-flex; align-items: center; height: var(--rtm-ctl-alto-chico); padding: 0 var(--rtm-e-4); border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); color: var(--rtm-ink); text-decoration: none; font-size: var(--rtm-t-cuerpo); background: var(--rtm-surface); }
+.rtm-st-pestanas a[aria-current='page'] { background: var(--rtm-ink); color: var(--rtm-panel); border-color: var(--rtm-ink); }
+
+.rtm-st-kpis { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--rtm-e-2); }
+.rtm-st-kpi { display: grid; gap: 2px; padding: var(--rtm-e-2) var(--rtm-e-4); border: 1px solid var(--rtm-borde-tarjeta); border-radius: var(--rtm-r-3); background: var(--rtm-surface); min-width: 120px; }
+.rtm-st-kpi span { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
+.rtm-st-kpi b { font-size: var(--rtm-t-seccion); font-weight: 600; font-variant-numeric: tabular-nums; }
+.rtm-st-visto { margin: 0; align-self: center; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
+.rtm-st-visto[data-tono='atencion'] { color: var(--rtm-warn); }
+
+.rtm-st-grafica { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--rtm-e-2); }
+.rtm-st-grafica li { display: grid; grid-template-columns: 9rem 1fr 4.5rem; align-items: center; gap: var(--rtm-e-3); font-size: var(--rtm-t-pequeno); }
+.rtm-st-g-nombre { color: var(--rtm-ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtm-st-grafica b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.rtm-st-barra { display: block; height: 6px; border-radius: 3px; background: var(--rtm-line-2); overflow: hidden; }
+.rtm-st-barra > svg { display: block; width: 100%; height: 100%; }
+.rtm-st-barra-r { fill: var(--rtm-ink); transform-box: fill-box; transform-origin: left; animation: rtm-st-crece var(--rtm-mov-barra) var(--rtm-mov-curva) both; }
+@keyframes rtm-st-crece { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .rtm-st-barra-r { animation: none; } }
+:root[data-movimiento='off'] .rtm-st-barra-r, :root[data-movimiento='reduced'] .rtm-st-barra-r { animation: none; }
+
+.rtm-st-filtros { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-e-2); padding: var(--rtm-e-2) 0; overflow-x: auto; }
+.rtm-st-buscar { flex: 1 1 auto; width: 220px; min-width: 160px; max-width: 360px; }
+.rtm-st-buscar .rtm-campo, .rtm-st-campo .rtm-campo { width: 100%; }
+.rtm-st-campo { flex: 0 0 auto; }
+.rtm-st-check { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: var(--rtm-t-cuerpo); }
+.rtm-st-resumen { margin-left: auto; white-space: nowrap; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
+
+.rtm-st-marca { display: grid; gap: var(--rtm-e-2); }
+.rtm-st-marca-titulo { margin: 0; display: flex; align-items: baseline; gap: var(--rtm-e-3); font-size: var(--rtm-t-seccion); font-weight: 600; letter-spacing: var(--rtm-trk-seccion); }
+.rtm-st-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--rtm-e-2); }
+.rtm-st-fila { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto auto auto auto auto; align-items: center; gap: var(--rtm-e-3); padding: var(--rtm-e-2) var(--rtm-e-3); border: 1px solid var(--rtm-borde-tarjeta); border-radius: var(--rtm-r-3); background: var(--rtm-surface); }
+.rtm-st-fila .rtm-kr-foto { width: 4.5rem; }
+.rtm-st-texto { display: grid; gap: 2px; min-width: 0; }
+.rtm-st-texto strong { font-size: var(--rtm-t-cuerpo); font-weight: 600; }
+.rtm-st-sabores, .rtm-st-propio, .rtm-st-cambio { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
+.rtm-st-sabores b, .rtm-st-propio b { color: var(--rtm-ink); font-variant-numeric: tabular-nums; }
+.rtm-st-cambio { white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .rtm-st-fila { grid-template-columns: 4.5rem minmax(0, 1fr); }
+  .rtm-st-fila > :nth-child(n+3) { grid-column: 2; }
+  .rtm-st-grafica li { grid-template-columns: 6rem 1fr 3.5rem; }
+}

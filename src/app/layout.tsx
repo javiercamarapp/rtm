@@ -22,6 +22,7 @@ import '@/ui/estilos/modelos-sabores.css';
 import '@/ui/estilos/renglones-tabla.css';
 import '@/ui/estilos/filtros.css';
 import '@/ui/estilos/karen.css';
+import '@/ui/estilos/stock.css';
 import '@/ui/estilos/hoja.css';
 import '@/ui/estilos/mayusculas.css';
 

@@ -3,7 +3,7 @@
 // Usa la funcion oficial catalogo.asignar_marca_modelo (migracion 20261115800000): idempotente por clave, auditada, solo reasigna modelos que siguen en 'Sin marca'.
 // Debe correrse DESPUES de aplicar esa migracion. No toca precios, costos, kardex ni asientos.
 //
-//   node scripts/catalogo/atar-marcas.mjs --verificar              solo lectura: estado actual de cada modelo del mapa y lo que se haria.
+//   node scripts/catalogo/atar-marcas.mjs --verificar              solo lectura: estado actual de cada modelo del mapa y lo que se haria (incluye las 8 marcas Waka confirmadas por el dueno el 14-nov).
 //   node scripts/catalogo/atar-marcas.mjs --aplicar                aplica los 'exacto' en UNA transaccion; si la huella de lo inmutable cambia hace ROLLBACK. Segunda corrida: sin cambios.
 //   node scripts/catalogo/atar-marcas.mjs --sql-salida <archivo>   no se conecta: escribe el mismo SQL (para `supabase db query --linked -f <archivo>`).
 // Conexion: RTM_DB_URL o la base local de `supabase status`. La URL nunca se imprime. Actua como el primer socio activo de seguridad.usuario (claim local de la transaccion).
@@ -51,7 +51,7 @@ async function verificar(c) {
     if (r.nombre_canonico !== m.nombre) { console.log(`${m.id}: el nombre cambio (${r.nombre_canonico}); revisar el mapa`); process.exitCode = 1; continue; }
     const accion = m.confianza !== 'exacto' ? `queda por confirmar (propuesta ${m.marca})` : r.marca === m.marca ? 'ya esta atado' : r.marca === 'Sin marca' ? `PENDIENTE: pasaria a ${m.marca}` : `tiene otra marca (${r.marca}): no se toca`;
     if (m.confianza === 'exacto' && r.marca === 'Sin marca') pendientes++;
-    console.log(`${m.nombre} [${m.confianza}]: hoy ${r.marca}; ${accion}`);
+    console.log(`${m.nombre} [${m.confirmado_por ? 'confirmado' : m.confianza}]: hoy ${r.marca}; ${accion}`);
   }
   console.log(pendientes === 0 ? 'VERIFICACION OK: nada pendiente.' : `VERIFICACION OK: ${pendientes} modelo(s) listo(s) para --aplicar.`);
 }

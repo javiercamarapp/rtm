@@ -1,5 +1,8 @@
 # Marcas y fotos por confirmar (14-nov)
 
+**Actualizacion 14-nov (dueno):** los 8 nombres sueltos Optimus, Burst, Blade, Smash Go, Slim, Icon, Elite y Go quedan CONFIRMADOS como marca WAKA (diccionario de alias en `scripts/catalogo/alias-waka.json` y migracion `20261116100000_alias_waka_modelos.sql`). `atar-marcas.mjs --verificar` ya los lista como confirmados; el `--aplicar` lo corre el dueno. Siguen por confirmar solo Box Pro 15 y Box Pro Max (IPLAY). Pendiente aparte: el diccionario dice Waka Optimus = 80K, pero el catalogo y la tienda dicen 100K; ese alias no se siembra.
+
+
 Lista de preguntas para el dueno. Nada de esto se aplico a produccion sin tu respuesta: las marcas "exacto" las ata `scripts/catalogo/atar-marcas.mjs` (despues de aplicar la migracion 20261115800000); las "probable" estan aqui con mi propuesta. Responde "si" por modelo o corrige la marca y se agregan al mapa `scripts/catalogo/marcas-modelos.json` como exactas.
 
 ## A. Marcas propuestas (hoy "Sin marca")
@@ -11,14 +14,14 @@ Lista de preguntas para el dueno. Nada de esto se aplico a produccion sin tu res
 | Snowwolf (147) | Snowwolf | exacto (se ata con el script) | El catalogo del proveedor lo lista como 'Snowwolf 8,000' con vendor Snowwolf; dameunhit.app lo asigna a la marca Snowwolf. |
 | X-Box 50k (138) | IPLAY | exacto (se ata con el script) | X-Box es la linea de iPlay: el catalogo del proveedor trae 'iPlay X-Box Pro Max 50,000' con vendor IPlay y dameunhit.app lo agrupa en la categoria iPlay. |
 | PA30000 (136) | Waka | exacto (se ata con el script) | PA#### es la clave de la linea Waka SoPro (resenas publicas de 'WAKA SoPro PA10000'); el catalogo del proveedor trae 'Waka Pro 30,000' con vendor WAKA. |
-| Optimus (128) | Waka | probable: confirmar | Existe 'Waka Optimus 100,000' en el proveedor y en el catalogo (id 76); no se encontro otra marca con un modelo Optimus. Falta que el dueno confirme que 'Optimus' suelto es ese. |
-| Burst (130) | Waka | probable: confirmar | Hay Waka Burst 36K, pero tambien IPLAY Burst 45K y Fasta Burst: 'Burst' solo es ambiguo. |
-| Blade (131) | Waka | probable: confirmar | Waka Blade 33K existe (id 85); 'Blade' suelto no trae marca. |
-| Smash Go (133) | Waka | probable: confirmar | Waka Smash es una linea publica de Waka (wakavaping.com); 'Smash Go' no aparece con ese nombre exacto en ningun catalogo. |
-| Slim (134) | Waka | probable: confirmar | Waka Slim 12K existe (id 93); 'Slim' suelto no trae marca. |
-| Icon (135) | Waka | probable: confirmar | Waka Icon 50K existe (id 77); 'Icon' suelto no trae marca. |
-| Elite (137) | Waka | probable: confirmar | Waka Elite 40K existe (id 80); 'Elite' suelto no trae marca. |
-| Go (142) | Waka | probable: confirmar | Waka Go 10K existe (id 95); 'Go' suelto no trae marca. |
+| Optimus (128) | Waka | CONFIRMADO por el dueno (14-nov) | Existe 'Waka Optimus 100,000' en el proveedor y en el catalogo (id 76); no se encontro otra marca con un modelo Optimus. Falta que el dueno confirme que 'Optimus' suelto es ese. |
+| Burst (130) | Waka | CONFIRMADO por el dueno (14-nov) | Hay Waka Burst 36K, pero tambien IPLAY Burst 45K y Fasta Burst: 'Burst' solo es ambiguo. |
+| Blade (131) | Waka | CONFIRMADO por el dueno (14-nov) | Waka Blade 33K existe (id 85); 'Blade' suelto no trae marca. |
+| Smash Go (133) | Waka | CONFIRMADO por el dueno (14-nov) | Waka Smash es una linea publica de Waka (wakavaping.com); 'Smash Go' no aparece con ese nombre exacto en ningun catalogo. |
+| Slim (134) | Waka | CONFIRMADO por el dueno (14-nov) | Waka Slim 12K existe (id 93); 'Slim' suelto no trae marca. |
+| Icon (135) | Waka | CONFIRMADO por el dueno (14-nov) | Waka Icon 50K existe (id 77); 'Icon' suelto no trae marca. |
+| Elite (137) | Waka | CONFIRMADO por el dueno (14-nov) | Waka Elite 40K existe (id 80); 'Elite' suelto no trae marca. |
+| Go (142) | Waka | CONFIRMADO por el dueno (14-nov) | Waka Go 10K existe (id 95); 'Go' suelto no trae marca. |
 | Box Pro 15 (139) | IPLAY | probable: confirmar | Parece iPlay X-Box Pro 15K (existe 'IPLAY Box Pro 15K', id 98): posible duplicado. |
 | Box Pro Max (140) | IPLAY | probable: confirmar | Parece iPlay X-Box Pro Max 50K (existe 'IPLAY Box Pro Max 50K', id 82): posible duplicado. |
 
