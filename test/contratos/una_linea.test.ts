@@ -84,3 +84,41 @@ describe('barras de filtros: una sola linea', () => {
     expect(css).toMatch(/overflow-x:\s*auto;[^}]*scrollbar-width:\s*none/);
   });
 });
+
+// Contrato (14-nov, pedido del dueno, "sube eso a una linea para compactar"): pestanas y filtros comparten renglon; la tira de KPI y las razones son bajas.
+describe('barras compactas', () => {
+  const controles = readFileSync(join(ESTILOS, 'controles.css'), 'utf8');
+  const premium = readFileSync(join(ESTILOS, 'premium.css'), 'utf8');
+  it('las pestanas con filtros laterales van en un solo renglon y solo se apilan en telefono', () => {
+    const linea = reglas.find((r) => r.selector === '.rtm-pestanas-linea')!;
+    expect(linea.cuerpo).toMatch(/display:\s*flex/);
+    expect(linea.cuerpo).not.toMatch(/flex-wrap:\s*wrap/);
+    expect(controles).toMatch(/@media \(max-width: 767px\) \{\s*\.rtm-pestanas-linea \{ flex-direction: column; \}/);
+  });
+  it('el componente Pestanas acepta `lateral` y lo monta junto a la tira', () => {
+    const fuente = readFileSync(join(process.cwd(), 'src', 'ui', 'componentes', 'pestanas.tsx'), 'utf8');
+    expect(fuente).toMatch(/lateral\?: ReactNode/);
+    expect(fuente).toMatch(/rtm-pestanas-linea/);
+  });
+  it('Dropshipping pone el periodo y el origen en la linea de las pestanas', () => {
+    const base = join(process.cwd(), 'src', 'app', '(socio)', 'dropshipping');
+    for (const f of ['page.tsx', 'pedidos/page.tsx', 'utilidad/page.tsx', 'pagos/page.tsx']) {
+      expect(readFileSync(join(base, f), 'utf8'), f).toMatch(/<PestanasDs [^\n]*filtros=\{/);
+    }
+  });
+  it('las pestanas miden 32 px (44 en tactil), los chips de filtro 24 px y la celda de KPI usa relleno vertical de 8 px', () => {
+    expect(premium).toMatch(/\.rtm-pestanas a \{[^}]*height: 32px/);
+    expect(premium).toMatch(/@media \(max-width: 900px\), \(pointer: coarse\) \{ \.rtm-pestanas a \{ height: 44px; \} \}/);
+    expect(controles).toMatch(/\.rtm-barra-filtros-v2 \.rtm-chip-v2 \{ height: var\(--rtm-h-chip\)/);
+    expect(premium).toMatch(/\.rtm-kpi-celda \{[^}]*padding: 8px var\(--rtm-pad-tarjeta\)/);
+  });
+  it('la tira de KPI compacta es de un renglon y las razones dentro de una barra de filtros no se parten', () => {
+    expect(controles).toMatch(/\.rtm-kpi-linea\[data-compacta\] > \.rtm-kpi-celda \{[^}]*flex-direction: row[^}]*flex-wrap: nowrap/);
+    expect(controles).toMatch(/\.rtm-barra-filtros-v2 \.rtm-ratios \{ flex-wrap: nowrap/);
+  });
+  it('Avisos usa la tira compacta y las razones van junto a los filtros', () => {
+    const f = readFileSync(join(process.cwd(), 'src', 'app', '(socio)', 'avisos', 'page.tsx'), 'utf8');
+    expect(f).toMatch(/<KpiLinea\s+compacta/);
+    expect(f).toMatch(/extras=\{<>[\s\S]*<FilaRatios[\s\S]*<\/BarraFiltros>/);
+  });
+});

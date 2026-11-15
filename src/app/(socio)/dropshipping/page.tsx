@@ -69,7 +69,7 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
         descripcion="Dropshipping: el proveedor envía de su stock al cliente y nada entra a la bodega de Mérida. Cada cifra se explica."
         acciones={<Link className="rtm-boton rtm-boton-primario" href="/dropshipping/nuevo">Nuevo pedido</Link>}
       />
-      <PestanasDs activa="resumen" sinFolio={r.sin_folio_externo} />
+      <PestanasDs activa="resumen" sinFolio={r.sin_folio_externo} filtros={(
       <BarraFiltros etiquetaAria="Periodo y origen" extras={desde || hasta || origen ? <Chip href="/dropshipping">Quitar filtros</Chip> : undefined}>
         <form className="rtm-ds-filtros-linea" method="get" aria-label="Periodo">
           <FiltrosPlegables etiqueta="Periodo" titulo="Filtrar por periodo (desde y hasta)" activos={(desde ? 1 : 0) + (hasta ? 1 : 0)}>
@@ -80,6 +80,7 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
         </form>
         <Segmentado etiquetaAria="Origen del surtido" tamano="chico" opciones={[{ valor: '', etiqueta: 'Todos', href: enlace({ origen: '' }), activa: !origen }, { valor: 'dropshipping', etiqueta: 'Dropshipping', href: enlace({ origen: 'dropshipping' }), activa: origen === 'dropshipping' }, { valor: 'inventario_merida', etiqueta: 'Inventario en Mérida', href: enlace({ origen: 'inventario_merida' }), activa: origen === 'inventario_merida' }]} />
       </BarraFiltros>
+      )} />
 
       <KpiLinea
         etiquetaAria="Indicadores de dropshipping"

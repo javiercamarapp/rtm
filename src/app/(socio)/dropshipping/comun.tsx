@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pestanas } from '@/ui/componentes/controles';
 import '@/ui/estilos/dropshipping.css';
 import type { OrigenSurtido } from '@/dominio/dropshipping/tipos';
@@ -12,7 +13,7 @@ export const FUENTE_PAGO: Record<string, string> = {
 export type PestanaDs = 'resumen' | 'pedidos' | 'nuevo' | 'pagos' | 'por-cobrar' | 'utilidad';
 
 /** Pestañas de la sección Dropshipping (máximo 6). */
-export function PestanasDs({ activa, sinFolio }: { activa: PestanaDs; sinFolio?: number }) {
+export function PestanasDs({ activa, sinFolio, filtros }: { activa: PestanaDs; sinFolio?: number; filtros?: ReactNode }) {
   const items: { id: PestanaDs; etiqueta: string; href: string; contador?: number }[] = [
     { id: 'resumen', etiqueta: 'Resumen', href: '/dropshipping' },
     { id: 'pedidos', etiqueta: 'Pedidos', href: '/dropshipping/pedidos', contador: sinFolio && sinFolio > 0 ? sinFolio : undefined },
@@ -21,7 +22,7 @@ export function PestanasDs({ activa, sinFolio }: { activa: PestanaDs; sinFolio?:
     { id: 'por-cobrar', etiqueta: 'Por cobrar', href: '/dropshipping/por-cobrar' },
     { id: 'utilidad', etiqueta: 'Utilidad', href: '/dropshipping/utilidad' },
   ];
-  return <Pestanas etiquetaAria="Secciones de Dropshipping" items={items.map((i) => ({ ...i, activa: i.id === activa, testid: `ds-pestana-${i.id}` }))} />;
+  return <Pestanas etiquetaAria="Secciones de Dropshipping" items={items.map((i) => ({ ...i, activa: i.id === activa, testid: `ds-pestana-${i.id}` }))} lateral={filtros} />;
 }
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;

@@ -33,6 +33,14 @@ Pendiente de revisar en navegador: que en telefono (<= 767 px) las secundarias s
 
 `rtm-boton-item` sigue existiendo solo para las filas de `MenuFiltro` (desplegable de enlaces de filtro), no para acciones.
 
+### Pestanas con filtros en la misma linea (14-nov)
+
+`Pestanas` acepta `lateral`: una `BarraFiltros` (periodo, segmentado de origen, "Quitar filtros") que se monta a la derecha de las pestanas, bajo la misma linea inferior (`.rtm-pestanas-linea`). En telefono (<= 767 px) los filtros bajan a su propio renglon. `PestanasDs` lo expone como `filtros` y lo usan Dropshipping (resumen, pedidos, pagos al proveedor y utilidad). Subnavegaciones de muchas pestanas (Contabilidad, 12) no llevan lateral: no caben.
+
+Tira de KPI baja: `KpiLinea compacta` pone etiqueta y cifra en un renglon de unos 36 px y mueve la nota al `title` (Avisos). Por omision la celda de KPI ya usa 8 px de relleno vertical y 2 px de hueco. `FilaRatios` (razones) es texto chico; dentro de una `BarraFiltros` (como `extras`) va en una sola fila a la derecha de los filtros (Avisos). Alturas: pestanas 32 px (44 tactil), chips de filtro 24 px (28 tactil), segmentado chico 24 px.
+
+Pendiente: pestanas de layout (Inventario, Movimientos) y sus filtros por pagina siguen en dos renglones porque la subnavegacion vive en el `layout`; Contabilidad no cabe junto a filtros.
+
 ## Filtros plegables (`src/ui/componentes/filtros-plegables.tsx`)
 
 `FiltrosPlegables` agrupa campos de formulario en un desplegable flotante de una sola linea (no ocupa alto en la pagina). Los campos siguen montados al cerrar (un formulario que los contiene los envia igual), el contador de `activos` no se pierde, cierra con Escape o al pulsar fuera. Aplicado en Pedidos, Libro de movimientos, Dropshipping (lista, pedidos y utilidad) y Menudeo. `FiltrosUrl` (`_a2/filtros-url.tsx`, formulario GET con la URL como fuente de verdad) acepta `plegable` y se envuelve solo: Inventario (existencias, marcas, antiguedad, mermas, kardex) y Contabilidad (valuacion, historial, capital, caja).

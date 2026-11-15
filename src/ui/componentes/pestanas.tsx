@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 export interface ItemPestana { id: string; etiqueta: string; href: string; activa: boolean; contador?: number; testid?: string; /** Nombre completo cuando la etiqueta visible es corta. */ titulo?: string }
 
@@ -9,8 +9,9 @@ export interface ItemPestana { id: string; etiqueta: string; href: string; activ
  * Pestanas o subnavegacion de seccion: SIEMPRE una sola linea (nunca se parten en dos renglones). Si no caben al ancho disponible,
  * la tira se desliza en horizontal con la barra oculta y un desvanecido en el borde que tiene mas contenido; al montar (y al cambiar
  * de pestana) la activa queda visible. Enlaces reales con aria-current="page".
+ * `lateral`: filtros (una `BarraFiltros`) que van en la MISMA linea, a la derecha de las pestanas; en telefono bajan a su propio renglon.
  */
-export function Pestanas({ etiquetaAria, items }: { etiquetaAria: string; items: ItemPestana[] }) {
+export function Pestanas({ etiquetaAria, items, lateral }: { etiquetaAria: string; items: ItemPestana[]; lateral?: ReactNode }) {
   const ref = useRef<HTMLElement>(null);
   const activa = items.find((i) => i.activa)?.id;
 
@@ -35,7 +36,7 @@ export function Pestanas({ etiquetaAria, items }: { etiquetaAria: string; items:
     return () => { nav.removeEventListener('scroll', marcar); o?.disconnect(); };
   }, [activa]);
 
-  return (
+  const nav = (
     <nav ref={ref} className="rtm-pestanas" aria-label={etiquetaAria}>
       <ul>
         {items.map((i) => (
@@ -49,4 +50,5 @@ export function Pestanas({ etiquetaAria, items }: { etiquetaAria: string; items:
       </ul>
     </nav>
   );
+  return lateral ? <div className="rtm-pestanas-linea">{nav}<div className="rtm-pestanas-lateral">{lateral}</div></div> : nav;
 }
