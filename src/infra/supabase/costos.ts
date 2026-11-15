@@ -1,7 +1,9 @@
 // Lecturas de la pantalla de costos con la sesion del usuario (api.costos_*). Las escrituras pasan por la lista cerrada de acciones.
 import { centavosABigint } from '@/dominio/operacion/json';
-import type { CargoVista, CuentaCostos, ExplicacionCargo, ResumenMesVista, ServicioVista } from '@/dominio/costos/vista';
+import type { Explicacion } from '@/dominio/catalogo/tipos';
+import type { AportacionesSocio, CargoVista, CuentaCostos, ExplicacionCargo, ResumenMesVista, ServicioVista } from '@/dominio/costos/vista';
 import { crearClienteServidor } from './cliente-servidor';
+import { explicacion, llamar } from './lector-catalogo';
 
 async function leer<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
   const sb = await crearClienteServidor();
@@ -17,6 +19,9 @@ export interface LectorCostos {
   cuenta(socio: 'angelo' | 'javier'): Promise<CuentaCostos>;
   explicar(cargoId: number): Promise<ExplicacionCargo>;
   tipoCambio(fecha: string): Promise<{ fecha: string; tc_micro: number; fuente: string } | null>;
+  aportaciones(socio: 'angelo' | 'javier'): Promise<AportacionesSocio>;
+  /** Cifras costos:aportacion:AAAA-MM y costos:aportacion:total (dos vias, calculadas por la base). */
+  explicarCifra(cifra: string): Promise<Explicacion>;
 }
 
 export function lectorCostosSupabase(): LectorCostos {
@@ -27,5 +32,7 @@ export function lectorCostosSupabase(): LectorCostos {
     cuenta: (s) => leer('costos_cuenta', { p_socio: s }),
     explicar: (id) => leer('costos_explicar', { p_cargo_id: id }),
     tipoCambio: (f) => leer('costos_tipo_cambio', { p_fecha: f }),
+    aportaciones: (s) => leer('costos_aportaciones', { p_socio: s }),
+    explicarCifra: (cifra) => llamar('explicar_costos', { p_cifra: cifra }, explicacion),
   };
 }

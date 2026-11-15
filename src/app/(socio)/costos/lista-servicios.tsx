@@ -31,16 +31,19 @@ export function ListaServicios({ servicios, resumen, mes, incluir }: { servicios
             <span className="rtm-serv-concepto">{concepto.get(s.slug) ?? ''}</span>
             {s.cargos === 0 ? (
               <>
-                <span className="rtm-serv-importe"><strong>$0.00</strong></span>
-                <span className="rtm-serv-estado" data-vacio>Sin cargos este mes</span>
+                <span className="rtm-serv-importe">
+                  <strong>{(s.usd_sin_tc_micro ?? 0) > 0 ? `USD ${textoMicro(BigInt(s.usd_sin_tc_micro!))}` : '$0.00'}</strong>
+                  {(s.acumulado_cent ?? 0n) > 0n && <small>acumulado {dinero(s.acumulado_cent!)}</small>}
+                </span>
+                <span className="rtm-serv-estado" data-vacio={(s.usd_sin_tc_micro ?? 0) > 0 ? undefined : true}>{(s.usd_sin_tc_micro ?? 0) > 0 ? 'Sin tipo de cambio: falta capturarlo' : 'Sin cargos este mes'}</span>
               </>
             ) : (
               <>
                 <span className="rtm-serv-importe">
                   <strong>{dinero(s.redondeado_cent)}</strong>
-                  <small>exacto {pesosDeExactoE6(BigInt(s.exacto_e6))}{s.usd_micro ? ` · USD ${textoMicro(BigInt(s.usd_micro))}` : ''}</small>
+                  <small>exacto {pesosDeExactoE6(BigInt(s.exacto_e6))}{s.usd_micro ? ` · USD ${textoMicro(BigInt(s.usd_micro))}` : ''}{s.acumulado_cent !== undefined ? ` · acumulado ${dinero(s.acumulado_cent)}` : ''}</small>
                 </span>
-                <span className="rtm-serv-estado">{ETIQUETA_COSTO[s.ultima_etiqueta ?? ''] ?? ''} · {s.ultimo_estado === 'confirmado' ? 'Confirmado' : 'Provisional'}</span>
+                <span className="rtm-serv-estado">Aportación de capital · {ETIQUETA_COSTO[s.ultima_etiqueta ?? ''] ?? ''} · {s.ultimo_estado === 'confirmado' ? 'Confirmado' : 'Provisional'}</span>
               </>
             )}
           </Link>

@@ -14,12 +14,12 @@ El avatar es circular con fondo claro fijo en ambos temas (los simbolos son negr
 | Telegram (`telegram`) | `telegram.svg` | https://telegram.org/img/t_logo.svg | Ninguna |
 | Higgsfield (`higgsfield`) | `higgsfield.webp` | https://higgsfield.ai/icon.png (icono que el propio sitio publica como favicon; Higgsfield no tiene kit de marca) | PNG de 192 px convertido a webp de 128 px (2.6 KB) |
 | Claude Max (`claude_max`; tambien `anthropic`) | `claude.svg` | Kit de prensa de Anthropic, https://www.anthropic.com/press-kit (zip), `Claude Spark - Clay.svg` | Ninguna |
-| Dominio (`dominio`) | `dominio.svg` | Icono generico (globo), sin proveedor: el catalogo no dice quien registra el dominio. Trazo propio basado en el icono `globe` de Lucide (licencia ISC, https://lucide.dev) | Es un icono neutro, no una marca |
+| Dominio (`dominio`) | `vercel.svg` | Se comparte el simbolo de Vercel: el dominio se compro y se administra en Vercel (decision del dueno, 14-nov). Ya no hay globo generico | Ninguna |
 | Transcripcion de audio (`transcripcion`) | `transcripcion.svg` | Icono generico (microfono): el catalogo solo dice que es audio medido en el libro propio; el modelo (`openai/whisper-large-v3-turbo`) se llama por OpenRouter, asi que no hay proveedor unico. Basado en el icono `mic` de Lucide (ISC) | Es un icono neutro, no una marca |
 
 ## Pendientes y limites
 
-- Dominio y Transcripcion de audio muestran un icono neutro. Si el dueno confirma el registrador del dominio, o que la transcripcion se factura a un proveedor concreto, se cambia solo la fila de `LOGOS_SERVICIO` y se agrega el archivo.
+- Transcripcion de audio muestra un icono neutro. Si el dueno confirma que se factura a un proveedor concreto, se cambia solo la fila de `LOGOS_SERVICIO` y se agrega el archivo. El dominio usa el logo de Vercel.
 - OpenAI (Whisper) no se descargo: openai.com/brand y sus favicon responden con una pagina de verificacion anti-robots y no se la eludio.
 - Los archivos se usan tal cual los publica cada empresa (salvo lo indicado). Declaracion del dueno: tiene licencias de uso; no esta verificada.
 

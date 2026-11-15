@@ -10,6 +10,8 @@ import { Aviso, Segmentado } from '@/ui/componentes/controles';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import { LogoServicio } from '@/ui/componentes/logo-servicio';
+import { CifraComprobada } from '@/ui/componentes/cifra';
+import { RazonamientoServicios } from './razonamiento-servicios';
 import { AnularCargo, FormularioReembolso, FormularioTipoCambio } from './acciones-costos';
 import { FormularioCargo } from './formulario-cargo';
 import { ListaServicios } from './lista-servicios';
@@ -32,13 +34,17 @@ export default async function PaginaCostos({ searchParams }: { searchParams: Pro
   const cuenta = resumen.cuenta_javier;
   const href = (m: string, c = incluir) => `/costos?${new URLSearchParams({ mes: m, ...(c ? { construccion: '1' } : {}) })}`;
   const faltan = resumen.al_menos;
+  const val = resumen.validacion;
+  const aportadoTotal = resumen.aportacion_javier?.total_cent ?? cuenta.aportado_capital_cent ?? 0n;
+  const aportaciones = (await lector.aportaciones('javier')).aportaciones;
+  const pendientesTc = val?.pendientes_tc ?? [];
 
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina
         eyebrow={`Costos del sistema · ${mes}`}
         titulo="Lo que cuesta mantener el sistema"
-        descripcion="Cada cargo es un gasto de la sociedad pagado por Javier y reembolsable; a cada servicio solo se le atribuye lo que RTM consume."
+        descripcion="Cada cargo mensual lo paga Javier con su tarjeta y se registra, con fecha, como su aportación de capital declarada; a cada servicio solo se le atribuye lo que RTM consume."
         acciones={
           <Segmentado
             etiquetaAria="Opciones del mes"
@@ -57,7 +63,7 @@ export default async function PaginaCostos({ searchParams }: { searchParams: Pro
             { id: 'operar', etiqueta: `Costo mensual de operar${faltan ? ' (al menos)' : ''}`, valor: <span data-testid="costos-operar">{dinero(resumen.operar.redondeado_cent)}</span>, categoria: 1, nota: `exacto ${pesosDeExactoE6(BigInt(resumen.operar.exacto_e6))}` },
             { id: 'total', etiqueta: `Gasto total del mes${incluir ? ', con construcción' : ''}`, valor: <span data-testid="costos-total">{dinero(t.redondeado_cent)}</span>, categoria: 2, nota: `exacto ${pesosDeExactoE6(BigInt(t.exacto_e6))} · redondeo ${pesosDeExactoE6(BigInt(t.redondeado_cent) * 1_000_000n - BigInt(t.exacto_e6))}` },
             { id: 'opc', etiqueta: 'Claude y Higgsfield (opcionales)', valor: dinero(resumen.opcionales.redondeado_cent), categoria: 4, nota: `construcción: ${dinero(resumen.construccion.redondeado_cent)} (aparte)` },
-            { id: 'pend', etiqueta: 'Pendiente de reembolsar a Javier', valor: <span data-testid="costos-pendiente">{dinero(cuenta.pendiente_cent)}</span>, categoria: 6, nota: `cargado ${dinero(cuenta.cargado_cent)} · reembolsado ${dinero(cuenta.reembolsado_cent)}` },
+            { id: 'apo', etiqueta: 'Aportado por Javier por costos (acumulado)', valor: <span data-testid="costos-aportado"><CifraComprobada texto={dinero(aportadoTotal)} cifra="costos:aportacion:total" comprobacion={val?.cuadra === false ? 'no_cuadra' : 'cuadra'} /></span>, categoria: 6, nota: `por reembolsar ${dinero(cuenta.pendiente_cent)} (solo lo no declarado como capital)` },
           ]}
         />
       </div>
@@ -66,6 +72,17 @@ export default async function PaginaCostos({ searchParams }: { searchParams: Pro
 
       <Tarjeta titulo="Por servicio" descripcion="Lo atribuido a cada servicio este mes. Elige uno para ver sus cargos y registrar uno nuevo.">
         <ListaServicios servicios={servicios} resumen={resumen.servicios} mes={mes} incluir={incluir} />
+      </Tarjeta>
+
+      {pendientesTc.length > 0 && <Aviso tono="atencion" titulo="Sin tipo de cambio: falta capturarlo">{pendientesTc.map((p) => `${p.servicio} USD ${textoMicro(BigInt(p.usd_micro))}`).join(' · ')}. Se guardan en dólares y no se convierten; al capturar el tipo de cambio abajo y volver a cargar el mes, nacen como aportación.</Aviso>}
+      <Tarjeta titulo="Validación de montos" descripcion="Lo cargado en el mes, lo aportado en el libro de socios y lo asentado en el mayor deben ser la misma cifra">
+        <p className="rtm-nota" data-testid="costos-validacion">
+          Cargos del mes <CifraComprobada texto={dinero(val?.cargos_cent ?? 0n)} cifra={`costos:aportacion:${mes}`} comprobacion={val ? (val.cuadra ? 'cuadra' : 'no_cuadra') : 'sin_comprobar'} /> · aportación generada {dinero(val?.aportado_cent ?? 0n)} · mayor {dinero(val?.mayor_cent ?? 0n)}:{' '}
+          <EstadoTexto tono={val?.cuadra === false ? 'atencion' : 'ok'}>{val?.cuadra === false ? 'no cuadra' : 'cuadra'}</EstadoTexto>
+        </p>
+      </Tarjeta>
+      <Tarjeta titulo="Razonamiento y destino del dinero" descripcion="Por qué se atribuye cada servicio a RTM, cómo se calcula y a dónde llega el dinero">
+        <RazonamientoServicios servicios={servicios} />
       </Tarjeta>
 
       <Tarjeta plana titulo="Cargos" descripcion={`${cargos.length} en el mes`}>
@@ -103,7 +120,26 @@ export default async function PaginaCostos({ searchParams }: { searchParams: Pro
         />
       </Tarjeta>
 
-      <Tarjeta plana titulo="Cuenta de costos con Javier" descripcion="Reembolsar reduce lo pendiente y no modifica ningún cargo">
+      <Tarjeta plana titulo="Aportaciones de capital de Javier por costos" descripcion={`${aportaciones.length} registradas, con fecha, servicio, monto y tipo de cambio usado`}>
+        <DataTable
+          plana
+          densidad="densa"
+          etiqueta="Aportaciones por costos del sistema"
+          clave={(a) => a.folio}
+          filas={aportaciones}
+          vacio={{ titulo: 'Sin aportaciones todavía', texto: 'Cada cargo del mes aparecerá aquí como aportación de capital de Javier.' }}
+          columnas={[
+            { id: 'd', titulo: 'Fecha', ancho: 's', prioridadMovil: 'titulo', celda: (a) => etiquetaFecha(a.fecha_neg) },
+            { id: 's', titulo: 'Servicio', celda: (a) => <LogoServicio slug={a.servicio_slug} logoSlug={a.logo_slug} nombre={a.servicio} conNombre /> },
+            { id: 'u', titulo: 'Origen', numerica: true, secundaria: true, celda: (a) => `${a.moneda} ${textoMicro(BigInt(a.base_orig_micro))}` },
+            { id: 't', titulo: 'Tipo de cambio', numerica: true, secundaria: true, celda: (a) => `${textoMicro(BigInt(a.tc_micro), 4)} · ${etiquetaFecha(a.tc_fecha)}` },
+            { id: 'r', titulo: 'Referencia', secundaria: true, celda: (a) => `${a.folio} · ${a.gasto_folio ?? ''}` },
+            { id: 'm', titulo: 'Aportación MXN', numerica: true, prioridadMovil: 'principal', celda: (a) => <CifraComprobada texto={formatearMoneda(a.monto_cent, { conSigno: a.tipo === 'reversa' })} cifra={`costos:aportacion:${a.mes}`} comprobacion={val?.cuadra === false ? 'no_cuadra' : 'cuadra'} /> },
+          ]}
+        />
+      </Tarjeta>
+
+      <Tarjeta plana titulo="Cuenta por reembolsar (solo lo no declarado como capital)" descripcion="Reembolsar reduce lo pendiente y no modifica ningún cargo">
         <DataTable
           plana
           densidad="densa"

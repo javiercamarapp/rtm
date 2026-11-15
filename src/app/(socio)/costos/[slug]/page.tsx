@@ -12,6 +12,7 @@ import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
 import { LogoServicio } from '@/ui/componentes/logo-servicio';
 import { PIE_DE_MARCAS } from '@/dominio/marcas';
+import { DESTINO_DEL_DINERO, razonamientoDe, textoCuotaBase } from '@/dominio/costos/razonamiento';
 import { FormularioCargo } from '../formulario-cargo';
 import '@/ui/estilos/costos.css';
 
@@ -55,6 +56,10 @@ export default async function PaginaServicioCostos({ params, searchParams }: { p
           { id: 'n', etiqueta: 'Cargos registrados', valor: String(cargos.length), categoria: 4, nota: def.ciclo === 'ninguno' ? 'Sin cobro por ciclo' : `Ciclo ${def.ciclo}` },
         ]}
       />
+      <Tarjeta titulo="Razonamiento y destino del dinero">
+        <p className="rtm-nota" data-testid="servicio-razonamiento"><strong>Por qué se atribuye a RTM:</strong> {razonamientoDe(slug).porQue} <strong>Cómo se calcula:</strong> {razonamientoDe(slug).comoSeCalcula}{textoCuotaBase(def.cuota_base) ? ` ${textoCuotaBase(def.cuota_base)}` : ''}</p>
+        <p className="rtm-nota"><strong>A dónde llega el dinero:</strong> {DESTINO_DEL_DINERO}</p>
+      </Tarjeta>
       <Pestanas
         etiquetaAria="Vistas del servicio"
         items={[

@@ -23,9 +23,9 @@ describe('logos de los servicios', () => {
       expect(readFileSync(join(DIR, f), 'utf8'), f).not.toMatch(/<script|\son\w+=|foreignObject|<image|<use|<a[\s>]|<iframe|javascript:|xlink:href|href="http|url\(http|@import|<filter|filter=/i);
     }
   });
-  it('los dos iconos genericos no pretenden ser marca', () => {
-    expect(LOGOS_SERVICIO['dominio']!.origen).toBe('generico');
+  it('el icono generico no pretende ser marca y el dominio usa el logo de Vercel (se administra ahi)', () => {
     expect(LOGOS_SERVICIO['transcripcion']!.origen).toBe('generico');
+    expect(LOGOS_SERVICIO['dominio']!.archivo).toBe(LOGOS_SERVICIO['vercel']!.archivo);
   });
   it('el pie de marcas incluye la atribucion literal que exige Vercel y no sugiere patrocinio', () => {
     expect(PIE_DE_MARCAS).toContain('Vercel, the Vercel design, Next.js and related marks, designs and logos are trademarks or registered trademarks of Vercel, Inc. or its affiliates in the US and other countries.');

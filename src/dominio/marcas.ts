@@ -21,7 +21,7 @@ export const LOGOS_SERVICIO: Readonly<Record<string, LogoDeServicio>> = {
   higgsfield: { archivo: 'higgsfield.webp', origen: 'oficial', sangrado: true },
   claude_max: { archivo: 'claude.svg', origen: 'oficial' },
   anthropic: { archivo: 'claude.svg', origen: 'oficial' },
-  dominio: { archivo: 'dominio.svg', origen: 'generico' },
+  dominio: { archivo: 'vercel.svg', origen: 'oficial' },
   transcripcion: { archivo: 'transcripcion.svg', origen: 'generico' },
 };
 
