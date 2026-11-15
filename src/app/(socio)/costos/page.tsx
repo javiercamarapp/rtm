@@ -9,7 +9,7 @@ import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { Aviso, Segmentado } from '@/ui/componentes/controles';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
-import { LogoMarca } from '@/ui/marcas/logo-marca';
+import { LogoServicio } from '@/ui/componentes/logo-servicio';
 import { AnularCargo, FormularioReembolso, FormularioTipoCambio } from './acciones-costos';
 import { FormularioCargo } from './formulario-cargo';
 import { ListaServicios } from './lista-servicios';
@@ -78,7 +78,7 @@ export default async function PaginaCostos({ searchParams }: { searchParams: Pro
           vacio={{ titulo: 'Sin cargos', texto: 'Registra el primer cargo del mes con el formulario de abajo.' }}
           columnas={[
             { id: 'f', titulo: 'Folio', ancho: 's', prioridadMovil: 'titulo', celda: (c) => <span data-testid={`cargo-folio-${c.id}`}>{c.folio}</span> },
-            { id: 's', titulo: 'Servicio', celda: (c) => <LogoMarca slug={c.logo_slug} nombre={c.servicio} alto={18} /> },
+            { id: 's', titulo: 'Servicio', celda: (c) => <LogoServicio slug={c.servicio_slug} logoSlug={c.logo_slug} nombre={c.servicio} conNombre /> },
             { id: 'd', titulo: 'Fecha', secundaria: true, celda: (c) => etiquetaFecha(c.fecha_neg) },
             { id: 'p', titulo: 'Base y porcentaje', secundaria: true, celda: (c) => <>{c.moneda} {textoMicro(BigInt(c.base_orig_micro))} · {textoPct(BigInt(c.pct_aplicado_ppm))} %<br /><span className="rtm-nota">TC {textoMicro(BigInt(c.tc_micro), 4)} ({etiquetaFecha(c.tc_fecha)})</span></> },
             { id: 'x', titulo: 'MXN exacto', numerica: true, secundaria: true, celda: (c) => pesosDeExactoE6(BigInt(c.exacto_mxn_e6)) },

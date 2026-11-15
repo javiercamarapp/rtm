@@ -1,0 +1,46 @@
+{
+  "descargado": "2026-11-14",
+  "nota": "Detalle y notas de marca registrada en docs/logos-servicios.md.",
+  "archivos": {
+    "claude.svg": {
+      "sha256": "6d53db4be375e899c937c26cf16684a80d6e869b1928d72b37748bef2560e219",
+      "origen": "https://www.anthropic.com/press-kit (zip: Claude logos/3 Claude Spark/SVG/Claude Spark - Clay.svg)"
+    },
+    "dominio.svg": {
+      "sha256": "e6b37b24bfe947777c388c2febcedf79df8a46381dd59b05a4b96bad27265082",
+      "origen": "Icono generico (globo), basado en Lucide (ISC); no es una marca"
+    },
+    "github.svg": {
+      "sha256": "693d7abe6f899646cc2e96856723b45e95f71885a54910b2749f6decdf7e1ee1",
+      "origen": "https://brand.github.com/GitHub_Logos.zip (GitHub Logos/SVG/GitHub_Invertocat_Black.svg)"
+    },
+    "higgsfield.webp": {
+      "sha256": "944228c350baf4f57f1ab0b01a5f702bb8a3331ea2a2a1f0f82c7c0f6aac6d75",
+      "origen": "https://higgsfield.ai/icon.png (192 px convertido a webp de 128 px)"
+    },
+    "openrouter.svg": {
+      "sha256": "91be6b8a91745f089bfe42b89a5cbcd4b666fca6473610f9a6c11a31bd7523bc",
+      "origen": "https://openrouter.ai/brand/logos/transparent/glyph/svg/glyph-ink.svg"
+    },
+    "resend.svg": {
+      "sha256": "1d5a8240a60ca53626a80479a956c3a711b955a116d217323abaf29668ff26d6",
+      "origen": "https://cdn.resend.com/brand/resend-icon-black.svg (solo viewBox recortado a 450 450 900 900)"
+    },
+    "supabase.svg": {
+      "sha256": "eb9ffcd100ad26228a578100ba7cbfc5b383e4995338d122abdc6a3b4d210ed3",
+      "origen": "https://supabase.com/brand-assets/supabase-icon-green-transparent.svg"
+    },
+    "telegram.svg": {
+      "sha256": "85059d5e5bf7bda91ebab30664993c49867a26be6b947834aca16c846581766a",
+      "origen": "https://telegram.org/img/t_logo.svg"
+    },
+    "transcripcion.svg": {
+      "sha256": "ff39bce650e9105543733b359fa41b66a19d0fe500aefa3d39b390942dcf8cc4",
+      "origen": "Icono generico (microfono), basado en Lucide (ISC); no es una marca"
+    },
+    "vercel.svg": {
+      "sha256": "1c1507a4a4742f992a689fcb6b61ac8c48c62e1110509b68121356154e67ed91",
+      "origen": "https://vercel.com/geist/brands/assets/vercel-symbol-black.svg"
+    }
+  }
+}

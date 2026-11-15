@@ -44,7 +44,7 @@ test('costos: un cargo de Supabase se calcula, se registra como gasto de la soci
   await expect(page.getByTestId('pie-marcas')).toContainText('Vercel, the Vercel design');
   // La lista usa casilla fija con monograma; el logo oficial (un <img> por tema, archivo sin alterar) esta en la ficha del servicio, que abre la fila.
   await page.getByTestId('servicio-supabase').getByRole('link').click();
-  await expect(page.getByTestId('servicio-logo').locator('img.rtm-marca-claro')).toHaveAttribute('src', '/marcas/supabase/negro.svg');
+  await expect(page.getByTestId('servicio-logo').locator('img')).toHaveAttribute('src', '/logos/supabase.svg');
   await page.goBack();
   await expect(page.getByTestId('costos-resumen')).toBeVisible();
   const antes = await page.getByTestId('costos-operar').innerText();
