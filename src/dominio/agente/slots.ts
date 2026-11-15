@@ -150,13 +150,21 @@ export const OPERACIONES: Readonly<Record<OperacionConv, DefOperacion>> = {
   },
   alta_cliente: {
     clave: 'alta_cliente', titulo: 'Alta de cliente',
-    slots: [nombre('¿Cómo se llama el cliente (nombre completo)?'), { clave: 'tipo_cliente', tipo: 'opcion', obligatorio: true, pregunta: '¿Es mayoreo o menudeo?', opciones: [{ valor: 'mayoreo', texto: 'Mayoreo' }, { valor: 'menudeo', texto: 'Menudeo' }], sinonimos: ['tipo'] }],
+    slots: [nombre('¿Cómo se llama el cliente (nombre completo)?'), { clave: 'tipo_cliente', tipo: 'opcion', obligatorio: true, pregunta: '¿Es mayoreo o menudeo?', opciones: [{ valor: 'mayoreo', texto: 'Mayoreo' }, { valor: 'menudeo', texto: 'Menudeo' }], sinonimos: ['tipo'] },
+      { clave: 'duenio', tipo: 'opcion', obligatorio: true, pregunta: '¿De qué socio es el cliente, Angelo o Javier?', opciones: SOCIOS, sinonimos: ['dueño', 'duenio', 'socio'] },
+      { clave: 'plazo_habitual', tipo: 'opcion', obligatorio: true, pregunta: '¿Cuál es su plazo habitual de pago? Elige uno o escribe los días.', opciones: [{ valor: '0', texto: 'De contado' }, { valor: '8', texto: '8 días' }, { valor: '15', texto: '15 días' }, { valor: '30', texto: '30 días' }], sinonimos: ['plazo habitual', 'plazo'] }],
   },
-  alta_sabor: { clave: 'alta_sabor', titulo: 'Alta de sabor', slots: [nombre('¿Cuál es el nombre exacto del sabor?')] },
+  alta_sabor: {
+    clave: 'alta_sabor', titulo: 'Alta de sabor',
+    slots: [nombre('¿Cuál es el nombre exacto del sabor?'), { clave: 'modelo', tipo: 'texto', obligatorio: true, pregunta: '¿De qué modelo es el sabor?', sinonimos: ['modelo'] }],
+  },
   alta_modelo: {
     clave: 'alta_modelo', titulo: 'Alta de modelo',
     slots: [nombre('¿Cuál es el nombre exacto del modelo?'), { clave: 'marca', tipo: 'texto', obligatorio: true, pregunta: '¿De qué marca es?', sinonimos: ['marca'] },
-      { clave: 'costo', tipo: 'monto', obligatorio: true, pregunta: '¿Cuál es el costo de lista? Escribe la cifra completa, por ejemplo 12,500.', sinonimos: ['costo'] }],
+      { clave: 'puffs', tipo: 'texto', obligatorio: true, pregunta: '¿Cuántas caladas (puffs) tiene? Escribe el número o «no sé».', sinonimos: ['puffs', 'caladas'] },
+      { clave: 'proveedor_costo', tipo: 'opcion', obligatorio: true, pregunta: '¿Con qué proveedor tiene costo de lista: Isaac o Karen? Si todavía no lo defines, elige «Sin costo por ahora» (no invento costos).',
+        opciones: [{ valor: 'isaac', texto: 'Isaac' }, { valor: 'karen', texto: 'Karen' }, { valor: 'ninguno', texto: 'Sin costo por ahora' }], sinonimos: ['proveedor'] },
+      { clave: 'costo', tipo: 'monto', obligatorio: true, si: { slot: 'proveedor_costo', valores: ['isaac', 'karen'] }, pregunta: '¿Cuál es el costo de lista? Escribe la cifra completa, por ejemplo 12,500.', sinonimos: ['costo'] }],
   },
 };
 

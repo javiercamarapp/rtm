@@ -11,7 +11,7 @@ export interface InstruccionConversacion {
 
 /** Operaciones que la conversacion registra de punta a punta por el carril de frenos. El resto de las intenciones sigue su camino anterior. */
 export const OPERACIONES_POR_CONVERSACION: ReadonlySet<OperacionConv> = new Set<OperacionConv>([
-  'pedido_bodega', 'cobro_cliente', 'pago_proveedor', 'pago_redirigido', 'gasto', 'aportacion', 'reembolso', 'retiro', 'conteo', 'alta_cliente',
+  'pedido_bodega', 'cobro_cliente', 'pago_proveedor', 'pago_redirigido', 'gasto', 'aportacion', 'reembolso', 'retiro', 'conteo', 'alta_cliente', 'alta_sabor', 'alta_modelo',
 ]);
 
 function limpiar(o: Record<string, unknown>): Record<string, unknown> {
@@ -64,6 +64,13 @@ export function instruccionDeIntencion(i: Intencion): InstruccionConversacion | 
       return { operacion: 'conteo', candidatos: limpiar({ lineas: lineas(i.lineas) }) };
     case 'cliente_alta':
       return { operacion: 'alta_cliente', candidatos: limpiar({ nombre: i.nombre }) };
+    // Carril aprendizaje y alta asistida: el sabor y el modelo nuevos pasan por la conversacion (el bot pregunta lo que falte; el costo de lista solo si lo dice el socio).
+    case 'sabor_alta':
+      return { operacion: 'alta_sabor', candidatos: limpiar({ nombre: i.sabor_texto, modelo: i.modelo_texto }) };
+    case 'modelo_alta': {
+      const prov = i.proveedor_texto === null ? null : /isaac/i.test(i.proveedor_texto) ? 'isaac' : /karen|vapemate/i.test(i.proveedor_texto) ? 'karen' : null;
+      return { operacion: 'alta_modelo', candidatos: limpiar({ nombre: i.modelo_texto, marca: i.marca_texto, ...(i.costo_centavos !== null && prov !== null ? { proveedor_costo: prov, costo: i.costo_centavos } : {}) }) };
+    }
     default:
       return null;
   }

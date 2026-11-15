@@ -30,6 +30,8 @@ function urlAppOpcional(): string | null {
   }
 }
 import { AlmacenConversacionDb, ResumenPedidosDb } from '@/infra/agente/conversacion_postgres';
+import { ModuloAprendizaje } from '@/aplicacion/agente/aprendizaje';
+import { PuertoAprendizajeDb } from '@/infra/agente/aprendizaje_postgres';
 import { AvisosDb, ContextoNegocioDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
 import { lectorDesdeEntorno } from '@/infra/proveedores/lector_http';
 
@@ -48,6 +50,8 @@ export interface DepsProduccion {
   configAgente?: Partial<import('@/aplicacion/agente/agente').ConfigAgente>;
   /** Maquina de conversacion (por omision encendida): el interprete alimenta los slots, el bot pregunta lo que falte y registra por el carril de frenos. `false` conserva el camino anterior. */
   conversacion?: boolean;
+  /** Aprendizaje y alta asistida (por omision encendido): alias con confirmacion, sabores parecidos, altas de cliente, sabor y modelo, recargo sugerido. `false` lo apaga. */
+  aprendizaje?: boolean;
   entorno?: Record<string, string | undefined>;
 }
 
@@ -76,6 +80,7 @@ export function crearAgenteProduccion(d: DepsProduccion): AgenteTelegram {
     almacen: new AlmacenAgenteDb(d.sql), presupuesto: new AlmacenPresupuestoDb(d.sql), llm: llmDe(d), telegram: tg, tokens: new AlmacenTokensDb(d.sql),
     catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d), config: { exigirSabor: true, exigirPlazoPedido: true, ...d.configAgente },
     ...(d.conversacion === false ? {} : { conversacion: { almacen: new AlmacenConversacionDb(d.sql), resumenes: new ResumenPedidosDb(d.sql) } }),
+    ...(d.aprendizaje === false ? {} : { aprendizaje: new ModuloAprendizaje(new PuertoAprendizajeDb(d.sql), () => new CatalogoAgenteDb(d.sql).clientes()) }),
   });
 }
 

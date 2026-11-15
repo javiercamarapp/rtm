@@ -5,9 +5,10 @@ import { envolverMensaje, nombreSeguro, redactarContactos } from '@/dominio/agen
 import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type { FuenteMensaje, Persona } from '@/dominio/agente/tipos';
 import { REGLAS_AMPLIADAS } from './prompt_ampliado';
+import { REGLAS_APRENDIZAJE } from './prompt_aprendizaje';
 
 /** Cambia con cualquier edicion del prompt o del esquema: forma parte de la clave de la corrida guardada. */
-export const VERSION_PROMPT = 'r6-2026-11-16.5';
+export const VERSION_PROMPT = 'r6-2026-11-16.6';
 
 /**
  * Tope de tokens de la respuesta. 700 truncaba un conteo de 40 sabores (cada renglon pesa ~28 tokens: 40 renglones + envoltura ~1,300; 60 renglones ~1,900).
@@ -68,6 +69,7 @@ export const SISTEMA_R1 = [
   '26. "puse X" o "meti X" sin concepto de gasto = aportacion del autor (intencion null salvo que diga capital); no preguntes si es capital. "pague X de guia, uber o envio" = gasto. "compra a Isaac: renglones" = compra; "orden de compra" = orden_compra.',
   '27. "Fulano pago X por transferencia a Isaac" o "a la cuenta de Javier" = pago con cuenta_destino_texto. "Fulano mando X a Karen" (dinero del cliente directo al proveedor) = pago_proveedor con cliente_texto. Varios clientes en un mensaje = una accion pedido por cliente; no preguntes si los registras por separado.',
   ...REGLAS_AMPLIADAS,
+  ...REGLAS_APRENDIZAJE,
 ].join('\n');
 
 function puntuar(texto: string, e: EntradaCatalogo): number {
@@ -100,6 +102,8 @@ export interface EntradaPrompt {
   modelos: readonly EntradaCatalogo[];
   /** Ultima pregunta del bot que espera respuesta, tomada de la MEMORIA DEL SERVIDOR (nunca del modelo). Sin ella el modelo no emite respuestas a preguntas. */
   preguntaPendiente?: string | null;
+  /** Bloque de alias, jerga y ejemplos anonimizados que el mensaje menciona (ver dominio/agente/aprendizaje.ts): DATOS acotados, nunca el catalogo completo. */
+  contextoAprendido?: string;
 }
 
 export function construirUsuarioR1(e: EntradaPrompt): string {
@@ -111,6 +115,7 @@ export function construirUsuarioR1(e: EntradaPrompt): string {
     `candidatos_clientes: ${JSON.stringify(clientes)}`,
     `candidatos_modelos: ${JSON.stringify(modelos)}`,
     ...(e.preguntaPendiente ? [`pregunta_pendiente_del_bot: ${JSON.stringify(nombreSeguro(e.preguntaPendiente, 240))}`] : []),
+    ...(e.contextoAprendido ? [e.contextoAprendido] : []),
   ].join('\n');
 }
 

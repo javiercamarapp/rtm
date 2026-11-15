@@ -174,6 +174,8 @@ export interface ContextoConv {
   previa?: { pendiente: PendienteConv | null; slot: string | null; texto: string | null; botones: BotonConv[] };
   /** Preguntas del carril de frenos que el socio ya contesto con "si". */
   confirmadas?: Array<ConfirmacionFrenos>;
+  /** Lo que el socio dijo tal cual para cada dato de catalogo que se resolvio (para aprender de una correccion). */
+  dichos?: Record<string, string>;
 }
 
 // ---------------------------------------------------------------- utilidades
@@ -217,6 +219,8 @@ export class MotorConversacion {
     private readonly entorno: EntornoConversacion,
     private readonly ejecutor: EjecutorOperacion,
     private readonly resumenes?: ResumenPedidos,
+    /** Carril de aprendizaje: una correccion de cliente ("no, era Memo Lopez") alimenta el diccionario (lo dicho -> lo correcto). Nunca guarda un alias sola. */
+    private readonly alCorregir?: (c: { clave: string; autor: Miembro; chatId: number; clase: 'cliente'; dicho: string; correcto: string }) => Promise<void>,
   ) {}
 
   async procesar(entrada: EntradaProceso, evento: Evento): Promise<Salida> {
@@ -383,6 +387,15 @@ export class MotorConversacion {
     for (const k of quitar) delete crudos[k];
     if (slot === 'lineas') delete ctx.borrador;
     crudos[slot] = texto;
+    // Aprendizaje: lo que dijo el socio al principio no era ese cliente; lo correcto es lo que dice ahora (el SQL decide si lo ignora, lo cuenta o sugiere un alias).
+    const dicho = ctx.dichos?.[slot];
+    if (slot === 'cliente' && this.alCorregir !== undefined && dicho !== undefined && normalizar(dicho) !== normalizar(texto)) {
+      try {
+        await this.alCorregir({ clave: `${e.clave}:aprende`, autor: e.autor, chatId: e.chatId, clase: 'cliente', dicho, correcto: texto });
+      } catch {
+        // Aprender es opcional.
+      }
+    }
     const base = await this.almacen.completarSlot({ clave: `${e.clave}:corr:${slot}`, id: conv.id, slot, valor: null, mensaje: texto, mensajeId: e.mensajeId ?? null, contexto: { ...ctx, crudos, pendiente: null } });
     let actual = base.conversacion;
     for (const k of quitar.filter((x) => x !== slot && actual.slots[x] !== undefined)) {
@@ -615,6 +628,7 @@ export class MotorConversacion {
     const res: Resolucion = resolverCliente(texto, catalogo, { rol: 'socio' }) as Resolucion;
     if (res.estado === 'unico') {
       await this.fijar(conv, def.clave, { id: res.id, nombre: res.nombre }, ctx, true);
+      ctx.dichos = { ...(ctx.dichos ?? {}), [def.clave]: texto };
       return { estado: 'ok' };
     }
     if (res.estado === 'varios') {

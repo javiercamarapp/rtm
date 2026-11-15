@@ -27,6 +27,7 @@ import { cifrasDeIntencionAmpliada, foliosSinProcedencia, montosQueSeRepiten, te
 import { montoARepetir, textoExtraidoSinPuerta } from './plantillas_interprete';
 import { MotorConversacion, type AlmacenConversacion, type EntornoConversacion, type OperacionCompleta as OperacionConversacion, type ResultadoRegistro, type ResumenPedidos, type Salida as SalidaConversacion } from './conversacion';
 import { instruccionDeIntencion, OPERACIONES_POR_CONVERSACION } from '@/dominio/agente/slots_desde_intencion';
+import { listoParaGrupo, type ModuloAprendizaje, type SalidaAprendizaje } from './aprendizaje';
 import { intencionDeSlots } from './slots_a_intencion';
 import * as P from './plantillas';
 import * as F from './plantillas_frenos';
@@ -117,6 +118,8 @@ export interface DependenciasAgente {
    * y registra por `ejecutarOperacionCompleta` (frenos). Sin ella, el agente conserva su camino anterior.
    */
   conversacion?: { almacen: AlmacenConversacion; resumenes?: ResumenPedidos; entorno?: Omit<EntornoConversacion, 'catalogo'> };
+  /** Aprendizaje y alta asistida (alias, jerga, ejemplos anonimizados, sabores parecidos, altas, recargo sugerido). Sin el, el agente conserva su camino anterior. */
+  aprendizaje?: ModuloAprendizaje;
 }
 
 export type ResultadoUpdate =
@@ -424,7 +427,8 @@ export class AgenteTelegram {
     this.cfg = { ...CONFIG_POR_OMISION, ...d.config };
     this.com = new Comunicador(d.telegram, d.almacen);
     this.motor = d.conversacion
-      ? new MotorConversacion(d.conversacion.almacen, { catalogo: d.catalogo, ...d.conversacion.entorno }, { ejecutarOperacionCompleta: (op) => this.registrarConversacion(op) }, d.conversacion.resumenes)
+      ? new MotorConversacion(d.conversacion.almacen, { catalogo: d.catalogo, ...d.conversacion.entorno }, { ejecutarOperacionCompleta: (op) => this.registrarConversacion(op) }, d.conversacion.resumenes,
+        d.aprendizaje ? async (c) => { await this.publicarAprendizaje(await d.almacen.chats(), await d.aprendizaje!.correccion({ clave: c.clave, autor: c.autor, chatId: c.chatId, clase: c.clase, dicho: c.dicho, correcto: c.correcto })); } : undefined)
       : null;
   }
 
@@ -609,6 +613,14 @@ export class AgenteTelegram {
         return { estado: 'procesado', acciones: 1 };
       }
     }
+    // Aprendizaje: respuestas si/no a una pregunta que el SERVIDOR recuerda en este chat (sabores parecidos, alias, recargo) y atajos del codigo; sin conversacion abierta ni comando.
+    if (!cmd && this.d.aprendizaje && autor.rol === 'socio' && !reenviado && !esEdicion) {
+      const s = await this.d.aprendizaje.interceptar({ chatId: msg.chat.id, autor, texto, clave: `tg:${update.update_id}` });
+      if (s !== null) {
+        await this.publicarAprendizaje(chats, s);
+        return { estado: 'procesado', acciones: s.textos.length };
+      }
+    }
     if (cmd) {
       if (!cmd.ok) {
         await this.responder(autor, chats, P.uso(cmd.uso));
@@ -778,7 +790,8 @@ export class AgenteTelegram {
       if (v.ok) return v;
     }
     const [clientes, modelos] = await Promise.all([this.d.catalogo.clientes(), this.d.catalogo.modelos()]);
-    const usuario = construirUsuarioR1({ autor: ctx.autor.persona, fuente: ctx.fuente, texto: ctx.texto, clientes, modelos });
+    const aprendido = this.d.aprendizaje && ctx.autor.rol === 'socio' ? await this.d.aprendizaje.contexto(ctx.texto) : '';
+    const usuario = construirUsuarioR1({ autor: ctx.autor.persona, fuente: ctx.fuente, texto: ctx.texto, clientes, modelos, ...(aprendido !== '' ? { contextoAprendido: aprendido } : {}) });
     let errores: string[] = [];
     for (let intento = 0; intento < 2; intento++) {
       const u = intento === 0 ? usuario : `${usuario}\nerrores_de_validacion: ${JSON.stringify(errores)}`;
@@ -957,7 +970,14 @@ export class AgenteTelegram {
         }
       }
       // Intenciones ampliadas aun sin puerta de ejecucion (estado 'extraido'): se entendio, se valido y NO se registra nada (jamas se inventa una escritura).
-      if (CATALOGO_INTENCIONES[declarada.tipo].estado === 'extraido') {
+      if (this.d.aprendizaje?.maneja(declarada.tipo) && ctx.autor.rol === 'socio' && ctx.fuente === 'texto') {
+        const s = await this.d.aprendizaje.manejarIntencion(declarada, { chatId: ctx.chatId, autor: ctx.autor, texto: ctx.texto, clave: `tg:${ctx.updateId}:${i}` });
+        await this.publicarAprendizaje(ctx.chats, s);
+        hechas++;
+        continue;
+      }
+      const conAltaConectada = this.d.aprendizaje !== undefined && this.motor !== null && (declarada.tipo === 'sabor_alta' || declarada.tipo === 'modelo_alta');
+      if (!conAltaConectada && CATALOGO_INTENCIONES[declarada.tipo].estado === 'extraido') {
         await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `extraido_sin_puerta:${declarada.tipo}` });
         await this.responder(ctx.autor, ctx.chats, textoExtraidoSinPuerta(declarada.tipo));
         continue;
@@ -1172,6 +1192,8 @@ export class AgenteTelegram {
   private async registrarConversacion(op: OperacionConversacion): Promise<ResultadoRegistro> {
     const grupo = await this.d.almacen.chats();
     if (this.d.almacen.escrituraEstado && !(await this.d.almacen.escrituraEstado()).activa) return { tipo: 'rechazado', texto: 'Estoy en solo lectura: la escritura esta apagada.' };
+    // Altas asistidas (cliente, sabor, modelo): por las funciones agente.alta_* (deteccion de parecidos, plazo habitual, sin inventar costos).
+    if (this.d.aprendizaje && (op.operacion === 'alta_cliente' || op.operacion === 'alta_sabor' || op.operacion === 'alta_modelo')) return this.d.aprendizaje.registrarAlta(op);
     const tr = intencionDeSlots(op.operacion, op.slots, op.cita);
     if (!tr.ok) return { tipo: 'rechazado', texto: tr.texto };
     const sal = await resolverAccion(tr.intencion, op.autor, this.d.catalogo, tr.overrides, this.cfg.exigirSabor);
@@ -1195,7 +1217,10 @@ export class AgenteTelegram {
     switch (r.tipo) {
       case 'ejecutado': {
         const pedidoId = typeof r.datos?.pedido_id === 'number' ? r.datos.pedido_id : undefined;
-        if (!r.repetido) this.ecoPendiente = { estado, r, grupo };
+        if (!r.repetido) {
+          this.ecoPendiente = { estado, r, grupo };
+          void this.aprenderDeOperacion(op, r.folio);
+        }
         return { tipo: 'registrado', folio: r.folio, ...(pedidoId !== undefined ? { pedidoId } : {}), ...(pedidoId === undefined ? { mensaje: P.ecoEjecutado(r, op.autor) } : {}) };
       }
       case 'pregunta':
@@ -1205,6 +1230,24 @@ export class AgenteTelegram {
         return { tipo: 'registrado', folio: r.folio, mensaje: P.textoSimple(`Quedo pendiente de autorizacion como ${r.folio}.`) };
       case 'rechazado':
         return { tipo: 'rechazado', texto: r.texto };
+    }
+  }
+
+  /** Todo lo que el modulo de aprendizaje dice va al grupo de los socios (nunca a clientes, proveedores ni Omar). */
+  private async publicarAprendizaje(chats: ChatsRegistrados, s: SalidaAprendizaje): Promise<void> {
+    for (const t of s.textos) await this.com.aGrupo(chats, listoParaGrupo(t));
+  }
+
+  /** Ejemplo propio anonimizado de lo que se acaba de registrar (solo vale pasados 10 minutos sin deshacerse; un fallo aqui no afecta el registro). */
+  private async aprenderDeOperacion(op: OperacionConversacion, folio: string): Promise<void> {
+    if (!this.d.aprendizaje || op.cita.trim() === '') return;
+    try {
+      const [clientes, modelos] = await Promise.all([this.d.catalogo.clientes(), this.d.catalogo.modelos()]);
+      const sabores: string[] = [];
+      for (const m of modelos.slice(0, 40)) sabores.push(...(await this.d.catalogo.saboresDe?.(m.id) ?? []).map((x) => x.nombre));
+      await this.d.aprendizaje.aprender({ clave: op.claveIdem, autor: op.autor, operacion: op.operacion, texto: op.cita, folio, clientes: clientes.flatMap((c) => [c.nombre, ...c.alias]), modelos: modelos.flatMap((m) => [m.nombre, ...m.alias]), sabores });
+    } catch {
+      // Aprender es opcional.
     }
   }
 

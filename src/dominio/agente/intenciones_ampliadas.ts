@@ -152,7 +152,7 @@ export interface ICostoLista {
   fuente_cita: string;
 }
 
-export const CLASES_ALIAS = ['cliente', 'sabor', 'modelo', 'proveedor'] as const;
+export const CLASES_ALIAS = ['cliente', 'sabor', 'modelo', 'marca', 'proveedor'] as const;
 export type ClaseAlias = (typeof CLASES_ALIAS)[number];
 
 /** Propuesta de alias ("Memo es Guillermo Torres"). Decision 5: aprende DATOS; un alias solo se guarda con la confirmacion de un socio (alias_respuesta). */
