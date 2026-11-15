@@ -43,7 +43,7 @@ async function crearPedido(page: Page, piezas: string, sabor: 'Fresa' | 'Uva', e
   await page.getByTestId('elegir-cliente').selectOption({ label: d.cliente });
   await page.getByRole('button', { name: 'Elegir cliente' }).click();
   await page.waitForURL(`**/pedidos/nuevo?cliente=${d.clienteId}`);
-  await page.getByTestId('modelo').selectOption({ label: `${d.marca} · ${d.modelo}` });
+  await page.getByTestId('modelo').selectOption({ label: `${d.marca} · ${d.modelo}`.toUpperCase() });
   await elegirOpcion(page, 'sabor', sabor);
   await page.getByTestId('piezas').fill(piezas);
   await expect(page.getByTestId('precio')).toHaveValue('150.00');
