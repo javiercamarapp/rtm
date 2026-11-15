@@ -281,6 +281,8 @@ export interface ContextoEjecucion {
   permitirDuplicado?: boolean;
   /** El socio confirmo que el cobro mayor a lo que debe el cliente es un anticipo. */
   confirmoExceso?: boolean;
+  /** Mensaje real del socio (redactado, 120 caracteres): la firma del acta lo guarda como su confirmacion personal. */
+  cita?: string;
 }
 
 export type MotivoPreguntaNegocio =
@@ -387,6 +389,10 @@ export interface NegocioAgente {
   caducarTomas(ahora: Date, horas: number): Promise<TomaCaducada[]>;
   /** Comentario de igualacion: lo que la base dice (api.socios_aportacion_neta); el agente solo lo cuenta. */
   igualacion(): Promise<Igualacion>;
+  /** Carril socios y gastos (opcional: el negocio simulado no lo implementa). Ambos saldos y la frase de igualacion tras un movimiento entre socios (cifras de SQL). */
+  saldosSocios?(): Promise<import('./socios_gastos').VistaSaldosSocios>;
+  /** Liga la foto del ticket (solo su huella) al gasto recien registrado; el monto lo tecleo el socio. */
+  ligarTicket?(telegramUserId: number, folio: string): Promise<{ ligada: boolean; duplicada: boolean; gastoPrevio: string | null }>;
   /** Socio de menudeo configurado (por omision Angelo). */
   socioMenudeo(): Promise<'angelo' | 'javier'>;
   /** Interruptor `telegram_envio`: con el apagado el latido no envia recordatorios. */

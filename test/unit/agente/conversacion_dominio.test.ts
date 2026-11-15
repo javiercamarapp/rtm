@@ -1,5 +1,5 @@
 // Piezas puras del carril de conversacion: montos con k o mil, correcciones, desambiguacion, folio por iniciales y espejo SQL de los slots.
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { detectarCorreccion } from '@/dominio/agente/correcciones';
 import { elegirCandidato, textoListaNumerada } from '@/dominio/agente/desambiguacion';
@@ -79,7 +79,8 @@ describe('folio por iniciales (espejo de SQL)', () => {
 });
 
 describe('slots: espejo SQL', () => {
-  const sql = readFileSync('supabase/migrations/20261116200000_agente_conversacion.sql', 'utf8') + readFileSync('supabase/migrations/20261116300100_ventas_bot_puertas.sql', 'utf8');
+  // Todas las migraciones que llenan agente.operacion_slot, en orden (la base y las de carriles posteriores).
+  const sql = readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort().map((f) => readFileSync(`supabase/migrations/${f}`, 'utf8')).filter((t) => t.includes('insert into agente.operacion_slot')).join('\n');
   const filas = [...sql.matchAll(/\('([a-z_]+)', (\d+), '([a-z_]+)', true, (null|'[a-z_]+'), (null|array\[[^\]]*\])\)/g)].map((m) => ({
     operacion: m[1]!, orden: Number(m[2]), slot: m[3]!, si_slot: m[4] === 'null' ? null : m[4]!.slice(1, -1),
     si_valor: m[5] === 'null' ? null : [...m[5]!.matchAll(/'([a-z_]+)'/g)].map((x) => x[1]!),

@@ -266,3 +266,17 @@ Todo pasa por la maquina de conversacion y el carril de frenos: el bot pregunta 
 - Envio y guias en dos tiempos: `envio_lote` marca enviados varios pedidos con una paqueteria del catalogo cerrado (Castores, Pitic, DHL o Estafeta) SIN exigir guia; `guias_lote` captura las guias despues y las empareja por folio, folio del proveedor o cliente; si hay duda pregunta y conserva lo ya emparejado. Una guia ya capturada no se reescribe (se cambia en el software). En la web, el dialogo de envio ahora tiene selector de paqueteria y la guia es opcional.
 - Consultas: `vencimientos` (por vencer y vencidos), `pedidos` de un cliente y `cartera` (cuanto debe cada cliente).
 - No reversibles por Telegram (se corrigen con un movimiento inverso o en el software): `envio_lote`, `guias_lote`, `compra_cierre`, `devolucion`, `paquete_perdido`. El pedido de dropshipping si se deshace mientras no salga.
+
+## Dinero entre socios, gastos, renta y valuacion por bot (carril socios y gastos)
+
+Sin topes y sin tarjeta: el bot pregunta lo que falte (que socio, cuanto, a quien, por transferencia o efectivo, la intencion) y registra cuando tiene todo. El modelo de IA no calcula dinero.
+
+- Aportacion o deposito: la INTENCION se pregunta siempre. Reembolso es lo que queda si el socio no declara capital; capital solo si el socio lo declara y lo registra quien lo pone.
+- Entrega de fondos: el socio entrega a la sociedad (se deshace 10 minutos) o a Isaac o Karen (no se deshace). Baja los fondos de la sociedad que tiene en su poder; NO es aportacion.
+- Liquidacion entre socios, retiro de utilidad y reembolso: se deshacen 10 minutos.
+- Retiro de capital: lo propone quien retira y lo confirma el OTRO socio con su propio mensaje (mismo monto). No se deshace.
+- Renta de Omar: la paga un socio; un pago mayor a lo que se debe se pregunta como anticipo.
+- Gasto: pagado por un socio (un gasto de la empresa y un reembolso) o con la caja de la sociedad. Con foto del ticket: la foto queda como evidencia (solo su huella) ligada al gasto; el monto lo escribe el socio; la misma foto no respalda dos gastos.
+- Cargo de servicio con tipo de cambio: pregunta moneda, monto, quien pago y el tipo de cambio.
+- Acta de corte: `/cierre` consulta el periodo; `/acta` propone; la firma es el mensaje personal de cada socio (`/firmaracta` o "firmo el acta"), queda registrado en SQL y no hay boton generico.
+- Valuacion e igualacion: `/valuacion`, "como estamos" y `/igualar angelo|javier` ("cuanto debe Angelo para igualar") con la misma frase del banner (entregar fondos mas aportar). Despues de cada movimiento entre socios el bot avisa al grupo con los saldos de AMBOS.

@@ -44,6 +44,7 @@ import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
 import type { AvisoPresupuesto, RolPresupuesto } from '@/dominio/agente/presupuesto';
 import type { CifraServidor, ChatsRegistrados, Miembro, RolMiembro } from '@/dominio/agente/tipos';
 import { llamar, type Sql } from '@/infra/postgres/servidor';
+import { leerCierreMensual, leerSaldosSocios, ligarTicket, lineasSocios, prepararSocios, respuestaDeSocios } from './socios_gastos';
 
 const F = (sql: Sql, fn: string, args: readonly unknown[] = [], casts: readonly string[] = []) => {
   const marcas = args.map((_, i) => `$${i + 1}${casts[i] ? `::${casts[i]}` : ''}`).join(', ');
@@ -196,6 +197,9 @@ export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string)
     ...(ctx.confirmoExceso ? { confirmo_exceso: true } : {}),
   };
   const lineasSku = () => a.resoluciones.lineas.map((r, n) => ({ modelo_id: Number(r.modeloId), sabor_id: r.saborId === null ? null : Number(r.saborId), piezas: (i as { lineas: { piezas: number }[] }).lineas[n]!.piezas }));
+  // Carril socios y gastos: entrega de fondos, liquidacion, retiro de capital, renta de Omar, gasto de caja y firma personal del acta.
+  const deSocios = prepararSocios(i, base, ctx.cita);
+  if (deSocios !== null) return deSocios;
   switch (i.tipo) {
     case 'gasto':
       return { hub: 'ejecutar', tipo: 'gasto', titulo: `Gasto registrado (${i.gasto})`, args: { ...base, pagado_por: i.pagado_por, monto_cent: i.monto_centavos, categoria: CATEGORIA_GASTO[i.gasto] ?? 'otro', nota: i.descripcion } };
@@ -399,6 +403,9 @@ export function preguntaExceso(x: ExcesoSql): ResultadoNegocio {
 export class NegocioAgenteDb implements NegocioAgente {
   constructor(private readonly sql: Sql) {}
 
+  saldosSocios() { return leerSaldosSocios(this.sql); }
+  ligarTicket(telegramUserId: number, folio: string) { return ligarTicket(this.sql, telegramUserId, folio); }
+
   async ejecutar(a: AccionResuelta, ctx: ContextoEjecucion): Promise<ResultadoNegocio> {
     const i = a.intencion;
     try {
@@ -408,7 +415,10 @@ export class NegocioAgenteDb implements NegocioAgente {
         // Frenos de la base: no escribio nada y pregunta (duplicado u cobro mayor a lo que debe el cliente). Sin tope: la respuesta afirmativa del socio lo registra.
         if (j.posible_duplicado === true) return preguntaDuplicado(j as unknown as DuplicadoSql);
         if (j.pregunta_exceso === true) return preguntaExceso(j as unknown as ExcesoSql);
+        const pSocios = respuestaDeSocios(j);
+        if (pSocios !== null) return pSocios;
         const ls = lineasDeResultado(j);
+        ls.push(...lineasSocios(prep.tipo, j));
         // El monto que el socio dicto (ya validado contra su mensaje) se muestra aunque la funcion de negocio no lo devuelva.
         if (!ls.some((l) => l.etiqueta === 'Monto') && typeof prep.args.monto_cent === 'number') ls.unshift({ tipo: 'pesos', etiqueta: 'Monto', centavos: BigInt(prep.args.monto_cent) });
         const adv = i.tipo === 'pedido_menudeo' ? ['Cuando el proveedor lo envie marcalo con /enviado; los datos de entrega se capturan en la web, nunca por Telegram.'] : [];
@@ -496,11 +506,17 @@ export class NegocioAgenteDb implements NegocioAgente {
     const q = async (tipo: string, id: number | null, sujeto: string | null): Promise<Cons> => (await F(this.sql, 'consulta', [tipo, id, sujeto], ['text', 'bigint', 'text'])) as Cons;
     let j: Cons | null = null;
     const qx = async (tipo: string, id: number | null, sujeto: string | null): Promise<Cons> => (await F(this.sql, 'consulta_ext', [tipo, id, sujeto], ['text', 'bigint', 'text'])) as Cons;
+    if (c.consulta === 'cierre_mensual') {
+      if (!autor || autor.rol !== 'socio') return { titulo: 'Eso lo ven solo los socios', lineas: [] };
+      return leerCierreMensual(this.sql);
+    }
     if (c.consulta === 'valuacion') {
       // La misma funcion de la base que la web (api.cuenta_socios_valuacion); el texto lo arma codigo determinista, nunca el modelo.
       if (!autor || autor.rol !== 'socio') return { titulo: 'Eso lo ven solo los socios', lineas: [] };
       const v = centavosABigint<VistaValuacionAgente>(await F(this.sql, 'valuacion_socios'));
-      const yo: Socio = autor.persona === 'angelo' ? 'Angelo' : 'Javier';
+      // "Cuanto debe Angelo para igualar": con un socio como sujeto, la respuesta es desde su lado (misma frase del banner, cifras de SQL).
+      const sujeto = (c.sujeto_texto ?? '').trim().toLowerCase();
+      const yo: Socio = sujeto === 'angelo' ? 'Angelo' : sujeto === 'javier' ? 'Javier' : autor.persona === 'angelo' ? 'Angelo' : 'Javier';
       const resp = respuestaValuacionAgente(v, yo, formatearMoneda);
       if (!resp) return { titulo: 'Todavía no hay valuación para comparar', lineas: [] };
       return { titulo: 'Tu valuación', lineas: [{ tipo: 'pesos', etiqueta: 'Tu valuación', centavos: resp.valuacionCent }, ...resp.textos.map((t) => ({ tipo: 'texto' as const, etiqueta: t.etiqueta, texto: t.texto }))] };

@@ -6,6 +6,7 @@ import type { OperacionConv } from '@/dominio/agente/slots';
 import type { Overrides } from './resolucion';
 import type { OrigenDs } from '@/dominio/agente/intenciones_ampliadas';
 import { paqueteriaDeCatalogo } from '@/dominio/agente/guias';
+import { tipoCambioMicro } from '@/dominio/agente/tipo_cambio';
 
 export interface LineaSlot { modeloId: string; modelo: string; saborId: string | null; sabor: string | null; piezas: number }
 
@@ -72,6 +73,7 @@ export function intencionDeSlots(operacion: OperacionConv, s: Readonly<Record<st
       if (m === null || txt(s.tipo_gasto) === null || txt(s.pagado_por) === null) return { ok: false, texto: 'Falta el tipo, el monto o quien pago.' };
       return { ok: true, intencion: { tipo: 'gasto', gasto: String(s.tipo_gasto) as TipoGasto, monto_centavos: m, pagado_por: String(s.pagado_por) as QuienPaga, descripcion: txt(s.referencia), fuente_cita: c }, overrides: {} };
     }
+    case 'deposito':
     case 'aportacion': {
       const m = num(s.monto);
       if (m === null || txt(s.socio) === null) return { ok: false, texto: 'Falta el socio o el monto.' };
@@ -83,6 +85,37 @@ export function intencionDeSlots(operacion: OperacionConv, s: Readonly<Record<st
       if (m === null || txt(s.socio) === null) return { ok: false, texto: 'Falta el socio o el monto.' };
       const via = s.via === 'efectivo' ? 'efectivo' : s.via === 'transferencia' ? 'transferencia' : null;
       return { ok: true, intencion: operacion === 'reembolso' ? { tipo: 'reembolso_socio', socio: String(s.socio) as SocioNombre, monto_centavos: m, via, fuente_cita: c } : { tipo: 'retiro_utilidad', socio: String(s.socio) as SocioNombre, monto_centavos: m, via, fuente_cita: c }, overrides: {} };
+    }
+    case 'entrega_fondos': {
+      const m = num(s.monto);
+      const dest = txt(s.destino);
+      if (m === null || txt(s.socio) === null || (dest !== 'sociedad' && dest !== 'isaac' && dest !== 'karen')) return { ok: false, texto: 'Falta el socio, el destino o el monto.' };
+      return { ok: true, intencion: { tipo: 'entrega_fondos', socio: String(s.socio) as SocioNombre, destino: dest, monto_centavos: m, via: s.via === 'efectivo' ? 'efectivo' : s.via === 'transferencia' ? 'transferencia' : null, fuente_cita: c }, overrides: {} };
+    }
+    case 'liquidacion': {
+      const m = num(s.monto);
+      if (m === null || txt(s.socio) === null || txt(s.contraparte) === null) return { ok: false, texto: 'Falta quien paga, a quien o el monto.' };
+      return { ok: true, intencion: { tipo: 'liquidacion_socios', de_socio: String(s.socio) as SocioNombre, a_socio: String(s.contraparte) as SocioNombre, monto_centavos: m, via: s.via === 'efectivo' ? 'efectivo' : s.via === 'transferencia' ? 'transferencia' : null, fuente_cita: c }, overrides: {} };
+    }
+    case 'retiro_capital': {
+      const m = num(s.monto);
+      if (m === null || txt(s.socio) === null) return { ok: false, texto: 'Falta el socio o el monto.' };
+      return { ok: true, intencion: { tipo: 'retiro_capital', socio: String(s.socio) as SocioNombre, monto_centavos: m, via: null, fuente_cita: c }, overrides: {} };
+    }
+    case 'renta_omar': {
+      const m = num(s.monto);
+      if (m === null || txt(s.pagado_por) === null) return { ok: false, texto: 'Falta quien pago o el monto.' };
+      return { ok: true, intencion: { tipo: 'renta_omar', monto_centavos: m, pagado_por: String(s.pagado_por) as QuienPaga, via: s.via === 'efectivo' ? 'efectivo' : s.via === 'transferencia' ? 'transferencia' : null, nota: null, fuente_cita: c }, overrides: {} };
+    }
+    case 'gasto_servicio': {
+      const m = num(s.monto);
+      const usd = s.moneda === 'usd';
+      if (m === null || txt(s.servicio) === null || txt(s.pagado_por) === null || (s.moneda !== 'usd' && s.moneda !== 'mxn')) return { ok: false, texto: 'Falta el servicio, la moneda, el monto o quien pago.' };
+      return {
+        ok: true,
+        intencion: { tipo: 'gasto_servicio', servicio_texto: String(s.servicio), monto_usd_centavos: usd ? m : null, monto_mxn_centavos: usd ? null : m, tipo_cambio_micro: usd ? tipoCambioMicro(txt(s.tipo_cambio)) : null, pagado_por: String(s.pagado_por) as QuienPaga, fuente_cita: c },
+        overrides: {},
+      };
     }
     case 'conteo':
       if (ls.length === 0) return { ok: false, texto: 'Faltan las piezas.' };

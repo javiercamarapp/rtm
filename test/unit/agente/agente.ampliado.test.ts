@@ -35,12 +35,14 @@ describe('catalogo declarativo de intenciones', () => {
   });
 
   it('lo que no se deshace por Telegram exige confirmacion reforzada o lo dice', () => {
-    for (const t of ['pedido_cancelar', 'conteo', 'acta_propuesta', 'acta_firma', 'lote_historico'] as const) {
+    for (const t of ['pedido_cancelar', 'conteo', 'lote_historico'] as const) {
       expect(CATALOGO_INTENCIONES[t].confirmacion, t).toBe('reforzada');
     }
     // Carril ventas-compras (16-nov): la devolucion y el paquete perdido ya tienen puerta (agente.ejecutar_ext) y se registran por conversacion.
     expect(CATALOGO_INTENCIONES.devolucion.estado).toBe('activa');
     expect(CATALOGO_INTENCIONES.paquete_perdido.estado).toBe('activa');
+    // Decision del dueno (14-nov): sin tarjeta ni boton generico; la firma del acta es el mensaje personal de cada socio (queda registrado en SQL).
+    for (const t of ['acta_propuesta', 'acta_firma'] as const) expect(CATALOGO_INTENCIONES[t].confirmacion, t).toBe('ninguna');
     expect(exigeConfirmacion('merma')).toBe(true);
   });
 

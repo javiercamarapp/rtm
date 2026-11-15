@@ -55,6 +55,8 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
   lote: '/lote etiqueta  [total 1500]  (una linea por movimiento: 2026-10-03 gasto javier 500 uber | 2026-10-04 cobro Cliente 7000 efectivo)',
   pedidomenudeo: '/pedidomenudeo [karen|isaac] | modelo/sabor 24 | modelo/sabor 10 | cuando el viernes 5pm  (o: sin fecha)',
   pagopedido: '/pagopedido P-0001 | 1000 | [transferencia|deposito|efectivo] | [proveedor|sociedad] | [ref CLAVE] | [ayer]',
+  cierre: '/cierre',
+  igualar: '/igualar [angelo|javier]',
   cuadra: '/cuadra',
   balance: '/balance',
   diario: '/diario',
@@ -70,7 +72,7 @@ export const USO_COMANDOS: Readonly<Record<string, string>> = {
 };
 
 export const LISTA_COMANDOS =
-  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes, /enviado, /entregado, /cancelar, /aprobar, /enviada, /llego, /recibir, /servicio, /merma, /conteo, /cliente, /precio, /acta, /firmaracta, /lote, /pedidomenudeo, /pagopedido, /cuadra, /balance, /diario, /cobertura, /reporte, /compras, /pedidos, /socios, /valuacion, /lectura, /escritura';
+  '/pedido, /pago, /pagoprov, /gasto, /aporte, /reembolso, /retiro, /devolucion, /paquete, /compra, /stock, /saldo, /estado, /utilidad, /cartera, /deshacer, /resumen, /pendientes, /enviado, /entregado, /cancelar, /aprobar, /enviada, /llego, /recibir, /servicio, /merma, /conteo, /cliente, /precio, /acta, /firmaracta, /lote, /pedidomenudeo, /pagopedido, /cuadra, /balance, /diario, /cobertura, /reporte, /compras, /pedidos, /socios, /valuacion, /cierre, /igualar, /lectura, /escritura';
 
 export type ResultadoComando =
   | { ok: true; tipo: 'intencion'; intencion: Intencion }
@@ -529,6 +531,12 @@ export function parsearComando(texto: string): ResultadoComando | null {
     case 'valuacion':
     case 'estamos':
       return consulta('valuacion');
+    case 'cierre':
+      return consulta('cierre_mensual');
+    case 'igualar': {
+      const p = normalizar(resto);
+      return p === '' ? consulta('valuacion') : p === 'angelo' || p === 'javier' ? consulta('valuacion', { sujeto_texto: p }) : fallo('igualar');
+    }
     case 'cobertura':
       return consulta('cobertura', { modelo_texto: resto === '' ? null : resto });
     case 'reporte': {
