@@ -4,7 +4,7 @@ import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, BarraFiltros, Chip } from '@/ui/componentes/controles';
-import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
+import { FiltroPeriodo } from '@/ui/componentes/filtro-periodo';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Tarjeta } from '@/ui/componentes/pagina';
@@ -34,11 +34,7 @@ export default async function PaginaUtilidadDs({ searchParams }: { searchParams:
       <PestanasDs activa="utilidad" sinFolio={resumen.sin_folio_externo} filtros={(
       <BarraFiltros etiquetaAria="Periodo" extras={desde || hasta ? <Chip href="/dropshipping/utilidad">Quitar filtros</Chip> : undefined}>
         <form className="rtm-ds-filtros-linea" method="get" aria-label="Periodo">
-          <FiltrosPlegables etiqueta="Periodo" titulo="Filtrar por periodo (desde y hasta)" activos={(desde ? 1 : 0) + (hasta ? 1 : 0)}>
-            <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
-            <label className="rtm-etiqueta-campo">Hasta<input className="rtm-campo" type="date" name="hasta" defaultValue={hasta ?? ''} /></label>
-            <button type="submit" className="rtm-boton rtm-boton-primario">Aplicar</button>
-          </FiltrosPlegables>
+          <FiltroPeriodo desde={desde} hasta={hasta} />
         </form>
       </BarraFiltros>
       )} />

@@ -25,6 +25,7 @@ import '@/ui/estilos/karen.css';
 import '@/ui/estilos/stock.css';
 import '@/ui/estilos/hoja.css';
 import '@/ui/estilos/mayusculas.css';
+import '@/ui/estilos/flotantes.css';
 
 export const metadata: Metadata = {
   title: { default: MARCA.nombre, template: `%s · ${MARCA.nombre}` },

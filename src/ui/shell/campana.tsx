@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { etiquetaFechaHora } from '@/dominio/formato';
 import { destinoAviso, type ListaCampana } from '@/dominio/notificaciones/tipos';
 import { IconoAviso } from '../iconos';
+import { useColision } from '../componentes/colision';
 
 const SEVERIDAD = { C: 'Crítica', I: 'Importante', F: 'Informativa' } as const;
 
@@ -25,6 +26,8 @@ export function Campana({ noLeidas, cargar, marcar, marcarTodas }: Props) {
   const [ocupado, empezar] = useTransition();
   const caja = useRef<HTMLDivElement>(null);
   const boton = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  useColision(abierta, panel, 'der');
 
   useEffect(() => setCuenta(noLeidas), [noLeidas]);
 
@@ -61,7 +64,7 @@ export function Campana({ noLeidas, cargar, marcar, marcarTodas }: Props) {
         {cuenta > 0 && <span className="rtm-campana-cuenta" data-testid="campana-cuenta">{cuenta > 99 ? '99+' : cuenta}</span>}
       </button>
       {abierta && (
-        <div className="rtm-campana-panel" role="dialog" aria-label="Avisos" data-testid="campana-panel">
+        <div ref={panel} className="rtm-campana-panel" data-flota role="dialog" aria-label="Avisos" data-testid="campana-panel">
           <div className="rtm-campana-pestanas" role="tablist" aria-label="Filtro de avisos">
             {(['sin_leer', 'todas'] as const).map((p) => (
               <button key={p} type="button" role="tab" aria-selected={pestana === p} className="rtm-campana-pestana" onClick={() => setPestana(p)} data-testid={`campana-${p}`}>{p === 'todas' ? 'Todas' : `Sin leer${lista && pestana === 'sin_leer' ? '' : ''}`}</button>

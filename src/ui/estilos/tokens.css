@@ -52,6 +52,8 @@
 
   /* Sombra solo en popover y dialogo. */
   --rtm-sombra-flotante: 0 8px 28px #00000026, 0 1px 3px #0000001f;
+  /* Panel flotante en capas: contacto, medio y ambiente (flotantes.css). */
+  --rtm-sombra-panel: 0 1px 2px #0000001f, 0 4px 10px #00000014, 0 18px 36px #00000024;
 
   /* Radios */
   --rtm-r-1: 5px;
@@ -185,6 +187,7 @@
   --rtm-lila-soft: #2e2438;
 
   --rtm-sombra-flotante: 0 8px 28px #00000080, 0 1px 3px #00000066;
+  --rtm-sombra-panel: 0 1px 2px #00000080, 0 4px 10px #00000066, 0 18px 36px #00000099;
 
   color-scheme: dark;
 }
