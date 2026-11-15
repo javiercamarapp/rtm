@@ -48,7 +48,7 @@ async function principal() {
     const espera = PAUSA_MS - (Date.now() - ultima);
     if (ultima && espera > 0) await new Promise((r) => setTimeout(r, espera));
     ultima = Date.now();
-    return fetch(url, { headers: { 'User-Agent': AGENTE_USUARIO, Accept: aceptar }, redirect: 'follow', signal: AbortSignal.timeout(25_000) });
+    return fetch(url, { headers: { 'User-Agent': AGENTE_USUARIO, Accept: aceptar }, redirect: 'follow', signal: globalThis.AbortSignal.timeout(25_000) });
   };
   const resumen = { con_foto: [], por_confirmar: [], sin_foto: [] };
   for (const c of cands) {
