@@ -11,7 +11,7 @@ export interface InstruccionConversacion {
 
 /** Operaciones que la conversacion registra de punta a punta por el carril de frenos. El resto de las intenciones sigue su camino anterior. */
 export const OPERACIONES_POR_CONVERSACION: ReadonlySet<OperacionConv> = new Set<OperacionConv>([
-  'pedido_bodega', 'cobro_cliente', 'pago_proveedor', 'pago_redirigido', 'gasto', 'aportacion', 'reembolso', 'retiro', 'conteo', 'alta_cliente',
+  'pedido_bodega', 'cobro_cliente', 'pago_proveedor', 'pago_redirigido', 'gasto', 'aportacion', 'reembolso', 'retiro', 'conteo', 'alta_cliente', 'alta_sabor', 'alta_modelo',
   // Carril ventas-compras (16-nov)
   'pedido_dropshipping', 'pedido_a_costo', 'compra', 'orden_compra', 'recepcion_compra', 'compra_estado', 'compra_cierre', 'devolucion', 'paquete_perdido', 'envio_lote', 'guias_lote',
   // Carril socios y gastos (16-nov): dinero entre socios, renta de Omar y cargo de servicio.
@@ -119,6 +119,13 @@ export function instruccionDeIntencion(i: Intencion): InstruccionConversacion | 
     case 'pedido_envio':
       // Un envio sin guia dictada pasa por el catalogo cerrado de paqueterias; con guia dictada conserva su camino anterior (la base valida la paqueteria).
       return i.estado === 'enviado' && i.guia_texto === null ? { operacion: 'envio_lote', candidatos: limpiar({ folios: i.pedido_folio === null ? null : [i.pedido_folio], paqueteria: i.paqueteria_texto }) } : null;
+    // Carril aprendizaje y alta asistida: el sabor y el modelo nuevos pasan por la conversacion (el bot pregunta lo que falte; el costo de lista solo si lo dice el socio).
+    case 'sabor_alta':
+      return { operacion: 'alta_sabor', candidatos: limpiar({ nombre: i.sabor_texto, modelo: i.modelo_texto }) };
+    case 'modelo_alta': {
+      const prov = i.proveedor_texto === null ? null : /isaac/i.test(i.proveedor_texto) ? 'isaac' : /karen|vapemate/i.test(i.proveedor_texto) ? 'karen' : null;
+      return { operacion: 'alta_modelo', candidatos: limpiar({ nombre: i.modelo_texto, marca: i.marca_texto, ...(i.costo_centavos !== null && prov !== null ? { proveedor_costo: prov, costo: i.costo_centavos } : {}) }) };
+    }
     default:
       return null;
   }

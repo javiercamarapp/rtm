@@ -282,11 +282,11 @@ describe('una conversacion simulada por operacion', () => {
     { op: 'devolucion', cand: { cliente: 'Ariel' }, cita: 'devolucion de ariel',
       resp: ['ag-003', 'nexa mango 3', 'op:inventario', 'llego mal'], preguntas: ['¿De qué pedido es la devolución?', '¿Qué modelo, sabor y cuántas piezas devolvió?', '¿Las piezas regresan al inventario o van a merma?', '¿Cuál fue el motivo de la devolución?'], slots: { pedido_folio: 'AG-003', destino_piezas: 'inventario', motivo: 'llego mal' } },
     { op: 'alta_cliente', cand: {}, cita: 'dar de alta un cliente',
-      resp: ['Beto Ramirez', 'op:menudeo'], preguntas: ['¿Cómo se llama el cliente', '¿Es mayoreo o menudeo?'], slots: { nombre: 'Beto Ramirez', tipo_cliente: 'menudeo' } },
+      resp: ['Beto Ramirez', 'op:menudeo', 'op:javier', 'op:15'], preguntas: ['¿Cómo se llama el cliente', '¿Es mayoreo o menudeo?', '¿De qué socio es el cliente', '¿Cuál es su plazo habitual'], slots: { nombre: 'Beto Ramirez', tipo_cliente: 'menudeo', duenio: 'javier', plazo_habitual: '15' } },
     { op: 'alta_sabor', cand: {}, cita: 'nuevo sabor',
-      resp: ['uva helada'], preguntas: ['¿Cuál es el nombre exacto del sabor?'], slots: { nombre: 'uva helada' } },
+      resp: ['uva helada', 'nexa'], preguntas: ['¿Cuál es el nombre exacto del sabor?', '¿De qué modelo es el sabor?'], slots: { nombre: 'uva helada', modelo: 'nexa' } },
     { op: 'alta_modelo', cand: { nombre: 'Waka 30K' }, cita: 'nuevo modelo waka 30k',
-      resp: ['Waka', '95'], preguntas: ['¿De qué marca es?', '¿Cuál es el costo de lista?'], slots: { marca: 'Waka', costo: 9500 } },
+      resp: ['Waka', '30k', 'op:karen', '95'], preguntas: ['¿De qué marca es?', '¿Cuántas caladas', '¿Con qué proveedor tiene costo de lista', '¿Cuál es el costo de lista?'], slots: { marca: 'Waka', puffs: '30k', proveedor_costo: 'karen', costo: 9500 } },
   ];
 
   for (const c of casos) {

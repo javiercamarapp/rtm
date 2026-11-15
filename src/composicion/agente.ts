@@ -13,6 +13,9 @@ import {
   EnviadorTelegramMemoria,
 } from '@/infra/agente/memoria';
 import { NegocioSimulado } from '@/infra/agente/negocio_simulado';
+import { ModuloAprendizaje } from '@/aplicacion/agente/aprendizaje';
+import { AlmacenConversacionMemoria } from '@/infra/agente/conversacion_memoria';
+import { PuertoAprendizajeMemoria } from '@/infra/agente/aprendizaje_memoria';
 import { ContadorUpdates, IDS_SIMULADOS } from '@/infra/agente/updates';
 
 export class RelojManual {
@@ -32,6 +35,10 @@ export interface OpcionesAgenteEnMemoria {
   presupuestoInicial?: EstadoPresupuesto;
   config?: Partial<ConfigAgente>;
   negocio?: NegocioSimulado;
+  /** Maquina de conversacion en memoria (transporte falso): el bot pregunta lo que falte y registra por el negocio simulado. */
+  conversacion?: boolean;
+  /** Aprendizaje y alta asistida con el puerto en memoria (sin base ni red). Implica conversacion. */
+  aprendizaje?: PuertoAprendizajeMemoria;
 }
 
 export const MIEMBROS_SIMULADOS: Miembro[] = [
@@ -63,8 +70,11 @@ export function crearAgenteEnMemoria(op: OpcionesAgenteEnMemoria = {}) {
     pendiente: (uid) => almacen.evidencias.find((e) => e.telegramUserId === uid && !usadas.has(e.id))?.id ?? null,
     usar: (id) => void usadas.add(id),
   };
-  const agente = new AgenteTelegram({ almacen, presupuesto, llm, telegram, tokens, catalogo, negocio, reloj: reloj.ahora, config: op.config });
-  return { agente, almacen, presupuesto, telegram, tokens, llm, catalogo, negocio, reloj, contador: new ContadorUpdates(), ids: IDS_SIMULADOS };
+  const aprendizaje = op.aprendizaje ? new ModuloAprendizaje(op.aprendizaje, async () => catalogo.clientes()) : undefined;
+  if (op.aprendizaje) op.aprendizaje.ahora = () => reloj.ahora().getTime();
+  const conversacion = op.conversacion || op.aprendizaje ? { almacen: new AlmacenConversacionMemoria(reloj.ahora) } : undefined;
+  const agente = new AgenteTelegram({ almacen, presupuesto, llm, telegram, tokens, catalogo, negocio, reloj: reloj.ahora, config: op.config, ...(conversacion ? { conversacion } : {}), ...(aprendizaje ? { aprendizaje } : {}) });
+  return { agente, almacen, presupuesto, telegram, tokens, llm, catalogo, negocio, reloj, aprendizaje: op.aprendizaje, contador: new ContadorUpdates(), ids: IDS_SIMULADOS };
 }
 
 export type AgenteEnMemoria = ReturnType<typeof crearAgenteEnMemoria>;

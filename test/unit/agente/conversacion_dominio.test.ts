@@ -79,14 +79,20 @@ describe('folio por iniciales (espejo de SQL)', () => {
 });
 
 describe('slots: espejo SQL', () => {
-  // Todas las migraciones que llenan agente.operacion_slot, en orden (la base y las de carriles posteriores).
-  const sql = readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort().map((f) => readFileSync(`supabase/migrations/${f}`, 'utf8')).filter((t) => t.includes('insert into agente.operacion_slot')).join('\n');
-  const filas = [...sql.matchAll(/\('([a-z_]+)', (\d+), '([a-z_]+)', true, (null|'[a-z_]+'), (null|array\[[^\]]*\])\)/g)].map((m) => ({
+  // Todas las migraciones que llenan agente.operacion_slot, en orden (la base y las de carriles posteriores), salvo la de altas que se aplica aparte.
+  const ARCHIVO_ALTAS = '20261116500300_alta_asistida_bot.sql';
+  const sql = readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql') && f !== ARCHIVO_ALTAS).sort().map((f) => readFileSync(`supabase/migrations/${f}`, 'utf8')).filter((x) => x.includes('insert into agente.operacion_slot')).join('\n');
+  // Las migraciones del carril de altas (20261116500300) agregan slots y mueven el costo del modelo: se aplican en el mismo orden.
+  const sqlAltas = readFileSync(`supabase/migrations/${ARCHIVO_ALTAS}`, 'utf8');
+  const leer = (t: string) => [...t.matchAll(/\('([a-z_]+)', (\d+), '([a-z_]+)', true, (null|'[a-z_]+'), (null|array\[[^\]]*\])\)/g)].map((m) => ({
     operacion: m[1]!, orden: Number(m[2]), slot: m[3]!, si_slot: m[4] === 'null' ? null : m[4]!.slice(1, -1),
     si_valor: m[5] === 'null' ? null : [...m[5]!.matchAll(/'([a-z_]+)'/g)].map((x) => x[1]!),
   }));
+  const base = leer(sql).map((f) => (f.operacion === 'alta_modelo' && f.slot === 'costo' ? { ...f, orden: 5, si_slot: 'proveedor_costo', si_valor: ['isaac', 'karen'] } : f));
+  const filas = [...base, ...leer(sqlAltas)].sort((a, b) => (a.operacion === b.operacion ? a.orden - b.orden : a.operacion < b.operacion ? -1 : 1));
   it('la tabla agente.operacion_slot coincide con src/dominio/agente/slots.ts (obligatorios, orden y condiciones)', () => {
-    expect(filas).toEqual(filasEspejoSql());
+    expect(sqlAltas).toContain("update agente.operacion_slot set orden = 5, si_slot = 'proveedor_costo', si_valor = array['isaac', 'karen'] where operacion = 'alta_modelo' and slot = 'costo'");
+    expect(filas).toEqual([...filasEspejoSql()].sort((a, b) => (a.operacion === b.operacion ? a.orden - b.orden : a.operacion < b.operacion ? -1 : 1)));
   });
   it('cada operacion tiene al menos un slot obligatorio y sus slots condicionales apuntan a slots que existen', () => {
     for (const op of OPERACIONES_CONV) {
