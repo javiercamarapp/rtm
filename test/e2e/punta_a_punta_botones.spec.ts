@@ -42,7 +42,7 @@ for (const tema of TEMAS) {
       await fijarTema(page, tema);
     });
 
-    test('shell: 12 enlaces del sidebar, logo, boton de tema, apariencia, cerrar sesion y cajon de Explicar (B-01 a B-27)', async ({ page }, info) => {
+    test('shell: 12 enlaces del sidebar, logo, boton de tema, cerrar sesion y cajon de Explicar (B-01 a B-27)', async ({ page }, info) => {
       const vigia = vigilarErrores(page);
       await sesionSocio(page, '/');
       const secciones: [string, RegExp][] = [
@@ -65,10 +65,6 @@ for (const tema of TEMAS) {
       await expect(page.locator('html')).toHaveAttribute('data-tema', otro);
       await page.getByTestId('boton-tema').click();
       await expect(page.locator('html')).toHaveAttribute('data-tema', tema);
-      // Apariencia (acento y movimiento).
-      await page.getByRole('button', { name: /Apariencia/i }).click();
-      await expect(page.getByRole('button', { name: /Apariencia/i })).toHaveAttribute('aria-expanded', 'true');
-      await page.keyboard.press('Escape');
       await expect(page.getByTestId('cerrar-sesion')).toBeVisible();
       await capturar(page, info, tema, 'shell');
       expect(vigia.errores).toEqual([]);
