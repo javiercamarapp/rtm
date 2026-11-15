@@ -23,11 +23,11 @@ const quien = (a: Miembro): Record<string, unknown> => ({ autor: a.persona, tele
 export class PuertoAvisosInventarioDb implements PuertoAvisosInventario {
   constructor(private readonly sql: Sql) {}
 
-  armar(ventana: VentanaAviso, ahora: Date): Promise<DigestArmado> {
-    return f<DigestArmado>(this.sql, 'avisos_digest_armar', '$1::text, $2::timestamptz', [ventana, ahora.toISOString()]).then((d) => ({ estado: d.estado, items: d.items ?? [], restantes: Number((d as { restantes?: number }).restantes ?? 0) }));
+  armar(ventana: VentanaAviso, ahora: Date, fusion = false): Promise<DigestArmado> {
+    return f<DigestArmado>(this.sql, 'avisos_digest_armar', '$1::text, $2::timestamptz, $3::boolean', [ventana, ahora.toISOString(), fusion]).then((d) => ({ estado: d.estado, items: d.items ?? [], restantes: Number((d as { restantes?: number }).restantes ?? 0) }));
   }
-  confirmar(ventana: VentanaAviso, ids: number[], ahora: Date): Promise<number | null> {
-    return f<number | null>(this.sql, 'avisos_digest_confirmar', '$1::text, $2::bigint[], $3::timestamptz', [ventana, ids, ahora.toISOString()]);
+  confirmar(ventana: VentanaAviso, ids: number[], ahora: Date, fusion = false): Promise<number | null> {
+    return f<number | null>(this.sql, 'avisos_digest_confirmar', '$1::text, $2::bigint[], $3::timestamptz, $4::boolean', [ventana, ids, ahora.toISOString(), fusion]);
   }
   consulta(tipo: 'mas_vendido' | 'reponer'): Promise<{ titulo: string; lineas: LineaConsulta[] }> {
     return f(this.sql, 'consulta_inventario', '$1::text', [tipo]);

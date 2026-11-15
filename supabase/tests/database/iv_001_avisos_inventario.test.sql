@@ -178,7 +178,8 @@ select ok(agente.avisos_digest_confirmar('I', array(select (x ->> 'id')::bigint 
 select is((select estado from agente.aviso_cola where codigo = 'oc_llego'), 'enviado', 'lo enviado sale de la cola');
 select is(agente.avisos_digest_confirmar('I', array(select id from agente.aviso_cola where codigo = 'oc_llego'), now()), null::bigint, 'confirmar dos veces no registra otro digest');
 -- Tope: con 6 mensajes en el dia ya no sale nada que no sea critico.
-insert into agente.aviso_digest (dia, ventana, items, enviado_at) select negocio.hoy(), 'M', 1, now() from generate_series(1, 6);
+-- (el techo cuenta en el libro unico notificacion.programado: reloj + cobranza + inventario)
+insert into notificacion.programado (clave, clase, codigo, severidad, dia, cuenta_techo, creado_at) select 'iv:tope:' || g, 'inventario_digest', 'digest_inventario_M', 'I', negocio.hoy(), true, now() from generate_series(1, 6) g;
 select is(jsonb_array_length(agente.avisos_digest_armar('M', (negocio.hoy() + time '09:00') at time zone 'America/Merida') -> 'items'), 0, 'con 6 mensajes en el dia el digest no manda mas');
 
 -- ------------------------------------------------------------------ 9. consultas del bot y diff de lista

@@ -18,6 +18,9 @@ import { PuertoTareasDb, RepositorioEntregasDb } from '@/infra/notificaciones/po
 import { enviadorTelegramDeLotes } from '@/infra/notificaciones/telegram_lotes';
 import { ejecutarPendientes, ejecutarResumenDiario } from '@/aplicacion/notificaciones/reportes_programados';
 import { PuertoReportesDb } from '@/infra/notificaciones/reportes_postgres';
+import { ejecutarRelojCobranza } from '@/aplicacion/agente/cobranza_reloj';
+import { ejecutarRelojAvisos } from '@/aplicacion/agente/avisos_inventario';
+import { PuertoRelojCobranzaDb } from '@/infra/agente/cobranza_postgres';
 import { llamadaProveedoresServidor } from '@/infra/postgres/proveedores';
 import { sqlServidor, type Sql } from '@/infra/postgres/servidor';
 import { secretoValido } from '@/infra/agente/telegram_webhook';
@@ -157,6 +160,32 @@ export function manejadoresDeTareas(d: DepsProduccion): Record<string, Manejador
     // Mensajes programados al grupo: plantilla sobre cifras SQL, emitidos por la puerta unica; con la regla o el maestro apagados quedan `omitida` y no sale nada.
     'resumen-diario': () => ejecutarResumenDiario(new PuertoReportesDb(d.sql), ahoraDe(d)()),
     'pendientes-diarios': () => ejecutarPendientes(new PuertoReportesDb(d.sql), ahoraDe(d)()),
+    // Digest de cobranza y avisos de inventario: mismos interruptores de origen (apagados), mismo techo diario unico y mismo silencio nocturno que el reloj.
+    'cobranza-reloj': async () => {
+      const tg = telegramDe(d);
+      if (!tg) return { estado: 'omitida', detalle: 'sin transporte de Telegram' };
+      const puerto = new PuertoRelojCobranzaDb(d.sql);
+      const estados: string[] = [];
+      for (const tipo of ['am', 'cierre'] as const) estados.push((await ejecutarRelojCobranza(tipo, puerto, tg)).estado);
+      return { estado: 'ok', detalle: estados.join(',') };
+    },
+    'avisos-inventario': async () => {
+      const tg = telegramDe(d);
+      if (!tg) return { estado: 'omitida', detalle: 'sin transporte de Telegram' };
+      const ahora = ahoraDe(d)();
+      // Como el reloj y la cobranza: sin telegram_envio (o con cron_pausado) no se evalua ni se envia nada.
+      const sw = await d.sql<{ ok: boolean }>("select coalesce((select activo from seguridad.interruptor where clave = 'telegram_envio'), false) and not coalesce((select activo from seguridad.interruptor where clave = 'cron_pausado'), false) as ok");
+      if (!sw[0]?.ok) return { estado: 'omitida', detalle: 'telegram_envio apagado o cron pausado' };
+      await d.sql('select agente.avisos_inventario_evaluar(null::date, $1::text, $2::timestamptz)', ['emitir', ahora.toISOString()]);
+      const chats = await new PuertoRelojCobranzaDb(d.sql).chats();
+      const r = await ejecutarRelojAvisos(new PuertoAvisosInventarioDb(d.sql), {
+        aGrupo: async (texto) => {
+          if (!chats.grupoSocios) return false;
+          try { await tg.enviar({ chatId: chats.grupoSocios, texto, protegido: true }); return true; } catch { return false; }
+        },
+      }, ahora);
+      return { estado: 'ok', detalle: r.apagado ? 'apagado' : `enviados:${r.enviados.length}` };
+    },
   };
 }
 

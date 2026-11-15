@@ -19,8 +19,9 @@ export class RechazoInventario extends Error {
 }
 
 export interface PuertoAvisosInventario {
-  armar(ventana: VentanaAviso, ahora: Date): Promise<DigestArmado>;
-  confirmar(ventana: VentanaAviso, ids: number[], ahora: Date): Promise<number | null>;
+  /** `fusion`: el reporte del reloj de esa hora (pendientes 09:00, resumen 20:00) pide las lineas para llevarlas en SU mensaje. */
+  armar(ventana: VentanaAviso, ahora: Date, fusion?: boolean): Promise<DigestArmado>;
+  confirmar(ventana: VentanaAviso, ids: number[], ahora: Date, fusion?: boolean): Promise<number | null>;
   consulta(tipo: 'mas_vendido' | 'reponer'): Promise<{ titulo: string; lineas: LineaConsulta[] }>;
   hayPregunta(chatId: number, autor: Miembro): Promise<boolean>;
   minimoPaso(clave: string, autor: Miembro, chatId: number, texto: string): Promise<RespInventario>;
@@ -46,6 +47,8 @@ export async function ejecutarRelojAvisos(p: PuertoAvisosInventario, t: Transpor
       out.apagado = true;
       return out;
     }
+    // 'fusionado': esa ventana viaja dentro del reporte del reloj (un solo digest); aqui no se manda mensaje propio.
+    if (d.estado !== 'ok') continue;
     const texto = redactarMensaje(ventana, d.items, d.restantes);
     if (texto === null) continue;
     // Se confirma SOLO si salio: un fallo de envio deja los avisos pendientes para la siguiente pasada.

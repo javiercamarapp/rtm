@@ -14,7 +14,7 @@ export interface ItemAviso {
 }
 
 export interface DigestArmado {
-  estado: 'ok' | 'apagado';
+  estado: 'ok' | 'apagado' | 'fusionado' | 'sin_fusion';
   items: ItemAviso[];
   restantes: number;
 }
