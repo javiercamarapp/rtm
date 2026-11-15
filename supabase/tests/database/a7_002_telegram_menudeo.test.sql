@@ -174,7 +174,8 @@ select is((select count(*)::int from operacion.ds_recordatorio_log where pedido_
 select is(agente.recordatorio_reclamar((select (j ->> 'pedido_id')::bigint from _p1), 'vencido', (select vence from _v) - interval '20 hours') ->> 'reclamado', 'false', 'un tipo que no toca no se reclama');
 select is(pg_temp.tipo((select (j ->> 'pedido_id')::bigint from _p1), (select vence from _v) - interval '19 hours'), null, 'ya avisado: no se repite');
 -- Borde: por_vencer y vence_hoy en la MISMA hora de reloj (la ventana unica es pedido+hora): el segundo aviso NO se duplica, se reclama en la hora siguiente.
-create temp table _p3 as select agente.ejecutar_ext('mt:p9', 'pedido_menudeo', pg_temp.pedido_args(negocio.hoy() + 2, '10:30')) as j;
+-- Frenos: el mismo contenido que _p1/_p2 dentro de 10 minutos es posible duplicado; aqui es otro pedido a proposito.
+create temp table _p3 as select agente.ejecutar_ext('mt:p9', 'pedido_menudeo', pg_temp.pedido_args(negocio.hoy() + 2, '10:30') || '{"permitir_duplicado":true}'::jsonb) as j;
 select set_config('rtm.canal', 'importacion', true);
 select operacion.enviar_pedido('mt-e9', (select (j ->> 'pedido_id')::bigint from _p3), null, null, null, true);
 select set_config('rtm.canal', '', true);

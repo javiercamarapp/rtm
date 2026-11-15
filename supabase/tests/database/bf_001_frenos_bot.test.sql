@@ -75,7 +75,7 @@ select is((select (j -> 'eco_rico' ->> 'saldo_antes_cent')::bigint from _f), 0::
 create temp table _p as select agente.ejecutar_ext('bf:ped', 'pedido_crear', pg_temp.ang(jsonb_build_object('plazo_dias', 7, 'cliente_id', pg_temp.cid2(),
   'lineas', jsonb_build_array(jsonb_build_object('modelo_id', pg_temp.mid(), 'sabor_id', pg_temp.sid(), 'piezas', 10))))) as j;
 select ok((select j ->> 'folio' from _p) is not null, 'el pedido se crea con su eco');
-select ok((agente.ejecutar_ext('bf:env', 'pedido_enviar', pg_temp.ang(jsonb_build_object('pedido_folio', (select j ->> 'folio' from _p), 'aceptar_avisos', true))) ->> 'pedido') like 'P-%', 'pedido enviado');
+select ok((agente.ejecutar_ext('bf:env', 'pedido_enviar', pg_temp.ang(jsonb_build_object('pedido_folio', (select j ->> 'folio' from _p), 'aceptar_avisos', true))) ->> 'pedido') ~ '^[A-Z]+-[0-9]{3}$', 'pedido enviado');
 create temp table _g as select agente.ejecutar('bf:c3', 'pago_cliente', pg_temp.ang(jsonb_build_object('cuenta', 'efectivo', 'monto_cent', 10000, 'cliente_id', pg_temp.cid2()))) as j;
 select ok((select j ->> 'folio' from _g) is not null, 'un cobro que cabe en lo que debe se registra sin preguntar');
 select ok(jsonb_array_length((select j -> 'eco_rico' -> 'pedidos_aplicados' from _g)) >= 1, 'eco rico: a que pedido se aplico');
