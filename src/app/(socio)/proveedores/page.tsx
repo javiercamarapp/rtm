@@ -98,10 +98,10 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             }
             secundarias={
               <>
-                <FormularioAccion variante="item" boton="Pago de la sociedad" descripcion={`Registrar un pago de la sociedad a ${proveedor}`} titulo={`Pago de la sociedad a ${proveedor}`} confirmar="Registrar pago" accion="registrar_pago_proveedor_sociedad" testid="pago-sociedad"
+                <FormularioAccion variante="terciario" boton="Pago sociedad" descripcion={`Registrar un pago de la sociedad a ${proveedor}`} titulo={`Pago de la sociedad a ${proveedor}`} confirmar="Registrar pago" accion="registrar_pago_proveedor_sociedad" testid="pago-sociedad"
                   fijos={{ p_proveedor: proveedor }} campos={[{ nombre: 'p_monto_cent', etiqueta: 'Monto', tipo: 'monto', requerido: true }, { nombre: 'p_nota', etiqueta: 'Nota (opcional)', tipo: 'texto' }]}
                   nota="Sale de la Caja de la empresa: si no tiene saldo suficiente el pago se bloquea (registralo como pago de un socio con su dinero o como cobro de cliente aplicado al proveedor). Se puede deshacer con un movimiento contrario." />
-                <FormularioAccion variante="item" boton="Registrar ajuste" descripcion={`Registrar un ajuste con ${proveedor}`} titulo={`Ajuste con ${proveedor}`} confirmar="Registrar ajuste" accion="registrar_ajuste_proveedor" testid="ajuste-proveedor"
+                <FormularioAccion variante="terciario" boton="Ajuste" descripcion={`Registrar un ajuste con ${proveedor}`} titulo={`Ajuste con ${proveedor}`} confirmar="Registrar ajuste" accion="registrar_ajuste_proveedor" testid="ajuste-proveedor"
                   fijos={{ p_proveedor: proveedor }}
                   campos={[
                     { nombre: 'p_tipo', etiqueta: 'Tipo', tipo: 'seleccion', opciones: [
@@ -110,7 +110,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
                     { nombre: 'p_monto_cent', etiqueta: 'Monto a favor de la sociedad', tipo: 'monto', requerido: true, ayuda: 'Un cargo a favor del proveedor se registra como orden de compra.' },
                     { nombre: 'p_motivo', etiqueta: 'Motivo', tipo: 'texto', requerido: true },
                   ]} />
-                <Link className="rtm-boton-item" href="/proveedores/inventario" data-testid="ir-inventario" title="Inventario actual de proveedores">Inventario de proveedores</Link>
+                <Link className="rtm-boton rtm-boton-terciario" href="/proveedores/inventario" data-testid="ir-inventario" title="Inventario actual de proveedores" aria-label="Inventario actual de proveedores">Inventario</Link>
               </>
             }
           />

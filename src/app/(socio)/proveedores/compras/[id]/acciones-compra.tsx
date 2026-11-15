@@ -34,10 +34,10 @@ export function AccionesCompra({ compra }: { compra: CompraDetalle }) {
   const hayMenu = enCamino || anulable;
   const secundarias = hayMenu ? (
     <>
-      {enCamino && <FormularioGuia variante="item" compraId={compra.id} folio={compra.folio} />}
-      {e === 'confirmada' && <BotonAccion variante="item" boton="Llegó a Mérida" accion="marcar_llego_merida" args={{ p_compra: compra.id }} testid="oc-llego" />}
+      {enCamino && <FormularioGuia variante="terciario" compraId={compra.id} folio={compra.folio} />}
+      {e === 'confirmada' && <BotonAccion variante="terciario" boton="Llegó a Mérida" accion="marcar_llego_merida" args={{ p_compra: compra.id }} testid="oc-llego" />}
       {anulable && (
-        <DialogoSimple variante="item" boton="Anular orden" titulo={`Anular ${compra.folio}`} accion="anular_compra" args={{ p_compra: compra.id }} motivo="p_motivo"
+        <DialogoSimple variante="terciario" boton="Anular" descripcion="Anular la orden de compra" titulo={`Anular ${compra.folio}`} accion="anular_compra" args={{ p_compra: compra.id }} motivo="p_motivo"
           texto={<p>Anular es un contramovimiento: el cargo regresa a la cuenta con el proveedor. Una orden ya recibida no se anula.</p>} />
       )}
     </>

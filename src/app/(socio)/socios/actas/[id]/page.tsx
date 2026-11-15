@@ -51,9 +51,9 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
             primarias={pendiente && !c.yo_firme ? <BotonAccion primario texto="Firmar" titulo={`Firmar ${c.folio}`} confirmarTexto="Firmar" accion="firmar_cierre_reparto" args={{ p_cierre: c.id }} testid="firmar-acta" /> : undefined}
             secundarias={(c.estado !== 'anulado' || pendiente) ? (
               <>
-                {c.estado !== 'anulado' && <a className="rtm-boton-item" href={`/socios/actas/${c.id}/pdf`} title="Descargar el acta en PDF" data-testid="acta-pdf">PDF del acta</a>}
-                {pendiente && <BotonAccion variante="item" texto="Anular" accion="anular_cierre_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Anular ${c.folio}`} />}
-                {c.estado === 'cerrado' && c.tipo === 'periodo' && !c.corregida && <BotonAccion variante="item" texto="Contra-acta" accion="contra_acta_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Corregir ${c.folio} con una contra-acta`} />}
+                {c.estado !== 'anulado' && <a className="rtm-boton rtm-boton-terciario" href={`/socios/actas/${c.id}/pdf`} title="Descargar el acta en PDF" data-testid="acta-pdf">PDF</a>}
+                {pendiente && <BotonAccion variante="terciario" texto="Anular" accion="anular_cierre_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Anular ${c.folio}`} />}
+                {c.estado === 'cerrado' && c.tipo === 'periodo' && !c.corregida && <BotonAccion variante="terciario" texto="Contra-acta" accion="contra_acta_reparto" args={{ p_cierre: c.id }} motivo="Motivo" titulo={`Corregir ${c.folio} con una contra-acta`} />}
               </>
             ) : undefined}
           />

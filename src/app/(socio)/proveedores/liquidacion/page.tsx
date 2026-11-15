@@ -77,8 +77,8 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
             }
             secundarias={
               <>
-                <Link className="rtm-boton-item" href={enlace({ semana: sumarDias(h.semana_ini, -7) })}>Semana anterior</Link>
-                <Link className="rtm-boton-item" href={enlace({ semana: sumarDias(h.semana_ini, 7) })}>Semana siguiente</Link>
+                <Link className="rtm-boton rtm-boton-terciario" href={enlace({ semana: sumarDias(h.semana_ini, -7) })}>Semana anterior</Link>
+                <Link className="rtm-boton rtm-boton-terciario" href={enlace({ semana: sumarDias(h.semana_ini, 7) })}>Semana siguiente</Link>
               </>
             }
           />
