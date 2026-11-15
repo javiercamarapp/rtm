@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
+import { useColision } from './colision';
 import { marcasAParam, marcasDeParam, PARAM_MARCA } from '@/dominio/catalogo/filtro';
 
 export interface MarcaOpcion { nombre: string; cuenta: number }
@@ -38,6 +39,8 @@ export function FiltroCatalogo({ etiquetaAria, placeholder = 'Buscar marca, mode
   const [busMarca, setBusMarca] = useState('');
   const raiz = useRef<HTMLDivElement>(null);
   const boton = useRef<HTMLButtonElement>(null);
+  const panelMarcas = useRef<HTMLDivElement>(null);
+  useColision(abierto, panelMarcas);
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setQ(urlQ); }, [urlQ]);
@@ -94,7 +97,7 @@ export function FiltroCatalogo({ etiquetaAria, placeholder = 'Buscar marca, mode
             <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="m2.5 4.5 3.5 3.5 3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           {abierto && (
-            <div id={idPanel} className="rtm-fc-panel" role="group" aria-label="Marcas">
+            <div id={idPanel} ref={panelMarcas} className="rtm-fc-panel" data-flota role="group" aria-label="Marcas">
               <input type="search" className="rtm-fc-panel-busca" value={busMarca} onChange={(e) => setBusMarca(e.target.value)} placeholder="Buscar marca" aria-label="Buscar marca" autoComplete="off" autoFocus />
               <ul>
                 {visibles.map((x) => (

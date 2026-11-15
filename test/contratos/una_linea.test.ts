@@ -122,3 +122,26 @@ describe('barras compactas', () => {
     expect(f).toMatch(/extras=\{<>[\s\S]*<FilaRatios[\s\S]*<\/BarraFiltros>/);
   });
 });
+
+// Contrato (14-nov, pedido del dueno, Menudeo): el aviso va en la MISMA fila que Filtros (extras de BarraFiltros) y los 7 KPI en una sola fila compacta.
+describe('aviso junto a Filtros y KPI en una fila (Menudeo)', () => {
+  const pagina = readFileSync(join(process.cwd(), 'src', 'app', '(socio)', 'menudeo', 'page.tsx'), 'utf8');
+  const kpiTsx = readFileSync(join(process.cwd(), 'src', 'ui', 'componentes', 'kpi.tsx'), 'utf8');
+  const premium = readFileSync(join(ESTILOS, 'premium.css'), 'utf8');
+  const controles = readFileSync(join(ESTILOS, 'controles.css'), 'utf8');
+  it('Menudeo monta los avisos como AvisoLinea en los extras de la barra de filtros y ya no usa Aviso de bloque', () => {
+    expect(pagina).toMatch(/<BarraFiltros[^>]*extras=\{[\s\S]*<AvisoLinea[\s\S]*alerta-sin-fecha/);
+    expect(pagina).not.toMatch(/<Aviso\s/);
+  });
+  it('los 7 KPI de Menudeo son compactos y caben en 7 columnas', () => {
+    expect(pagina).toMatch(/<KpiLinea\s+compacta/);
+    expect(kpiTsx).toMatch(/celdas\.length === 7 \? 7/);
+    expect(premium).toMatch(/\.rtm-kpi-linea\[data-n='7'\] \{ grid-template-columns: repeat\(7, minmax\(0, 1fr\)\); \}/);
+    expect(controles).toMatch(/\.rtm-kpi-linea\[data-compacta\]\[data-n='7'\] > \.rtm-kpi-celda \{[^}]*padding: 5px 10px/);
+  });
+  it('la banda de aviso es de una linea y se corta con puntos suspensivos', () => {
+    const r = controles.match(/\.rtm-aviso-linea \{[^}]*\}/)![0];
+    expect(r).toMatch(/white-space: nowrap/);
+    expect(r).toMatch(/overflow: hidden/);
+  });
+});

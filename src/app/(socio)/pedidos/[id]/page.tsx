@@ -17,7 +17,8 @@ import { origenSurtido } from '@/dominio/dropshipping/calculos';
 import { etiquetaHoy } from '../../contexto';
 import { AVISO_PEDIDO, ESTADO_PEDIDO, ORIGEN } from '../../operacion/etiquetas';
 import { AccionesPedido } from './acciones-pedido';
-import { BotonCopiar } from './boton-copiar';
+import { TarjetaWhatsApp } from '@/ui/componentes/tarjeta-whatsapp';
+import { mensajeNotaCliente } from '@/dominio/nota/mensaje';
 import { NotaCliente } from './nota-vista';
 import { AnularDevolucionCliente, DevolverMercancia } from './devolucion-pedido';
 
@@ -184,14 +185,15 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
 
           {vista === 'nota' && verNota && (
             <section className="rtm-seccion" aria-label="Nota para el cliente">
-              <div className="rtm-acciones-fila">
-                <BotonCopiar texto={verNota.texto_whatsapp} />
-                <a className="rtm-boton" href={`/notas/${verNota.id}/pdf?v=cliente`} target="_blank" rel="noreferrer" data-testid="descargar-pdf">Descargar PDF de la nota</a>
-                {!verNota.vigente && <EstadoTexto tono="atencion">Versión anterior</EstadoTexto>}
-                {verNota.corregida_por && <EstadoTexto tono="atencion">Corregida por {verNota.corregida_por}</EstadoTexto>}
-              </div>
-              <pre className="rtm-texto-copiable" data-testid="texto-whatsapp">{verNota.texto_whatsapp}</pre>
-              <NotaCliente nota={verNota} pedidoId={p.id} />
+              <TarjetaWhatsApp
+                mensaje={mensajeNotaCliente(verNota.texto_whatsapp)}
+                urlPdf={`/notas/${verNota.id}/pdf?v=cliente`}
+                nombreArchivo={`${verNota.folio_documento}.pdf`}
+                nombreDocumento={`nota ${verNota.folio_documento}`}
+                hora={etiquetaFechaHora(verNota.emitida_at)}
+                estado={verNota.corregida_por ? `Corregida por ${verNota.corregida_por}` : !verNota.vigente ? 'Versión anterior' : undefined}
+                vistaPrevia={<NotaCliente nota={verNota} pedidoId={p.id} />}
+              />
             </section>
           )}
 

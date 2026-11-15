@@ -4,6 +4,7 @@ import { nombreVape, marcaMayus } from '@/dominio/formato';
 import { useRef, useState, useTransition } from 'react';
 import { enlaceWhatsApp } from '@/dominio/inventario/compartir';
 import type { VersionInventario } from '@/dominio/inventario/tipos';
+import { useColision } from '@/ui/componentes/colision';
 import { exportarInventarioAccion } from './acciones';
 
 interface Props {
@@ -17,6 +18,8 @@ interface Resultado { id: number; folio: string; nombre_archivo: string; texto_c
 /** Exportar el inventario en PDF y compartirlo: hoja nativa (Web Share con archivos) o descarga mas texto para WhatsApp. El software NO envia mensajes a clientes. */
 export function ExportarInventario({ marcas, modelos, clientes }: Props) {
   const [abierto, setAbierto] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useColision(abierto, panelRef, 'der');
   const [version, setVersion] = useState<VersionInventario>('clientes');
   const [marca, setMarca] = useState('');
   const [modelo, setModelo] = useState('');
@@ -83,7 +86,7 @@ export function ExportarInventario({ marcas, modelos, clientes }: Props) {
     <div className="rtm-exportar">
       <button type="button" className="rtm-boton rtm-boton-primario" onClick={() => setAbierto((v) => !v)} aria-expanded={abierto} data-testid="exportar-abrir">Exportar PDF</button>
       {abierto && (
-        <div className="rtm-tarjeta rtm-exportar-panel" role="group" aria-label="Exportar el inventario">
+        <div ref={panelRef} className="rtm-tarjeta rtm-exportar-panel" data-flota role="group" aria-label="Exportar el inventario">
           <div className="rtm-exportar-campos">
             <label className="rtm-etiqueta-campo">Versión
               <select className="rtm-campo" value={version} onChange={(e) => { setVersion(e.target.value as VersionInventario); setResultado(null); }} data-testid="exportar-version">

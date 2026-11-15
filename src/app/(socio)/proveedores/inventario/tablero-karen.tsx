@@ -7,6 +7,7 @@ import {
 } from '@/dominio/proveedores/tablero';
 import { fotoDeModelo } from '@/config/fotos_karen';
 import { etiquetaFechaHora, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
+import { DetallesFlotantes } from '@/ui/componentes/colision';
 import { PanelVape } from './panel-vape';
 import { TarjetaVape } from './tarjeta-vape';
 import '@/ui/estilos/barrido-b.css';
@@ -74,9 +75,9 @@ export function TableroKaren(p: PropsTablero) {
           <span className="rtm-solo-lectores">Buscar modelo, marca o sabor</span>
           <input type="search" className="rtm-campo" placeholder="Buscar modelo, marca o sabor" value={f.q} onChange={(e) => aplicar({ q: e.target.value })} data-testid="buscar" autoComplete="off" />
         </label>
-        <details className="rtm-kr-marcas" data-testid="filtro-marca">
+        <DetallesFlotantes className="rtm-kr-marcas" data-testid="filtro-marca">
           <summary className="rtm-boton">Marca{f.marcas.length ? ` (${f.marcas.length})` : ''}</summary>
-          <fieldset>
+          <fieldset data-flota>
             <legend className="rtm-solo-lectores">Marcas</legend>
             {marcas.map((m) => (
               <label key={m.marca}>
@@ -86,13 +87,13 @@ export function TableroKaren(p: PropsTablero) {
             ))}
             {f.marcas.length > 0 && <button type="button" className="rtm-kr-enlace" onClick={() => aplicar({ marcas: [] })}>Quitar marcas</button>}
           </fieldset>
-        </details>
+        </DetallesFlotantes>
         <div className="rtm-seg-mini" role="group" aria-label="Disponibilidad en Karen">
           {([['todos', 'Todos'], ['con', 'Con sabores'], ['agotados', 'Agotados']] as const).map(([v, t]) => <button key={v} type="button" aria-pressed={f.disp === v} onClick={() => aplicar({ disp: v })}>{t}</button>)}
         </div>
-        <details className="rtm-kr-marcas" data-testid="mas-filtros">
+        <DetallesFlotantes className="rtm-kr-marcas" data-testid="mas-filtros">
           <summary className="rtm-boton" title="Existencia propia, lo que vendemos, nuevos y caladas">Más filtros{extras ? ` (${extras})` : ''}</summary>
-          <fieldset>
+          <fieldset data-flota>
             <legend className="rtm-solo-lectores">Más filtros</legend>
             <label className="rtm-bb-campo-fila"><span>Existencia nuestra</span>
               <select className="rtm-campo" value={f.existencia} onChange={(e) => aplicar({ existencia: e.target.value as FiltrosKaren['existencia'] })} data-testid="filtro-existencia" aria-label="Existencia propia">
@@ -103,7 +104,7 @@ export function TableroKaren(p: PropsTablero) {
             <label><input type="checkbox" checked={f.nuevos} onChange={() => aplicar({ nuevos: !f.nuevos })} data-testid="solo-nuevos" /><span>Nuevos esta semana</span></label>
             <label><input type="checkbox" checked={f.caladas} onChange={() => aplicar({ caladas: !f.caladas })} data-testid="ver-caladas" /><span>Mostrar caladas</span></label>
           </fieldset>
-        </details>
+        </DetallesFlotantes>
         <label className="rtm-kr-select"><span className="rtm-solo-lectores">Ordenar por</span>
           <select className="rtm-campo" value={f.orden} onChange={(e) => aplicar({ orden: e.target.value as OrdenTablero })} data-testid="orden">
             {ORDENES.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useColision } from './colision';
 
 export interface OpcionMenuFiltro { href: string; etiqueta: string; activa: boolean }
 
@@ -19,6 +20,7 @@ export function MenuFiltro({ nombre, opciones, testid }: Props) {
   const disparo = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const id = useId();
+  useColision(abierto, panel);
   const activa = opciones.find((o) => o.activa);
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function MenuFiltro({ nombre, opciones, testid }: Props) {
         {nombre}: {activa?.etiqueta ?? 'Todos'}
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" width="12" height="12"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
       </button>
-      <div id={id} className="rtm-bb-menu-panel" role="group" aria-label={nombre} ref={panel} hidden={!abierto} onClick={() => setAbierto(false)}>
+      <div id={id} className="rtm-bb-menu-panel" data-flota role="group" aria-label={nombre} ref={panel} hidden={!abierto} onClick={() => setAbierto(false)}>
         {opciones.map((o) => <Link key={o.href} href={o.href} className="rtm-boton-item" aria-current={o.activa ? 'true' : undefined}>{o.etiqueta}</Link>)}
       </div>
     </div>

@@ -1,0 +1,59 @@
+/* Tarjeta "Enviar por WhatsApp": vista previa del PDF como hoja de papel, burbuja de chat y acciones dentro del mismo recuadro.
+   Solo tokens (sin colores literales): la burbuja usa la superficie tenue del tema en lugar del verde de WhatsApp y el glifo va en tinta. */
+
+.rtm-wa { display: grid; gap: var(--rtm-e-3); max-width: 480px; padding: var(--rtm-e-4); background: var(--rtm-surface); border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3); }
+.rtm-wa-cab { display: flex; align-items: center; gap: var(--rtm-e-2); min-width: 0; }
+.rtm-wa-logo { display: inline-flex; flex: none; width: 28px; height: 28px; color: var(--rtm-ink); }
+.rtm-wa-logo svg { width: 100%; height: 100%; }
+.rtm-wa-titulo { margin: 0; font-size: var(--rtm-t-cuerpo); font-weight: 600; min-width: 0; }
+.rtm-wa-estado { margin-inline-start: auto; font-size: var(--rtm-t-pequeno); color: var(--rtm-warn); }
+
+/* Vista previa: la propia nota a escala, recortada con degradado. El papel mide 288 px de ancho (nota de 720 px a 0.4). */
+.rtm-wa-vista { position: relative; display: block; width: 100%; height: 232px; padding: var(--rtm-e-4) var(--rtm-e-4) 0; overflow: hidden; color: var(--rtm-ink); background: var(--rtm-tint); border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-2); transition: border-color 120ms ease, box-shadow 120ms ease; }
+.rtm-wa-vista:hover { border-color: var(--rtm-line-strong); box-shadow: 0 2px 10px color-mix(in srgb, var(--rtm-ink) 12%, transparent); }
+.rtm-wa-vista-abrir { position: absolute; z-index: 2; inset: 0; display: block; padding: 0; background: none; border: 0; border-radius: var(--rtm-r-2); cursor: pointer; color: inherit; }
+.rtm-wa-vista-abrir:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
+.rtm-wa-papel { position: relative; display: block; width: 288px; max-width: 100%; height: 100%; margin-inline: auto; overflow: hidden; background: var(--rtm-surface); border: 1px solid var(--rtm-line-2); border-bottom: 0; border-radius: var(--rtm-r-1) var(--rtm-r-1) 0 0; box-shadow: 0 6px 18px color-mix(in srgb, var(--rtm-ink) 18%, transparent), 0 1px 3px color-mix(in srgb, var(--rtm-ink) 14%, transparent); }
+.rtm-wa-papel-fondo { display: block; width: 720px; transform: scale(0.4); transform-origin: top left; pointer-events: none; user-select: none; }
+.rtm-wa-papel-fondo .rtm-nota-doc { border: 0; border-radius: 0; max-width: none; }
+.rtm-wa-vista::after { content: ''; position: absolute; inset-inline: 0; bottom: 0; height: 46%; background: linear-gradient(to bottom, transparent, var(--rtm-tint)); pointer-events: none; }
+.rtm-wa-vista-pie { position: absolute; inset-inline: 0; bottom: var(--rtm-e-2); text-align: center; font-size: var(--rtm-t-pequeno); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; pointer-events: none; }
+
+/* Burbuja de chat: mensaje saliente alineado a la derecha, tipografia del sistema, colapsada a 4 lineas. */
+.rtm-wa-chat { display: grid; gap: var(--rtm-e-1); justify-items: end; }
+.rtm-wa-burbuja { position: relative; max-width: 100%; padding: var(--rtm-e-2) var(--rtm-e-3); background: var(--rtm-fill-active); border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3) var(--rtm-r-3) var(--rtm-r-1) var(--rtm-r-3); }
+.rtm-wa-mensaje { margin: 0; font: inherit; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: var(--rtm-t-cuerpo); line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
+.rtm-wa-burbuja[data-abierta] .rtm-wa-mensaje { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
+.rtm-wa-hora { display: block; margin-top: var(--rtm-e-1); text-align: end; font-size: var(--rtm-t-micro); color: var(--rtm-ink-3); }
+.rtm-wa-enlace { padding: var(--rtm-e-1) 0; background: none; border: 0; font: inherit; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; border-radius: var(--rtm-r-1); }
+.rtm-wa-enlace:hover { color: var(--rtm-ink-2); }
+.rtm-wa-enlace:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
+
+.rtm-wa-acciones { display: flex; flex-wrap: wrap; gap: var(--rtm-e-2); }
+.rtm-wa-acciones > .rtm-boton { justify-content: center; text-decoration: none; }
+.rtm-wa-ayuda { margin: 0; font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
+.rtm-wa-aviso { margin: 0; min-height: 1.2em; font-size: var(--rtm-t-pequeno); }
+.rtm-wa-aviso-ok { color: var(--rtm-ok); }
+.rtm-wa-aviso-error { color: var(--rtm-bad); }
+.rtm-wa-aviso-info { color: var(--rtm-ink-2); }
+
+/* Vista ampliada: hoja grande con la nota completa y desplazamiento propio. */
+.rtm-wa-ampliada-marco { display: grid; grid-template-rows: auto minmax(0, 1fr); max-height: calc(100dvh - 48px); }
+.rtm-wa-ampliada-cab { display: flex; align-items: center; gap: var(--rtm-e-2); flex-wrap: wrap; padding: var(--rtm-e-3) var(--rtm-e-4); border-bottom: 1px solid var(--rtm-line-2); }
+.rtm-wa-ampliada-cab h3 { margin: 0; margin-inline-end: auto; font-size: var(--rtm-t-cuerpo); }
+.rtm-wa-ampliada-cuerpo { overflow: auto; padding: var(--rtm-e-4); background: var(--rtm-tint); }
+.rtm-wa-ampliada-cuerpo:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: -2px; }
+.rtm-wa-ampliada-cuerpo .rtm-nota-doc { margin-inline: auto; }
+
+@media (max-width: 480px) {
+  .rtm-wa { padding: var(--rtm-e-3); }
+  .rtm-wa-vista { height: 200px; padding-inline: var(--rtm-e-3); }
+  .rtm-wa-papel { width: 245px; }
+  .rtm-wa-papel-fondo { transform: scale(0.34); }
+  .rtm-wa-acciones > .rtm-boton { flex-grow: 1; }
+}
+
+:root[data-movimiento='off'] .rtm-wa-vista, :root[data-movimiento='reduced'] .rtm-wa-vista { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-movimiento]) .rtm-wa-vista { transition: none; }
+}

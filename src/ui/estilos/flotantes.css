@@ -1,0 +1,44 @@
+/* Paneles flotantes (menus, desplegables, popovers): UN solo sistema de colision y de estilo. Se carga al final para ganar a las hojas por pagina.
+   Todo panel que cuelga de un disparador lleva `data-flota` y usa `useColision` / `DetallesFlotantes` (src/ui/componentes/colision.tsx), que mide el panel
+   contra el viewport y fija data-alin (izq | der | ancho) y data-vert (abajo | arriba). Contrato: test/contratos/paneles_flotantes.test.ts.
+   Pantallas angostas (<= 767 px): hoja inferior a ancho completo. */
+:root { --rtm-flota-margen: 8px; --rtm-flota-sep: 6px; --rtm-flota-alto-max: calc(100dvh - 96px); }
+
+[data-flota] {
+  max-width: calc(100vw - 2 * var(--rtm-flota-margen));
+  max-height: min(var(--rtm-flota-alto-max), 560px);
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  box-sizing: border-box;
+  border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-r-3);
+  background: var(--rtm-surface); box-shadow: var(--rtm-sombra-panel);
+  transform-origin: top left;
+  animation: rtm-flota-entra 120ms ease-out;
+}
+[data-flota][data-alin='izq'] { left: 0; right: auto; transform-origin: top left; }
+[data-flota][data-alin='der'] { left: auto; right: 0; transform-origin: top right; }
+[data-flota][data-alin='ancho'] { position: fixed; left: var(--rtm-flota-margen); right: var(--rtm-flota-margen); width: auto; max-width: none; }
+[data-flota][data-vert='arriba'] { top: auto; bottom: calc(100% + var(--rtm-flota-sep)); }
+[data-flota][data-vert='arriba'][data-alin='ancho'] { bottom: var(--rtm-flota-margen); }
+
+@keyframes rtm-flota-entra { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes rtm-flota-sube { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 767px) {
+  [data-flota][data-alin][data-vert] {
+    position: fixed; top: auto; left: var(--rtm-flota-margen); right: var(--rtm-flota-margen); bottom: var(--rtm-flota-margen);
+    width: auto; max-width: none; max-height: min(80dvh, var(--rtm-flota-alto-max));
+    margin: 0; padding-bottom: calc(var(--rtm-pad-tarjeta) + env(safe-area-inset-bottom));
+    border-radius: var(--rtm-r-4); z-index: var(--rtm-z-cajon);
+    transform-origin: bottom center; animation-name: rtm-flota-sube;
+  }
+}
+@media (prefers-reduced-motion: reduce) { [data-flota] { animation: none; } }
+:root[data-movimiento='reduced'] [data-flota], :root[data-movimiento='off'] [data-flota] { animation: none; }
+
+/* Formulario de periodo (FiltroPeriodo): grilla de 2 columnas con Desde y Hasta, atajos en una fila y acciones alineadas a la derecha. */
+.rtm-fp-periodo { width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--rtm-e-3); align-items: end; }
+.rtm-fp-periodo > .rtm-etiqueta-campo { min-width: 0; }
+.rtm-fp-periodo > .rtm-etiqueta-campo > .rtm-campo { width: 100%; }
+.rtm-fp-atajos { grid-column: 1 / -1; display: flex; gap: var(--rtm-e-2); }
+.rtm-fp-atajos > button { flex: 1 1 0; min-width: 0; }
+.rtm-fp-acciones { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: var(--rtm-e-2); padding-top: var(--rtm-e-2); border-top: 1px solid var(--rtm-line); }

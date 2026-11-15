@@ -23,8 +23,7 @@
 }
 
 /* ---- Relleno sistemico: en una rejilla que estira (por omision) el contenido de la tarjeta corta ocupa y reparte el alto de su vecina. alinear="inicio" se reserva para formularios y tablas largas junto a tarjetas cortas. ---- */
-.rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-g, .rtm-grafica, .rtm-a1-cuerpo, .rtm-comp) { flex: 1 1 auto; }
+.rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-g, .rtm-grafica, .rtm-comp) { flex: 1 1 auto; }
 .rtm-rejilla > .rtm-tarjeta-v2 > :is(.rtm-g, .rtm-grafica) { display: flex; flex-direction: column; justify-content: center; }
-.rtm-rejilla > .rtm-tarjeta-v2 > .rtm-a1-cuerpo { justify-content: space-around; }
 .rtm-rejilla > .rtm-tarjeta-v2 > .rtm-a1-sub { margin-top: auto; }
 .rtm-rejilla > .rtm-tarjeta-v2 > .rtm-a1-estado-vacio { flex: 1 1 auto; display: flex; align-items: center; }

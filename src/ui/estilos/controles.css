@@ -184,6 +184,18 @@ body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { widt
 .rtm-kpi-linea[data-compacta] > .rtm-kpi-celda { flex-direction: row; align-items: baseline; justify-content: space-between; flex-wrap: nowrap; gap: 8px; padding: 6px 12px; }
 .rtm-kpi-linea[data-compacta] .rtm-kpi-cifra { font-size: 18px; }
 .rtm-kpi-linea[data-compacta] .rtm-kpi-nota { display: none; }
+/* Siete celdas en UNA fila: no cabe etiqueta y cifra lado a lado, asi que la etiqueta (cortada, completa en title) va sobre la cifra en una celda de ~40 px. */
+.rtm-kpi-linea[data-compacta][data-n='7'] > .rtm-kpi-celda { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; padding: 5px 10px; }
+.rtm-kpi-linea[data-compacta][data-n='7'] .rtm-kpi-etiqueta { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtm-kpi-linea[data-compacta][data-n='7'] .rtm-kpi-cifra { max-width: 100%; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Aviso en banda compacta dentro de la fila de filtros: una linea, cede ancho y se corta con puntos suspensivos. */
+.rtm-aviso-linea { display: inline-flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; height: var(--rtm-ctl-alto-chico); padding: 0 10px; box-sizing: border-box; border: 1px solid color-mix(in srgb, var(--rtm-d-azul-marino) 25%, transparent); border-radius: var(--rtm-r-ctl); background: var(--rtm-tinte-info); font-size: var(--rtm-t-pequeno); white-space: nowrap; overflow: hidden; }
+.rtm-aviso-linea[data-tono='atencion'] { border-color: color-mix(in srgb, var(--rtm-warn) 25%, transparent); background: var(--rtm-tinte-warn); }
+.rtm-aviso-linea[data-tono='error'] { border-color: color-mix(in srgb, var(--rtm-bad) 25%, transparent); background: var(--rtm-tinte-bad); }
+.rtm-aviso-linea > strong { flex: none; font-weight: var(--rtm-peso-fuerte); }
+.rtm-aviso-linea > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rtm-aviso-linea > .rtm-aviso-v2-marca { width: 14px; height: 14px; font-size: 11px; }
+.rtm-barra-filtros-v2 > .rtm-aviso-linea + .rtm-aviso-linea, .rtm-barra-filtros-v2 > .rtm-aviso-linea + .rtm-chip-v2 { margin-left: 0; }
 /* Razones dentro de la barra de filtros: texto chico, una fila y sin caja. */
 .rtm-barra-filtros-v2 .rtm-ratios { flex-wrap: nowrap; white-space: nowrap; gap: 0 14px; font-size: var(--rtm-t-pequeno); }
 .rtm-barra-filtros-v2 .rtm-ratios > div { gap: 4px; }

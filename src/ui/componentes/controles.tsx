@@ -51,6 +51,17 @@ export function BarraFiltros({ children, extras, etiquetaAria }: { children: Rea
   );
 }
 
+/** Aviso en banda compacta de UNA linea para la fila de filtros (extras de BarraFiltros): marca, titular y texto cortado con puntos suspensivos; el texto completo va en title. */
+export function AvisoLinea({ tono = 'atencion', titulo, texto, detalle, testid }: { tono?: 'info' | 'atencion' | 'error'; titulo: string; texto: string; detalle?: string; testid?: string }) {
+  return (
+    <span className="rtm-aviso-linea" data-tono={tono} role={tono === 'error' ? 'alert' : 'status'} title={`${titulo} ${texto}${detalle ? ` ${detalle}` : ''}`}>
+      <span className="rtm-aviso-v2-marca" aria-hidden="true">{tono === 'error' ? '!' : tono === 'atencion' ? '•' : 'i'}</span>
+      <strong>{titulo}</strong>
+      <span data-testid={testid}>{texto}</span>
+    </span>
+  );
+}
+
 /** Monograma: iniciales sobre fondo suave en cuadrado de radio 8 (no circulo). El matiz sale de la paleta de datos segun el texto. */
 const MATICES = ['lila', 'verde-azulado', 'azul-marino', 'terracota', 'malva', 'ocre'] as const;
 export function Monograma({ nombre, tam = 28 }: { nombre: string; tam?: 28 | 36 }) {
