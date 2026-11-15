@@ -15,7 +15,8 @@ select set_config('request.jwt.claim.sub', '27272727-2727-2727-2727-272727272701
 select is((api.cuentas_por_cobrar() ? 'apertura'), true, 'cuentas por cobrar trae la lista de partidas de apertura');
 select is(jsonb_typeof(api.cuentas_por_cobrar() -> 'apertura'), 'array', 'y es una lista');
 select is((api.cuentas_por_cobrar() -> 'filas') = (api.cuentas_por_cobrar() -> 'filas'), true, 'dos lecturas seguidas dan las filas en el mismo orden');
-select matches(pg_get_functiondef('api.cuentas_por_cobrar()'::regprocedure), 'pedido_id.*::bigint\), ''\[\]''', 'el orden se desempata por pedido_id');
+-- La funcion publica quedo envuelta por el recargo semanal (500400): el orden estable vive en la definicion base que envuelve.
+select matches(pg_get_functiondef('api._cuentas_por_cobrar_sin_recargo_semanal()'::regprocedure), 'pedido_id.*::bigint\), ''\[\]''', 'el orden se desempata por pedido_id');
 
 -- Aportacion por Telegram: sin declarar capital es un reembolso (adenda 32).
 select matches(pg_get_functiondef('agente._ejecutar_base(text,text,jsonb)'::regprocedure), 'else ''reembolso'' end', 'agente.ejecutar (base, tras la puerta que verifica al autor) pasa reembolso por omision y capital solo si se declara');

@@ -8,6 +8,13 @@ select agente.registrar_miembro(5130002, 'angelo');
 select set_config('rtm.canal', 'importacion', true);
 select catalogo.asegurar_cliente('BV Lupita Soto', 'Javier');
 select catalogo.asegurar_cliente('BV Memo Garcia', 'Javier');
+-- Enviar un pedido de bodega devenga renta a la persona de bodega: en una base limpia hay que darla de alta (como en b1_001).
+do $$ begin
+  if not exists (select 1 from catalogo.persona_bodega) then
+    perform catalogo.asegurar_cliente('BV Omar Cliente', 'Javier');
+    perform catalogo.asegurar_persona_bodega('BV Omar Cliente', 'BV Omar');
+  end if;
+end $$;
 select catalogo.asegurar_modelo('BV Marca', 'BV Modelo', 10000, 'ambas');
 select catalogo.asegurar_sku('BV Modelo', 'Uva');
 select catalogo.asegurar_sku('BV Modelo', 'Mango');
