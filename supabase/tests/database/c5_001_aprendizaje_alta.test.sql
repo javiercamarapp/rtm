@@ -110,7 +110,7 @@ select is(agente.correccion_registrar('c5-k1', pg_temp.a('angelo', '{"clase":"cl
 select is(agente.correccion_registrar('c5-k2', pg_temp.a('angelo', '{"clase":"cliente","dicho_texto":"Ariel G","correcto_texto":"Zeta Ariel Gomez"}')) ->> 'sugerir_alias', 'true', 'la segunda igual si lo sugiere (nunca lo guarda sola)');
 select is((select count(*)::int from catalogo.cliente_alias where alias_norm = 'ariel g'), 0, 'sigue sin guardarse');
 select throws_ok($$select agente.ejemplo_registrar('c5-e0', pg_temp.a('angelo', '{"operacion":"pedido","texto_anonimo":"CLIENTE pidio 10 piezas"}'))$$, 'P0460', null, 'un ejemplo con cifras no se acepta');
-select throws_ok($$select agente.ejemplo_registrar('c5-e00', pg_temp.a('angelo', '{"operacion":"pedido","texto_anonimo":"escribe a juan@correo.com"}'))$$, 'P0460', null, 'ni con correos');
+select throws_ok($$select agente.ejemplo_registrar('c5-e00', pg_temp.a('angelo', '{"operacion":"pedido","texto_anonimo":"escribe a juan@example.test"}'))$$, 'P0460', null, 'ni con correos');
 select is(agente.ejemplo_registrar('c5-e1', pg_temp.a('angelo', '{"operacion":"pedido","texto_anonimo":"apuntale a CLIENTE un pedido de MODELO SABOR","folio":"C5-NOEXISTE"}')) ->> 'estado', 'guardado', 'ejemplo anonimizado guardado');
 select is(jsonb_array_length(agente.aprendizaje_contexto(jsonb_build_object('texto', 'apuntale un pedido')) -> 'ejemplos'), 0, 'un ejemplo reciente (menos de 10 minutos) todavia no entra');
 update agente.ejemplo set creado_at = clock_timestamp() - interval '11 minutes';
