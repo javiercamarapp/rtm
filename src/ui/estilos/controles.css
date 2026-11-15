@@ -199,3 +199,6 @@ body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { widt
 /* Razones dentro de la barra de filtros: texto chico, una fila y sin caja. */
 .rtm-barra-filtros-v2 .rtm-ratios { flex-wrap: nowrap; white-space: nowrap; gap: 0 14px; font-size: var(--rtm-t-pequeno); }
 .rtm-barra-filtros-v2 .rtm-ratios > div { gap: 4px; }
+/* Ranura de la subnavegacion de seccion: los filtros de la pagina hija viajan a la MISMA linea que las pestanas del layout (ver ranura-subnav.tsx). */
+.rtm-subnav-ranura { display: flex; align-items: center; gap: var(--rtm-e-2); min-width: 0; }
+@media (max-width: 767px) { .rtm-pestanas-lateral:has(> .rtm-subnav-ranura:empty) { display: none; } }

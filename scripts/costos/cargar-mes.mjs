@@ -14,8 +14,8 @@
 //   openrouter / openrouter_comision / transcripcion  libro propio ia.llamada del mes (liquidadas); el rol 'audio' es la transcripcion. Sin libro:
 //                                                      dato faltante, salvo --openrouter-usd (consumo declarado de la llave de RTM, queda 'capturado').
 //   vercel                  vale 0 por ahora (plan equivalente): sin cargo y SIN dato faltante; con --vercel-consumo/--vercel-factura-usd aplica la misma regla de cuota base.
-//   supabase                vale 0 sin consumo real declarado (14-nov). Con --supabase-horas RTM:TOTAL --supabase-factura-usd N se cobra lo MENOR (o lo mayor, segun la
-//                           regla vigente de costos.cuota_base) entre la cuota base y el consumo real.
+//   supabase                vale 0 sin consumo real declarado (14-nov). Con --supabase-horas RTM:TOTAL --supabase-factura-usd N se cobra lo MAYOR (la cuota base es el piso; solo
+//                           cambia si costos.cuota_base fija la regla menor) entre la cuota base y el consumo real.
 //   claude_max              FIJO en US$20 al mes (decision del dueno: 20 de 200 prorrateados; --claude-usd N lo cambia). No usa el conteo de tokens por carpeta.
 //   dominio                 administrado en Vercel; --dominio-anual-usd N (devengo de un doceavo). Sin costo declarado vale 0.
 //   higgsfield              --higgsfield-usd N (generaciones etiquetadas RTM). Sin dato: sin cargo.
@@ -564,7 +564,7 @@ function confirmar(texto) {
 export function parsearCuota(texto) {
   const m = /^([a-z][a-z0-9_]*):(menor|mayor):([0-9.,]+):(\d{4}-\d{2}-\d{2})$/.exec(String(texto));
   const micro = m ? microDeTexto(m[3]) : null;
-  if (!m || micro === null) throw new Error('--fijar-cuota debe ser SLUG:REGLA:USD:AAAA-MM-DD (por ejemplo vercel:menor:20:2026-12-01).');
+  if (!m || micro === null) throw new Error('--fijar-cuota debe ser SLUG:REGLA:USD:AAAA-MM-DD (por ejemplo vercel:mayor:20:2026-12-01).');
   return { slug: m[1], regla: m[2], cuotaMicro: micro, desde: m[4] };
 }
 

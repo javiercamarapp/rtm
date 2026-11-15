@@ -9,10 +9,11 @@ import { FiltroPeriodo } from '@/ui/componentes/filtro-periodo';
 import { Composicion, type GrupoComposicion } from '@/ui/componentes/composicion';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
-import { KpiLinea } from '@/ui/componentes/kpi';
+import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { ColumnasPeriodo } from '@/ui/graficas';
 import '@/ui/estilos/paginas-a1.css';
+import '@/ui/estilos/barrido-b.css';
 import { aNumero as aNum } from '@/dominio/tablero/agregados';
 import { etiquetaHoy } from '../contexto';
 import { fechaOpcional, ORIGEN_SURTIDO, PestanasDs } from './comun';
@@ -91,11 +92,25 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
           { id: 'ds-pedidos', etiqueta: 'Pedidos enviados (dropshipping)', valor: cif('pedidos', 'dropshipping', String(dsCol?.pedidos ?? 0)), categoria: 1, nota: `${formatearPiezas(dsCol?.piezas ?? 0)} · en curso ${r.en_curso.find((e) => e.origen_surtido === 'dropshipping')?.pedidos ?? 0}`, testid: 'kpi-ds-pedidos' },
           { id: 'ds-venta', etiqueta: 'Venta (dropshipping)', valor: cif('venta', 'dropshipping', formatearMoneda(dsCol?.venta_cent ?? 0n)), categoria: 2, nota: `Costo total ${formatearMoneda(dsCol?.costo_cent ?? 0n)}` },
           { id: 'ds-margen', etiqueta: 'Utilidad (dropshipping)', valor: cif('margen', 'dropshipping', formatearMoneda(dsCol?.margen_cent ?? 0n)), categoria: 3, nota: 'Venta menos todo el costo del pedido' },
-          { id: 'ds-karen', etiqueta: 'Por pagar a proveedores (libro)', valor: formatearMoneda(deudaLibro), categoria: 4, nota: [`Isaac ${formatearMoneda(deudaProv('Isaac'))} · Karen ${formatearMoneda(deudaProv('Karen'))} según el libro`, `Por pedido de dropshipping sin amortizar: ${formatearMoneda(porPagarPedidos)}${difPuente !== 0n ? ` (diferencia ${formatearMoneda(difPuente < 0n ? -difPuente : difPuente)}: compras de inventario y pagos no ligados a un pedido)` : ''}`, pendienteSocio > 0n ? `Incluye ${formatearMoneda(pendienteSocio)} de pedidos de ${socioMenudeo} pendientes (a su cuenta, no son deuda de la empresa)` : null].filter(Boolean).join(' · ') },
+          { id: 'ds-karen', etiqueta: 'Por pagar a proveedores (libro)', valor: formatearMoneda(deudaLibro), categoria: 4, nota: `Isaac ${formatearMoneda(deudaProv('Isaac'))} · Karen ${formatearMoneda(deudaProv('Karen'))} según el libro`, ayuda: 'Lo que el libro debe a Isaac y a Karen. El detalle de cómo se compone está en el desglose plegable debajo de los indicadores.' },
           { id: 'ds-cobrar', etiqueta: 'Por cobrar (dropshipping)', valor: cif('porcobrar', 'dropshipping', formatearMoneda(dsCol?.por_cobrar_cent ?? 0n)), categoria: 6, nota: `Intereses de crédito ${formatearMoneda(dsCol?.intereses_cent ?? 0n)}`, href: '/dropshipping/por-cobrar' },
           { id: 'ds-piezas', etiqueta: 'Piezas movidas a proveedores', valor: cif('piezas', 'dropshipping', formatearPiezas(pm.total)), categoria: 7, nota: `${formatearPiezas(pm.de_clientes)} de clientes · ${formatearPiezas(pm.a_costo_socios)} a costo para socios`, testid: 'kpi-piezas-movidas' },
         ]}
       />
+
+      <details className="rtm-bb-plegable" data-testid="ds-desglose-por-pagar">
+        <summary>De dónde sale lo que se debe a proveedores</summary>
+        <p className="rtm-nota">La diferencia es lo que el libro debe a proveedores por compras de inventario para la bodega y por pagos al proveedor que no están ligados a un pedido de dropshipping.</p>
+        <FilaRatios
+          etiqueta="Composición de lo que se debe a proveedores según el libro"
+          items={[
+            { etiqueta: 'Debe el libro a proveedores', valor: formatearMoneda(deudaLibro) },
+            { etiqueta: 'De pedidos de dropshipping sin amortizar', valor: dsCol ? formatearMoneda(porPagarPedidos) : null },
+            { etiqueta: 'Diferencia: compras de inventario y pagos no ligados a un pedido', valor: dsCol ? formatearMoneda(difPuente, { conSigno: true }) : null },
+            { etiqueta: `Pedidos de ${socioMenudeo} pendientes (a su cuenta, no son deuda de la empresa)`, valor: formatearMoneda(pendienteSocio) },
+          ]}
+        />
+      </details>
 
       <Tarjeta titulo="Dropshipping frente a inventario en Mérida" descripcion="Pedidos enviados; el costo incluye producto, envío del proveedor y otros costos directos">
         <DataTable

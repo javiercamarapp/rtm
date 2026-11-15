@@ -13,6 +13,7 @@ import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pag
 import { Campo, FiltrosUrl } from '../../_a2/filtros-url';
 import { TRAMOS, acumularPorTramo, tramoDe } from '../../_a2/antiguedad';
 import { dec, diasEntre, fecha, m, partePct, pctTexto, periodo, pz, pzs, fechaCorta, textoParam, tonoChip, type Params } from '../../_a2/util';
+import { EnSubnav } from '@/ui/componentes/ranura-subnav';
 
 export const metadata: Metadata = { title: 'Antigüedad y rotación' };
 
@@ -39,10 +40,12 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow="Inventario · antigüedad y rotación" titulo={sd ? 'Sin existencias para medir antigüedad' : `${pctTexto(partePct(viejas.piezas, totalPz)) ?? '0 %'} de las piezas tienen más de 90 días`} descripcion="Días desde la última entrada de compra de cada sabor, rotación del periodo y valor por tramo." />
+      <EnSubnav>
       <FiltrosUrl etiquetaAria="Filtros" restablecer="/inventario/antiguedad" plegable={{ activos: q ? 1 : 0 }}>
         <Campo etiqueta="Periodo de rotación"><select name="dias" defaultValue={String(per.dias ?? '90')}><option value="30">30 días</option><option value="90">90 días</option><option value="180">180 días</option></select></Campo>
         <Campo etiqueta="Buscar"><input type="search" name="q" placeholder="Modelo o sabor" defaultValue={q ?? ''} data-noauto="" /></Campo>
       </FiltrosUrl>
+      </EnSubnav>
       <KpiLinea etiquetaAria="Resumen de antigüedad" celdas={[
         { id: 's', etiqueta: 'Sabores con existencia', valor: sd ? null : String(filas.length), categoria: 1, nota: sd ? undefined : `${pz(totalPz)} piezas` },
         { id: 'v', etiqueta: 'Valor a costo', valor: sd ? null : m(totalV), categoria: 2, nota: 'Costo del modelo' },
