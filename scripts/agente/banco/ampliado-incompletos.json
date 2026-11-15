@@ -1,0 +1,184 @@
+[
+ {
+  "id": "n-119",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "Cliente Alfa pidio zafiro 5k mango",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin piezas"
+  }
+ },
+ {
+  "id": "n-120",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "pago de Cliente Beta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin monto"
+  }
+ },
+ {
+  "id": "n-121",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "entregue a la sociedad",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin monto"
+  }
+ },
+ {
+  "id": "n-122",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "pague la renta de Omar",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin monto"
+  }
+ },
+ {
+  "id": "n-123",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "guias de Castores",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "ninguna"
+     }
+    ]
+   ],
+   "nota": "sin folios ni guias"
+  }
+ },
+ {
+  "id": "n-124",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "dropshipping para Cliente Gamma",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin renglones"
+  }
+ },
+ {
+  "id": "n-125",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "regale unas piezas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin modelo ni cantidad"
+  }
+ },
+ {
+  "id": "n-126",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "retiro de capital",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin monto"
+  }
+ },
+ {
+  "id": "n-127",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "pedido para Cliente Delta: 24",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin modelo"
+  }
+ },
+ {
+  "id": "n-128",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "pague a Karen",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin monto"
+  }
+ },
+ {
+  "id": "n-129",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "al P-0012 dale mas plazo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "ninguna"
+     }
+    ]
+   ],
+   "nota": "sin plazo"
+  }
+ },
+ {
+  "id": "n-130",
+  "categoria": "incompletos",
+  "autor": "javier",
+  "texto": "Cliente Beta ya pago lo que debia",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "nota": "sin cifra"
+  }
+ }
+]

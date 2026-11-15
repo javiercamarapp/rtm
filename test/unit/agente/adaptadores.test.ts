@@ -38,7 +38,7 @@ describe('webhook de Telegram', () => {
     expect(leerUpdate(JSON.stringify({ update_id: 'no' }))).toEqual({ ok: false, motivo: 'forma_invalida' });
     expect(leerUpdate(JSON.stringify({ update_id: 1, callback_query: { id: 'x', from: { id: 1 }, data: 'x'.repeat(65) } }))).toEqual({ ok: false, motivo: 'forma_invalida' });
   });
-  it('secreto invalido -> 401 y no procesa; todo lo demas responde 200', async () => {
+  it('secreto invalido -> 401 y no procesa; 200 tras registrar el update; 500 si no pudo registrarlo (Telegram reintenta)', async () => {
     let llamadas = 0;
     const procesar = async () => {
       llamadas++;
@@ -51,7 +51,7 @@ describe('webhook de Telegram', () => {
     const falla = async () => {
       throw new Error('boom');
     };
-    expect(await manejarWebhook({ cabeceraSecreto: 'bien', secretoEsperado: 'bien', cuerpo: cuerpoValido, procesar: falla })).toEqual({ status: 200, detalle: 'error' });
+    expect(await manejarWebhook({ cabeceraSecreto: 'bien', secretoEsperado: 'bien', cuerpo: cuerpoValido, procesar: falla })).toEqual({ status: 500, detalle: 'no_registrado' });
   });
   it('de punta a punta con el agente: el mismo update dos veces por el webhook se aplica una vez', async () => {
     const e = escenario([unaAccion(pago('Cliente Norte', 700_000))]);

@@ -32,6 +32,20 @@ describe('MEDIO-D: telefonos', () => {
   it('un correo tambien', () => expect(redactarContactos('prueba@example.test')).toBe('[correo oculto]'));
 });
 
+describe('privacidad: domicilios y usuarios de Telegram', () => {
+  it('oculta calle y numero conservando el resto de la frase', () => {
+    expect(redactarContactos('su tel 9991234567 entregar en Calle 5 numero 123')).toBe('su tel [telefono oculto] entregar en [domicilio oculto]');
+    expect(redactarContactos('enviar a Calle 21 #305 por 30 y 32, pago 1,500.00')).toBe('enviar a [domicilio oculto], pago 1,500.00');
+    expect(redactarContactos('Av. Itzaes 120 colonia Centro 28 piezas')).toBe('[domicilio oculto] 120 [domicilio oculto] 28 piezas');
+    expect(redactarContactos('C.P. 97000 Merida')).toBe('[domicilio oculto] Merida');
+  });
+  it('oculta @usuarios pero no correos ya cubiertos ni montos', () => {
+    expect(redactarContactos('mandaselo a @pedro_mx hoy')).toBe('mandaselo a [usuario oculto] hoy');
+    expect(redactarContactos('prueba@example.test')).toBe('[correo oculto]');
+    expect(redactarContactos('cobre 2,000.00 de Pedro por 28 piezas')).toBe('cobre 2,000.00 de Pedro por 28 piezas');
+  });
+});
+
 describe('BAJO-1: montos ambiguos en TODAS las intenciones', () => {
   it('esMontoAmbiguo', () => {
     expect(esMontoAmbiguo('pago 1.250 en efectivo', 125_000n)).toBe(true);

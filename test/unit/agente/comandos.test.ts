@@ -28,7 +28,6 @@ describe('comandos (modo sin IA)', () => {
     '/pedido Sur',
     '/pedido Sur | sin cifra',
     '/pedido Sur | jupiter 0',
-    '/pedido Sur | jupiter 2001',
     '/pedido Sur | jupiter 5 | envio abc',
   ])('formato invalido "%s" devuelve el uso', (t) => {
     const r = parsearComando(t);

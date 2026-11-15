@@ -315,7 +315,7 @@
   "esperado": {
    "acciones": [
     {
-     "tipo": "pedido",
+     "tipo": "pedido_ds",
      "cliente": "cliente alfa",
      "lineas": [
       {
@@ -330,39 +330,12 @@
       }
      ],
      "sin_destinatario": "carolina",
-     "plazo_sin_campo": [
+     "plazo": [
       "semana"
      ]
     }
    ],
-   "alternativas": [
-    [
-     {
-      "tipo": "pedido_menudeo",
-      "lineas": [
-       {
-        "m": "zafiro 5k",
-        "s": "sandia",
-        "n": 10
-       },
-       {
-        "m": "zafiro 5k",
-        "s": "mango",
-        "n": 10
-       }
-      ],
-      "plazo": [
-       "semana"
-      ]
-     }
-    ],
-    [
-     {
-      "tipo": "aclarar"
-     }
-    ]
-   ],
-   "nota": "BRECHA: pedido no tiene campo de plazo/credito; aclarar es la salida segura"
+   "nota": "r6: venta a cliente por dropshipping = pedido_ds (el destinatario ficticio no va en ningun campo)"
   }
  },
  {
@@ -373,7 +346,7 @@
   "esperado": {
    "acciones": [
     {
-     "tipo": "pedido",
+     "tipo": "pedido_ds",
      "cliente": "cliente beta",
      "lineas": [
       {
@@ -383,34 +356,12 @@
       }
      ],
      "sin_destinatario": "tomas",
-     "plazo_sin_campo": [
+     "plazo": [
       "2 semanas"
      ]
     }
    ],
-   "alternativas": [
-    [
-     {
-      "tipo": "pedido_menudeo",
-      "lineas": [
-       {
-        "m": "orbita 20k",
-        "s": "durazno",
-        "n": 18
-       }
-      ],
-      "plazo": [
-       "2 semanas"
-      ]
-     }
-    ],
-    [
-     {
-      "tipo": "aclarar"
-     }
-    ]
-   ],
-   "nota": "BRECHA: pedido no tiene campo de plazo/credito"
+   "nota": "r6: venta a cliente por dropshipping = pedido_ds (el destinatario ficticio no va en ningun campo)"
   }
  },
  {
@@ -421,7 +372,7 @@
   "esperado": {
    "acciones": [
     {
-     "tipo": "pedido",
+     "tipo": "pedido_ds",
      "cliente": "cliente gamma",
      "lineas": [
       {
@@ -431,34 +382,12 @@
       }
      ],
      "sin_destinatario": "valeria",
-     "plazo_sin_campo": [
+     "plazo": [
       "viernes"
      ]
     }
    ],
-   "alternativas": [
-    [
-     {
-      "tipo": "pedido_menudeo",
-      "lineas": [
-       {
-        "m": "vega 9k",
-        "s": "fresa",
-        "n": 12
-       }
-      ],
-      "plazo": [
-       "viernes"
-      ]
-     }
-    ],
-    [
-     {
-      "tipo": "aclarar"
-     }
-    ]
-   ],
-   "nota": "BRECHA: pedido no tiene campo de plazo/credito"
+   "nota": "r6: venta a cliente por dropshipping = pedido_ds (el destinatario ficticio no va en ningun campo)"
   }
  },
  {

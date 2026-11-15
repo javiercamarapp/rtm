@@ -23,9 +23,21 @@ import { interpretarPlazo } from '@/dominio/agente/plazo_pedido';
 import { normalizar } from '@/dominio/catalogo/normalizar';
 import { Comunicador, verificarMensajeOmar } from './comunicador';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
+import { cifrasDeIntencionAmpliada, foliosSinProcedencia, montosQueSeRepiten, textosConCifraAjena } from '@/dominio/agente/guardia_ampliada';
+import { montoARepetir, textoExtraidoSinPuerta } from './plantillas_interprete';
+import { mensajeSaldosSocios, textoTicketDuplicado, textoTicketLigado } from './socios_gastos';
+import { MotorConversacion, type AlmacenConversacion, type EntornoConversacion, type OperacionCompleta as OperacionConversacion, type ResultadoRegistro, type ResumenPedidos, type Salida as SalidaConversacion } from './conversacion';
+import { instruccionDeIntencion, OPERACIONES_POR_CONVERSACION } from '@/dominio/agente/slots_desde_intencion';
+import { listoParaGrupo, type ModuloAprendizaje, type SalidaAprendizaje } from './aprendizaje';
+import type { ModuloCobranza } from './cobranza';
+import type { ModuloInventarioBot } from './avisos_inventario';
+import { intencionDeSlots } from './slots_a_intencion';
 import * as P from './plantillas';
+import * as F from './plantillas_frenos';
+import { esMontoAbreviado } from '@/dominio/agente/monto_abreviado';
+import { partirMensaje } from '@/dominio/agente/partes';
 import type { MensajeListo } from './plantillas';
-import { MAX_TOKENS_SALIDA_R1, SISTEMA_R1, VERSION_PROMPT, construirUsuarioR1, estimarTokensSolicitud } from './prompt';
+import { maxTokensSalidaPara, SISTEMA_R1, VERSION_PROMPT, construirUsuarioR1, estimarTokensSolicitud } from './prompt';
 import type {
   AccionBoton,
   AccionResuelta,
@@ -41,6 +53,7 @@ import type {
   ResultadoSimulacion,
   NegocioAgente,
   RecordatorioMenudeo,
+  ReclamoUpdate,
   ResultadoEjecutado,
   RespuestaLlm,
   TipoEspera,
@@ -49,9 +62,18 @@ import { ErrorLlm } from './puertos';
 import { resolverAccion, type PreguntaAbierta } from './resolucion';
 import type { TgCallback, TgMensaje, UpdateTelegram } from './telegram';
 
+/** Numero estable (negativo, para no chocar con update_id reales) derivado del id del callback: un reproceso del mismo boton arma la misma clave de idempotencia. */
+function updateIdDeBoton(callbackId: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < callbackId.length; i++) h = Math.imul(h ^ callbackId.charCodeAt(i), 16777619) >>> 0;
+  return -(h + 1);
+}
+
 export interface ConfigAgente {
   maxPreguntas: number;
   caducaPreguntaHoras: number;
+  /** Las preguntas de dinero (posible duplicado, cobro mayor a lo que debe) caducan pronto: un "Si" al dia siguiente no debe registrar con datos viejos. */
+  caducaPreguntaDineroMin: number;
   caducaTomaHoras: number;
   ventanaDeshacerMin: number;
   maxOpciones: number;
@@ -70,20 +92,28 @@ export interface ConfigAgente {
   caducaEsperaMin: number;
   /** Intentos para entender una fecha antes de soltar la pregunta. */
   maxIntentosFecha: number;
+  /** Un mensaje largo se procesa por partes de hasta este numero de lineas (cada parte, una llamada al modelo). */
+  maxLineasPorParte: number;
+  /** ... o de hasta este numero de caracteres. */
+  maxCaracteresPorParte: number;
 }
 
 export const CONFIG_POR_OMISION: ConfigAgente = {
   maxPreguntas: 3,
   caducaPreguntaHoras: 24,
+  caducaPreguntaDineroMin: 10,
   caducaTomaHoras: 72,
   ventanaDeshacerMin: VENTANA_DESHACER_MIN,
   maxOpciones: 4,
-  confirmarMovimientos: true,
+  // Decision del dueno (14-nov): NINGUNA operacion lleva tarjeta de confirmacion; el bot pregunta lo que falte y registra cuando tiene todo. Los frenos son SQL (interruptor, antiduplicado, deshacer 10 min).
+  confirmarMovimientos: false,
   exigirSabor: false,
   exigirPlazoPedido: false,
   limiteMensajesPorMinuto: 20,
   caducaEsperaMin: 30,
   maxIntentosFecha: 3,
+  maxLineasPorParte: 20,
+  maxCaracteresPorParte: 1500,
 };
 
 export interface DependenciasAgente {
@@ -96,6 +126,17 @@ export interface DependenciasAgente {
   negocio: NegocioAgente;
   reloj: () => Date;
   config?: Partial<ConfigAgente>;
+  /**
+   * Conversacion (integracion 16-nov): con ella, lo que el interprete entiende de un mensaje de un socio alimenta los slots de la maquina de conversacion, que pregunta lo que falte
+   * y registra por `ejecutarOperacionCompleta` (frenos). Sin ella, el agente conserva su camino anterior.
+   */
+  conversacion?: { almacen: AlmacenConversacion; resumenes?: ResumenPedidos; entorno?: Omit<EntornoConversacion, 'catalogo'> };
+  /** Aprendizaje y alta asistida (alias, jerga, ejemplos anonimizados, sabores parecidos, altas, recargo sugerido). Sin el, el agente conserva su camino anterior. */
+  aprendizaje?: ModuloAprendizaje;
+  /** Cobranza por Telegram: respuestas del socio a lo que se debe (pago, promesa, atraso, disputa, pausa), con la pregunta que el servidor recuerda. Sin el, el agente conserva su camino anterior. */
+  cobranza?: ModuloCobranza;
+  /** Comandos de inventario (/vende, /reponer, /minimo, /avisos). Sin el, esos comandos no existen. */
+  inventario?: ModuloInventarioBot;
 }
 
 export type ResultadoUpdate =
@@ -125,7 +166,17 @@ interface EstadoAccion {
   /** Boton "Si, estoy seguro" que consumio el autor (la base lo exige para la firma del acta). */
   tokenConfirmacion: string | null;
   cita: string;
+  /** El socio contesto que SI es otro movimiento (antiduplicado de la base). */
+  duplicadoOk?: boolean;
+  /** El socio confirmo que el cobro mayor a lo que debe el cliente es un anticipo. */
+  excesoOk?: boolean;
 }
+
+/**
+ * Operaciones que conservan su tarjeta aunque `confirmarMovimientos` sea falso: la base exige un boton consumido por el socio (firma personal del acta; segundo socio del lote historico).
+ * No es una confirmacion de monto: es la firma, que SQL no acepta sin el boton.
+ */
+export const TARJETA_POR_FIRMA: ReadonlySet<TipoIntencion> = new Set<TipoIntencion>(['lote_historico']);
 
 /**
  * POLITICA DE QUIEN CONFIRMA (MEDIO-2).
@@ -185,6 +236,23 @@ type FilaRecordatorio = RecordatorioMenudeo & { tipo: 'por_vencer' | 'vence_hoy'
 
 interface PayloadRecordatorio {
   fila: Omit<FilaRecordatorio, 'pendienteCent'> & { pendienteCent: string };
+}
+
+const BOTONES_QUE_ESCRIBEN: ReadonlySet<AccionBoton> = new Set<AccionBoton>(['autorizar_toma', 'rechazar_toma', 'confirmar_pago', 'rechazar_pago', 'recordatorio_pagado', 'confirmar_reprogramar']);
+
+/** Movimientos de dinero ENTRE socios (o que cambian lo que la sociedad le debe a un socio): avisan al grupo con ambos saldos. */
+export function esMovimientoEntreSocios(i: Intencion): boolean {
+  switch (i.tipo) {
+    case 'entrega_fondos':
+    case 'liquidacion_socios':
+    case 'retiro_capital':
+    case 'renta_omar':
+      return true;
+    case 'gasto':
+      return i.pagado_por !== 'sociedad';
+    default:
+      return false;
+  }
 }
 
 /** Movimientos que cambian la aportacion neta de un socio: despues de ellos el bot comenta la igualacion. */
@@ -272,6 +340,8 @@ export function cifrasDeIntencion(a: Intencion): CifraExtraida[] {
       if (a.tipo === 'compra' && a.guia_centavos !== null && a.guia_centavos > 0) salida.push(cifrasDeMonto('guia', a.guia_centavos));
       break;
     default:
+      // Intenciones ampliadas (carril interprete): pedido_ds, obsequio, entrega_fondos, renta_omar...
+      salida.push(...cifrasDeIntencionAmpliada(a));
       break;
   }
   return salida;
@@ -366,20 +436,41 @@ export function contieneTexto(fuente: string, frase: string): boolean {
   return f !== '' && normalizar(fuente).includes(f);
 }
 
+/** Operacion completa lista para escribir: el carril de conversacion la entrega aqui cuando la maquina de estados ya pregunto todo lo que faltaba. */
+export interface OperacionCompleta {
+  accion: AccionResuelta;
+  autor: Miembro;
+  claveIdem: string;
+  origen: { updateId: number; chatId: number; messageId: number };
+  /** Cita corta del mensaje del socio (se redacta de contactos antes de guardarse). */
+  cita?: string;
+}
+
 export class AgenteTelegram {
+  /** Conteo del mensaje en curso (lotes): una instancia atiende un update a la vez (la ruta crea una por peticion). */
+  private tally = { ok: 0, rechazadas: 0 };
   private readonly cfg: ConfigAgente;
   private readonly com: Comunicador;
+  private readonly motor: MotorConversacion | null;
+  /** El eco del ultimo registro hecho por la conversacion: lo publica `presentarSalida` con el mensaje rico y el boton Deshacer. */
+  private ecoPendiente: { estado: EstadoAccion; r: ResultadoEjecutado; grupo: ChatsRegistrados } | null = null;
 
   constructor(private readonly d: DependenciasAgente) {
     this.cfg = { ...CONFIG_POR_OMISION, ...d.config };
     this.com = new Comunicador(d.telegram, d.almacen);
+    this.motor = d.conversacion
+      ? new MotorConversacion(d.conversacion.almacen, { catalogo: d.catalogo, ...d.conversacion.entorno }, { ejecutarOperacionCompleta: (op) => this.registrarConversacion(op) }, d.conversacion.resumenes,
+        d.aprendizaje ? async (c) => { await this.publicarAprendizaje(await d.almacen.chats(), await d.aprendizaje!.correccion({ clave: c.clave, autor: c.autor, chatId: c.chatId, clase: c.clase, dicho: c.dicho, correcto: c.correcto })); } : undefined)
+      : null;
   }
 
   // ------------------------------------------------------------------ entrada
 
   async procesarUpdate(update: UpdateTelegram): Promise<ResultadoUpdate> {
-    // Reclamo unico ANTES de cualquier IA: el mismo update (reintento de Telegram) se aplica una sola vez.
-    if (!(await this.d.almacen.reclamarUpdate(update.update_id))) {
+    // Reclamo unico ANTES de cualquier IA, con lease y cuerpo guardado: un update reclamado y no terminado se REPROCESA (las escrituras son idempotentes por clave).
+    // Si el reclamo mismo falla (base caida) la excepcion sube y el webhook responde 5xx: Telegram reintenta.
+    const reclamo = await this.reclamar(update);
+    if (reclamo === 'duplicado') {
       await this.d.almacen.registrarEvento({ tipo: 'update_duplicado', miembro: null, detalle: 'update_id repetido' });
       // Un boton reenviado por Telegram tampoco queda en silencio: aviso corto, sin registrar nada.
       if (update.callback_query) {
@@ -388,16 +479,60 @@ export class AgenteTelegram {
       return { estado: 'duplicado', motivo: 'update' };
     }
     try {
-      return update.callback_query ? await this.boton(update.callback_query) : await this.mensaje(update);
+      const r = update.callback_query ? await this.boton(update.callback_query) : await this.mensaje(update, reclamo === 'reprocesar');
+      await this.cerrarUpdate(update.update_id, 'terminado');
+      return r;
     } catch {
       await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: null, detalle: 'error_inesperado' });
+      await this.cerrarUpdate(update.update_id, 'fallido', 'error_inesperado');
       try {
         await this.com.aGrupo(await this.d.almacen.chats(), P.textoSimple(MSG_ERROR));
       } catch {
-        // Telegram tambien esta caido: el fallo ya quedo registrado y el webhook responde 200.
+        // Telegram tambien esta caido: el fallo ya quedo registrado.
       }
       return { estado: 'error' };
     }
+  }
+
+  private async reclamar(update: UpdateTelegram): Promise<ReclamoUpdate> {
+    if (this.d.almacen.reclamarUpdate2) return this.d.almacen.reclamarUpdate2(update.update_id, update);
+    return (await this.d.almacen.reclamarUpdate(update.update_id)) ? 'nuevo' : 'duplicado';
+  }
+
+  private async cerrarUpdate(updateId: number, estado: 'terminado' | 'fallido', error?: string): Promise<void> {
+    try {
+      await this.d.almacen.terminarUpdate?.(updateId, estado, error);
+    } catch {
+      // Sin cierre el lease vence y el update se reprocesa: es seguro (idempotente).
+    }
+  }
+
+  /**
+   * Barrido del latido (apagado por interruptor de envio): reprocesa updates fallidos o con lease vencido y avisa UNA vez de los que ya no se reintentan.
+   * Con `telegram_envio` apagado no hace nada (no se manda ningun mensaje).
+   */
+  async barrerUpdates(): Promise<{ estado: 'omitido' | 'ok'; reprocesados: number; abandonados: number; motivo?: string }> {
+    if (!this.d.almacen.updatesPendientes || !this.d.almacen.updatesAbandonados) return { estado: 'omitido', reprocesados: 0, abandonados: 0, motivo: 'almacen sin soporte de lease' };
+    if (!(await this.d.negocio.envioActivo())) return { estado: 'omitido', reprocesados: 0, abandonados: 0, motivo: 'interruptor telegram_envio apagado' };
+    let reprocesados = 0;
+    for (const u of await this.d.almacen.updatesPendientes(20)) {
+      try {
+        const r = await this.procesarUpdate(u.cuerpo as UpdateTelegram);
+        if (r.estado !== 'duplicado') reprocesados++;
+      } catch {
+        await this.d.almacen.registrarEvento({ tipo: 'update_fallido', miembro: null, detalle: `reproceso update=${u.updateId}` });
+      }
+    }
+    const chats = await this.d.almacen.chats();
+    const abandonados = await this.d.almacen.updatesAbandonados();
+    for (const u of abandonados) {
+      try {
+        await this.com.aGrupo(chats, F.updateAbandonado(F.horaMerida(u.recibidoAt)));
+      } catch {
+        await this.d.almacen.registrarEvento({ tipo: 'update_fallido', miembro: null, detalle: `aviso abandonado update=${u.updateId}` });
+      }
+    }
+    return { estado: 'ok', reprocesados, abandonados: abandonados.length };
   }
 
   /**
@@ -432,9 +567,11 @@ export class AgenteTelegram {
 
   // ------------------------------------------------------------------ mensajes
 
-  private async mensaje(update: UpdateTelegram): Promise<ResultadoUpdate> {
+  private async mensaje(update: UpdateTelegram, reproceso = false): Promise<ResultadoUpdate> {
     const esEdicion = update.message === undefined && update.edited_message !== undefined;
     const msg = update.message ?? update.edited_message;
+    // El grupo paso a supergrupo: se actualiza el id en UNA sola funcion SQL (las dos tablas) y NO se sale del grupo.
+    if (msg && (msg.migrate_to_chat_id !== undefined || msg.migrate_from_chat_id !== undefined)) return this.migracionDeChat(msg);
     if (!msg?.from) return { estado: 'ignorado', motivo: 'sin_remitente' };
 
     const chats = await this.d.almacen.chats();
@@ -443,7 +580,8 @@ export class AgenteTelegram {
     if (!autor) return { estado: 'ignorado', motivo: 'no_autorizado' };
 
     // El reclamo por (chat, mensaje) va ANTES del limite de frecuencia: un mensaje rechazado por frecuencia queda reclamado, y su edicion posterior no se procesa como nuevo.
-    if (!(await this.d.almacen.reclamarMensaje(msg.chat.id, msg.message_id))) {
+    // Un reproceso del MISMO update (lease vencido o fallo anterior) ya reclamo su mensaje: no se bloquea a si mismo. Las escrituras son idempotentes por clave (`tg:<update>:<n>`).
+    if (!reproceso && !(await this.d.almacen.reclamarMensaje(msg.chat.id, msg.message_id))) {
       await this.d.almacen.registrarEvento({ tipo: 'mensaje_duplicado', miembro: autor.telegramUserId, detalle: esEdicion ? 'edicion' : 'reenvio' });
       if (esEdicion) {
         await this.responder(autor, chats, P.textoSimple('Ese mensaje ya se proceso y no se vuelve a ejecutar. Si hay un error, usa /deshacer y mandalo de nuevo.'));
@@ -497,7 +635,40 @@ export class AgenteTelegram {
       const espera = await this.d.almacen.esperaTomar(msg.chat.id, autor.telegramUserId, this.d.reloj());
       if (espera) return this.responderEspera(espera, texto, autor, chats);
     }
+    // Inventario: /vende, /reponer, /minimo, /avisos y la respuesta corta a la pregunta abierta de /minimo (solo socios; el aviso va al grupo).
+    if (this.d.inventario && autor.rol === 'socio' && !reenviado && !esEdicion) {
+      const inv = await this.d.inventario.interceptar({ chatId: msg.chat.id, autor, texto, clave: `tg:${update.update_id}` });
+      if (inv !== null) {
+        await this.publicarAprendizaje(chats, inv);
+        return { estado: 'procesado', acciones: inv.textos.length };
+      }
+    }
     const cmd = parsearComando(texto);
+    // Conversacion abierta de este socio: su mensaje contesta la pregunta pendiente (o corrige un dato). Sin conversacion abierta, sigue el camino normal.
+    if (!cmd && this.motor !== null && autor.rol === 'socio' && !reenviado && !esEdicion) {
+      const s = await this.motor.procesar({ chatId: msg.chat.id, autor, ahora: this.d.reloj(), clave: `tg:${update.update_id}`, mensajeId: msg.message_id }, { tipo: 'texto', texto });
+      if (s.tipo === 'reprocesar') base.texto = s.texto;
+      else if (s.tipo !== 'sin_conversacion') {
+        await this.presentarSalida(autor, chats, msg.chat.id, s);
+        return { estado: 'procesado', acciones: 1 };
+      }
+    }
+    // Cobranza: atajos del servidor y la respuesta a la pregunta que el SERVIDOR dejo abierta (cuenta, cifra, fecha, dias, motivo); nunca llama a la IA.
+    if (!cmd && this.d.cobranza && autor.rol === 'socio' && !reenviado && !esEdicion) {
+      const s = await this.d.cobranza.interceptar({ chatId: msg.chat.id, autor, texto, clave: `tg:${update.update_id}` });
+      if (s !== null) {
+        await this.publicarAprendizaje(chats, s);
+        return { estado: 'procesado', acciones: s.textos.length };
+      }
+    }
+    // Aprendizaje: respuestas si/no a una pregunta que el SERVIDOR recuerda en este chat (sabores parecidos, alias, recargo) y atajos del codigo; sin conversacion abierta ni comando.
+    if (!cmd && this.d.aprendizaje && autor.rol === 'socio' && !reenviado && !esEdicion) {
+      const s = await this.d.aprendizaje.interceptar({ chatId: msg.chat.id, autor, texto, clave: `tg:${update.update_id}` });
+      if (s !== null) {
+        await this.publicarAprendizaje(chats, s);
+        return { estado: 'procesado', acciones: s.textos.length };
+      }
+    }
     if (cmd) {
       if (!cmd.ok) {
         await this.responder(autor, chats, P.uso(cmd.uso));
@@ -507,24 +678,52 @@ export class AgenteTelegram {
       return this.ejecutarAcciones([cmd.intencion], { ...base, fuente: 'comando', verificarCifras: false, sospecha: false });
     }
 
-    if (!debeProcesarConIa(texto)) {
+    if (!debeProcesarConIa(base.texto)) {
       await this.d.almacen.contarNoProcesado();
       return { estado: 'ignorado', motivo: 'prefiltro' };
     }
 
     const sin = await this.d.almacen.modoSinIa();
+    const ctxIa: ContextoMensaje = { ...base, fuente: reenviado ? 'reenviado' : 'texto', verificarCifras: true, sospecha: false };
+    if (sin.activo && sin.motivo === 'tope_presupuesto') {
+      // El modo sin IA por tope de presupuesto NO es permanente (auditoria P1-10): la reserva decide. Si el dia o el mes rotaron y ya cabe, el modelo vuelve solo; si sigue agotado,
+      // la reserva falla otra vez (no se llama al modelo ni se gasta nada) y el aviso no se repite.
+      const r = await this.conIa(ctxIa);
+      if (r.estado !== 'sin_ia') await this.d.almacen.fijarModoSinIa(false, null);
+      return r;
+    }
     if (sin.activo) {
       await this.avisarModoSinIa(chats);
       return { estado: 'sin_ia' };
     }
-    return this.conIa({ ...base, fuente: reenviado ? 'reenviado' : 'texto', verificarCifras: true, sospecha: false });
+    return this.conIa(ctxIa);
+  }
+
+  private async migracionDeChat(msg: TgMensaje): Promise<ResultadoUpdate> {
+    const viejo = msg.migrate_to_chat_id !== undefined ? msg.chat.id : msg.migrate_from_chat_id!;
+    const nuevo = msg.migrate_to_chat_id !== undefined ? msg.migrate_to_chat_id : msg.chat.id;
+    const migrado = this.d.almacen.migrarChat ? await this.d.almacen.migrarChat(viejo, nuevo) : false;
+    await this.d.almacen.registrarEvento({ tipo: 'chat_migrado', miembro: null, detalle: migrado ? 'grupo_a_supergrupo' : 'chat_no_registrado' });
+    if (migrado) {
+      try {
+        await this.com.aGrupo(await this.d.almacen.chats(), F.chatMigrado());
+      } catch {
+        // El aviso es cortesia: el registro ya quedo.
+      }
+    }
+    return { estado: 'procesado', acciones: 0 };
   }
 
   /** Identidad por id de Telegram. Devuelve el miembro solo si el chat de origen es el que le corresponde. */
   private async autorizar(msg: TgMensaje, miembro: Miembro | null, chats: ChatsRegistrados): Promise<Miembro | null> {
     const esGrupo = msg.chat.type === 'group' || msg.chat.type === 'supergroup';
     if (msg.chat.id !== chats.grupoSocios && esGrupo) {
-      // El bot abandona cualquier chat de grupo que no sea el registrado.
+      // Un socio activo escribiendo desde otro grupo (por ejemplo, el grupo de siempre ya migrado a supergrupo) NO hace que el bot se vaya: solo se registra y se ignora.
+      if (miembro?.rol === 'socio') {
+        await this.d.almacen.registrarEvento({ tipo: 'chat_ajeno_socio', miembro: miembro.telegramUserId, detalle: 'grupo_no_registrado_de_un_socio' });
+        return null;
+      }
+      // El bot abandona un grupo ajeno al que lo agrego alguien que no es socio.
       await this.d.telegram.salirDelChat(msg.chat.id);
       await this.d.almacen.registrarEvento({ tipo: 'chat_ajeno', miembro: miembro?.telegramUserId ?? null, detalle: 'chat_de_grupo_no_registrado' });
       return null;
@@ -542,10 +741,22 @@ export class AgenteTelegram {
     return null;
   }
 
-  private async control(autor: Miembro, chats: ChatsRegistrados, control: 'sinia' | 'conia'): Promise<ResultadoUpdate> {
+  private async control(autor: Miembro, chats: ChatsRegistrados, control: 'sinia' | 'conia' | 'lectura' | 'escritura'): Promise<ResultadoUpdate> {
     if (autor.rol !== 'socio') {
       await this.responder(autor, chats, P.omarFueraDeAlcance());
       return { estado: 'ignorado', motivo: 'control_solo_socios' };
+    }
+    if (control === 'lectura' || control === 'escritura') {
+      // /lectura y /escritura: solo socios verificados (SQL vuelve a exigirlo por id de Telegram). Aviso al grupo con quien lo cambio.
+      if (!this.d.almacen.fijarEscritura) {
+        await this.responder(autor, chats, P.textoSimple('Este entorno no tiene el interruptor de escritura.'));
+        return { estado: 'ignorado', motivo: 'sin_interruptor' };
+      }
+      const activa = control === 'escritura';
+      const cambio = await this.d.almacen.fijarEscritura(activa, autor, 'comando de Telegram');
+      await this.d.almacen.registrarEvento({ tipo: 'escritura_cambio', miembro: autor.telegramUserId, detalle: activa ? 'escritura' : 'lectura' });
+      await this.com.aGrupo(chats, F.escrituraCambiada(activa, autor.persona, cambio));
+      return { estado: 'procesado', acciones: 0 };
     }
     if (control === 'sinia') {
       await this.d.almacen.fijarModoSinIa(true, 'manual');
@@ -568,40 +779,71 @@ export class AgenteTelegram {
   // ------------------------------------------------------------------ IA
 
   private async conIa(ctx: ContextoMensaje): Promise<ResultadoUpdate> {
-    const clave = `r1:${ctx.chatId}:${ctx.messageId}:${VERSION_PROMPT}`;
-    const r = await this.extraer(clave, ctx);
-    if (!r.ok) {
-      if (r.motivo === 'presupuesto') {
+    const claveBase = `r1:${ctx.chatId}:${ctx.messageId}:${VERSION_PROMPT}`;
+    // Sin recorte silencioso: un mensaje largo (o un lote pegado) se parte por lineas y cada parte va al modelo por separado; el resultado se avisa SIEMPRE.
+    const partes = this.partesDe(ctx.texto);
+    const totalLineas = ctx.texto.split('\n').filter((l) => l.trim() !== '').length;
+    const acciones: Intencion[] = [];
+    const fallos: Array<'presupuesto' | 'llm' | 'validacion'> = [];
+    let sospechaModelo = false;
+    let sinEntender = 0;
+    let bajaCerteza = false;
+    for (let i = 0; i < partes.length; i++) {
+      const parte = partes[i]!;
+      const r = await this.extraer(i === 0 ? claveBase : `${claveBase}:p${i}`, { ...ctx, texto: parte.texto }, parte.lineas);
+      if (!r.ok) {
+        fallos.push(r.motivo);
+        sinEntender += parte.lineas;
+        continue;
+      }
+      sospechaModelo = sospechaModelo || r.valor.sospecha_inyeccion;
+      if (r.valor.baja_certeza && r.valor.acciones.some((a) => esEscritura(a.tipo))) {
+        bajaCerteza = true;
+        sinEntender += parte.lineas;
+        continue;
+      }
+      acciones.push(...r.valor.acciones);
+    }
+    if (acciones.length === 0 && (fallos.length > 0 || bajaCerteza)) {
+      if (fallos[0] === 'presupuesto') {
         await this.d.almacen.fijarModoSinIa(true, 'tope_presupuesto');
         await this.avisarModoSinIa(ctx.chats);
         return { estado: 'sin_ia' };
       }
       await this.responder(ctx.autor, ctx.chats, P.avisoSinIaMensaje());
-      return { estado: 'sin_ia' };
+      return bajaCerteza && fallos.length === 0 ? { estado: 'procesado', acciones: 0 } : { estado: 'sin_ia' };
     }
-    const sospecha = r.valor.sospecha_inyeccion || detectarInyeccion(ctx.texto).length > 0;
+    const sospecha = sospechaModelo || detectarInyeccion(ctx.texto).length > 0;
     if (sospecha || ctx.fuente === 'reenviado') {
       await this.d.almacen.registrarEvento({ tipo: 'sospecha_inyeccion', miembro: ctx.autor.telegramUserId, detalle: sospecha ? 'patron_o_modelo' : 'reenviado' });
     }
-    if (r.valor.baja_certeza && r.valor.acciones.some((a) => esEscritura(a.tipo))) {
-      await this.responder(ctx.autor, ctx.chats, P.avisoSinIaMensaje());
-      return { estado: 'procesado', acciones: 0 };
+    const r = await this.ejecutarAcciones(acciones, { ...ctx, sospecha }, { lineas: totalLineas, partes: partes.length, sinEntender });
+    if (fallos.includes('presupuesto')) {
+      await this.d.almacen.fijarModoSinIa(true, 'tope_presupuesto');
+      await this.avisarModoSinIa(ctx.chats);
     }
-    return this.ejecutarAcciones(r.valor.acciones, { ...ctx, sospecha });
+    return r;
   }
 
-  private async extraer(clave: string, ctx: ContextoMensaje): Promise<{ ok: true; valor: RespuestaExtractor } | { ok: false; motivo: 'presupuesto' | 'llm' | 'validacion' }> {
+  private partesDe(texto: string): Array<{ texto: string; lineas: number }> {
+    const lineas = texto.split('\n').filter((l) => l.trim() !== '').length;
+    if (texto.length <= this.cfg.maxCaracteresPorParte && lineas <= this.cfg.maxLineasPorParte) return [{ texto, lineas: Math.max(1, lineas) }];
+    return partirMensaje(texto, this.cfg.maxLineasPorParte, this.cfg.maxCaracteresPorParte);
+  }
+
+  private async extraer(clave: string, ctx: ContextoMensaje, lineas = 1): Promise<{ ok: true; valor: RespuestaExtractor } | { ok: false; motivo: 'presupuesto' | 'llm' | 'validacion' }> {
     const guardada = await this.d.almacen.corrida(clave);
     if (guardada !== null) {
       const v = validarRespuesta(guardada);
       if (v.ok) return v;
     }
     const [clientes, modelos] = await Promise.all([this.d.catalogo.clientes(), this.d.catalogo.modelos()]);
-    const usuario = construirUsuarioR1({ autor: ctx.autor.persona, fuente: ctx.fuente, texto: ctx.texto, clientes, modelos });
+    const aprendido = this.d.aprendizaje && ctx.autor.rol === 'socio' ? await this.d.aprendizaje.contexto(ctx.texto) : '';
+    const usuario = construirUsuarioR1({ autor: ctx.autor.persona, fuente: ctx.fuente, texto: ctx.texto, clientes, modelos, ...(aprendido !== '' ? { contextoAprendido: aprendido } : {}) });
     let errores: string[] = [];
     for (let intento = 0; intento < 2; intento++) {
       const u = intento === 0 ? usuario : `${usuario}\nerrores_de_validacion: ${JSON.stringify(errores)}`;
-      const resp = await this.llamar(`${clave}:${intento}`, u, ctx.autor);
+      const resp = await this.llamar(`${clave}:${intento}`, u, ctx.autor, lineas);
       if (resp === 'presupuesto' || resp === 'llm') return { ok: false, motivo: resp };
       const v = validarRespuesta(resp.contenido);
       if (v.ok) {
@@ -615,10 +857,11 @@ export class AgenteTelegram {
   }
 
   /** Reserva el peor caso ANTES de llamar; liquida con el costo real; libera si la llamada falla. */
-  private async llamar(claveReserva: string, usuario: string, autor: Miembro): Promise<RespuestaLlm | 'presupuesto' | 'llm'> {
+  private async llamar(claveReserva: string, usuario: string, autor: Miembro, lineas = 1): Promise<RespuestaLlm | 'presupuesto' | 'llm'> {
     const cadena = cadenaParaRol('texto');
     const esquemaJson = esquemaJsonDeRespuesta();
-    const reserva = peorCasoTokens(cadena, estimarTokensSolicitud(SISTEMA_R1, usuario, esquemaJson), MAX_TOKENS_SALIDA_R1);
+    const maxSalida = Math.max(maxTokensSalidaPara(lineas), maxTokensSalidaPara(usuario));
+    const reserva = peorCasoTokens(cadena, estimarTokensSolicitud(SISTEMA_R1, usuario, esquemaJson), maxSalida);
     const ahora = this.d.reloj();
     const dec = await this.d.presupuesto.reservar({ clave: claveReserva, rol: 'texto', microUsd: reserva, fechaNeg: fechaNeg(ahora) });
     if (!dec.ok) return 'presupuesto';
@@ -630,7 +873,7 @@ export class AgenteTelegram {
         modelos: cadena.map((m) => m.slug),
         sistema: SISTEMA_R1,
         usuario,
-        maxTokensSalida: MAX_TOKENS_SALIDA_R1,
+        maxTokensSalida: maxSalida,
         esquemaJson,
       });
     } catch (e) {
@@ -658,8 +901,10 @@ export class AgenteTelegram {
 
   // ------------------------------------------------------------------ acciones
 
-  private async ejecutarAcciones(acciones: readonly Intencion[], ctx: ContextoMensaje): Promise<ResultadoUpdate> {
+  private async ejecutarAcciones(acciones: readonly Intencion[], ctx: ContextoMensaje, lote?: { lineas: number; partes: number; sinEntender: number }): Promise<ResultadoUpdate> {
     let hechas = 0;
+    this.tally = { ok: 0, rechazadas: 0 };
+    let escrituraBloqueada = false;
     for (let i = 0; i < acciones.length; i++) {
       const a = acciones[i]!;
       if (a.tipo === 'ninguna') continue;
@@ -675,6 +920,16 @@ export class AgenteTelegram {
         await this.responder(ctx.autor, ctx.chats, P.omarFueraDeAlcance());
         if (permiso.motivo === 'omar_no_registra') await this.com.aGrupo(ctx.chats, P.avisoOmarAlGrupo(a.tipo));
         continue;
+      }
+
+      // Interruptor de escritura: con la escritura apagada no se hace ninguna pregunta ni se prepara nada (una sola respuesta por mensaje). Consultas y deshacer siguen.
+      if (esEscritura(a.tipo) && a.tipo !== 'deshacer') {
+        if (escrituraBloqueada) continue;
+        if (!(await this.escrituraAbierta(ctx.autor, ctx.chats))) {
+          escrituraBloqueada = true;
+          hechas++;
+          continue;
+        }
       }
 
       if (ctx.fuente === 'reenviado' && esEscritura(a.tipo)) {
@@ -699,10 +954,17 @@ export class AgenteTelegram {
       }
 
       if (ctx.verificarCifras) {
-        const faltan = [...cifrasSinProcedencia(ctx.texto, cifrasDeIntencion(a)), ...cifrasDePrecios(a, ctx.texto)];
+        const faltan = [...cifrasSinProcedencia(ctx.texto, cifrasDeIntencion(a)), ...cifrasDePrecios(a, ctx.texto), ...foliosSinProcedencia(a, ctx.texto), ...textosConCifraAjena(a, ctx.texto)];
         if (faltan.length > 0) {
           await this.d.almacen.registrarEvento({ tipo: 'cifra_sin_procedencia', miembro: ctx.autor.telegramUserId, detalle: faltan.join(',') });
           await this.responder(ctx.autor, ctx.chats, P.cifraSinProcedencia(ctx.texto.slice(0, 120), faltan));
+          continue;
+        }
+        // Decision del dueno (14-nov): un monto escrito con k, con mil, con letra o de forma aproximada se REPITE completo y se pregunta antes de registrar.
+        const repetir = montosQueSeRepiten(ctx.texto, cifrasDeIntencion(a));
+        if (repetir.length > 0 && esEscritura(a.tipo)) {
+          await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `monto_abreviado:${repetir.map((x) => x.campo).join(',')}`.slice(0, 280) });
+          await this.responder(ctx.autor, ctx.chats, montoARepetir(repetir));
           continue;
         }
         // BAJO-1: un monto que solo se explica con un formato ambiguo ("1.250") se pregunta en TODAS las intenciones con dinero, no solo en el precio de un pedido.
@@ -710,6 +972,17 @@ export class AgenteTelegram {
         if (ambiguos.length > 0) {
           await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `monto_ambiguo:${ambiguos.join(',')}`.slice(0, 280) });
           await this.responder(ctx.autor, ctx.chats, P.faltaDato(MENSAJE_MONTO_AMBIGUO));
+          continue;
+        }
+      }
+
+      // Decision del dueno: un monto escrito con "k" o "mil" se repite y se pregunta con la cifra completa antes de registrar.
+      if (ctx.verificarCifras) {
+        const abreviados = cifrasDeIntencion(a).filter((c) => c.esDinero === true && esMontoAbreviado(ctx.texto, c.valor)).map((c) => c.campo);
+        if (abreviados.length > 0) {
+          await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `monto_abreviado:${abreviados.join(',')}`.slice(0, 280) });
+          await this.responder(ctx.autor, ctx.chats, F.repiteMontoCompleto(ctx.texto.slice(0, 120)));
+          hechas++;
           continue;
         }
       }
@@ -744,6 +1017,36 @@ export class AgenteTelegram {
           }
         }
       }
+      if (this.d.cobranza?.maneja(declarada.tipo) && ctx.autor.rol === 'socio' && ctx.fuente === 'texto') {
+        const s = await this.d.cobranza.manejarIntencion(declarada, { chatId: ctx.chatId, autor: ctx.autor, texto: ctx.texto, clave: `tg:${ctx.updateId}:${i}` });
+        await this.publicarAprendizaje(ctx.chats, s);
+        hechas++;
+        continue;
+      }
+      // Intenciones ampliadas aun sin puerta de ejecucion (estado 'extraido'): se entendio, se valido y NO se registra nada (jamas se inventa una escritura).
+      if (this.d.aprendizaje?.maneja(declarada.tipo) && ctx.autor.rol === 'socio' && ctx.fuente === 'texto') {
+        const s = await this.d.aprendizaje.manejarIntencion(declarada, { chatId: ctx.chatId, autor: ctx.autor, texto: ctx.texto, clave: `tg:${ctx.updateId}:${i}` });
+        await this.publicarAprendizaje(ctx.chats, s);
+        hechas++;
+        continue;
+      }
+      const conAltaConectada = this.d.aprendizaje !== undefined && this.motor !== null && (declarada.tipo === 'sabor_alta' || declarada.tipo === 'modelo_alta');
+      if (!conAltaConectada && CATALOGO_INTENCIONES[declarada.tipo].estado === 'extraido') {
+        await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `extraido_sin_puerta:${declarada.tipo}` });
+        await this.responder(ctx.autor, ctx.chats, textoExtraidoSinPuerta(declarada.tipo));
+        continue;
+      }
+      // Conversacion: el interprete alimenta los slots; la maquina pregunta lo que falte y registra por el carril de frenos.
+      // (El modo estricto con tarjeta de confirmacion, `confirmarMovimientos`, conserva el camino anterior.)
+      if (this.motor !== null && !this.cfg.confirmarMovimientos && ctx.fuente === 'texto' && ctx.autor.rol === 'socio') {
+        const ins = instruccionDeIntencion(declarada);
+        if (ins !== null && OPERACIONES_POR_CONVERSACION.has(ins.operacion)) {
+          const s = await this.motor.procesar({ chatId: ctx.chatId, autor: ctx.autor, ahora: this.d.reloj(), clave: `tg:${ctx.updateId}:${i}`, mensajeId: ctx.messageId }, { tipo: 'instruccion', operacion: ins.operacion, candidatos: ins.candidatos, cita: redactarContactos(ctx.texto).slice(0, 120) });
+          await this.presentarSalida(ctx.autor, ctx.chats, ctx.chatId, s);
+          hechas++;
+          continue;
+        }
+      }
       const estado: EstadoAccion = {
         intencion: declarada,
         overrides: {},
@@ -761,6 +1064,13 @@ export class AgenteTelegram {
       };
       await this.resolverYEjecutar(estado, ctx.chats);
       hechas++;
+    }
+    // Un lote nunca pierde una linea en silencio: aviso final con lo registrado, lo preguntado y lo que no se entendio ni se registro.
+    if (lote && !escrituraBloqueada && (lote.partes > 1 || (lote.lineas > 1 && acciones.length > 1))) {
+      const registradas = this.tally.ok;
+      const noEntendidas = lote.sinEntender + Math.max(0, acciones.length - hechas) + this.tally.rechazadas;
+      const preguntadas = Math.max(0, hechas - registradas - this.tally.rechazadas);
+      await this.responder(ctx.autor, ctx.chats, F.resumenLote({ lineas: lote.lineas, registradas, preguntadas, sinEntender: noEntendidas, partes: lote.partes }));
     }
     return { estado: 'procesado', acciones: hechas };
   }
@@ -837,11 +1147,12 @@ export class AgenteTelegram {
       }
     }
 
-    if (this.cfg.confirmarMovimientos && exigeConfirmacion(intencion.tipo) && !estado.vistoBueno) {
+    const tarjeta = (this.cfg.confirmarMovimientos && exigeConfirmacion(intencion.tipo)) || TARJETA_POR_FIRMA.has(intencion.tipo);
+    if (tarjeta && !estado.vistoBueno) {
       await this.pedirConfirmacion(estado, a, chats);
       return;
     }
-    if (this.cfg.confirmarMovimientos && exigeConfirmacion(intencion.tipo) && confirmacionDe(intencion.tipo) === 'reforzada' && !estado.refuerzo) {
+    if (tarjeta && confirmacionDe(intencion.tipo) === 'reforzada' && !estado.refuerzo) {
       if (intencion.tipo === 'acta_firma' && estado.confirmadoPor !== estado.autor.persona) {
         await this.responder(estado.autor, chats, P.rechazo('La firma del acta es personal: la da quien la pide, desde su propio Telegram. No firme nada.'));
         return;
@@ -849,41 +1160,210 @@ export class AgenteTelegram {
       await this.pedirRefuerzo(estado, chats);
       return;
     }
+    // Sin tarjeta: el bot PREGUNTA lo que falte (cuenta, via, quien pago...) y solo escribe cuando la operacion esta completa.
+    if (!tarjeta && exigeConfirmacion(intencion.tipo) && (await this.preguntarFaltante(estado, a, chats))) return;
 
-    const r = await this.d.negocio.ejecutar(a, {
-      autor: estado.autor,
-      claveIdem: estado.claveIdem,
-      origen: estado.origen,
-      ahora: this.d.reloj(),
-      confirmado: estado.confirmado,
-      efectoHash: estado.efectoHash,
-      tokenBoton: estado.tokenConfirmacion,
-    });
+    await this.ejecutarOperacionCompleta(estado, a, chats);
+  }
+
+  /**
+   * PUNTO DE INTEGRACION para la maquina de estados de conversacion: recibe una operacion COMPLETA (todos los datos resueltos y preguntados) y la escribe.
+   * Aqui viven los frenos de TypeScript: interruptor de escritura, preguntas del antiduplicado y del sobrepago, eco rico, boton Deshacer y revision de anomalias.
+   * No hay tarjeta de confirmacion. El modelo no calcula dinero: todas las cifras que se imprimen salen de la base.
+   */
+  async ejecutarOperacionCompleta(op: OperacionCompleta | EstadoAccion, a?: AccionResuelta, chats?: ChatsRegistrados): Promise<void> {
+    const grupo = chats ?? (await this.d.almacen.chats());
+    const estado: EstadoAccion = 'accion' in op
+      ? {
+          intencion: op.accion.intencion, overrides: {}, preguntasPrevias: 0, claveIdem: op.claveIdem, origen: op.origen, autor: op.autor, confirmado: false, vistoBueno: true,
+          confirmadoPor: null, refuerzo: false, efectoHash: null, tokenConfirmacion: null, cita: redactarContactos(op.cita ?? '').slice(0, 120),
+        }
+      : op;
+    const accion: AccionResuelta = 'accion' in op ? op.accion : a!;
+    const intencion = accion.intencion;
+    if (esEscritura(intencion.tipo) && intencion.tipo !== 'deshacer' && !(await this.escrituraAbierta(estado.autor, grupo))) return;
+
+    let r: ResultadoNegocio;
+    try {
+      r = await this.d.negocio.ejecutar(accion, {
+        autor: estado.autor,
+        claveIdem: estado.claveIdem,
+        origen: estado.origen,
+        ahora: this.d.reloj(),
+        confirmado: estado.confirmado,
+        efectoHash: estado.efectoHash,
+        tokenBoton: estado.tokenConfirmacion,
+        permitirDuplicado: estado.duplicadoOk === true,
+        confirmoExceso: estado.excesoOk === true,
+        cita: estado.cita,
+      });
+    } catch (e) {
+      await this.d.almacen.registrarEvento({ tipo: 'error_escritura', miembro: estado.autor.telegramUserId, detalle: intencion.tipo });
+      await this.revisarAnomalia(grupo);
+      throw e;
+    }
+    this.tally.ok += r.tipo === 'ejecutado' || r.tipo === 'toma_pendiente' ? 1 : 0;
+    this.tally.rechazadas += r.tipo === 'rechazado' ? 1 : 0;
 
     switch (r.tipo) {
       case 'ejecutado': {
         if (r.repetido) return; // misma clave: ya se aplico y ya se aviso; no se duplica nada
-        const boton = await this.boton1('Deshacer', 'deshacer', ['socio'], chats.grupoSocios, this.mas(this.cfg.ventanaDeshacerMin * 60_000), null, {
-          folio: r.folio,
-          ejecutadoEn: r.ejecutadoEn.toISOString(),
-          claveIdem: `${estado.claveIdem}:deshacer`,
-        } satisfies PayloadDeshacer);
-        await this.com.aGrupo(chats, P.ecoEjecutado(r, estado.autor, estado.confirmadoPor), { botones: [[boton]] });
-        await this.despuesDeEjecutar(intencion, r, estado, chats);
+        await this.publicarEco(estado, r, grupo, P.ecoEjecutado(r, estado.autor, estado.confirmadoPor));
+        await this.despuesDeEjecutar(intencion, r, estado, grupo);
+        await this.revisarAnomalia(grupo);
         return;
       }
       case 'pregunta': {
-        const si = await this.boton1('Si, continuar', 'confirmar_accion', ['socio'], chats.grupoSocios, this.mas(this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, { ...estado, confirmado: true } satisfies EstadoAccion);
-        const no = await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, this.mas(this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, null);
-        await this.com.aGrupo(chats, P.preguntaNegocio(r.texto, r.cifras), { botones: [[si, no]] });
+        // Duplicado y cobro mayor a lo que debe: PREGUNTA (nunca tope). La respuesta afirmativa vuelve a mandar la operacion con la bandera correspondiente.
+        const siguiente: EstadoAccion = r.clave === 'duplicado' ? { ...estado, duplicadoOk: true } : r.clave === 'exceso' ? { ...estado, excesoOk: true } : { ...estado, confirmado: true };
+        const si = await this.boton1(r.clave === 'duplicado' ? 'Si, es otro' : r.clave === 'exceso' ? 'Si, es anticipo' : 'Si, continuar', 'confirmar_accion', ['socio'], grupo.grupoSocios, this.mas(r.clave === 'duplicado' || r.clave === 'exceso' ? this.cfg.caducaPreguntaDineroMin * 60_000 : this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, siguiente satisfies EstadoAccion);
+        const no = await this.boton1('No, cancelar', 'cancelar', ['socio'], grupo.grupoSocios, this.mas(r.clave === 'duplicado' || r.clave === 'exceso' ? this.cfg.caducaPreguntaDineroMin * 60_000 : this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, null);
+        await this.com.aGrupo(grupo, P.preguntaNegocio(r.texto, r.cifras), { botones: [[si, no]] });
         return;
       }
       case 'toma_pendiente':
-        await this.publicarTomaPendiente(r, chats, estado.autor);
+        await this.publicarTomaPendiente(r, grupo, estado.autor);
         return;
       case 'rechazado':
-        await this.responder(estado.autor, chats, P.rechazo(r.texto));
+        await this.responder(estado.autor, grupo, P.rechazo(r.texto));
         return;
+    }
+  }
+
+  /** El eco de un registro: el mensaje (el eco normal o el mensaje rico de la conversacion) con el boton Deshacer de 10 minutos. */
+  private async publicarEco(estado: EstadoAccion, r: ResultadoEjecutado, grupo: ChatsRegistrados, mensaje: MensajeListo): Promise<void> {
+    const boton = await this.boton1('Deshacer', 'deshacer', ['socio'], grupo.grupoSocios, this.mas(this.cfg.ventanaDeshacerMin * 60_000), null, {
+      folio: r.folio,
+      ejecutadoEn: r.ejecutadoEn.toISOString(),
+      claveIdem: `${estado.claveIdem}:deshacer`,
+    } satisfies PayloadDeshacer);
+    await this.com.aGrupo(grupo, mensaje, { botones: [[boton]] });
+  }
+
+  /**
+   * Punto de salida de la maquina de conversacion: recibe la operacion COMPLETA en slots, la traduce a la intencion del carril de frenos y la escribe con sus mismos frenos
+   * (interruptor de escritura, antiduplicado, sobrepago como pregunta, idempotencia). El eco NO se manda aqui: lo publica `presentarSalida` con el mensaje rico y Deshacer.
+   */
+  private async registrarConversacion(op: OperacionConversacion): Promise<ResultadoRegistro> {
+    const grupo = await this.d.almacen.chats();
+    if (this.d.almacen.escrituraEstado && !(await this.d.almacen.escrituraEstado()).activa) return { tipo: 'rechazado', texto: 'Estoy en solo lectura: la escritura esta apagada.' };
+    // Altas asistidas (cliente, sabor, modelo): por las funciones agente.alta_* (deteccion de parecidos, plazo habitual, sin inventar costos).
+    if (this.d.aprendizaje && (op.operacion === 'alta_cliente' || op.operacion === 'alta_sabor' || op.operacion === 'alta_modelo')) return this.d.aprendizaje.registrarAlta(op);
+    const tr = intencionDeSlots(op.operacion, op.slots, op.cita);
+    if (!tr.ok) return { tipo: 'rechazado', texto: tr.texto };
+    const sal = await resolverAccion(tr.intencion, op.autor, this.d.catalogo, tr.overrides, this.cfg.exigirSabor);
+    if (!sal.ok) return { tipo: 'rechazado', texto: 'No pude resolver los datos de la operacion contra el catalogo.' };
+    const conf = op.confirmaciones ?? [];
+    const estado: EstadoAccion = {
+      intencion: tr.intencion, overrides: tr.overrides, preguntasPrevias: 0, claveIdem: op.claveIdem, origen: { updateId: 0, chatId: op.chatId, messageId: 0 }, autor: op.autor,
+      confirmado: conf.includes('confirmado'), vistoBueno: true, confirmadoPor: null, refuerzo: false, efectoHash: null, tokenConfirmacion: null, cita: redactarContactos(op.cita).slice(0, 120),
+    };
+    let r: ResultadoNegocio;
+    try {
+      r = await this.d.negocio.ejecutar(sal.resuelta, {
+        autor: op.autor, claveIdem: op.claveIdem, origen: estado.origen, ahora: this.d.reloj(), confirmado: estado.confirmado, efectoHash: null, tokenBoton: null,
+        permitirDuplicado: conf.includes('duplicado'), confirmoExceso: conf.includes('exceso'), cita: estado.cita,
+      });
+    } catch (e) {
+      await this.d.almacen.registrarEvento({ tipo: 'error_escritura', miembro: op.autor.telegramUserId, detalle: tr.intencion.tipo });
+      await this.revisarAnomalia(grupo);
+      throw e;
+    }
+    switch (r.tipo) {
+      case 'ejecutado': {
+        // Solo los pedidos NUEVOS arman el mensaje final de pedido; una devolucion o un paquete perdido tambien traen pedido_id pero no son un pedido registrado.
+        const pedidoId = op.operacion.startsWith('pedido') && typeof r.datos?.pedido_id === 'number' ? r.datos.pedido_id : undefined;
+        if (!r.repetido) {
+          this.ecoPendiente = { estado, r, grupo };
+          void this.aprenderDeOperacion(op, r.folio);
+        }
+        return { tipo: 'registrado', folio: r.folio, ...(pedidoId !== undefined ? { pedidoId } : {}), ...(pedidoId === undefined ? { mensaje: P.ecoEjecutado(r, op.autor) } : {}) };
+      }
+      case 'pregunta':
+        return { tipo: 'pregunta', motivo: r.clave === 'duplicado' ? 'duplicado' : 'otro', texto: P.preguntaNegocio(r.texto, r.cifras).texto, clave: r.clave === 'duplicado' || r.clave === 'exceso' ? r.clave : 'confirmado' };
+      case 'toma_pendiente':
+        await this.publicarTomaPendiente(r, grupo, op.autor);
+        return { tipo: 'registrado', folio: r.folio, mensaje: P.textoSimple(`Quedo pendiente de autorizacion como ${r.folio}.`) };
+      case 'rechazado':
+        return { tipo: 'rechazado', texto: r.texto };
+    }
+  }
+
+  /** Todo lo que el modulo de aprendizaje dice va al grupo de los socios (nunca a clientes, proveedores ni Omar). */
+  private async publicarAprendizaje(chats: ChatsRegistrados, s: SalidaAprendizaje): Promise<void> {
+    for (const t of s.textos) await this.com.aGrupo(chats, listoParaGrupo(t));
+  }
+
+  /** Ejemplo propio anonimizado de lo que se acaba de registrar (solo vale pasados 10 minutos sin deshacerse; un fallo aqui no afecta el registro). */
+  private async aprenderDeOperacion(op: OperacionConversacion, folio: string): Promise<void> {
+    if (!this.d.aprendizaje || op.cita.trim() === '') return;
+    try {
+      const [clientes, modelos] = await Promise.all([this.d.catalogo.clientes(), this.d.catalogo.modelos()]);
+      const sabores: string[] = [];
+      for (const m of modelos.slice(0, 40)) sabores.push(...(await this.d.catalogo.saboresDe?.(m.id) ?? []).map((x) => x.nombre));
+      await this.d.aprendizaje.aprender({ clave: op.claveIdem, autor: op.autor, operacion: op.operacion, texto: op.cita, folio, clientes: clientes.flatMap((c) => [c.nombre, ...c.alias]), modelos: modelos.flatMap((m) => [m.nombre, ...m.alias]), sabores });
+    } catch {
+      // Aprender es opcional.
+    }
+  }
+
+  /** Muestra lo que la maquina de conversacion decidio: la pregunta con sus botones, el registro con el eco rico y Deshacer, o el aviso de cancelacion. */
+  private async presentarSalida(autor: Miembro, chats: ChatsRegistrados, chatId: number, s: SalidaConversacion): Promise<void> {
+    switch (s.tipo) {
+      case 'pregunta': {
+        const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
+        const grupoExclusivo = `conv:${s.conversacionId}:${this.d.reloj().getTime()}`;
+        const botones: BotonEnLinea[] = [];
+        for (const b of s.botones) botones.push(await this.boton1(b.texto, 'conv', ['socio'], chats.grupoSocios, caduca, grupoExclusivo, { valor: b.valor, conversacionId: s.conversacionId }));
+        const filas: BotonEnLinea[][] = [];
+        for (let i = 0; i < botones.length; i += 2) filas.push(botones.slice(i, i + 2));
+        await this.com.aGrupo(chats, { texto: s.texto, registro: s.registro }, filas.length > 0 ? { botones: filas } : {});
+        return;
+      }
+      case 'registrado': {
+        const eco = this.ecoPendiente;
+        this.ecoPendiente = null;
+        if (eco === null) {
+          await this.com.aGrupo(chats, s.mensaje);
+          return;
+        }
+        await this.publicarEco(eco.estado, eco.r, eco.grupo, s.mensaje);
+        await this.despuesDeEjecutar(eco.estado.intencion, eco.r, eco.estado, eco.grupo);
+        await this.revisarAnomalia(eco.grupo);
+        return;
+      }
+      case 'cancelada':
+      case 'expirada':
+        await this.com.aGrupo(chats, { texto: s.texto, registro: s.registro });
+        return;
+      case 'rechazado':
+        await this.com.aGrupo(chats, { texto: s.texto, registro: s.registro });
+        return;
+      case 'reprocesar':
+      case 'sin_conversacion':
+        return;
+    }
+    void autor;
+    void chatId;
+  }
+
+  /** Lee el interruptor de escritura. Apagado: responde "Estoy en solo lectura desde HH:MM" y no se escribe nada (las consultas y el deshacer siguen). */
+  private async escrituraAbierta(autor: Miembro, chats: ChatsRegistrados): Promise<boolean> {
+    if (!this.d.almacen.escrituraEstado) return true;
+    const e = await this.d.almacen.escrituraEstado();
+    if (e.activa) return true;
+    await this.responder(autor, chats, F.soloLectura(e));
+    return false;
+  }
+
+  /** Despues de una tanda de escrituras: la base decide si hubo una anomalia; solo puede APAGAR (reactivar es de un socio). */
+  private async revisarAnomalia(chats: ChatsRegistrados): Promise<void> {
+    if (!this.d.almacen.revisarAnomalia) return;
+    try {
+      const r = await this.d.almacen.revisarAnomalia();
+      if (r.apagado) await this.com.aGrupo(chats, F.escrituraApagadaPorAnomalia(r.motivo ?? 'actividad anormal'));
+    } catch {
+      await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: null, detalle: 'revision_anomalia_no_disponible' });
     }
   }
 
@@ -897,7 +1377,33 @@ export class AgenteTelegram {
         await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: estado.autor.telegramUserId, detalle: 'tarjeta_pago_reportado' });
       }
     }
-    if (esMovimientoDeAportacion(intencion)) await this.comentarIgualacion(chats);
+    // Carril socios y gastos: ambos saldos (y la frase de igualacion del banner) en el mismo aviso; el ticket del gasto queda ligado a su foto.
+    if (esMovimientoEntreSocios(intencion) && this.d.negocio.saldosSocios) {
+      await this.avisarSaldosSocios(chats);
+    } else if (esMovimientoDeAportacion(intencion)) {
+      await this.comentarIgualacion(chats);
+    }
+    if ((intencion.tipo === 'gasto' || intencion.tipo === 'gasto_servicio') && this.d.negocio.ligarTicket && r.folio !== '') await this.ligarTicketDelGasto(estado, r.folio, chats);
+  }
+
+  /** Aviso al grupo con los saldos de AMBOS socios tras mover dinero entre ellos. Si la lectura falla, el movimiento ya registrado no se afecta. */
+  private async avisarSaldosSocios(chats: ChatsRegistrados): Promise<void> {
+    try {
+      await this.com.aGrupo(chats, mensajeSaldosSocios(await this.d.negocio.saldosSocios!()));
+    } catch {
+      await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: null, detalle: 'saldos_socios_no_disponible' });
+    }
+  }
+
+  /** La foto del ticket (si el socio la mando) queda como evidencia con huella del gasto; el monto es el que tecleo el socio. */
+  private async ligarTicketDelGasto(estado: EstadoAccion, folio: string, chats: ChatsRegistrados): Promise<void> {
+    try {
+      const t = await this.d.negocio.ligarTicket!(estado.autor.telegramUserId, folio);
+      if (t.ligada) await this.com.aGrupo(chats, textoTicketLigado(folio));
+      else if (t.duplicada && t.gastoPrevio !== null) await this.com.aGrupo(chats, textoTicketDuplicado(t.gastoPrevio));
+    } catch {
+      await this.d.almacen.registrarEvento({ tipo: 'recordatorio_error', miembro: estado.autor.telegramUserId, detalle: 'ticket_no_ligado' });
+    }
   }
 
   /**
@@ -1080,13 +1586,15 @@ export class AgenteTelegram {
   // ------------------------------------------------------------------ resumen y confirmacion explicita
 
   /** Muestra el resumen del movimiento y espera el Confirmar de un socio. Nada se registra antes. Si falta un dato, pregunta. */
-  private async pedirConfirmacion(estado: EstadoAccion, a: AccionResuelta, chats: ChatsRegistrados): Promise<void> {
+  /** Si falta un dato (cuenta, quien pago, via, folio...) lo PREGUNTA, con botones cuando hay opciones, y devuelve true (no se escribe). false = la operacion esta completa. */
+  private async preguntarFaltante(estado: EstadoAccion, a: AccionResuelta, chats: ChatsRegistrados): Promise<boolean> {
     const falta = datoFaltante(a.intencion);
-    if (falta !== null) {
+    if (falta === null) return false;
+    {
       const opciones = opcionesFaltante(a.intencion);
       if (opciones === null) {
         await this.responder(estado.autor, chats, P.faltaDato(falta));
-        return;
+        return true;
       }
       // Estado de conversacion: las opciones viajan en tokens de un solo uso con expiracion; al elegir una se completa la accion y sigue el resumen.
       const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
@@ -1097,8 +1605,12 @@ export class AgenteTelegram {
       }
       botones.push([await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null)]);
       await this.com.aGrupo(chats, P.faltaDatoConOpciones(falta), { botones });
-      return;
+      return true;
     }
+  }
+
+  private async pedirConfirmacion(estado: EstadoAccion, a: AccionResuelta, chats: ChatsRegistrados): Promise<void> {
+    if (await this.preguntarFaltante(estado, a, chats)) return;
     if (a.intencion.tipo === 'acta_firma' && estado.confirmadoPor !== null && estado.confirmadoPor !== estado.autor.persona) {
       await this.responder(estado.autor, chats, P.rechazo('La firma del acta es personal: la da quien la pide, desde su propio Telegram. No firme nada.'));
       return;
@@ -1245,6 +1757,8 @@ export class AgenteTelegram {
     ctx: { miembro: Miembro; chats: ChatsRegistrados; chatId: number; messageId: number; callbackId: string; token: string },
   ): Promise<void> {
     const { miembro, chats } = ctx;
+    // Botones que escriben directo en el negocio: tambien respetan el interruptor de escritura (los que vuelven a resolverYEjecutar lo revisan alla).
+    if (BOTONES_QUE_ESCRIBEN.has(accion) && !(await this.escrituraAbierta(miembro, chats))) return;
     switch (accion) {
       case 'cancelar':
         await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Cancelado.'));
@@ -1282,7 +1796,22 @@ export class AgenteTelegram {
         const e = payload as EstadoAccion;
         if (!(await this.confirmaQuienDebe(e, miembro, chats, ctx, 'pregunta'))) return;
         await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Confirmado.'));
-        await this.resolverYEjecutar({ ...e, confirmado: true }, chats);
+        await this.resolverYEjecutar({ ...e, confirmado: e.duplicadoOk === true || e.excesoOk === true ? e.confirmado : true }, chats);
+        return;
+      }
+      case 'conv': {
+        if (this.motor === null) return;
+        const p = payload as { valor: string };
+        const s = await this.motor.procesar({ chatId: ctx.chatId, autor: miembro, ahora: this.d.reloj(), clave: `tg:cb:${ctx.callbackId}`, mensajeId: ctx.messageId }, { tipo: 'boton', valor: p.valor });
+        if (s.tipo === 'sin_conversacion') {
+          await this.responder(miembro, chats, P.textoSimple('Esa pregunta ya no esta abierta o no es tuya.'));
+          return;
+        }
+        if (s.tipo === 'reprocesar') {
+          await this.conIa({ autor: miembro, chats, texto: s.texto, fuente: 'texto', updateId: updateIdDeBoton(ctx.callbackId), messageId: ctx.messageId, chatId: ctx.chatId, verificarCifras: true, sospecha: false });
+          return;
+        }
+        await this.presentarSalida(miembro, chats, ctx.chatId, s);
         return;
       }
       case 'deshacer': {
@@ -1433,7 +1962,12 @@ export class AgenteTelegram {
       await this.aplicarDeshacer(autor, chats, folio, claveIdem);
       return;
     }
-    const motivo = dec.motivo === 'dependencias' ? `El folio ${folio} tiene dependencias:` : `Pasaron mas de ${VENTANA_DESHACER_MIN} minutos desde ${folio}.`;
+    // Decision del dueno (14-nov): 10 minutos para TODOS (incluido el autor), aplicado en SQL. Pasado el plazo no hay boton "de todos modos": se corrige con un movimiento inverso.
+    if (dec.motivo === 'fuera_de_ventana') {
+      await this.com.aGrupo(chats, F.pasaronDiezMinutos(`Pasaron mas de ${VENTANA_DESHACER_MIN} minutos desde ${folio}: ya no se deshace desde Telegram. Corrigelo con un movimiento inverso o desde el software.`));
+      return;
+    }
+    const motivo = `El folio ${folio} tiene dependencias:`;
     const si = await this.boton1('Deshacer de todos modos', 'deshacer_expreso', ['socio'], chats.grupoSocios, this.mas(this.cfg.ventanaDeshacerMin * 60_000), `dx:${folio}`, {
       folio,
       ejecutadoEn: ejecutadoEn.toISOString(),
@@ -1444,13 +1978,13 @@ export class AgenteTelegram {
   }
 
   private async aplicarDeshacer(autor: Miembro, chats: ChatsRegistrados, folio: string, claveIdem: string): Promise<void> {
-    const r = await this.d.negocio.deshacer({ folio, autor, claveIdem });
+    const r = await this.d.negocio.deshacer({ folio, autor, claveIdem, ahora: this.d.reloj() });
     if (r.tipo === 'rechazado') {
       await this.com.aGrupo(chats, P.rechazo(r.texto));
       return;
     }
     if (r.repetido) return;
-    await this.com.aGrupo(chats, P.ecoDeshecho(r.titulo, r.folioContra, r.lineas));
+    await this.com.aGrupo(chats, r.eco ? F.deshechoConEco(r.titulo, r.folioContra, r.eco, r.lineas) : P.ecoDeshecho(r.titulo, r.folioContra, r.lineas));
   }
 
   // ------------------------------------------------------------------ utilidades

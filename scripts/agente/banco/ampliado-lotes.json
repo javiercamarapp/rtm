@@ -1,0 +1,324 @@
+[
+ {
+  "id": "n-113",
+  "categoria": "lotes",
+  "autor": "javier",
+  "texto": "pedidos de hoy:\n1) Cliente Alfa 10 zafiro 5k sandia\n2) Cliente Beta 20 orbita 20k mango\n3) Cliente Gamma 15 vega 9k menta\n4) Cliente Delta 8 nimbo 50k uva hielo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "cliente alfa",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 10
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "cliente beta",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "mango",
+       "n": 20
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "cliente gamma",
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "menta",
+       "n": 15
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "cliente delta",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "uva hielo",
+       "n": 8
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-114",
+  "categoria": "lotes",
+  "autor": "javier",
+  "texto": "Cliente Alfa pago 5,000. Cliente Beta pidio 20 zafiro 5k mango. gasto uber 300",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago",
+     "cliente": "cliente alfa",
+     "monto_pesos": 5000
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "cliente beta",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 20
+      }
+     ]
+    },
+    {
+     "tipo": "gasto",
+     "gasto": "uber",
+     "monto_pesos": 300
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-115",
+  "categoria": "lotes",
+  "autor": "javier",
+  "texto": "dropshipping de hoy, todos por Karen a credito de 8 dias:\n1) Cliente Alfa 100 zafiro 5k mango\n2) Cliente Beta 60 nimbo 50k sandia hielo\n3) Cliente Gamma 80 vega 9k fresa",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente alfa",
+     "plazo": [
+      "8 dias"
+     ],
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 100
+      }
+     ]
+    },
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente beta",
+     "plazo": [
+      "8 dias"
+     ],
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "sandia hielo",
+       "n": 60
+      }
+     ]
+    },
+    {
+     "tipo": "pedido_ds",
+     "cliente": "cliente gamma",
+     "plazo": [
+      "8 dias"
+     ],
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "fresa",
+       "n": 80
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-116",
+  "categoria": "lotes",
+  "autor": "javier",
+  "texto": "cobros de hoy:\nCliente Alfa 1,000\nCliente Beta 2,000\nCliente Gamma 3,000\nCliente Delta 4,000\nCliente Norte 5,000\nCliente Sur 6,000\nTienda La Esquina 7,000",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago",
+     "cliente": "cliente alfa",
+     "monto_pesos": 1000
+    },
+    {
+     "tipo": "pago",
+     "cliente": "cliente beta",
+     "monto_pesos": 2000
+    },
+    {
+     "tipo": "pago",
+     "cliente": "cliente gamma",
+     "monto_pesos": 3000
+    },
+    {
+     "tipo": "pago",
+     "cliente": "cliente delta",
+     "monto_pesos": 4000
+    },
+    {
+     "tipo": "pago",
+     "cliente": "cliente norte",
+     "monto_pesos": 5000
+    },
+    {
+     "tipo": "pago",
+     "cliente": "cliente sur",
+     "monto_pesos": 6000
+    },
+    {
+     "tipo": "pago",
+     "cliente": "tienda la esquina",
+     "monto_pesos": 7000
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-117",
+  "categoria": "lotes",
+  "autor": "javier",
+  "texto": "pedidos del dia:\n1) Cliente Alfa 10 zafiro 5k sandia\n2) Cliente Beta 11 zafiro 5k mango\n3) Cliente Gamma 12 orbita 20k fresa\n4) Cliente Delta 13 orbita 20k uva\n5) Cliente Norte 14 nimbo 50k menta\n6) Cliente Sur 15 nimbo 50k limon\n7) Tienda La Esquina 16 vega 9k kiwi\n8) Tienda Demo Uno 17 cometa 30k coco",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "cliente alfa",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "sandia",
+       "n": 10
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "cliente beta",
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "mango",
+       "n": 11
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "cliente gamma",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "fresa",
+       "n": 12
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "cliente delta",
+     "lineas": [
+      {
+       "m": "orbita 20k",
+       "s": "uva",
+       "n": 13
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "cliente norte",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "menta",
+       "n": 14
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "cliente sur",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "limon",
+       "n": 15
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "tienda la esquina",
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "kiwi",
+       "n": 16
+      }
+     ]
+    },
+    {
+     "tipo": "pedido",
+     "cliente": "tienda demo uno",
+     "lineas": [
+      {
+       "m": "cometa 30k",
+       "s": "coco",
+       "n": 17
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-118",
+  "categoria": "lotes",
+  "autor": "javier",
+  "texto": "ya salieron: P-0101 y P-0102 por Castores, P-0103 por DHL",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "envio_lote",
+     "paqueteria": "castores",
+     "folios": [
+      "P-0101",
+      "P-0102"
+     ]
+    },
+    {
+     "tipo": "envio_lote",
+     "paqueteria": "dhl",
+     "folios": [
+      "P-0103"
+     ]
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "envio_lote",
+      "paqueteria": "castores",
+      "folios": [
+       "P-0101",
+       "P-0102"
+      ]
+     },
+     {
+      "tipo": "pedido_envio",
+      "folio": "P-0103",
+      "estado": "enviado"
+     }
+    ]
+   ]
+  }
+ }
+]

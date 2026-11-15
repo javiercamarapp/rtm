@@ -3,6 +3,8 @@
 -- Compra A: 100 Mango a 100.00 + guia 200.00 => costo puesto 10,200.00 (1,020,000). 60 pz => 612,000; luego 40 pz => 408,000 (resto exacto).
 -- Compra B (bot): 100 Mango + 50 Uva a 100.00 sin guia. Compra C (bot): 100 Mango; llegan 88 y se cierra: faltante 12 pz = 120,000.
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('rp.parcial@example.test', 'socio', 'Angelo', true);
@@ -110,7 +112,8 @@ select is((select titulo from (select case when (r->>'piezas_ahora') is not null
 -- La migracion 20261114700000 (plazo obligatorio) envuelve de nuevo: la cadena es _ejecutar_ext_base -> _sin_plazo (esta migracion) -> _sin_parcial.
 select ok((select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base_sin_plazo(text,text,jsonb)'::regprocedure) like '%recibir_compra_parcial%'
   and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base_sin_plazo(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_parcial%'
-  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_plazo%', 'agente._ejecutar_ext_base conserva la recepcion parcial y delega el resto (por la capa del plazo)');
+  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base_sin_ventas(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_plazo%'
+  and (select prosrc from pg_proc where oid = 'agente._ejecutar_ext_base(text,text,jsonb)'::regprocedure) like '%_ejecutar_ext_base_sin_ventas%', 'agente._ejecutar_ext_base conserva la recepcion parcial y delega el resto (por las capas de ventas y del plazo)');
 select ok((select prosrc from pg_proc where oid = 'agente._efecto(text,jsonb)'::regprocedure) like '%piezas_ahora%', 'agente._efecto conserva las piezas de la llegada en el hash');
 
 select * from finish();

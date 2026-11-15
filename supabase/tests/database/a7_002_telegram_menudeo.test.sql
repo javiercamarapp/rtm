@@ -2,6 +2,8 @@
 -- Solo el socio de menudeo (Angelo por omision) mete pedidos a costo, avisa pagos y reprograma; el otro socio confirma o rechaza. La fecha la fija el codigo, nunca la IA.
 -- El comprobante se guarda solo como huella (el bot no lo lee). Ninguna funcion nueva se concede a authenticated. Datos sinteticos; sin envios reales.
 begin;
+-- Carril frenos: el interruptor agente_escritura nace apagado; esta prueba ejerce las puertas de escritura.
+update seguridad.interruptor set activo = true where clave = 'agente_escritura';
 select no_plan();
 select set_config('rtm.canal', 'importacion', true);
 select agente.registrar_miembro(5800001, 'angelo');
@@ -70,7 +72,7 @@ select throws_ok($$ select agente.ejecutar_ext('mt:h1', 'pedido_menudeo', pg_tem
 select is((select count(*)::int from operacion.pedido), 0, '... y no deja nada');
 
 create temp table _p1 as select agente.ejecutar_ext('mt:p1', 'pedido_menudeo', pg_temp.pedido_args(negocio.hoy() + 2, '10:00') || jsonb_build_object('efecto_hash', (select j ->> 'efecto_hash' from _prev))) as j;
-select is((select j ->> 'folio' from _p1) ~ '^P-', true, 'pedido creado con folio P-');
+select is((select j ->> 'folio' from _p1) ~ '^[A-Z]{2}-[0-9]{3}$', true, 'pedido creado con folio por iniciales');
 select is((select tipo_venta from operacion.pedido_ds where pedido_id = (select (j ->> 'pedido_id')::bigint from _p1)), 'socio_a_costo', 'es un pedido a costo para un socio');
 select is((select s.nombre from operacion.pedido_ds d join catalogo.socio s on s.id = d.socio_id where d.pedido_id = (select (j ->> 'pedido_id')::bigint from _p1)), 'Angelo', '... de Angelo');
 select is((select estado from operacion.pedido where id = (select (j ->> 'pedido_id')::bigint from _p1)), 'confirmado', '... confirmado');
@@ -172,7 +174,8 @@ select is((select count(*)::int from operacion.ds_recordatorio_log where pedido_
 select is(agente.recordatorio_reclamar((select (j ->> 'pedido_id')::bigint from _p1), 'vencido', (select vence from _v) - interval '20 hours') ->> 'reclamado', 'false', 'un tipo que no toca no se reclama');
 select is(pg_temp.tipo((select (j ->> 'pedido_id')::bigint from _p1), (select vence from _v) - interval '19 hours'), null, 'ya avisado: no se repite');
 -- Borde: por_vencer y vence_hoy en la MISMA hora de reloj (la ventana unica es pedido+hora): el segundo aviso NO se duplica, se reclama en la hora siguiente.
-create temp table _p3 as select agente.ejecutar_ext('mt:p9', 'pedido_menudeo', pg_temp.pedido_args(negocio.hoy() + 2, '10:30')) as j;
+-- Frenos: el mismo contenido que _p1/_p2 dentro de 10 minutos es posible duplicado; aqui es otro pedido a proposito.
+create temp table _p3 as select agente.ejecutar_ext('mt:p9', 'pedido_menudeo', pg_temp.pedido_args(negocio.hoy() + 2, '10:30') || '{"permitir_duplicado":true}'::jsonb) as j;
 select set_config('rtm.canal', 'importacion', true);
 select operacion.enviar_pedido('mt-e9', (select (j ->> 'pedido_id')::bigint from _p3), null, null, null, true);
 select set_config('rtm.canal', '', true);

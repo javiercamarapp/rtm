@@ -1,0 +1,393 @@
+[
+ {
+  "id": "n-075",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "si, es lo mismo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "sabor_respuesta",
+     "respuesta": "si"
+    }
+   ]
+  },
+  "pendiente": "¿\"Sandia helada\" es lo mismo que \"Sandia hielo\"? Responde si o no."
+ },
+ {
+  "id": "n-076",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "no, son distintos",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "sabor_respuesta",
+     "respuesta": "no"
+    }
+   ]
+  },
+  "pendiente": "¿\"Sandia helada\" es lo mismo que \"Sandia hielo\"? Responde si o no."
+ },
+ {
+  "id": "n-077",
+  "categoria": "respuestas",
+  "autor": "angelo",
+  "texto": "no se, luego lo veo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "sabor_respuesta",
+     "respuesta": "no_se"
+    }
+   ]
+  },
+  "pendiente": "¿\"Sandia helada\" es lo mismo que \"Sandia hielo\"? Responde si o no."
+ },
+ {
+  "id": "n-078",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "si guardalo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "alias_respuesta",
+     "respuesta": "si"
+    }
+   ]
+  },
+  "pendiente": "¿Guardo \"Memo\" como alias de Guillermo Torres? Responde si o no."
+ },
+ {
+  "id": "n-079",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "no, solo esta vez",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "alias_respuesta",
+     "respuesta": "no"
+    }
+   ]
+  },
+  "pendiente": "¿Guardo \"Memo\" como alias de Guillermo Torres? Responde si o no."
+ },
+ {
+  "id": "n-080",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "12,500",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "slot_respuesta",
+     "valor": "12,500"
+    }
+   ]
+  },
+  "pendiente": "¿De cuanto fue el pago de Cliente Alfa? Escribe la cifra completa."
+ },
+ {
+  "id": "n-081",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "a credito",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "slot_respuesta",
+     "valor": "a credito"
+    }
+   ]
+  },
+  "pendiente": "¿Es de contado o a credito?"
+ },
+ {
+  "id": "n-082",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "a 15 dias",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "slot_respuesta",
+     "valor": "15 dias"
+    }
+   ]
+  },
+  "pendiente": "¿A cuantos dias o semanas paga? Tambien puedes escribir la fecha."
+ },
+ {
+  "id": "n-083",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "a la de Isaac",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "slot_respuesta",
+     "valor": "isaac"
+    }
+   ]
+  },
+  "pendiente": "¿A que cuenta cayo el pago de Cliente Beta?"
+ },
+ {
+  "id": "n-084",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "30",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "slot_respuesta",
+     "valor": "30"
+    }
+   ]
+  },
+  "pendiente": "¿Cuantas piezas de zafiro 5k mango?"
+ },
+ {
+  "id": "n-085",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "karen via isaac",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "slot_respuesta",
+     "valor": "karen via isaac"
+    }
+   ]
+  },
+  "pendiente": "¿Lo surte Karen directo, Karen via Isaac o Isaac directo?"
+ },
+ {
+  "id": "n-086",
+  "categoria": "respuestas",
+  "autor": "angelo",
+  "texto": "yo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "slot_respuesta",
+     "valor": "yo"
+    }
+   ]
+  },
+  "pendiente": "¿Quien entrega, Angelo o Javier?"
+ },
+ {
+  "id": "n-087",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "Cliente Alfa pago 500",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago",
+     "cliente": "cliente alfa",
+     "monto_pesos": 500
+    }
+   ],
+   "nota": "operacion nueva con pregunta pendiente: no es respuesta"
+  },
+  "pendiente": "¿Guardo \"Memo\" como alias de Guillermo Torres? Responde si o no."
+ },
+ {
+  "id": "n-088",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "si",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "ninguna"
+    }
+   ],
+   "nota": "sin pregunta pendiente jamas se emite una respuesta"
+  }
+ },
+ {
+  "id": "n-089",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "a credito",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "ninguna"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "aclarar"
+     }
+    ]
+   ],
+   "nota": "sin pregunta pendiente no hay slot_respuesta"
+  }
+ },
+ {
+  "id": "n-090",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "perdon, no fue a Karen, fue a Isaac",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "correccion",
+     "campo": "proveedor",
+     "valor": "isaac"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-091",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "me equivoque, era Cliente Beta no Cliente Alfa",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "correccion",
+     "campo": "cliente",
+     "valor": "cliente beta"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-092",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "corrige: son 15 piezas, no 12",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "correccion",
+     "campo": "piezas",
+     "valor": "15"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-093",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "no, el monto fue 8,500",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "correccion",
+     "campo": "monto",
+     "valor": "8,500"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-094",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "mejor a 3 semanas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "correccion",
+     "campo": "plazo",
+     "valor": "3 semanas"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "aclarar"
+     }
+    ],
+    [
+     {
+      "tipo": "plazo_acordar",
+      "plazo": [
+       "3 semanas"
+      ]
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "n-095",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "ya no, olvidalo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cancelar"
+    }
+   ]
+  },
+  "pendiente": "¿De cuanto fue el pago de Cliente Alfa? Escribe la cifra completa."
+ },
+ {
+  "id": "n-096",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "cancela eso",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cancelar"
+    }
+   ]
+  },
+  "pendiente": "¿Es de contado o a credito?"
+ },
+ {
+  "id": "n-097",
+  "categoria": "respuestas",
+  "autor": "angelo",
+  "texto": "dejalo asi, no lo registres",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "cancelar"
+    }
+   ]
+  },
+  "pendiente": "¿Cuantas piezas de nimbo 50k uva?"
+ },
+ {
+  "id": "n-098",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "cancela el P-0012",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_cancelar",
+     "folio": "P-0012"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-099",
+  "categoria": "respuestas",
+  "autor": "javier",
+  "texto": "echalo para atras",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "deshacer"
+    }
+   ]
+  }
+ }
+]

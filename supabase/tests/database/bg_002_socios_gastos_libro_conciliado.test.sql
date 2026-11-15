@@ -1,0 +1,62 @@
+-- pgTAP con COMMIT REAL (cada operacion en su propia transaccion): tras entrega de fondos, liquidacion, renta, gasto de socio y gasto de caja hechos POR LA PUERTA DEL BOT,
+-- el libro conciliado y TODAS las identidades de socios cuadran (suma de saldos de socios = efectivo repartido). Se salta si el escenario BG2 ya existe.
+begin;
+select no_plan();
+create function pg_temp.ya() returns boolean language sql as $$ select exists (select 1 from catalogo.cliente where nombre_canonico = 'BG2 Cliente') $$;
+create temp table _f as select pg_temp.ya() as ya;
+select case when (select ya from _f) then skip('el escenario BG2 ya existe: re-crear la base', 1) else pass('base sin el escenario BG2: se corre con commit real') end;
+do $$ begin
+  if (select ya from _f) then return; end if;
+  perform set_config('rtm.canal', 'importacion', true);
+  perform agente.registrar_miembro(7100001, 'angelo'); perform agente.registrar_miembro(7100002, 'javier');
+  perform agente.registrar_chat('grupo_socios', -7100001);
+  perform agente.fijar_escritura(true, 'angelo', 7100001, 'prueba');
+  perform catalogo.asegurar_cliente('BG2 Cliente', 'Javier');
+end $$;
+commit;
+create function pg_temp.ang(extra jsonb default '{}') returns jsonb language sql as $$ select jsonb_build_object('autor', 'angelo', 'telegram_user_id', 7100001, 'origen', 'x') || $1 $$;
+create function pg_temp.jav(extra jsonb default '{}') returns jsonb language sql as $$ select jsonb_build_object('autor', 'javier', 'telegram_user_id', 7100002, 'origen', 'x') || $1 $$;
+create function pg_temp.fallas() returns text language plpgsql as $$
+declare r text := '';
+begin
+  perform set_config('rtm.canal', 'telegram', true); perform set_config('rtm.actor', 'angelo', true);
+  perform contabilidad.asentar_pendientes();
+  if not coalesce((operacion.cuadre_socios() ->> 'libro_conciliado')::boolean, false) then r := r || 'libro_conciliado;'; end if;
+  r := r || coalesce((select string_agg('socios:' || (x ->> 'id'), ';') from jsonb_array_elements(operacion.cuadre_socios() -> 'verificaciones') x where not (x ->> 'ok')::boolean), '');
+  r := r || coalesce((select string_agg(c.codigo, ';' order by c.codigo) from contabilidad.comprobaciones() c where not c.ok), '');
+  return r;
+end $$;
+commit;
+begin; select set_config('rtm.canal','telegram',true), set_config('rtm.actor','angelo',true), contabilidad.asentar_pendientes();
+commit;
+begin; select case when (select ya from _f) then null else (agente.ejecutar('bg2:a1', 'aportacion', pg_temp.ang('{"socio":"angelo","monto_cent":2000000,"intencion":"reembolso"}'))) end;
+commit;
+begin; select set_config('rtm.canal','telegram',true), set_config('rtm.actor','angelo',true), contabilidad.asentar_pendientes();
+commit;
+begin; select case when (select ya from _f) then null else (agente.ejecutar('bg2:g1', 'gasto', pg_temp.ang('{"pagado_por":"angelo","monto_cent":50000,"categoria":"uber"}'))) end;
+commit;
+begin; select set_config('rtm.canal','telegram',true), set_config('rtm.actor','angelo',true), contabilidad.asentar_pendientes();
+commit;
+begin; select case when (select ya from _f) then null else (agente.ejecutar('bg2:c1', 'pago_cliente', pg_temp.ang(jsonb_build_object('cuenta','angelo','monto_cent',700000,'cliente_id',(select id from catalogo.cliente where nombre_canonico='BG2 Cliente'),'confirmo_exceso',true)))) end;
+commit;
+begin; select set_config('rtm.canal','telegram',true), set_config('rtm.actor','angelo',true), contabilidad.asentar_pendientes();
+commit;
+begin; select case when (select ya from _f) then null else (agente.ejecutar_ext('bg2:e1', 'entrega_fondos', pg_temp.ang('{"socio":"angelo","destino":"sociedad","monto_cent":300000}'))) end;
+commit;
+begin; select set_config('rtm.canal','telegram',true), set_config('rtm.actor','angelo',true), contabilidad.asentar_pendientes();
+commit;
+begin; select case when (select ya from _f) then null else (agente.ejecutar_ext('bg2:l1', 'liquidacion_socios', pg_temp.ang('{"de_socio":"angelo","a_socio":"javier","monto_cent":100000}'))) end;
+commit;
+begin; select set_config('rtm.canal','telegram',true), set_config('rtm.actor','angelo',true), contabilidad.asentar_pendientes();
+commit;
+begin; select case when (select ya from _f) then null else (agente.ejecutar_ext('bg2:p1', 'renta_omar', pg_temp.ang('{"pagado_por":"angelo","monto_cent":50000,"via":"efectivo","confirmo_exceso":true}'))) end;
+commit;
+begin; select set_config('rtm.canal','telegram',true), set_config('rtm.actor','angelo',true), contabilidad.asentar_pendientes();
+commit;
+begin; select case when (select ya from _f) then null else (agente.ejecutar_ext('bg2:gc1', 'gasto_caja', pg_temp.ang('{"monto_cent":20000,"categoria":"uber"}'))) end;
+commit;
+begin;
+select is(case when (select ya from _f) then '' else pg_temp.fallas() end, '', 'libro conciliado, identidades de socios y comprobaciones C1..C24 cuadran tras las operaciones del bot');
+select is((select count(*)::int from operacion.aportacion_socio where clasificacion = 'capital' and concepto ilike '%BG2%'), 0, 'ninguna operacion marco capital sin declaracion');
+select * from finish();
+rollback;
