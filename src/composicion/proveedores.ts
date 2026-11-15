@@ -2,7 +2,7 @@
 import { prepararListaParaCliente, type PeticionLista } from '@/aplicacion/proveedores/lista';
 import type { ResultadoLista } from '@/dominio/proveedores/lista_cliente';
 import { ContextoNegocioDb, DatosListaDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
-import { llamadaProveedoresSocio, pantallaProveedores, tableroKaren, type PantallaProveedores } from '@/infra/supabase/proveedores';
+import { llamadaProveedoresSocio, pantallaProveedores, tableroIsaac, tableroKaren, type PantallaProveedores } from '@/infra/supabase/proveedores';
 import { sinLineaBase } from '@/dominio/proveedores/stock';
 import { bloqueoDeActualizar, type DatosTablero } from '@/dominio/proveedores/tablero';
 import { lecturaManualDeProveedores } from './produccion';
@@ -23,6 +23,13 @@ export async function listaParaClienteDeSocio(peticion: PeticionLista): Promise<
 export async function tableroDeSocio(): Promise<DatosTablero> {
   await exigirSocio();
   const t = await tableroKaren();
+  return { ...t, modelos: sinLineaBase(t.modelos) };
+}
+
+/** Stock disponible de Isaac (catalogo Remate), mismo formato que el de Karen. Solo socios. */
+export async function tableroIsaacDeSocio(): Promise<DatosTablero> {
+  await exigirSocio();
+  const t = await tableroIsaac();
   return { ...t, modelos: sinLineaBase(t.modelos) };
 }
 

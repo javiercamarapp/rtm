@@ -14,6 +14,8 @@ export interface PropsStockKaren {
   lecturaActiva: boolean;
   ahoraIso: string;
   busqueda: Record<string, string | string[] | undefined>;
+  /** Proveedor al que pertenece el stock (por omision Karen). Isaac usa el mismo formato con su catalogo Remate. */
+  proveedor?: 'Karen' | 'Isaac';
 }
 
 const SIN_DATO = 'Sin dato';
@@ -36,7 +38,7 @@ function GraficaMarcas({ modelos }: { modelos: ModeloTablero[] }) {
   );
 }
 
-export function StockKaren({ modelos: modelosCrudos, eventos: eventosCrudos, ultimaLecturaOk, desactualizado, lecturaActiva, ahoraIso, busqueda }: PropsStockKaren) {
+export function StockKaren({ modelos: modelosCrudos, eventos: eventosCrudos, ultimaLecturaOk, desactualizado, lecturaActiva, ahoraIso, busqueda, proveedor = 'Karen' }: PropsStockKaren) {
   const ahora = new Date(ahoraIso);
   // La primera lectura es la linea base: ni cuenta como nuevo ni aparece en cambios recientes.
   const modelos = sinLineaBase(modelosCrudos);
@@ -53,7 +55,7 @@ export function StockKaren({ modelos: modelosCrudos, eventos: eventosCrudos, ult
     return (
       <section className="rtm-kr-vacio" data-testid="vacio-karen">
         <span aria-hidden="true" className="rtm-kr-vacio-marca">K</span>
-        <h2>Todavía no hay lecturas de Karen</h2>
+        <h2>{proveedor === 'Isaac' ? 'Todavía no hay catálogo de Isaac' : 'Todavía no hay lecturas de Karen'}</h2>
         <p>{lecturaActiva ? 'La lectura está encendida y esperando la primera pasada.' : 'La lectura está apagada. Cuando se encienda, el vigilante horario llenará esta página con los modelos y sabores de su tienda.'}</p>
       </section>
     );
@@ -61,9 +63,9 @@ export function StockKaren({ modelos: modelosCrudos, eventos: eventosCrudos, ult
 
   return (
     <>
-      <section className="rtm-st-kpis" aria-label="Resumen del stock de Karen" data-testid="kpis-stock">
+      <section className="rtm-st-kpis" aria-label={`Resumen del stock de ${proveedor}`} data-testid="kpis-stock">
         {[
-          ['Modelos', String(k.modelos), 'Modelos que aparecen hoy en la tienda de Karen.'],
+          ['Modelos', String(k.modelos), `Modelos que aparecen hoy con ${proveedor}.`],
           ['Con sabores', String(k.conStock), 'Modelos con al menos un sabor disponible.'],
           ['Agotados', String(k.agotados), 'Modelos cuyos sabores están todos agotados.'],
           ['Nuevos esta semana', String(k.nuevos), 'Modelos vistos por primera vez en los últimos 7 días.'],
