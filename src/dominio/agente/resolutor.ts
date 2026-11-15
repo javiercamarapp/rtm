@@ -5,6 +5,7 @@
 //   ninguno -> preguntar (con sugerencias cercanas, que nunca deciden)
 //   vacio   -> preguntar
 import { normalizar } from '../catalogo/normalizar';
+import { textoAmbiguo } from './alias_ambiguos';
 import type { Miembro } from './tipos';
 
 export interface EntradaCatalogo {
@@ -28,9 +29,6 @@ export type Resolucion =
 
 /** Ids reservados para las opciones de "Omar" a secas. */
 export const ID_TOMA_OMAR_BODEGA = 'bodega_omar';
-
-/** Textos de modelo que SIEMPRE se preguntan: el precio de venta es igual pero costo e inventario difieren entre variantes. */
-const MODELOS_SIEMPRE_AMBIGUOS: ReadonlySet<string> = new Set(['waka 50', 'waka 50k']);
 
 function tokenCoincide(q: string, n: string): boolean {
   if (q === n) return true;
@@ -81,19 +79,28 @@ function candidatosPorTokens(q: string, catalogo: readonly EntradaCatalogo[]): C
     .map((e) => ({ id: e.id, nombre: e.nombre }));
 }
 
-function resolverContra(
-  texto: string,
-  catalogo: readonly EntradaCatalogo[],
-  siempreAmbiguos: ReadonlySet<string>,
-): Resolucion {
+/**
+ * Texto de modelo que SIEMPRE se pregunta (ver alias_ambiguos.ts): solo se ofrecen las opciones del dueno que existen en el catalogo,
+ * aunque haya una sola. Si ninguna existe, no se inventa: ninguno.
+ */
+function resolverAmbiguo(q: string, catalogo: readonly EntradaCatalogo[]): Resolucion | null {
+  const grupo = textoAmbiguo(q);
+  if (!grupo) return null;
+  const candidatos: Candidato[] = [];
+  for (const op of grupo.opciones) {
+    const e = catalogo.find((x) => normalizar(x.nombre) === normalizar(op.modelo));
+    if (e) candidatos.push({ id: e.id, nombre: op.etiqueta ?? e.nombre });
+  }
+  return candidatos.length === 0 ? { estado: 'ninguno', sugerencias: [] } : { estado: 'varios', candidatos, motivo: 'regla' };
+}
+
+function resolverContra(texto: string, catalogo: readonly EntradaCatalogo[], modelo: boolean): Resolucion {
   const q = normalizar(texto);
   if (q === '') return { estado: 'vacio' };
 
-  if (siempreAmbiguos.has(q)) {
-    const candidatos = candidatosPorTokens(q, catalogo);
-    return candidatos.length === 0
-      ? { estado: 'ninguno', sugerencias: [] }
-      : { estado: 'varios', candidatos, motivo: 'regla' };
+  if (modelo) {
+    const ambiguo = resolverAmbiguo(q, catalogo);
+    if (ambiguo) return ambiguo;
   }
 
   const exactos = catalogo.filter((e) => [e.nombre, ...e.alias].some((n) => normalizar(n) === q));
@@ -110,11 +117,11 @@ function resolverContra(
 }
 
 export function resolverModelo(texto: string, catalogo: readonly EntradaCatalogo[]): Resolucion {
-  return resolverContra(texto, catalogo, MODELOS_SIEMPRE_AMBIGUOS);
+  return resolverContra(texto, catalogo, true);
 }
 
 export function resolverSabor(texto: string, saboresEnExistencia: readonly EntradaCatalogo[]): Resolucion {
-  return resolverContra(texto, saboresEnExistencia, new Set());
+  return resolverContra(texto, saboresEnExistencia, false);
 }
 
 export type ResolucionCliente = Resolucion | { estado: 'toma_propia' };
@@ -140,7 +147,7 @@ export function resolverCliente(
       motivo: 'regla',
     };
   }
-  return resolverContra(texto, clientes, new Set());
+  return resolverContra(texto, clientes, false);
 }
 
 export type IdProveedor = 'isaac' | 'karen';

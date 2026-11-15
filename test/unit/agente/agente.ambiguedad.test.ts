@@ -43,13 +43,14 @@ describe('criterio: "Omar" a secas y "Waka 50" siempre preguntan', () => {
     expect(e.negocio.numeroDeHechos()).toBe(0);
   });
 
-  it.each(['Waka 50', 'waka 50k', 'WAKA 50'])('"%s" pregunta cual variante (con las tres opciones)', async (txt) => {
+  it.each(['Waka 50', 'waka 50k', 'WAKA 50'])('"%s" pregunta cual variante (solo Jupiter o Icon)', async (txt) => {
     const e = escenario([unaAccion(pedido('Cliente Norte', [[txt, 28]]))]);
     await e.socio('angelo', `Cliente Norte 28 ${txt}`);
     const q = e.ultimoGrupo();
     expect(q.texto).toContain('¿cual modelo es');
     const opciones = q.botones!.flat().map((b) => b.texto);
-    expect(opciones).toEqual(expect.arrayContaining(['Waka Icon 50K', 'Waka Blast 50K', 'Waka Jupiter 50K']));
+    expect(opciones).toEqual(expect.arrayContaining(['Waka Icon 50K', 'Waka Jupiter 50K']));
+    expect(opciones).not.toContain('Waka Blast 50K'); // el dueno: 50K es Jupiter o Icon
     expect(e.negocio.numeroDeHechos()).toBe(0);
   });
 
@@ -57,13 +58,13 @@ describe('criterio: "Omar" a secas y "Waka 50" siempre preguntan', () => {
     const e = escenario([unaAccion(pedido('Cliente Norte', [['waka 50', 28]]))]);
     await e.socio('angelo', 'Cliente Norte 28 waka 50');
     const q = e.ultimoGrupo();
-    const fila = q.botones!.findIndex((f) => f[0]!.texto === 'Waka Blast 50K');
+    const fila = q.botones!.findIndex((f) => f[0]!.texto === 'Waka Jupiter 50K');
     await e.pulsar(IDS.javier, IDS.grupoSocios, q, fila);
-    expect(e.negocio.existenciaDe('m2')).toBe(2);
+    expect(e.negocio.existenciaDe('m3')).toBe(72);
     expect(e.negocio.existenciaDe('m1')).toBe(12);
     expect(e.textosGrupo().at(-1)).toContain('Registrado P-0001');
     // La tarjeta de la pregunta se edita y sus otras opciones dejan de valer.
-    expect(e.telegram.ediciones.at(-1)!.texto).toContain('Elegido: Waka Blast 50K');
+    expect(e.telegram.ediciones.at(-1)!.texto).toContain('Elegido: Waka Jupiter 50K');
     const otra = q.botones!.findIndex((f) => f[0]!.texto === 'Waka Icon 50K');
     const r = await e.pulsar(IDS.angelo, IDS.grupoSocios, q, otra);
     expect(r).toEqual({ estado: 'boton', resultado: 'usado' });
