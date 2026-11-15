@@ -288,14 +288,15 @@ select is((select count(*)::int from operacion.aviso where codigo = 'accion_fuer
 -- Campana, Tu turno y pulso --------------------------------------------------------------------------------------------------------------------
 select set_config('request.jwt.claim.sub', '74444444-4444-4444-4444-444444444442', true);
 select ok((api.mis_notificaciones('todas', 0) -> 'notificaciones') is not null, 'la campana lista las notificaciones');
-select is(api.contar_no_leidas(), (select count(*)::int from operacion.aviso a join notificacion.tipo t on t.codigo = a.codigo where a.estado = 'abierta' and t.canal not in ('OM', 'VO')), 'contar_no_leidas = abiertas sin marca de lectura');
+select is(api.contar_no_leidas(), (select count(*)::int from operacion.aviso a join notificacion.tipo t on t.codigo = a.codigo cross join lateral notificacion.condicion(a) k where a.estado = 'abierta' and k.vigente is not false and t.canal not in ('OM', 'VO')), 'contar_no_leidas = abiertas vigentes sin marca de lectura');
 select ok(api.contar_no_leidas() > 0, 'hay avisos sin leer');
 select ok(jsonb_array_length(api.mis_notificaciones('sin_leer', 0) -> 'notificaciones') <= 25, 'paginas de 25');
 select ok(not exists (select 1 from jsonb_array_elements(api.mis_notificaciones('sin_leer', 0) -> 'notificaciones') n where (n ->> 'leida')::boolean), 'la pestana Sin leer solo trae lo no leido');
-select api.marcar_leida((select id from operacion.aviso where clave_dedupe = 'pe:1'));
-select is((select leida_at is not null from notificacion.destinatario where aviso_id = (select id from operacion.aviso where clave_dedupe = 'pe:1') and usuario_id = '74444444-4444-4444-4444-444444444442'), true, 'marcar leida');
-select is((select estado from operacion.aviso where clave_dedupe = 'pe:1'), 'abierta', 'leida y resuelta son independientes: sigue abierta');
-select ok(exists (select 1 from jsonb_array_elements(api.tu_turno() -> 'items') i where i ->> 'codigo' = 'paquete_por_empacar'), 'un asunto abierto con accion sigue en Tu turno aunque este leido');
+select pg_temp.av('aviso_precio_tabulador', 'tt:1', 1);
+select api.marcar_leida((select id from operacion.aviso where clave_dedupe = 'tt:1'));
+select is((select leida_at is not null from notificacion.destinatario where aviso_id = (select id from operacion.aviso where clave_dedupe = 'tt:1') and usuario_id = '74444444-4444-4444-4444-444444444442'), true, 'marcar leida');
+select is((select estado from operacion.aviso where clave_dedupe = 'tt:1'), 'abierta', 'leida y resuelta son independientes: sigue abierta');
+select ok(exists (select 1 from jsonb_array_elements(api.tu_turno() -> 'items') i where i ->> 'codigo' = 'aviso_precio_tabulador'), 'un asunto abierto con accion sigue en Tu turno aunque este leido');
 select ok(not exists (select 1 from jsonb_array_elements(api.tu_turno() -> 'items') i where i ->> 'codigo' = 'paquete_enviado_con_guia'), 'lo informativo no entra en Tu turno');
 select ok(exists (select 1 from generate_series(0, 8) p, jsonb_array_elements(api.mis_notificaciones('todas', p) -> 'notificaciones') n where (n ->> 'telegram_no_salio')::boolean), 'la campana dice "Telegram no salio" cuando la entrega murio y el asunto sigue abierto');
 select api.marcar_todas_leidas();
