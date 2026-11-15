@@ -10,7 +10,7 @@ export interface GrupoModelo { modelo: string; marca: string | null; piezas: num
 export function agruparPorModelo(renglones: readonly RenglonSabor[]): GrupoModelo[] {
   const grupos = new Map<string, { modelo: string; marca: string | null; sabores: Map<string, number> }>();
   for (const r of renglones) {
-    const clave = `${r.marca ?? ''}|${r.modelo}`;
+    const clave = `${r.marca ?? ''}|${r.modelo}`; // may-ok: clave de agrupacion, no se muestra
     const g = grupos.get(clave) ?? { modelo: r.modelo, marca: r.marca ?? null, sabores: new Map<string, number>() };
     g.sabores.set(r.sabor, (g.sabores.get(r.sabor) ?? 0) + r.piezas);
     grupos.set(clave, g);
