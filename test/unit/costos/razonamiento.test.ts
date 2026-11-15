@@ -10,11 +10,16 @@ describe('razonamiento de costos', () => {
     }
     expect(razonamientoDe('claude_max').comoSeCalcula).toContain('20 USD');
     expect(razonamientoDe('dominio').porQue).toContain('Vercel');
+    for (const slug of ['vercel', 'supabase']) {
+      expect(razonamientoDe(slug).comoSeCalcula).toContain('lo MAYOR entre la cuota base');
+      expect(razonamientoDe(slug).comoSeCalcula).not.toMatch(/lo menor/i);
+    }
     expect(DESTINO_DEL_DINERO).toContain('aportación de capital');
     expect(DESTINO_DEL_DINERO).toContain('sin mover la caja');
   });
   it('la cuota base se narra con su regla y vigencia', () => {
-    expect(textoCuotaBase({ regla: 'menor', cuota_orig_micro: 20_000_000, vigente_desde: '2026-11-01', nota: '' })).toBe('Se cobra lo menor entre la cuota base de USD 20.00 y el consumo real (vigente desde 2026-11-01).');
+    expect(textoCuotaBase({ regla: 'mayor', cuota_orig_micro: 20_000_000, vigente_desde: '2026-11-01', nota: '' })).toBe('Se cobra lo MAYOR entre la cuota base de USD 20.00 y el consumo real (vigente desde 2026-11-01).');
+    expect(textoCuotaBase({ regla: 'menor', cuota_orig_micro: 20_000_000, vigente_desde: '2026-11-01', nota: '' })).toBe('Se cobra lo MENOR entre la cuota base de USD 20.00 y el consumo real (vigente desde 2026-11-01).');
     expect(textoCuotaBase(null)).toBeNull();
   });
 });
