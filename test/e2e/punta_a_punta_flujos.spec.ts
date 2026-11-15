@@ -377,7 +377,7 @@ test('F08 gasto de socio y reembolso: el gasto baja la utilidad una sola vez; no
   await sesionSocio(page, '/socios', 'Angelo');
   const pend0 = await reembolsoPendiente('Angelo');
   await page.getByTestId('gasto-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('500');
   await page.getByTestId('campo-p_categoria').fill(`envio QA ${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -391,15 +391,15 @@ test('F08 gasto de socio y reembolso: el gasto baja la utilidad una sola vez; no
   });
   // Pago a socio: reembolso de 400.00 y luego un intento de 1,200.00 que excede lo pendiente.
   await page.getByTestId('pago-a-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('400');
-  await page.getByTestId('campo-p_tipo').selectOption('reembolso');
+  await page.getByTestId('campo-p_tipo-reembolso').check();
   await page.getByTestId('confirmar').click();
   await expect.poll(async () => (await reembolsoPendiente('Angelo')) - pend0).toBe(10_000n);
   await page.getByTestId('pago-a-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('999999');
-  await page.getByTestId('campo-p_tipo').selectOption('reembolso');
+  await page.getByTestId('campo-p_tipo-reembolso').check();
   await page.getByTestId('confirmar').click();
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText(/excede|pendiente/i);
   await page.keyboard.press('Escape');
@@ -412,15 +412,15 @@ test('F08 gasto de socio y reembolso: el gasto baja la utilidad una sola vez; no
 test('F09 aportacion de capital: 1,000.00 de Javier, la devolucion automatica ya no existe y deshacer', async ({ page }) => {
   await sesionSocio(page, '/socios', 'Javier');
   await page.getByTestId('aportacion').click();
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
+  await page.getByTestId('campo-p_socio-Javier').check();
   await page.getByTestId('campo-p_monto_cent').fill('1000');
   await page.getByTestId('campo-p_concepto').fill(`Capital adicional ${d.sufijo}`);
   await page.getByTestId('confirmar').click();
   await expect(page.getByText(`Capital adicional ${d.sufijo}`)).toBeVisible();
   await page.getByTestId('pago-a-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
+  await page.getByTestId('campo-p_socio-Javier').check();
   // Decision del 11-nov: la devolucion de capital ya NO es automatica (retiro de capital explicito). El formulario no la ofrece y el SQL la rechaza.
-  await expect(page.getByTestId('campo-p_tipo').locator('option')).toHaveText(['Reembolso de gastos', 'Retiro de utilidad ya asignada']);
+  await expect(page.getByTestId('campo-p_tipo').locator('.rtm-seg-op')).toHaveText(['Reembolso de gastos', 'Retiro de utilidad ya asignada']);
   await page.getByRole('button', { name: 'Cancelar' }).click();
   const rechazo = await conDb(async (c) => {
     await c.query('begin');
@@ -443,7 +443,7 @@ test('F09 aportacion de capital: 1,000.00 de Javier, la devolucion automatica ya
   // Doble clic en Registrar aportacion: una sola captura.
   const antes = await consultar<{ n: number }>("select count(*)::int as n from operacion.aportacion_socio where concepto = $1", [`Doble clic ${d.sufijo}`]);
   await page.getByTestId('aportacion').click();
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
+  await page.getByTestId('campo-p_socio-Javier').check();
   await page.getByTestId('campo-p_monto_cent').fill('10');
   await page.getByTestId('campo-p_concepto').fill(`Doble clic ${d.sufijo}`);
   await page.getByTestId('confirmar').dblclick();

@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
+import { useExito } from '@/ui/componentes/dialogo-enterprise';
 import { useAccion } from './usar-accion';
 
 interface Props {
@@ -27,22 +28,22 @@ interface Props {
 /** Boton + dialogo propio para una accion de un solo paso, con motivo opcional obligatorio. Nunca window.confirm. */
 export function DialogoSimple({ boton, titulo, accion, args, confirmar, primario, chico, motivo, texto, testid, variante, descripcion, alTerminar }: Props) {
   const { correr, ocupado, error, limpiarError } = useAccion();
+  const { exito, celebrar } = useExito();
   const [abierto, setAbierto] = useState(false);
   const [m, setM] = useState('');
   const [local, setLocal] = useState<string | null>(null);
   const ir = () => {
     if (motivo && m.trim() === '') return setLocal('Escribe el motivo.');
     setLocal(null);
-    correr(accion, { ...args, ...(motivo ? { [motivo]: m.trim() } : {}) }, (d) => { setAbierto(false); setM(''); alTerminar?.(d); });
+    correr(accion, { ...args, ...(motivo ? { [motivo]: m.trim() } : {}) }, (d) => celebrar(() => { setAbierto(false); setM(''); alTerminar?.(d); }));
   };
   return (
     <>
       <button type="button" className={variante === 'terciario' ? 'rtm-boton rtm-boton-terciario' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} title={descripcion} onClick={() => { limpiarError(); setAbierto(true); }} data-testid={testid}>{boton}</button>
       {abierto && (
-        <ConfirmDialog abierto={abierto} titulo={titulo} confirmar={confirmar ?? boton} ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
+        <ConfirmDialog abierto={abierto} titulo={titulo} subtitulo={descripcion} confirmar={confirmar ?? boton} ocupado={ocupado} exito={exito} error={local ?? error} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           {texto}
           {motivo && <label className="rtm-etiqueta-campo">Motivo<textarea className="rtm-campo" value={m} onChange={(e) => setM(e.target.value)} aria-label="Motivo" /></label>}
-          {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
         </ConfirmDialog>
       )}
     </>
