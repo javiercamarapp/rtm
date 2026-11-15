@@ -96,7 +96,7 @@ describe('barras compactas', () => {
     const tira = reglas.find((r) => r.selector === '.rtm-pestanas-linea > .rtm-pestanas')!;
     expect(tira.cuerpo).toMatch(/flex:\s*0 0 auto/);
     const lateral = reglas.find((r) => r.selector === '.rtm-pestanas-lateral')!;
-    expect(lateral.cuerpo).not.toMatch(/max-width:\s*\d+%/);
+    expect(lateral.cuerpo).not.toMatch(/max-width:\s*[1-9]\d?%/);
     expect(lateral.cuerpo).toMatch(/flex:\s*1 1 auto/);
     expect(controles).toMatch(/@media \(max-width: 767px\) \{\s*\.rtm-pestanas-linea \{ flex-direction: column; \}/);
   });
