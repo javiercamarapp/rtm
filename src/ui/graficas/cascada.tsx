@@ -8,6 +8,8 @@ import type { BaseGrafica, TablaAlterna } from './tipos';
 export interface PasoCascadaVista extends PasoCascada {
   /** Texto ya formateado, con signo: "+$1,200.00", "−$300.00". */
   texto: string;
+  /** Etiqueta corta para dentro de la grafica ("+$154.8 mil"); el texto exacto queda en la tabla y en la descripcion accesible. */
+  textoCompacto?: string;
 }
 
 interface Props extends BaseGrafica {
@@ -64,7 +66,7 @@ export function Cascada({ pasos, unidad, tablaAbierta, ...base }: Props) {
                 <g key={b.id} role="img" aria-label={`${p.etiqueta}: ${p.texto}${esTotal && p.tipo === 'total' ? (b.cuadra ? ', cuadra' : ', no cuadra con la suma') : ''}`} data-marca={b.id} data-signo={b.signo} className="rtm-g-marca" {...nav.props(i)}>
                   <rect x={r2(x)} y={r2(yA)} width={r2(ancho)} height={r2(alto)} rx="3" className={`rtm-g-crece-y ${claseEscalonado(i)} ${ultimoTotal ? 'rtm-g-foco' : esTotal ? 'rtm-g-total' : 'rtm-g-base'}`} />
                   {b.signo === 'menos' && <rect x={r2(x)} y={r2(yA)} width={r2(ancho)} height={r2(alto)} rx="3" fill={urlPatron(uid, 'rayas')} className="rtm-g-trama-capa" />}
-                  <text x={r2(x + ancho / 2)} y={r2(yA - 6)} textAnchor="middle" className="rtm-g-texto-fuerte rtm-num">{p.texto}</text>
+                  <text x={r2(x + ancho / 2)} y={r2(yA - 6)} textAnchor="middle" className="rtm-g-texto-fuerte rtm-num">{p.textoCompacto ?? p.texto}</text>
                   {partirEtiqueta(p.etiqueta, 12, 2).map((l, k) => (
                     <text key={k} x={r2(x + ancho / 2)} y={H - 30 + k * 14} textAnchor="middle" className="rtm-g-texto">{l}</text>
                   ))}

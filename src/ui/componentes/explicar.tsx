@@ -73,7 +73,7 @@ export function ExplicarProvider({ explicar, children, modo = 'socio' }: { expli
   // Foco atrapado: Tab y Mayus+Tab ciclan dentro del panel (se ignoran las secciones colapsadas).
   const atrapar = (e: TecladoReact<HTMLElement>) => {
     if (e.key !== 'Tab' || !panel.current) return;
-    const lista = [...panel.current.querySelectorAll<HTMLElement>(FOCALIZABLES)].filter((el) => !el.closest('[hidden]'));
+    const lista = [...panel.current.querySelectorAll<HTMLElement>(FOCALIZABLES)].filter((el) => !el.closest('[inert]'));
     if (lista.length === 0) { e.preventDefault(); return; }
     const primero = lista[0]!;
     const ultimo = lista[lista.length - 1]!;
@@ -99,9 +99,9 @@ export function ExplicarProvider({ explicar, children, modo = 'socio' }: { expli
               <p className="rtm-eyebrow xp-etq" id="xp-etq">Explicar este número</p>
               <button ref={cerrar} type="button" className="xp-cerrar" aria-label="Cerrar" onClick={cerrarPanel}><IconoCerrar /></button>
             </header>
-            {estado.fase === 'cargando' && <div className="xp-estado" role="status" aria-live="polite"><span className="xp-esq xp-esq-cifra" aria-hidden="true" /><span className="xp-esq xp-esq-linea" aria-hidden="true" /><span className="xp-esq xp-esq-linea xp-esq-corta" aria-hidden="true" />Buscando los movimientos que forman esta cifra…</div>}
+            {estado.fase === 'cargando' && <p className="xp-aviso" role="status" aria-live="polite"><span className="rtm-punto-carga" aria-hidden="true" />Buscando los movimientos que forman esta cifra…</p>}
             {(estado.fase === 'error' || (estado.fase === 'listo' && !vista)) && (
-              <div className="xp-estado" role="alert">No se pudo explicar esta cifra.
+              <div className="xp-aviso" role="alert">No se pudo explicar esta cifra.
                 <button type="button" className="xp-boton" onClick={() => abrir(cifraAbierta.current, null)}>Reintentar</button>
               </div>
             )}

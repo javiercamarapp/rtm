@@ -1,0 +1,47 @@
+/* Hoja lateral y pop-ups: base comun de todos los paneles flotantes (Explicar, panel de modelo de Karen, notificaciones, exportar, apariencia, filtros, confirmacion).
+   Anatomia: cabecera compacta de 40 px, cierre, UN solo contenedor con scroll vertical (el cuerpo), relleno de 12 px, radios y sombra de tokens.
+   Regla de scroll: el panel nunca pasa del viewport (dvh), el cuerpo trae overflow-y: auto + overscroll-behavior: contain y toda la cadena flex lleva min-height: 0.
+   Las secciones internas crecen a su altura natural: jamas max-height con overflow oculto. */
+:root {
+  --rtm-hoja-cab: 40px;
+  --rtm-hoja-pad-x: 12px;
+  --rtm-hoja-pad-y: 12px;
+  --rtm-hoja-radio: 20px;
+  --rtm-hoja-sombra: var(--rtm-sombra-flotante);
+}
+
+/* Scroll unico y contenido dentro del viewport en cada panel y pop-up. */
+.rtm-dialogo,
+.rtm-popover,
+.rtm-campana-panel,
+.rtm-ba .rtm-exportar-panel,
+.rtm-kr-marcas fieldset,
+.rtm-kr-panel-in {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+.rtm-dialogo { max-height: calc(100dvh - 32px); }
+.rtm-popover { max-height: calc(100dvh - 96px); }
+.rtm-campana-panel { max-height: min(calc(100dvh - 72px), 520px); }
+.rtm-ba .rtm-exportar-panel { max-height: min(80dvh, calc(100dvh - 96px)); }
+.rtm-fc-panel > ul { max-height: min(260px, calc(100dvh - 160px)); overscroll-behavior: contain; }
+
+/* Panel de modelo (Karen): hoja derecha con cabecera y cuerpo en columna; el dialogo mide el viewport y el cuerpo es lo unico que se desplaza. */
+.rtm-kr-panel { overflow: hidden; }
+.rtm-kr-panel[open] { display: flex; flex-direction: column; }
+.rtm-kr-panel-in { box-sizing: border-box; flex: 1 1 0; width: 100%; padding: var(--rtm-hoja-pad-y) var(--rtm-hoja-pad-x) calc(var(--rtm-hoja-pad-y) + env(safe-area-inset-bottom)); gap: var(--rtm-e-3); }
+.rtm-kr-panel-in > * { flex: none; }
+.rtm-kr-panel-titulo { margin: 0 0 4px; font-size: var(--rtm-t-seccion); }
+.rtm-kr-panel-pie { padding-top: var(--rtm-e-2); }
+.rtm-campana-panel, .rtm-popover, .rtm-ba .rtm-exportar-panel { border-radius: var(--rtm-r-3); box-shadow: var(--rtm-hoja-sombra); }
+
+/* Sidebar de navegacion: filas de 32 px (44 px en movil), titulos de grupo pequenos, sin huecos; el pie de sesion ocupa una linea. */
+.rtm-lateral { overscroll-behavior: contain; }
+.rtm-lateral-pie { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--rtm-e-2); padding: var(--rtm-e-1) var(--rtm-e-2); }
+.rtm-lateral-usuario { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtm-lateral-salir { flex: none; }
+@media (max-width: 767px) {
+  .rtm-lateral { overflow-y: auto; }
+}
