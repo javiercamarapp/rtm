@@ -236,6 +236,9 @@ export function adaptarEsquemaParaProveedor(esquema: unknown, opciones: { sinRan
       if (opciones.sinRangos && RESTRICCIONES_DE_RANGO.has(k)) continue;
       salida[k === 'oneOf' ? 'anyOf' : k] = visitar(v);
     }
+    // Salida estructurada ESTRICTA (Luna): `required` debe listar TODAS las propiedades. Un campo `.optional()` de zod (p. ej. plazo_texto de un pedido) las dejaba fuera y el proveedor rechazaba
+    // el esquema entero con 400 (medido el 14-nov: "Missing 'plazo_texto'"), con lo que el respaldo de Luna estaba caido. zod sigue aceptando que falte; el modelo siempre lo escribe (nullable).
+    if (salida.properties !== null && typeof salida.properties === 'object' && !Array.isArray(salida.properties)) salida.required = Object.keys(salida.properties as Record<string, unknown>);
     return salida;
   };
   return visitar(esquema);

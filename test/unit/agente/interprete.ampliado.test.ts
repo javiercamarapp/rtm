@@ -174,7 +174,8 @@ describe('guardia de cifras ligada (campo, clase y escala)', () => {
 
 describe('prompt versionado y salida sin tope oculto', () => {
   it('la version cambio y el prompt trae las reglas nuevas y la regla de dropshipping a cliente', () => {
-    expect(VERSION_PROMPT).toBe('r6-2026-11-14.1');
+    expect(VERSION_PROMPT).toMatch(/^r6-2026-11-14\.\d+$/);
+    expect(SISTEMA_R1).not.toMatch(/maximo 6/);
     for (const palabra of ['pedido_ds', 'envio_lote', 'guias_lote', 'plazo_acordar', 'recargo_credito', 'entrega_fondos', 'renta_omar', 'obsequio', 'sabor_alta', 'alias_ensenar', 'sabor_respuesta', 'slot_respuesta', 'correccion', 'cancelar', 'Sin topes']) {
       expect(SISTEMA_R1, palabra).toContain(palabra);
     }
@@ -257,5 +258,30 @@ describe('conversaciones simuladas por operacion nueva (LLM guionado, transporte
     const e = escenario([unaAccion(EJEMPLOS[14]!.intencion)]);
     await e.socio('javier', EJEMPLOS[14]!.mensaje, { reenviado: true });
     expect(e.ultimoGrupo().texto).toMatch(/reenviado/);
+  });
+});
+
+describe('esquema para el proveedor con salida estructurada estricta (Luna)', () => {
+  it('toda propiedad de todo objeto esta en required (un .optional() de zod rompia el esquema entero con 400)', async () => {
+    const { esquemaJsonDeRespuesta } = await import('@/aplicacion/agente/esquemas');
+    const faltan: string[] = [];
+    const visitar = (nodo: unknown, ruta: string): void => {
+      if (Array.isArray(nodo)) return nodo.forEach((x, i) => visitar(x, `${ruta}[${i}]`));
+      if (nodo === null || typeof nodo !== 'object') return;
+      const o = nodo as Record<string, unknown>;
+      if (o.properties && typeof o.properties === 'object') {
+        const req = new Set((o.required as string[] | undefined) ?? []);
+        for (const k of Object.keys(o.properties as object)) if (!req.has(k)) faltan.push(`${ruta}.${k}`);
+      }
+      for (const [k, v] of Object.entries(o)) visitar(v, `${ruta}.${k}`);
+    };
+    visitar(esquemaJsonDeRespuesta(), '$');
+    visitar(esquemaJsonDeRespuesta({ sinRangos: true }), '$');
+    expect(faltan).toEqual([]);
+  });
+
+  it('un pedido sin plazo_texto sigue validando en zod (compatibilidad), aunque el esquema del proveedor lo exija', () => {
+    const pedido = { tipo: 'pedido', cliente_texto: 'Cliente Alfa', destino_texto: null, lineas: [{ modelo_texto: 'zafiro 5k', sabor_texto: null, piezas: 3, precio_texto: null, fuente_cita: 'c' }], envio_cobrado_centavos: null, fuente_cita: 'c' };
+    expect(validarRespuesta(RESP([pedido])).ok).toBe(true);
   });
 });

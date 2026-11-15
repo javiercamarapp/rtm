@@ -109,7 +109,15 @@
      "tipo": "renta_omar",
      "monto_pesos": 400
     }
-   ]
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "aclarar"
+     }
+    ]
+   ],
+   "nota": "como 400 mas o menos: registrar 400 (el codigo lo repite y pregunta) o aclarar son ambos seguros"
   }
  },
  {
@@ -165,7 +173,15 @@
      "tipo": "aclarar"
     }
    ],
-   "nota": "monto ambiguo"
+   "nota": "1.250 es ambiguo: el agente lo pregunta con esMontoAmbiguo aunque el modelo lo lea como pago",
+   "alternativas": [
+    [
+     {
+      "tipo": "pago",
+      "cliente": "cliente beta"
+     }
+    ]
+   ]
   }
  },
  {
@@ -184,9 +200,15 @@
      {
       "tipo": "aclarar"
      }
+    ],
+    [
+     {
+      "tipo": "consulta",
+      "consulta": "pedido"
+     }
     ]
    ],
-   "nota": "charla con folio y fecha: ninguna operacion"
+   "nota": "ambiguo: charla con folio; cualquiera de las tres es segura (ninguna escribe)"
   }
  },
  {
@@ -209,6 +231,19 @@
     }
    ],
    "nota": "fecha y hora no son piezas"
+  }
+ },
+ {
+  "id": "n-155",
+  "categoria": "adversos",
+  "autor": "javier",
+  "texto": "ya mero llego a la bodega, nos vemos el 5 de diciembre a las 4",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "ninguna"
+    }
+   ]
   }
  }
 ]
