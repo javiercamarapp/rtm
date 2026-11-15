@@ -14,6 +14,7 @@ import {
 } from '@/infra/agente/memoria';
 import { NegocioSimulado } from '@/infra/agente/negocio_simulado';
 import { ModuloAprendizaje } from '@/aplicacion/agente/aprendizaje';
+import { ModuloInventarioBot, type PuertoAvisosInventario } from '@/aplicacion/agente/avisos_inventario';
 import { AlmacenConversacionMemoria } from '@/infra/agente/conversacion_memoria';
 import { PuertoAprendizajeMemoria } from '@/infra/agente/aprendizaje_memoria';
 import { ContadorUpdates, IDS_SIMULADOS } from '@/infra/agente/updates';
@@ -39,6 +40,8 @@ export interface OpcionesAgenteEnMemoria {
   conversacion?: boolean;
   /** Aprendizaje y alta asistida con el puerto en memoria (sin base ni red). Implica conversacion. */
   aprendizaje?: PuertoAprendizajeMemoria;
+  /** Comandos de inventario (/vende, /reponer, /minimo, /avisos) con su puerto (en memoria en pruebas). */
+  inventario?: PuertoAvisosInventario;
 }
 
 export const MIEMBROS_SIMULADOS: Miembro[] = [
@@ -73,7 +76,7 @@ export function crearAgenteEnMemoria(op: OpcionesAgenteEnMemoria = {}) {
   const aprendizaje = op.aprendizaje ? new ModuloAprendizaje(op.aprendizaje, async () => catalogo.clientes()) : undefined;
   if (op.aprendizaje) op.aprendizaje.ahora = () => reloj.ahora().getTime();
   const conversacion = op.conversacion || op.aprendizaje ? { almacen: new AlmacenConversacionMemoria(reloj.ahora) } : undefined;
-  const agente = new AgenteTelegram({ almacen, presupuesto, llm, telegram, tokens, catalogo, negocio, reloj: reloj.ahora, config: op.config, ...(conversacion ? { conversacion } : {}), ...(aprendizaje ? { aprendizaje } : {}) });
+  const agente = new AgenteTelegram({ almacen, presupuesto, llm, telegram, tokens, catalogo, negocio, reloj: reloj.ahora, config: op.config, ...(conversacion ? { conversacion } : {}), ...(aprendizaje ? { aprendizaje } : {}), ...(op.inventario ? { inventario: new ModuloInventarioBot(op.inventario) } : {}) });
   return { agente, almacen, presupuesto, telegram, tokens, llm, catalogo, negocio, reloj, aprendizaje: op.aprendizaje, contador: new ContadorUpdates(), ids: IDS_SIMULADOS };
 }
 

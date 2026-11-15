@@ -29,6 +29,7 @@ import { mensajeSaldosSocios, textoTicketDuplicado, textoTicketLigado } from './
 import { MotorConversacion, type AlmacenConversacion, type EntornoConversacion, type OperacionCompleta as OperacionConversacion, type ResultadoRegistro, type ResumenPedidos, type Salida as SalidaConversacion } from './conversacion';
 import { instruccionDeIntencion, OPERACIONES_POR_CONVERSACION } from '@/dominio/agente/slots_desde_intencion';
 import { listoParaGrupo, type ModuloAprendizaje, type SalidaAprendizaje } from './aprendizaje';
+import type { ModuloInventarioBot } from './avisos_inventario';
 import { intencionDeSlots } from './slots_a_intencion';
 import * as P from './plantillas';
 import * as F from './plantillas_frenos';
@@ -121,6 +122,8 @@ export interface DependenciasAgente {
   conversacion?: { almacen: AlmacenConversacion; resumenes?: ResumenPedidos; entorno?: Omit<EntornoConversacion, 'catalogo'> };
   /** Aprendizaje y alta asistida (alias, jerga, ejemplos anonimizados, sabores parecidos, altas, recargo sugerido). Sin el, el agente conserva su camino anterior. */
   aprendizaje?: ModuloAprendizaje;
+  /** Comandos de inventario (/vende, /reponer, /minimo, /avisos). Sin el, esos comandos no existen. */
+  inventario?: ModuloInventarioBot;
 }
 
 export type ResultadoUpdate =
@@ -618,6 +621,14 @@ export class AgenteTelegram {
     if (autor.rol === 'socio' && !reenviado && !esEdicion && !texto.startsWith('/')) {
       const espera = await this.d.almacen.esperaTomar(msg.chat.id, autor.telegramUserId, this.d.reloj());
       if (espera) return this.responderEspera(espera, texto, autor, chats);
+    }
+    // Inventario: /vende, /reponer, /minimo, /avisos y la respuesta corta a la pregunta abierta de /minimo (solo socios; el aviso va al grupo).
+    if (this.d.inventario && autor.rol === 'socio' && !reenviado && !esEdicion) {
+      const inv = await this.d.inventario.interceptar({ chatId: msg.chat.id, autor, texto, clave: `tg:${update.update_id}` });
+      if (inv !== null) {
+        await this.publicarAprendizaje(chats, inv);
+        return { estado: 'procesado', acciones: inv.textos.length };
+      }
     }
     const cmd = parsearComando(texto);
     // Conversacion abierta de este socio: su mensaje contesta la pregunta pendiente (o corrige un dato). Sin conversacion abierta, sigue el camino normal.

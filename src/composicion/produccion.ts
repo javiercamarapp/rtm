@@ -33,6 +33,8 @@ function urlAppOpcional(): string | null {
 import { AlmacenConversacionDb, ResumenPedidosDb } from '@/infra/agente/conversacion_postgres';
 import { ModuloAprendizaje } from '@/aplicacion/agente/aprendizaje';
 import { PuertoAprendizajeDb } from '@/infra/agente/aprendizaje_postgres';
+import { ModuloInventarioBot } from '@/aplicacion/agente/avisos_inventario';
+import { PuertoAvisosInventarioDb } from '@/infra/agente/avisos_inventario_postgres';
 import { AvisosDb, ContextoNegocioDb, RepositorioProveedorDb } from '@/infra/proveedores/postgres';
 import { lectorDesdeEntorno } from '@/infra/proveedores/lector_http';
 
@@ -81,6 +83,7 @@ export function crearAgenteProduccion(d: DepsProduccion): AgenteTelegram {
     almacen: new AlmacenAgenteDb(d.sql), presupuesto: new AlmacenPresupuestoDb(d.sql), llm: llmDe(d), telegram: tg, tokens: new AlmacenTokensDb(d.sql),
     catalogo: new CatalogoAgenteDb(d.sql), negocio: new NegocioAgenteDb(d.sql), reloj: ahoraDe(d), config: { exigirSabor: true, exigirPlazoPedido: true, ...d.configAgente },
     ...(d.conversacion === false ? {} : { conversacion: { almacen: new AlmacenConversacionDb(d.sql), resumenes: new ResumenPedidosDb(d.sql), entorno: entornoVentasDb(d.sql) } }),
+    inventario: new ModuloInventarioBot(new PuertoAvisosInventarioDb(d.sql)),
     ...(d.aprendizaje === false ? {} : { aprendizaje: new ModuloAprendizaje(new PuertoAprendizajeDb(d.sql), () => new CatalogoAgenteDb(d.sql).clientes()) }),
   });
 }
