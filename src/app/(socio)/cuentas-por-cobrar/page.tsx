@@ -177,6 +177,13 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
           ) : (
             <p className="a3-grafica-vacia"><strong>Sin saldos que mostrar</strong>Cuando un pedido enviado o un saldo de apertura quede sin saldar, aparecerá aquí por cliente y por tramo.</p>
           )}
+          <ListaClaveValor items={[
+            { k: 'Clientes con saldo', v: String(porCliente.size) },
+            { k: 'Clientes con saldo vencido', v: String(d.por_cliente.filter((c) => c.vencido_cent > 0n).length) },
+            { k: 'Mayor saldo de un cliente', v: d.por_cliente[0] ? <><Link href={`/clientes/${d.por_cliente[0].cliente_id}`}>{d.por_cliente[0].cliente}</Link> · {m(d.por_cliente[0].saldo_cent)}</> : <SinDato /> },
+            { k: 'Saldo medio por cliente', v: porCliente.size > 0 ? m(d.total_cent / BigInt(porCliente.size)) : <SinDato /> },
+            { k: 'Saldo con más de 30 días', v: `${m(d.antiguedad_cent.mas_30)} · ${pctTexto(pct(d.antiguedad_cent.mas_30, d.total_cent))}` },
+          ]} />
         </Tarjeta>
         <Tarjeta titulo="Concentración por cliente" descripcion="Parte del saldo total y acumulado de los 8 mayores">
           {ranking.length > 0 ? <BarList etiquetaAria="Saldo por cliente" items={ranking} /> : <p className="a3-grafica-vacia"><strong>Sin saldos</strong>Ningún cliente debe nada por ahora.</p>}
