@@ -1,21 +1,101 @@
 {
   "fecha": "2026-11-14",
-  "fuente": "Diccionario dado por el dueno: el nombre con que los socios llaman cada modelo Waka = el nombre por puffs. Son alias oficiales para el agente y para el emparejador.",
+  "fuente": "Diccionario dado por el dueno: el nombre con que los socios llaman cada modelo Waka = el nombre por puffs. Son alias oficiales para el agente y para el emparejador. Union aprobada por el dueno (14-nov): 'si, unir cada alias con su modelo por pufs'; 'tambien' = nombres de modelos sueltos (sin la marca) que son el mismo producto.",
   "marca": "Waka",
-  "regla_destino": "El alias apunta al modelo del catalogo cuyo nombre es exactamente 'Waka <puffs>K' si existe; si no, al modelo 'Waka <linea> <puffs>K'. Nunca se unifican modelos: si el alias coincide con el nombre de OTRO modelo existente, no se inserta y queda para la cola de confirmacion.",
+  "regla_destino": "El alias apunta al modelo del catalogo cuyo nombre es exactamente 'Waka <puffs>K' si existe; si no, al modelo 'Waka <linea> <puffs>K'. Los modelos sueltos con el nombre del alias (o de 'tambien') se UNEN al destino con scripts/catalogo/unificar-alias-waka.mjs (aprobacion explicita del dueno); si el destino no existe, la union se bloquea y se explica: nunca se crean duplicados.",
   "alias": [
-    { "alias": "Waka Icon", "puffs_oficial": "Waka 50K", "destino": "Waka 50K" },
-    { "alias": "Waka Steel", "puffs_oficial": "Waka 60K", "destino": "Waka 60K" },
-    { "alias": "Waka SoPro", "puffs_oficial": "Waka 15K", "destino": "Waka 15K" },
-    { "alias": "Smash Go", "puffs_oficial": "Waka 10K", "destino": "Waka GO 10K" },
-    { "alias": "Waka Go", "puffs_oficial": "Waka 10K", "destino": "Waka GO 10K" },
-    { "alias": "Waka PA30000", "puffs_oficial": "Waka 30K", "destino": "Waka 30K" },
-    { "alias": "Waka Elite", "puffs_oficial": "Waka 40K", "destino": "Waka Elite 40K" },
-    { "alias": "Waka Burst", "puffs_oficial": "Waka 36K", "destino": "Waka 36K" },
-    { "alias": "Waka Blade", "puffs_oficial": "Waka 33K", "destino": "Waka Blade 33K" },
-    { "alias": "Waka Optimus", "puffs_oficial": "Waka 80K", "destino": "Waka Optimus 100K", "por_confirmar": "El diccionario dice 80K; el catalogo y la tienda dicen 100,000. No se inserta hasta confirmar." },
-    { "alias": "Waka Slim", "puffs_oficial": "Waka 12K", "destino": "Waka Slim 12K" },
-    { "alias": "Waka Jupiter", "puffs_oficial": "Waka 50K Jupiter", "destino": "Waka Jupiter 50K" },
-    { "alias": "Waka Icon Slim", "puffs_oficial": "Waka 20K", "destino": "Waka Icon Slim 20K" }
+    {
+      "alias": "Waka Icon",
+      "puffs_oficial": "Waka 50K",
+      "destino": "Waka 50K",
+      "tambien": [
+        "Icon"
+      ]
+    },
+    {
+      "alias": "Waka Steel",
+      "puffs_oficial": "Waka 60K",
+      "destino": "Waka 60K"
+    },
+    {
+      "alias": "Waka SoPro",
+      "puffs_oficial": "Waka 15K",
+      "destino": "Waka 15K",
+      "tambien": [
+        "Waka So Pro"
+      ]
+    },
+    {
+      "alias": "Smash Go",
+      "puffs_oficial": "Waka 10K",
+      "destino": "Waka GO 10K"
+    },
+    {
+      "alias": "Waka Go",
+      "puffs_oficial": "Waka 10K",
+      "destino": "Waka GO 10K",
+      "tambien": [
+        "Go"
+      ]
+    },
+    {
+      "alias": "Waka PA30000",
+      "puffs_oficial": "Waka 30K",
+      "destino": "Waka 30K",
+      "tambien": [
+        "PA30000"
+      ]
+    },
+    {
+      "alias": "Waka Elite",
+      "puffs_oficial": "Waka 40K",
+      "destino": "Waka Elite 40K",
+      "tambien": [
+        "Elite"
+      ]
+    },
+    {
+      "alias": "Waka Burst",
+      "puffs_oficial": "Waka 36K",
+      "destino": "Waka 36K",
+      "tambien": [
+        "Burst"
+      ]
+    },
+    {
+      "alias": "Waka Blade",
+      "puffs_oficial": "Waka 33K",
+      "destino": "Waka Blade 33K",
+      "tambien": [
+        "Blade"
+      ]
+    },
+    {
+      "alias": "Waka Optimus",
+      "puffs_oficial": "Waka 100K",
+      "destino": "Waka Optimus 100K",
+      "nota": "Corregido por el dueno (14-nov): Optimus = Waka 100K, no 80K.",
+      "tambien": [
+        "Optimus"
+      ]
+    },
+    {
+      "alias": "Waka Slim",
+      "puffs_oficial": "Waka 12K",
+      "destino": "Waka Slim 12K",
+      "tambien": [
+        "Slim"
+      ]
+    },
+    {
+      "alias": "Waka Jupiter",
+      "puffs_oficial": "Waka 50K Jupiter",
+      "destino": "Waka Jupiter 50K"
+    },
+    {
+      "alias": "Waka Icon Slim",
+      "puffs_oficial": "Waka 20K",
+      "destino": "Waka Icon Slim 20K"
+    }
   ]
 }
