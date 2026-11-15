@@ -6,7 +6,8 @@ import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import type { FilaCxc } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, BarraFiltros, CeldaPersona, Chip } from '@/ui/componentes/controles';
-import { BarList, ListaHallazgos } from '@/ui/componentes/datos';
+import { Composicion, type GrupoComposicion } from '@/ui/componentes/composicion';
+import { BarList, ListaClaveValor, ListaHallazgos } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
@@ -106,6 +107,18 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
     { id: 'sp', etiqueta: 'Sin plazo acordado', c: sinPlazo, n: nSinPlazo },
   ].map((e) => ({ id: e.id, etiqueta: e.etiqueta, texto: m(e.c), pct: pct(e.c, d.total_cent), nota: `${e.n} ${e.n === 1 ? 'partida' : 'partidas'}`, tono: e.tono }));
 
+  // Relleno util de las tarjetas "Por estado", recargo y socios: barras apiladas y razones con lo que la pagina ya calcula.
+  const saldoPedidos = suma(todas.map((f) => (f.saldo_cent > 0n ? f.saldo_cent : 0n)));
+  const gruposPlazo: GrupoComposicion[] = [
+    { id: 'tramo', titulo: 'Saldo por antigüedad', segmentos: CUBETAS.map((k) => ({ id: k, etiqueta: CUBETA_CORTA[k]!, valor: Number(d.antiguedad_cent[k]), texto: m(d.antiguedad_cent[k]) })) },
+    { id: 'origen', titulo: 'De dónde viene el saldo', segmentos: [
+      { id: 'ped', etiqueta: 'Pedidos enviados', valor: Number(saldoPedidos), texto: m(saldoPedidos) },
+      { id: 'ini', etiqueta: 'Saldos iniciales', valor: Number(saldoApertura), texto: m(saldoApertura) },
+    ] },
+  ];
+  const masAtrasado = todas.filter((f) => f.estado === 'vencido' && f.dias_atraso !== null).sort((a, b) => (b.dias_atraso ?? 0) - (a.dias_atraso ?? 0))[0];
+  const conRecargo = todas.filter((f) => f.recargo_cent > 0n).length;
+  const conSaldoAbierto = todas.filter((f) => f.saldo_cent > 0n).length;
   const maxFondos = suma(d.socios.map((s) => (s.deuda_cent > s.fondos_cent ? s.deuda_cent : s.fondos_cent)));
   const barrasSocios = d.socios.map((s) => ({
     id: s.socio, etiqueta: s.socio, href: `/socios/${s.socio}`, texto: m(s.deuda_cent), pct: pct(s.deuda_cent, maxFondos),
@@ -179,7 +192,16 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
 
       <Rejilla dividir="4-4-4">
         <Tarjeta titulo="Por estado del plazo" descripcion="Saldo según el plazo acordado con el cliente">
-          {d.total_cent > 0n ? <BarList etiquetaAria="Saldo por estado" items={estados} /> : <p className="a3-grafica-vacia"><strong>Sin saldos</strong>No hay pedidos con saldo.</p>}
+          {d.total_cent > 0n ? (
+            <>
+              <BarList etiquetaAria="Saldo por estado" items={estados} />
+              <Composicion etiquetaAria="Saldo por antigüedad y por origen" grupos={gruposPlazo} />
+              <ListaClaveValor items={[
+                { k: 'Pedido más atrasado', v: masAtrasado ? <><Link className="rtm-mono" href={`/pedidos/${masAtrasado.pedido_id}`}>{masAtrasado.folio}</Link> · {masAtrasado.dias_atraso} días</> : <SinDato /> },
+                { k: 'Antigüedad media ponderada', v: ponderado === null ? <SinDato /> : `${ponderado.toFixed(1)} días` },
+              ]} />
+            </>
+          ) : <p className="a3-grafica-vacia"><strong>Sin saldos</strong>No hay pedidos con saldo.</p>}
         </Tarjeta>
         <Tarjeta titulo="Recargo por crédito" descripcion={`Sugerido al ${d.recargo_bp / 100} % contra aplicado`}>
           <BarList
@@ -190,10 +212,21 @@ export default async function PaginaCxc({ searchParams }: { searchParams: Promis
             ]}
             mostrarPct={recargoSugerido > 0n || recargoAplicado > 0n}
           />
+          <ListaClaveValor items={[
+            { k: 'Pedidos con saldo abierto', v: String(conSaldoAbierto) },
+            { k: 'Pedidos con recargo aplicado', v: String(conRecargo) },
+            { k: 'Falta por aplicar', v: m(recargoSugerido > recargoAplicado ? recargoSugerido - recargoAplicado : 0n) },
+            { k: 'Tasa sugerida', v: `${d.recargo_bp / 100} %` },
+          ]} />
           <Pie>El recargo sale como corrección enlazada de la nota; la nota original no cambia.</Pie>
         </Tarjeta>
         <Tarjeta titulo="Dinero de la sociedad en poder de un socio" descripcion="Lo que cada socio debe entregar">
           {barrasSocios.length > 0 ? <BarList etiquetaAria="Deuda de cada socio con la sociedad" items={barrasSocios} /> : <p className="a3-grafica-vacia"><strong>Sin cuentas de socios</strong></p>}
+          <ListaClaveValor items={[
+            { k: 'Fondos en poder de socios', v: m(fondosSocios) },
+            { k: 'Debe a la sociedad', v: m(deudaSocios) },
+            { k: 'Socios con alerta de fondos', v: String(d.socios.filter((x) => x.alerta_fondos).length) },
+          ]} />
           <Pie>Total en su poder {m(fondosSocios)} · debe a la sociedad {m(deudaSocios)}.</Pie>
         </Tarjeta>
       </Rejilla>

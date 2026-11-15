@@ -4,8 +4,10 @@ import { movimientosDeSocio } from '@/composicion/apertura';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { ETIQUETA_ESTADO, ETIQUETA_TIPO, type EstadoMovimiento } from '@/dominio/movimientos/tipos';
 import { ChipEstado, Pestanas } from '@/ui/componentes/controles';
-import { BarList, Paginador } from '@/ui/componentes/datos';
+import { Composicion, type GrupoComposicion } from '@/ui/componentes/composicion';
+import { BarList, ListaClaveValor, Paginador } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
+import { SinDato } from '@/ui/componentes/estado-texto';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { AccionesMovimiento } from './acciones-movimiento';
@@ -28,6 +30,27 @@ export default async function PaginaBandeja({ searchParams }: { searchParams: Pr
   const entradas = resumen.estados.reduce((a, x) => a + x.entradas_cent, 0n);
   const salidas = resumen.estados.reduce((a, x) => a + x.salidas_cent, 0n);
   const pct = (parte: number) => (resumen.total > 0 ? (parte / resumen.total) * 100 : null);
+  // Relleno util de las dos tarjetas inferiores: composicion por estado y por sentido del dinero, razones y suma de importaciones.
+  const grupos: GrupoComposicion[] = [
+    { id: 'estado', titulo: 'Por estado', segmentos: [
+      { id: 'sin', etiqueta: ETIQUETA_ESTADO.sin_clasificar, valor: n('sin_clasificar'), texto: String(n('sin_clasificar')) },
+      { id: 'cla', etiqueta: ETIQUETA_ESTADO.clasificado, valor: n('clasificado'), texto: String(n('clasificado')) },
+      { id: 'con', etiqueta: ETIQUETA_ESTADO.conciliado, valor: n('conciliado'), texto: String(n('conciliado')) },
+      { id: 'otr', etiqueta: 'Duplicados o descartados', valor: n('duplicado') + n('descartado'), texto: String(n('duplicado') + n('descartado')) },
+    ] },
+    { id: 'sentido', titulo: 'Entradas y salidas', segmentos: [
+      { id: 'ent', etiqueta: 'Entradas', valor: resumen.total > 0 ? Number(entradas) : null, texto: formatearMoneda(entradas) },
+      { id: 'sal', etiqueta: 'Salidas', valor: resumen.total > 0 ? Number(salidas) : null, texto: formatearMoneda(salidas) },
+    ] },
+  ];
+  const imp = resumen.importaciones;
+  const impTotal = imp.reduce((a, i) => a + i.filas_total, 0);
+  const impNuevas = imp.reduce((a, i) => a + i.filas_nuevas, 0);
+  const impRepetidas = imp.reduce((a, i) => a + i.filas_duplicadas, 0);
+  const gruposImp: GrupoComposicion[] = [{ id: 'imp', titulo: 'Filas de las importaciones recientes', segmentos: [
+    { id: 'nuevas', etiqueta: 'Nuevas', valor: impNuevas, texto: String(impNuevas) },
+    { id: 'rep', etiqueta: 'Repetidas', valor: impRepetidas, texto: String(impRepetidas) },
+  ] }];
   const desde = pag * PAGINA + 1;
   const hasta = Math.min((pag + 1) * PAGINA, lista.total);
   return (
@@ -77,11 +100,22 @@ export default async function PaginaBandeja({ searchParams }: { searchParams: Pr
         <>
           <Tarjeta titulo="Por estado" descripcion="Cantidad de movimientos">
             <BarList etiquetaAria="Movimientos por estado" items={ESTADOS.map((e) => ({ id: e, etiqueta: ETIQUETA_ESTADO[e], texto: String(n(e)), pct: pct(n(e)), tono: e === 'sin_clasificar' && n(e) > 0 ? ('atencion' as const) : undefined, href: href(e) }))} />
+            {resumen.total > 0 && <Composicion etiquetaAria="Composición de los movimientos" grupos={grupos} />}
+            <ListaClaveValor columnas={2} items={[
+              { k: 'Por clasificar', v: resumen.total > 0 ? `${n('sin_clasificar')} de ${resumen.total}` : <SinDato /> },
+              { k: 'Neto entradas menos salidas', v: resumen.total > 0 ? formatearMoneda(entradas - salidas, { conSigno: true }) : <SinDato /> },
+            ]} />
           </Tarjeta>
           <Tarjeta titulo="Últimas importaciones" descripcion="Lo ya cargado no se duplica si se vuelve a pegar">
             {resumen.importaciones.length === 0 ? (
               <p className="rtm-lista-vacia">Todavía no hay importaciones.</p>
             ) : (
+              <>
+              <Composicion etiquetaAria="Filas nuevas y repetidas de las importaciones" grupos={gruposImp} />
+              <ListaClaveValor columnas={2} items={[
+                { k: 'Filas leídas', v: String(impTotal) },
+                { k: 'Importaciones recientes', v: String(imp.length) },
+              ]} />
               <DataTable
                 etiqueta="Importaciones recientes"
                 densidad="densa" plana
@@ -94,6 +128,7 @@ export default async function PaginaBandeja({ searchParams }: { searchParams: Pr
                   { id: 'd', titulo: 'Repetidas', numerica: true, ancho: 'xs', celda: (i) => i.filas_duplicadas },
                 ]}
               />
+              </>
             )}
           </Tarjeta>
         </>

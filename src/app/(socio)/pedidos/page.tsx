@@ -5,11 +5,10 @@ import { fechaNeg } from '@/dominio/calendario';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { DesglosePedidos, EstadoPedido } from '@/dominio/operacion/tipos';
 import { origenSurtido } from '@/dominio/dropshipping/calculos';
-import { aNumero, contarPor, porcentaje, sumarPorSemana, ultimasSemanas } from '@/dominio/tablero/agregados';
+import { aNumero, sumarPorSemana, ultimasSemanas } from '@/dominio/tablero/agregados';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { BarraFiltros, Chip, ChipEstado, CeldaPersona, Segmentado } from '@/ui/componentes/controles';
 import { Composicion, type GrupoComposicion } from '@/ui/componentes/composicion';
-import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
@@ -18,6 +17,7 @@ import { ColumnasPeriodo } from '@/ui/graficas';
 import '@/ui/estilos/paginas-a1.css';
 import { ESTADO_PEDIDO, ORIGEN } from '../operacion/etiquetas';
 import { columnasSemana, deltaSemanal, NUMERO_SEMANAS, semanasDe, sparkSemanal } from '../_a1/comun';
+import { TarjetaEstadosSurtido } from './estados-surtido';
 import { DesglosePedidosTabla, GRUPOS, PROVEEDORES, TIPOS_VENTA, buscarFila } from './desglose';
 import { etiquetaHoy } from '../contexto';
 
@@ -69,7 +69,6 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
   const cobradoReal = cobrado - saldo;
   const piezasTot = filas.reduce((a, p) => a + p.piezas_pedidas, 0);
   const surtidasTot = filas.reduce((a, p) => a + p.piezas_surtidas, 0);
-  const cuentaEstado = contarPor(todos, (p) => p.estado);
   const cuenta = (e: string) => (e ? todos.filter((p) => p.estado === e).length : todos.length);
   const ticket = enviadosFiltro.length ? cobrado / BigInt(enviadosFiltro.length) : null;
   // Composicion del libro (de las filas que la base ya sumo en el desglose): relleno animado bajo la grafica semanal.
@@ -132,12 +131,7 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
           ) : <p className="rtm-a1-estado-vacio">Sin pedidos todavía.</p>}
           {todos.length > 0 && <Composicion etiquetaAria="Composición del libro de pedidos" grupos={gruposComp} />}
         </Tarjeta>
-        <Tarjeta titulo="Estados y surtido" descripcion="Todos los pedidos del libro">
-          <div className="rtm-a1-cuerpo">
-            <p className="rtm-a1-subtitulo">Por estado</p>
-            <BarList etiquetaAria="Pedidos por estado" items={cuentaEstado.map((c) => ({ id: c.clave, etiqueta: ESTADO_PEDIDO[c.clave as EstadoPedido].texto, texto: String(c.n), pct: porcentaje(c.n, todos.length), tono: c.clave === 'anulado' ? ('malo' as const) : c.clave === 'confirmado' ? ('atencion' as const) : undefined }))} />
-          </div>
-        </Tarjeta>
+        <TarjetaEstadosSurtido todos={todos} filas={filas} hoy={hoy} />
       </Rejilla>
 
       <Tarjeta plana titulo="Libro de pedidos" descripcion={`${filas.length} de ${todos.length}`}>
