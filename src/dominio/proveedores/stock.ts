@@ -33,6 +33,27 @@ export function pasaFiltroStock(m: ModeloTablero, f: FiltrosStock): boolean {
   return true;
 }
 
+/** Margen para la carga inicial: todos los modelos de la primera lectura comparten (casi) el mismo instante. La lectura horaria siguiente queda fuera de este margen. */
+const MARGEN_LINEA_BASE_MS = 10 * 60_000;
+
+/** Instante de la primera lectura (linea base): la primera vez mas antigua entre los modelos, o null sin modelos. */
+export function lineaBase(modelos: ModeloTablero[]): string | null {
+  let base: number | null = null;
+  for (const m of modelos) {
+    const t = Date.parse(m.primera_vez);
+    if (!Number.isNaN(t) && (base === null || t < base)) base = t;
+  }
+  return base === null ? null : new Date(base).toISOString();
+}
+
+/** La linea base NO cuenta como nuevo: solo es nuevo lo que aparecio despues de la carga inicial. Idempotente. */
+export function sinLineaBase(modelos: ModeloTablero[]): ModeloTablero[] {
+  const base = lineaBase(modelos);
+  if (base === null) return modelos;
+  const limite = Date.parse(base) + MARGEN_LINEA_BASE_MS;
+  return modelos.map((m) => (m.nuevo_semana && Date.parse(m.primera_vez) <= limite ? { ...m, nuevo_semana: false } : m));
+}
+
 export interface ResumenMarca { marca: string; modelos: number; conStock: number; agotados: number; sinDato: number; saboresDisp: number; saboresTotal: number; pct: number | null }
 
 export function resumenPorMarca(modelos: ModeloTablero[]): ResumenMarca[] {
