@@ -60,7 +60,7 @@ describe('fotos de modelos', () => {
   it('rutaFotoModelo busca por nombre sin importar mayusculas', () => {
     expect(rutaFotoModelo('geek bar somax 80k')).toBe('/modelos/geek-bar-somax-80k.webp');
     expect(rutaFotoModelo('Waka Icon 50K')).toBe('/proveedores/karen/waka-icon-50-000.webp');
-    expect(rutaFotoModelo('Elux 50K')).toBeNull();
+    expect(rutaFotoModelo('Elux 50K')).toBe('/modelos/elux-50k.webp');
     expect(rutaFotoModelo('No existe')).toBeNull();
   });
 });
