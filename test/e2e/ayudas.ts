@@ -13,6 +13,10 @@ export interface EstadoSupabase {
 
 let cache: EstadoSupabase | null = null;
 export function estado(): EstadoSupabase {
+  if (!cache && process.env.RTM_TEST_DB_URL) {
+    // Base temporal propia (p. ej. la de integracion del bot): solo se necesita la cadena de conexion a Postgres.
+    cache = { API_URL: '', DB_URL: process.env.RTM_TEST_DB_URL, ANON_KEY: '', SERVICE_ROLE_KEY: '', MAILPIT_URL: '' };
+  }
   if (!cache) {
     cache = JSON.parse(execFileSync('supabase', ['status', '-o', 'json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })) as EstadoSupabase;
   }

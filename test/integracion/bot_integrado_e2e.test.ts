@@ -167,20 +167,20 @@ describe('bot integrado: conversacion + frenos + interprete', () => {
     expect(p.texto).toMatch(/cuenta/i);
     expect(await cuenta('operacion.pago')).toBe(0);
     await sala.pulsar('angelo', 'Efectivo');
-    // El cliente no debe nada (el pedido se deshizo): el carril de frenos lo pregunta como anticipo y la conversacion lo muestra con sus botones.
+    // El cliente no debe nada (el pedido se deshizo): con el entorno de ventas la propia conversacion lee su saldo y lo pregunta como anticipo (slot confirma_exceso, sin tope).
     expect(sala.ultimo().texto).toContain('mayor que lo que debe el cliente');
     expect(await cuenta('operacion.pago')).toBe(0);
-    await sala.pulsar('angelo', 'Sí, es anticipo');
+    await sala.pulsar('angelo', 'Es un anticipo');
     expect(sala.ultimo().texto).toContain('Registrado');
     expect(await cuenta('operacion.pago')).toBe(1);
-    // El mismo cobro, ahora del otro socio, dentro de 10 minutos: el carril de frenos lo detiene y la conversacion lo pregunta.
+    // El mismo cobro, ahora del otro socio, dentro de 10 minutos: primero la conversacion pregunta el exceso (slot confirma_exceso) y despues el carril de frenos detiene el repetido.
     await sala.escribir('javier', 'Ib Cliente pago 1000 en efectivo');
+    expect(sala.ultimo().texto).toContain('mayor que lo que debe el cliente');
+    await sala.pulsar('javier', 'Es un anticipo');
     expect(sala.ultimo().texto).toMatch(/Ya se registro un movimiento igual/);
     expect(await cuenta('operacion.pago')).toBe(1);
     await sala.pulsar('javier', 'Sí, es otro');
-    // Dijo que es otro: el carril de frenos sigue preguntando el exceso (el cliente ya no debe nada) y ahora el "si" es al anticipo.
-    expect(sala.ultimo().texto).toContain('mayor que lo que debe el cliente');
-    await sala.pulsar('javier', 'Sí, es anticipo');
+    // Dijo que es otro: ya habia confirmado el anticipo, no se le vuelve a preguntar.
     expect(await cuenta('operacion.pago')).toBe(2);
     expect(sala.ultimo().texto).toContain('Registrado');
   });

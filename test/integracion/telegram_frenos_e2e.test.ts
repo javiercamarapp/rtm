@@ -115,6 +115,7 @@ afterAll(async () => {
 describe('carril frenos extremo a extremo (sin tarjeta)', () => {
   it('la escritura NACE apagada: nada se escribe hasta que un socio escribe /escritura; el aviso sale al grupo', async () => {
     expect((await q<{ activo: boolean }>("select activo from seguridad.interruptor where clave = 'agente_escritura'"))[0]!.activo).toBe(false);
+    const cambiosAntes = await cuenta('agente.escritura_cambio');
     await sala.escribir('angelo', '/pago Tg Cliente | 1000 | efectivo');
     expect(sala.ultimo().texto).toContain('Estoy en solo lectura');
     expect(await cuenta('operacion.pago')).toBe(0);
@@ -122,7 +123,7 @@ describe('carril frenos extremo a extremo (sin tarjeta)', () => {
     expect((await q<{ activo: boolean }>("select activo from seguridad.interruptor where clave = 'agente_escritura'"))[0]!.activo).toBe(false);
     await sala.escribir('javier', '/escritura');
     expect(sala.ultimo().texto).toContain('Escritura ACTIVADA por Javier');
-    expect(await cuenta('agente.escritura_cambio')).toBe(2);
+    expect(await cuenta('agente.escritura_cambio')).toBe(cambiosAntes + 1);
   });
 
   it('pedido, envio y cobro sin tarjeta: eco rico con cliente, cuenta, pedido y saldos que calcula la base', async () => {
@@ -160,7 +161,8 @@ describe('carril frenos extremo a extremo (sin tarjeta)', () => {
 
   it('deshacer: dentro de 10 minutos el autor lo deshace con eco del efecto; pasados, ni el autor', async () => {
     await sala.escribir('angelo', '/gasto uber 45 angelo');
-    const eco = sala.ultimo();
+    // Un gasto de un socio publica el eco con Deshacer y despues el aviso de saldos de ambos socios (carril socios y gastos): el eco es el ultimo mensaje CON el boton.
+    const eco = sala.enviados.findLast((e) => e.botones.flat().some((b) => b.texto === 'Deshacer'))!;
     await sala.pulsar('angelo', 'Deshacer', eco);
     expect(sala.ultimo().texto).toContain('Deshecho');
     await sala.escribir('angelo', '/aporte angelo 3333');

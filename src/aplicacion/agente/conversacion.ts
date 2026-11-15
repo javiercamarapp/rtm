@@ -924,6 +924,8 @@ export class MotorConversacion {
 
   private async ejecutar(e: EntradaProceso, conv: ConversacionVista, confirmadas: Array<ConfirmacionFrenos>): Promise<Salida> {
     const r = new RegistroCifras();
+    // Integracion: si el socio ya dijo en la conversacion que el cobro mayor a lo que debe es un anticipo (slot confirma_exceso), el carril de frenos no vuelve a preguntarlo.
+    if (conv.slots.confirma_exceso === 'anticipo' && !confirmadas.includes('exceso')) confirmadas = [...confirmadas, 'exceso'];
     const op: OperacionCompleta = {
       operacion: conv.operacion, slots: { ...conv.slots }, conversacionId: conv.id, claveIdem: `conv:${conv.id}:registro`, autor: e.autor, chatId: e.chatId,
       cita: (conv.contexto as ContextoConv).cita ?? '', permitirDuplicado: confirmadas.includes('duplicado'), confirmaciones: confirmadas,

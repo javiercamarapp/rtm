@@ -315,8 +315,15 @@ describe('casos por intencion: feliz, faltante, suma que no cuadra, sin permiso,
   });
 
   it('firma del acta: sin acta pendiente la base lo dice y el bot no firma nada', async () => {
-    await sala.escribir('javier', '/firmaracta');
-    expect(sala.ultimo().texto.toLowerCase()).toContain('no hay un acta pendiente');
+    // La firma del acta es el mensaje personal de cada socio y solo existe en el camino sin tarjeta (el de produccion): se prueba con esa configuracion.
+    const antes = sala.configAgente;
+    sala.configAgente = { ...antes, confirmarMovimientos: false };
+    try {
+      await sala.escribir('javier', '/firmaracta');
+      expect(sala.ultimo().texto.toLowerCase()).toContain('no hay un acta pendiente');
+    } finally {
+      sala.configAgente = antes;
+    }
   });
 
   it('consultas nuevas responden en el grupo', async () => {
@@ -326,19 +333,9 @@ describe('casos por intencion: feliz, faltante, suma que no cuadra, sin permiso,
     }
   });
 
-  it('devolucion y paquete perdido: siguen como contrato (no conectados al bot en esta ronda); sin capacidad, la base rechaza con P0461', async () => {
-    const cap = (await q<{ j: { devolucion: boolean; paquete: boolean } }>('select agente.capacidades() as j'))[0]!.j;
-    for (const [tipo, ok] of [['devolucion', cap.devolucion], ['paquete_perdido', cap.paquete]] as const) {
-      expect(CATALOGO_INTENCIONES[tipo].estado).toBe('contrato');
-      if (!ok) {
-        await expect(q("select agente.ejecutar('e2e:v:' || $1, $1, '{\"autor\":\"angelo\"}')", [tipo])).rejects.toMatchObject({ code: 'P0461' });
-      }
-    }
+  it('devolucion y paquete perdido: ya estan conectados al bot (agente.ejecutar_ext) y su catalogo esta activo; su e2e vive en ventas_bot_e2e', async () => {
+    for (const tipo of ['devolucion', 'paquete_perdido'] as const) expect(CATALOGO_INTENCIONES[tipo].estado).toBe('activa');
   });
-
-  // PENDIENTE DOCUMENTADO (no se oculta): la base de la integracion ya trae la capacidad de paquete perdido (lane/paquete-perdido), pero agente.ejecutar y NegocioAgenteDb
-  // aun no la llaman. Devolucion (lane/devolucion-parcial) sigue fuera de la integracion. Cuando se conecten, reemplazar este pendiente por la prueba de extremo a extremo y pasar el contrato a 'activa'.
-  it.todo('conectar paquete_perdido (y devolucion) a agente.ejecutar y NegocioAgenteDb, y pasar el contrato a activa');
 
   it('cobertura del catalogo: toda escritura activa con puerta tiene su tipo en la base (o rechaza con un codigo claro, nunca SQL libre)', async () => {
     const activas = INTENCIONES_ESCRITURA.filter((t) => CATALOGO_INTENCIONES[t].estado === 'activa' && CATALOGO_INTENCIONES[t].hub.startsWith('agente.ejecutar'));

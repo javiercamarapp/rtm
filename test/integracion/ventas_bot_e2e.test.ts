@@ -92,6 +92,9 @@ describe.skipIf(!URL_DB)('bot de ventas y compras: conversaciones de punta a pun
     for (const [id, p] of [[ID.angelo, 'angelo'], [ID.javier, 'javier']] as const) await q('select agente.registrar_miembro($1::bigint, $2::text)', [id, p]);
     await q("select agente.registrar_chat('grupo_socios', $1::bigint)", [ID.grupo]);
     for (const nom of ['Ev Lupita Soto', 'Ev Memo Garcia']) await q('select catalogo.asegurar_cliente($1, $2)', [nom, 'Javier']);
+    // Enviar un pedido de bodega devenga renta a la persona de bodega: en una base limpia hay que darla de alta.
+    await q("select catalogo.asegurar_cliente('Ev Omar Persona', 'Javier')");
+    await q("do $$ begin if not exists (select 1 from catalogo.persona_bodega) then perform catalogo.asegurar_persona_bodega('Ev Omar Persona', 'Ev Omar'); end if; end $$");
     await q("select catalogo.asegurar_modelo('Ev Marca', 'Ev Modelo', 10000, 'ambas')");
     for (const sab of ['Uva', 'Mango']) await q('select catalogo.asegurar_sku($1, $2)', ['Ev Modelo', sab]);
     await q("select catalogo.fijar_costo('ev:k', 'Karen', 'Ev Modelo', 10000, negocio.hoy() - 30, 'prueba')");
