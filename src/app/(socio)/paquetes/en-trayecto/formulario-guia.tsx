@@ -5,7 +5,7 @@ import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
 import { useAccion } from '../../operacion/usar-accion';
 
 /** Registra una guía de rastreo de una orden de compra (puede haber varias por orden). */
-export function FormularioGuia({ compraId, folio, variante }: { compraId: number; folio: string; variante?: 'boton' | 'item' }) {
+export function FormularioGuia({ compraId, folio, variante }: { compraId: number; folio: string; variante?: 'boton' | 'terciario' }) {
   const { correr, ocupado, error, limpiarError } = useAccion();
   const [abierto, setAbierto] = useState(false);
   const [paqueteria, setPaqueteria] = useState('');
@@ -20,7 +20,7 @@ export function FormularioGuia({ compraId, folio, variante }: { compraId: number
   };
   return (
     <>
-      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : 'rtm-boton rtm-boton-chico'} onClick={() => { limpiarError(); setAbierto(true); }} data-testid={`guia-${compraId}`}>Registrar guía</button>
+      <button type="button" className={variante === 'terciario' ? 'rtm-boton rtm-boton-terciario' : 'rtm-boton rtm-boton-chico'} onClick={() => { limpiarError(); setAbierto(true); }} data-testid={`guia-${compraId}`}>Registrar guía</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo={`Registrar guía de ${folio}`} confirmar="Registrar guía" ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           <label className="rtm-etiqueta-campo">Paquetería<input className="rtm-campo" value={paqueteria} onChange={(e) => setPaqueteria(e.target.value)} placeholder="Castores" /></label>

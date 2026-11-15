@@ -40,9 +40,14 @@ export function IndicadorScroll() {
     if (el) el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.8), behavior: 'smooth' });
   };
   return (
-    <span ref={ancla} className="rtm-dt-indicador">
-      {estado.izq && <button type="button" className="rtm-dt-mas rtm-dt-mas-izq" onClick={() => mover(-1)} aria-label="Ver columnas anteriores de la tabla">← Atrás</button>}
-      {estado.der && <button type="button" className="rtm-dt-mas rtm-dt-mas-der" onClick={() => mover(1)} aria-label="Ver más columnas de la tabla">Más columnas →</button>}
-    </span>
+    <>
+      <span ref={ancla} className="rtm-dt-indicador" aria-hidden="true" />
+      {(estado.izq || estado.der) && (
+        <div className="rtm-dt-mas-barra">
+          {estado.izq && <button type="button" className="rtm-dt-mas rtm-dt-mas-izq" onClick={() => mover(-1)} aria-label="Ver columnas anteriores de la tabla">← Atrás</button>}
+          {estado.der && <button type="button" className="rtm-dt-mas rtm-dt-mas-der" onClick={() => mover(1)} aria-label="Ver más columnas de la tabla">Más columnas →</button>}
+        </div>
+      )}
+    </>
   );
 }

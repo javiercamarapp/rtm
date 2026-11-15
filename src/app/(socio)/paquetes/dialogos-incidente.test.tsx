@@ -77,7 +77,7 @@ describe('DialogoReportarSalida', () => {
     const cont = montarEl(<DialogoReportarSalida pedidoId={9} folio="P-0009" />);
     await clic(porTestid(cont, 'reportar-salida-9'));
     await esperar(); await esperar();
-    expect(cont.textContent).toContain('Jupiter 50K · Mango (salieron 20 pz, ya reportadas 5 pz)');
+    expect(cont.textContent).toContain('JUPITER 50K · MANGO (salieron 20 pz, ya reportadas 5 pz)');
     escribir(cont.querySelector('input[aria-label="Piezas afectadas de Jupiter 50K Mango"]'), '16');
     escribir(cont.querySelector('textarea[aria-label="Detalle del incidente"]'), 'se perdio');
     await confirmar(cont);

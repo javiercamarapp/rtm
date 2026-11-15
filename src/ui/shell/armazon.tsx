@@ -6,7 +6,6 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
 import { IconoApertura, IconoAviso, IconoCatalogo, IconoClientes, IconoCobrar, IconoContabilidad, IconoContactos, IconoDevolucion, IconoDropshipping, IconoInicio, IconoInventario, IconoMenu, IconoMovimientos, IconoOmar, IconoPaquete, IconoPedidos, IconoProveedores, IconoReportes, IconoCostos, IconoSocios, IconoTrayecto } from '../iconos';
-import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
 import type { ListaCampana } from '@/dominio/notificaciones/tipos';
 import type { Pulso as DatosPulso } from '@/dominio/operacion/pulso';
@@ -109,7 +108,6 @@ export function Armazon({ children, nombreSocio, accionSalir, pulso, socioMenude
           </div>
           <div className="rtm-barra-acciones">
             {cargarCampana && marcarLeida && marcarTodasLeidas && <Campana noLeidas={noLeidas} cargar={cargarCampana} marcar={marcarLeida} marcarTodas={marcarTodasLeidas} />}
-            <Apariencia />
             <BotonTema />
           </div>
         </header>

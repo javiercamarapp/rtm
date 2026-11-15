@@ -85,7 +85,7 @@ describe('T14 caracteres y longitudes', () => {
   it('el texto de WhatsApp conserva ñ, acentos, comillas y etiquetas sin interpretarlas', () => {
     const t = textoNota(nota('Peña "El Güero" <script>alert(1)</script>', 'Níñ\'o 50K'));
     expect(t).toContain('Peña "El Güero" <script>alert(1)</script>');
-    expect(t).toContain('Níñ\'o 50K 1pz x $1 = 1');
+    expect(t).toContain('NÍÑ\'O 50K 1pz x $1 = 1');
   });
   it('cliente de 120 caracteres no se trunca en el texto', () => {
     const largo = 'C'.repeat(120);

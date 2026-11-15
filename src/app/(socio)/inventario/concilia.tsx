@@ -1,5 +1,5 @@
 import '@/ui/estilos/socios-valuacion.css';
-import { etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFechaHora, formatearMoneda, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import type { ConciliaInventario } from '@/dominio/inventario/tipos';
 import { Estado } from '../_a3/util';
 import { Tarjeta } from '@/ui/componentes/pagina';
@@ -26,7 +26,7 @@ export function PanelConcilia({ c }: { c: ConciliaInventario }) {
       {u && u.diferencias.length > 0 && (
         <ul className="sv-rubros" data-testid="concilia-diferencias" aria-label="Diferencias por sabor del último conteo">
           {u.diferencias.map((d) => (
-            <li key={`${d.modelo}-${d.sabor}`}><span>{d.modelo} · {d.sabor}</span><span>Sistema {formatearPiezas(d.esperado)} · contado {formatearPiezas(d.contado)} · {d.diferencia > 0 ? '+' : ''}{formatearPiezas(d.diferencia)}</span><Estado tono={d.explicada ? 'ok' : 'atencion'}>{d.explicada ? 'Explicada' : 'Sin explicar'}</Estado></li>
+            <li key={`${d.modelo}-${d.sabor}`}><span>{nombreVape(d.modelo)} · {saborMayus(d.sabor)}</span><span>Sistema {formatearPiezas(d.esperado)} · contado {formatearPiezas(d.contado)} · {d.diferencia > 0 ? '+' : ''}{formatearPiezas(d.diferencia)}</span><Estado tono={d.explicada ? 'ok' : 'atencion'}>{d.explicada ? 'Explicada' : 'Sin explicar'}</Estado></li>
           ))}
         </ul>
       )}

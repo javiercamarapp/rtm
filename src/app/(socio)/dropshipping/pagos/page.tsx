@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { lectorDeSocio } from '@/composicion/catalogo';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { operacionDeSocio } from '@/composicion/operacion';
-import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, nombreVape, saborMayus } from '@/dominio/formato';
 import { Segmentado, ChipEstado } from '@/ui/componentes/controles';
 import { DataTable } from '@/ui/componentes/data-table';
 import { Aviso } from '@/ui/componentes/controles';
@@ -92,7 +92,7 @@ export default async function PaginaPagosDs({ searchParams }: { searchParams: Pr
           vacio={{ titulo: `Sin diferencias con ${proveedor}`, texto: 'Aparecen cuando un pedido se captura con un costo distinto del catálogo.' }}
           columnas={[
             { id: 'f', titulo: 'Pedido', ancho: 'm', prioridadMovil: 'titulo', celda: (d) => <Link className="rtm-mono" href={`/dropshipping/pedidos/${d.pedido_id}`}>{d.folio}</Link> },
-            { id: 'm', titulo: 'Modelo', ancho: 'xl', prioridadMovil: 'normal', celda: (d) => `${d.modelo} · ${d.sabor} · ${d.piezas} pz` },
+            { id: 'm', titulo: 'Modelo', ancho: 'xl', prioridadMovil: 'normal', celda: (d) => `${nombreVape(d.modelo)} · ${saborMayus(d.sabor)} · ${d.piezas} pz` },
             { id: 'c', titulo: 'Catálogo', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (d) => formatearMoneda(d.costo_catalogo_cent) },
             { id: 'k', titulo: 'Capturado', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (d) => formatearMoneda(d.costo_capturado_cent) },
             { id: 'd', titulo: 'Diferencia', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (d) => <span data-testid={`dif-monto-${d.captura_id}`}>{formatearMoneda(d.diferencia_cent, { conSigno: true })}</span> },

@@ -7,6 +7,8 @@
 //   node scripts/catalogo/unificar-aprobados.mjs --verificar              solo lectura: estado de cada par, el plan por modelo (reasigna o fusiona) y los bloqueos. No escribe.
 //   node scripts/catalogo/unificar-aprobados.mjs --aplicar                aplica en UNA transaccion; si la huella de kardex, existencias, eventos, asientos, cadena del libro, cuenta 1310 o
 //                                                                         comprobaciones C1..C24 cambia, hace ROLLBACK y sale con error. Idempotente: la segunda corrida no cambia nada.
+//   node scripts/catalogo/unificar-aprobados.mjs --aplicar --reaplicar   solo si un par YA se unifico con la clave fija y despues se DESHIZO: sin esta bandera, --aplicar se detiene con "ya deshecho: usa una clave nueva"
+//                                                                         (la clave fija devolveria el resultado viejo sin unificar nada); con ella usa una clave nueva derivada (clave:r1, clave:r2...).
 //   node scripts/catalogo/unificar-aprobados.mjs --sql-salida <archivo>   no se conecta: escribe el mismo SQL (una transaccion, idempotente, con la misma guarda de huella) para
 //                                                                         `supabase db query --linked -f <archivo>`.
 // Conexion: RTM_DB_URL (postgres://postgres:...@host:puerto/base) o, si no existe, la base local de `supabase status`. La URL nunca se imprime.
@@ -22,7 +24,7 @@ export const PARES_APROBADOS = [
 const lit = (v) => pg.escapeLiteral(String(v));
 
 /** SQL de UNA transaccion con la guarda de huella. Las claves de idempotencia son fijas: correrlo dos veces devuelve lo guardado. */
-export function sqlAplicar(pares = PARES_APROBADOS) {
+export function sqlAplicar(pares = PARES_APROBADOS, { reaplicar = false } = {}) {
   const bloques = pares.map((p) => `
   select s.id into o from catalogo.sabor s where s.nombre_norm = catalogo.normalizar(${lit(p.origen)});
   select s.id into d from catalogo.sabor s where s.nombre_norm = catalogo.normalizar(${lit(p.destino)});
@@ -31,14 +33,24 @@ export function sqlAplicar(pares = PARES_APROBADOS) {
   elsif d is null then
     raise exception 'no existe el sabor destino %', ${lit(p.destino)};
   else
-    r := catalogo.unificar_sabor(${lit('aprobados:' + p.clave)}, o, d, 'importacion', null, null, ${lit(p.clave)});
+    k := ${lit('aprobados:' + p.clave)};
+    select count(*) into n from catalogo.unificacion_sabor u where u.clave_idem = k and u.estado = 'deshecha';
+    if n > 0 then
+      if ${reaplicar ? 'true' : 'false'} then
+        select count(*) into n from catalogo.unificacion_sabor u where u.clave_idem like k || '%';
+        k := k || ':r' || n;
+      else
+        raise exception 'ya deshecho: % -> % se unifico con la clave fija y despues se deshizo; usa una clave nueva (corre de nuevo con --aplicar --reaplicar)', ${lit(p.origen)}, ${lit(p.destino)};
+      end if;
+    end if;
+    r := catalogo.unificar_sabor(k, o, d, 'importacion', null, null, ${lit(p.clave)});
     raise notice '% -> %: %', ${lit(p.origen)}, ${lit(p.destino)}, r;
     if r ->> 'estado' = 'bloqueado' then raise exception 'bloqueado: %', r; end if;
   end if;`).join('\n');
   return `begin;
 select set_config('rtm.canal', 'importacion', true);
 do $unif$
-declare o bigint; d bigint; r jsonb; h0 jsonb := catalogo.huella_inmutables(); h1 jsonb;
+declare o bigint; d bigint; r jsonb; k text; n int; h0 jsonb := catalogo.huella_inmutables(); h1 jsonb;
 begin${bloques}
   h1 := catalogo.huella_inmutables();
   if h1 is distinct from h0 then raise exception 'la huella de lo inmutable cambio: se cancela todo. antes=% despues=%', h0, h1; end if;
@@ -70,6 +82,8 @@ async function verificar(c) {
     if (!r.d) { console.log(`${p.origen} -> ${p.destino}: FALTA el sabor destino`); process.exitCode = 1; continue; }
     pendientes++;
     const plan = r.plan;
+    const deshecha = await c.query("select 1 from catalogo.unificacion_sabor where clave_idem = $1 and estado = 'deshecha'", ['aprobados:' + p.clave]);
+    if (deshecha.rows.length) console.log(`${p.origen} -> ${p.destino}: ATENCION: ya deshecho. La clave fija se uso y esa unificacion se deshizo; --aplicar se detendra. Usa una clave nueva: --aplicar --reaplicar.`);
     const bloq = plan.skus.filter((s) => s.bloqueos.length > 0);
     console.log(`${p.origen} -> ${p.destino}: pendiente. ${plan.skus.length} sku: ${plan.skus.map((s) => `${s.modelo} (${s.accion}${s.bloqueos.length ? ', BLOQUEADO: ' + s.bloqueos.join(', ') : ''})`).join('; ')}`);
     if (bloq.length) process.exitCode = 1;
@@ -84,7 +98,7 @@ const i = args.indexOf('--sql-salida');
 if (i >= 0) {
   const archivo = args[i + 1];
   if (!archivo) { console.error('falta el archivo de --sql-salida'); process.exit(2); }
-  writeFileSync(archivo, sqlAplicar());
+  writeFileSync(archivo, sqlAplicar(PARES_APROBADOS, { reaplicar: args.includes('--reaplicar') }));
   chmodSync(archivo, 0o600);
   console.log(`SQL escrito en ${archivo} (una transaccion, idempotente, con guarda de huella). Ejecutalo con: supabase db query --linked -f ${archivo}`);
 } else if (args.includes('--verificar') || args.includes('--aplicar')) {
@@ -96,7 +110,7 @@ if (i >= 0) {
       const antes = (await c.query('select catalogo.huella_inmutables() as h')).rows[0].h;
       c.on('notice', (n) => console.log(n.message));
       try {
-        await c.query(sqlAplicar());
+        await c.query(sqlAplicar(PARES_APROBADOS, { reaplicar: args.includes('--reaplicar') }));
       } catch (e) {
         await c.query('rollback').catch(() => {});
         console.error(`FALLO (todo cancelado): ${e.message}`);
@@ -114,6 +128,6 @@ if (i >= 0) {
     await c.end();
   }
 } else {
-  console.error('Uso: unificar-aprobados.mjs --verificar | --aplicar | --sql-salida <archivo>');
+  console.error('Uso: unificar-aprobados.mjs --verificar | --aplicar [--reaplicar] | --sql-salida <archivo> [--reaplicar]');
   process.exit(2);
 }

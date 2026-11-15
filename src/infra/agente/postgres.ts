@@ -34,7 +34,7 @@ import type { IConsulta, Intencion } from '@/dominio/agente/intenciones';
 import { parsearPrecio } from '@/dominio/agente/cifras';
 import { sumarDias } from '@/dominio/calendario';
 import { formatearFechaPago } from '@/dominio/agente/fecha_pago';
-import { formatearMoneda } from '@/dominio/formato';
+import { formatearMoneda, nombreVape } from '@/dominio/formato';
 import { centavosABigint } from '@/dominio/operacion/json';
 import { respuestaValuacionAgente, type Socio, type VistaValuacionAgente } from '@/dominio/socios/valuacion';
 import type { EntradaCatalogo } from '@/dominio/agente/resolutor';
@@ -287,7 +287,7 @@ function efectoDeSimulacion(e: Record<string, unknown>): CifraServidor[] {
   const salida: CifraServidor[] = [];
   const ls = e.lineas as { etiqueta: string; piezas: number; precio_cent: number; importe_cent: number }[] | undefined;
   for (const l of ls ?? []) {
-    salida.push({ tipo: 'texto', etiqueta: l.etiqueta, texto: `${l.piezas} pz a ${formatearMoneda(BigInt(l.precio_cent))} = ${formatearMoneda(BigInt(l.importe_cent))}` });
+    salida.push({ tipo: 'texto', etiqueta: nombreVape(l.etiqueta), texto: `${l.piezas} pz a ${formatearMoneda(BigInt(l.precio_cent))} = ${formatearMoneda(BigInt(l.importe_cent))}` });
   }
   const pesos = (k: string, etiqueta: string) => { if (typeof e[k] === 'number') salida.push({ tipo: 'pesos', etiqueta, centavos: BigInt(e[k] as number) }); };
   if (typeof e.piezas_ahora === 'number' && typeof e.pendientes === 'number') salida.push({ tipo: 'texto', etiqueta: 'Llegada', texto: `${e.piezas_ahora} pz ahora; llevaran ${String(e.piezas_acumuladas ?? '')} de ${String(e.piezas_facturadas ?? '')}; pendientes ${e.pendientes}` });

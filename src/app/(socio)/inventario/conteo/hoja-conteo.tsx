@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { EXPLICACIONES_CONTEO, type ExplicacionConteo, type HojaConteoSku, type PrevisualizacionConteo } from '@/dominio/inventario/tipos';
-import { formatearPiezas } from '@/dominio/formato';
+import { formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { Aviso } from '@/ui/componentes/controles';
 import { Tarjeta } from '@/ui/componentes/pagina';
 import { agregarSaborAccion, cerrarConteoAccion, previsualizarConteoAccion } from '../acciones';
@@ -100,7 +100,7 @@ export function HojaConteo({ ubicacion, hoja: hojaInicial }: { ubicacion: string
             <div className="rtm-dt-grupo" role="rowgroup">
               {previa.lineas.map((l) => (
                 <div key={l.sku_id} className="rtm-dt-fila" role="row" data-testid={`dif-${l.sku_id}`}>
-                  <div role="cell" className="rtm-dt-celda">{l.modelo} · {l.sabor}</div>
+                  <div role="cell" className="rtm-dt-celda">{nombreVape(l.modelo)} · {saborMayus(l.sabor)}</div>
                   <div role="cell" className="rtm-dt-celda" data-num>{formatearPiezas(l.contado)}</div>
                   <div role="cell" className="rtm-dt-celda" data-num>{formatearPiezas(l.esperado)}<br /><span className="rtm-nota">{formatearPiezas(l.disponible_sistema)} + {formatearPiezas(l.vendido_por_recoger)} por recoger</span></div>
                   <div role="cell" className="rtm-dt-celda" data-num>{l.diferencia === 0 ? 'Cuadra' : `${l.diferencia > 0 ? '+' : ''}${formatearPiezas(l.diferencia)}`}</div>
@@ -143,7 +143,7 @@ export function HojaConteo({ ubicacion, hoja: hojaInicial }: { ubicacion: string
           <legend>{m}</legend>
           {hoja.filter((h) => `${h.marca} · ${h.modelo}` === m).map((h) => (
             <label key={h.sku_id} className="rtm-conteo-fila">
-              <span>{h.sabor}</span>
+              <span>{saborMayus(h.sabor)}</span>
               <input className="rtm-campo rtm-campo-num" inputMode="numeric" pattern="[0-9]*" placeholder="Contadas" value={cuentas[h.sku_id] ?? ''} onChange={(e) => setCuentas({ ...cuentas, [h.sku_id]: e.target.value.replace(/[^0-9]/g, '') })} aria-label={`Piezas contadas de ${h.modelo} ${h.sabor}`} data-testid={`contado-${h.sku_id}`} />
             </label>
           ))}

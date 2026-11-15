@@ -5,7 +5,7 @@ import { useId, useRef, useState, useTransition } from 'react';
 import { ModeloTarjeta } from '../componentes/modelo';
 import { maximoPara, modelosDe, saboresDe } from '@/dominio/omar/solicitud';
 import type { PiezaDisponible, ResultadoSolicitud } from '@/dominio/omar/tipos';
-import { formatearPiezas } from '@/dominio/formato';
+import { formatearPiezas, saborMayus, nombreVape } from '@/dominio/formato';
 
 export type EnviarSolicitud = (entrada: { clave: string; modelo: string; sabor: string; piezas: number }) => Promise<ResultadoSolicitud>;
 
@@ -62,12 +62,12 @@ export function FormularioSolicitud({ disponible, tope, caducaHoras, enviar }: P
       <div className="omar-form-fila">
         <label className="rtm-etiqueta-campo" htmlFor={`${id}-m`}>Modelo
           <select id={`${id}-m`} className="rtm-campo" value={modelo} onChange={(e) => { setModelo(e.target.value); setSabor(saboresDe(disponible, e.target.value)[0]?.sabor ?? ''); }}>
-            {modelos.map((m) => <option key={m} value={m}>{m}</option>)}
+            {modelos.map((m) => <option key={m} value={m}>{nombreVape(m)}</option>)}
           </select>
         </label>
         <label className="rtm-etiqueta-campo" htmlFor={`${id}-s`}>Sabor
           <select id={`${id}-s`} className="rtm-campo" value={saborValido} onChange={(e) => setSabor(e.target.value)}>
-            {sabores.map((s) => <option key={s.sabor} value={s.sabor}>{s.sabor} ({formatearPiezas(s.piezas)})</option>)}
+            {sabores.map((s) => <option key={s.sabor} value={s.sabor}>{saborMayus(s.sabor)} ({formatearPiezas(s.piezas)})</option>)}
           </select>
         </label>
       </div>

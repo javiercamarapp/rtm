@@ -43,7 +43,7 @@ async function crearPedido(page: Page, piezas: string, sabor: 'Fresa' | 'Uva', e
   await page.getByTestId('elegir-cliente').selectOption({ label: d.cliente });
   await page.getByRole('button', { name: 'Elegir cliente' }).click();
   await page.waitForURL(`**/pedidos/nuevo?cliente=${d.clienteId}`);
-  await page.getByTestId('modelo').selectOption({ label: `${d.marca} · ${d.modelo}` });
+  await page.getByTestId('modelo').selectOption({ label: `${d.marca} · ${d.modelo}`.toUpperCase() });
   await elegirOpcion(page, 'sabor', sabor);
   await page.getByTestId('piezas').fill(piezas);
   await expect(page.getByTestId('precio')).toHaveValue('150.00');
@@ -156,7 +156,6 @@ test('F02 compra a Isaac: 100 Fresa + 100 Uva a 100.00, guia 450.00 pagada por A
   await page.goto(`/proveedores/compras/${oc1}`);
   await page.getByTestId('oc-enviada').click();
   await expect(page.getByTestId('estado-oc')).toContainText('Enviada');
-  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${oc1}`).click();
   await page.getByLabel('Número de guía').fill(`QA-OC1-${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -257,7 +256,6 @@ test('F05 pago parcial y total: 5,000.00, correccion de envio a 350 (6,350.00), 
   await expect(page.getByText('Por cobrar', { exact: true }).locator('..')).toContainText('$1,300.00');
   expect(await saldoSocio('Angelo')).toBeGreaterThanOrEqual(500_000n);
   // Correccion: envio 350.
-  await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
   await page.getByTestId('corregir-nota').click();
   await page.getByLabel('Motivo de la corrección').fill('el envío fue de 350');
   await page.getByLabel('Envío nuevo').fill('350');
@@ -327,7 +325,6 @@ test('F06 paquetes por hacer y en trayecto: Uva 30 pz a 150.00 + envio 300 = 4,8
   oc2 = Number(page.url().split('/').pop());
   await page.getByTestId('confirmar-oc').click();
   await page.getByTestId('oc-enviada').click();
-  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${oc2}`).click();
   await page.getByLabel('Número de guía').fill(`QA-OC2-${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -380,7 +377,7 @@ test('F08 gasto de socio y reembolso: el gasto baja la utilidad una sola vez; no
   await sesionSocio(page, '/socios', 'Angelo');
   const pend0 = await reembolsoPendiente('Angelo');
   await page.getByTestId('gasto-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('500');
   await page.getByTestId('campo-p_categoria').fill(`envio QA ${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -394,15 +391,15 @@ test('F08 gasto de socio y reembolso: el gasto baja la utilidad una sola vez; no
   });
   // Pago a socio: reembolso de 400.00 y luego un intento de 1,200.00 que excede lo pendiente.
   await page.getByTestId('pago-a-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('400');
-  await page.getByTestId('campo-p_tipo').selectOption('reembolso');
+  await page.getByTestId('campo-p_tipo-reembolso').check();
   await page.getByTestId('confirmar').click();
   await expect.poll(async () => (await reembolsoPendiente('Angelo')) - pend0).toBe(10_000n);
   await page.getByTestId('pago-a-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('999999');
-  await page.getByTestId('campo-p_tipo').selectOption('reembolso');
+  await page.getByTestId('campo-p_tipo-reembolso').check();
   await page.getByTestId('confirmar').click();
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText(/excede|pendiente/i);
   await page.keyboard.press('Escape');
@@ -415,15 +412,15 @@ test('F08 gasto de socio y reembolso: el gasto baja la utilidad una sola vez; no
 test('F09 aportacion de capital: 1,000.00 de Javier, la devolucion automatica ya no existe y deshacer', async ({ page }) => {
   await sesionSocio(page, '/socios', 'Javier');
   await page.getByTestId('aportacion').click();
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
+  await page.getByTestId('campo-p_socio-Javier').check();
   await page.getByTestId('campo-p_monto_cent').fill('1000');
   await page.getByTestId('campo-p_concepto').fill(`Capital adicional ${d.sufijo}`);
   await page.getByTestId('confirmar').click();
   await expect(page.getByText(`Capital adicional ${d.sufijo}`)).toBeVisible();
   await page.getByTestId('pago-a-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
+  await page.getByTestId('campo-p_socio-Javier').check();
   // Decision del 11-nov: la devolucion de capital ya NO es automatica (retiro de capital explicito). El formulario no la ofrece y el SQL la rechaza.
-  await expect(page.getByTestId('campo-p_tipo').locator('option')).toHaveText(['Reembolso de gastos', 'Retiro de utilidad ya asignada']);
+  await expect(page.getByTestId('campo-p_tipo').locator('.rtm-seg-op')).toHaveText(['Reembolso de gastos', 'Retiro de utilidad ya asignada']);
   await page.getByRole('button', { name: 'Cancelar' }).click();
   const rechazo = await conDb(async (c) => {
     await c.query('begin');
@@ -446,7 +443,7 @@ test('F09 aportacion de capital: 1,000.00 de Javier, la devolucion automatica ya
   // Doble clic en Registrar aportacion: una sola captura.
   const antes = await consultar<{ n: number }>("select count(*)::int as n from operacion.aportacion_socio where concepto = $1", [`Doble clic ${d.sufijo}`]);
   await page.getByTestId('aportacion').click();
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
+  await page.getByTestId('campo-p_socio-Javier').check();
   await page.getByTestId('campo-p_monto_cent').fill('10');
   await page.getByTestId('campo-p_concepto').fill(`Doble clic ${d.sufijo}`);
   await page.getByTestId('confirmar').dblclick();
@@ -488,7 +485,6 @@ test('F10 estado de cuenta y cascada de reparto: cinco pasos, identidad por dos 
 test('F11 anulacion: anular el pedido P-2 regresa las 30 piezas a su costo original 3,067.50 y revierte la renta; la nota original sigue', async ({ page }, info) => {
   const antes = await piezasYValor(d.modelo);
   await sesionSocio(page, `/pedidos/${pedido2}`, 'Javier');
-  await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
   await page.getByTestId('anular-pedido').click();
   await page.getByRole('dialog').getByLabel('Motivo').fill('devolucion total del cliente');
   await page.getByTestId('confirmar').click();
@@ -544,7 +540,6 @@ test('F13 liquidacion semanal con Isaac: hoja con comprobacion, ambito sociedad/
   await expect(page.getByTestId('texto-copiable')).not.toContainText(d.cliente);
   const hoyEsViernes = new Date(Date.now() - 6 * 3_600_000).getUTCDay() === 5;
   if (!hoyEsViernes) await expect(page.getByTestId('cerrar-liquidacion')).toBeDisabled();
-  await page.getByTestId('barra-mas').click();
   await page.getByRole('link', { name: 'Semana anterior' }).click();
   await expect(page.getByTestId('comprobacion')).toBeVisible();
   await capturar(page, info, 'claro', 'F13-liquidacion');

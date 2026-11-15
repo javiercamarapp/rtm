@@ -372,21 +372,23 @@ describe('teclado', () => {
 
 describe('estados', () => {
   for (const caso of CASOS_CON_MARCO) {
-    it(`${caso.id}: cargando muestra el esqueleto de su forma y nada de datos`, () => {
+    it(`${caso.id}: cargando muestra una linea de texto (sin cajas vacias) y nada de datos`, () => {
       const m = abrir(montar(caso.crear({ estado: 'cargando' })));
       const fig = m.cont.querySelector('figure')!;
       expect(fig.getAttribute('aria-busy')).toBe('true');
-      expect(fig.querySelector(`svg.rtm-g-esqueleto[data-forma="${caso.forma}"]`)).not.toBeNull();
+      expect(fig.querySelector(`p.rtm-g-cargando[data-forma="${caso.forma}"]`)).not.toBeNull();
+      expect(fig.querySelector('svg')).toBeNull();
       expect(fig.querySelector('[data-marca]')).toBeNull();
       expect(fig.querySelector('[role="status"]')?.textContent).toBe('Cargando gráfica');
       expect(fig.querySelector('[role="table"]')).toBeNull();
     });
   }
-  it('cada forma de esqueleto se dibuja con elementos propios', () => {
+  it('cada forma de carga es una sola linea de texto, sin svg', () => {
     const formas: FormaEsqueleto[] = ['barras', 'linea', 'cascada', 'pareto', 'calor', 'burbujas', 'treemap', 'radar', 'bump', 'apilada', 'cobertura', 'sparkline'];
     for (const f of formas) {
       const m = abrir(montar(<EsqueletoGrafica forma={f} />));
-      expect(m.cont.querySelector('svg')!.children.length, f).toBeGreaterThan(0);
+      expect(m.cont.querySelector('svg'), f).toBeNull();
+      expect(m.cont.querySelector('p.rtm-g-cargando')!.textContent, f).toContain('Cargando');
       m.desmontar();
       montajes.pop();
     }

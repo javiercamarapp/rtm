@@ -139,7 +139,6 @@ test('4 compra a Isaac: orden, confirmar, enviada, guia, llego, recepcion', asyn
   await page.getByTestId('confirmar-oc').click();
   await expect(page.getByTestId('estado-oc')).toContainText('Confirmada');
   await page.getByTestId('oc-enviada').click();
-  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${oc}`).click();
   await page.getByLabel('Número de guía').fill(`CUADRE-OC-${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -158,7 +157,6 @@ test('4b persona de bodega: se da de alta desde la ficha del cliente (sin ella, 
   await page.getByRole('link', { name: d.omar }).first().click();
   await page.waitForURL(/\/clientes\/\d+$/);
   await cap(page, 'persona-bodega-antes');
-  await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
   await page.getByTestId('alta-persona-bodega').click();
   await page.getByTestId('confirmar').click();
   await expect(page.getByTestId('alta-persona-bodega')).toHaveCount(0);
@@ -226,14 +224,13 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
   // Regla del dueno (13-nov): el pago de la sociedad se bloquea sin saldo en su caja. Antes de pagar, Javier deposita 2,000.00 a la caja de la empresa (reembolso).
   await javier.goto('/socios');
   await javier.getByTestId('aportacion').click();
-  await javier.getByTestId('campo-p_socio').selectOption('Javier');
+  await javier.getByTestId('campo-p_socio-Javier').check();
   await javier.getByTestId('campo-p_monto_cent').fill('2000');
   await javier.getByTestId('campo-p_concepto').fill(`Aportacion demo ${d.sufijo}`);
   await javier.getByTestId('confirmar').click();
   await expect(javier.getByText(`Aportacion demo ${d.sufijo}`).first()).toBeVisible();
   const page = angelo;
   await page.goto('/proveedores?p=Isaac');
-  await page.getByTestId('barra-mas').click();
   await page.getByTestId('pago-sociedad').click();
   await page.getByLabel(/Monto/).fill('1000');
   await page.getByTestId('confirmar').click();
@@ -272,7 +269,7 @@ test('8 socios: aportacion, gasto de socio y reembolso', async () => {
   await page.goto('/socios');
   await page.waitForLoadState('networkidle');
   await page.getByTestId('gasto-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('400');
   await page.getByTestId('campo-p_categoria').fill(`envio demo ${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -280,9 +277,9 @@ test('8 socios: aportacion, gasto de socio y reembolso', async () => {
   await page.reload();
   await cap(page, 'socios-tras-gasto');
   await page.getByTestId('pago-a-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('400');
-  await page.getByTestId('campo-p_tipo').selectOption('reembolso');
+  await page.getByTestId('campo-p_tipo-reembolso').check();
   await page.getByTestId('confirmar').click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.reload();

@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { formatearPiezas } from '@/dominio/formato';
+import { useId, useState } from 'react';
+import { formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
+import { CampoMonto } from '@/ui/componentes/campos-dialogo';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
+import { useExito } from '@/ui/componentes/dialogo-enterprise';
 import { centavosDeTexto, useAccion } from './usar-accion';
 
 export interface RenglonEnvio { linea_id: number; modelo: string; sabor: string; piezas: number; disponible: number }
@@ -19,6 +21,8 @@ interface Props {
 /** Marcar enviado: surtido pieza por pieza (el cliente solo paga lo que salio), guia con su costo real y "Enviar de todos modos" si hay avisos. */
 export function DialogoEnviar({ pedidoId, folio, renglones, avisosPendientes, etiquetaBoton = 'Marcar enviado', chico = false }: Props) {
   const { correr, ocupado, error, limpiarError } = useAccion();
+  const { exito, celebrar } = useExito();
+  const idCosto = useId();
   const [abierto, setAbierto] = useState(false);
   const [surtido, setSurtido] = useState<Record<number, string>>(() => Object.fromEntries(renglones.map((r) => [r.linea_id, String(r.piezas)])));
   const [paqueteria, setPaqueteria] = useState('');
@@ -40,39 +44,45 @@ export function DialogoEnviar({ pedidoId, folio, renglones, avisosPendientes, et
     correr('enviar_pedido', {
       p_pedido: pedidoId, p_surtido: lista, p_aceptar_avisos: acepto, p_falta_tipo: faltante,
       p_guia: numero.trim() ? { paqueteria: paqueteria.trim() || 'Paquetería', numero: numero.trim(), ...(c !== null ? { costo_cent: c } : {}), ...(pagaGuia ? { pagada_por: pagaGuia } : {}) } : null,
-    }, () => setAbierto(false));
+    }, () => celebrar(() => setAbierto(false)));
   };
 
   return (
     <>
       <button type="button" className={`rtm-boton rtm-boton-primario${chico ? ' rtm-boton-chico' : ''}`} onClick={() => { limpiarError(); setAbierto(true); }} data-testid={`marcar-enviado-${pedidoId}`}>{etiquetaBoton}</button>
       {abierto && (
-        <ConfirmDialog abierto={abierto} titulo={`Marcar enviado ${folio}`} confirmar="Marcar enviado" ocupado={ocupado} onConfirmar={confirmar} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
-          <p>Escribe las piezas que realmente salieron. El cliente solo paga lo surtido; lo demás queda pendiente.</p>
-          {renglones.map((r) => (
-            <label key={r.linea_id} className="rtm-etiqueta-campo">
-              {r.modelo} · {r.sabor} (pedidas {formatearPiezas(r.piezas)}, disponibles {formatearPiezas(Math.max(r.disponible, 0))})
-              <input className="rtm-campo rtm-campo-num" inputMode="numeric" value={surtido[r.linea_id] ?? ''} onChange={(e) => setSurtido((s) => ({ ...s, [r.linea_id]: e.target.value }))} aria-label={`Surtidas de ${r.modelo} ${r.sabor}`} />
+        <ConfirmDialog abierto={abierto} titulo={`Marcar enviado ${folio}`} subtitulo="Piezas surtidas y guía del envío" confirmar="Marcar enviado" ocupado={ocupado} exito={exito} error={local ?? error} variante="hoja" ancho="lg" onConfirmar={confirmar} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
+          <div className="rtm-hoja-seccion">
+            <h3 className="rtm-hoja-seccion-titulo" aria-hidden="true">Piezas surtidas</h3>
+            <p className="rtm-nota rtm-hoja-ancho">Escribe las piezas que realmente salieron. El cliente solo paga lo surtido; lo demás queda pendiente.</p>
+            {renglones.map((r) => (
+              <label key={r.linea_id} className="rtm-etiqueta-campo">
+                {nombreVape(r.modelo)} · {saborMayus(r.sabor)} (pedidas {formatearPiezas(r.piezas)}, disponibles {formatearPiezas(Math.max(r.disponible, 0))})
+                <input className="rtm-campo rtm-campo-num" inputMode="numeric" value={surtido[r.linea_id] ?? ''} onChange={(e) => setSurtido((s) => ({ ...s, [r.linea_id]: e.target.value }))} aria-label={`Surtidas de ${r.modelo} ${r.sabor}`} />
+              </label>
+            ))}
+            <label className="rtm-etiqueta-campo rtm-hoja-ancho">Lo que no salga queda como
+              <select className="rtm-campo" value={faltante} onChange={(e) => setFaltante(e.target.value)}>
+                <option value="entrega_diferida">Entrega diferida</option>
+                <option value="pieza_no_llego">Pieza que no llegó (saldo a favor si ya pagó)</option>
+              </select>
             </label>
-          ))}
-          <label className="rtm-etiqueta-campo">Lo que no salga queda como
-            <select className="rtm-campo" value={faltante} onChange={(e) => setFaltante(e.target.value)}>
-              <option value="entrega_diferida">Entrega diferida</option>
-              <option value="pieza_no_llego">Pieza que no llegó (saldo a favor si ya pagó)</option>
-            </select>
-          </label>
-          <div className="rtm-form-fila">
+          </div>
+          <div className="rtm-hoja-seccion rtm-i-1">
+            <h3 className="rtm-hoja-seccion-titulo" aria-hidden="true">Guía</h3>
             <label className="rtm-etiqueta-campo">Paquetería<input className="rtm-campo" value={paqueteria} onChange={(e) => setPaqueteria(e.target.value)} placeholder="Castores" /></label>
             <label className="rtm-etiqueta-campo">Guía<input className="rtm-campo" value={numero} onChange={(e) => setNumero(e.target.value)} aria-label="Número de guía" /></label>
-            <label className="rtm-etiqueta-campo">Costo real de la guía<input className="rtm-campo rtm-campo-num" inputMode="decimal" value={costo} onChange={(e) => setCosto(e.target.value)} /></label>
+            <div className="rtm-hoja-campo">
+              <label htmlFor={`${idCosto}-c`}>Costo real de la guía</label>
+              <CampoMonto id={`${idCosto}-c`} valor={costo} onCambio={setCosto} />
+            </div>
             <label className="rtm-etiqueta-campo">La pagó
               <select className="rtm-campo" value={pagaGuia} onChange={(e) => setPagaGuia(e.target.value)}><option value="">Sin indicar</option><option value="Angelo">Angelo</option><option value="Javier">Javier</option></select>
             </label>
           </div>
           {avisosPendientes > 0 && (
-            <label><input type="checkbox" checked={acepto} onChange={(e) => setAcepto(e.target.checked)} data-testid="enviar-de-todos-modos" /> Enviar de todos modos ({avisosPendientes} {avisosPendientes === 1 ? 'aviso' : 'avisos'}): queda registrado quién lo aceptó</label>
+            <label className="rtm-hoja-ancho"><input type="checkbox" checked={acepto} onChange={(e) => setAcepto(e.target.checked)} data-testid="enviar-de-todos-modos" /> Enviar de todos modos ({avisosPendientes} {avisosPendientes === 1 ? 'aviso' : 'avisos'}): queda registrado quién lo aceptó</label>
           )}
-          {(local || error) && <p className="rtm-error" role="alert">{local ?? error}</p>}
         </ConfirmDialog>
       )}
     </>

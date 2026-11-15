@@ -1,5 +1,6 @@
 'use client';
 
+import { nombreVape } from '@/dominio/formato';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import type { PreguntaDuplicado, ResultadoRespuesta } from '@/dominio/catalogo/duplicados';
@@ -9,7 +10,7 @@ import { deshacerUnificacionAccion, responderDuplicadoAccion } from './acciones-
 const clave = () => `web:${crypto.randomUUID()}`;
 
 function textoBloqueo(r: Extract<ResultadoRespuesta, { estado: 'bloqueado' }>): string {
-  return `No se pudo unir todavía. ${r.bloqueos.map((b) => `${b.modelo}: ${b.motivos.join(', ')}`).join('; ')}. ${r.ayuda}`;
+  return `No se pudo unir todavía. ${r.bloqueos.map((b) => `${nombreVape(b.modelo)}: ${b.motivos.join(', ')}`).join('; ')}. ${r.ayuda}`;
 }
 
 /** Botones "Sí, es lo mismo" (con el nombre canónico elegible) y "No, son distintos". Cada uno confirma con el diálogo propio; el negativo no se vuelve a preguntar. */

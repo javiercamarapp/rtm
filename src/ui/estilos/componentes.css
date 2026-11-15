@@ -15,8 +15,9 @@
 .rtm-dt-celda .rtm-acciones-fila { flex-wrap: nowrap; white-space: nowrap; gap: 6px; }
 .rtm-dt-aviso { padding: 8px var(--rtm-e-3); border: 1px dashed var(--rtm-line-2); border-radius: var(--rtm-r-3); background: var(--rtm-tint); display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 .rtm-dt-aviso p { margin: 0; color: var(--rtm-ink-2); }
-.rtm-esqueleto { display: block; height: 10px; width: 70%; border-radius: var(--rtm-r-pildora); background: var(--rtm-fill-active); }
-.rtm-dt-celda[data-num] .rtm-esqueleto { margin-left: auto; width: 50%; }
+/* Carga: una linea de texto con un punto; nunca cajas vacias. */
+.rtm-punto-carga { display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: var(--rtm-ink-3); vertical-align: middle; }
+.rtm-dt-cargando, .rtm-g-cargando { margin: 0; padding: var(--rtm-e-2) var(--rtm-e-3); font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-2); }
 
 /* ---- Cifras, estados y utilidades ---- */
 .rtm-cifra { border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; font-variant-numeric: tabular-nums; border-bottom: 1px dotted var(--rtm-line-strong); color: var(--rtm-ink); }
@@ -112,11 +113,7 @@ p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
   .rtm-campo { font-size: 16px; min-height: 44px; }
 }
 
-/* Carga de pagina: esqueleto con la forma de una pagina; alturas del contenido, no de la ventana. */
-.rtm-cargando { display: flex; flex-direction: column; gap: var(--rtm-ritmo); }
-.rtm-cargando > .rtm-cargando-eyebrow { width: 160px; }
-.rtm-cargando > .rtm-cargando-titular { height: 28px; width: min(420px, 80%); }
-.rtm-cargando > .rtm-cargando-bloque { height: 56px; width: 100%; border-radius: var(--rtm-r-3); }
+.rtm-cargando { margin: 0; padding: var(--rtm-e-2) 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); }
 
 /* Estados de los campos: placeholder legible (>= 4.5:1), foco visible con borde de tinta y deshabilitado reconocible sin depender solo del color. */
 .rtm-campo::placeholder { color: var(--rtm-ink-3); opacity: 1; }

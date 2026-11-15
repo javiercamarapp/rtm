@@ -45,13 +45,13 @@ test('hoja de Isaac: falta por saldar con comprobacion, lo que dice el proveedor
 test('cuenta de socios: aportacion con eco, gasto pagado por un socio, deshacer y estado de cuenta', async ({ page }) => {
   await sesion(page, '/socios');
   await page.getByTestId('aportacion').click();
-  await page.getByTestId('campo-p_socio').selectOption('Javier');
+  await page.getByTestId('campo-p_socio-Javier').check();
   await page.getByTestId('campo-p_monto_cent').fill('1000');
   await page.getByTestId('campo-p_concepto').fill(`Capital E2E ${d.sufijo}`);
   await page.getByTestId('confirmar').click();
   await expect(page.getByText(`Capital E2E ${d.sufijo}`)).toBeVisible();
   await page.getByTestId('gasto-socio').click();
-  await page.getByTestId('campo-p_socio').selectOption('Angelo');
+  await page.getByTestId('campo-p_socio-Angelo').check();
   await page.getByTestId('campo-p_monto_cent').fill('500');
   await page.getByTestId('campo-p_categoria').fill(`envio E2E ${d.sufijo}`);
   await page.getByTestId('confirmar').click();

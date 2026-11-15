@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { datosDeSocio } from '@/composicion/datos';
 import { inventarioDeSocio } from '@/composicion/inventario';
 import type { FilaKardex } from '@/dominio/datos/tipos';
-import { etiquetaFechaHora } from '@/dominio/formato';
+import { etiquetaFechaHora, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable, type Columna } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
@@ -47,7 +47,7 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
   const sabores = conDato.find((x) => x.modelo_id === modeloId)?.sabores ?? [];
   const saborSel = k.sabor;
   const unico = modeloId !== null;
-  const titulo = modo === 'sabor' ? (saborSel ? `${saborSel.sabor} de ${saborSel.modelo}` : 'Kárdex por sabor') : modelo ? `Movimientos de ${modelo.nombre}` : marca ? `Kárdex de ${marca}` : 'Kárdex de todos los modelos';
+  const titulo = modo === 'sabor' ? (saborSel ? `${saborMayus(saborSel.sabor)} de ${nombreVape(saborSel.modelo)}` : 'Kárdex por sabor') : modelo ? `Movimientos de ${nombreVape(modelo.nombre)}` : marca ? `Kárdex de ${marcaMayus(marca)}` : 'Kárdex de todos los modelos';
   const exportar = new URLSearchParams(Object.entries({ marca, modelo: modeloId, sku, ini, fin, tipo: filtro.tipo, q }).filter(([, v]) => v !== null && v !== undefined && v !== '').map(([a, v]) => [a, String(v)]));
   const sinMov = k.total === 0 && k.inicial.piezas === 0 && k.totales.n === 0;
 
@@ -65,7 +65,7 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
     )) },
     ...(vS ? [] : unico
       ? [{ id: 's', titulo: 'Sabor', ancho: 'm' as const, prioridadMovil: 'detalle' as const, celda: (f: Fila) => cel(f, (x) => x.sabor) }]
-      : [{ id: 'mo', titulo: 'Modelo › sabor', ancho: 'l' as const, truncar: 'm' as const, prioridadMovil: 'detalle' as const, celda: (f: Fila) => cel(f, (x) => <span className="rtm-a2-nowrap">{x.modelo}<span className="rtm-a2-nota"> › {x.sabor}</span></span>) }]),
+      : [{ id: 'mo', titulo: 'Modelo › sabor', ancho: 'l' as const, truncar: 'm' as const, prioridadMovil: 'detalle' as const, celda: (f: Fila) => cel(f, (x) => <span className="rtm-a2-nowrap">{nombreVape(x.modelo)}<span className="rtm-a2-nota"> › {saborMayus(x.sabor)}</span></span>) }]),
     { id: 'ec', prioridadMovil: 'normal' as const, etiquetaMovil: 'Entra pzs', titulo: 'Piezas', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_piezas === null ? '' : pzs(x.entra_piezas))) },
     { id: 'eu', prioridadMovil: 'oculta' as const, ocultarBajo: 1360 as const, titulo: 'V. unit.', bloque: 'Entradas', numerica: true, ancho: 's', celda: (f) => cel(f, (x) => (x.entra_unit_cent === null ? '' : m(x.entra_unit_cent))) },
     { id: 'et', prioridadMovil: 'normal' as const, etiquetaMovil: 'Entra total', titulo: 'Total', bloque: 'Entradas', numerica: true, ancho: 'm', celda: (f) => cel(f, (x) => (x.entra_total_cent === null ? '' : m(x.entra_total_cent))) },
@@ -122,18 +122,18 @@ export async function VistaKardex({ sp, modo }: { sp: Params; modo: 'consolidado
       <FiltrosUrl etiquetaAria="Filtros del kárdex" restablecer={base} plegable>
         {modo === 'consolidado' && (
           <Campo etiqueta="Marca">
-            <select name="marca" defaultValue={marca ?? ''}><option value="">Todas</option>{k.marcas.map((x) => <option key={x} value={x}>{x}</option>)}</select>
+            <select name="marca" defaultValue={marca ?? ''}><option value="">Todas</option>{k.marcas.map((x) => <option key={x} value={x}>{marcaMayus(x)}</option>)}</select>
           </Campo>
         )}
         <Campo etiqueta="Modelo">
           <select name="modelo" defaultValue={modeloId ? String(modeloId) : ''} data-testid="kardex-modelo">
             {modo === 'consolidado' && <option value="">Todos</option>}
-            {k.modelos.filter((x) => modo === 'sabor' || !marca || x.marca === marca).map((x) => <option key={x.id} value={x.id}>{x.marca} · {x.nombre}</option>)}
+            {k.modelos.filter((x) => modo === 'sabor' || !marca || x.marca === marca).map((x) => <option key={x.id} value={x.id}>{marcaMayus(x.marca)} · {nombreVape(x.nombre)}</option>)}
           </select>
         </Campo>
         {unico && (
           <Campo etiqueta="Sabor">
-            <select name="sku" defaultValue={sku ? String(sku) : ''}>{modo === 'consolidado' && <option value="">Todos</option>}{sabores.map((s) => <option key={s.sku_id} value={s.sku_id}>{s.sabor}</option>)}</select>
+            <select name="sku" defaultValue={sku ? String(sku) : ''}>{modo === 'consolidado' && <option value="">Todos</option>}{sabores.map((s) => <option key={s.sku_id} value={s.sku_id}>{saborMayus(s.sabor)}</option>)}</select>
           </Campo>
         )}
         <Campo etiqueta="Desde"><input type="date" name="ini" defaultValue={ini ?? ''} /></Campo>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatearPiezas } from '@/dominio/formato';
+import { formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import type { IncidentePaquete, SalidaLineaIncidente } from '@/dominio/operacion/tipos';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
 import { centavosDeTexto, useAccion } from '../operacion/usar-accion';
@@ -43,7 +43,7 @@ export function DialogoReportarSalida({ pedidoId, folio }: { pedidoId: number; f
           </label>
           {lineas === null ? <p className="rtm-nota">Leyendo renglones.</p> : lineas.map((l) => (
             <label key={clave(l)} className="rtm-etiqueta-campo">
-              {l.modelo} · {l.sabor} (salieron {formatearPiezas(l.surtidas)}{l.reportadas > 0 ? `, ya reportadas ${formatearPiezas(l.reportadas)}` : ''})
+              {nombreVape(l.modelo)} · {saborMayus(l.sabor)} (salieron {formatearPiezas(l.surtidas)}{l.reportadas > 0 ? `, ya reportadas ${formatearPiezas(l.reportadas)}` : ''})
               <input className="rtm-campo rtm-campo-num" inputMode="numeric" value={piezas[clave(l)] ?? ''} onChange={(e) => setPiezas((s) => ({ ...s, [clave(l)]: e.target.value }))} aria-label={`Piezas afectadas de ${l.modelo} ${l.sabor}`} />
             </label>
           ))}
@@ -84,7 +84,7 @@ export function DialogoReportarEntrada({ compraId, folio, renglones }: { compraI
           </label>
           {tipo === 'danado' && renglones.map((r) => (
             <label key={r.linea_id} className="rtm-etiqueta-campo">
-              {r.modelo} · {r.sabor}: piezas sanas recibidas (de {formatearPiezas(r.facturadas)})
+              {nombreVape(r.modelo)} · {saborMayus(r.sabor)}: piezas sanas recibidas (de {formatearPiezas(r.facturadas)})
               <input className="rtm-campo rtm-campo-num" inputMode="numeric" value={sanas[r.linea_id] ?? ''} onChange={(e) => setSanas((s) => ({ ...s, [r.linea_id]: e.target.value }))} aria-label={`Sanas de ${r.modelo} ${r.sabor}`} />
             </label>
           ))}

@@ -1,3 +1,4 @@
+import { marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import { exigirSocio } from '@/composicion/acceso';
 import { datosDeSocio } from '@/composicion/datos';
 import { inventarioDeSocio } from '@/composicion/inventario';
@@ -16,10 +17,10 @@ export async function GET() {
   const lineas = [`Inventario al corte ${inv.corte}; periodo ${det.ini} a ${det.fin}`, cab.join(',')];
   for (const x of inv.modelos.filter((z) => z.piezas !== null)) {
     const d = dM.get(x.modelo_id);
-    lineas.push(['Modelo', x.marca, x.modelo, '', x.piezas, x.reservado, x.disponible, pesosCsv(x.costo_prom_cent), pesosCsv(x.valor_cent), d?.entradas ?? 0, d?.salidas ?? 0, d?.mermas ?? 0, x.cobertura_dias, x.estado ? PALABRA_COBERTURA[x.estado] : '', d?.ultima_entrada ?? ''].map((v) => celdaCsv(v as string | number | null)).join(','));
+    lineas.push(['Modelo', marcaMayus(x.marca), nombreVape(x.modelo), '', x.piezas, x.reservado, x.disponible, pesosCsv(x.costo_prom_cent), pesosCsv(x.valor_cent), d?.entradas ?? 0, d?.salidas ?? 0, d?.mermas ?? 0, x.cobertura_dias, x.estado ? PALABRA_COBERTURA[x.estado] : '', d?.ultima_entrada ?? ''].map((v) => celdaCsv(v as string | number | null)).join(','));
     for (const s of x.sabores) {
       const e = dS.get(s.sku_id);
-      lineas.push(['Sabor', x.marca, x.modelo, s.sabor, s.piezas, s.reservado, s.disponible, pesosCsv(x.costo_prom_cent), pesosCsv(s.valor_cent), e?.entradas ?? 0, e?.salidas ?? 0, e?.mermas ?? 0, s.cobertura_dias, s.estado ? PALABRA_COBERTURA[s.estado] : '', e?.ultima_entrada ?? ''].map((v) => celdaCsv(v as string | number | null)).join(','));
+      lineas.push(['Sabor', marcaMayus(x.marca), nombreVape(x.modelo), saborMayus(s.sabor), s.piezas, s.reservado, s.disponible, pesosCsv(x.costo_prom_cent), pesosCsv(s.valor_cent), e?.entradas ?? 0, e?.salidas ?? 0, e?.mermas ?? 0, s.cobertura_dias, s.estado ? PALABRA_COBERTURA[s.estado] : '', e?.ultima_entrada ?? ''].map((v) => celdaCsv(v as string | number | null)).join(','));
     }
   }
   lineas.push(['Total', '', '', '', inv.totales.piezas, inv.totales.reservado, '', '', pesosCsv(inv.totales.valor_cent)].map((v) => celdaCsv(v as string | number | null)).join(','));

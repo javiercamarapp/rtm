@@ -14,7 +14,7 @@ beforeAll(simularDialogo);
 afterEach(() => { while (montajes.length) montajes.pop()!.desmontar(); refresh.mockClear(); ejecutar.mockReset(); });
 
 async function abrir() {
-  const m = montar(<PagoSocioProveedor proveedor="Isaac" />);
+  const m = montar(<PagoSocioProveedor proveedor="Isaac" />, 'off');
   montajes.push(m);
   await clic(porTestid(m.cont, 'pago-socio'));
   return m;
@@ -69,6 +69,7 @@ describe('PagoSocioProveedor: dinero propio = reembolso salvo declaracion expres
     await clic(porTestid(m.cont, 'declara-capital'));
     const cancelar = Array.from(m.cont.querySelectorAll('button')).find((b) => b.textContent === 'Cancelar')!;
     await clic(cancelar);
+    await clic(porTestid(m.cont, 'descartar')); // el dialogo pide descartar lo escrito
     await clic(porTestid(m.cont, 'pago-socio'));
     expect((porTestid(m.cont, 'declara-capital') as HTMLInputElement).checked).toBe(false);
   });

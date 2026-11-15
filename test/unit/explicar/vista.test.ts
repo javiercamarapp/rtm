@@ -48,7 +48,7 @@ describe('armarVista', () => {
     const mov = (n: number, saldo: number) => ({ hora: `2026-11-0${n}T10:00:00Z`, fechaNeg: `2026-11-0${n}`, tipo: 'entrada_compra', sabor: 'Menta', ubicacion: 'Bodega', cantidad: 10, saldo, valorCent: 0n, evento: `E-${n}`, canal: 'web', mensajeOrigen: null, autor: 'Ana' });
     const v = armarVista({ ...base, cifra: 'existencia:modelo:3', unidad: 'pz', valor: 20, movimientos: [mov(1, 10), mov(2, 20)] });
     expect(v.valorTexto).toBe('20 pz');
-    expect(v.detalle[0]!.concepto).toBe('entrada compra · Menta · Bodega');
+    expect(v.detalle[0]!.concepto).toBe('entrada compra · MENTA · Bodega');
     expect(v.serie).toHaveLength(2);
   });
   it('valor nulo dice Sin dato y lo explica; el costo supuesto se advierte', () => {

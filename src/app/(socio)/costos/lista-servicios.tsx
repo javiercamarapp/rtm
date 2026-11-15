@@ -3,12 +3,7 @@ import { ETIQUETA_CATEGORIA, categoriaDe, ordenarServicios } from '@/dominio/cos
 import { ETIQUETA_COSTO, pesosDeExactoE6, textoMicro } from '@/dominio/costos/entrada';
 import type { ResumenServicio, ServicioVista } from '@/dominio/costos/vista';
 import { formatearMoneda } from '@/dominio/formato';
-import { IconoServicio } from '@/ui/marcas/icono-servicio';
-import { LogoMarca } from '@/ui/marcas/logo-marca';
-import { MARCAS } from '@/dominio/marcas';
-
-/** El logo oficial reemplaza al nombre solo cuando el servicio ES la marca (Supabase, Vercel, GitHub...); un servicio derivado ('OpenRouter, comision de recarga') conserva su nombre. */
-const conLogoOficial = (slug: string | null, nombre: string) => { const m = slug ? MARCAS[slug] : undefined; return !!m && !!m.claro && !!m.oscuro && m.nombre === nombre; };
+import { LogoServicio } from '@/ui/componentes/logo-servicio';
 
 const dinero = (c: bigint) => formatearMoneda(c);
 
@@ -30,8 +25,8 @@ export function ListaServicios({ servicios, resumen, mes, incluir }: { servicios
       {ordenarServicios(resumen).map((s) => (
         <li key={s.slug} data-testid={`servicio-${s.slug}`}>
           <Link className="rtm-serv-fila" href={`/costos/${s.slug}?${query}`} aria-label={`${s.servicio}: ver detalle y cargos`}>
-            <IconoServicio slug={s.logo_slug} nombre={s.servicio} logoEnNombre={conLogoOficial(s.logo_slug, s.servicio)} />
-            <span className="rtm-serv-nombre">{conLogoOficial(s.logo_slug, s.servicio) ? <LogoMarca slug={s.logo_slug} nombre={s.servicio} alto={18} /> : s.servicio}</span>
+            <LogoServicio slug={s.slug} logoSlug={s.logo_slug} nombre={s.servicio} />
+            <span className="rtm-serv-nombre">{s.servicio}</span>
             <span className="rtm-serv-cat" data-categoria={categoriaDe(s)}>{ETIQUETA_CATEGORIA[categoriaDe(s)]}</span>
             <span className="rtm-serv-concepto">{concepto.get(s.slug) ?? ''}</span>
             {s.cargos === 0 ? (

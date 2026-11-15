@@ -3,7 +3,7 @@ import { AreaPesos } from '../_a3/graficas-pesos';
 import Link from 'next/link';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { operacionDeSocio } from '@/composicion/operacion';
-import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearPiezas, nombreVape } from '@/dominio/formato';
 import { armarHojaProveedor, armarPosicionProveedor, rotuloModalidad } from '@/dominio/operacion/posicion_proveedor';
 import type { EstadoCompra } from '@/dominio/operacion/tipos';
 import { BarraAcciones } from '@/ui/componentes/barra-acciones';
@@ -98,10 +98,10 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
             }
             secundarias={
               <>
-                <FormularioAccion variante="item" boton="Pago de la sociedad" descripcion={`Registrar un pago de la sociedad a ${proveedor}`} titulo={`Pago de la sociedad a ${proveedor}`} confirmar="Registrar pago" accion="registrar_pago_proveedor_sociedad" testid="pago-sociedad"
+                <FormularioAccion variante="terciario" boton="Pago sociedad" descripcion={`Registrar un pago de la sociedad a ${proveedor}`} titulo={`Pago de la sociedad a ${proveedor}`} confirmar="Registrar pago" accion="registrar_pago_proveedor_sociedad" testid="pago-sociedad"
                   fijos={{ p_proveedor: proveedor }} campos={[{ nombre: 'p_monto_cent', etiqueta: 'Monto', tipo: 'monto', requerido: true }, { nombre: 'p_nota', etiqueta: 'Nota (opcional)', tipo: 'texto' }]}
                   nota="Sale de la Caja de la empresa: si no tiene saldo suficiente el pago se bloquea (registralo como pago de un socio con su dinero o como cobro de cliente aplicado al proveedor). Se puede deshacer con un movimiento contrario." />
-                <FormularioAccion variante="item" boton="Registrar ajuste" descripcion={`Registrar un ajuste con ${proveedor}`} titulo={`Ajuste con ${proveedor}`} confirmar="Registrar ajuste" accion="registrar_ajuste_proveedor" testid="ajuste-proveedor"
+                <FormularioAccion variante="terciario" boton="Ajuste" descripcion={`Registrar un ajuste con ${proveedor}`} titulo={`Ajuste con ${proveedor}`} confirmar="Registrar ajuste" accion="registrar_ajuste_proveedor" testid="ajuste-proveedor"
                   fijos={{ p_proveedor: proveedor }}
                   campos={[
                     { nombre: 'p_tipo', etiqueta: 'Tipo', tipo: 'seleccion', opciones: [
@@ -110,7 +110,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
                     { nombre: 'p_monto_cent', etiqueta: 'Monto a favor de la sociedad', tipo: 'monto', requerido: true, ayuda: 'Un cargo a favor del proveedor se registra como orden de compra.' },
                     { nombre: 'p_motivo', etiqueta: 'Motivo', tipo: 'texto', requerido: true },
                   ]} />
-                <Link className="rtm-boton-item" href="/proveedores/inventario" data-testid="ir-inventario" title="Inventario actual de proveedores">Inventario de proveedores</Link>
+                <Link className="rtm-boton rtm-boton-terciario" href="/proveedores/inventario" data-testid="ir-inventario" title="Inventario actual de proveedores" aria-label="Inventario actual de proveedores">Inventario</Link>
               </>
             }
           />
@@ -267,7 +267,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
               { id: 'se', titulo: 'Seguro', prioridadMovil: 'oculta', numerica: true, ancho: 'm', secundaria: true, celda: (r) => m(r.seguro_cent) },
               { id: 'gu', titulo: 'Guía', prioridadMovil: 'oculta', numerica: true, ancho: 'm', secundaria: true, celda: (r) => (r.guia_pendiente ? <Estado tono="atencion">Sin costo real</Estado> : m(r.guia_cent)) },
               { id: 'c', titulo: 'Costo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (r) => m(r.costo_cent) },
-              { id: 'm', titulo: 'Detalle a costo', prioridadMovil: 'oculta', ancho: 'xl', secundaria: true, celda: (r) => r.detalle.map((x) => `${x.modelo}: ${x.piezas} × ${m(x.costo_unit_cent)}`).join(' · ') },
+              { id: 'm', titulo: 'Detalle a costo', prioridadMovil: 'oculta', ancho: 'xl', secundaria: true, celda: (r) => r.detalle.map((x) => `${nombreVape(x.modelo)}: ${x.piezas} × ${m(x.costo_unit_cent)}`).join(' · ') },
               { id: 'a', titulo: 'Alcance', prioridadMovil: 'oculta', ancho: 's', secundaria: true, celda: (r) => (r.es_de_sociedad ? 'Sociedad' : 'Propio') },
               { id: 'k', titulo: 'Cuadra', prioridadMovil: 'normal', ancho: 's', celda: (r) => <Estado tono={r.cuadra ? 'ok' : 'malo'}>{r.cuadra ? 'Sí' : 'No'}</Estado> },
             ]}

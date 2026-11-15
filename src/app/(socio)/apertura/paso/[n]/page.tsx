@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { aperturaDeSocio } from '@/composicion/apertura';
 import { pasoPorNumero } from '@/dominio/apertura/pasos';
 import type { EstadoApertura, PartidaApertura } from '@/dominio/apertura/tipos';
-import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas, nombreVape } from '@/dominio/formato';
 import { Aviso } from '@/ui/componentes/controles';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
@@ -16,7 +16,7 @@ import { FormularioPartida } from '../../formulario-partida';
 export const metadata: Metadata = { title: 'Apertura · paso' };
 
 function detalle(p: PartidaApertura): string {
-  return [p.socio, p.cliente, p.proveedor, p.modelo && `${p.modelo} ${p.sabor ?? ''}`.trim(), p.piezas != null && `${formatearPiezas(p.piezas)} pz`, p.costo_unit_cent != null && `a ${formatearMoneda(p.costo_unit_cent)}`, p.fecha_ref && `desde ${etiquetaFecha(p.fecha_ref)}`, p.descripcion]
+  return [p.socio, p.cliente, p.proveedor, p.modelo && `${nombreVape(p.modelo)} ${p.sabor ?? ''}`.trim(), p.piezas != null && `${formatearPiezas(p.piezas)} pz`, p.costo_unit_cent != null && `a ${formatearMoneda(p.costo_unit_cent)}`, p.fecha_ref && `desde ${etiquetaFecha(p.fecha_ref)}`, p.descripcion]
     .filter(Boolean).join(' · ');
 }
 

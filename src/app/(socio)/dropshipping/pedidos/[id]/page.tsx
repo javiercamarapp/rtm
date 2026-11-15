@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { ChipEstado } from '@/ui/componentes/controles';
 import { ListaClaveValor } from '@/ui/componentes/datos';
@@ -92,7 +92,7 @@ export default async function FichaDs({ params }: { params: Promise<{ id: string
               clave={(r) => r.linea_id}
               filas={costos.renglones}
               columnas={[
-                { id: 'r', titulo: 'Renglón', ancho: 'xl', prioridadMovil: 'titulo', celda: (r) => `${r.modelo} · ${r.sabor} · ${formatearPiezas(r.piezas)}` },
+                { id: 'r', titulo: 'Renglón', ancho: 'xl', prioridadMovil: 'titulo', celda: (r) => `${nombreVape(r.modelo)} · ${saborMayus(r.sabor)} · ${formatearPiezas(r.piezas)}` },
                 { id: 'c', titulo: 'Catálogo', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (r) => (r.costo_catalogo_cent === null ? 'Sin dato' : formatearMoneda(r.costo_catalogo_cent)) },
                 { id: 'k', titulo: 'Capturado', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (r) => (r.costo_capturado_cent === null ? <span className="rtm-texto-envuelve">Usa el catálogo</span> : formatearMoneda(r.costo_capturado_cent)) },
                 { id: 'd', titulo: 'Diferencia por pieza', numerica: true, ancho: 'm', prioridadMovil: 'normal', celda: (r) => (r.diferencia_unit_cent === null || r.diferencia_unit_cent === 0n ? '' : formatearMoneda(r.diferencia_unit_cent, { conSigno: true })) },

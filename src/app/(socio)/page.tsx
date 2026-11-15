@@ -6,7 +6,7 @@ import { inventarioDeSocio, notificacionesDeSocio } from '@/composicion/inventar
 import { operacionDeSocio } from '@/composicion/operacion';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { fechaNeg } from '@/dominio/calendario';
-import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas, nombreVape } from '@/dominio/formato';
 import { URGENCIA_COBERTURA, textoDias } from '@/dominio/inventario/cobertura';
 import { destinoAviso } from '@/dominio/notificaciones/tipos';
 import { aNumero, contarPor, porcentaje, sumarPorSemana, ultimasSemanas } from '@/dominio/tablero/agregados';
@@ -201,7 +201,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
           {reponer.length >= 1 && inv ? (
             <CoberturaDias
               titulo="¿Qué modelos se acaban primero?" descripcion={`Cobertura en días de ${reponer.length} modelos contra el objetivo.`} procedencia="estimado" pie={`Corte: ${etiquetaFechaHora(inv.corte)}`}
-              filas={reponer.map((m) => ({ id: String(m.modelo_id), etiqueta: m.modelo, dias: m.cobertura_dias, textoDias: textoDias(m.cobertura_dias), estado: m.estado ?? 'sin_historia' }))}
+              filas={reponer.map((m) => ({ id: String(m.modelo_id), etiqueta: nombreVape(m.modelo), dias: m.cobertura_dias, textoDias: textoDias(m.cobertura_dias), estado: m.estado ?? 'sin_historia' }))}
               umbrales={[{ id: 'obj', etiqueta: 'Objetivo', dias: inv.parametros.objetivo_dias }]}
             />
           ) : <p className="rtm-a1-estado-vacio">{inv ? 'Ningún modelo pide reposición ahora.' : 'Sin dato de inventario.'}</p>}

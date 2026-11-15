@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { fechaNeg } from '@/dominio/calendario';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
-import type { EstadoPedido, Origen } from '@/dominio/operacion/tipos';
+import type { DesglosePedidos, EstadoPedido } from '@/dominio/operacion/tipos';
 import { origenSurtido } from '@/dominio/dropshipping/calculos';
 import { aNumero, contarPor, porcentaje, sumarPorSemana, ultimasSemanas } from '@/dominio/tablero/agregados';
 import { CifraComprobada } from '@/ui/componentes/cifra';
@@ -17,7 +17,7 @@ import { ColumnasPeriodo } from '@/ui/graficas';
 import '@/ui/estilos/paginas-a1.css';
 import { ESTADO_PEDIDO, ORIGEN } from '../operacion/etiquetas';
 import { columnasSemana, deltaSemanal, NUMERO_SEMANAS, semanasDe, sparkSemanal } from '../_a1/comun';
-import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
+import { DesglosePedidosTabla, filasDeGrupo, GRUPOS, PROVEEDORES, TIPOS_VENTA, buscarFila } from './desglose';
 import { etiquetaHoy } from '../contexto';
 
 export const metadata: Metadata = { title: 'Pedidos y notas' };
@@ -27,15 +27,28 @@ const ESTADOS: { clave: string; texto: string }[] = [
 ];
 const TONO: Record<EstadoPedido, 'ok' | 'atencion' | 'malo' | 'apagado'> = { borrador: 'apagado', confirmado: 'atencion', enviado: 'ok', cancelado: 'apagado', anulado: 'malo' };
 
-export default async function PaginaPedidos({ searchParams }: { searchParams: Promise<{ estado?: string; aviso?: string; origen?: string; semanas?: string; surtido?: string }> }) {
-  const { estado = '', aviso = '', origen = '', semanas: sem, surtido: surtidoQ = '' } = await searchParams;
+/** Texto corto " · $x" con lo facturado que la base ya sumo; vacio si aun no hay enviados. */
+function totalFacturado(f: DesglosePedidos | undefined): string {
+  return f && f.enviados ? ` · ${formatearMoneda(f.facturado_cent)}` : '';
+}
+
+function itemDesglose(f: DesglosePedidos | undefined, id: string, etiqueta: string, total: number, href: string) {
+  const util = f && f.utilidad_cent !== null ? ` · utilidad ${formatearMoneda(f.utilidad_cent)}${f.utilidad_provisional ? ' (provisional)' : ''}` : '';
+  return { id, etiqueta, href, texto: String(f?.pedidos ?? 0), pct: porcentaje(f?.pedidos ?? 0, total), nota: f ? `${f.enviados} enviados · facturado ${f.enviados ? formatearMoneda(f.facturado_cent) : 'sin dato'}${util}` : undefined };
+}
+
+export default async function PaginaPedidos({ searchParams }: { searchParams: Promise<{ estado?: string; aviso?: string; semanas?: string; surtido?: string; prov?: string; tipo?: string }> }) {
+  const { estado = '', aviso = '', semanas: sem, surtido: surtidoQ = '', prov: provQ = '', tipo: tipoQ = '' } = await searchParams;
   const surtido = surtidoQ === 'dropshipping' || surtidoQ === 'inventario_merida' ? surtidoQ : '';
+  const prov = surtido && PROVEEDORES[provQ]?.surtido === surtido ? provQ : '';
+  const tipo = surtido === 'dropshipping' && TIPOS_VENTA[tipoQ] ? tipoQ : '';
   const n = semanasDe(sem);
-  const todos = await (await operacionDeSocio()).pedidos();
+  const operacion = await operacionDeSocio();
+  const [todos, desglose] = await Promise.all([operacion.pedidos(), operacion.pedidosDesglose()]);
   const hoy = fechaNeg(new Date());
-  const filas = todos.filter((p) => (!estado || p.estado === (estado as EstadoPedido)) && (!aviso || p.avisos > 0) && (!origen || p.origen === origen) && (!surtido || origenSurtido(p.origen) === surtido));
+  const filas = todos.filter((p) => (!estado || p.estado === (estado as EstadoPedido)) && (!aviso || p.avisos > 0) && (!surtido || origenSurtido(p.origen) === surtido) && (!prov || PROVEEDORES[prov]!.origenes.includes(p.origen)) && (!tipo || p.tipo_venta === tipo));
   const enlace = (cambios: Record<string, string>) => {
-    const q = new URLSearchParams({ ...(estado ? { estado } : {}), ...(aviso ? { aviso } : {}), ...(origen ? { origen } : {}), ...(surtido ? { surtido } : {}), ...(sem ? { semanas: sem } : {}), ...cambios });
+    const q = new URLSearchParams({ ...(estado ? { estado } : {}), ...(aviso ? { aviso } : {}), ...(surtido ? { surtido } : {}), ...(prov ? { prov } : {}), ...(tipo ? { tipo } : {}), ...(sem ? { semanas: sem } : {}), ...cambios });
     for (const [k, v] of [...q.entries()]) if (!v) q.delete(k);
     const s = q.toString();
     return s ? `/pedidos?${s}` : '/pedidos';
@@ -60,7 +73,6 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
   const piezasTot = filas.reduce((a, p) => a + p.piezas_pedidas, 0);
   const surtidasTot = filas.reduce((a, p) => a + p.piezas_surtidas, 0);
   const cuentaEstado = contarPor(todos, (p) => p.estado);
-  const cuentaOrigen = contarPor(todos, (p) => p.origen);
   const cuenta = (e: string) => (e ? todos.filter((p) => p.estado === e).length : todos.length);
   const ticket = enviadosFiltro.length ? cobrado / BigInt(enviadosFiltro.length) : null;
 
@@ -77,24 +89,15 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
           </>
         }
       />
-      <BarraFiltros etiquetaAria="Filtros" extras={estado || aviso || origen || surtido ? <Chip href="/pedidos">Quitar filtros</Chip> : undefined}>
-        <Segmentado etiquetaAria="Origen del surtido" tamano="chico" opciones={[
-          { valor: '', etiqueta: `Todos ${todos.length}`, href: enlace({ surtido: '' }), activa: !surtido, testid: 'surtido-todos' },
-          { valor: 'dropshipping', etiqueta: `Dropshipping ${todos.filter((p) => origenSurtido(p.origen) === 'dropshipping').length}`, href: enlace({ surtido: 'dropshipping' }), activa: surtido === 'dropshipping', testid: 'surtido-dropshipping' },
-          { valor: 'inventario_merida', etiqueta: `Inventario en Mérida ${todos.filter((p) => origenSurtido(p.origen) === 'inventario_merida').length}`, href: enlace({ surtido: 'inventario_merida' }), activa: surtido === 'inventario_merida', testid: 'surtido-inventario' },
+      <BarraFiltros etiquetaAria="Filtros" extras={estado || aviso || surtido ? <Chip href="/pedidos">Quitar filtros</Chip> : undefined}>
+        <Segmentado etiquetaAria="Bodega o dropshipping" tamano="chico" opciones={[
+          { valor: '', etiqueta: `Todos ${todos.length}${totalFacturado(buscarFila(desglose, 'total', 'todos'))}`, href: enlace({ surtido: '', prov: '', tipo: '' }), activa: !surtido, testid: 'surtido-todos' },
+          ...GRUPOS.map((g) => ({ valor: g.clave, etiqueta: `${g.texto} ${todos.filter((p) => origenSurtido(p.origen) === g.clave).length}${totalFacturado(buscarFila(desglose, 'surtido', g.clave))}`, href: enlace({ surtido: g.clave, prov: '', tipo: '' }), activa: surtido === g.clave, testid: g.clave === 'dropshipping' ? 'surtido-dropshipping' : 'surtido-inventario' })),
         ]} />
         <Segmentado etiquetaAria="Estado del pedido" tamano="chico" opciones={ESTADOS.map((e) => ({ valor: e.clave, etiqueta: e.texto, contador: cuenta(e.clave), href: enlace({ estado: e.clave }), activa: estado === e.clave }))} />
-        <FiltrosPlegables etiqueta="Más" titulo="Más filtros: avisos y origen del cliente" activos={(aviso ? 1 : 0) + (origen ? 1 : 0)}>
-          <div className="rtm-ba-fp-grupo">
-            <small>Avisos</small>
-            <Chip tono="atencion" href={enlace({ aviso: aviso ? '' : '1' })} activo={aviso === '1'}>Con avisos</Chip>
-          </div>
-          <div className="rtm-ba-fp-grupo">
-            <small>Origen</small>
-            {(Object.keys(ORIGEN) as Origen[]).filter((o) => cuentaOrigen.some((c) => c.clave === o)).map((o) => <Chip key={o} href={enlace({ origen: origen === o ? '' : o })} activo={origen === o}>{ORIGEN[o]}</Chip>)}
-          </div>
-        </FiltrosPlegables>
+        <Chip tono="atencion" href={enlace({ aviso: aviso ? '' : '1' })} activo={aviso === '1'} testid="filtro-avisos">Con avisos {todos.filter((p) => p.avisos > 0).length}</Chip>
       </BarraFiltros>
+      <DesglosePedidosTabla desglose={desglose} surtido={surtido} prov={prov} tipo={tipo} enlace={enlace} />
 
       <KpiLinea
         etiquetaAria="Indicadores de pedidos"
@@ -124,14 +127,23 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
             <ColumnasPeriodo titulo="Piezas pedidas por semana" descripcion={`Piezas de los pedidos activos por semana; la última es parcial.`} unidad="Piezas" procedencia="observado" pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: libro de pedidos`} datos={columnasSemana(semanas, pedidas, (v) => formatearPiezas(v), 'piezas')} />
           ) : <p className="rtm-a1-estado-vacio">Sin pedidos todavía.</p>}
         </Tarjeta>
-        <Tarjeta titulo="Estados y origen" descripcion="Todos los pedidos del libro">
+        <Tarjeta titulo="Estados y surtido" descripcion="Todos los pedidos del libro">
           <div className="rtm-a1-cuerpo">
             <p className="rtm-a1-subtitulo">Por estado</p>
             <BarList etiquetaAria="Pedidos por estado" items={cuentaEstado.map((c) => ({ id: c.clave, etiqueta: ESTADO_PEDIDO[c.clave as EstadoPedido].texto, texto: String(c.n), pct: porcentaje(c.n, todos.length), tono: c.clave === 'anulado' ? ('malo' as const) : c.clave === 'confirmado' ? ('atencion' as const) : undefined }))} />
-            <p className="rtm-a1-subtitulo">Por origen de surtido</p>
-            <BarList etiquetaAria="Pedidos por origen de surtido" items={(['dropshipping', 'inventario_merida'] as const).map((k) => { const g = todos.filter((p) => origenSurtido(p.origen) === k); const env = g.filter((p) => p.estado === 'enviado'); const util = env.filter((p) => p.utilidad_cent !== null).reduce((a, p) => a + (p.utilidad_cent ?? 0n), 0n); return { id: k, etiqueta: k === 'dropshipping' ? 'Dropshipping' : 'Inventario en Mérida', texto: String(g.length), pct: porcentaje(g.length, todos.length), nota: `${env.length} enviados · facturado ${formatearMoneda(env.reduce((a, p) => a + p.cobrado_cent, 0n))} · utilidad ${formatearMoneda(util)}` }; })} />
-            <p className="rtm-a1-subtitulo">Por origen</p>
-            <BarList etiquetaAria="Pedidos por origen" items={cuentaOrigen.map((c) => ({ id: c.clave, etiqueta: ORIGEN[c.clave as Origen], texto: String(c.n), pct: porcentaje(c.n, todos.length) }))} />
+            <p className="rtm-a1-subtitulo">Bodega y dropshipping</p>
+            <BarList etiquetaAria="Pedidos por bodega o dropshipping" items={GRUPOS.map((g) => itemDesglose(buscarFila(desglose, 'surtido', g.clave), g.clave, g.texto, todos.length, enlace({ surtido: g.clave, prov: '', tipo: '' })))} />
+            {GRUPOS.map((g) => {
+              const total = buscarFila(desglose, 'surtido', g.clave)?.pedidos ?? 0;
+              const filasG = filasDeGrupo(desglose, g.clave);
+              if (!filasG.length) return null;
+              return (
+                <div key={g.clave}>
+                  <p className="rtm-a1-subtitulo">{g.texto}: por {g.clave === 'dropshipping' ? 'proveedor y tipo de venta' : 'origen'}</p>
+                  <BarList etiquetaAria={`${g.texto}: pedidos por origen`} items={filasG.map((r) => itemDesglose(r.fila, r.id, r.texto, total, enlace(r.nivel === 'proveedor' ? { surtido: g.clave, prov: r.clave, tipo: '' } : { surtido: g.clave, tipo: r.clave, prov: '' })))} />
+                </div>
+              );
+            })}
           </div>
         </Tarjeta>
       </Rejilla>

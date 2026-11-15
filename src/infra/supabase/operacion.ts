@@ -22,6 +22,7 @@ export class ErrorDeNegocio extends Error {
 export function lectorOperacionSupabase(): LectorOperacion {
   return {
     pedidos: () => leer('pedidos_lista'),
+    pedidosDesglose: () => leer('pedidos_desglose'),
     pedido: (id) => leer('pedido_detalle', { p_pedido: id }),
     catalogoPedido: (c) => leer('pedido_catalogo', { p_cliente_id: c }),
     notaFuente: (id) => leer('nota_fuente', { p_nota: id }),

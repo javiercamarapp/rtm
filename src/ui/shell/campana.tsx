@@ -24,6 +24,7 @@ export function Campana({ noLeidas, cargar, marcar, marcarTodas }: Props) {
   const [error, setError] = useState(false);
   const [ocupado, empezar] = useTransition();
   const caja = useRef<HTMLDivElement>(null);
+  const boton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => setCuenta(noLeidas), [noLeidas]);
 
@@ -47,7 +48,7 @@ export function Campana({ noLeidas, cargar, marcar, marcarTodas }: Props) {
   useEffect(() => {
     if (!abierta) return;
     const fuera = (e: MouseEvent) => { if (caja.current && !caja.current.contains(e.target as Node)) setAbierta(false); };
-    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbierta(false); };
+    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') { setAbierta(false); boton.current?.focus(); } };
     document.addEventListener('mousedown', fuera);
     document.addEventListener('keydown', tecla);
     return () => { document.removeEventListener('mousedown', fuera); document.removeEventListener('keydown', tecla); };
@@ -55,7 +56,7 @@ export function Campana({ noLeidas, cargar, marcar, marcarTodas }: Props) {
 
   return (
     <div className="rtm-campana" ref={caja}>
-      <button type="button" className="rtm-icono-boton rtm-campana-boton" aria-label={cuenta > 0 ? `Avisos, ${cuenta} sin leer` : 'Avisos, ninguno sin leer'} aria-expanded={abierta} aria-haspopup="dialog" onClick={() => setAbierta((v) => !v)} data-testid="campana">
+      <button ref={boton} type="button" className="rtm-icono-boton rtm-campana-boton" aria-label={cuenta > 0 ? `Avisos, ${cuenta} sin leer` : 'Avisos, ninguno sin leer'} aria-expanded={abierta} aria-haspopup="dialog" onClick={() => setAbierta((v) => !v)} data-testid="campana">
         <IconoAviso />
         {cuenta > 0 && <span className="rtm-campana-cuenta" data-testid="campana-cuenta">{cuenta > 99 ? '99+' : cuenta}</span>}
       </button>

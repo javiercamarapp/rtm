@@ -1,0 +1,8 @@
+/* Presentacion en MAYUSCULAS de marcas, modelos y sabores (decision del dueno, 14-nov). Solo presentacion: el texto del DOM no cambia, asi que la busqueda,
+   los selectores y las pruebas siguen viendo el nombre canonico. Para texto que sale de componentes compartidos; el texto de PDF, CSV y bot pasa por src/dominio/formato/nombres.ts. */
+.rtm-may,
+.rtm-may-modelo,
+.rtm-may-sabor,
+.rtm-may-marca {
+  text-transform: uppercase;
+}

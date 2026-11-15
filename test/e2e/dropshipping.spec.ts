@@ -81,7 +81,7 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
   await page.getByTestId('ds-elegir-cliente').selectOption({ label: CLIENTE });
   await page.getByTestId('ds-elegir').click();
   await page.waitForURL(/cliente=\d+/);
-  await page.getByTestId('ds-modelo').selectOption({ label: `${MARCA} · ${MODELO}` });
+  await page.getByTestId('ds-modelo').selectOption({ label: `${MARCA} · ${MODELO}`.toUpperCase() });
   await page.getByTestId('ds-pegado').fill('Fresa 40\nMango 35\nUva 25');
   await page.getByTestId('ds-agregar-pegado').click();
   await expect(page.getByTestId('ds-renglones').locator('li')).toHaveCount(3);
@@ -216,7 +216,7 @@ test('Pedidos menudeo Angelo: solo Angelo los mete y los paga, Javier los superv
   await page.getByTestId('ds-tipo').selectOption('socio_a_costo');
   await expect(page.getByTestId('ds-socio')).toHaveText('Angelo');
   await page.getByTestId('ds-fecha-compromiso').fill(mas3);
-  await page.getByTestId('ds-modelo').selectOption({ label: `${MARCA} · ${MODELO}` });
+  await page.getByTestId('ds-modelo').selectOption({ label: `${MARCA} · ${MODELO}`.toUpperCase() });
   await page.getByTestId('ds-pegado').fill('Fresa 30');
   await page.getByTestId('ds-agregar-pegado').click();
   await expect(page.getByTestId('prev-margen')).toContainText('$0.00');
@@ -238,7 +238,7 @@ test('Pedidos menudeo Angelo: solo Angelo los mete y los paga, Javier los superv
   await page.getByTestId('ds-elegir-cliente').selectOption({ label: CLIENTE });
   await page.getByTestId('ds-elegir').click();
   await page.waitForURL(/cliente=\d+/);
-  await page.getByTestId('ds-modelo').selectOption({ label: `${MARCA} · ${MODELO}` });
+  await page.getByTestId('ds-modelo').selectOption({ label: `${MARCA} · ${MODELO}`.toUpperCase() });
   await page.getByTestId('ds-pegado').fill('Mango 10');
   await page.getByTestId('ds-agregar-pegado').click();
   await page.getByTestId('ds-credito').check();

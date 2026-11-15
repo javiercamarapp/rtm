@@ -1,5 +1,6 @@
 'use client';
 
+import { marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import { useMemo, useState } from 'react';
 import type { CatalogosApertura, CategoriaApertura } from '@/dominio/apertura/tipos';
 import { centavosDeTexto, useAccion } from '../operacion/usar-accion';
@@ -82,10 +83,10 @@ export function FormularioPartida({ sesion, categoria, catalogos }: { sesion: nu
       {esInventario ? (
         <>
           <label className="rtm-etiqueta-campo">Modelo
-            <select className="rtm-campo" value={modelo} onChange={(e) => setModelo(e.target.value)} data-testid="campo-modelo">{catalogos.modelos.map((m) => <option key={m.modelo_id} value={m.modelo_id}>{m.marca} {m.modelo}</option>)}</select>
+            <select className="rtm-campo" value={modelo} onChange={(e) => setModelo(e.target.value)} data-testid="campo-modelo">{catalogos.modelos.map((m) => <option key={m.modelo_id} value={m.modelo_id}>{marcaMayus(m.marca)} {nombreVape(m.modelo)}</option>)}</select>
           </label>
           <label className="rtm-etiqueta-campo">Sabor
-            <select className="rtm-campo" value={skuElegido} onChange={(e) => setSku(e.target.value)} data-testid="campo-sabor">{sabores.map((s) => <option key={s.sku_id} value={s.sku_id}>{s.sabor}</option>)}</select>
+            <select className="rtm-campo" value={skuElegido} onChange={(e) => setSku(e.target.value)} data-testid="campo-sabor">{sabores.map((s) => <option key={s.sku_id} value={s.sku_id}>{saborMayus(s.sabor)}</option>)}</select>
           </label>
           <label className="rtm-etiqueta-campo">Piezas contadas
             <input className="rtm-campo" inputMode="numeric" value={piezas} onChange={(e) => setPiezas(e.target.value)} data-testid="campo-piezas" />

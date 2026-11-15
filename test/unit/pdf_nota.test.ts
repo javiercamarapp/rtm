@@ -47,7 +47,7 @@ async function textoDe(bytes: Uint8Array): Promise<string> {
 describe('texto de WhatsApp (G1)', () => {
   it('es identico al formato del documento del dueno', () => {
     expect(textoNota(villa().cliente)).toBe(
-      'Nota Cliente Ilustrativo\nWaka Jupiter 50K 28pz x $250 = 7,000\nWaka DM 15K 24pz x $185 = 4,440\nFasta Kit 40K 10pz x $185 = 1,850\nEnvío $300\n\ntotal a saldar 13,590.00',
+      'Nota Cliente Ilustrativo\nWAKA JUPITER 50K 28pz x $250 = 7,000\nWAKA DM 15K 24pz x $185 = 4,440\nFASTA KIT 40K 10pz x $185 = 1,850\nEnvío $300\n\ntotal a saldar 13,590.00',
     );
   });
   it('sin envio no hay renglon de envio; con descuento lo escribe', () => {
@@ -88,7 +88,7 @@ describe('PDF de la nota para el cliente (G11)', () => {
     const bytes = await pdfNotaCliente({ ...base, cliente: { ...base.cliente, grupos: muchos } });
     const t = await textoDe(bytes);
     expect(t).toMatch(/Página 1 de [2-9]/);
-    expect(t).toContain('Modelo de prueba 70');
+    expect(t).toContain('MODELO DE PRUEBA 70');
   });
 });
 

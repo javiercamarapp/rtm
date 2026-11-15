@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { CostoHistorico } from '@/aplicacion/catalogo/alta';
 import { altaDeSocio, lectorDeSocio } from '@/composicion/catalogo';
 import { fechaNeg } from '@/dominio/calendario';
-import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, marcaMayus, nombreVape } from '@/dominio/formato';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
 import { Aviso } from '@/ui/componentes/controles';
@@ -33,7 +33,7 @@ export default async function PaginaCostosCatalogo({ searchParams }: { searchPar
 
   const paraForm = modelos.map((m) => ({
     id: m.id,
-    nombre: `${m.marca} ${m.nombre}`,
+    nombre: `${marcaMayus(m.marca)} ${nombreVape(m.nombre)}`,
     vigentes: Object.fromEntries(m.costos.filter((c) => c.esLista).map((c) => [c.proveedor, { cent: c.costoCent.toString(), desde: c.desde }])),
   }));
   const costo = (m: (typeof modelos)[number], p: 'Isaac' | 'Karen') => m.costos.find((c) => c.proveedor === p);
@@ -57,7 +57,7 @@ export default async function PaginaCostosCatalogo({ searchParams }: { searchPar
           filas={modelos}
           vacio={{ titulo: 'Sin modelos', texto: 'Primero se carga el catálogo.', accion: <Link className="rtm-boton" href="/catalogo">Ir al catálogo</Link> }}
           columnas={[
-            { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (m) => `${m.marca} ${m.nombre}` },
+            { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (m) => `${marcaMayus(m.marca)} ${nombreVape(m.nombre)}` },
             { id: 'i', titulo: 'Isaac', numerica: true, prioridadMovil: 'normal', celda: (m) => { const c = costo(m, 'Isaac'); return c ? <>{formatearMoneda(c.costoCent)}<span className="rtm-celda-sub">desde {etiquetaFecha(c.desde)}{c.supuesto ? ' · supuesto' : ''}</span></> : <SinDato />; } },
             { id: 'k', titulo: 'Karen', numerica: true, prioridadMovil: 'normal', celda: (m) => { const c = costo(m, 'Karen'); return c ? <>{formatearMoneda(c.costoCent)}<span className="rtm-celda-sub">desde {etiquetaFecha(c.desde)}{c.supuesto ? ' · supuesto' : ''}</span></> : <SinDato />; } },
             { id: 'a', titulo: 'Acción', celda: (m) => <Link href={`/catalogo/costos?modelo=${m.id}&p=${proveedor}#cambiar`}>Cambiar o ver historial</Link> },
@@ -71,7 +71,7 @@ export default async function PaginaCostosCatalogo({ searchParams }: { searchPar
       </Tarjeta>
 
       {elegido && (
-        <Tarjeta plana titulo={`Historial de costos: ${elegido.marca} ${elegido.nombre}`}>
+        <Tarjeta plana titulo={`Historial de costos: ${marcaMayus(elegido.marca)} ${nombreVape(elegido.nombre)}`}>
           {historial === null ? (
             <div data-testid="historial-pendiente">
               <Aviso tono="atencion" titulo="Historial no disponible todavía">La base aún no tiene la función que lista el historial de costos (ver docs/pendiente-sql-alta.md). Los costos vigentes de arriba sí son correctos.</Aviso>

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { lectorDeSocio } from '@/composicion/catalogo';
 import { fechaNeg } from '@/dominio/calendario';
-import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, marcaMayus, nombreVape } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
@@ -24,7 +24,7 @@ export default async function PaginaPreciosCliente({ params, searchParams }: { p
   const vigentes = new Map(f.tabulador.map((t) => [t.modeloId, t]));
   const paraForm = modelos.map((m) => {
     const t = vigentes.get(m.id);
-    return { id: m.id, nombre: `${m.marca} ${m.nombre}`, actual: t ? { cent: t.precioCent.toString(), desde: t.desde } : null };
+    return { id: m.id, nombre: `${marcaMayus(m.marca)} ${nombreVape(m.nombre)}`, actual: t ? { cent: t.precioCent.toString(), desde: t.desde } : null };
   });
   const elegido = Number(sp.modelo);
 
@@ -47,7 +47,7 @@ export default async function PaginaPreciosCliente({ params, searchParams }: { p
           filas={f.tabulador}
           vacio={{ titulo: 'Sin precios todavía', texto: 'Este cliente aún no tiene precio en ningún modelo. Usa el formulario de abajo para fijar el primero.' }}
           columnas={[
-            { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (t) => t.modelo },
+            { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (t) => nombreVape(t.modelo) },
             { id: 'p', titulo: 'Precio', numerica: true, prioridadMovil: 'principal', celda: (t) => <CifraComprobada texto={formatearMoneda(t.precioCent)} cifra={`margen:${f.id}:${t.modeloId}`} comprobacion="cuadra" /> },
             { id: 'mi', titulo: 'Margen vs Isaac', numerica: true, secundaria: true, celda: (t) => { const m = t.margenes.find((x) => x.proveedor === 'Isaac'); return m ? formatearMoneda(m.margenCent) : <SinDato />; } },
             { id: 'd', titulo: 'Vale desde', secundaria: true, celda: (t) => etiquetaFecha(t.desde) },
@@ -70,7 +70,7 @@ export default async function PaginaPreciosCliente({ params, searchParams }: { p
           filas={f.historial}
           vacio={{ titulo: 'Sin historial', texto: 'Aún no se ha registrado ningún precio.' }}
           columnas={[
-            { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (h) => h.modelo },
+            { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (h) => nombreVape(h.modelo) },
             { id: 'p', titulo: 'Precio', numerica: true, prioridadMovil: 'principal', celda: (h) => formatearMoneda(h.precioCent) },
             { id: 'd', titulo: 'Desde', celda: (h) => etiquetaFecha(h.desde) },
             { id: 'h', titulo: 'Hasta', secundaria: true, celda: (h) => (h.hasta ? etiquetaFecha(h.hasta) : '—') },

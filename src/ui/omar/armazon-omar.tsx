@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
-import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
 
 export const SECCIONES_OMAR = [
@@ -48,7 +47,6 @@ export function ArmazonOmar({ children, accionSalir }: Props) {
           </ul>
         </nav>
         <div className="omar-barra-acciones">
-          <Apariencia />
           <BotonTema />
           <form action={accionSalir}>
             <button type="submit" className="rtm-boton rtm-boton-chico" data-testid="cerrar-sesion">Cerrar sesión</button>

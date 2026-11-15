@@ -19,6 +19,7 @@ vi.mock('@/composicion/catalogo', () => ({ lectorDeSocio: async () => ({ cliente
 vi.mock('@/composicion/operacion', () => ({
   operacionDeSocio: async () => ({
     pedidos: async () => [pedido(1, 'Cliente Alfa', 'Angelo'), pedido(2, 'Cliente Beta', 'Javier')],
+    pedidosDesglose: async () => [],
     contextoPagos: async () => ({ cuentas: [], clientes: [] }),
     cuentasPorCobrar: async () => ({
       hoy: '2026-11-10', filas: [fila(1, 'Cliente Alfa', 'Angelo'), fila(2, 'Cliente Beta', 'Javier')], apertura: [], total_cent: 200n, vencido_cent: 200n,

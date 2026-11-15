@@ -66,7 +66,7 @@ function Pago({ pedidoId, folio, clienteId, cuentas }: Pick<Props, 'pedidoId' | 
   );
 }
 
-function CorreccionNota({ pedidoId, folio, lineasNota, variante }: Pick<Props, 'pedidoId' | 'folio' | 'lineasNota'> & { variante?: 'boton' | 'item' }) {
+function CorreccionNota({ pedidoId, folio, lineasNota, variante }: Pick<Props, 'pedidoId' | 'folio' | 'lineasNota'> & { variante?: 'boton' | 'terciario' }) {
   const { correr, ocupado, error, limpiarError } = useAccion();
   const [abierto, setAbierto] = useState(false);
   const [motivo, setMotivo] = useState('');
@@ -94,7 +94,7 @@ function CorreccionNota({ pedidoId, folio, lineasNota, variante }: Pick<Props, '
   };
   return (
     <>
-      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : 'rtm-boton'} onClick={() => { limpiarError(); setAbierto(true); }} data-testid="corregir-nota">Emitir corrección</button>
+      <button type="button" className={variante === 'terciario' ? 'rtm-boton rtm-boton-terciario' : 'rtm-boton'} onClick={() => { limpiarError(); setAbierto(true); }} data-testid="corregir-nota" title="Emitir una corrección de la nota">Corregir nota</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo={`Corregir la nota de ${folio}`} confirmar="Emitir corrección" ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           <p>La nota emitida no se edita: la corrección es un documento nuevo enlazado (P-xxxx-C1). Deja en blanco lo que no cambia.</p>
@@ -116,7 +116,7 @@ function CorreccionNota({ pedidoId, folio, lineasNota, variante }: Pick<Props, '
   );
 }
 
-function Plazo({ pedidoId, variante }: { pedidoId: number; variante?: 'boton' | 'item' }) {
+function Plazo({ pedidoId, variante }: { pedidoId: number; variante?: 'boton' | 'terciario' }) {
   const { correr, ocupado, error, limpiarError } = useAccion();
   const [abierto, setAbierto] = useState(false);
   const [dias, setDias] = useState('');
@@ -129,7 +129,7 @@ function Plazo({ pedidoId, variante }: { pedidoId: number; variante?: 'boton' | 
   };
   return (
     <>
-      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : 'rtm-boton'} onClick={() => { limpiarError(); setAbierto(true); }}>Acordar plazo</button>
+      <button type="button" className={variante === 'terciario' ? 'rtm-boton rtm-boton-terciario' : 'rtm-boton'} onClick={() => { limpiarError(); setAbierto(true); }} title="Acordar plazo de pago">Plazo</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo="Acordar plazo de pago" confirmar="Guardar plazo" ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           <label className="rtm-etiqueta-campo">Plazo en días desde el envío<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={dias} onChange={(e) => setDias(e.target.value)} aria-label="Plazo en días" /></label>
@@ -145,7 +145,7 @@ export function AccionesPedido(p: Props) {
   const confirmado = p.estado === 'confirmado';
   const enviado = p.estado === 'enviado';
   const cancelar = (borrador || confirmado) && (
-    <DialogoSimple variante="item" boton="Cancelar pedido" titulo={`Cancelar ${p.folio}`} accion="cancelar_pedido" args={{ p_pedido: p.pedidoId }} motivo="p_motivo" texto={<p>Libera las reservas. Todavía no salió nada, así que no hay nada que revertir.</p>} />
+    <DialogoSimple variante="terciario" boton="Cancelar" descripcion="Cancelar el pedido" titulo={`Cancelar ${p.folio}`} accion="cancelar_pedido" args={{ p_pedido: p.pedidoId }} motivo="p_motivo" texto={<p>Libera las reservas. Todavía no salió nada, así que no hay nada que revertir.</p>} />
   );
   const primarias = (
     <>
@@ -159,14 +159,14 @@ export function AccionesPedido(p: Props) {
   const hayMenu = borrador || confirmado || enviado || Boolean(p.fichaDs);
   const secundarias = hayMenu ? (
     <>
-      {enviado && <CorreccionNota variante="item" pedidoId={p.pedidoId} folio={p.folio} lineasNota={p.lineasNota} />}
-      {enviado && <Plazo variante="item" pedidoId={p.pedidoId} />}
+      {enviado && <CorreccionNota variante="terciario" pedidoId={p.pedidoId} folio={p.folio} lineasNota={p.lineasNota} />}
+      {enviado && <Plazo variante="terciario" pedidoId={p.pedidoId} />}
       {cancelar}
       {enviado && (
-        <DialogoSimple variante="item" boton="Anular pedido" titulo={`Anular ${p.folio}`} accion="anular_pedido" args={{ p_pedido: p.pedidoId }} motivo="p_motivo" testid="anular-pedido"
+        <DialogoSimple variante="terciario" boton="Anular" descripcion="Anular el pedido" titulo={`Anular ${p.folio}`} accion="anular_pedido" args={{ p_pedido: p.pedidoId }} motivo="p_motivo" testid="anular-pedido"
           texto={<p>Anular es un contramovimiento: regresan las piezas, se revierte la renta y los pagos aplicados quedan como saldo a favor. La nota original no se toca.</p>} />
       )}
-      {p.fichaDs && <Link className="rtm-boton-item" href={p.fichaDs} data-testid="ir-ficha-ds" title="Ficha de dropshipping de este pedido">Ficha de dropshipping</Link>}
+      {p.fichaDs && <Link className="rtm-boton rtm-boton-terciario" href={p.fichaDs} data-testid="ir-ficha-ds" title="Ficha de dropshipping de este pedido" aria-label="Ficha de dropshipping de este pedido">Ficha DS</Link>}
     </>
   ) : undefined;
   return (

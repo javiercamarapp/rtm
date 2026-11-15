@@ -1,7 +1,7 @@
 // Modelo de vista de "Explicar este numero": convierte la Explicacion que entrega la base (o el armador de Omar/capital/cuadre) en secciones ya formateadas.
 // Aqui solo se ordena, se nombra y se da formato: NINGUN importe se calcula en TypeScript. Una seccion sin datos no existe (sin secciones vacias).
 import type { Explicacion } from '@/dominio/catalogo/tipos';
-import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearMoneda, formatearPiezas, saborMayus } from '@/dominio/formato';
 import { enlaceDePartida, fichaDe, nombreDeCuenta, periodoDe, type Enlace, type Ficha } from './fichas';
 import { terminosDe, type Termino } from './glosario';
 
@@ -82,7 +82,7 @@ export function armarVista(d: Explicacion, modo: Modo = 'socio'): Vista {
   const detalle: FilaDetalle[] = [
     ...d.movimientos.map((m, i): FilaDetalle => ({
       id: `m-${m.evento}-${i}`, folio: m.evento, fecha: m.hora, fechaTexto: etiquetaFechaHora(m.hora),
-      concepto: `${m.tipo.replaceAll('_', ' ')} · ${m.sabor} · ${m.ubicacion}`, monto: m.cantidad, montoTexto: formatearPiezas(m.cantidad), saldoTexto: formatearPiezas(m.saldo),
+      concepto: `${m.tipo.replaceAll('_', ' ')} · ${saborMayus(m.sabor)} · ${m.ubicacion}`, monto: m.cantidad, montoTexto: formatearPiezas(m.cantidad), saldoTexto: formatearPiezas(m.saldo),
       origen: m.autor ? `${m.autor} · ${m.canal}` : m.canal, nota: m.mensajeOrigen,
     })),
     ...d.renglones.filter((r) => r.hora !== null).map((r, i): FilaDetalle => ({
@@ -177,4 +177,26 @@ export function descripcionSerie(serie: readonly PuntoSerie[]): string {
   const a = serie[0];
   const z = serie[serie.length - 1];
   return a && z ? `De ${a.texto} (${a.etiqueta}) a ${z.texto} (${z.etiqueta}) en ${serie.length} puntos` : 'Sin puntos';
+}
+
+/** Formato compacto para etiquetas dentro de una grafica: "$154.8 mil", "$1.2 M". `centavos` en centavos; el exacto queda en tooltip y tabla. */
+export function compactoMxn(centavos: number, conSigno = false): string {
+  const pesos = Math.abs(centavos) / 100;
+  const cuerpo = pesos >= 1_000_000 ? `${(pesos / 1_000_000).toFixed(1)} M` : pesos >= 1_000 ? `${(pesos / 1_000).toFixed(1)} mil` : `${Math.round(pesos)}`;
+  const signo = centavos < 0 ? '\u2212' : conSigno && centavos > 0 ? '+' : '';
+  return `${signo}$${cuerpo}`;
+}
+
+const limpiar = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(Boolean);
+
+/** El nombre y la definicion corta son "casi iguales" si uno contiene al otro o comparten la mayoria de sus palabras. */
+export function nombresSimilares(a: string, b: string): boolean {
+  const x = limpiar(a);
+  const y = limpiar(b);
+  if (x.length === 0 || y.length === 0) return false;
+  const ja = x.join(' ');
+  const jb = y.join(' ');
+  if (ja.includes(jb) || jb.includes(ja)) return true;
+  const comunes = x.filter((w) => y.includes(w)).length;
+  return comunes / Math.min(x.length, y.length) >= 0.7;
 }
