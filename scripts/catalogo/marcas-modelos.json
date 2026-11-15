@@ -1,0 +1,21 @@
+{
+  "fecha": "2026-11-14",
+  "nota": "Mapa de atado modelo_id -> marca canonica de los 15 modelos con marca 'Sin marca' al 14-nov. Solo los de confianza 'exacto' los aplica atar-marcas.mjs; los 'probable' esperan la respuesta del dueno (docs/marcas-por-confirmar.md).",
+  "modelos": [
+    { "id": 145, "nombre": "Instabar 70K", "marca": "Instabar", "confianza": "exacto", "evidencia": "El nombre del modelo incluye la marca; el catalogo del proveedor lo lista como 'Instabar Be 70,000' con vendor Instabar." },
+    { "id": 146, "nombre": "Fifty Bar", "marca": "Fifty Bar", "confianza": "exacto", "evidencia": "El catalogo del proveedor lo lista como 'Fifty Bar 20,000' con vendor Fifty Bar (la marca se llama igual que el modelo)." },
+    { "id": 147, "nombre": "Snowwolf", "marca": "Snowwolf", "confianza": "exacto", "evidencia": "El catalogo del proveedor lo lista como 'Snowwolf 8,000' con vendor Snowwolf; dameunhit.app lo asigna a la marca Snowwolf." },
+    { "id": 138, "nombre": "X-Box 50k", "marca": "IPLAY", "confianza": "exacto", "evidencia": "X-Box es la linea de iPlay: el catalogo del proveedor trae 'iPlay X-Box Pro Max 50,000' con vendor IPlay y dameunhit.app lo agrupa en la categoria iPlay." },
+    { "id": 136, "nombre": "PA30000", "marca": "Waka", "confianza": "exacto", "evidencia": "PA#### es la clave de la linea Waka SoPro (resenas publicas de 'WAKA SoPro PA10000'); el catalogo del proveedor trae 'Waka Pro 30,000' con vendor WAKA." },
+    { "id": 128, "nombre": "Optimus", "marca": "Waka", "confianza": "probable", "evidencia": "Existe 'Waka Optimus 100,000' en el proveedor y en el catalogo (id 76); no se encontro otra marca con un modelo Optimus. Falta que el dueno confirme que 'Optimus' suelto es ese." },
+    { "id": 130, "nombre": "Burst", "marca": "Waka", "confianza": "probable", "evidencia": "Hay Waka Burst 36K, pero tambien IPLAY Burst 45K y Fasta Burst: 'Burst' solo es ambiguo." },
+    { "id": 131, "nombre": "Blade", "marca": "Waka", "confianza": "probable", "evidencia": "Waka Blade 33K existe (id 85); 'Blade' suelto no trae marca." },
+    { "id": 133, "nombre": "Smash Go", "marca": "Waka", "confianza": "probable", "evidencia": "Waka Smash es una linea publica de Waka (wakavaping.com); 'Smash Go' no aparece con ese nombre exacto en ningun catalogo." },
+    { "id": 134, "nombre": "Slim", "marca": "Waka", "confianza": "probable", "evidencia": "Waka Slim 12K existe (id 93); 'Slim' suelto no trae marca." },
+    { "id": 135, "nombre": "Icon", "marca": "Waka", "confianza": "probable", "evidencia": "Waka Icon 50K existe (id 77); 'Icon' suelto no trae marca." },
+    { "id": 137, "nombre": "Elite", "marca": "Waka", "confianza": "probable", "evidencia": "Waka Elite 40K existe (id 80); 'Elite' suelto no trae marca." },
+    { "id": 142, "nombre": "Go", "marca": "Waka", "confianza": "probable", "evidencia": "Waka Go 10K existe (id 95); 'Go' suelto no trae marca." },
+    { "id": 139, "nombre": "Box Pro 15", "marca": "IPLAY", "confianza": "probable", "evidencia": "Parece iPlay X-Box Pro 15K (existe 'IPLAY Box Pro 15K', id 98): posible duplicado." },
+    { "id": 140, "nombre": "Box Pro Max", "marca": "IPLAY", "confianza": "probable", "evidencia": "Parece iPlay X-Box Pro Max 50K (existe 'IPLAY Box Pro Max 50K', id 82): posible duplicado." }
+  ]
+}
