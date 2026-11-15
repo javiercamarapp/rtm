@@ -26,6 +26,52 @@ Cobertura al 14-nov: 64 de 87 modelos con foto (49 exactas, 15 probables por con
 - Waka Duo 25K (Waka, id 89, probable): `waka-duo.webp` - origen https://dameunhit.app/wp-content/uploads/2025/11/WAKA-DUO-ALFA-01-copia.png (pagina https://dameunhit.app/product/waka-duo/)
 - Waka GO Mundialista 10K (Waka, id 96, exacto): `waka-go-mundialista.webp` - origen https://dameunhit.app/wp-content/uploads/2026/08/WAKA-GO-MUNDIALISTA-ALFA-03-copia.png (pagina https://dameunhit.app/product/waka-go-mundialista/)
 
+- Adjust 40K (Adjust, id 109, probable): `adjust-40k.webp` - origen https://cdn11.bigcommerce.com/s-nlylv/images/stencil/2560w/products/2581/9229/AdjustMyCool40K_02-800x800__33099.1726867720.jpg?c=2 (pagina https://perfectvape.com/adjust-mycool-40k/; descargada el 2026-11-15)
+
+- Dojo 40K (Dojo, id 110, probable): `dojo-40k.webp` - origen https://cdn.shopify.com/s/files/1/0755/1028/4521/files/sphere-s-02-1.webp (pagina https://www.dojovape.com/products/sphere-s; descargada el 2026-11-15)
+
+- Elfbar 40K (Elfbar, id 150, probable): `elfbar-40k.webp` - origen https://uvapeshop.com/cdn/shop/files/elf-bar-mixart-40k-disposable-vape-device-blue-razz-ice-20ml_512x512.jpg?v=1765474516 (pagina https://uvapeshop.com/collections/elf-bar-mixart-40k-disposables; descargada el 2026-11-15)
+
+- Elux 50K (Elux, id 106, probable): `elux-50k.webp` - origen https://cdn.shopify.com/s/files/1/0127/1821/1131/files/EluxPro50KGallery.png?v=1771609567 (pagina https://vapordna.com/products/elux-cyberover-pro-50k-50000-puffs-disposable-vape; descargada el 2026-11-15)
+
+- Extre Bar 40K (Extre Bar, id 115, exacto): `extre-bar-40k.webp` - origen https://cdn11.bigcommerce.com/s-2v1qqoz92o/images/stencil/1280x1280/products/1034/2142/EXTREBARDISPOSABLEVAPE-40000PUFFS__73142.1784597344.png?c=1 (pagina https://flyingvape.com/products/extre-bar-disposable-vape-40000-puffs; descargada el 2026-11-15)
+
+- Fasta Burst 37K (Fasta, id 102, probable): `fasta-burst-37k.webp` - origen https://cdn.shopify.com/s/files/1/0127/1821/1131/files/FastaBurrstCreamyPerfectPeach.png?v=1776703825 (pagina https://vapordna.com/products/fasta-burrst-v2-37k-37000-puffs-disposable-vape-25ml; descargada el 2026-11-15)
+
+- Fasta Kit 40K (Fasta, id 103, exacto): `fasta-kit-40k.webp` - origen https://image.vapesourcing.com/imagecache/800/images/202601/fasta-40k-kit.jpg (pagina https://vapesourcing.com/fasta-40k-kit.html; descargada el 2026-11-15)
+
+- Funky Republic Fi 3K (Funky Republic, id 118, probable): `funky-republic-fi-3k.webp` - origen https://cdn11.bigcommerce.com/s-4yd3whobzs/images/stencil/1280x1280/products/634/385/Fi3000_Tropical-Delight_600x600_9032ed8d-1d93-427a-9838-212cf6fe5fe6__77169.1786998458.png?c=1 (pagina https://ebcreate.store/products/funky-republic-fi3000-disposable-vape; descargada el 2026-11-15)
+
+- iPlay 15K (IPLAY, id 161, probable): `iplay-15k.webp` - origen https://cdn.shopify.com/s/files/1/0364/8277/7219/files/IPLAY-X-Box-Pro-Disposable-10_000Puffs-WatermelonIce.png?v=1740894499 (pagina https://ajvmxonline.com/products/iplay-x-box-pro-disposable-10-000-puffs-iplay; descargada el 2026-11-15)
+
+- Lost Mary 35K (Lost Mary, id 105, probable): `lost-mary-35k.webp` - origen https://cdn.shopify.com/s/files/1/0127/1821/1131/files/LostMaryMT35KGalleryNew.png?v=1764199245 (pagina https://vapordna.com/products/lost-mary-mt35k-turbo-35000-puffs-disposable-vape; descargada el 2026-11-15)
+
+- Maskking 100K (Maskking, id 159, probable): `maskking-100k.webp` - origen https://cdn.shopify.com/s/files/1/0127/1821/1131/files/MaskkingExtre100KGallery.png?v=1776726668 (pagina https://vapordna.com/products/maskking-extre-100k-disposable; descargada el 2026-11-15)
+
+- Maskking Fexo 45K (Maskking, id 86, exacto): `maskking-fexo-45k.webp` - origen https://tsvapeb2b.com/wp-content/uploads/2026/05/c337aa40ea0f55e497bb5a17a5321f51-819x1024.png (pagina https://tsvapeb2b.com/product/maskking-fexo-45000-puffs-disposable-vape-360-infinite-display-dual-mesh-coil-wholesale-vape/; descargada el 2026-11-15)
+
+- Maskking Ice X 40K (Maskking, id 88, exacto): `maskking-ice-x-40k.webp` - origen https://cdn.shopify.com/s/files/1/0574/1228/8610/files/maskking-icex-40000-puffs-disposable-vape-wholesale-3786150.jpg?v=1767088938 (pagina https://vapzvape.com/products/maskking-icex-40000-puffs-disposable-vape-wholesale; descargada el 2026-11-15)
+
+- Nexa 35K (Nexa, id 112, probable): `nexa-35k.webp` - origen https://cdn.shopify.com/s/files/1/0127/1821/1131/files/NexaPix35KGallery_90b74636-3605-436e-a21b-675f61b1a21a.png?v=1758151690 (pagina https://vapordna.com/products/nexa-pix-35k-35000-puffs-disposable-vape-16ml; descargada el 2026-11-15)
+
+- Nexa 50K (Nexa, id 104, probable): `nexa-50k.webp` - origen https://cdn.shopify.com/s/files/1/0127/1821/1131/files/NexaUltraII50kGallery.png?v=1762387595 (pagina https://vapordna.com/products/nexa-ultra-ii-50k-50000-puff-disposable-vape-20ml; descargada el 2026-11-15)
+
+- Nexa Ultra 50K (Nexa, id 157, probable): `nexa-ultra-50k.webp` - origen https://cdn.shopify.com/s/files/1/0127/1821/1131/files/NexaUltraII50kGallery.png?v=1762387595 (pagina https://vapordna.com/products/nexa-ultra-ii-50k-50000-puff-disposable-vape-20ml; descargada el 2026-11-15)
+
+- Rifbar Pro 40K (Rifbar, id 108, probable): `rifbar-pro-40k.webp` - origen https://cdn.shopify.com/s/files/1/0127/1821/1131/files/RifBarMixPro40KGallery.png?v=1754953872 (pagina https://vapordna.com/products/rifbar-mixpro-40k-puffs-disposable-vape; descargada el 2026-11-15)
+
+- Optimus (Waka, id 128, probable): `optimus.webp` - origen https://cdn.shopify.com/s/files/1/0364/8277/7219/files/WAKA-Waka-Optimus-100k-Disposable-10_000Puffs-Watermelon.png?v=1779199516 (pagina https://ajvmxonline.com/products/waka-optimus-100k-disposable-100-000-puffs-waka; descargada el 2026-11-15)
+
+- Uno Mas X (Uno Mas, id 117, probable): `uno-mas-x.webp` - origen https://cdn.shopify.com/s/files/1/0613/8472/0630/files/Apple-peach-strawberry-UNO-MAS-X-Stick-Front.png?v=1743985979 (pagina https://giantvapes.com/products/uno-mas-x-10000-disposable; descargada el 2026-11-15)
+
+- Vhill 3K (Vhill, id 162, probable): `vhill-3k.webp` - origen https://cdn.shopify.com/s/files/1/0581/2699/1521/files/0001-2444791225468933782.jpg?v=1744686065 (pagina https://ricovapestore.com/en/products/vhill-v3000; descargada el 2026-11-15)
+
+- Waka 100 (Waka, id 144, probable): `waka-100.webp` - origen https://cdn.shopify.com/s/files/1/0364/8277/7219/files/WAKA-Waka-Optimus-100k-Disposable-10_000Puffs-Blueberry.png?v=1779199511 (pagina https://ajvmxonline.com/products/waka-optimus-100k-disposable-100-000-puffs-waka; descargada el 2026-11-15)
+
+- Waka DM 15K (Waka, id 90, probable): `waka-dm-15k.webp` - origen https://cdn.shopify.com/s/files/1/0081/8855/9413/files/PortadaBatonWEB-2024-07-12T170515.410_1.png?v=1720829273 (pagina https://mrvapes.mx/products/waka-sopro-dm41i-desechable-15000-hits; descargada el 2026-11-15)
+
+- Waka Titan 30K (Waka, id 154, probable): `waka-titan-30k.webp` - origen https://cdn.shopify.com/s/files/1/0081/8855/9413/files/PortadaBatonWEB-2025-02-12T131546.818_1.png?v=1739391749 (pagina https://mrvapes.mx/products/waka-titan-desechable-30-000-hits; descargada el 2026-11-15)
+
 ## Fotos de la tienda del proveedor (public/proveedores/karen)
 
 Origen: catalogo publico de la tienda del proveedor, descargado una sola vez (direccion privada, no se publica aqui).

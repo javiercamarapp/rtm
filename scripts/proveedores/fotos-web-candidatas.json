@@ -1,211 +1,211 @@
 {
- "candidatas": [
-  {
-   "id": 109,
-   "marca": "Adjust",
-   "nombre": "Adjust 40K",
-   "imagen": "https://cdn11.bigcommerce.com/s-nlylv/images/stencil/2560w/products/2581/9229/AdjustMyCool40K_02-800x800__33099.1726867720.jpg?c=2",
-   "pagina": "https://perfectvape.com/adjust-mycool-40k/",
-   "confianza": "dudoso",
-   "nota": "Adjust tiene varias lineas 40K (MyCool, MySour, MySweet, MyFlavor, MyRusher); se usa foto de MyCool 40K (800x800, perfectvape.com). Confirmar linea."
-  },
-  {
-   "id": 110,
-   "marca": "Dojo",
-   "nombre": "Dojo 40K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0755/1028/4521/files/sphere-s-02-1.webp",
-   "pagina": "https://www.dojovape.com/products/sphere-s",
-   "confianza": "dudoso",
-   "nota": "Dojo tiene Sphere S 40K y Sphere X 40K; imagen del sitio oficial de Sphere S 40K (1040x980, archivo .webp que sirve JPEG). No verificada visualmente que sea solo el dispositivo."
-  },
-  {
-   "id": 150,
-   "marca": "Elfbar",
-   "nombre": "Elfbar 40K",
-   "imagen": "https://uvapeshop.com/cdn/shop/files/elf-bar-mixart-40k-disposable-vape-device-blue-razz-ice-20ml_512x512.jpg?v=1765474516",
-   "pagina": "https://uvapeshop.com/collections/elf-bar-mixart-40k-disposables",
-   "confianza": "dudoso",
-   "nota": "Elf Bar tiene MixArt 40K, Trio 40K, Ice King 40K y BC Pro 40K; se propone MixArt 40K sabor Blue Razz Ice (512x512, uvapeshop.com)."
-  },
-  {
-   "id": 106,
-   "marca": "Elux",
-   "nombre": "Elux 50K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/EluxPro50KGallery.png?v=1771609567",
-   "pagina": "https://vapordna.com/products/elux-cyberover-pro-50k-50000-puffs-disposable-vape",
-   "confianza": "probable",
-   "nota": "Elux lista PRO 50K (Cyberover Pro) y ASTRA 50K (50000 puffs); se usa Pro 50K, primera en el sitio oficial eluxtech.com. 600x600, vapordna.com."
-  },
-  {
-   "id": 115,
-   "marca": "Extre Bar",
-   "nombre": "Extre Bar 40K",
-   "imagen": "https://cdn11.bigcommerce.com/s-2v1qqoz92o/images/stencil/1280x1280/products/1034/2142/EXTREBARDISPOSABLEVAPE-40000PUFFS__73142.1784597344.png?c=1",
-   "pagina": "https://flyingvape.com/products/extre-bar-disposable-vape-40000-puffs",
-   "confianza": "exacto",
-   "nota": "Extre Bar 40000 puffs, foto principal del producto (1080x1080 real, flyingvape.com)."
-  },
-  {
-   "id": 102,
-   "marca": "Fasta",
-   "nombre": "Fasta Burst 37K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/FastaBurrstCreamyPerfectPeach.png?v=1776703825",
-   "pagina": "https://vapordna.com/products/fasta-burrst-v2-37k-37000-puffs-disposable-vape-25ml",
-   "confianza": "probable",
-   "nota": "Fasta Burrst V2 37K (el nombre oficial es Burrst), sabor Creamy Perfect Peach, 600x600 vapordna.com. Primera imagen de la pagina (Untitled_design_21.png, 2000x2000) no se uso por no poder confirmar su contenido."
-  },
-  {
-   "id": 103,
-   "marca": "Fasta",
-   "nombre": "Fasta Kit 40K",
-   "imagen": "https://image.vapesourcing.com/imagecache/800/images/202601/fasta-40k-kit.jpg",
-   "pagina": "https://vapesourcing.com/fasta-40k-kit.html",
-   "confianza": "exacto",
-   "nota": "Fasta 40K Disposable Vape Kit, 800x800, vapesourcing.com."
-  },
-  {
-   "id": 118,
-   "marca": "Funky Republic",
-   "nombre": "Funky Republic Fi 3K",
-   "imagen": "https://cdn11.bigcommerce.com/s-4yd3whobzs/images/stencil/1280x1280/products/634/385/Fi3000_Tropical-Delight_600x600_9032ed8d-1d93-427a-9838-212cf6fe5fe6__77169.1786998458.png?c=1",
-   "pagina": "https://ebcreate.store/products/funky-republic-fi3000-disposable-vape",
-   "confianza": "probable",
-   "nota": "Funky Republic Fi3000 (3000 puffs), sabor Tropical Delight, fuente 600x600 (ebcreate.store). Imagenes del sitio oficial funkyrepublic.com son banners 1920x960 con texto."
-  },
-  {
-   "id": 161,
-   "marca": "IPLAY",
-   "nombre": "iPlay 15K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0364/8277/7219/files/IPLAY-X-Box-Pro-Disposable-10_000Puffs-WatermelonIce.png?v=1740894499",
-   "pagina": "https://ajvmxonline.com/products/iplay-x-box-pro-disposable-10-000-puffs-iplay",
-   "confianza": "probable",
-   "nota": "iPlay X-Box Pro 15,000 puffs, sabor Watermelon Ice, 1080x1080 (ajvmxonline.com). La linea exacta del catalogo 'iPlay 15K' no esta confirmada."
-  },
-  {
-   "id": 105,
-   "marca": "Lost Mary",
-   "nombre": "Lost Mary 35K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/LostMaryMT35KGalleryNew.png?v=1764199245",
-   "pagina": "https://vapordna.com/products/lost-mary-mt35k-turbo-35000-puffs-disposable-vape",
-   "confianza": "dudoso",
-   "nota": "Dos candidatos 35K: MT35K Turbo (usado, 600x600 vapordna.com; oficial lostmary.com/product/mt35000-turbo.html) y Ultrasonic 35K."
-  },
-  {
-   "id": 159,
-   "marca": "Maskking",
-   "nombre": "Maskking 100K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/MaskkingExtre100KGallery.png?v=1776726668",
-   "pagina": "https://vapordna.com/products/maskking-extre-100k-disposable",
-   "confianza": "probable",
-   "nota": "Unico Maskking de 100000 puffs encontrado: Extre 100K, 600x600 vapordna.com."
-  },
-  {
-   "id": 86,
-   "marca": "Maskking",
-   "nombre": "Maskking Fexo 45K",
-   "imagen": "https://tsvapeb2b.com/wp-content/uploads/2026/05/c337aa40ea0f55e497bb5a17a5321f51-819x1024.png",
-   "pagina": "https://tsvapeb2b.com/product/maskking-fexo-45000-puffs-disposable-vape-360-infinite-display-dual-mesh-coil-wholesale-vape/",
-   "confianza": "exacto",
-   "nota": "Maskking FEXO 45000, imagen og:image de la pagina del producto (819x1024, mayorista tsvapeb2b.com). Sitio oficial solo tiene banners 4000x2200."
-  },
-  {
-   "id": 88,
-   "marca": "Maskking",
-   "nombre": "Maskking Ice X 40K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0574/1228/8610/files/maskking-icex-40000-puffs-disposable-vape-wholesale-3786150.jpg?v=1767088938",
-   "pagina": "https://vapzvape.com/products/maskking-icex-40000-puffs-disposable-vape-wholesale",
-   "confianza": "exacto",
-   "nota": "Maskking ICEX 40000, primera imagen del producto (1200x1200, mayorista vapzvape.com)."
-  },
-  {
-   "id": 112,
-   "marca": "Nexa",
-   "nombre": "Nexa 35K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/NexaPix35KGallery_90b74636-3605-436e-a21b-675f61b1a21a.png?v=1758151690",
-   "pagina": "https://vapordna.com/products/nexa-pix-35k-35000-puffs-disposable-vape-16ml",
-   "confianza": "probable",
-   "nota": "Nexa Pix 35K, unico Nexa de 35000 puffs encontrado, 600x600 vapordna.com."
-  },
-  {
-   "id": 104,
-   "marca": "Nexa",
-   "nombre": "Nexa 50K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/NexaUltraII50kGallery.png?v=1762387595",
-   "pagina": "https://vapordna.com/products/nexa-ultra-ii-50k-50000-puff-disposable-vape-20ml",
-   "confianza": "dudoso",
-   "nota": "Nexa de 50K es la linea Ultra (Ultra / Ultra II / InvisaCloud); coincide con el modelo 157. Si ya existe foto para Nexa Ultra 50K, probablemente sean el mismo producto."
-  },
-  {
-   "id": 157,
-   "marca": "Nexa",
-   "nombre": "Nexa Ultra 50K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/NexaUltraII50kGallery.png?v=1762387595",
-   "pagina": "https://vapordna.com/products/nexa-ultra-ii-50k-50000-puff-disposable-vape-20ml",
-   "confianza": "probable",
-   "nota": "Nexa Ultra II 50K (version actualizada de Ultra 50K), 600x600 vapordna.com. No se hallo foto limpia de la primera Ultra 50K (elementvape.com/nexa-ultra solo muestra edicion InvisaCloud)."
-  },
-  {
-   "id": 108,
-   "marca": "Rifbar",
-   "nombre": "Rifbar Pro 40K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/RifBarMixPro40KGallery.png?v=1754953872",
-   "pagina": "https://vapordna.com/products/rifbar-mixpro-40k-puffs-disposable-vape",
-   "confianza": "probable",
-   "nota": "RifBar MixPro 40K (nombre exacto del catalogo seria 'Pro'; puede ser MixPro), 600x600 vapordna.com."
-  },
-  {
-   "id": 128,
-   "marca": "Waka",
-   "nombre": "Optimus",
-   "imagen": "https://cdn.shopify.com/s/files/1/0364/8277/7219/files/WAKA-Waka-Optimus-100k-Disposable-10_000Puffs-Watermelon.png?v=1779199516",
-   "pagina": "https://ajvmxonline.com/products/waka-optimus-100k-disposable-100-000-puffs-waka",
-   "confianza": "dudoso",
-   "nota": "Waka Optimus existe en 100K (usado, sabor Watermelon, 1080x1080 ajvmxonline.com) y 120K (ca.wakavaping.com/products/waka-optimus). Puffs del catalogo dudosos (80K o 100K); no se hallo version 80K."
-  },
-  {
-   "id": 117,
-   "marca": "Uno Mas",
-   "nombre": "Uno Mas X",
-   "imagen": "https://cdn.shopify.com/s/files/1/0613/8472/0630/files/Apple-peach-strawberry-UNO-MAS-X-Stick-Front.png?v=1743985979",
-   "pagina": "https://giantvapes.com/products/uno-mas-x-10000-disposable",
-   "confianza": "probable",
-   "nota": "UNO Mas X 10000 puffs, sabor Apple Peach Strawberry, 800x1025 giantvapes.com. Puffs no indicados en el catalogo."
-  },
-  {
-   "id": 162,
-   "marca": "Vhill",
-   "nombre": "Vhill 3K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0581/2699/1521/files/0001-2444791225468933782.jpg?v=1744686065",
-   "pagina": "https://ricovapestore.com/en/products/vhill-v3000",
-   "confianza": "probable",
-   "nota": "VHILL V3000 (3000 puffs), 1080x1350 jpg (ricovapestore.com, tienda MX). No verificado visualmente: podria incluir marca de la tienda."
-  },
-  {
-   "id": 144,
-   "marca": "Waka",
-   "nombre": "Waka 100",
-   "imagen": "https://cdn.shopify.com/s/files/1/0364/8277/7219/files/WAKA-Waka-Optimus-100k-Disposable-10_000Puffs-Blueberry.png?v=1779199511",
-   "pagina": "https://ajvmxonline.com/products/waka-optimus-100k-disposable-100-000-puffs-waka",
-   "confianza": "probable",
-   "nota": "Waka Optimus 100K, sabor Blueberry, 1080x1080 ajvmxonline.com. Unico Waka de 100K encontrado; mismo producto que el modelo 128 con otro sabor."
-  },
-  {
-   "id": 90,
-   "marca": "Waka",
-   "nombre": "Waka DM 15K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0081/8855/9413/files/PortadaBatonWEB-2024-07-12T170515.410_1.png?v=1720829273",
-   "pagina": "https://mrvapes.mx/products/waka-sopro-dm41i-desechable-15000-hits",
-   "confianza": "dudoso",
-   "nota": "Waka SOPRO DM41i 15,000 hits (mrvapes.mx, 2048x2048). Es el unico Waka 'DM' de 15K hallado, pero el nombre exacto no coincide y la imagen es una portada de la tienda no verificada visualmente."
-  },
-  {
-   "id": 154,
-   "marca": "Waka",
-   "nombre": "Waka Titan 30K",
-   "imagen": "https://cdn.shopify.com/s/files/1/0081/8855/9413/files/PortadaBatonWEB-2025-02-12T131546.818_1.png?v=1739391749",
-   "pagina": "https://mrvapes.mx/products/waka-titan-desechable-30-000-hits",
-   "confianza": "probable",
-   "nota": "Waka Titan 30,000 hits, imagen principal (2048x2048, mrvapes.mx). Es una portada de tienda no verificada visualmente; podria llevar marca de la tienda."
-  }
- ]
+  "candidatas": [
+    {
+      "id": 109,
+      "marca": "Adjust",
+      "nombre": "Adjust 40K",
+      "imagen": "https://cdn11.bigcommerce.com/s-nlylv/images/stencil/2560w/products/2581/9229/AdjustMyCool40K_02-800x800__33099.1726867720.jpg?c=2",
+      "pagina": "https://perfectvape.com/adjust-mycool-40k/",
+      "confianza": "probable",
+      "nota": "PROVISIONAL (15-nov): aplicada por instruccion del dueno (\"todos los modelos tienen que tener imagen\"); la vi en una hoja de contacto y coincide con el producto o la linea propuesta, pero conviene confirmar la linea exacta. Adjust tiene varias lineas 40K (MyCool, MySour, MySweet, MyFlavor, MyRusher); se usa foto de MyCool 40K (800x800, perfectvape.com). Confirmar linea."
+    },
+    {
+      "id": 110,
+      "marca": "Dojo",
+      "nombre": "Dojo 40K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0755/1028/4521/files/sphere-s-02-1.webp",
+      "pagina": "https://www.dojovape.com/products/sphere-s",
+      "confianza": "probable",
+      "nota": "PROVISIONAL (15-nov): aplicada por instruccion del dueno (\"todos los modelos tienen que tener imagen\"); la vi en una hoja de contacto y coincide con el producto o la linea propuesta, pero conviene confirmar la linea exacta. Dojo tiene Sphere S 40K y Sphere X 40K; imagen del sitio oficial de Sphere S 40K (1040x980, archivo .webp que sirve JPEG). No verificada visualmente que sea solo el dispositivo."
+    },
+    {
+      "id": 150,
+      "marca": "Elfbar",
+      "nombre": "Elfbar 40K",
+      "imagen": "https://uvapeshop.com/cdn/shop/files/elf-bar-mixart-40k-disposable-vape-device-blue-razz-ice-20ml_512x512.jpg?v=1765474516",
+      "pagina": "https://uvapeshop.com/collections/elf-bar-mixart-40k-disposables",
+      "confianza": "probable",
+      "nota": "PROVISIONAL (15-nov): aplicada por instruccion del dueno (\"todos los modelos tienen que tener imagen\"); la vi en una hoja de contacto y coincide con el producto o la linea propuesta, pero conviene confirmar la linea exacta. Elf Bar tiene MixArt 40K, Trio 40K, Ice King 40K y BC Pro 40K; se propone MixArt 40K sabor Blue Razz Ice (512x512, uvapeshop.com)."
+    },
+    {
+      "id": 106,
+      "marca": "Elux",
+      "nombre": "Elux 50K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/EluxPro50KGallery.png?v=1771609567",
+      "pagina": "https://vapordna.com/products/elux-cyberover-pro-50k-50000-puffs-disposable-vape",
+      "confianza": "probable",
+      "nota": "Elux lista PRO 50K (Cyberover Pro) y ASTRA 50K (50000 puffs); se usa Pro 50K, primera en el sitio oficial eluxtech.com. 600x600, vapordna.com."
+    },
+    {
+      "id": 115,
+      "marca": "Extre Bar",
+      "nombre": "Extre Bar 40K",
+      "imagen": "https://cdn11.bigcommerce.com/s-2v1qqoz92o/images/stencil/1280x1280/products/1034/2142/EXTREBARDISPOSABLEVAPE-40000PUFFS__73142.1784597344.png?c=1",
+      "pagina": "https://flyingvape.com/products/extre-bar-disposable-vape-40000-puffs",
+      "confianza": "exacto",
+      "nota": "Extre Bar 40000 puffs, foto principal del producto (1080x1080 real, flyingvape.com)."
+    },
+    {
+      "id": 102,
+      "marca": "Fasta",
+      "nombre": "Fasta Burst 37K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/FastaBurrstCreamyPerfectPeach.png?v=1776703825",
+      "pagina": "https://vapordna.com/products/fasta-burrst-v2-37k-37000-puffs-disposable-vape-25ml",
+      "confianza": "probable",
+      "nota": "Fasta Burrst V2 37K (el nombre oficial es Burrst), sabor Creamy Perfect Peach, 600x600 vapordna.com. Primera imagen de la pagina (Untitled_design_21.png, 2000x2000) no se uso por no poder confirmar su contenido."
+    },
+    {
+      "id": 103,
+      "marca": "Fasta",
+      "nombre": "Fasta Kit 40K",
+      "imagen": "https://image.vapesourcing.com/imagecache/800/images/202601/fasta-40k-kit.jpg",
+      "pagina": "https://vapesourcing.com/fasta-40k-kit.html",
+      "confianza": "exacto",
+      "nota": "Fasta 40K Disposable Vape Kit, 800x800, vapesourcing.com."
+    },
+    {
+      "id": 118,
+      "marca": "Funky Republic",
+      "nombre": "Funky Republic Fi 3K",
+      "imagen": "https://cdn11.bigcommerce.com/s-4yd3whobzs/images/stencil/1280x1280/products/634/385/Fi3000_Tropical-Delight_600x600_9032ed8d-1d93-427a-9838-212cf6fe5fe6__77169.1786998458.png?c=1",
+      "pagina": "https://ebcreate.store/products/funky-republic-fi3000-disposable-vape",
+      "confianza": "probable",
+      "nota": "Funky Republic Fi3000 (3000 puffs), sabor Tropical Delight, fuente 600x600 (ebcreate.store). Imagenes del sitio oficial funkyrepublic.com son banners 1920x960 con texto."
+    },
+    {
+      "id": 161,
+      "marca": "IPLAY",
+      "nombre": "iPlay 15K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0364/8277/7219/files/IPLAY-X-Box-Pro-Disposable-10_000Puffs-WatermelonIce.png?v=1740894499",
+      "pagina": "https://ajvmxonline.com/products/iplay-x-box-pro-disposable-10-000-puffs-iplay",
+      "confianza": "probable",
+      "nota": "iPlay X-Box Pro 15,000 puffs, sabor Watermelon Ice, 1080x1080 (ajvmxonline.com). La linea exacta del catalogo 'iPlay 15K' no esta confirmada."
+    },
+    {
+      "id": 105,
+      "marca": "Lost Mary",
+      "nombre": "Lost Mary 35K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/LostMaryMT35KGalleryNew.png?v=1764199245",
+      "pagina": "https://vapordna.com/products/lost-mary-mt35k-turbo-35000-puffs-disposable-vape",
+      "confianza": "probable",
+      "nota": "PROVISIONAL (15-nov): aplicada por instruccion del dueno (\"todos los modelos tienen que tener imagen\"); la vi en una hoja de contacto y coincide con el producto o la linea propuesta, pero conviene confirmar la linea exacta. Dos candidatos 35K: MT35K Turbo (usado, 600x600 vapordna.com; oficial lostmary.com/product/mt35000-turbo.html) y Ultrasonic 35K."
+    },
+    {
+      "id": 159,
+      "marca": "Maskking",
+      "nombre": "Maskking 100K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/MaskkingExtre100KGallery.png?v=1776726668",
+      "pagina": "https://vapordna.com/products/maskking-extre-100k-disposable",
+      "confianza": "probable",
+      "nota": "Unico Maskking de 100000 puffs encontrado: Extre 100K, 600x600 vapordna.com."
+    },
+    {
+      "id": 86,
+      "marca": "Maskking",
+      "nombre": "Maskking Fexo 45K",
+      "imagen": "https://tsvapeb2b.com/wp-content/uploads/2026/05/c337aa40ea0f55e497bb5a17a5321f51-819x1024.png",
+      "pagina": "https://tsvapeb2b.com/product/maskking-fexo-45000-puffs-disposable-vape-360-infinite-display-dual-mesh-coil-wholesale-vape/",
+      "confianza": "exacto",
+      "nota": "Maskking FEXO 45000, imagen og:image de la pagina del producto (819x1024, mayorista tsvapeb2b.com). Sitio oficial solo tiene banners 4000x2200."
+    },
+    {
+      "id": 88,
+      "marca": "Maskking",
+      "nombre": "Maskking Ice X 40K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0574/1228/8610/files/maskking-icex-40000-puffs-disposable-vape-wholesale-3786150.jpg?v=1767088938",
+      "pagina": "https://vapzvape.com/products/maskking-icex-40000-puffs-disposable-vape-wholesale",
+      "confianza": "exacto",
+      "nota": "Maskking ICEX 40000, primera imagen del producto (1200x1200, mayorista vapzvape.com)."
+    },
+    {
+      "id": 112,
+      "marca": "Nexa",
+      "nombre": "Nexa 35K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/NexaPix35KGallery_90b74636-3605-436e-a21b-675f61b1a21a.png?v=1758151690",
+      "pagina": "https://vapordna.com/products/nexa-pix-35k-35000-puffs-disposable-vape-16ml",
+      "confianza": "probable",
+      "nota": "Nexa Pix 35K, unico Nexa de 35000 puffs encontrado, 600x600 vapordna.com."
+    },
+    {
+      "id": 104,
+      "marca": "Nexa",
+      "nombre": "Nexa 50K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/NexaUltraII50kGallery.png?v=1762387595",
+      "pagina": "https://vapordna.com/products/nexa-ultra-ii-50k-50000-puff-disposable-vape-20ml",
+      "confianza": "probable",
+      "nota": "PROVISIONAL (15-nov): aplicada por instruccion del dueno (\"todos los modelos tienen que tener imagen\"); la vi en una hoja de contacto y coincide con el producto o la linea propuesta, pero conviene confirmar la linea exacta. Nexa de 50K es la linea Ultra (Ultra / Ultra II / InvisaCloud); coincide con el modelo 157. Si ya existe foto para Nexa Ultra 50K, probablemente sean el mismo producto."
+    },
+    {
+      "id": 157,
+      "marca": "Nexa",
+      "nombre": "Nexa Ultra 50K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/NexaUltraII50kGallery.png?v=1762387595",
+      "pagina": "https://vapordna.com/products/nexa-ultra-ii-50k-50000-puff-disposable-vape-20ml",
+      "confianza": "probable",
+      "nota": "Nexa Ultra II 50K (version actualizada de Ultra 50K), 600x600 vapordna.com. No se hallo foto limpia de la primera Ultra 50K (elementvape.com/nexa-ultra solo muestra edicion InvisaCloud)."
+    },
+    {
+      "id": 108,
+      "marca": "Rifbar",
+      "nombre": "Rifbar Pro 40K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0127/1821/1131/files/RifBarMixPro40KGallery.png?v=1754953872",
+      "pagina": "https://vapordna.com/products/rifbar-mixpro-40k-puffs-disposable-vape",
+      "confianza": "probable",
+      "nota": "RifBar MixPro 40K (nombre exacto del catalogo seria 'Pro'; puede ser MixPro), 600x600 vapordna.com."
+    },
+    {
+      "id": 128,
+      "marca": "Waka",
+      "nombre": "Optimus",
+      "imagen": "https://cdn.shopify.com/s/files/1/0364/8277/7219/files/WAKA-Waka-Optimus-100k-Disposable-10_000Puffs-Watermelon.png?v=1779199516",
+      "pagina": "https://ajvmxonline.com/products/waka-optimus-100k-disposable-100-000-puffs-waka",
+      "confianza": "probable",
+      "nota": "PROVISIONAL (15-nov): aplicada por instruccion del dueno (\"todos los modelos tienen que tener imagen\"); la vi en una hoja de contacto y coincide con el producto o la linea propuesta, pero conviene confirmar la linea exacta. Waka Optimus existe en 100K (usado, sabor Watermelon, 1080x1080 ajvmxonline.com) y 120K (ca.wakavaping.com/products/waka-optimus). Puffs del catalogo dudosos (80K o 100K); no se hallo version 80K."
+    },
+    {
+      "id": 117,
+      "marca": "Uno Mas",
+      "nombre": "Uno Mas X",
+      "imagen": "https://cdn.shopify.com/s/files/1/0613/8472/0630/files/Apple-peach-strawberry-UNO-MAS-X-Stick-Front.png?v=1743985979",
+      "pagina": "https://giantvapes.com/products/uno-mas-x-10000-disposable",
+      "confianza": "probable",
+      "nota": "UNO Mas X 10000 puffs, sabor Apple Peach Strawberry, 800x1025 giantvapes.com. Puffs no indicados en el catalogo."
+    },
+    {
+      "id": 162,
+      "marca": "Vhill",
+      "nombre": "Vhill 3K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0581/2699/1521/files/0001-2444791225468933782.jpg?v=1744686065",
+      "pagina": "https://ricovapestore.com/en/products/vhill-v3000",
+      "confianza": "probable",
+      "nota": "VHILL V3000 (3000 puffs), 1080x1350 jpg (ricovapestore.com, tienda MX). No verificado visualmente: podria incluir marca de la tienda."
+    },
+    {
+      "id": 144,
+      "marca": "Waka",
+      "nombre": "Waka 100",
+      "imagen": "https://cdn.shopify.com/s/files/1/0364/8277/7219/files/WAKA-Waka-Optimus-100k-Disposable-10_000Puffs-Blueberry.png?v=1779199511",
+      "pagina": "https://ajvmxonline.com/products/waka-optimus-100k-disposable-100-000-puffs-waka",
+      "confianza": "probable",
+      "nota": "Waka Optimus 100K, sabor Blueberry, 1080x1080 ajvmxonline.com. Unico Waka de 100K encontrado; mismo producto que el modelo 128 con otro sabor."
+    },
+    {
+      "id": 90,
+      "marca": "Waka",
+      "nombre": "Waka DM 15K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0081/8855/9413/files/PortadaBatonWEB-2024-07-12T170515.410_1.png?v=1720829273",
+      "pagina": "https://mrvapes.mx/products/waka-sopro-dm41i-desechable-15000-hits",
+      "confianza": "probable",
+      "nota": "PROVISIONAL (15-nov): aplicada por instruccion del dueno (\"todos los modelos tienen que tener imagen\"); la vi en una hoja de contacto y coincide con el producto o la linea propuesta, pero conviene confirmar la linea exacta. Waka SOPRO DM41i 15,000 hits (mrvapes.mx, 2048x2048). Es el unico Waka 'DM' de 15K hallado, pero el nombre exacto no coincide y la imagen es una portada de la tienda no verificada visualmente."
+    },
+    {
+      "id": 154,
+      "marca": "Waka",
+      "nombre": "Waka Titan 30K",
+      "imagen": "https://cdn.shopify.com/s/files/1/0081/8855/9413/files/PortadaBatonWEB-2025-02-12T131546.818_1.png?v=1739391749",
+      "pagina": "https://mrvapes.mx/products/waka-titan-desechable-30-000-hits",
+      "confianza": "probable",
+      "nota": "Waka Titan 30,000 hits, imagen principal (2048x2048, mrvapes.mx). Es una portada de tienda no verificada visualmente; podria llevar marca de la tienda."
+    }
+  ]
 }

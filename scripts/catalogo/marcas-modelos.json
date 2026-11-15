@@ -105,15 +105,17 @@
       "id": 139,
       "nombre": "Box Pro 15",
       "marca": "IPLAY",
-      "confianza": "probable",
-      "evidencia": "Parece iPlay X-Box Pro 15K (existe 'IPLAY Box Pro 15K', id 98): posible duplicado."
+      "confianza": "exacto",
+      "evidencia": "CONFIRMADO por el dueno (15-nov): Box Pro 15 es de la marca IPLAY. Sigue pendiente decidir si es duplicado del modelo de id existente (98).",
+      "confirmado_por": "dueno 2026-11-15"
     },
     {
       "id": 140,
       "nombre": "Box Pro Max",
       "marca": "IPLAY",
-      "confianza": "probable",
-      "evidencia": "Parece iPlay X-Box Pro Max 50K (existe 'IPLAY Box Pro Max 50K', id 82): posible duplicado."
+      "confianza": "exacto",
+      "evidencia": "CONFIRMADO por el dueno (15-nov): Box Pro Max es de la marca IPLAY. Sigue pendiente decidir si es duplicado del modelo de id existente (82).",
+      "confirmado_por": "dueno 2026-11-15"
     }
   ]
 }
