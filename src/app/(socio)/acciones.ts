@@ -42,9 +42,10 @@ export async function cambiarDisponibilidad(modeloId: number, estado: Disponibil
   await (await escritorDeSocio()).fijarDisponibilidad(`web:${claveIdem}`, modeloId, estado);
 }
 
-/** Campana: lista de avisos (pestañas Todas y Sin leer). Solo socios. */
+/** Campana: lista de avisos vigentes (pestañas Todas y Sin leer). Antes barre lo que ya no tiene causa. Solo socios. */
 export async function cargarCampana(filtro: 'todas' | 'sin_leer'): Promise<ListaCampana> {
   if (filtro !== 'todas' && filtro !== 'sin_leer') throw new Error('filtro invalido');
+  await (await escritorNotificacionesDeSocio()).depurar();
   return (await notificacionesDeSocio()).mis(filtro, 0);
 }
 
