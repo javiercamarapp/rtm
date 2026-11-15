@@ -8,6 +8,7 @@ import { origenSurtido } from '@/dominio/dropshipping/calculos';
 import { aNumero, contarPor, porcentaje, sumarPorSemana, ultimasSemanas } from '@/dominio/tablero/agregados';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { BarraFiltros, Chip, ChipEstado, CeldaPersona, Segmentado } from '@/ui/componentes/controles';
+import { Composicion, type GrupoComposicion } from '@/ui/componentes/composicion';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
@@ -71,6 +72,13 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
   const cuentaEstado = contarPor(todos, (p) => p.estado);
   const cuenta = (e: string) => (e ? todos.filter((p) => p.estado === e).length : todos.length);
   const ticket = enviadosFiltro.length ? cobrado / BigInt(enviadosFiltro.length) : null;
+  // Composicion del libro (de las filas que la base ya sumo en el desglose): relleno animado bajo la grafica semanal.
+  const gruposComp: GrupoComposicion[] = [
+    { id: 'fact-origen', titulo: 'Facturado por origen del surtido', segmentos: GRUPOS.map((g) => { const f = buscarFila(desglose, 'surtido', g.clave); return { id: g.clave, etiqueta: g.texto, valor: f ? aNumero(f.facturado_cent) : null, texto: f ? formatearMoneda(f.facturado_cent) : 'Sin dato', nota: f ? `${f.enviados} ${f.enviados === 1 ? 'enviado' : 'enviados'}` : undefined }; }) },
+    { id: 'piezas-origen', titulo: 'Piezas pedidas por origen del surtido', segmentos: GRUPOS.map((g) => { const f = buscarFila(desglose, 'surtido', g.clave); return { id: g.clave, etiqueta: g.texto, valor: f ? f.piezas : null, texto: f ? formatearPiezas(f.piezas) : 'Sin dato' }; }) },
+    { id: 'fact-prov', titulo: 'Facturado por proveedor u origen', segmentos: Object.entries(PROVEEDORES).map(([k, v]) => { const f = buscarFila(desglose, 'proveedor', k); return { id: k, etiqueta: v.texto, valor: f ? aNumero(f.facturado_cent) : null, texto: f ? formatearMoneda(f.facturado_cent) : 'Sin dato' }; }) },
+    { id: 'fact-tipo', titulo: 'Dropshipping: tipo de venta (facturado)', segmentos: Object.entries(TIPOS_VENTA).map(([k, texto]) => { const f = buscarFila(desglose, 'tipo', k); return { id: k, etiqueta: texto, valor: f ? aNumero(f.facturado_cent) : null, texto: f ? formatearMoneda(f.facturado_cent) : 'Sin dato' }; }) },
+  ];
 
   return (
     <Pagina ancho="tablero">
@@ -117,11 +125,12 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
         ]}
       />
 
-      <Rejilla dividir="8-4" alinear="inicio">
+      <Rejilla dividir="8-4">
         <Tarjeta titulo="Piezas pedidas por semana" descripcion={`Pedidos activos de las últimas ${n} semanas · surtidas esta semana: ${formatearPiezas(surtidas[iSem] ?? 0)}`}>
           {todos.length ? (
             <ColumnasPeriodo titulo="Piezas pedidas por semana" descripcion={`Piezas de los pedidos activos por semana; la última es parcial.`} unidad="Piezas" procedencia="observado" pie={`Corte: ${etiquetaFecha(hoy)} · Fuente: libro de pedidos`} datos={columnasSemana(semanas, pedidas, (v) => formatearPiezas(v), 'piezas')} />
           ) : <p className="rtm-a1-estado-vacio">Sin pedidos todavía.</p>}
+          {todos.length > 0 && <Composicion etiquetaAria="Composición del libro de pedidos" grupos={gruposComp} />}
         </Tarjeta>
         <Tarjeta titulo="Estados y surtido" descripcion="Todos los pedidos del libro">
           <div className="rtm-a1-cuerpo">
