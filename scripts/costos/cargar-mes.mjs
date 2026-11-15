@@ -246,7 +246,7 @@ export function planificar({ mes, fecha, snap, declarado, tc }) {
   for (const slug of ['vercel', 'supabase']) {
     const s = servicio(slug);
     const d = declarado[slug];
-    const q = snap.cuotas?.[slug] ?? (s.cuotaMicro === null ? null : { regla: 'menor', cuotaMicro: s.cuotaMicro });
+    const q = snap.cuotas?.[slug] ?? (s.cuotaMicro === null ? null : { regla: 'mayor', cuotaMicro: s.cuotaMicro });
     if (!d?.consumo || d.facturaMicro === null) {
       acciones.push(sinCargo(slug, `vale 0: sin consumo real declarado (decision del dueno, 14-nov); con --${slug}-${slug === 'supabase' ? 'horas' : 'consumo'} RTM:TOTAL --${slug}-factura-usd N se cobra lo ${q?.regla ?? 'menor'} entre la cuota base y el consumo real`));
       continue;

@@ -49,7 +49,7 @@ create table costos.cuota_base (
   unique (servicio_id, vigente_desde)
 );
 insert into costos.cuota_base (servicio_id, regla, cuota_orig_micro, vigente_desde, nota)
-  select s.id, 'menor', s.cuota_documento_orig_micro, date '2026-11-01',
+  select s.id, 'mayor', s.cuota_documento_orig_micro, date '2026-11-01',
          'Cuota del documento inicial; regla: se cobra lo menor entre esta cuota y el consumo real (decision del dueño, 14-nov; pendiente de confirmar el sentido exacto)'
     from costos.servicio s where s.slug in ('vercel', 'supabase') and s.cuota_documento_orig_micro is not null;
 

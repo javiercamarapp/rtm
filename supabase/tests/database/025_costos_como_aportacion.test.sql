@@ -46,10 +46,10 @@ select is((costos.registrar_pendiente_tc('claude_max', '2031-06', negocio.hoy(),
 select is(jsonb_array_length(api.costos_validacion('2031-06') -> 'pendientes_tc'), 1, 'la validacion lo lista');
 select is(costos.resolver_pendiente_tc('claude_max', '2031-06'), 1, 'se resuelve');
 -- cuota base con vigente_desde
-select is(costos.cuota_base_vigente('vercel', date '2031-01-01') ->> 'regla', 'menor', 'regla vigente: menor');
-select lives_ok($$ select costos.fijar_cuota_base('vercel', 'mayor', 30000000, date '2031-02-01', 'prueba') $$, 'fila nueva con vigente_desde');
-select is(costos.cuota_base_vigente('vercel', date '2031-03-01') ->> 'regla', 'mayor', 'la nueva rige desde su fecha');
-select is(costos.cuota_base_vigente('vercel', date '2031-01-15') ->> 'regla', 'menor', 'antes de la fecha rige la anterior');
+select is(costos.cuota_base_vigente('vercel', date '2031-01-01') ->> 'regla', 'mayor', 'regla vigente: mayor');
+select lives_ok($$ select costos.fijar_cuota_base('vercel', 'menor', 30000000, date '2031-02-01', 'prueba') $$, 'fila nueva con vigente_desde');
+select is(costos.cuota_base_vigente('vercel', date '2031-03-01') ->> 'regla', 'menor', 'la nueva rige desde su fecha');
+select is(costos.cuota_base_vigente('vercel', date '2031-01-15') ->> 'regla', 'mayor', 'antes de la fecha rige la anterior');
 select throws_ok($$ select costos.fijar_cuota_base('vercel', 'mayor', 1, date '2031-02-01', 'x') $$, 'P0457', null, 'no se edita una fila anterior');
 select is((select logo_slug from costos.servicio where slug = 'dominio'), 'vercel', 'el dominio usa el logo de Vercel');
 select is(has_function_privilege('authenticated', 'operacion.registrar_gasto_socio_capital(text,text,bigint,text,text,date,text,text)', 'EXECUTE'), false, 'la web no ejecuta el gasto capital');
