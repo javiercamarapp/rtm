@@ -4,6 +4,7 @@ import { operacionDeSocio } from '@/composicion/operacion';
 import { sumarDias } from '@/dominio/calendario';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { DataTable } from '@/ui/componentes/data-table';
+import { ModelosSabores } from '@/ui/componentes/modelos-sabores';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { ChipEstado } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
@@ -78,7 +79,7 @@ export default async function PaginaEnTrayecto() {
           columnas={[
             { id: 'f', titulo: 'Orden', celda: (c) => <Link className="rtm-mono" href={`/proveedores/compras/${c.id}`}>{c.folio}</Link> },
             { id: 'p', titulo: 'Proveedor', celda: (c) => c.proveedor },
-            { id: 'm', titulo: 'Modelos y sabores', secundaria: true, celda: (c) => c.renglones.map((r) => `${r.modelo} ${r.sabor} ${r.pagadas}`).join(' · ') },
+            { id: 'm', titulo: 'Modelos y sabores', secundaria: true, ancho: 'xl', celda: (c) => <ModelosSabores variante="celda" testid={`ms-${c.id}`} renglones={c.renglones.map((r) => ({ modelo: r.modelo, sabor: r.sabor, piezas: r.pagadas }))} /> },
             { id: 'z', titulo: 'Piezas', numerica: true, celda: (c) => formatearPiezas(c.piezas_pedidas) },
             { id: 't', titulo: 'Total pagado', numerica: true, secundaria: true, celda: (c) => formatearMoneda(c.total_cent) },
             { id: 'g', titulo: 'Guías', celda: (c) => (c.guias.length ? c.guias.map((g) => `${g.paqueteria} ${g.numero}`).join(', ') : 'Sin guía') },

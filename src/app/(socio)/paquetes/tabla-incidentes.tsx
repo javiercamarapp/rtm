@@ -3,6 +3,7 @@ import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import type { IncidentePaquete } from '@/dominio/operacion/tipos';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
+import { ModelosSabores } from '@/ui/componentes/modelos-sabores';
 import { ChipEstado } from '@/ui/componentes/controles';
 import { Tarjeta } from '@/ui/componentes/pagina';
 import { DialogoResolver } from './dialogos-incidente';
@@ -30,7 +31,7 @@ export function TablaIncidentes({ incidentes, sentido, testid }: { incidentes: I
           { id: 'f', titulo: 'Folio', ancho: 'm', celda: (i) => <span className="rtm-mono rtm-a2-nowrap" data-testid={`${testid}-folio`}>{i.folio}</span> },
           { id: 'o', titulo: sentido === 'salida' ? 'Pedido' : 'Orden', ancho: 'm', celda: (i) => (sentido === 'salida' ? <Link className="rtm-mono rtm-a2-nowrap" href={`/pedidos/${i.pedido_id}`}>{i.pedido_folio}</Link> : <Link className="rtm-mono rtm-a2-nowrap" href={`/proveedores/compras/${i.compra_id}`}>{i.compra_folio}</Link>) },
           { id: 'c', titulo: sentido === 'salida' ? 'Cliente' : 'Proveedor', secundaria: true, truncar: 's', celda: (i) => (sentido === 'salida' ? i.cliente : i.proveedor) },
-          { id: 'r', titulo: 'Tipo, sabor y modelo', secundaria: true, truncar: 's', celda: (i) => `${i.tipo === 'perdido' ? 'Perdido' : 'Dañado'}: ` + i.renglones.map((r) => `${r.sabor} ${r.piezas} pz (${r.modelo})`).join(' · ') },
+          { id: 'r', titulo: 'Tipo, modelo y sabor', secundaria: true, ancho: 'xl', celda: (i) => <><span className="rtm-nota">{i.tipo === 'perdido' ? 'Perdido' : 'Dañado'}</span><ModelosSabores variante="celda" testid={`${testid}-ms-${i.id}`} renglones={i.renglones.map((r) => ({ modelo: r.modelo, sabor: r.sabor, piezas: r.piezas }))} /></> },
           { id: 'z', titulo: 'Piezas', numerica: true, celda: (i) => formatearPiezas(i.piezas) },
           { id: 'v', titulo: 'Costo de lo perdido', numerica: true, celda: (i) => <CifraComprobada texto={formatearMoneda(i.valor_cent)} cifra={`paquete:valor:${i.id}`} comprobacion="cuadra" /> },
           { id: 'q', titulo: 'Quién absorbe', celda: (i) => {

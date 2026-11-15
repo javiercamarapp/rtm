@@ -2,6 +2,7 @@ import { ETIQUETA_ESTADO_COMPRA, type ClientePorPreparar, type CompraPorRecibir,
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import { DataTable } from '../componentes/data-table';
 import { EstadoTexto } from '../componentes/estado-texto';
+import { ModelosSabores } from '../componentes/modelos-sabores';
 
 export function ErrorLectura() {
   return <p className="rtm-error" role="alert" data-testid="lectura-error">No se pudo cargar. Intenta de nuevo en un momento.</p>;
@@ -9,14 +10,7 @@ export function ErrorLectura() {
 
 function Lineas({ lineas }: { lineas: LineaBodega[] }) {
   return (
-    <ul className="bodega-lineas">
-      {lineas.map((l) => (
-        <li key={`${l.modelo}|${l.sabor}`}>
-          <span>{l.modelo} · {l.sabor}</span>
-          <strong>{formatearPiezas(l.piezas)}</strong>
-        </li>
-      ))}
-    </ul>
+    <ModelosSabores renglones={lineas.map((l) => ({ modelo: l.modelo, sabor: l.sabor, piezas: l.piezas }))} />
   );
 }
 
