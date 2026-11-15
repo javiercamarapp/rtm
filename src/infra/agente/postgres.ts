@@ -211,7 +211,7 @@ export function preparar(a: AccionResuelta, ctx: ContextoEjecucion, hoy: string)
       return { hub: 'ejecutar', tipo: 'pago_a_socio', titulo: `${r ? 'Reembolso a' : 'Retiro de utilidad de'} ${socioNombre(i.socio)} registrado`, args: { ...base, socio: i.socio, monto_cent: i.monto_centavos, tipo: r ? 'reembolso' : 'retiro', via: i.via } };
     }
     case 'pago':
-      return { hub: 'ejecutar', tipo: 'pago_cliente', titulo: 'Cobro de cliente registrado', args: { ...base, cuenta: i.cuenta_destino_texto, monto_cent: i.monto_centavos, cliente_id: Number(a.resoluciones.clienteId) } };
+      return { hub: 'ejecutar', tipo: 'pago_cliente', titulo: 'Cobro de cliente registrado', args: { ...base, cuenta: i.cuenta_destino_texto, monto_cent: i.monto_centavos, cliente_id: Number(a.resoluciones.clienteId), pedido_folio: i.pedido_folio ?? null } };
     case 'pago_proveedor':
       return { hub: 'ejecutar', tipo: 'pago_proveedor', titulo: 'Pago a proveedor registrado', args: { ...base, proveedor: a.resoluciones.proveedorId, monto_cent: i.monto_centavos, pagado_por: i.pagado_por, cliente_id: a.resoluciones.clienteId === null ? null : Number(a.resoluciones.clienteId),
         // Dinero propio de un socio que paga a un proveedor: REEMBOLSO por omision; capital solo si el socio lo declaro expresamente (la base rechaza la combinacion con la funcion aun no integrada).

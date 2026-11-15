@@ -62,9 +62,18 @@ import { ErrorLlm } from './puertos';
 import { resolverAccion, type PreguntaAbierta } from './resolucion';
 import type { TgCallback, TgMensaje, UpdateTelegram } from './telegram';
 
+/** Numero estable (negativo, para no chocar con update_id reales) derivado del id del callback: un reproceso del mismo boton arma la misma clave de idempotencia. */
+function updateIdDeBoton(callbackId: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < callbackId.length; i++) h = Math.imul(h ^ callbackId.charCodeAt(i), 16777619) >>> 0;
+  return -(h + 1);
+}
+
 export interface ConfigAgente {
   maxPreguntas: number;
   caducaPreguntaHoras: number;
+  /** Las preguntas de dinero (posible duplicado, cobro mayor a lo que debe) caducan pronto: un "Si" al dia siguiente no debe registrar con datos viejos. */
+  caducaPreguntaDineroMin: number;
   caducaTomaHoras: number;
   ventanaDeshacerMin: number;
   maxOpciones: number;
@@ -92,6 +101,7 @@ export interface ConfigAgente {
 export const CONFIG_POR_OMISION: ConfigAgente = {
   maxPreguntas: 3,
   caducaPreguntaHoras: 24,
+  caducaPreguntaDineroMin: 10,
   caducaTomaHoras: 72,
   ventanaDeshacerMin: VENTANA_DESHACER_MIN,
   maxOpciones: 4,
@@ -1206,8 +1216,8 @@ export class AgenteTelegram {
       case 'pregunta': {
         // Duplicado y cobro mayor a lo que debe: PREGUNTA (nunca tope). La respuesta afirmativa vuelve a mandar la operacion con la bandera correspondiente.
         const siguiente: EstadoAccion = r.clave === 'duplicado' ? { ...estado, duplicadoOk: true } : r.clave === 'exceso' ? { ...estado, excesoOk: true } : { ...estado, confirmado: true };
-        const si = await this.boton1(r.clave === 'duplicado' ? 'Si, es otro' : r.clave === 'exceso' ? 'Si, es anticipo' : 'Si, continuar', 'confirmar_accion', ['socio'], grupo.grupoSocios, this.mas(this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, siguiente satisfies EstadoAccion);
-        const no = await this.boton1('No, cancelar', 'cancelar', ['socio'], grupo.grupoSocios, this.mas(this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, null);
+        const si = await this.boton1(r.clave === 'duplicado' ? 'Si, es otro' : r.clave === 'exceso' ? 'Si, es anticipo' : 'Si, continuar', 'confirmar_accion', ['socio'], grupo.grupoSocios, this.mas(r.clave === 'duplicado' || r.clave === 'exceso' ? this.cfg.caducaPreguntaDineroMin * 60_000 : this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, siguiente satisfies EstadoAccion);
+        const no = await this.boton1('No, cancelar', 'cancelar', ['socio'], grupo.grupoSocios, this.mas(r.clave === 'duplicado' || r.clave === 'exceso' ? this.cfg.caducaPreguntaDineroMin * 60_000 : this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, null);
         await this.com.aGrupo(grupo, P.preguntaNegocio(r.texto, r.cifras), { botones: [[si, no]] });
         return;
       }
@@ -1798,7 +1808,7 @@ export class AgenteTelegram {
           return;
         }
         if (s.tipo === 'reprocesar') {
-          await this.conIa({ autor: miembro, chats, texto: s.texto, fuente: 'texto', updateId: this.d.reloj().getTime(), messageId: ctx.messageId, chatId: ctx.chatId, verificarCifras: true, sospecha: false });
+          await this.conIa({ autor: miembro, chats, texto: s.texto, fuente: 'texto', updateId: updateIdDeBoton(ctx.callbackId), messageId: ctx.messageId, chatId: ctx.chatId, verificarCifras: true, sospecha: false });
           return;
         }
         await this.presentarSalida(miembro, chats, ctx.chatId, s);

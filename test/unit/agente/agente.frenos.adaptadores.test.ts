@@ -47,6 +47,12 @@ describe('frenos: traduccion de lo que dice la base', () => {
     expect(preparar(pagoResuelto, ctx(), '2026-11-14')?.args).not.toHaveProperty('permitir_duplicado');
   });
 
+  it('el pedido que el socio eligio viaja a la base (el cobro se aplica a ese pedido, no al mas antiguo)', () => {
+    const conPedido: AccionResuelta = { ...pagoResuelto, intencion: { ...pagoResuelto.intencion, pedido_folio: 'PC-002' } as AccionResuelta['intencion'] };
+    expect(preparar(conPedido, ctx(), '2026-11-14')?.args).toMatchObject({ pedido_folio: 'PC-002', cliente_id: 7 });
+    expect(preparar(pagoResuelto, ctx(), '2026-11-14')?.args).toMatchObject({ pedido_folio: null });
+  });
+
   it('el interruptor apagado (P0463) se responde como solo lectura, no como error inesperado', async () => {
     const sql = (async () => { throw Object.assign(new Error('el agente esta en solo lectura desde 10:00'), { code: 'P0463' }); }) as unknown as Sql;
     const r = await new NegocioAgenteDb(sql).ejecutar(pagoResuelto, ctx());
