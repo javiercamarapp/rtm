@@ -17,7 +17,7 @@ import { DataTable } from '@/ui/componentes/data-table';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { CoberturaDias, ColumnasPeriodo } from '@/ui/graficas';
-import { chipsPulso } from '@/ui/shell/pulso';
+import { chipsPulso } from '@/ui/shell/pulso-chips';
 import '@/ui/estilos/paginas-a1.css';
 import { CUBETA, ESTADO_PEDIDO, SEVERIDAD } from './operacion/etiquetas';
 import { centTexto, columnasSemana, deltaSemanal, NUMERO_SEMANAS, semanasDe, sparkSemanal } from './_a1/comun';
