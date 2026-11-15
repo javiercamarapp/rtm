@@ -1,7 +1,8 @@
 /* Filtro compartido: una sola barra compacta (32 px) con buscador en vivo, segmentado de estado y marcas en desplegable. */
 .rtm-fc { display: flex; flex-direction: column; gap: var(--rtm-e-2); min-width: 0; }
-.rtm-fc-barra { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-e-2); min-width: 0; }
-.rtm-fc-barra > .rtm-fc-busca { position: relative; flex: 1 1 auto; width: 220px; min-width: 180px; max-width: 360px; }
+.rtm-fc-barra { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-e-2); min-width: 0; }
+.rtm-fc-barra > * { flex: none; }
+.rtm-fc-barra > .rtm-fc-busca { position: relative; flex: 1 1 auto; width: 220px; min-width: 160px; max-width: 360px; }
 .rtm-fc-busca > svg { position: absolute; left: 10px; top: 50%; width: 14px; height: 14px; transform: translateY(-50%); color: var(--rtm-ink-3); pointer-events: none; }
 .rtm-fc-busca > input { width: 100%; height: var(--rtm-ctl-alto); box-sizing: border-box; padding: 0 10px 0 30px; border: 1px solid var(--rtm-campo-borde); border-radius: var(--rtm-ctl-r); background: var(--rtm-surface); color: var(--rtm-ink); font: inherit; font-size: var(--rtm-ctl-fs); transition: border-color 140ms ease, box-shadow 140ms ease; }
 .rtm-fc-busca > input:hover { border-color: var(--rtm-ink-3); }
@@ -49,13 +50,44 @@
 @media (prefers-reduced-motion: reduce) { .rtm-fc-panel, .rtm-fc-chips button { animation: none; } .rtm-fc *, .rtm-fc-disparo > svg { transition: none !important; } }
 
 @media (max-width: 767px) {
-  .rtm-fc-barra > .rtm-fc-busca { flex: 1 1 auto; width: 100%; max-width: none; }
+  .rtm-fc-barra > .rtm-fc-busca { flex: none; width: 168px; max-width: none; }
   .rtm-fc-atajos { display: none; }
   .rtm-fc-barra { gap: 6px; }
 }
+/* Ventana angosta: el atajo de marca cede su lugar (la marca sigue en el desplegable) para que todo siga en una linea. */
+@media (max-width: 900px) { .rtm-fc-atajos { display: none; } }
 @media (pointer: coarse) {
-  .rtm-fc-busca > input, .rtm-fc-seg, .rtm-fc-atajo, .rtm-fc-disparo, .rtm-fc-limpiar { height: 44px; }
-  .rtm-fc-seg > button { min-width: 44px; }
+  /* La altura visual no crece (32 px): el area de toque de 44 px sale de un pseudo-elemento transparente. */
+  .rtm-fc-seg, .rtm-fc-atajo, .rtm-fc-disparo, .rtm-fc-limpiar { position: relative; }
+  .rtm-fc-atajo::before, .rtm-fc-disparo::before, .rtm-fc-limpiar::before { content: ''; position: absolute; inset: -6px -2px; }
+  .rtm-fc-seg > button { min-width: 44px; position: relative; }
+  .rtm-fc-seg > button::before { content: ''; position: absolute; inset: -8px 0; }
   .rtm-fc-panel li > label { padding: 11px 6px; }
   .rtm-fc-panel > input, .rtm-fc-panel-busca { height: 40px; font-size: 16px; }
+}
+
+/* ===== Barras de filtros: UNA sola linea siempre (contrato test/contratos/filtros_una_linea.test.ts). =====
+   Escritorio: nada se parte; el buscador se encoge (160-360 px) y los atajos ceden. Movil o ventana angosta (<= 767 px): la barra desliza en
+   horizontal con barra oculta y desvanecido a la derecha; los desplegables pasan a position: fixed para no recortarse con el desplazamiento. */
+.rtm-fc-barra > .rtm-fc-extra, .rtm-fc-barra > .rtm-ba-barra-filtros { flex: none; }
+@media (max-width: 767px) {
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form) {
+    overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain;
+    }
+  /* Desvanecido a la derecha: pseudo-elemento pegajoso (una mascara recortaria tambien los desplegables). */
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form)::after { content: ''; flex: none; position: sticky; right: 0; align-self: stretch; width: 24px; margin-inline-start: -24px; pointer-events: none; background: linear-gradient(to right, transparent, var(--rtm-chrome)); }
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form)::-webkit-scrollbar { display: none; }
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-barra-filtros, .rtm-barra-filtros-v2, .rtm-dt-barra, .rtm-filtros-linea, .a3-filtros-form) > * { flex-shrink: 0; }
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-kr-barra-filtros) :is(.rtm-fc-panel, .rtm-bb-menu-panel, .rtm-ba-fp-panel, .rtm-kr-marcas fieldset) {
+    position: fixed; top: auto; left: 8px; right: 8px; width: auto; max-width: none; margin-top: 6px;
+  }
+}
+/* Tactil: la altura visual de los controles de las barras se queda en 32 px; los 44 px de area de toque salen de un pseudo-elemento. El texto de los campos sigue en 16 px para que iOS no haga zoom. */
+@media (pointer: coarse), (max-width: 767px) {
+  :is(.rtm-fc-barra, .rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-dt-barra, .a3-filtros-form) { --rtm-ctl-alto: 32px; --rtm-ctl-alto-chico: 28px; }
+  :is(.rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-dt-barra, .a3-filtros-form) :is(.rtm-boton, .rtm-boton-chico) { position: relative; min-height: 0; font-size: 13px; }
+  :is(.rtm-ba-barra-filtros, .rtm-ds-filtros-linea, .rtm-kr-barra-filtros, .rtm-dt-barra, .a3-filtros-form) :is(.rtm-boton, .rtm-boton-chico)::before { content: ''; position: absolute; inset: -6px -2px; }
+  .rtm-fc-disparo, .rtm-fc-atajo { font-size: 13px; }
+  :is(.rtm-fc-barra, .rtm-bb-menu-filtro) > :is(.rtm-boton, .rtm-fc-disparo), .rtm-fc-barra .rtm-bb-menu-filtro > .rtm-boton, .rtm-fc-barra .rtm-ba-fp-disparo { min-height: 0; position: relative; }
+  .rtm-fc-barra .rtm-bb-menu-filtro > .rtm-boton::before, .rtm-fc-barra .rtm-ba-fp-disparo::before { content: ''; position: absolute; inset: -6px -2px; }
 }

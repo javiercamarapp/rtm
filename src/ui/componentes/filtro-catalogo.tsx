@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
 import { marcasAParam, marcasDeParam, PARAM_MARCA } from '@/dominio/catalogo/filtro';
 
 export interface MarcaOpcion { nombre: string; cuenta: number }
@@ -19,10 +19,12 @@ interface Props {
   segmentos?: { parametro: string; opciones: Segmento[]; etiquetaAria: string };
   /** Parametros que se limpian al cambiar un filtro (por ejemplo la pagina). */
   limpiar?: string[];
+  /** Controles extra (estado, periodo) que van en la MISMA linea, pegados al desplegable de marcas. */
+  children?: ReactNode;
 }
 
 /** Una sola barra: buscador en vivo, estado segmentado y marcas agrupadas en un desplegable multiseleccion. Todo el estado vive en la URL (compartible). */
-export function FiltroCatalogo({ etiquetaAria, placeholder = 'Buscar marca, modelo o alias', etiquetaBusqueda, marcas, atajos = [], segmentos, limpiar = [] }: Props) {
+export function FiltroCatalogo({ etiquetaAria, placeholder = 'Buscar marca, modelo o alias', etiquetaBusqueda, marcas, atajos = [], segmentos, limpiar = [], children }: Props) {
   const router = useRouter();
   const ruta = usePathname();
   const sp = useSearchParams();
@@ -109,6 +111,7 @@ export function FiltroCatalogo({ etiquetaAria, placeholder = 'Buscar marca, mode
             </div>
           )}
         </div>
+        {children}
         {hayFiltros && <button type="button" className="rtm-fc-limpiar" onClick={() => { setQ(''); aplicar({ q: '', [PARAM_MARCA]: '', ...(segmentos ? { [segmentos.parametro]: '' } : {}) }); }}>Quitar filtros</button>}
       </div>
       {seleccion.length > 0 && (

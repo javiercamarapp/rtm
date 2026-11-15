@@ -38,8 +38,8 @@
 .rtm-kr-vacio-linea { margin: 0; font-size: var(--rtm-t-cuerpo); color: var(--rtm-ink-2); }
 
 /* Barra de busqueda y filtros */
-.rtm-kr-barra-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-e-2); padding: var(--rtm-e-2) 0; }
-.rtm-kr-buscar { flex: 1 1 auto; min-width: 240px; }
+.rtm-kr-barra-filtros { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-e-2); padding: var(--rtm-e-2) 0; }
+.rtm-kr-buscar { flex: 1 1 auto; width: 220px; min-width: 160px; max-width: 360px; }
 .rtm-kr-buscar .rtm-campo { width: 100%; }
 .rtm-kr-select .rtm-campo { height: var(--rtm-ctl-alto); }
 .rtm-kr-chip, .rtm-seg-mini button { height: var(--rtm-ctl-alto-chico); padding: 0 var(--rtm-e-3); border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); background: var(--rtm-surface); color: var(--rtm-ink); font: inherit; font-size: var(--rtm-t-pequeno); cursor: pointer; white-space: nowrap; }

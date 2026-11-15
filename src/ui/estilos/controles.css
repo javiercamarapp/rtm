@@ -41,28 +41,28 @@ textarea.rtm-campo { height: auto; min-height: 72px; padding: 8px var(--rtm-ctl-
 .rtm-seg[data-tamano='chico'] > a { height: calc(var(--rtm-ctl-alto-chico) - 6px); }
 
 /* ---- Barra de filtros unificada: rejilla flexible con hueco uniforme y todo alineado al pie del renglon ---- */
-.rtm-a2-filtros, .a3-filtros-form, .rtm-a1-buscar, .rtm-form-fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--rtm-ctl-gap); min-width: 0; }
+.rtm-form-fila, .rtm-a1-buscar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--rtm-ctl-gap); min-width: 0; }
+/* Barras de filtros: UNA sola linea (nunca flex-wrap: wrap); si no caben, desliza en horizontal. El formulario dentro del desplegable (.rtm-ba-fp-panel) si puede acomodar sus campos. */
+.rtm-a2-filtros, .a3-filtros-form { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: var(--rtm-ctl-gap); min-width: 0; }
 .rtm-a2-filtros > :is(.rtm-boton, .rtm-boton-chico), .a3-filtros-form > :is(.rtm-boton, .rtm-boton-chico), .rtm-filtros-linea > :is(.rtm-boton, .rtm-boton-chico), .rtm-a1-buscar > .rtm-boton { height: var(--rtm-ctl-alto); font-size: var(--rtm-ctl-fs); padding: 0 var(--rtm-e-3); }
 .a3-filtros-form { align-items: center; }
 .rtm-barra-filtros-v2 { gap: var(--rtm-ctl-gap); min-height: var(--rtm-ctl-alto); }
 .rtm-barra-filtros-v2 .rtm-chip-v2 { height: var(--rtm-ctl-alto-chico); padding-block: 0; }
-.rtm-filtros-linea { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--rtm-ctl-gap); align-items: end; }
+.rtm-filtros-linea { display: flex; flex-wrap: nowrap; gap: var(--rtm-ctl-gap); align-items: end; min-width: 0; }
+.rtm-filtros-linea > .rtm-etiqueta-campo { flex: 1 1 auto; width: 168px; min-width: 140px; max-width: 360px; }
 .rtm-filtros-linea .rtm-etiqueta-campo > .rtm-campo { width: 100%; max-width: none; min-width: 0; }
-.rtm-filtros-linea > .rtm-boton { justify-self: start; }
+.rtm-filtros-linea > .rtm-boton { flex: none; }
 .rtm-dt-barra { gap: var(--rtm-ctl-gap); }
 /* Barras de tabla y paginadores: buscador, selector y botones del mismo renglon miden lo mismo (32 px escritorio, 44 px tactil). */
 :is(.rtm-dt-barra, .rtm-paginador) :is(.rtm-boton, .rtm-boton-chico, .rtm-campo, .rtm-dt-busqueda) { height: var(--rtm-ctl-alto); }
 .rtm-paginador-filas .rtm-campo-chico { padding: 0 var(--rtm-ctl-px); padding-right: 28px; }
 @media (max-width: 767px) {
-  .rtm-a2-filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
-  .rtm-a2-filtros > .rtm-a2-campo:has(> :is(select, input[type='search'])) { grid-column: 1 / -1; }
+  /* Formulario dentro del desplegable de filtros: ahi si acomoda los campos en rejilla. */
+  .rtm-ba-fp-panel > .rtm-a2-filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
+  .rtm-ba-fp-panel > .rtm-a2-filtros > .rtm-a2-campo:has(> :is(select, input[type='search'])) { grid-column: 1 / -1; }
   .rtm-a2-filtros > :is(.rtm-boton, .rtm-a2-aplicar) { justify-content: center; }
-  .rtm-a2-filtros > .rtm-a2-campo > :is(input, select) { width: 100%; max-width: none; }
+  .rtm-ba-fp-panel > .rtm-a2-filtros > .rtm-a2-campo > :is(input, select) { width: 100%; max-width: none; }
   .rtm-a2-aplicar { display: inline-flex; }
-  /* Filtro de una fila con selector y fechas: el selector ocupa su propio renglon completo, las dos fechas comparten el siguiente y el boton va al pie. */
-  .a3-filtros-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
-  .a3-filtros-form > select.rtm-campo, .a3-filtros-form > .rtm-boton { grid-column: 1 / -1; width: 100%; max-width: none; }
-  .a3-filtros-form > .rtm-campo[type='date'] { width: 100%; }
 }
 
 /* ---- Formularios: rejilla comun. Cada fila reparte el ancho completo; el ancho del campo sigue a su contenido (fecha y monto, una parte;

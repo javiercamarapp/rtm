@@ -32,7 +32,7 @@
 p.rtm-nota { margin: var(--rtm-e-2) 0 0; }
 .rtm-seccion { display: flex; flex-direction: column; gap: var(--rtm-v-gap-tarjeta); }
 .rtm-seccion > h2 { margin: 0; font-size: var(--rtm-t-seccion); font-weight: 600; }
-.rtm-barra-filtros { display: flex; gap: var(--rtm-e-2); flex-wrap: wrap; align-items: center; }
+.rtm-barra-filtros { display: flex; gap: var(--rtm-e-2); flex-wrap: nowrap; align-items: center; }
 .rtm-a2-campo > :is(input, select),
 .rtm-dt-busqueda,
 .rtm-campo { box-sizing: border-box; height: var(--rtm-ctl-alto); padding: 0 var(--rtm-ctl-px); border: 1px solid var(--rtm-campo-borde); border-radius: var(--rtm-ctl-r); background-color: var(--rtm-surface); color: var(--rtm-ink); font: inherit; font-size: var(--rtm-ctl-fs); line-height: 1.2; letter-spacing: 0; text-transform: none; min-width: 0; max-width: 100%; }
