@@ -53,3 +53,7 @@ Despues de `--aplicar`: revisar a ojo cada `.webp` nuevo (sin precios, telefonos
 ## Costos
 
 Todo corre en tu Mac o en la base: ningun push ni despliegue dispara builds de Vercel por esta entrega salvo el despliegue normal del codigo nuevo (1 build al integrar a main).
+
+## Estado de las fotos web (14-nov, solo --verificar)
+
+`fotos-web.mjs --verificar` sobre las 23 candidatas: 16 pasan la validacion (tipo, 300 px o mas, proporcion) y 7 quedan en la cola por dudosas (Adjust 40K, Dojo 40K, Elfbar 40K, Lost Mary 35K, Nexa 50K, Optimus, Waka DM 15K). Las candidatas se buscaron por texto y NO se han visto a ojo: antes de `--aplicar` abrir cada imagen (Waka Titan, Vhill y Waka DM pueden traer marca de tienda; Dojo puede traer fondo) y quitar de `fotos-web-candidatas.json` las que no sirvan. Nexa 50K y Nexa Ultra 50K, y Optimus y Waka 100, apuntan al mismo producto: decidir si comparten foto.
