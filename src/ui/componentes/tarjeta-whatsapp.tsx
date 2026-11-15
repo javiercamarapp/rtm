@@ -48,8 +48,7 @@ function puedeCompartirArchivos(): boolean {
 }
 
 /**
- * Tarjeta "Enviar por WhatsApp": la vista previa del PDF es el recuadro principal, el mensaje va como burbuja de chat y las acciones viven dentro
- * del mismo recuadro. El software NUNCA envia nada: copiar, descargar, abrir WhatsApp o compartir las hace la persona, y WhatsApp se abre sin
+ * Tarjeta "Enviar por WhatsApp": en horizontal: encabezado de una linea y debajo una fila con la miniatura del PDF, la burbuja del mensaje y la columna de acciones. El software NUNCA envia nada: copiar, descargar, abrir WhatsApp o compartir las hace la persona, y WhatsApp se abre sin
  * numero (la persona elige el contacto), asi ni la pagina ni el modelo de IA ven telefonos.
  */
 export function TarjetaWhatsApp({ titulo = 'Enviar nota por WhatsApp', mensaje, urlPdf = null, nombreArchivo = 'nota.pdf', vistaPrevia, nombreDocumento = 'la nota', estado, hora, obtenerCompleto, testid = 'tarjeta-whatsapp', etiquetaCopiar = 'Copiar para WhatsApp', testidMensaje = 'texto-whatsapp', testidCopiar = 'copiar-texto' }: PropsTarjetaWhatsApp) {
@@ -118,42 +117,47 @@ export function TarjetaWhatsApp({ titulo = 'Enviar nota por WhatsApp', mensaje, 
         {estado && <span className="rtm-wa-estado">{estado}</span>}
       </header>
 
-      {vistaPrevia && (
-        <div className="rtm-wa-vista">
-          <span className="rtm-wa-papel" aria-hidden="true">
-            <span className="rtm-wa-papel-fondo" inert>{vistaPrevia}</span>
-          </span>
-          <button ref={abridor} type="button" className="rtm-wa-vista-abrir" onClick={() => setAmpliada(true)} aria-haspopup="dialog" aria-label={`Abrir vista ampliada de ${nombreDocumento}`} data-testid="wa-vista-previa">
-            <span className="rtm-wa-vista-pie" aria-hidden="true">Ver nota completa</span>
+      <div className="rtm-wa-fila" data-vista={vistaPrevia ? '' : undefined}>
+        {vistaPrevia && (
+          <div className="rtm-wa-vista">
+            <span className="rtm-wa-papel" aria-hidden="true">
+              <span className="rtm-wa-papel-fondo" inert>{vistaPrevia}</span>
+            </span>
+            <button ref={abridor} type="button" className="rtm-wa-vista-abrir" onClick={() => setAmpliada(true)} aria-haspopup="dialog" aria-label={`Abrir vista ampliada de ${nombreDocumento}`} data-testid="wa-vista-previa">
+              <span className="rtm-wa-vista-pie" aria-hidden="true">Ver nota completa</span>
+            </button>
+          </div>
+        )}
+
+        <div className="rtm-wa-chat">
+          <div className="rtm-wa-burbuja" data-abierta={mensajeAbierto ? '' : undefined}>
+            <pre className="rtm-wa-mensaje" id={`${id}-m`} data-testid={testidMensaje}>{mensaje}</pre>
+            {hora && <span className="rtm-wa-hora">{hora}</span>}
+          </div>
+          <button type="button" className="rtm-wa-enlace" aria-expanded={mensajeAbierto} aria-controls={`${id}-m`} onClick={() => setMensajeAbierto((a) => !a)} data-testid="wa-ver-mensaje">
+            {mensajeAbierto ? 'Ver menos' : 'Ver mensaje completo'}
           </button>
         </div>
-      )}
 
-      <div className="rtm-wa-chat">
-        <div className="rtm-wa-burbuja" data-abierta={mensajeAbierto ? '' : undefined}>
-          <pre className="rtm-wa-mensaje" id={`${id}-m`} data-testid={testidMensaje}>{mensaje}</pre>
-          {hora && <span className="rtm-wa-hora">{hora}</span>}
+        <div className="rtm-wa-acciones" role="group" aria-label="Acciones para enviar por WhatsApp">
+          <button type="button" className="rtm-boton rtm-boton-chico rtm-boton-primario" onClick={copiar} disabled={ocupado} data-testid={testidCopiar}>{etiquetaCopiar}</button>
+          {urlPdf && <a className="rtm-boton rtm-boton-chico" href={urlPdf} download={nombreArchivo} data-testid="descargar-pdf">Descargar PDF de la nota</a>}
+          {!obtenerCompleto && <a className="rtm-boton rtm-boton-chico" href={enlaceWhatsApp(mensaje)} target="_blank" rel="noopener noreferrer" data-testid="abrir-whatsapp">Abrir en WhatsApp</a>}
+          {compartible && <button type="button" className="rtm-boton rtm-boton-chico" onClick={compartir} disabled={ocupado} data-testid="compartir-pdf">Compartir PDF y mensaje</button>}
         </div>
-        <button type="button" className="rtm-wa-enlace" aria-expanded={mensajeAbierto} aria-controls={`${id}-m`} onClick={() => setMensajeAbierto((a) => !a)} data-testid="wa-ver-mensaje">
-          {mensajeAbierto ? 'Ver menos' : 'Ver mensaje completo'}
-        </button>
       </div>
 
-      <div className="rtm-wa-acciones" role="group" aria-label="Acciones para enviar por WhatsApp">
-        <button type="button" className="rtm-boton rtm-boton-primario" onClick={copiar} disabled={ocupado} data-testid={testidCopiar}>{etiquetaCopiar}</button>
-        {urlPdf && <a className="rtm-boton" href={urlPdf} download={nombreArchivo} data-testid="descargar-pdf">Descargar PDF de la nota</a>}
-        {!obtenerCompleto && <a className="rtm-boton" href={enlaceWhatsApp(mensaje)} target="_blank" rel="noopener noreferrer" data-testid="abrir-whatsapp">Abrir en WhatsApp</a>}
-        {compartible && <button type="button" className="rtm-boton" onClick={compartir} disabled={ocupado} data-testid="compartir-pdf">Compartir PDF y mensaje</button>}
+      <div className="rtm-wa-pie">
+        <p className="rtm-wa-ayuda">
+          {compartible
+            ? 'Compartir envía el PDF y el mensaje juntos: tú eliges el contacto en WhatsApp.'
+            : urlPdf
+              ? 'En computadora: descarga el PDF, copia el mensaje y pégalos en la conversación de WhatsApp.'
+              : 'Copia el mensaje y pégalo en la conversación de WhatsApp.'}
+          {' '}El sistema no envía nada por sí solo.
+        </p>
+        <p className={`rtm-wa-aviso${aviso ? ` rtm-wa-aviso-${aviso.tipo}` : ''}`} role={aviso?.tipo === 'error' ? 'alert' : 'status'} aria-live={aviso?.tipo === 'error' ? 'assertive' : 'polite'} data-testid="wa-aviso">{aviso?.texto ?? ''}</p>
       </div>
-      <p className="rtm-wa-ayuda">
-        {compartible
-          ? 'Compartir envía el PDF y el mensaje juntos: tú eliges el contacto en WhatsApp.'
-          : urlPdf
-            ? 'En computadora: descarga el PDF, copia el mensaje y pégalos en la conversación de WhatsApp.'
-            : 'Copia el mensaje y pégalo en la conversación de WhatsApp.'}
-        {' '}El sistema no envía nada por sí solo.
-      </p>
-      <p className={`rtm-wa-aviso${aviso ? ` rtm-wa-aviso-${aviso.tipo}` : ''}`} role={aviso?.tipo === 'error' ? 'alert' : 'status'} aria-live={aviso?.tipo === 'error' ? 'assertive' : 'polite'} data-testid="wa-aviso">{aviso?.texto ?? ''}</p>
 
       {vistaPrevia && (
         <dialog ref={dialogo} className="rtm-hoja rtm-wa-ampliada" data-ancho="lg" aria-labelledby={`${id}-d`} onClose={() => { if (ampliada) cerrar(); }} onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }} data-testid="wa-ampliada">

@@ -122,4 +122,21 @@ describe('TarjetaWhatsApp', () => {
     act(() => unica(m, 'wa-vista-previa').click());
     expect(await auditar(m.cont)).toEqual([]);
   });
+
+  it('es horizontal: una fila con vista previa, mensaje y acciones, y la ayuda al pie en una sola linea', () => {
+    const m = abrir(montar(<TarjetaWhatsApp mensaje={MENSAJE} urlPdf="/x.pdf" vistaPrevia={<Nota />} />));
+    const fila = m.cont.querySelector('.rtm-wa-fila')!;
+    expect(fila.hasAttribute('data-vista')).toBe(true);
+    expect([...fila.children].map((c) => c.className)).toEqual(['rtm-wa-vista', 'rtm-wa-chat', 'rtm-wa-acciones']);
+    expect(fila.querySelector('.rtm-wa-acciones [data-testid="copiar-texto"]')).not.toBeNull();
+    expect(m.cont.querySelector('.rtm-wa-pie .rtm-wa-ayuda')).not.toBeNull();
+    expect(m.cont.querySelector('.rtm-wa-pie [data-testid="wa-aviso"]')).not.toBeNull();
+  });
+
+  it('sin vista previa la fila tiene dos zonas', () => {
+    const m = abrir(montar(<TarjetaWhatsApp mensaje={MENSAJE} />));
+    const fila = m.cont.querySelector('.rtm-wa-fila')!;
+    expect(fila.hasAttribute('data-vista')).toBe(false);
+    expect([...fila.children].map((c) => c.className)).toEqual(['rtm-wa-chat', 'rtm-wa-acciones']);
+  });
 });
