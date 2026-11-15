@@ -7,6 +7,7 @@ import { parsearPegado } from '@/dominio/dropshipping/pegado';
 import type { CatalogoDs, DatosDestinatario } from '@/dominio/dropshipping/tipos';
 import { textoOrden, agruparRenglones } from '@/dominio/dropshipping/orden';
 import { centavosDeTexto, useAccion } from '../../operacion/usar-accion';
+import { RenglonesTabla } from '@/ui/componentes/renglones-tabla';
 import { CamposDestinatario, DESTINATARIO_VACIO } from '../bloque-destinatario';
 import { PanelOrden } from '../panel-orden';
 
@@ -151,14 +152,9 @@ export function FormularioDs({ clienteId, clienteNombre, origen, catalogo, socio
         <button type="button" className="rtm-boton" onClick={agregarPegado} data-testid="ds-agregar-pegado">Agregar los sabores pegados</button>
         {sku && <p className="rtm-nota">Costo de {proveedor}: {sku.costo_cent === null ? 'sin costo vigente (no se puede surtir)' : formatearMoneda(sku.costo_cent)} · precio del tabulador: {sku.precio_cent === null ? 'sin precio' : formatearMoneda(sku.precio_cent)}</p>}
         {renglones.length > 0 && (
-          <ul className="rtm-lineas-form" aria-label="Renglones agregados" data-testid="ds-renglones">
-            {renglones.map((x, i) => (
-              <li key={`${x.sku_id}-${i}`} className="rtm-acciones-fila">
-                <span>{nombreVape(x.modelo)} · {saborMayus(x.sabor)} · {formatearPiezas(x.piezas)}{x.precioCent !== null ? ` a ${formatearMoneda(x.precioCent)}` : ''}</span>
-                <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setRenglones((r) => r.filter((_, j) => j !== i))}>Quitar</button>
-              </li>
-            ))}
-          </ul>
+          <RenglonesTabla etiqueta="Renglones agregados" precios testid="ds-renglones"
+            renglones={renglones.map((x, i) => ({ clave: `${x.sku_id}-${i}`, marca: x.marca, modelo: x.modelo, sabor: x.sabor, piezas: x.piezas, precioCent: x.precioCent }))}
+            acciones={(_, i) => <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setRenglones((r) => r.filter((_x, j) => j !== i))}>Quitar</button>} />
         )}
       </section>
 

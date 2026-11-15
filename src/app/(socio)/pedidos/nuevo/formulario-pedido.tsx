@@ -7,10 +7,12 @@ import { bigintACentavos } from '@/dominio/operacion/json';
 import { formatearMoneda, formatearPiezas, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import type { CatalogoPedido, Origen } from '@/dominio/operacion/tipos';
 import { ModeloTarjeta } from '@/ui/componentes/modelo';
+import { RenglonesTabla } from '@/ui/componentes/renglones-tabla';
 import { ORIGEN } from '../../operacion/etiquetas';
 import { centavosDeTexto, useAccion } from '../../operacion/usar-accion';
 
-interface Renglon { sku_id: number; modelo: string; sabor: string; piezas: number; precio: string; motivo: string; tab: bigint | null }
+const aCentavos = (t: string): bigint | null => { const c = centavosDeTexto(t); return c === null ? null : BigInt(c); };
+interface Renglon { sku_id: number; marca: string; modelo: string; sabor: string; piezas: number; precio: string; motivo: string; tab: bigint | null }
 
 const textoPesos = (c: bigint | null) => (c === null ? '' : formatearMoneda(c).replace('$', ''));
 
@@ -52,7 +54,7 @@ export function FormularioPedido({ clienteId, clienteNombre, catalogo }: { clien
     if (!Number.isInteger(n) || n <= 0) return setLocal('Las piezas deben ser un entero positivo.');
     if (centavosDeTexto(precio) === null || centavosDeTexto(precio) === 0) return setLocal('Escribe el precio por pieza (por ejemplo 250 o 250.00).');
     setLocal(null);
-    setRenglones((r) => [...r, { sku_id: sku.sku_id, modelo: sku.modelo, sabor: sku.sabor, piezas: n, precio, motivo, tab: sku.precio_cent }]);
+    setRenglones((r) => [...r, { sku_id: sku.sku_id, marca: sku.marca, modelo: sku.modelo, sabor: sku.sabor, piezas: n, precio, motivo, tab: sku.precio_cent }]);
     setPiezas('');
     setMotivo('');
   };
@@ -113,14 +115,9 @@ export function FormularioPedido({ clienteId, clienteNombre, catalogo }: { clien
         </div>
         {sku && <p className="rtm-nota">Tabulador del cliente: {sku.precio_cent === null ? 'sin precio (escríbelo a mano)' : formatearMoneda(sku.precio_cent)} · existencia {formatearPiezas(sku.existencia)} · disponible {formatearPiezas(Math.max(sku.disponible, 0))}</p>}
         {renglones.length > 0 && (
-          <ul className="rtm-lineas-form" aria-label="Renglones agregados">
-            {renglones.map((x, i) => (
-              <li key={`${x.sku_id}-${i}`} className="rtm-acciones-fila">
-                <span>{nombreVape(x.modelo)} · {saborMayus(x.sabor)} · {formatearPiezas(x.piezas)} a ${x.precio}{x.tab !== null && centavosDeTexto(x.precio) !== bigintACentavos(x.tab) ? ' (distinto del tabulador)' : ''}</span>
-                <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setRenglones((r) => r.filter((_, j) => j !== i))}>Quitar</button>
-              </li>
-            ))}
-          </ul>
+          <RenglonesTabla etiqueta="Renglones agregados" precios testid="pedido-renglones"
+            renglones={renglones.map((x, i) => ({ clave: `${x.sku_id}-${i}`, marca: x.marca, modelo: x.modelo, sabor: x.sabor, piezas: x.piezas, precioCent: aCentavos(x.precio), detalle: x.tab !== null && centavosDeTexto(x.precio) !== bigintACentavos(x.tab) ? 'Distinto del tabulador' : undefined }))}
+            acciones={(_, i) => <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setRenglones((r) => r.filter((_x, j) => j !== i))}>Quitar</button>} />
         )}
       </section>
 
