@@ -134,19 +134,36 @@ body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { widt
 .rtm-boton-item:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: -2px; }
 @media (pointer: coarse) { .rtm-boton, .rtm-boton-chico, .rtm-boton-item { min-height: 44px; } }
 
-/* ---- BarraAcciones: UNA sola fila (vistas + acciones secundarias terciarias + primarias); jamas se parte en dos filas ni lleva un menu "Mas". ----
+/* ---- BarraAcciones: UNA sola fila (vistas + grupo unido de acciones secundarias + primarias); jamas se parte en dos filas ni lleva un menu "Mas". ----
+   Botones DENSOS (28 px en escritorio, 12.5 px, relleno de 10 px): el alto visual no crece en pantallas tactiles; el area de toque de 44 px sale de un pseudo-elemento invisible (::before; ::after queda para el indicador de carga).
+   Las secundarias forman un solo grupo unido (pastilla con filetes finos, esquinas redondeadas solo en los extremos); la primaria va aparte, a la derecha.
+   Solo se tocan los botones HIJOS DIRECTOS de la barra: los botones de los dialogos que cuelgan de ella conservan su tamano.
    Escritorio: nowrap; el encabezado baja la barra entera a su propia linea si no cabe junto al titular. Pantallas de hasta 1100 px (telefono y tableta): si ni sola cabe, la fila se desliza en horizontal sin barra visible y con un desvanecido en el borde derecho. */
 .rtm-ba { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: var(--rtm-v-acciones); min-width: 0; max-width: 100%; }
 .rtm-ba > *, .rtm-ba-sec > *, .rtm-ba-primarias > * { flex: none; }
-.rtm-ba-sec, .rtm-ba-primarias { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-v-acciones); }
-.rtm-ba-sec > .rtm-boton, .rtm-ba-primarias > .rtm-boton { white-space: nowrap; }
-.rtm-ba-vistas { display: inline-flex; padding: 2px; gap: 2px; height: var(--rtm-boton-alto); box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-ctl-r); background: var(--rtm-tint); }
-.rtm-ba-vistas > a { display: inline-flex; align-items: center; padding: 0 10px; border-radius: calc(var(--rtm-ctl-r) - 2px); color: var(--rtm-ink-2); font-size: 12.5px; font-weight: 500; text-decoration: none; white-space: nowrap; transition: background-color 140ms ease, color 140ms ease; }
+.rtm-ba-primarias { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-ba-gap); }
+.rtm-ba-sec { display: inline-flex; flex-wrap: nowrap; align-items: stretch; gap: 0; height: var(--rtm-ba-alto); box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-ctl-r); background: var(--rtm-surface); }
+:is(.rtm-ba-sec, .rtm-ba-primarias) > .rtm-boton { position: relative; height: var(--rtm-ba-alto); min-height: var(--rtm-ba-alto); padding: 0 var(--rtm-ba-px); gap: var(--rtm-ba-gap); font-size: var(--rtm-ba-fs); white-space: nowrap; box-sizing: border-box; }
+:is(.rtm-ba-sec, .rtm-ba-primarias) > .rtm-boton > svg { width: 12px; height: 12px; }
+:is(.rtm-ba-sec, .rtm-ba-primarias) > .rtm-boton::before { content: ''; position: absolute; inset: -8px -2px; }
+.rtm-ba-sec > .rtm-boton { height: calc(var(--rtm-ba-alto) - 2px); min-height: 0; border-width: 0; border-radius: 0; background: transparent; }
+.rtm-ba-sec > .rtm-boton:hover:not(:disabled) { background: var(--rtm-tint); }
+.rtm-ba-sec > .rtm-boton ~ .rtm-boton { border-left: 1px solid var(--rtm-line-2); }
+.rtm-ba-sec > .rtm-boton:not(.rtm-boton ~ .rtm-boton) { border-start-start-radius: calc(var(--rtm-ctl-r) - 1px); border-end-start-radius: calc(var(--rtm-ctl-r) - 1px); }
+.rtm-ba-sec > .rtm-boton:not(:has(~ .rtm-boton)) { border-start-end-radius: calc(var(--rtm-ctl-r) - 1px); border-end-end-radius: calc(var(--rtm-ctl-r) - 1px); }
+.rtm-ba-sec > .rtm-boton:focus-visible { outline-offset: -2px; z-index: 1; }
+.rtm-ba-sec > .rtm-boton[aria-busy='true'] { color: transparent; }
+.rtm-ba-vistas { display: inline-flex; padding: 2px; gap: 2px; height: var(--rtm-ba-alto); box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-ctl-r); background: var(--rtm-tint); }
+.rtm-ba-vistas > a { position: relative; display: inline-flex; align-items: center; padding: 0 var(--rtm-ba-px); border-radius: calc(var(--rtm-ctl-r) - 2px); color: var(--rtm-ink-2); font-size: var(--rtm-ba-fs); font-weight: 500; text-decoration: none; white-space: nowrap; transition: background-color 140ms ease, color 140ms ease; }
+.rtm-ba-vistas > a::after { content: ''; position: absolute; inset: -8px -1px; }
 .rtm-ba-vistas > a:hover { background: var(--rtm-surface); color: var(--rtm-ink); }
 .rtm-ba-vistas > a:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 1px; }
+.rtm-ba-vistas > a[aria-current='page'], .rtm-ba-vistas > a[aria-current='true'] { background: var(--rtm-surface); color: var(--rtm-ink); }
 @media (max-width: 1100px) {
   .rtm-ba { justify-content: flex-start; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 2px; margin: -2px; -webkit-mask-image: linear-gradient(to right, black calc(100% - 20px), transparent); mask-image: linear-gradient(to right, black calc(100% - 20px), transparent); }
   .rtm-ba::-webkit-scrollbar { display: none; }
   /* La barra de inventario abre un panel flotante (absoluto o fijo): sin overflow para que no se recorte. */
   .rtm-ba:has(.rtm-exportar) { overflow: visible; -webkit-mask-image: none; mask-image: none; }
 }
+/* Tactil en tableta o telefono: la fila desliza dentro de un contenedor con overflow, que recortaria el area de toque de 44 px; se reserva con relleno y margen negativo (sin sumar alto a la pagina). */
+@media (pointer: coarse) and (max-width: 1100px) { .rtm-ba { padding: 8px 2px; margin: -8px -2px; } }

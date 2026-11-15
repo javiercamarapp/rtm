@@ -130,15 +130,15 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-seg > a small { font-size: var(--rtm-t-micro); color: var(--rtm-ink-3); }
 .rtm-seg > a::after { content: ''; position: absolute; inset: -8px -2px; }
 
-.rtm-pestanas { border-bottom: var(--rtm-borde); overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+/* Pestanas: UNA sola linea siempre (nunca flex-wrap: wrap). Si no caben, la tira desliza en horizontal con la barra oculta y un desvanecido en el borde con mas contenido (data-izq / data-der los pone el componente). */
+.rtm-pestanas { border-bottom: var(--rtm-borde); overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; scroll-snap-type: x proximity; }
 .rtm-pestanas::-webkit-scrollbar { display: none; }
-.rtm-pestanas ul { display: flex; flex-wrap: wrap; column-gap: 20px; margin: 0; padding: 0; list-style: none; }
-@media (max-width: 767px) {
-  /* Pantalla angosta: las pestanas deslizan en una sola linea y el borde derecho se desvanece para avisar que hay mas. */
-  .rtm-pestanas { -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent); mask-image: linear-gradient(to right, black calc(100% - 28px), transparent); }
-  .rtm-pestanas ul { flex-wrap: nowrap; min-width: max-content; padding-right: 32px; }
-}
-.rtm-pestanas a { display: inline-flex; align-items: center; gap: 6px; height: 36px; font-size: var(--rtm-t-cuerpo); font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-3); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; scroll-snap-align: start; white-space: nowrap; position: relative; }
+.rtm-pestanas ul { display: flex; flex-wrap: nowrap; column-gap: 0; margin: 0; padding: 0; list-style: none; min-width: max-content; }
+.rtm-pestanas li { flex: none; }
+.rtm-pestanas[data-der='true'] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.rtm-pestanas[data-izq='true'] { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
+.rtm-pestanas[data-izq='true'][data-der='true'] { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.rtm-pestanas a { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 9px; font-size: 13px; font-weight: var(--rtm-peso-medio); color: var(--rtm-ink-3); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; scroll-snap-align: start; white-space: nowrap; position: relative; }
 .rtm-pestanas a::after { content: ''; position: absolute; inset: -4px -6px; }
 .rtm-pestanas a:hover { color: var(--rtm-ink); }
 .rtm-pestanas a[aria-current='page'] { color: var(--rtm-ink); font-weight: var(--rtm-peso-fuerte); border-bottom-color: var(--rtm-ink); }

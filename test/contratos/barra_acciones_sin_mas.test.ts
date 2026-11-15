@@ -29,7 +29,7 @@ describe('BarraAcciones sin boton Mas', () => {
   });
   it('la fila nunca se parte: .rtm-ba y sus grupos son nowrap y no hay flex-wrap: wrap en ellos', () => {
     const css = texto(join(SRC, 'ui', 'estilos', 'controles.css'));
-    for (const sel of ['\\.rtm-ba', '\\.rtm-ba-sec, \\.rtm-ba-primarias']) {
+    for (const sel of ['\\.rtm-ba', '\\.rtm-ba-sec', '\\.rtm-ba-primarias']) {
       const m = new RegExp(`(^|\\n)${sel}\\s*\\{[^}]*\\}`).exec(css);
       expect(m, sel).not.toBeNull();
       expect(m![0], sel).toMatch(/flex-wrap:\s*nowrap/);

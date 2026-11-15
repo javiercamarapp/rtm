@@ -39,23 +39,7 @@ export function Segmentado({ etiquetaAria, opciones, tamano = 'normal' }: { etiq
   );
 }
 
-/** Pestanas de seccion (maximo 6) con subrayado de 2 px y contador. Sustituye al subnav. */
-export function Pestanas({ etiquetaAria, items }: { etiquetaAria: string; items: { id: string; etiqueta: string; href: string; activa: boolean; contador?: number; testid?: string }[] }) {
-  return (
-    <nav className="rtm-pestanas" data-desliza="767" aria-label={etiquetaAria}>
-      <ul>
-        {items.map((i) => (
-          <li key={i.id}>
-            <Link href={i.href} aria-current={i.activa ? 'page' : undefined} data-testid={i.testid}>
-              {i.etiqueta}
-              {i.contador !== undefined && <small>{i.contador}</small>}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
+export { Pestanas, type ItemPestana } from './pestanas';
 
 /** Una sola linea de 32 px: filtros a la izquierda, `extras` a la derecha; en movil desplaza en horizontal. */
 export function BarraFiltros({ children, extras, etiquetaAria }: { children: ReactNode; extras?: ReactNode; etiquetaAria: string }) {
