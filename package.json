@@ -46,7 +46,10 @@
     "latido": "node scripts/latido-local.mjs",
     "cargador": "node scripts/cargador/cargar.mjs",
     "cargador:cuadre": "node scripts/cargador/cuadre.mjs",
-    "cargador:prueba": "node scripts/cargador/prueba-sintetica.mjs"
+    "cargador:prueba": "node scripts/cargador/prueba-sintetica.mjs",
+    "demo:cargar": "node scripts/demo/cargar.mjs",
+    "demo:reiniciar": "node scripts/demo/reiniciar.mjs",
+    "demo:enlace": "node scripts/demo/enlace.mjs"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
