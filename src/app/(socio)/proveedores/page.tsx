@@ -111,6 +111,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
                     { nombre: 'p_motivo', etiqueta: 'Motivo', tipo: 'texto', requerido: true },
                   ]} />
                 <Link className="rtm-boton rtm-boton-terciario" href="/proveedores/inventario" data-testid="ir-inventario" title="Inventario actual de proveedores" aria-label="Inventario actual de proveedores">Inventario</Link>
+                <Link className="rtm-boton rtm-boton-terciario" href="/proveedores/stock" data-testid="ir-stock" title="Stock disponible de proveedores" aria-label="Stock disponible de proveedores">Stock</Link>
               </>
             }
           />

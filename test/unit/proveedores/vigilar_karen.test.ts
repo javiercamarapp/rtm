@@ -76,7 +76,7 @@ describe('guardas del vigilante', () => {
     expect(fotosFaltantes([{ clave: 'a' }, { clave: 'b' }], ['a'])).toEqual([{ clave: 'b' }]);
   });
   it('lee la fuente del entorno y nunca devuelve algo vacio', () => {
-    expect(leerFuente(undefined, { INVENTARIO_PROVEEDORES_FUENTE: ' https://x.test ' })).toBe('https://x.test');
-    expect(leerFuente(undefined, {})).toBeNull();
+    expect(leerFuente(undefined, { INVENTARIO_PROVEEDORES_FUENTE: ' https://x.test ' } as unknown as NodeJS.ProcessEnv)).toBe('https://x.test');
+    expect(leerFuente(undefined, {} as unknown as NodeJS.ProcessEnv)).toBeNull();
   });
 });
