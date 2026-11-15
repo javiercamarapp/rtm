@@ -290,7 +290,27 @@ export async function resolverAccion(intencion: Intencion, autor: Miembro, catal
     case 'retiro_utilidad':
     case 'deshacer':
     case 'aclarar':
-    case 'ninguna':
+    case 'ninguna': // fin de las intenciones base; siguen las ampliadas (carril interprete, estado 'extraido': su resolucion de catalogo y su puerta las construyen otros carriles)
+    case 'pedido_ds':
+    case 'envio_lote':
+    case 'guias_lote':
+    case 'plazo_acordar':
+    case 'recargo_credito':
+    case 'compra_cierre':
+    case 'entrega_fondos':
+    case 'liquidacion_socios':
+    case 'retiro_capital':
+    case 'renta_omar':
+    case 'obsequio':
+    case 'sabor_alta':
+    case 'modelo_alta':
+    case 'costo_lista':
+    case 'alias_ensenar':
+    case 'alias_respuesta':
+    case 'sabor_respuesta':
+    case 'slot_respuesta':
+    case 'correccion':
+    case 'cancelar':
       return { ok: true, resuelta: { intencion, resoluciones: res } };
   }
 }

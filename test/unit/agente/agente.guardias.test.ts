@@ -28,7 +28,7 @@ describe('criterio: ningun numero que no venga del servidor llega a una respuest
     expect(e.ultimoGrupo().texto).toContain('precio');
   });
 
-  it('cifras con otro formato SI tienen procedencia ("28pz", "7 mil", palabras)', async () => {
+  it('cifras con otro formato SI tienen procedencia ("28pz", palabras); un monto con "mil" tiene procedencia pero se repite completo antes de registrar', async () => {
     const e = escenario([
       unaAccion(pedido('Cliente Norte', [['jupiter', 28]])),
       unaAccion(pago('Cliente Norte', 700_000)),
@@ -39,6 +39,7 @@ describe('criterio: ningun numero que no venga del servidor llega a una respuest
     // Decision del dueno (14-nov): un monto abreviado ("7 mil") se repite con la cifra completa antes de registrar; las palabras y "28pz" siguen valiendo.
     expect(e.negocio.numeroDeHechos()).toBe(1);
     expect(e.ultimoGrupo().texto).toContain('cifra completa');
+    expect(e.ultimoGrupo().texto).toContain('7,000');
     await e.socio('angelo', 'Cliente Sur veinticuatro nexa');
     expect(e.negocio.numeroDeHechos()).toBe(2);
   });

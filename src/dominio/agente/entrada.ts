@@ -26,7 +26,7 @@ export function sanitizar(texto: string): string {
  * pueda abrir ni cerrar una etiqueta del prompt (<mensaje>, </system>) ni inyectar marcado. Se usa al dar de alta y al ofrecer candidatos al modelo.
  */
 export function nombreSeguro(texto: string, max = 60): string {
-  return sanitizar(texto).replace(/</g, '‹').replace(/>/g, '›').replace(/\s+/g, ' ').trim().slice(0, max);
+  return sanitizar(texto).slice(0, MAX_CARACTERES).replace(/</g, '‹').replace(/>/g, '›').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
 const PATRONES_INYECCION: ReadonlyArray<readonly [string, RegExp]> = [
@@ -57,13 +57,18 @@ const PALABRAS_DE_NEGOCIO = new Set([
   'utilidad', 'cartera', 'estado', 'reembolso', 'reembolsa', 'retiro', 'retire', 'saque', 'capital', 'devolucion', 'devolvio', 'paquete', 'perdio', 'extravio', 'danado', 'cobro',
   'enviado', 'entregado', 'cancela', 'cancelar', 'recibi', 'recibir', 'recepcion', 'merma', 'conteo', 'cliente', 'precio', 'acta', 'firmar', 'firma', 'cuadra', 'cuadran', 'balance', 'diario',
   'cobertura', 'reporte', 'llego', 'aprobar', 'aprueba', 'servicio', 'openrouter', 'vercel', 'lote', 'historico', 'cuentas', 'socios', 'faltan', 'falta', 'valuacion', 'estamos', 'igualar', 'igualados',
+  // Operaciones ampliadas (carril interprete, 14-nov): credito y plazo, dropshipping, paqueterias, renta, obsequio, altas, alias y correcciones.
+  'credito', 'contado', 'fiado', 'plazo', 'recargo', 'interes', 'dropshipping', 'envio', 'salieron', 'salio', 'guias', 'paqueteria', 'castores', 'pitic', 'dhl', 'estafeta', 'entregue', 'liquidacion', 'liquide',
+  'renta', 'regale', 'obsequio', 'regalo', 'sabor', 'sabores', 'modelo', 'costo', 'alias', 'apodo', 'cancela', 'olvidalo', 'dejalo', 'corrige', 'corrijo', 'perdon', 'equivoque', 'vencimientos', 'vence', 'cobrar',
 ]);
 
 /**
  * Prefiltro sin IA: ignora stickers, "ok", "gracias" y charla sin cifras. Procesa si hay digitos, signo de pregunta
  * o alguna palabra del negocio. Lo descartado se cuenta (sin contenido) para vigilar que no sea demasiado estricto.
  */
-export function debeProcesarConIa(texto: string): boolean {
+export function debeProcesarConIa(texto: string, opciones: { hayPreguntaPendiente?: boolean } = {}): boolean {
+  // Con una pregunta del bot esperando respuesta, un "si", "no" o "a credito" SI es una respuesta: nunca se descarta como charla.
+  if (opciones.hayPreguntaPendiente === true && normalizar(texto) !== '') return true;
   if (/\d/.test(texto) || /[?¿]/.test(texto) || valoresDeTexto(texto).size > 0) return true;
   return normalizar(texto)
     .split(' ')

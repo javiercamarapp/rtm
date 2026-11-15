@@ -1,0 +1,326 @@
+[
+ {
+  "id": "n-039",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "entregue 20,000 a la sociedad en efectivo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "entrega_fondos",
+     "socio": "javier",
+     "destino": "sociedad",
+     "monto_pesos": 20000,
+     "via": "efectivo"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-040",
+  "categoria": "socios",
+  "autor": "angelo",
+  "texto": "le pase 10 mil a Isaac con el dinero que cobre yo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "entrega_fondos",
+     "socio": "angelo",
+     "destino": "isaac",
+     "monto_pesos": 10000
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-041",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "Angelo entrego 35,000 a la sociedad por transferencia",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "entrega_fondos",
+     "socio": "angelo",
+     "destino": "sociedad",
+     "monto_pesos": 35000,
+     "via": "transferencia"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-042",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "liquidacion: le pase 5,000 a Angelo por transferencia",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "liquidacion_socios",
+     "de_socio": "javier",
+     "a_socio": "angelo",
+     "monto_pesos": 5000,
+     "via": "transferencia"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-043",
+  "categoria": "socios",
+  "autor": "angelo",
+  "texto": "te liquido 12,500 Javier, en efectivo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "liquidacion_socios",
+     "de_socio": "angelo",
+     "a_socio": "javier",
+     "monto_pesos": 12500,
+     "via": "efectivo"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-044",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "retiro de capital 8,000 en efectivo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "retiro_capital",
+     "socio": "javier",
+     "monto_pesos": 8000,
+     "via": "efectivo"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-045",
+  "categoria": "socios",
+  "autor": "angelo",
+  "texto": "saco 50 mil de mi capital por transferencia",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "retiro_capital",
+     "socio": "angelo",
+     "monto_pesos": 50000,
+     "via": "transferencia"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-046",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "pague 400 de renta a Omar",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "renta_omar",
+     "monto_pesos": 400,
+     "pagado_por": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-047",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "le di a Omar 960, es lo de la semana, en efectivo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "renta_omar",
+     "monto_pesos": 960,
+     "via": "efectivo"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-048",
+  "categoria": "socios",
+  "autor": "angelo",
+  "texto": "le adelante 2,000 de renta a Omar por transferencia",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "renta_omar",
+     "monto_pesos": 2000,
+     "pagado_por": "angelo",
+     "via": "transferencia"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-049",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "pagamos 3,500 de renta de Omar desde la sociedad",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "renta_omar",
+     "monto_pesos": 3500,
+     "pagado_por": "sociedad"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-050",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "pague la renta del local 9,000",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "monto_pesos": 9000,
+     "pagado_por": "javier"
+    }
+   ],
+   "nota": "distractor: renta del local es gasto, no renta de Omar"
+  }
+ },
+ {
+  "id": "n-051",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "meti 15,000 de capital",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aportacion",
+     "socio": "javier",
+     "monto_pesos": 15000,
+     "intencion": "capital"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-052",
+  "categoria": "socios",
+  "autor": "angelo",
+  "texto": "reembolsale a Javier 2,500 por transferencia",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "reembolso_socio",
+     "socio": "javier",
+     "monto_pesos": 2500,
+     "via": "transferencia"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-053",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "retiro de utilidad de 6,000 en efectivo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "retiro_utilidad",
+     "socio": "javier",
+     "monto_pesos": 6000,
+     "via": "efectivo"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-054",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "me cayeron 7,500 de Memo Ficticio, a la cuenta de Isaac",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago",
+     "cliente": "memo ficticio",
+     "monto_pesos": 7500
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-055",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "Cliente Alfa mando 30,500 a Karen",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "karen",
+     "monto_pesos": 30500,
+     "cliente": "cliente alfa"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-056",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "le deposite 12,000 a Isaac de la sociedad",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "isaac",
+     "monto_pesos": 12000,
+     "pagado_por": "sociedad"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-057",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "pague 1,200 de guia con mi tarjeta",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "guia",
+     "monto_pesos": 1200,
+     "pagado_por": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-058",
+  "categoria": "socios",
+  "autor": "javier",
+  "texto": "pagamos 500 a Isaac y 500 a Karen",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "isaac",
+     "monto_pesos": 500
+    },
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "karen",
+     "monto_pesos": 500
+    }
+   ]
+  }
+ }
+]

@@ -1,5 +1,7 @@
 // Catalogo de intenciones del agente. El modelo devuelve TEXTOS tal como se dijeron (nunca ids ni importes calculados);
 // el codigo resuelve alias y calcula. Los esquemas estrictos (zod) viven en aplicacion/agente/esquemas.ts y deben coincidir con estos tipos.
+import type { IntencionAmpliada } from './intenciones_ampliadas';
+import { ESCRITURA_AMPLIADA } from './intenciones_ampliadas';
 
 export const TIPOS_GASTO = ['guia', 'envio', 'uber', 'comision_terminal', 'servicio', 'otro'] as const;
 export type TipoGasto = (typeof TIPOS_GASTO)[number];
@@ -331,6 +333,12 @@ export const TIPOS_CONSULTA = [
   'por_pagar',
   /** Valuacion de quien pregunta y del otro socio, y como igualar (agente.valuacion_socios). */
   'valuacion',
+  /** Total por cobrar de los clientes (agente.consulta 'por_cobrar'). */
+  'por_cobrar',
+  /** Pedidos a credito por vencer y vencidos, con su fecha. */
+  'vencimientos',
+  /** Que modelos y sabores se estan vendiendo mas (ventas por modelo del periodo). */
+  'que_se_vende',
 ] as const;
 export type TipoConsulta = (typeof TIPOS_CONSULTA)[number];
 
@@ -390,7 +398,8 @@ export type Intencion =
   | IConsulta
   | IDeshacer
   | IAclarar
-  | INinguna;
+  | INinguna
+  | IntencionAmpliada;
 
 export type TipoIntencion = Intencion['tipo'];
 
@@ -411,6 +420,7 @@ export const MAX_LINEAS_CONTEO = 500;
 export const INTENCIONES_ESCRITURA: readonly TipoIntencion[] = [
   'pedido', 'pago', 'pago_proveedor', 'gasto', 'aportacion', 'reembolso_socio', 'retiro_utilidad', 'devolucion', 'paquete_perdido', 'compra', 'orden_compra', 'toma_omar', 'deshacer',
   'pedido_envio', 'pedido_cancelar', 'compra_recepcion', 'compra_estado', 'compra_aprobar', 'gasto_servicio', 'merma', 'conteo', 'cliente_alta', 'cliente_precio', 'acta_propuesta', 'acta_firma', 'lote_historico', 'pedido_menudeo', 'pago_pedido_menudeo',
+  ...ESCRITURA_AMPLIADA,
 ];
 
 /** Escrituras que mueven dinero o cuentas: se muestran en un resumen y exigen confirmacion explicita ANTES de registrarse. La toma de Omar ya exige la autorizacion de un socio; deshacer tiene su propio flujo. */

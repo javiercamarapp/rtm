@@ -1,0 +1,171 @@
+[
+ {
+  "id": "n-029",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "al P-0012 dale hasta el viernes",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "plazo_acordar",
+     "folio": "P-0012",
+     "plazo": [
+      "viernes"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-030",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "a Cliente Alfa dale 15 dias de plazo en su pedido",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "plazo_acordar",
+     "cliente": "cliente alfa",
+     "plazo": [
+      "15 dias"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-031",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "cambiale el plazo al P-0033 a 3 semanas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "plazo_acordar",
+     "folio": "P-0033",
+     "plazo": [
+      "3 semanas"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-032",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "cobrale el recargo al P-0012",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "recargo_credito",
+     "folio": "P-0012"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-033",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "ponle el interes a Cliente Beta, ya se atraso dos semanas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "recargo_credito",
+     "cliente": "cliente beta"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-034",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "cobrale el recargo del 50 por ciento al P-0012",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "recargo_credito",
+     "folio": "P-0012"
+    }
+   ],
+   "nota": "el porcentaje del mensaje no es un campo: lo calcula SQL"
+  }
+ },
+ {
+  "id": "n-035",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "cierra la C-0002, lo que falta ya no llega",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra_cierre",
+     "folio": "C-0002"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-036",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "cerrar recepcion de la C-0005 con faltante, Karen no manda el resto",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra_cierre",
+     "folio": "C-0005"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-037",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "recibi C-0006: faltaron 12 de nimbo 50k uva hielo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aclarar"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "compra_cierre",
+      "folio": "C-0006"
+     }
+    ]
+   ],
+   "nota": "faltaron 12 = NO llegaron 12: sin lo recibido se pregunta"
+  }
+ },
+ {
+  "id": "n-038",
+  "categoria": "credito",
+  "autor": "javier",
+  "texto": "Cliente Gamma pidio 12 vega 9k fresa a 15 dias",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "cliente gamma",
+     "plazo": [
+      "15 dias"
+     ],
+     "lineas": [
+      {
+       "m": "vega 9k",
+       "s": "fresa",
+       "n": 12
+      }
+     ]
+    }
+   ],
+   "nota": "15 es el plazo, no piezas"
+  }
+ }
+]

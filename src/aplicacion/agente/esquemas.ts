@@ -2,13 +2,13 @@
 // (los opcionales van como null) para poder exigir el mismo esquema al proveedor en modo json_schema estricto.
 import { z } from 'zod';
 import { MAX_ACCIONES, MAX_LINEAS, MAX_LINEAS_CONTEO, TIPOS_CONSULTA, TIPOS_GASTO, type RespuestaExtractor } from '@/dominio/agente/intenciones';
+import { MONTO_TECNICO_MAX, VARIANTES_AMPLIADAS } from './esquemas_ampliados';
 
 const texto = (max: number) => z.string().min(1).max(max);
 const textoONulo = (max: number) => z.string().min(1).max(max).nullable();
-// Sin topes de negocio (decision del dueno, 14-nov): solo un techo TECNICO de cordura (10^12 centavos) que evita desbordes; los cobros mayores a lo que debe el cliente se resuelven como pregunta en SQL.
-const TECHO_CENTAVOS = 1_000_000_000_000;
+// Sin topes ocultos (decision del dueno, 14-nov): antes piezas <= 2,000 y monto <= 1,000,000 pesos. Solo queda un limite tecnico de cordura.
 const piezas = z.number().int().min(1).max(1_000_000);
-const monto = z.number().int().min(1).max(TECHO_CENTAVOS);
+const monto = z.number().int().min(1).max(MONTO_TECNICO_MAX);
 const quienPaga = z.enum(['angelo', 'javier', 'sociedad']);
 const cita = texto(120);
 
@@ -32,7 +32,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     cliente_texto: texto(60),
     destino_texto: textoONulo(40),
     lineas: z.array(lineaPedido).min(1).max(MAX_LINEAS),
-    envio_cobrado_centavos: z.number().int().min(0).max(TECHO_CENTAVOS).nullable(),
+    envio_cobrado_centavos: z.number().int().min(0).max(MONTO_TECNICO_MAX).nullable(),
     plazo_texto: textoONulo(60).optional(),
     fuente_cita: cita,
   }),
@@ -104,7 +104,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     tipo: z.literal('compra'),
     proveedor_texto: texto(40),
     lineas: z.array(lineaCompra).min(1).max(MAX_LINEAS),
-    guia_centavos: z.number().int().min(0).max(TECHO_CENTAVOS).nullable(),
+    guia_centavos: z.number().int().min(0).max(MONTO_TECNICO_MAX).nullable(),
     pagado_por: quienPaga.nullable(),
     fuente_cita: cita,
   }),
@@ -117,7 +117,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
   }),
   z.strictObject({
     tipo: z.literal('toma_omar'),
-    lineas: z.array(z.strictObject({ modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas: z.number().int().min(1).max(1_000_000) })).min(1).max(MAX_LINEAS),
+    lineas: z.array(z.strictObject({ modelo_texto: texto(60), sabor_texto: textoONulo(40), piezas })).min(1).max(MAX_LINEAS),
     fuente_cita: cita,
   }),
   z.strictObject({ tipo: z.literal('pedido_envio'), pedido_folio: textoONulo(20), estado: z.enum(['enviado', 'entregado']), paqueteria_texto: textoONulo(40), guia_texto: textoONulo(40), fuente_cita: cita }),
@@ -167,7 +167,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
         }),
       )
       .min(1)
-      .max(60),
+      .max(MAX_LINEAS_CONTEO),
     fuente_cita: cita,
   }),
   z.strictObject({
@@ -197,6 +197,7 @@ export const EsquemaIntencion = z.discriminatedUnion('tipo', [
     periodo: z.enum(['hoy', 'ayer', 'semana', 'mes']).nullable(),
   }),
   z.strictObject({ tipo: z.literal('deshacer'), folio: textoONulo(20) }),
+  ...VARIANTES_AMPLIADAS,
   z.strictObject({ tipo: z.literal('aclarar'), pregunta: texto(200) }),
   z.strictObject({ tipo: z.literal('ninguna') }),
 ]);
@@ -235,6 +236,9 @@ export function adaptarEsquemaParaProveedor(esquema: unknown, opciones: { sinRan
       if (opciones.sinRangos && RESTRICCIONES_DE_RANGO.has(k)) continue;
       salida[k === 'oneOf' ? 'anyOf' : k] = visitar(v);
     }
+    // Salida estructurada ESTRICTA (Luna): `required` debe listar TODAS las propiedades. Un campo `.optional()` de zod (p. ej. plazo_texto de un pedido) las dejaba fuera y el proveedor rechazaba
+    // el esquema entero con 400 (medido el 14-nov: "Missing 'plazo_texto'"), con lo que el respaldo de Luna estaba caido. zod sigue aceptando que falte; el modelo siempre lo escribe (nullable).
+    if (salida.properties !== null && typeof salida.properties === 'object' && !Array.isArray(salida.properties)) salida.required = Object.keys(salida.properties as Record<string, unknown>);
     return salida;
   };
   return visitar(esquema);

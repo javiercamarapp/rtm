@@ -45,7 +45,7 @@ function aCentavos(t: string): number | null {
   try {
     const base = centavosDesdeTexto(m[1]!);
     const c = m[2] ? base * 1000n : base;
-    return c > 0n && c <= 100_000_000n ? Number(c) : null;
+    return c > 0n && c <= 10_000_000_000_000n ? Number(c) : null;
   } catch {
     return null;
   }

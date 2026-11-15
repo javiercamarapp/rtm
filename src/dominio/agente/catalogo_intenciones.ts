@@ -3,6 +3,7 @@
 // El agente solo puede llamar lo que esta en esta tabla: cada fila apunta a UNA puerta del esquema `agente` (ejecutar, ejecutar_ext o consulta) con un `tipoHub`
 // fijo, y esa puerta llama a las funciones de negocio listadas en `funcionesSql` (probado contra la base en test/integracion).
 import type { TipoIntencion } from './intenciones';
+import { CATALOGO_AMPLIADO } from './catalogo_ampliado';
 
 export type NivelConfirmacion = 'ninguna' | 'normal' | 'reforzada';
 /** directa = "deshacer" la revierte con contramovimiento; software = se corrige en el software; ninguna = no hay reversa. */
@@ -18,8 +19,8 @@ export interface DefIntencion {
   confirmacion: NivelConfirmacion;
   quien: QuienPuede;
   reversa: Reversa;
-  /** contrato = la base de esta rama aun no trae la funcion (P0461). */
-  estado: 'activa' | 'contrato';
+  /** contrato = la base de esta rama aun no trae la funcion (P0461). extraido = el interprete ya la extrae y valida, pero falta la puerta de ejecucion (otro carril): el agente no registra nada. */
+  estado: 'activa' | 'contrato' | 'extraido';
 }
 
 const A = (d: Partial<DefIntencion> & Pick<DefIntencion, 'descripcion' | 'hub' | 'tipoHub' | 'funcionesSql'>): DefIntencion => ({ confirmacion: 'normal', quien: 'socios', reversa: 'ninguna', estado: 'activa', ...d });
@@ -56,6 +57,7 @@ export const CATALOGO_INTENCIONES: Record<TipoIntencion, DefIntencion> = {
   pago_pedido_menudeo: A({ descripcion: 'El socio de menudeo avisa que pago un pedido a costo (queda Pago reportado hasta que el otro socio lo confirme, o se aplica con comprobante)', hub: 'agente.ejecutar_ext', tipoHub: 'pago_pedido_menudeo', funcionesSql: ['operacion.ds_reportar_pago_menudeo'], reversa: 'software' }),
   consulta: LECTURA('Consultas de solo lectura (saldos, utilidad, inventario, contabilidad, pendientes, reporte)', 'agente.consulta', null, ['operacion.saldo_cliente', 'operacion.utilidad_periodo', 'operacion.neto_socio', 'contabilidad.comprobaciones', 'operacion.cobertura'], 'todos'),
   deshacer: A({ descripcion: 'Deshacer el ultimo movimiento propio o un folio', hub: 'ninguno', tipoHub: null, funcionesSql: ['operacion.anular_pago', 'operacion.anular_movimiento_socio', 'operacion.anular_compra', 'operacion.cancelar_pedido', 'operacion.reversar_evento'], confirmacion: 'ninguna', reversa: 'directa' }),
+  ...CATALOGO_AMPLIADO,
   aclarar: LECTURA('Pregunta de aclaracion', 'ninguno', null, [], 'todos'),
   ninguna: LECTURA('Sin accion', 'ninguno', null, [], 'todos'),
 };
