@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { operacionDeSocio } from '@/composicion/operacion';
-import { etiquetaFecha, etiquetaFechaHora, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, etiquetaFechaHora, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, Chip } from '@/ui/componentes/controles';
 import { LineaTiempo } from '@/ui/componentes/datos';
@@ -73,7 +73,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
           filas={c.lineas}
           totales={{ etiqueta: 'Total', celdas: { p: formatearPiezas(piezasPag), f: formatearPiezas(piezasFac), r: piezasRec === null ? 'Sin dato' : formatearPiezas(piezasRec) } }}
           columnas={[
-            { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (l) => <Dos a={l.modelo} b={l.sabor} /> },
+            { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (l) => <Dos a={nombreVape(l.modelo)} b={saborMayus(l.sabor)} /> },
             { id: 'p', titulo: 'Pagadas', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.pagadas) },
             { id: 'f', titulo: 'Facturadas', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.facturadas) },
             { id: 'r', titulo: 'Recibidas', numerica: true, ancho: 's', celda: (l) => (l.recibidas === null ? <SinDato /> : formatearPiezas(l.recibidas)) },
@@ -89,7 +89,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
           <DataTable etiqueta="Avance de la recepción por renglón" densidad="densa" plana primeraFija clave={(l) => l.linea_id} filas={rec.lineas}
             totales={{ etiqueta: 'Total', celdas: { f: formatearPiezas(rec.lineas.reduce((a, l) => a + l.facturadas, 0)), r: formatearPiezas(rec.lineas.reduce((a, l) => a + l.recibidas, 0)), p: formatearPiezas(rec.lineas.reduce((a, l) => a + l.pendientes, 0)), e: m(rec.lineas.reduce((a, l) => a + l.entrada_cent, 0n)), c: m(rec.lineas.reduce((a, l) => a + l.puesto_cent, 0n)) } }}
             columnas={[
-              { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (l) => <Dos a={l.modelo} b={l.sabor} /> },
+              { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (l) => <Dos a={nombreVape(l.modelo)} b={saborMayus(l.sabor)} /> },
               { id: 'f', titulo: 'Facturadas', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.facturadas) },
               { id: 'r', titulo: 'Llegadas', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.recibidas) },
               { id: 'p', titulo: cerrada ? 'No llegaron' : 'Pendientes', numerica: true, ancho: 's', celda: (l) => formatearPiezas(l.pendientes) },
@@ -123,7 +123,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
             <Tarjeta plana titulo="Recepción por sabor">
               <DataTable etiqueta="Recepción por sabor" densidad="densa" plana clave={(r) => `${r.modelo}-${r.sabor}-${r.contado_at}`} filas={c.recepciones}
                 totales={{ etiqueta: 'Total', celdas: { p: formatearPiezas(c.recepciones.reduce((a, r) => a + r.piezas, 0)) } }}
-                columnas={[{ id: 'm', titulo: 'Modelo · sabor', ancho: 'l', celda: (r) => <Dos a={r.modelo} b={r.sabor} /> }, { id: 'p', titulo: 'Contadas', numerica: true, ancho: 's', celda: (r) => formatearPiezas(r.piezas) }, { id: 'h', titulo: 'Contadas el', ancho: 'm', secundaria: true, celda: (r) => etiquetaFechaHora(r.contado_at) }]} />
+                columnas={[{ id: 'm', titulo: 'Modelo · sabor', ancho: 'l', celda: (r) => <Dos a={nombreVape(r.modelo)} b={saborMayus(r.sabor)} /> }, { id: 'p', titulo: 'Contadas', numerica: true, ancho: 's', celda: (r) => formatearPiezas(r.piezas) }, { id: 'h', titulo: 'Contadas el', ancho: 'm', secundaria: true, celda: (r) => etiquetaFechaHora(r.contado_at) }]} />
             </Tarjeta>
           )}
           {c.diferencias.length > 0 && (
@@ -135,7 +135,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
                 filas={c.diferencias}
                 totales={{ etiqueta: 'Total', celdas: { p: formatearPiezas(c.diferencias.reduce((a, d) => a + d.piezas, 0)), v: m(c.diferencias.reduce((a, d) => a + d.valor_cent, 0n)) } }}
                 columnas={[
-                  { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (d) => d.modelo },
+                  { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (d) => nombreVape(d.modelo) },
                   { id: 't', titulo: 'Tipo', ancho: 's', celda: (d) => (d.tipo === 'faltante' ? 'Faltante' : 'Sobrante') },
                   { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', celda: (d) => formatearPiezas(d.piezas) },
                   { id: 'v', titulo: 'Valor al costo promedio', numerica: true, ancho: 'm', celda: (d) => m(d.valor_cent) },

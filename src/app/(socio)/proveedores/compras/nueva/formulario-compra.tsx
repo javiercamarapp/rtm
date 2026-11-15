@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { normalizar } from '@/dominio/catalogo/normalizar';
-import { formatearMoneda } from '@/dominio/formato';
+import { formatearMoneda, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import { ModeloTarjeta } from '@/ui/componentes/modelo';
 import type { CatalogoCompra } from '@/dominio/operacion/tipos';
 import { centavosDeTexto, useAccion } from '../../../operacion/usar-accion';
@@ -72,14 +72,14 @@ export function FormularioCompra({ proveedor, catalogo, modeloInicial, disponibl
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Modelo
             <select className="rtm-campo" value={modelo} onChange={(e) => { setModelo(e.target.value); setSkuId(''); }} data-testid="oc-modelo">
               <option value="">Elige un modelo</option>
-              {modelos.map((m) => <option key={m.modelo} value={m.modelo}>{m.marca} · {m.modelo}</option>)}
+              {modelos.map((m) => <option key={m.modelo} value={m.modelo}>{marcaMayus(m.marca)} · {nombreVape(m.modelo)}</option>)}
             </select>
           </label>
           {modelo !== '' && <ModeloTarjeta modelo={modelo} marca={modelos.find((x) => x.modelo === modelo)?.marca} tam="s" testid="oc-modelo-elegido" />}
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Sabor
             <select className="rtm-campo" value={skuId} onChange={(e) => { const v = e.target.value === '' ? '' : Number(e.target.value); setSkuId(v); setCosto(textoPesos(catalogo.skus.find((s) => s.sku_id === v)?.costo_cent ?? null)); }} disabled={modelo === ''} data-testid="oc-sabor">
               <option value="">Elige un sabor</option>
-              {sabores.map((s) => { const agotado = disponibles !== undefined && !disponibles.some((d) => normalizar(d) === normalizar(s.sabor)); return <option key={s.sku_id} value={s.sku_id} disabled={agotado}>{s.sabor}{agotado ? ' (agotado en Karen)' : ''}</option>; })}
+              {sabores.map((s) => { const agotado = disponibles !== undefined && !disponibles.some((d) => normalizar(d) === normalizar(s.sabor)); return <option key={s.sku_id} value={s.sku_id} disabled={agotado}>{saborMayus(s.sabor)}{agotado ? ' (agotado en Karen)' : ''}</option>; })}
             </select>
           </label>
           <label className="rtm-etiqueta-campo">Pagadas<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={pagadas} onChange={(e) => setPagadas(e.target.value)} data-testid="oc-pagadas" /></label>
@@ -93,7 +93,7 @@ export function FormularioCompra({ proveedor, catalogo, modeloInicial, disponibl
           <ul className="rtm-lineas-form" aria-label="Renglones agregados">
             {renglones.map((r, i) => (
               <li key={`${r.sku_id}-${i}`} className="rtm-acciones-fila">
-                <span>{r.modelo} · {r.sabor} · pagadas {r.pagadas}{r.facturadas !== null ? ` · facturadas ${r.facturadas}` : ''}{r.costo ? ` · costo $${r.costo} (${r.motivo})` : ' · costo de lista'}</span>
+                <span>{nombreVape(r.modelo)} · {saborMayus(r.sabor)} · pagadas {r.pagadas}{r.facturadas !== null ? ` · facturadas ${r.facturadas}` : ''}{r.costo ? ` · costo $${r.costo} (${r.motivo})` : ' · costo de lista'}</span>
                 <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setRenglones((x) => x.filter((_, j) => j !== i))}>Quitar</button>
               </li>
             ))}

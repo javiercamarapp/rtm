@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { Aviso, ChipEstado } from '@/ui/componentes/controles';
@@ -66,7 +66,7 @@ export default async function PaginaPorHacer() {
         </Tarjeta>
         <Tarjeta titulo="Alcanza la existencia" descripcion="Lo que hay que tomar contra lo que hay">
           {d.surtido.length ? (
-            <BarList etiquetaAria="Surtido contra existencia" items={d.surtido.slice(0, 8).map((s) => ({ id: String(s.sku_id), etiqueta: `${s.modelo} · ${s.sabor}`, texto: `${s.piezas} de ${s.existencia}`, pct: s.existencia > 0 ? porcentaje(Math.min(s.piezas, s.existencia), s.existencia) : 100, tono: s.falta > 0 ? ('malo' as const) : undefined, nota: s.falta > 0 ? `faltan ${s.falta}` : undefined }))} />
+            <BarList etiquetaAria="Surtido contra existencia" items={d.surtido.slice(0, 8).map((s) => ({ id: String(s.sku_id), etiqueta: `${nombreVape(s.modelo)} · ${saborMayus(s.sabor)}`, texto: `${s.piezas} de ${s.existencia}`, pct: s.existencia > 0 ? porcentaje(Math.min(s.piezas, s.existencia), s.existencia) : 100, tono: s.falta > 0 ? ('malo' as const) : undefined, nota: s.falta > 0 ? `faltan ${s.falta}` : undefined }))} />
           ) : <p className="rtm-a1-estado-vacio">Sin piezas por tomar.</p>}
         </Tarjeta>
       </Rejilla>
@@ -81,7 +81,7 @@ export default async function PaginaPorHacer() {
             { id: 'f', titulo: 'Pedido', celda: (p) => <Link className="rtm-mono" href={`/pedidos/${p.id}`}>{p.folio}</Link> },
             { id: 'c', titulo: 'Cliente', celda: (p) => <>{p.cliente}<br /><span className="rtm-nota">{ORIGEN[p.origen]}{p.paqueteria ? ` · ${p.paqueteria}` : ''}</span></> },
             { id: 'z', titulo: 'Piezas', numerica: true, celda: (p) => formatearPiezas(p.piezas) },
-            { id: 'r', titulo: 'Por modelo y sabor', secundaria: true, celda: (p) => p.renglones.map((r) => `${r.modelo} ${r.sabor} ${r.piezas}`).join(' · ') },
+            { id: 'r', titulo: 'Por modelo y sabor', secundaria: true, celda: (p) => p.renglones.map((r) => `${nombreVape(r.modelo)} ${saborMayus(r.sabor)} ${r.piezas}`).join(' · ') },
             { id: 'e', titulo: 'Envío cobrado', numerica: true, secundaria: true, celda: (p) => (p.envio_cent > 0n ? formatearMoneda(p.envio_cent) : 'No se cobra') },
             { id: 'g', titulo: 'Guía', secundaria: true, celda: () => 'Pendiente' },
             { id: 'h', titulo: 'Antigüedad', celda: (p) => {
@@ -106,8 +106,8 @@ export default async function PaginaPorHacer() {
           filas={d.surtido}
           vacio={{ titulo: 'Sin piezas por tomar', texto: 'La lista de surtido suma las piezas de todos los paquetes por hacer y las compara con la existencia por sabor.' }}
           columnas={[
-            { id: 'm', titulo: 'Modelo', celda: (s) => s.modelo },
-            { id: 's', titulo: 'Sabor', celda: (s) => s.sabor },
+            { id: 'm', titulo: 'Modelo', celda: (s) => nombreVape(s.modelo) },
+            { id: 's', titulo: 'Sabor', celda: (s) => saborMayus(s.sabor) },
             { id: 'p', titulo: 'Tomar', numerica: true, celda: (s) => formatearPiezas(s.piezas) },
             { id: 'e', titulo: 'Existencia', numerica: true, celda: (s) => formatearPiezas(s.existencia) },
             { id: 'f', titulo: 'Alcanza', celda: (s) => (s.falta > 0 ? <EstadoTexto tono="malo">Faltan {formatearPiezas(s.falta)}</EstadoTexto> : <EstadoTexto tono="ok">Sí</EstadoTexto>) },

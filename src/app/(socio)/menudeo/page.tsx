@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { exigirSocio } from '@/composicion/acceso';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, formatearPiezas, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, BarraFiltros, Chip, ChipEstado } from '@/ui/componentes/controles';
 import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
@@ -85,7 +85,7 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
             { id: 'r', titulo: 'Vapes (renglones)', ancho: 'xl', prioridadMovil: 'detalle', celda: (f) => (
               <details data-testid={`renglones-${f.pedido_id}`}>
                 <summary>{f.renglones.length} {f.renglones.length === 1 ? 'renglón' : 'renglones'} · {formatearPiezas(f.piezas)}</summary>
-                <ul className="rtm-lineas-form">{f.renglones.map((r, i) => <li key={`${r.sabor}-${i}`}>{r.marca} · {r.modelo} · {r.sabor} · {formatearPiezas(r.piezas)} a {formatearMoneda(r.costo_unit_cent)} = {formatearMoneda(r.costo_cent)}</li>)}</ul>
+                <ul className="rtm-lineas-form">{f.renglones.map((r, i) => <li key={`${r.sabor}-${i}`}>{marcaMayus(r.marca)} · {nombreVape(r.modelo)} · {saborMayus(r.sabor)} · {formatearPiezas(r.piezas)} a {formatearMoneda(r.costo_unit_cent)} = {formatearMoneda(r.costo_cent)}</li>)}</ul>
               </details>
             ) },
             { id: 'pv', titulo: 'Proveedor', ancho: 'm', prioridadMovil: 'normal', celda: (f) => f.proveedor ?? '' },

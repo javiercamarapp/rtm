@@ -1,5 +1,5 @@
 import { ETIQUETA_ESTADO_COMPRA, type ClientePorPreparar, type CompraPorRecibir, type LineaBodega, type Surtido } from '@/dominio/bodega/bodega';
-import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { DataTable } from '../componentes/data-table';
 import { EstadoTexto } from '../componentes/estado-texto';
 
@@ -12,7 +12,7 @@ function Lineas({ lineas }: { lineas: LineaBodega[] }) {
     <ul className="bodega-lineas">
       {lineas.map((l) => (
         <li key={`${l.modelo}|${l.sabor}`}>
-          <span>{l.modelo} · {l.sabor}</span>
+          <span>{nombreVape(l.modelo)} · {saborMayus(l.sabor)}</span>
           <strong>{formatearPiezas(l.piezas)}</strong>
         </li>
       ))}
@@ -49,7 +49,7 @@ export function TablaSurtido({ surtido }: { surtido: Surtido[] }) {
     <DataTable plana densidad="densa" etiqueta="Lista de surtido" clave={(s) => `${s.modelo}|${s.sabor}`} filas={surtido}
       vacio={{ titulo: 'Nada que tomar', texto: 'No hay pedidos por preparar.' }}
       columnas={[
-        { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (s) => <>{s.modelo}<span className="rtm-celda-sub">{s.sabor}</span></> },
+        { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (s) => <>{nombreVape(s.modelo)}<span className="rtm-celda-sub">{saborMayus(s.sabor)}</span></> },
         { id: 'p', titulo: 'Tomar', numerica: true, prioridadMovil: 'principal', celda: (s) => formatearPiezas(s.piezas) },
         { id: 'e', titulo: 'Hay', numerica: true, celda: (s) => formatearPiezas(s.existencia) },
         { id: 'f', titulo: 'Alcanza', celda: (s) => (s.falta > 0 ? <EstadoTexto tono="malo">{`Faltan ${formatearPiezas(s.falta)}`}</EstadoTexto> : <EstadoTexto tono="ok">Sí</EstadoTexto>) },
@@ -79,7 +79,7 @@ export function TablaPorGuardar({ lineas }: { lineas: LineaBodega[] }) {
     <DataTable plana densidad="densa" etiqueta="Por guardar" clave={(s) => `${s.modelo}|${s.sabor}`} filas={lineas}
       vacio={{ titulo: 'Nada por guardar', texto: 'No hay compras por recibir.' }}
       columnas={[
-        { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (s) => <>{s.modelo}<span className="rtm-celda-sub">{s.sabor}</span></> },
+        { id: 'm', titulo: 'Modelo', ancho: 'l', prioridadMovil: 'titulo', celda: (s) => <>{nombreVape(s.modelo)}<span className="rtm-celda-sub">{saborMayus(s.sabor)}</span></> },
         { id: 'p', titulo: 'Esperadas', numerica: true, prioridadMovil: 'principal', celda: (s) => formatearPiezas(s.piezas) },
       ]} />
   );

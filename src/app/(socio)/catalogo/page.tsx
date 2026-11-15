@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { lectorDeSocio } from '@/composicion/catalogo';
 import { normalizar } from '@/dominio/catalogo/normalizar';
 import type { ModeloCatalogo } from '@/dominio/catalogo/tipos';
-import { formatearMoneda } from '@/dominio/formato';
+import { formatearMoneda, marcaMayus, nombreVape } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto, SinDato } from '@/ui/componentes/estado-texto';
@@ -90,13 +90,13 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
           {conMargen.length > 0 ? (
             <BarList
               etiquetaAria="Costo contra precio por modelo" mostrarPct={false}
-              items={conMargen.slice(0, 10).map((x) => ({ id: String(x.m.id), etiqueta: x.m.nombre, href: enlace({ modelo: String(x.m.id) }) + '#precios', texto: `${formatearMoneda(x.costo)} → ${formatearMoneda(x.precio)}`, pct: porcentaje(aNumero(x.costo), topeCosto), umbral: porcentaje(aNumero(x.precio), topeCosto) ?? undefined, nota: `margen ${formatearMoneda(x.precio - x.costo)}${x.supuesto ? ' · costo supuesto' : ''}`, tono: x.precio <= x.costo ? ('malo' as const) : undefined }))}
+              items={conMargen.slice(0, 10).map((x) => ({ id: String(x.m.id), etiqueta: nombreVape(x.m.nombre), href: enlace({ modelo: String(x.m.id) }) + '#precios', texto: `${formatearMoneda(x.costo)} → ${formatearMoneda(x.precio)}`, pct: porcentaje(aNumero(x.costo), topeCosto), umbral: porcentaje(aNumero(x.precio), topeCosto) ?? undefined, nota: `margen ${formatearMoneda(x.precio - x.costo)}${x.supuesto ? ' · costo supuesto' : ''}`, tono: x.precio <= x.costo ? ('malo' as const) : undefined }))}
             />
           ) : <p className="rtm-bb-vacio">Sin modelos con costo y precio al mismo tiempo.</p>}
         </Tarjeta>
         <Tarjeta titulo="Rango de precios" descripcion="Mínimo a máximo y clientes con precio">
           {conRango.length > 0 ? (
-            <BarList etiquetaAria="Rango de precios por modelo" mostrarPct={false} items={conRango.slice(0, 10).map((m) => ({ id: String(m.id), etiqueta: m.nombre, texto: m.precios.minCent === m.precios.maxCent ? formatearMoneda(m.precios.minCent!) : `${formatearMoneda(m.precios.minCent!)} a ${formatearMoneda(m.precios.maxCent!)}`, pct: porcentaje(aNumero(m.precios.maxCent!), topeRango), nota: `${m.precios.clientes} cl.` }))} />
+            <BarList etiquetaAria="Rango de precios por modelo" mostrarPct={false} items={conRango.slice(0, 10).map((m) => ({ id: String(m.id), etiqueta: nombreVape(m.nombre), texto: m.precios.minCent === m.precios.maxCent ? formatearMoneda(m.precios.minCent!) : `${formatearMoneda(m.precios.minCent!)} a ${formatearMoneda(m.precios.maxCent!)}`, pct: porcentaje(aNumero(m.precios.maxCent!), topeRango), nota: `${m.precios.clientes} cl.` }))} />
           ) : <p className="rtm-bb-vacio">Ningún modelo tiene precios de clientes.</p>}
         </Tarjeta>
       </Rejilla>
@@ -109,8 +109,8 @@ export default async function PaginaCatalogo({ searchParams }: { searchParams: P
           clave={(m) => m.id} filas={modelos}
           vacio={{ titulo: 'Sin resultados', texto: 'Ningún modelo coincide con el filtro.', accion: <Link className="rtm-boton" href="/catalogo">Quitar filtros</Link> }}
           columnas={[
-            { id: 'marca', titulo: 'Marca', ancho: 'm', secundaria: true, celda: (m) => m.marca },
-            { id: 'modelo', titulo: 'Modelo', ancho: 'xl', celda: (m) => <span className="rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={m.nombre} marca={m.marca} tam="xs" /><Link href={`/catalogo?modelo=${m.id}#precios`}>{m.nombre}</Link></span> },
+            { id: 'marca', titulo: 'Marca', ancho: 'm', secundaria: true, celda: (m) => marcaMayus(m.marca) },
+            { id: 'modelo', titulo: 'Modelo', ancho: 'xl', celda: (m) => <span className="rtm-modelo-tarjeta" data-tam="xs"><ModeloMiniatura modelo={m.nombre} marca={m.marca} tam="xs" /><Link href={`/catalogo?modelo=${m.id}#precios`}>{nombreVape(m.nombre)}</Link></span> },
             { id: 'estado', titulo: 'Disponibilidad', ancho: 'l', celda: (m) => (m.estado === 'disponible' ? <ChipEstado tono="ok">Disponible</ChipEstado> : <ChipEstado tono="atencion">Sin disponibilidad</ChipEstado>) },
             { id: 'isaac', titulo: 'Costo Isaac', numerica: true, ancho: 'm', celda: (m) => { const c = costoDe(m, 'Isaac'); return c ? formatearMoneda(c.costoCent) : <SinDato />; } },
             { id: 'karen', titulo: 'Costo Karen', numerica: true, ancho: 'm', celda: (m) => { const c = costoDe(m, 'Karen'); return c ? <>{formatearMoneda(c.costoCent)} {c.supuesto && <EstadoTexto tono="atencion">supuesto</EstadoTexto>}</> : <SinDato />; } },

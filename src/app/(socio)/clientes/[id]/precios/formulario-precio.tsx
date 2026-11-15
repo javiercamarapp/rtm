@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { ResultadoAlta, SolicitudPrecio } from '@/aplicacion/catalogo/alta';
 import { describirCambio, validarPrecio, type CampoPrecio } from '@/dominio/catalogo/alta';
-import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, nombreVape } from '@/dominio/formato';
 import { Campo, EcoResultado } from '@/ui/componentes/campo';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
@@ -63,7 +63,7 @@ export function FormularioPrecio({ clienteId, clienteNombre, modelos, hoy, model
       <div className="rtm-form-fila">
         <div className="rtm-campo-ancho">
           <Campo etiqueta="Modelo" control="seleccion" requerido valor={v.modeloId} onCambio={cambia('modeloId')} error={errores.modelo} testid="campo-modelo"
-            opciones={modelos.map((m) => ({ valor: String(m.id), texto: m.actual ? `${m.nombre} · ${formatearMoneda(BigInt(m.actual.cent))}` : `${m.nombre} · sin precio` }))} />
+            opciones={modelos.map((m) => ({ valor: String(m.id), texto: m.actual ? `${nombreVape(m.nombre)} · ${formatearMoneda(BigInt(m.actual.cent))}` : `${nombreVape(m.nombre)} · sin precio` }))} />
         </div>
         <Campo etiqueta="Precio nuevo por pieza" control="monto" requerido valor={v.precio} onCambio={cambia('precio')} error={errores.precio} placeholder="150.00" testid="campo-precio" />
         <Campo etiqueta="Vale desde" control="fecha" requerido valor={v.desde} onCambio={cambia('desde')} error={errores.desde} testid="campo-desde" />
@@ -85,7 +85,7 @@ export function FormularioPrecio({ clienteId, clienteNombre, modelos, hoy, model
         <ConfirmDialog abierto titulo="Confirmar cambio de precio" confirmar="Guardar precio" ocupado={ocupado} onConfirmar={guardar} onCancelar={() => setConfirmando(false)}>
           <dl className="rtm-dl">
             <dt>Cliente</dt><dd>{clienteNombre}</dd>
-            <dt>Modelo</dt><dd>{modelo.nombre}</dd>
+            <dt>Modelo</dt><dd>{nombreVape(modelo.nombre)}</dd>
             {cambio.tipo !== 'nuevo' && <><dt>Precio actual</dt><dd className="rtm-num">{formatearMoneda(cambio.actualCent)}</dd></>}
             <dt>Precio nuevo</dt><dd className="rtm-num">{formatearMoneda(cambio.nuevoCent)}</dd>
             <dt>Vale desde</dt><dd>{etiquetaFecha(validado.valor.desde)}</dd>

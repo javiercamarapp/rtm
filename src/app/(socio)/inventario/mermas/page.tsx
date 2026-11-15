@@ -1,3 +1,4 @@
+import { nombreVape, saborMayus } from '@/dominio/formato';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { datosDeSocio } from '@/composicion/datos';
@@ -52,7 +53,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
             ) : <p className="rtm-a2-nota">Sin movimientos en el periodo.</p>}
           </Tarjeta>
           <Tarjeta titulo="Valor perdido por modelo" descripcion="A costo promedio">
-            <BarList etiquetaAria="Valor perdido por modelo" items={r.modelos.slice(0, 8).map((x) => ({ id: String(x.modelo_id), etiqueta: x.modelo, texto: `${pz(x.piezas)} · ${m(x.valor_cent)}`, pct: maxMod > 0n ? Math.round((Number(x.valor_cent) / Number(maxMod)) * 100) : null }))} mostrarPct={false} />
+            <BarList etiquetaAria="Valor perdido por modelo" items={r.modelos.slice(0, 8).map((x) => ({ id: String(x.modelo_id), etiqueta: nombreVape(x.modelo), texto: `${pz(x.piezas)} · ${m(x.valor_cent)}`, pct: maxMod > 0n ? Math.round((Number(x.valor_cent) / Number(maxMod)) * 100) : null }))} mostrarPct={false} />
           </Tarjeta>
         </Rejilla>
       )}
@@ -63,8 +64,8 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
           columnas={[
             { id: 'f', titulo: 'Fecha', ancho: 's', celda: (x) => fecha(x.fecha_neg) },
             { id: 't', titulo: 'Tipo', ancho: 'm', celda: (x) => TIPO_MOV[x.tipo] ?? x.tipo },
-            { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (x) => <Link href={`/inventario/kardex?modelo=${x.modelo_id}&tipo=${x.tipo}`}>{x.modelo}</Link> },
-            { id: 's', titulo: 'Sabor', ancho: 'm', celda: (x) => x.sabor },
+            { id: 'm', titulo: 'Modelo', ancho: 'l', celda: (x) => <Link href={`/inventario/kardex?modelo=${x.modelo_id}&tipo=${x.tipo}`}>{nombreVape(x.modelo)}</Link> },
+            { id: 's', titulo: 'Sabor', ancho: 'm', celda: (x) => saborMayus(x.sabor) },
             { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', celda: (x) => pz(x.piezas) },
             { id: 'v', titulo: 'Valor', numerica: true, ancho: 'm', celda: (x) => m(x.valor_cent) },
             { id: 'mo', titulo: 'Motivo', ancho: 'l', secundaria: true, celda: (x) => x.motivo ?? '' },

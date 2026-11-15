@@ -97,7 +97,7 @@ export function FiltroCatalogo({ etiquetaAria, placeholder = 'Buscar marca, mode
               <ul>
                 {visibles.map((x) => (
                   <li key={x.nombre}>
-                    <label><input type="checkbox" checked={seleccion.includes(x.nombre)} onChange={() => alternarMarca(x.nombre)} /><span>{x.nombre}</span><small>{x.cuenta}</small></label>
+                    <label><input type="checkbox" checked={seleccion.includes(x.nombre)} onChange={() => alternarMarca(x.nombre)} /><span className="rtm-may-marca">{x.nombre}</span><small>{x.cuenta}</small></label>
                   </li>
                 ))}
                 {visibles.length === 0 && <li className="rtm-fc-vacio">Ninguna marca coincide</li>}
@@ -113,7 +113,7 @@ export function FiltroCatalogo({ etiquetaAria, placeholder = 'Buscar marca, mode
       </div>
       {seleccion.length > 0 && (
         <ul className="rtm-fc-chips" aria-label="Marcas seleccionadas">
-          {seleccion.map((m) => <li key={m}><button type="button" onClick={() => alternarMarca(m)} aria-label={`Quitar la marca ${m}`}>{m}<svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="m3 3 6 6m0-6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg></button></li>)}
+          {seleccion.map((m) => <li key={m}><button type="button" onClick={() => alternarMarca(m)} aria-label={`Quitar la marca ${m}`}><span className="rtm-may-marca">{m}</span><svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="m3 3 6 6m0-6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg></button></li>)}
         </ul>
       )}
     </div>

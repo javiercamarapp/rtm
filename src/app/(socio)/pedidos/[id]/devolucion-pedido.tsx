@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { armarDevolucionCliente, type DestinoDevolucion } from '@/dominio/operacion/devoluciones';
-import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { formatearMoneda, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import type { PedidoDevoluciones } from '@/dominio/operacion/tipos';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
 import { DialogoSimple } from '../../operacion/dialogo-simple';
@@ -35,7 +35,7 @@ export function DevolverMercancia({ pedidoId, folio, renglones }: { pedidoId: nu
           <div className="rtm-lista-form" role="group" aria-label="Piezas a devolver">
             {posibles.map((r) => (
               <div key={llave(r)} className="rtm-form-fila">
-                <span className="rtm-campo-ancho"><strong>{r.modelo} {r.sabor}</strong><br />Surtidas {formatearPiezas(r.surtidas)} · ya devueltas {formatearPiezas(r.devueltas)} · precio de la nota {formatearMoneda(r.precio_cent)}</span>
+                <span className="rtm-campo-ancho"><strong>{nombreVape(r.modelo)} {saborMayus(r.sabor)}</strong><br />Surtidas {formatearPiezas(r.surtidas)} · ya devueltas {formatearPiezas(r.devueltas)} · precio de la nota {formatearMoneda(r.precio_cent)}</span>
                 <label className="rtm-etiqueta-campo">Devuelve<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={piezas[llave(r)] ?? ''} onChange={(e) => setPiezas((p) => ({ ...p, [llave(r)]: e.target.value }))} aria-label={`Piezas a devolver de ${r.modelo} ${r.sabor}`} /></label>
                 <label className="rtm-etiqueta-campo">Destino
                   <select className="rtm-campo" value={destinos[llave(r)] ?? 'inventario'} onChange={(e) => setDestinos((d) => ({ ...d, [llave(r)]: e.target.value as DestinoDevolucion }))} aria-label={`Destino de ${r.modelo} ${r.sabor}`}>

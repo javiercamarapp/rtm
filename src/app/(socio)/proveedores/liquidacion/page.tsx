@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { sumarDias } from '@/dominio/calendario';
-import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearPiezas, nombreVape } from '@/dominio/formato';
 import { armarHojaProveedor } from '@/dominio/operacion/posicion_proveedor';
 import type { AmbitoHoja } from '@/dominio/operacion/tipos';
 import { BarraAcciones } from '@/ui/componentes/barra-acciones';
@@ -136,7 +136,7 @@ export default async function PaginaLiquidacion({ searchParams }: { searchParams
             { id: 'f', titulo: 'Folio', ancho: 'l', celda: (r) => <Dos a={<Link className="rtm-mono" href={r.tipo === 'oc' ? `/proveedores/compras/${r.id}` : `/pedidos/${r.id}`}>{r.folio}</Link>} b={r.tipo === 'oc' ? 'Orden de compra' : (ORIGEN[r.origen as keyof typeof ORIGEN] ?? r.origen)} /> },
             { id: 'd', titulo: 'Fecha', ancho: 's', celda: (r) => etiquetaFecha(r.fecha) },
             { id: 'p', titulo: 'Piezas', numerica: true, ancho: 's', celda: (r) => formatearPiezas(r.piezas) },
-            { id: 'm', titulo: 'Detalle a costo', ancho: 'xl', secundaria: true, celda: (r) => r.detalle.map((x) => `${x.modelo}: ${x.piezas} × ${m(x.costo_unit_cent)}`).join(' · ') },
+            { id: 'm', titulo: 'Detalle a costo', ancho: 'xl', secundaria: true, celda: (r) => r.detalle.map((x) => `${nombreVape(x.modelo)}: ${x.piezas} × ${m(x.costo_unit_cent)}`).join(' · ') },
             { id: 'c', titulo: 'Costo', numerica: true, ancho: 'm', celda: (r) => m(r.mercancia_cent + r.seguro_cent) },
             { id: 'g', titulo: 'Guía', numerica: true, ancho: 'm', celda: (r) => (r.guia_pendiente ? <Estado tono="atencion">Sin costo real</Estado> : m(r.guia_cent)) },
             { id: 'a', titulo: 'Alcance', ancho: 's', secundaria: true, celda: (r) => (r.es_de_sociedad ? 'Sociedad' : 'Propio') },

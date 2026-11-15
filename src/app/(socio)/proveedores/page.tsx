@@ -3,7 +3,7 @@ import { AreaPesos } from '../_a3/graficas-pesos';
 import Link from 'next/link';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { operacionDeSocio } from '@/composicion/operacion';
-import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearPiezas, nombreVape } from '@/dominio/formato';
 import { armarHojaProveedor, armarPosicionProveedor, rotuloModalidad } from '@/dominio/operacion/posicion_proveedor';
 import type { EstadoCompra } from '@/dominio/operacion/tipos';
 import { BarraAcciones } from '@/ui/componentes/barra-acciones';
@@ -267,7 +267,7 @@ export default async function PaginaProveedores({ searchParams }: { searchParams
               { id: 'se', titulo: 'Seguro', prioridadMovil: 'oculta', numerica: true, ancho: 'm', secundaria: true, celda: (r) => m(r.seguro_cent) },
               { id: 'gu', titulo: 'Guía', prioridadMovil: 'oculta', numerica: true, ancho: 'm', secundaria: true, celda: (r) => (r.guia_pendiente ? <Estado tono="atencion">Sin costo real</Estado> : m(r.guia_cent)) },
               { id: 'c', titulo: 'Costo', prioridadMovil: 'principal', numerica: true, ancho: 'm', celda: (r) => m(r.costo_cent) },
-              { id: 'm', titulo: 'Detalle a costo', prioridadMovil: 'oculta', ancho: 'xl', secundaria: true, celda: (r) => r.detalle.map((x) => `${x.modelo}: ${x.piezas} × ${m(x.costo_unit_cent)}`).join(' · ') },
+              { id: 'm', titulo: 'Detalle a costo', prioridadMovil: 'oculta', ancho: 'xl', secundaria: true, celda: (r) => r.detalle.map((x) => `${nombreVape(x.modelo)}: ${x.piezas} × ${m(x.costo_unit_cent)}`).join(' · ') },
               { id: 'a', titulo: 'Alcance', prioridadMovil: 'oculta', ancho: 's', secundaria: true, celda: (r) => (r.es_de_sociedad ? 'Sociedad' : 'Propio') },
               { id: 'k', titulo: 'Cuadra', prioridadMovil: 'normal', ancho: 's', celda: (r) => <Estado tono={r.cuadra ? 'ok' : 'malo'}>{r.cuadra ? 'Sí' : 'No'}</Estado> },
             ]}

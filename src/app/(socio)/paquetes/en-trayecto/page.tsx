@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { sumarDias } from '@/dominio/calendario';
-import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearMoneda, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { DataTable } from '@/ui/componentes/data-table';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { ChipEstado } from '@/ui/componentes/controles';
@@ -78,7 +78,7 @@ export default async function PaginaEnTrayecto() {
           columnas={[
             { id: 'f', titulo: 'Orden', celda: (c) => <Link className="rtm-mono" href={`/proveedores/compras/${c.id}`}>{c.folio}</Link> },
             { id: 'p', titulo: 'Proveedor', celda: (c) => c.proveedor },
-            { id: 'm', titulo: 'Modelos y sabores', secundaria: true, celda: (c) => c.renglones.map((r) => `${r.modelo} ${r.sabor} ${r.pagadas}`).join(' · ') },
+            { id: 'm', titulo: 'Modelos y sabores', secundaria: true, celda: (c) => c.renglones.map((r) => `${nombreVape(r.modelo)} ${saborMayus(r.sabor)} ${r.pagadas}`).join(' · ') },
             { id: 'z', titulo: 'Piezas', numerica: true, celda: (c) => formatearPiezas(c.piezas_pedidas) },
             { id: 't', titulo: 'Total pagado', numerica: true, secundaria: true, celda: (c) => formatearMoneda(c.total_cent) },
             { id: 'g', titulo: 'Guías', celda: (c) => (c.guias.length ? c.guias.map((g) => `${g.paqueteria} ${g.numero}`).join(', ') : 'Sin guía') },

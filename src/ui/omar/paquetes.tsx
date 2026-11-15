@@ -1,4 +1,4 @@
-import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
+import { etiquetaFecha, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import type { Lectura, PaqueteOmar } from '@/dominio/omar/tipos';
 import { EstadoTexto } from '../componentes/estado-texto';
 import { Tarjeta as TarjetaBase } from '../componentes/pagina';
@@ -21,7 +21,7 @@ function Tarjeta({ p }: { p: PaqueteOmar }) {
         <EstadoTexto tono={e.tono}>{e.texto}</EstadoTexto>
       </div>
       <ul>
-        {p.renglones.map((r) => <li key={`${r.modelo}|${r.sabor}`}><span>{r.modelo} · {r.sabor}</span><span>{formatearPiezas(r.piezas)}</span></li>)}
+        {p.renglones.map((r) => <li key={`${r.modelo}|${r.sabor}`}><span>{nombreVape(r.modelo)} · {saborMayus(r.sabor)}</span><span>{formatearPiezas(r.piezas)}</span></li>)}
       </ul>
       {p.tipo === 'salida' && p.horas !== null && <span className="rtm-nota">Pendiente desde hace {p.horas} h</span>}
       {p.tipo === 'entrada' && p.estado !== 'incidente' && p.llegada_estimada && <span className="rtm-nota">Llegada estimada: {etiquetaFecha(p.llegada_estimada)}</span>}

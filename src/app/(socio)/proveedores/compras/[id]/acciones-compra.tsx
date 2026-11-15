@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatearPiezas } from '@/dominio/formato';
+import { formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { armarLlegada } from '@/dominio/operacion/devoluciones';
 import type { CompraDetalle, RecepcionCompra } from '@/dominio/operacion/tipos';
 import { BarraAcciones } from '@/ui/componentes/barra-acciones';
@@ -71,10 +71,10 @@ export function FormularioRecepcion({ compra, sabores }: { compra: CompraDetalle
         const l = compra.lineas.find((x) => x.id === f.linea_id)!;
         return (
           <div key={i} className="rtm-form-fila">
-            <span className="rtm-campo-ancho">{l.modelo} (facturadas {formatearPiezas(l.facturadas)})</span>
+            <span className="rtm-campo-ancho">{nombreVape(l.modelo)} (facturadas {formatearPiezas(l.facturadas)})</span>
             <label className="rtm-etiqueta-campo">Sabor
               <select className="rtm-campo" value={f.sku_id} onChange={(e) => cambiar(i, { sku_id: Number(e.target.value) })} aria-label={`Sabor recibido de ${l.modelo}`}>
-                {(sabores[l.modelo] ?? []).map((s) => <option key={s.sku_id} value={s.sku_id}>{s.sabor}</option>)}
+                {(sabores[l.modelo] ?? []).map((s) => <option key={s.sku_id} value={s.sku_id}>{saborMayus(s.sabor)}</option>)}
               </select>
             </label>
             <label className="rtm-etiqueta-campo">Recibidas<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={f.piezas} onChange={(e) => cambiar(i, { piezas: e.target.value })} aria-label={`Piezas recibidas de ${l.modelo} ${i + 1}`} /></label>
@@ -132,12 +132,12 @@ export function FormularioLlegada({ compra, recepcion, sabores }: { compra: Comp
           return (
             <div key={i} className="rtm-llegada-fila">
               <div className="rtm-llegada-renglon">
-                <strong>{l.modelo}</strong>
+                <strong>{nombreVape(l.modelo)}</strong>
                 <span>Facturadas {formatearPiezas(l.facturadas)} · llevan {formatearPiezas(l.recibidas)} · faltan {formatearPiezas(l.pendientes)}</span>
               </div>
               <label className="rtm-etiqueta-campo">Sabor
                 <select className="rtm-campo" value={f.sku_id} onChange={(e) => cambiar(i, { sku_id: Number(e.target.value) })} aria-label={`Sabor que llegó de ${l.modelo} ${i + 1}`}>
-                  {(sabores[l.modelo] ?? []).map((s) => <option key={s.sku_id} value={s.sku_id}>{s.sabor}</option>)}
+                  {(sabores[l.modelo] ?? []).map((s) => <option key={s.sku_id} value={s.sku_id}>{saborMayus(s.sabor)}</option>)}
                 </select>
               </label>
               <label className="rtm-etiqueta-campo">Llegaron<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={f.piezas} onChange={(e) => cambiar(i, { piezas: e.target.value })} aria-label={`Piezas que llegaron de ${l.modelo} ${i + 1}`} /></label>

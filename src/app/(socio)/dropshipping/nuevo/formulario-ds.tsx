@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { formatearMoneda, formatearPiezas, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import { previewPedido, semanasHasta } from '@/dominio/dropshipping/calculos';
 import { parsearPegado } from '@/dominio/dropshipping/pegado';
 import type { CatalogoDs, DatosDestinatario } from '@/dominio/dropshipping/tipos';
@@ -133,12 +133,12 @@ export function FormularioDs({ clienteId, clienteNombre, origen, catalogo, socio
         <div className="rtm-form-fila">
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Modelo
             <select className="rtm-campo" value={modeloId} onChange={(e) => elegirModelo(e.target.value === '' ? '' : Number(e.target.value))} data-testid="ds-modelo">
-              <option value="">Elige un modelo</option>{modelos.map((m) => <option key={m.id} value={m.id}>{m.marca} · {m.nombre}</option>)}
+              <option value="">Elige un modelo</option>{modelos.map((m) => <option key={m.id} value={m.id}>{marcaMayus(m.marca)} · {nombreVape(m.nombre)}</option>)}
             </select>
           </label>
           <label className="rtm-etiqueta-campo rtm-campo-ancho">Sabor
             <select className="rtm-campo" value={skuId} onChange={(e) => setSkuId(e.target.value === '' ? '' : Number(e.target.value))} disabled={modeloId === ''} data-testid="ds-sabor">
-              <option value="">Elige un sabor</option>{sabores.map((s) => <option key={s.sku_id} value={s.sku_id}>{s.sabor}</option>)}
+              <option value="">Elige un sabor</option>{sabores.map((s) => <option key={s.sku_id} value={s.sku_id}>{saborMayus(s.sabor)}</option>)}
             </select>
           </label>
           <label className="rtm-etiqueta-campo">Piezas<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={piezas} onChange={(e) => setPiezas(e.target.value)} data-testid="ds-piezas" /></label>
@@ -154,7 +154,7 @@ export function FormularioDs({ clienteId, clienteNombre, origen, catalogo, socio
           <ul className="rtm-lineas-form" aria-label="Renglones agregados" data-testid="ds-renglones">
             {renglones.map((x, i) => (
               <li key={`${x.sku_id}-${i}`} className="rtm-acciones-fila">
-                <span>{x.modelo} · {x.sabor} · {formatearPiezas(x.piezas)}{x.precioCent !== null ? ` a ${formatearMoneda(x.precioCent)}` : ''}</span>
+                <span>{nombreVape(x.modelo)} · {saborMayus(x.sabor)} · {formatearPiezas(x.piezas)}{x.precioCent !== null ? ` a ${formatearMoneda(x.precioCent)}` : ''}</span>
                 <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setRenglones((r) => r.filter((_, j) => j !== i))}>Quitar</button>
               </li>
             ))}

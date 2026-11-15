@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { armarDevolucionProveedor } from '@/dominio/operacion/devoluciones';
-import { formatearMoneda, formatearPiezas } from '@/dominio/formato';
+import { formatearMoneda, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import type { CatalogoDevolucionProveedor } from '@/dominio/operacion/tipos';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
 import { DialogoSimple } from '../operacion/dialogo-simple';
@@ -47,7 +47,7 @@ export function DevolverAProveedor({ catalogo }: { catalogo: CatalogoDevolucionP
           <div className="rtm-lista-form" role="group" aria-label="Piezas a devolver al proveedor">
             {visibles.map((s) => (
               <div key={s.sku_id} className="rtm-form-fila">
-                <span className="rtm-campo-ancho"><strong>{s.modelo} {s.sabor}</strong><br />Disponible {formatearPiezas(s.disponible)} · costo promedio {formatearMoneda(s.costo_prom_cent)}</span>
+                <span className="rtm-campo-ancho"><strong>{nombreVape(s.modelo)} {saborMayus(s.sabor)}</strong><br />Disponible {formatearPiezas(s.disponible)} · costo promedio {formatearMoneda(s.costo_prom_cent)}</span>
                 <label className="rtm-etiqueta-campo">Devuelve<input className="rtm-campo rtm-campo-num" inputMode="numeric" value={piezas[s.sku_id] ?? ''} onChange={(e) => setPiezas((p) => ({ ...p, [s.sku_id]: e.target.value }))} aria-label={`Piezas a devolver de ${s.modelo} ${s.sabor}`} /></label>
               </div>
             ))}
