@@ -75,6 +75,15 @@ export function limpio(fuente: PDFFont, t: string): string {
   return s;
 }
 
+/** Tamano de letra para que etiqueta y valor del mismo renglon no se toquen (queda al menos `hueco` pt entre ambos): con totales de cientos de millones baja hasta 8 pt. */
+export function tamanoQueCabe(fuente: PDFFont, etiqueta: string, valor: string, size: number, ancho: number, hueco = 10): number {
+  const a = limpio(fuente, etiqueta);
+  const v = limpio(fuente, valor);
+  let s = size;
+  while (s > 8 && fuente.widthOfTextAtSize(a, s) + fuente.widthOfTextAtSize(v, s) + hueco > ancho) s -= 0.5;
+  return s;
+}
+
 export class Hoja {
   pagina!: PDFPage;
   y = 0;
@@ -195,8 +204,10 @@ export async function pdfNotaCliente(n: NotaFuente): Promise<Uint8Array> {
 
     h.asegurar(120);
     const fila = (etiqueta: string, valor: string, fuerte = false) => {
-      h.texto(etiqueta, X.precio - 120, fuerte ? 12 : 10, { fuente: fuerte ? f.negrita : f.cuerpo });
-      h.texto(valor, X.total, fuerte ? 12 : 10, { fuente: fuerte ? f.negrita : f.cuerpo, derecha: true });
+      const fuente = fuerte ? f.negrita : f.cuerpo;
+      const size = tamanoQueCabe(fuente, etiqueta, valor, fuerte ? 12 : 10, X.total - (X.precio - 120));
+      h.texto(etiqueta, X.precio - 120, size, { fuente });
+      h.texto(valor, X.total, size, { fuente, derecha: true });
       h.bajar(fuerte ? 18 : 14);
     };
     fila('Cantidad total', `${c.piezas_total} piezas`);
