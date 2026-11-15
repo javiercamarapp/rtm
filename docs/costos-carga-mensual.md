@@ -5,7 +5,7 @@ Comando: `node scripts/costos/cargar-mes.mjs --mes AAAA-MM --verificar` (solo le
 Ruta oficial: el script llama `costos.registrar_cargo` (la misma de la pagina; un cargo cobrable de Javier nace como gasto de la sociedad + aportacion de capital declarada, ver docs/costos-como-aportacion.md), `costos.registrar_tipo_cambio`, `costos.registrar_dato_faltante` y `costos.resolver_dato_faltante`. Idempotente: un cargo vivo igual se omite; si difiere avisa y solo con `--reemplazar` anula (reversa) y vuelve a registrar.
 
 ## Reglas vigentes (decisiones del dueno, 14-nov)
-- Vercel y Supabase valen 0 por ahora (sin consumo real declarado): sin cargo y sin dato faltante. Con consumo declarado se cobra lo menor (o mayor, segun `costos.cuota_base`) entre la cuota base y el consumo real.
+- Vercel y Supabase valen 0 por ahora (sin consumo real declarado): sin cargo y sin dato faltante. Con consumo declarado se cobra lo MAYOR (la cuota base es el piso; la regla `menor` solo aplica si `costos.cuota_base` la fija) entre la cuota base y el consumo real.
 - Claude Max: fijo en US$20 al mes (20 de 200 prorrateados), fase construccion y opcional, aparte del total de operar; `--claude-usd N` lo cambia.
 - OpenRouter, comision (5.5 %) y transcripcion (rol `audio`) salen del libro `ia.llamada`; sin llamadas vale 0 (salvo `--openrouter-usd N`, capturado y provisional).
 - Dominio: administrado en Vercel; `--dominio-anual-usd N` (devengo de un doceavo); sin costo declarado vale 0. Higgsfield: `--higgsfield-usd N`. Resend, Telegram y GitHub: sin cargo.

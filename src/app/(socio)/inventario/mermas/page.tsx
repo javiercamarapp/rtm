@@ -9,6 +9,7 @@ import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pag
 import { ColumnasPeriodo } from '@/ui/graficas';
 import { Campo, FiltrosUrl } from '../../_a2/filtros-url';
 import { TIPO_MOV, enlace, enteroParam, fecha, m, mesEtiqueta, periodo, pz, type Params } from '../../_a2/util';
+import { EnSubnav } from '@/ui/componentes/ranura-subnav';
 
 export const metadata: Metadata = { title: 'Mermas y diferencias' };
 const PASO = 100;
@@ -25,9 +26,11 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow="Inventario · mermas y diferencias" titulo={sd ? 'Sin mermas ni diferencias de conteo' : `${pz(t.merma_piezas + t.faltante_piezas)} piezas perdidas`} descripcion="Mermas y ajustes por conteo físico, por modelo y mes, con su valor a costo, motivo y autor." acciones={<Link className="rtm-boton" href="/inventario/conteo">Conteo físico</Link>} />
+      <EnSubnav>
       <FiltrosUrl etiquetaAria="Periodo" restablecer="/inventario/mermas" plegable={{ etiqueta: 'Periodo' }}>
         <Campo etiqueta="Periodo"><select name="dias" defaultValue={String(per.dias ?? '90')}><option value="30">30 días</option><option value="90">90 días</option><option value="365">12 meses</option><option value="todo">Todo</option></select></Campo>
       </FiltrosUrl>
+      </EnSubnav>
       <KpiLinea etiquetaAria="Resumen de mermas" celdas={[
         { id: 'm', etiqueta: 'Mermas', valor: sd ? null : pz(t.merma_piezas), nota: sd ? undefined : m(t.merma_valor_cent), categoria: 3 },
         { id: 'f', etiqueta: 'Faltantes de conteo', valor: sd ? null : pz(t.faltante_piezas), nota: sd ? undefined : m(t.faltante_valor_cent), categoria: 4 },

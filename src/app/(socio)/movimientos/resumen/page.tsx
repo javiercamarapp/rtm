@@ -9,6 +9,7 @@ import { BarList } from '@/ui/componentes/datos';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
+import { EnSubnav } from '@/ui/componentes/ranura-subnav';
 
 export const metadata: Metadata = { title: 'Agrupar y utilidad' };
 
@@ -39,7 +40,9 @@ export default async function PaginaResumen({ searchParams }: { searchParams: Pr
           { id: 'gr', etiqueta: `Grupos ${DIMENSIONES.find((d) => d.id === dim)!.etiqueta.toLowerCase()}`, valor: String(grupos.length), categoria: 4, nota: 'Con movimientos clasificados' },
         ]}
       />
+      <EnSubnav>
       <Segmentado etiquetaAria="Agrupar por" opciones={DIMENSIONES.map((d) => ({ valor: d.id, etiqueta: d.etiqueta, href: `/movimientos/resumen?dim=${d.id}`, activa: dim === d.id, testid: `dim-${d.id}` }))} />
+      </EnSubnav>
       <Rejilla dividir="8-4">
         <Tarjeta plana titulo={`Movimientos agrupados ${DIMENSIONES.find((d) => d.id === dim)!.etiqueta.toLowerCase()}`}>
           <DataTable

@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { Pestanas } from '@/ui/componentes/controles';
+import { RanuraSubnav } from '@/ui/componentes/ranura-subnav';
 
 const PAGINAS = [
   { href: '/inventario', etiqueta: 'Existencia y cobertura', id: 'existencia' },
@@ -19,6 +20,7 @@ export function SubnavInventario() {
   return (
     <Pestanas
       etiquetaAria="Inventario"
+      lateral={<RanuraSubnav />}
       items={PAGINAS.map((p) => ({ id: p.id, etiqueta: p.etiqueta, href: p.href, activa: ruta === p.href, testid: `inventario-${p.id}` }))}
     />
   );

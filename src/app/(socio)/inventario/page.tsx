@@ -10,9 +10,11 @@ import { BarraAcciones } from '@/ui/componentes/barra-acciones';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { ChipEstado, Pestanas } from '@/ui/componentes/controles';
 import { FiltroCatalogo } from '@/ui/componentes/filtro-catalogo';
+import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
+import { EnSubnav } from '@/ui/componentes/ranura-subnav';
 import { MenuFiltro } from '@/ui/componentes/menu-filtro';
 import { ModeloMiniatura } from '@/ui/componentes/modelo';
-import { atajosDeMarcas, marcasDeParam } from '@/dominio/catalogo/filtro';
+import { marcasDeParam } from '@/dominio/catalogo/filtro';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable, type Columna } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
@@ -109,8 +111,6 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
   const merP = detalle.modelos.reduce((a, d) => a + d.mermas, 0);
   const rotGlobal = inv.totales.piezas > 0 ? dec(salP / ((detalle.modelos.reduce((a, d) => a + (d.piezas_inicial ?? 0), 0) + inv.totales.piezas) / 2 || 1), 2) : null;
   const opcionesMarca = marcas.map((mc) => ({ nombre: mc, cuenta: conDato.filter((x) => x.marca === mc).length }));
-  // Atajos: las marcas con mas valor de inventario (maximo 5).
-  const atajos = atajosDeMarcas(new Map(porMarca.map((x) => [x.mc, Number(x.v)])));
   const sd = conDato.length === 0;
   const pie = `Corte: ${etiquetaFechaHora(inv.corte)} · Fuente: libro de movimientos`;
 
@@ -136,19 +136,6 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
           { etiqueta: `Entradas (${dec(diasEntre(detalle.ini, detalle.fin) + 1, 0)} d)`, valor: pz(entP) }, { etiqueta: 'Salidas', valor: pz(salP) }, { etiqueta: 'Rotación', valor: rotGlobal === null ? null : `${rotGlobal} veces` },
           { etiqueta: 'Mermas', valor: pz(merP) }, { etiqueta: 'Cobertura media', valor: covMedia === null ? null : textoDias(covMedia) }, { etiqueta: 'Sin movimiento', valor: String(cuenta(FILTROS[3]!)) },
         ]} />
-      )}
-
-      {!sd && (
-        <details className="rtm-bb-plegable" data-testid="inv-mas-razones">
-          <summary>Semáforo de reposición y valor</summary>
-        <FilaRatios etiqueta="Semáforo de reposición" items={(['urge', 'brevedad', 'siguiente', 'buena', 'excelente', 'sobrestock', 'sin_movimiento', 'sin_historia'] as EstadoCoberturaCodigo[]).map((e) => ({ etiqueta: PALABRA_COBERTURA[e], valor: String(conDato.filter((x) => x.estado === e).length) }))} />
-        <FilaRatios etiqueta="Valor y disponibilidad" items={[
-          { etiqueta: 'Valor medio por pieza', valor: inv.totales.piezas > 0 ? formatearMoneda(inv.totales.valor_cent / BigInt(Math.max(inv.totales.piezas, 1))) : null },
-          { etiqueta: 'Disponibles de las piezas', valor: inv.totales.piezas > 0 ? `${dec((conDato.reduce((a, x) => a + (x.disponible ?? 0), 0) / inv.totales.piezas) * 100, 1)} %` : null },
-          { etiqueta: 'Marcas con existencia', valor: String(marcas.length) },
-          { etiqueta: 'Marca con más valor', valor: porMarca[0] ? `${marcaMayus(porMarca[0].mc)} · ${pctTexto(partePct(porMarca[0].v, totalValor)) ?? ''}` : null },
-        ]} />
-        </details>
       )}
 
       {vista === 'existencias' && (
@@ -183,7 +170,8 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
 
       {vista === 'existencias' && (
         <>
-          <FiltroCatalogo etiquetaAria="Buscar y filtrar por marca" placeholder="Buscar modelo, marca o sabor" marcas={opcionesMarca} atajos={atajos}>
+          <EnSubnav>
+          <FiltroCatalogo etiquetaAria="Buscar y filtrar por marca" placeholder="Buscar modelo, marca o sabor" marcas={opcionesMarca}>
             <MenuFiltro nombre="Estado" testid="filtro-estado" opciones={[
               { href: chipLink({ estado: null, solo: null }), etiqueta: 'Todos', activa: !filtro && !soloCero && !soloApartado },
               ...FILTROS.map((f) => ({ href: chipLink({ estado: f.id, solo: null }), etiqueta: `${f.etiqueta} (${cuenta(f)})`, activa: filtro?.id === f.id })),
@@ -198,7 +186,21 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
               {soloCero && <input type="hidden" name="solo" value="cero" />}
               {soloApartado && <input type="hidden" name="solo" value="apartado" />}
             </FiltrosUrl>
+            {!sd && (
+              <FiltrosPlegables etiqueta="Semáforo y valor" titulo="Semáforo de reposición y valor del inventario">
+                <div data-testid="inv-mas-razones">
+        <FilaRatios etiqueta="Semáforo de reposición" items={(['urge', 'brevedad', 'siguiente', 'buena', 'excelente', 'sobrestock', 'sin_movimiento', 'sin_historia'] as EstadoCoberturaCodigo[]).map((e) => ({ etiqueta: PALABRA_COBERTURA[e], valor: String(conDato.filter((x) => x.estado === e).length) }))} />
+        <FilaRatios etiqueta="Valor y disponibilidad" items={[
+          { etiqueta: 'Valor medio por pieza', valor: inv.totales.piezas > 0 ? formatearMoneda(inv.totales.valor_cent / BigInt(Math.max(inv.totales.piezas, 1))) : null },
+          { etiqueta: 'Disponibles de las piezas', valor: inv.totales.piezas > 0 ? `${dec((conDato.reduce((a, x) => a + (x.disponible ?? 0), 0) / inv.totales.piezas) * 100, 1)} %` : null },
+          { etiqueta: 'Marcas con existencia', valor: String(marcas.length) },
+          { etiqueta: 'Marca con más valor', valor: porMarca[0] ? `${marcaMayus(porMarca[0].mc)} · ${pctTexto(partePct(porMarca[0].v, totalValor)) ?? ''}` : null },
+        ]} />
+                </div>
+              </FiltrosPlegables>
+            )}
           </FiltroCatalogo>
+          </EnSubnav>
 
           <Tarjeta plana className="rtm-a2-tabla" titulo="Existencias por modelo y sabor" descripcion={`${visibles.length} modelos · abre un modelo para ver sus sabores`}>
             <DataTable

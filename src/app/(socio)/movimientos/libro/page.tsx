@@ -12,6 +12,7 @@ import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pag
 import { AreaSerie, ColumnasPeriodo } from '@/ui/graficas';
 import { Campo, FiltrosUrl } from '../../_a2/filtros-url';
 import { enlace, enteroParam, fechaCorta, fechaParam, m, mesEtiqueta, textoParam, uno, type Params } from '../../_a2/util';
+import { EnSubnav } from '@/ui/componentes/ranura-subnav';
 
 export const metadata: Metadata = { title: 'Libro de ingresos y egresos' };
 const PASO = 200;
@@ -41,6 +42,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina eyebrow="Movimientos · libro" titulo={sd ? 'Todavía no hay movimientos en el libro' : `${l.total} renglones, saldo de ${m(t.saldo_final_cent)}`} descripcion="Todos los ingresos y egresos en una sola tabla con saldo corrido, totales del filtro completo y paginación en servidor." acciones={<><Link className="rtm-boton" href="/movimientos">Bandeja</Link><a className="rtm-boton" href={`${base}/exportar${exportar.size ? `?${exportar}` : ''}`} data-testid="libro-exportar">Exportar CSV</a></>} />
+      <EnSubnav>
       <div className="rtm-ba-barra-filtros">
       <FiltrosPlegables etiqueta="Filtros" titulo="Filtros del libro: periodo, estado, cuenta, monto y concepto" activos={[filtro.ini, filtro.fin, estado, filtro.cuenta, uno(sp.min), uno(sp.max), filtro.q].filter(Boolean).length}>
       <FiltrosUrl etiquetaAria="Filtros del libro" restablecer={base}>
@@ -55,6 +57,7 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
       </FiltrosUrl>
       </FiltrosPlegables>
       </div>
+      </EnSubnav>
       <KpiLinea etiquetaAria="Resumen del libro" celdas={[
         { id: 'c', etiqueta: 'Cargos (+)', valor: sd ? null : m(t.cargos_cent), categoria: 2, nota: 'Dinero que entró' },
         { id: 'a', etiqueta: 'Abonos (−)', valor: sd ? null : m(t.abonos_cent), categoria: 3, nota: 'Dinero que salió' },
