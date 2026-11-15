@@ -232,4 +232,24 @@ begin
   grant execute on function notificacion._mxn(bigint) to servidor;
 end $$;
 
-select notificacion.sembrar_reglas();
+-- Siembra inline: el rol de `supabase db push` no es 'servidor' ni 'postgres', asi que no puede pasar por la guardia exigir_sistema().
+do $sembrar$
+declare v_n int;
+begin
+  insert into notificacion.regla (codigo, tipo_codigo, clase, interruptor, evaluador, descripcion, orden) values
+    ('resumen_diario', 'resumen_diario', 'resumen', 'regla_resumen_diario', null, 'Resumen diario de las 20:00 (plantilla sobre agente.rep_telegram)', 10),
+    ('pendientes_diarios', 'pendientes_diarios', 'pendientes', 'regla_pendientes_diarios', null, 'Pendientes de las 09:00 (plantilla sobre agente.rep_pendientes)', 20),
+    ('cobertura_pagos', 'cobertura_pago_viernes', 'cobertura', 'regla_cobertura_pagos', 'ev_cobertura_pagos', 'Cobertura de pagos a proveedor menor a 1.0 (cruce de >= 1.0 a < 1.0)', 30),
+    ('vencimiento_proveedor', 'vencimiento_proveedor', 'vencimiento_proveedor', 'regla_vencimiento_proveedor', 'ev_vencimiento_proveedor', 'Pago a Isaac o Karen a 3 dias del vencimiento (FIFO) o vencido', 40),
+    ('cobranza_vence_manana', 'cobranza_vence_manana', 'cobranza', 'regla_cobranza_vence_manana', 'ev_cobranza_vence_manana', 'Cuentas por cobrar que vencen manana', 50),
+    ('cuenta_vencida', 'cuenta_vencida', 'cobranza', 'regla_cuenta_vencida', 'ev_cuenta_vencida', 'Cuenta vencida: dia 1 y cruces de 8, 15, 30 y 60 dias de atraso', 60),
+    ('libro_no_cuadra', 'libro_no_cuadra', 'libro', 'regla_libro_no_cuadra', 'ev_libro_no_cuadra', 'Cualquier comprobacion C1..C24 o CU en rojo', 70),
+    ('reloj_caido', 'tarea_sin_latido', 'reloj', 'regla_reloj_caido', null, 'Reloj caido: sin latido dentro de la tolerancia (la emite reloj.verificar)', 80),
+    ('fondos_en_poder', 'fondos_en_poder_socio', 'fondos', 'regla_fondos_en_poder', 'ev_fondos_en_poder', 'Fondos en poder de un socio que crecen (o pasan de la antiguedad permitida)', 90),
+    ('margen_bajo', 'margen_bajo_pedido', 'margen', 'regla_margen_bajo', 'ev_margen_bajo', 'Pedido enviado con margen menor al 5 por ciento (excluye pedidos a costo del socio)', 100),
+    ('credito_sin_plazo', 'credito_sin_plazo', 'credito', 'regla_credito_sin_plazo', 'ev_credito_sin_plazo', 'Pedido a credito sin plazo acordado', 110),
+    ('diferencia_recepcion_vieja', 'diferencia_recepcion_vieja', 'diferencia', 'regla_diferencia_recepcion', 'ev_diferencia_recepcion', 'Diferencia de recepcion abierta a 7, 14 y 30 dias', 120)
+    on conflict (codigo) do update set tipo_codigo = excluded.tipo_codigo, clase = excluded.clase, evaluador = excluded.evaluador, descripcion = excluded.descripcion, orden = excluded.orden;
+  get diagnostics v_n = row_count;
+  insert into seguridad.interruptor (clave, activo) select r.interruptor, false from notificacion.regla r on conflict (clave) do nothing;
+end $sembrar$;
