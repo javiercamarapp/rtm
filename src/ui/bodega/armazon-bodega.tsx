@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { MARCA } from '@/config/marca';
 import { Logo } from '../logo/logo';
-import { Apariencia } from '../tema/apariencia';
 import { BotonTema } from '../tema/boton-tema';
 
 export const SECCIONES_BODEGA = [
@@ -48,7 +47,6 @@ export function ArmazonBodega({ children, accionSalir, vistaPrevia }: Props) {
           </ul>
         </nav>
         <div className="bodega-barra-acciones">
-          <Apariencia />
           <BotonTema />
           {vistaPrevia
             ? <Link className="rtm-boton rtm-boton-chico" href="/cuentas" data-testid="salir-vista-previa">Volver a Cuentas</Link>
