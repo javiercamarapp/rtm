@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
-import { formatearEntero, marcaMayus, saborMayus } from '@/dominio/formato';
+import { formatearEntero, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import { disponibles, estadoDisponibilidad, ETIQUETA_EVENTO, hace, nombreVisible, tonoDeEvento, type ModeloTablero, type Recomendacion } from '@/dominio/proveedores/tablero';
 import { FotoVape, IndicadorDisponibilidad } from './tarjeta-vape';
 
@@ -33,7 +33,7 @@ export function PanelVape({ modelo: m, foto, caladas, ahora, recomendacion, onCe
             <FotoVape src={foto} marca={m.marca} nombre={nombre} tamano="grande" />
             <div>
               <p className="rtm-eyebrow">{marcaMayus(m.marca)}</p>
-              <h2 id={`${id}-t`} className="rtm-kr-panel-titulo">{nombre}</h2>
+              <h2 id={`${id}-t`} className="rtm-kr-panel-titulo">{nombreVape(nombre)}</h2>
               <IndicadorDisponibilidad estado={estadoDisponibilidad(m)} />
               <p className="rtm-nota">{disponibles(m)} de {m.sabores.length} sabores disponibles{m.puffs ? ` · ${formatearEntero(m.puffs)} caladas` : ''}</p>
             </div>
@@ -53,7 +53,7 @@ export function PanelVape({ modelo: m, foto, caladas, ahora, recomendacion, onCe
                 {recomendacion.motivos.includes('reponer') ? 'Conviene pedir este modelo: se vende y la existencia propia es corta. ' : ''}
                 {recomendacion.motivos.includes('llego_y_vendemos') ? 'Karen acaba de recibir algo de este modelo. ' : ''}
                 {recomendacion.motivos.includes('agotado_y_vendemos') ? 'Se agotó algo de este modelo con Karen. ' : ''}
-                {recomendacion.sabores_sugeridos.length > 0 ? `Sabores que más vendes y Karen tiene: ${recomendacion.sabores_sugeridos.join(', ')}.` : ''}
+                {recomendacion.sabores_sugeridos.length > 0 ? `Sabores que más vendes y Karen tiene: ${recomendacion.sabores_sugeridos.map(saborMayus).join(', ')}.` : ''}
               </p>
             </div>
           )}

@@ -6,7 +6,7 @@ import {
   type DatosTablero, type EventoGlobal, type FiltrosKaren, type OrdenTablero,
 } from '@/dominio/proveedores/tablero';
 import { fotoDeModelo } from '@/config/fotos_karen';
-import { etiquetaFechaHora, marcaMayus, nombreVape } from '@/dominio/formato';
+import { etiquetaFechaHora, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import { PanelVape } from './panel-vape';
 import { TarjetaVape } from './tarjeta-vape';
 import '@/ui/estilos/barrido-b.css';
@@ -140,7 +140,7 @@ export function TableroKaren(p: PropsTablero) {
             <ol className="rtm-kr-linea" data-testid="linea-tiempo">
               {p.eventos.slice(0, 12).map((e) => (
                 <li key={e.clave} data-tono={tonoDeEvento(e.tipo)}>
-                  <span>{ETIQUETA_EVENTO[e.tipo] ?? e.tipo}{e.modelo ? `: ${nombreVape(e.modelo)}` : ''}{e.despues && e.tipo.startsWith('sabor') ? ` (${e.despues})` : ''}</span>
+                  <span>{ETIQUETA_EVENTO[e.tipo] ?? e.tipo}{e.modelo ? `: ${nombreVape(e.modelo)}` : ''}{e.despues && e.tipo.startsWith('sabor') ? ` (${saborMayus(e.despues)})` : ''}</span>
                   <time dateTime={e.en}>{hace(e.en, ahora)}</time>
                 </li>
               ))}
