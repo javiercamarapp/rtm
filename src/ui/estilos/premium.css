@@ -144,14 +144,14 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 .rtm-pestanas a[aria-current='page'] { color: var(--rtm-ink); font-weight: var(--rtm-peso-fuerte); border-bottom-color: var(--rtm-ink); }
 .rtm-pestanas small { display: inline-grid; place-items: center; min-width: 20px; height: 18px; padding: 0 6px; border-radius: var(--rtm-r-pildora); background: var(--rtm-tint); font-size: var(--rtm-t-micro); font-weight: var(--rtm-peso-fuerte); color: var(--rtm-ink-2); }
 
-.rtm-barra-filtros-v2 { display: flex; align-items: center; gap: var(--rtm-e-2); min-height: var(--rtm-h-ctl); flex-wrap: wrap; }
+.rtm-barra-filtros-v2 { display: flex; align-items: center; gap: var(--rtm-e-2); min-height: var(--rtm-h-ctl); flex-wrap: nowrap; }
 .rtm-barra-filtros-v2 > * { flex: none; min-width: 0; max-width: 100%; }
 .rtm-barra-filtros-espacio { flex-grow: 1 !important; flex-shrink: 0 !important; min-width: 8px; }
 /* Una barra con formulario de periodo: los chips miden lo mismo que los campos y botones (32 px; 44 tactil) y, en pantalla angosta, el formulario toma su propio renglon completo. */
 .rtm-barra-filtros-v2:has(> .a3-filtros-form) .rtm-chip-v2 { height: var(--rtm-ctl-alto); }
 @media (max-width: 767px) {
   .rtm-barra-filtros-v2 > .rtm-barra-filtros-espacio { display: none; }
-  .rtm-barra-filtros-v2 > :is(.a3-filtros-form, .rtm-a2-filtros) { flex-grow: 1; width: 100%; }
+  .rtm-barra-filtros-v2 > :is(.a3-filtros-form, .rtm-a2-filtros) { flex-grow: 1; }
 }
 
 /* ---- Monograma, persona, aviso ---- */
@@ -296,11 +296,11 @@ a.rtm-chip-v2:hover { background: var(--rtm-tint); }
 
 /* Barra de busqueda y exportacion */
 .rtm-dt-interactiva { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.rtm-dt-barra { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-e-2); }
+.rtm-dt-barra { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-e-2); }
 .rtm-dt-barra-espacio { display: none; }
 .rtm-dt-barra > :is(.rtm-boton, .rtm-boton-chico) { margin-left: auto; }
 .rtm-dt-busqueda { width: min(280px, 100%); }
-.rtm-dt-barra > .rtm-dt-busqueda { flex: 1 1 auto; width: auto; max-width: 280px; }
+.rtm-dt-barra > .rtm-dt-busqueda { flex: 1 1 auto; width: 220px; min-width: 140px; max-width: 360px; }
 .rtm-campo-chico { height: var(--rtm-ctl-alto-chico); padding: 0 8px; }
 .rtm-paginador-filas { display: inline-flex; align-items: center; gap: 6px; }
 .rtm-tarjeta-v2[data-plana] .rtm-dt-interactiva { gap: 0; }
