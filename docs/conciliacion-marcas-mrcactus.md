@@ -156,7 +156,7 @@ No se siembran, y quedan en la cola de confirmacion porque ya existe un modelo c
 
 Dos diferencias que requieren respuesta del dueno:
 
-- Waka Optimus: el diccionario dice 80K; el catalogo (id 76) y la tienda dicen 100,000. No se siembra el alias.
-- Waka SoPro: el diccionario dice 15K; hoy existe un alias `waka sopro` que apunta a Waka Sopro 30K (id 87). La migracion no lo pisa. Confirmar y corregir a mano.
+- Waka Optimus: el dueno corrigio a 100K (14-nov); ver docs/alias-waka-y-tabulador.md.
+- Waka SoPro = 15K: la migracion 20261118100000 corrige el alias y registra la union aprobada (docs/alias-waka-y-tabulador.md).
 
 Las 8 marcas sueltas (Optimus, Burst, Blade, Smash Go, Slim, Icon, Elite, Go) quedan confirmadas como Waka en `marcas-modelos.json`; Box Pro 15 y Box Pro Max (IPLAY) siguen por confirmar.
