@@ -6,12 +6,14 @@ import type { DimensionDesglose, FilaDesglose, OrigenSurtido } from '@/dominio/d
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { BarraFiltros, Segmentado, Chip } from '@/ui/componentes/controles';
 import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
+import { Composicion, type GrupoComposicion } from '@/ui/componentes/composicion';
 import { BarList } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
 import { ColumnasPeriodo } from '@/ui/graficas';
 import '@/ui/estilos/paginas-a1.css';
+import { aNumero as aNum } from '@/dominio/tablero/agregados';
 import { etiquetaHoy } from '../contexto';
 import { fechaOpcional, ORIGEN_SURTIDO, PestanasDs } from './comun';
 
@@ -52,6 +54,12 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
   const porPagarPedidos = dsCol?.por_pagar_cent ?? 0n;
   const difPuente = deudaLibro - porPagarPedidos;
   const semanas = porSemana.slice(-12);
+  // Relleno animado bajo la grafica semanal: solo cifras que el resumen ya trae.
+  const gruposComp: GrupoComposicion[] = [
+    { id: 'venta-origen', titulo: 'Venta por origen del surtido', segmentos: [{ id: 'ds', etiqueta: ORIGEN_SURTIDO.dropshipping, valor: dsCol ? aNum(dsCol.venta_cent) : null, texto: dsCol ? formatearMoneda(dsCol.venta_cent) : 'Sin dato' }, { id: 'inv', etiqueta: ORIGEN_SURTIDO.inventario_merida, valor: invCol ? aNum(invCol.venta_cent) : null, texto: invCol ? formatearMoneda(invCol.venta_cent) : 'Sin dato' }] },
+    { id: 'piezas-origen', titulo: 'Piezas por origen del surtido', segmentos: [{ id: 'ds', etiqueta: ORIGEN_SURTIDO.dropshipping, valor: dsCol?.piezas ?? null, texto: dsCol ? formatearPiezas(dsCol.piezas) : 'Sin dato' }, { id: 'inv', etiqueta: ORIGEN_SURTIDO.inventario_merida, valor: invCol?.piezas ?? null, texto: invCol ? formatearPiezas(invCol.piezas) : 'Sin dato' }] },
+    { id: 'piezas-tipo', titulo: 'Piezas movidas a proveedores: de clientes y a costo', segmentos: [{ id: 'cli', etiqueta: 'De clientes', valor: pm.de_clientes, texto: formatearPiezas(pm.de_clientes) }, { id: 'costo', etiqueta: 'A costo para socios', valor: pm.a_costo_socios, texto: formatearPiezas(pm.a_costo_socios) }] },
+  ];
 
   return (
     <Pagina ancho="tablero">
@@ -105,12 +113,13 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
         />
       </Tarjeta>
 
-      <Rejilla dividir="8-4" alinear="inicio">
+      <Rejilla dividir="8-4">
         <Tarjeta titulo="Piezas de dropshipping por semana" descripcion="Piezas surtidas por los proveedores, enviadas cada semana">
           {semanas.length >= 1 ? (
             <ColumnasPeriodo titulo="Piezas de dropshipping por semana" descripcion="Piezas surtidas por semana de envío; la última puede ser parcial." unidad="Piezas" procedencia="observado" pie="Fuente: libro de pedidos"
               datos={semanas.map((s) => ({ id: s.clave, etiqueta: s.clave.slice(5), valor: s.piezas, texto: formatearPiezas(s.piezas) }))} />
           ) : <p className="rtm-a1-estado-vacio">Sin pedidos de dropshipping todavía.</p>}
+          {hayDatos && <Composicion etiquetaAria="Composición de los pedidos" grupos={gruposComp} />}
         </Tarjeta>
         <Tarjeta titulo="Piezas movidas a proveedores" descripcion="Incluye pedidos a costo para socios, que no generan utilidad">
           <div className="rtm-a1-cuerpo">
