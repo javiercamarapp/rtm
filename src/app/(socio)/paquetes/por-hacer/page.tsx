@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { operacionDeSocio } from '@/composicion/operacion';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { DataTable } from '@/ui/componentes/data-table';
+import { ModelosSabores } from '@/ui/componentes/modelos-sabores';
 import { EstadoTexto } from '@/ui/componentes/estado-texto';
 import { Aviso, ChipEstado } from '@/ui/componentes/controles';
 import { BarList } from '@/ui/componentes/datos';
@@ -81,7 +82,7 @@ export default async function PaginaPorHacer() {
             { id: 'f', titulo: 'Pedido', celda: (p) => <Link className="rtm-mono" href={`/pedidos/${p.id}`}>{p.folio}</Link> },
             { id: 'c', titulo: 'Cliente', celda: (p) => <>{p.cliente}<br /><span className="rtm-nota">{ORIGEN[p.origen]}{p.paqueteria ? ` · ${p.paqueteria}` : ''}</span></> },
             { id: 'z', titulo: 'Piezas', numerica: true, celda: (p) => formatearPiezas(p.piezas) },
-            { id: 'r', titulo: 'Por modelo y sabor', secundaria: true, celda: (p) => p.renglones.map((r) => `${r.modelo} ${r.sabor} ${r.piezas}`).join(' · ') },
+            { id: 'r', titulo: 'Por modelo y sabor', secundaria: true, ancho: 'xl', celda: (p) => <ModelosSabores variante="celda" testid={`ms-${p.id}`} renglones={p.renglones.map((r) => ({ modelo: r.modelo, sabor: r.sabor, piezas: r.piezas }))} /> },
             { id: 'e', titulo: 'Envío cobrado', numerica: true, secundaria: true, celda: (p) => (p.envio_cent > 0n ? formatearMoneda(p.envio_cent) : 'No se cobra') },
             { id: 'g', titulo: 'Guía', secundaria: true, celda: () => 'Pendiente' },
             { id: 'h', titulo: 'Antigüedad', celda: (p) => {
