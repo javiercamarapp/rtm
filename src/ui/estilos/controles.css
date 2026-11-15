@@ -134,23 +134,19 @@ body :is(input[type='checkbox'], input[type='radio'], .rtm-casilla input) { widt
 .rtm-boton-item:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: -2px; }
 @media (pointer: coarse) { .rtm-boton, .rtm-boton-chico, .rtm-boton-item { min-height: 44px; } }
 
-/* ---- BarraAcciones: UNA sola fila (primarias + vistas + menu "Mas"); jamas se parte en dos filas ---- */
+/* ---- BarraAcciones: UNA sola fila (vistas + acciones secundarias terciarias + primarias); jamas se parte en dos filas ni lleva un menu "Mas". ----
+   Escritorio: nowrap; el encabezado baja la barra entera a su propia linea si no cabe junto al titular. Pantallas de hasta 1100 px (telefono y tableta): si ni sola cabe, la fila se desliza en horizontal sin barra visible y con un desvanecido en el borde derecho. */
 .rtm-ba { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: var(--rtm-v-acciones); min-width: 0; max-width: 100%; }
-.rtm-ba-primarias { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-v-acciones); }
+.rtm-ba > *, .rtm-ba-sec > *, .rtm-ba-primarias > * { flex: none; }
+.rtm-ba-sec, .rtm-ba-primarias { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: var(--rtm-v-acciones); }
+.rtm-ba-sec > .rtm-boton, .rtm-ba-primarias > .rtm-boton { white-space: nowrap; }
 .rtm-ba-vistas { display: inline-flex; padding: 2px; gap: 2px; height: var(--rtm-boton-alto); box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: var(--rtm-ctl-r); background: var(--rtm-tint); }
 .rtm-ba-vistas > a { display: inline-flex; align-items: center; padding: 0 10px; border-radius: calc(var(--rtm-ctl-r) - 2px); color: var(--rtm-ink-2); font-size: 12.5px; font-weight: 500; text-decoration: none; white-space: nowrap; transition: background-color 140ms ease, color 140ms ease; }
 .rtm-ba-vistas > a:hover { background: var(--rtm-surface); color: var(--rtm-ink); }
 .rtm-ba-vistas > a:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 1px; }
-.rtm-ba-mas { position: relative; }
-.rtm-ba-panel { position: absolute; z-index: 40; right: 0; top: calc(100% + 6px); min-width: 220px; max-width: min(320px, 90vw); display: flex; flex-direction: column; gap: 1px; padding: 4px; box-sizing: border-box; border: 1px solid var(--rtm-line-2); border-radius: 10px; background: var(--rtm-surface); box-shadow: var(--rtm-sombra-flotante); animation: rtm-fc-entra 140ms ease both; }
-.rtm-ba-panel[data-cerrado] { visibility: hidden; position: absolute; width: 0; min-width: 0; height: 0; padding: 0; border: 0; overflow: hidden; animation: none; }
-.rtm-ba-panel[data-cerrado] dialog { visibility: visible; }
-.rtm-ba-panel-vistas { display: none; flex-direction: column; gap: 1px; padding-bottom: 4px; margin-bottom: 4px; border-bottom: 1px solid var(--rtm-line); }
-.rtm-ba-panel > .rtm-boton-item, .rtm-ba-panel > * > .rtm-boton-item { width: 100%; }
-/* Red de seguridad: un .rtm-boton suelto dentro del menu "Mas" se ve como fila de menu (lo correcto es variante="item"). */
-.rtm-ba-panel > .rtm-boton:not(.rtm-boton-item) { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 32px; padding: 0 10px; border-color: transparent; background: transparent; color: var(--rtm-ink); }
-.rtm-ba-panel > .rtm-boton:not(.rtm-boton-item):hover:not(:disabled) { background: var(--rtm-tint); border-color: transparent; }
-@media (max-width: 1100px) { .rtm-ba-vistas { display: none; } .rtm-ba-panel-vistas { display: flex; } }
-@media (max-width: 767px) { .rtm-ba-etq { display: none; } .rtm-ba-disparo { padding: 0 9px; } .rtm-ba { justify-content: flex-start; } .rtm-ba-panel { right: auto; left: 0; } }
-@media (prefers-reduced-motion: reduce) { .rtm-ba-panel { animation: none; } }
-:root[data-movimiento='reduced'] .rtm-ba-panel, :root[data-movimiento='off'] .rtm-ba-panel { animation: none; }
+@media (max-width: 1100px) {
+  .rtm-ba { justify-content: flex-start; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 2px; margin: -2px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); }
+  .rtm-ba::-webkit-scrollbar { display: none; }
+  /* La barra de inventario abre un panel flotante (absoluto o fijo): sin overflow para que no se recorte. */
+  .rtm-ba:has(.rtm-exportar) { overflow: visible; -webkit-mask-image: none; mask-image: none; }
+}

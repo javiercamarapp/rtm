@@ -23,8 +23,8 @@ interface Props {
   fijos?: Record<string, unknown>;
   primario?: boolean;
   chico?: boolean;
-  /** 'item': fila de un menu desplegable (BarraAcciones) en lugar de boton con contorno. */
-  variante?: 'boton' | 'item';
+  /** 'terciario': boton compacto sin contorno (acciones secundarias de BarraAcciones). */
+  variante?: 'boton' | 'terciario';
   /** Texto largo para title y lectores cuando la etiqueta visible es corta. */
   descripcion?: string;
   testid?: string;
@@ -66,7 +66,7 @@ export function FormularioAccion({ boton, titulo, confirmar, accion, campos, fij
 
   return (
     <>
-      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} title={descripcion} onClick={() => { limpiarError(); setValores(inicial()); setAbierto(true); }} data-testid={testid}>{boton}</button>
+      <button type="button" className={variante === 'terciario' ? 'rtm-boton rtm-boton-terciario' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} title={descripcion} onClick={() => { limpiarError(); setValores(inicial()); setAbierto(true); }} data-testid={testid}>{boton}</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo={titulo} confirmar={confirmar} ocupado={ocupado} onConfirmar={enviar} onCancelar={cerrar}>
           {campos.map((c) => (
@@ -100,7 +100,7 @@ export function FormularioAccion({ boton, titulo, confirmar, accion, campos, fij
 
 /** Boton de una sola accion con confirmacion (firmar, anular, cerrar...). */
 export function BotonAccion({ texto, accion, args, confirmarTexto, titulo, chico, primario, testid, motivo, desactivado, variante }: {
-  texto: string; accion: string; args: Record<string, unknown>; confirmarTexto?: string; titulo?: string; chico?: boolean; primario?: boolean; testid?: string; motivo?: string; desactivado?: boolean; variante?: 'boton' | 'item';
+  texto: string; accion: string; args: Record<string, unknown>; confirmarTexto?: string; titulo?: string; chico?: boolean; primario?: boolean; testid?: string; motivo?: string; desactivado?: boolean; variante?: 'boton' | 'terciario';
 }) {
   const { correr, ocupado, error, limpiarError } = useAccion();
   const [abierto, setAbierto] = useState(false);
@@ -113,7 +113,7 @@ export function BotonAccion({ texto, accion, args, confirmarTexto, titulo, chico
   };
   return (
     <>
-      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} disabled={desactivado} onClick={() => { limpiarError(); setM(''); setAbierto(true); }} data-testid={testid}>{texto}</button>
+      <button type="button" className={variante === 'terciario' ? 'rtm-boton rtm-boton-terciario' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} disabled={desactivado} onClick={() => { limpiarError(); setM(''); setAbierto(true); }} data-testid={testid}>{texto}</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo={titulo ?? texto} confirmar={confirmarTexto ?? texto} ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           {motivo && (

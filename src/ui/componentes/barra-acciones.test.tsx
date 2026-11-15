@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { act } from 'react';
 import { auditar, fijarModo, montar, type Montaje } from '@/ui/graficas/pruebas/ayudas';
 import { BarraAcciones } from './barra-acciones';
 
@@ -11,43 +10,37 @@ afterEach(() => { while (montajes.length) montajes.pop()!.desmontar(); fijarModo
 const barra = () => (
   <BarraAcciones
     vistas={[{ href: '/a', etiqueta: 'Angelo', titulo: 'Historial de Angelo' }, { href: '/b', etiqueta: 'Cascada', titulo: 'Cascada y actas' }]}
-    primarias={<button type="button" className="rtm-boton rtm-boton-primario" title="Registrar depósito de un socio">Registrar depósito</button>}
-    secundarias={<><button type="button" className="rtm-boton-item">Registrar gasto</button><button type="button" className="rtm-boton-item">Registrar pago</button></>}
+    primarias={<button type="button" className="rtm-boton rtm-boton-primario" title="Registrar depósito de un socio">Depósito</button>}
+    secundarias={<><button type="button" className="rtm-boton rtm-boton-terciario" title="Registrar gasto pagado por un socio">Gasto</button><button type="button" className="rtm-boton rtm-boton-terciario" title="Registrar pago a un socio">Pago</button></>}
   />
 );
 
 describe('BarraAcciones', () => {
-  it('es una sola fila: primarias, vistas y menu en un contenedor sin envoltura', () => {
+  it('es una sola fila: vistas, secundarias y primarias en un contenedor sin envoltura ni estilos en linea', () => {
     const m = abrir(montar(barra()));
     const ba = m.cont.querySelector('.rtm-ba')!;
-    expect(ba.children.length).toBe(3);
-    expect(m.cont.querySelectorAll('.rtm-ba-primarias button').length).toBe(1);
+    expect([...ba.children].map((c) => c.className)).toEqual(['rtm-ba-vistas', 'rtm-ba-sec', 'rtm-ba-primarias']);
     expect(m.cont.querySelector('[style]')).toBeNull();
   });
-  it('el menu Mas abre con el boton, mueve el foco con flechas y cierra con Escape devolviendo el foco', () => {
+  it('las acciones secundarias estan visibles como botones, sin menu ni boton Mas', () => {
     const m = abrir(montar(barra()));
-    const disparo = m.cont.querySelector<HTMLButtonElement>('[data-testid="barra-mas"]')!;
-    const panel = m.cont.querySelector<HTMLElement>('.rtm-ba-panel')!;
-    expect(panel.hasAttribute('data-cerrado')).toBe(true);
-    expect(disparo.getAttribute('aria-expanded')).toBe('false');
-    act(() => disparo.click());
-    expect(panel.hasAttribute('data-cerrado')).toBe(false);
-    expect(disparo.getAttribute('aria-expanded')).toBe('true');
-    act(() => { panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
-    expect(panel.hasAttribute('data-cerrado')).toBe(true);
-    expect(document.activeElement).toBe(disparo);
+    const secundarias = [...m.cont.querySelectorAll<HTMLButtonElement>('.rtm-ba-sec button')];
+    expect(secundarias.map((b) => b.textContent)).toEqual(['Gasto', 'Pago']);
+    expect(secundarias.every((b) => b.classList.contains('rtm-boton-terciario') && Boolean(b.title))).toBe(true);
+    expect(m.cont.querySelector('[data-testid="barra-mas"], [aria-haspopup], [aria-expanded], .rtm-ba-panel')).toBeNull();
+    expect(m.cont.textContent).not.toMatch(/\bM[aá]s\b/);
   });
-  it('elegir un elemento cierra el menu', () => {
+  it('las vistas son enlaces con su descripcion larga en title y aria-label', () => {
     const m = abrir(montar(barra()));
-    const disparo = m.cont.querySelector<HTMLButtonElement>('[data-testid="barra-mas"]')!;
-    act(() => disparo.click());
-    act(() => m.cont.querySelector<HTMLButtonElement>('.rtm-ba-panel .rtm-boton-item:not(a)')!.click());
-    expect(m.cont.querySelector<HTMLElement>('.rtm-ba-panel')!.hasAttribute('data-cerrado')).toBe(true);
+    const enlaces = [...m.cont.querySelectorAll<HTMLAnchorElement>('.rtm-ba-vistas a')];
+    expect(enlaces.map((a) => a.getAttribute('aria-label'))).toEqual(['Historial de Angelo', 'Cascada y actas']);
   });
-  it('sin violaciones de axe, cerrada y abierta', async () => {
+  it('sin secundarias ni vistas solo queda la fila de primarias', () => {
+    const m = abrir(montar(<BarraAcciones primarias={<button type="button" className="rtm-boton">Exportar</button>} />));
+    expect(m.cont.querySelectorAll('.rtm-ba > *').length).toBe(1);
+  });
+  it('sin violaciones de axe', async () => {
     const m = abrir(montar(barra(), 'reduced'));
-    expect(await auditar(m.cont)).toEqual([]);
-    act(() => m.cont.querySelector<HTMLButtonElement>('[data-testid="barra-mas"]')!.click());
     expect(await auditar(m.cont)).toEqual([]);
   });
 });
