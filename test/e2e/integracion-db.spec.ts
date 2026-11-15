@@ -135,7 +135,7 @@ test('inventario de proveedores: estado de la lectura, lista para cliente sin pr
   await expect(texto).not.toContainText('Uva');
   await expect(texto).not.toContainText(/karen|20\.?000|\$/i);
   await page.getByTestId('lista-copiar').click();
-  await expect(page.getByTestId('lista-copiada')).toBeVisible();
+  await expect(page.getByTestId('wa-aviso')).toHaveText('Copiado');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('Mango');
 
   // Orden de compra a Karen desde el panel del modelo: el sabor agotado queda bloqueado
