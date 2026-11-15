@@ -95,7 +95,6 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   await expect(page.getByText('Por cobrar', { exact: true }).locator('..')).toContainText('$1,300.00');
 
   // Correccion enlazada.
-  await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
   await page.getByTestId('corregir-nota').click();
   await page.getByLabel('Motivo de la corrección').fill('el envío fue de 350');
   await page.getByLabel('Envío nuevo').fill('350');
@@ -144,7 +143,6 @@ test('orden de compra a Karen: el saldo a favor se aplica, la recepcion por sabo
 
   await page.getByTestId('oc-enviada').click();
   await expect(page.getByTestId('estado-oc')).toContainText('Enviada');
-  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${idOc}`).click();
   await page.getByLabel('Número de guía').fill('TRAYECTO-E2E');
   await page.getByTestId('confirmar').click();

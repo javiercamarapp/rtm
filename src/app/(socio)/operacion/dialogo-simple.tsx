@@ -17,8 +17,8 @@ interface Props {
   motivo?: string;
   texto?: ReactNode;
   testid?: string;
-  /** 'item': fila de un menu desplegable (BarraAcciones) en lugar de boton con contorno. */
-  variante?: 'boton' | 'item';
+  /** 'terciario': boton compacto sin contorno (acciones secundarias de BarraAcciones). */
+  variante?: 'boton' | 'terciario';
   /** Texto largo para title y lectores cuando la etiqueta visible es corta. */
   descripcion?: string;
   alTerminar?: (datos: Record<string, unknown>) => void;
@@ -37,7 +37,7 @@ export function DialogoSimple({ boton, titulo, accion, args, confirmar, primario
   };
   return (
     <>
-      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} title={descripcion} onClick={() => { limpiarError(); setAbierto(true); }} data-testid={testid}>{boton}</button>
+      <button type="button" className={variante === 'terciario' ? 'rtm-boton rtm-boton-terciario' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} title={descripcion} onClick={() => { limpiarError(); setAbierto(true); }} data-testid={testid}>{boton}</button>
       {abierto && (
         <ConfirmDialog abierto={abierto} titulo={titulo} confirmar={confirmar ?? boton} ocupado={ocupado} onConfirmar={ir} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           {texto}
@@ -50,11 +50,11 @@ export function DialogoSimple({ boton, titulo, accion, args, confirmar, primario
 }
 
 /** Accion de un clic (sin dialogo): para pasos seguros y reversibles como confirmar o marcar empacado. */
-export function BotonAccion({ boton, accion, args, primario, chico, testid, variante, descripcion }: { boton: string; accion: string; args: Record<string, unknown>; primario?: boolean; chico?: boolean; testid?: string; variante?: 'boton' | 'item'; descripcion?: string }) {
+export function BotonAccion({ boton, accion, args, primario, chico, testid, variante, descripcion }: { boton: string; accion: string; args: Record<string, unknown>; primario?: boolean; chico?: boolean; testid?: string; variante?: 'boton' | 'terciario'; descripcion?: string }) {
   const { correr, ocupado, error } = useAccion();
   return (
     <>
-      <button type="button" className={variante === 'item' ? 'rtm-boton-item' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} title={descripcion} onClick={() => correr(accion, args)} disabled={ocupado} data-testid={testid}>{ocupado ? 'Guardando' : boton}</button>
+      <button type="button" className={variante === 'terciario' ? 'rtm-boton rtm-boton-terciario' : `rtm-boton${primario ? ' rtm-boton-primario' : ''}${chico ? ' rtm-boton-chico' : ''}`} title={descripcion} onClick={() => correr(accion, args)} disabled={ocupado} data-testid={testid}>{ocupado ? 'Guardando' : boton}</button>
       {error && <span className="rtm-error" role="alert">{error}</span>}
     </>
   );

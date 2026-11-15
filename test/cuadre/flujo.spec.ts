@@ -139,7 +139,6 @@ test('4 compra a Isaac: orden, confirmar, enviada, guia, llego, recepcion', asyn
   await page.getByTestId('confirmar-oc').click();
   await expect(page.getByTestId('estado-oc')).toContainText('Confirmada');
   await page.getByTestId('oc-enviada').click();
-  await page.getByTestId('barra-mas').click();
   await page.getByTestId(`guia-${oc}`).click();
   await page.getByLabel('Número de guía').fill(`CUADRE-OC-${d.sufijo}`);
   await page.getByTestId('confirmar').click();
@@ -158,7 +157,6 @@ test('4b persona de bodega: se da de alta desde la ficha del cliente (sin ella, 
   await page.getByRole('link', { name: d.omar }).first().click();
   await page.waitForURL(/\/clientes\/\d+$/);
   await cap(page, 'persona-bodega-antes');
-  await page.getByTestId('barra-mas').click(); // la accion vive en el menu "Mas" de la barra de acciones
   await page.getByTestId('alta-persona-bodega').click();
   await page.getByTestId('confirmar').click();
   await expect(page.getByTestId('alta-persona-bodega')).toHaveCount(0);
@@ -233,7 +231,6 @@ test('7 pago a proveedor: pago de la sociedad a Isaac y pago de un socio', async
   await expect(javier.getByText(`Aportacion demo ${d.sufijo}`).first()).toBeVisible();
   const page = angelo;
   await page.goto('/proveedores?p=Isaac');
-  await page.getByTestId('barra-mas').click();
   await page.getByTestId('pago-sociedad').click();
   await page.getByLabel(/Monto/).fill('1000');
   await page.getByTestId('confirmar').click();

@@ -84,7 +84,7 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pr
           { valor: 'inventario_merida', etiqueta: `Inventario en Mérida ${todos.filter((p) => origenSurtido(p.origen) === 'inventario_merida').length}`, href: enlace({ surtido: 'inventario_merida' }), activa: surtido === 'inventario_merida', testid: 'surtido-inventario' },
         ]} />
         <Segmentado etiquetaAria="Estado del pedido" tamano="chico" opciones={ESTADOS.map((e) => ({ valor: e.clave, etiqueta: e.texto, contador: cuenta(e.clave), href: enlace({ estado: e.clave }), activa: estado === e.clave }))} />
-        <FiltrosPlegables etiqueta="Más" titulo="Más filtros: avisos y origen del cliente" activos={(aviso ? 1 : 0) + (origen ? 1 : 0)}>
+        <FiltrosPlegables etiqueta="Avisos y origen" titulo="Más filtros: avisos y origen del cliente" activos={(aviso ? 1 : 0) + (origen ? 1 : 0)}>
           <div className="rtm-ba-fp-grupo">
             <small>Avisos</small>
             <Chip tono="atencion" href={enlace({ aviso: aviso ? '' : '1' })} activo={aviso === '1'}>Con avisos</Chip>

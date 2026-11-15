@@ -113,7 +113,6 @@ test('inventario de proveedores: estado de la lectura, lista para cliente sin pr
   await sembrarProveedores(canonico, 0.2);
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await entrarComo(page, await altaYCorreo('prov'), '/proveedores');
-  await page.getByTestId('barra-mas').click();
   await page.getByTestId('ir-inventario').click();
   await expect(page.getByRole('heading', { name: /Lo que hay en Karen/ })).toBeVisible();
   await expect(page.getByTestId('estado-fuente')).toContainText('Al día');
