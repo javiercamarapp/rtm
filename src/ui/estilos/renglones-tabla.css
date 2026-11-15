@@ -1,0 +1,28 @@
+/* Renglones como tabla (patron del kardex por sabor): rejilla con roles ARIA, cifras tabulares, encabezado fijo y total en el flujo. Blanco y negro, prefijo rtm-rt-. */
+.rtm-rt { min-width: 0; width: 100%; font-size: var(--rtm-t-pequeno, 13px); color: var(--rtm-ink); --rt-c-marca: minmax(0, 1fr); --rt-c-precios: ; --rt-c-acc: ; }
+.rtm-rt[data-marca='no'] { --rt-c-marca: ; }
+.rtm-rt[data-precios='si'] { --rt-c-precios: 6.5rem 7.5rem; }
+.rtm-rt[data-acciones='si'] { --rt-c-acc: max-content; }
+.rtm-rt-vacio { color: var(--rtm-ink-3); }
+.rtm-rt-scroll { max-height: 26rem; overflow: auto; border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-ctl); overscroll-behavior: contain; background: var(--rtm-surface); }
+.rtm-rt-scroll:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; }
+.rtm-rt-tabla { min-width: 34rem; width: 100%; }
+.rtm-rt-fila { display: grid; grid-template-columns: var(--rt-c-marca) minmax(0, 2fr) minmax(0, 2fr) 5.5rem var(--rt-c-precios) var(--rt-c-acc); align-items: center; column-gap: var(--rtm-e-3, 12px); padding: 0 var(--rtm-e-3, 12px); border-bottom: 1px solid var(--rtm-line-2); }
+.rtm-rt-fila > * { min-width: 0; padding: 5px 0; }
+.rtm-rt-fila > .rtm-num { text-align: right; font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; white-space: nowrap; }
+.rtm-rt-cabeza { position: sticky; top: 0; z-index: 1; background: var(--rtm-surface); }
+.rtm-rt-cab { border-bottom: 1px solid var(--rtm-line-strong); }
+.rtm-rt-cab > * { font-size: var(--rtm-t-micro, 11px); letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-ink-2); font-weight: 600; white-space: nowrap; }
+.rtm-rt-marca { color: var(--rtm-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtm-rt-modelo { display: flex; align-items: center; gap: var(--rtm-e-2, 8px); font-weight: 600; min-width: 0; }
+.rtm-rt-modelo > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtm-rt-sabor { display: flex; flex-direction: column; min-width: 0; }
+.rtm-rt-sabor > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtm-rt-sabor > small { color: var(--rtm-ink-2); font-size: var(--rtm-t-micro, 11px); }
+.rtm-rt-acc { text-align: right; white-space: nowrap; }
+.rtm-rt-subtotal { background: var(--rtm-tint); font-weight: 600; }
+.rtm-rt-fila[data-en-grupo] > .rtm-rt-sabor { padding-left: var(--rtm-e-5, 20px); }
+.rtm-rt-totales > .rtm-rt-total { border-bottom: 0; border-top: 1px solid var(--rtm-line-strong); font-weight: 700; background: var(--rtm-tint); }
+.rtm-rt-rotulo { grid-column: span 2; white-space: nowrap; }
+.rtm-rt[data-marca='no'] .rtm-rt-rotulo { grid-column: span 1; }
+@media (max-width: 767px) { .rtm-rt-scroll { max-height: 22rem; } }

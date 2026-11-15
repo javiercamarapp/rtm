@@ -19,6 +19,7 @@ import '@/ui/estilos/bodega.css';
 import '@/ui/estilos/controles.css';
 import '@/ui/estilos/modelo.css';
 import '@/ui/estilos/modelos-sabores.css';
+import '@/ui/estilos/renglones-tabla.css';
 import '@/ui/estilos/filtros.css';
 import '@/ui/estilos/karen.css';
 import '@/ui/estilos/hoja.css';
