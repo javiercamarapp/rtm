@@ -34,10 +34,21 @@ begin
     order by f.creada_at, f.clave) from proveedores.foto_pendiente f where f.estado = 'pendiente'), '[]'::jsonb);
 end $$;
 
+-- Catalogo propio para emparejar fotos: id, marca, nombre y alias. Sin costos, precios ni existencias.
+create function proveedores.catalogo_para_fotos() returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  perform seguridad.exigir_socio_o_sistema();
+  return coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'marca', b.nombre, 'n', m.nombre_canonico,
+    'al', coalesce((select jsonb_agg(a.alias_norm order by a.alias_norm) from catalogo.modelo_alias a where a.modelo_id = m.id and not a.ambiguo), '[]'::jsonb)) order by m.id)
+    from catalogo.modelo m join catalogo.marca b on b.id = m.marca_id), '[]'::jsonb);
+end $$;
+
 create function api.prov_fotos_pendientes() returns jsonb language plpgsql stable security definer set search_path = ''
 as $$ begin perform seguridad.exigir_rol(array['socio']); return proveedores.fotos_pendientes(); end $$;
 
-revoke execute on function proveedores.registrar_foto_pendiente(text, text, text, text, jsonb, text), proveedores.fotos_pendientes() from public, anon, authenticated;
-grant execute on function proveedores.registrar_foto_pendiente(text, text, text, text, jsonb, text), proveedores.fotos_pendientes() to servidor;
+revoke execute on function proveedores.registrar_foto_pendiente(text, text, text, text, jsonb, text), proveedores.fotos_pendientes(), proveedores.catalogo_para_fotos() from public, anon, authenticated;
+grant execute on function proveedores.registrar_foto_pendiente(text, text, text, text, jsonb, text), proveedores.fotos_pendientes(), proveedores.catalogo_para_fotos() to servidor;
 revoke execute on function api.prov_fotos_pendientes() from public, anon;
 grant execute on function api.prov_fotos_pendientes() to authenticated;

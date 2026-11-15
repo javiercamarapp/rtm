@@ -1,4 +1,4 @@
--- pgTAP: alias Waka (semilla aditiva) y cola de fotos por confirmar. ESCRITA SIN EJECUTAR (sin Docker). Datos sinteticos "N904".
+-- pgTAP: alias Waka (semilla aditiva) y cola de fotos por confirmar. Corrida en una base temporal clonada (7 comprobaciones ok). Datos sinteticos "N904".
 begin;
 select no_plan();
 
@@ -11,8 +11,8 @@ select is((select relrowsecurity and relforcerowsecurity from pg_class where oid
 select ok(not has_table_privilege('authenticated', 'proveedores.foto_pendiente', 'select'), 'nadie con sesion lee la tabla directo');
 select ok(not exists (select 1 from information_schema.columns where table_schema = 'proveedores' and table_name = 'foto_pendiente' and (column_name ilike '%precio%' or column_name ilike '%costo%' or column_name ilike '%cent%')), 'sin columnas de importe');
 
-insert into auth.users (id, instance_id, aud, role, email) values ('94000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'n904.omar@example.test');
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('n904.omar@example.test', 'omar', null, true);
+insert into auth.users (id, instance_id, aud, role, email) values ('94000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'n904.omar@example.test');
 select set_config('request.jwt.claim.sub', '94000000-0000-0000-0000-000000000001', true);
 select throws_ok($$select api.prov_fotos_pendientes()$$, '42501', null, 'Omar no ve la cola de fotos');
 
