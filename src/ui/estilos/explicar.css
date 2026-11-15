@@ -66,11 +66,13 @@
 
 /* Cuerpo: el UNICO contenedor con scroll vertical de la hoja. min-height: 0 en la cadena flex; sus hijos nunca se encogen (flex: none)
    para que las secciones crezcan a su altura natural y sea el cuerpo el que se desplace, nunca una caja interna que corte. */
-.xp-cuerpo { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 0 calc(var(--rtm-e-5) + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--rtm-e-2); scroll-padding-top: 48px; -webkit-overflow-scrolling: touch; }
+.xp-cuerpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 0 calc(var(--rtm-e-5) + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--rtm-e-2); scroll-padding-top: 48px; -webkit-overflow-scrolling: touch; }
 .xp-cuerpo > * { flex: none; }
 .xp-cuerpo:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: -2px; }
 .xp-grafica .rtm-g-svg { min-width: 0; max-height: none; }
 .xp-grafica .rtm-g-lienzo { overflow-x: visible; }
+/* El svg se escala al ancho de la hoja (~0.55): se compensa el texto para que las etiquetas compactas se lean sin empalmarse. */
+.xp-grafica .rtm-g-texto, .xp-grafica .rtm-g-texto-fuerte { font-size: 14px; }
 .xp-cuerpo > .xp-seccion, .xp-cuerpo > .xp-vacio { width: calc(100% - 2 * var(--rtm-hoja-pad-x)); max-width: 520px; margin-inline: auto; box-sizing: border-box; }
 /* Indice sticky: fondo opaco del color de la hoja, alto propio de 40 px, chips centrados, sobre el contenido y bajo el encabezado. */
 .xp-indice { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; height: 40px; box-sizing: border-box; background: var(--rtm-panel); border-bottom: 1px solid var(--rtm-line); }
@@ -149,6 +151,7 @@
 
 /* Carga y error: una linea de texto, sin cajas vacias. */
 .xp-aviso { margin: 0; flex: none; padding: var(--rtm-e-3) var(--rtm-hoja-pad-x); display: flex; align-items: center; gap: var(--rtm-e-3); flex-wrap: wrap; color: var(--rtm-ink-2); }
+.xp-aviso .rtm-punto-carga { margin-right: 0; }
 
 /* Movil: hoja inferior curva */
 @media (max-width: 767px) {
