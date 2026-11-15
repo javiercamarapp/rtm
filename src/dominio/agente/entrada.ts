@@ -83,14 +83,19 @@ export function envolverMensaje(autor: Persona, fuente: FuenteMensaje, texto: st
 }
 
 /**
- * El modelo nunca recibe telefonos ni correos (politica de privacidad 19). Se reemplazan antes de armar el prompt;
+ * El modelo nunca recibe telefonos, correos, domicilios ni usuarios de Telegram (politica de privacidad 19). Se reemplazan antes de armar el prompt;
  * la guardia de cifras sigue comparando contra el mensaje ORIGINAL.
  */
 export function redactarContactos(texto: string): string {
   return texto
     .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g, '[correo oculto]')
     // Telefonos con parentesis y separadores de 1 a 3 caracteres: (999) 123-4567, 999 - 123 - 4567, (999)1234567, +52 999 123 4567. La coma NO es separador (1,250.50 es un monto).
-    .replace(/\+?\(?\d(?:[\s().-]{0,3}\d){9,14}\)?/g, (m) => (m.replace(/\D/g, '').length >= 10 && !/\d\.\d{2}\s+\d/.test(m) ? '[telefono oculto]' : m));
+    .replace(/\+?\(?\d(?:[\s().-]{0,3}\d){9,14}\)?/g, (m) => (m.replace(/\D/g, '').length >= 10 && !/\d\.\d{2}\s+\d/.test(m) ? '[telefono oculto]' : m))
+    // Domicilios (calle y numero, colonia, codigo postal) y usuarios de Telegram: solo lo estrictamente domiciliario, para no tragarse montos ni piezas de la misma frase.
+    .replace(/\b(?:calle|avenida|av\.?|blvd\.?|boulevard|calzada|calz\.?|carretera|privada|priv\.?|andador|prolongacion|periferico)\s+[\wÁÉÍÓÚÑáéíóúñ.]+(?:\s+(?:n[uú]mero|num\.?|no\.?|#)\s*\d+[A-Za-z]?|\s+#\d+[A-Za-z]?)?(?:\s+(?:por|entre)\s+\d+(?:\s+y\s+\d+)?)?/gi, '[domicilio oculto]')
+    .replace(/\b(?:colonia|col\.|fraccionamiento|fracc\.?)\s+[A-Za-zÁÉÍÓÚÑáéíóúñ0-9]+/gi, '[domicilio oculto]')
+    .replace(/\b(?:c\.?\s?p\.?|codigo postal|código postal)\s*:?\s*\d{5}\b/gi, '[domicilio oculto]')
+    .replace(/(^|[\s(])@[A-Za-z][A-Za-z0-9_]{3,31}\b/g, '$1[usuario oculto]');
 }
 
 /**
