@@ -109,7 +109,7 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
   await expect(page.getByTestId('ds-creado')).toBeVisible();
   await expect(page.getByTestId('orden-texto')).toContainText('*** ** 11');
   await page.getByTestId('copiar-orden').click();
-  await expect(page.getByTestId('orden-copiada')).toBeVisible();
+  await expect(page.getByTestId('wa-aviso')).toHaveText('Copiado');
   const copiado = await page.evaluate(() => navigator.clipboard.readText());
   expect(copiado).toContain('Entregar a:\nPersona Sintetica Uno');
   expect(copiado).toContain('Tel: 9990001111');
