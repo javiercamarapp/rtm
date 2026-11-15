@@ -21,13 +21,19 @@ describe('desglose de pedidos', () => {
     expect(filasDeGrupo(DATOS, 'inventario_merida').map((r) => r.texto)).toEqual(['Bodega Omar']);
     expect(filasDeGrupo([], 'dropshipping')).toEqual([]);
   });
-  it('muestra ambos grupos con filtros clicables, cifras ya formateadas y accesibles (th scope, caption)', () => {
+  it('muestra ambos grupos con filtros clicables, cifras ya formateadas y accesibles (roles ARIA, sin table)', () => {
     const html = renderToStaticMarkup(<DesglosePedidosTabla desglose={DATOS} surtido="" prov="" tipo="" enlace={enlace} />);
     for (const t of ['Bodega', 'Dropshipping', 'Karen', 'Isaac', 'Bodega Omar', 'A costo para socio', 'provisional', 'Sin dato']) expect(html).toContain(t);
     expect(html).toContain('href="/pedidos?surtido=dropshipping&amp;prov=karen"');
     expect(html).toContain('href="/pedidos?surtido=dropshipping&amp;tipo=socio_a_costo"');
-    expect(html).toContain('<caption');
-    expect(html).toContain('scope="row"');
+    expect(html).not.toMatch(/<(table|tfoot|caption)/);
+    expect(html).toContain('role="table"');
+    expect(html).toContain('aria-label="Desglose de pedidos');
+    expect(html).toContain('role="columnheader"');
+    expect(html).toContain('role="rowheader"');
+    expect(html).toContain('role="rowgroup"');
+    expect(html.match(/role="row"/g)?.length).toBe(1 + 2 + 5);
+    expect(html).toContain('data-testid="desglose-dropshipping"');
     expect(html).not.toContain('NaN');
   });
   it('con un grupo elegido muestra solo ese; el activo queda marcado y se apaga con otro clic', () => {

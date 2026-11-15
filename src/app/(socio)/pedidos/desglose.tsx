@@ -30,52 +30,54 @@ interface Props {
   enlace: (cambios: Record<string, string>) => string;
 }
 
-/** Desglose compacto por grupo (Bodega / Dropshipping). Cada renglon filtra la lista de abajo; el activo lleva aria-current. */
+/** Desglose compacto por grupo (Bodega / Dropshipping), en rejilla CSS con roles ARIA (nunca la etiqueta de tabla cruda). Cada renglon filtra la lista de abajo; el activo lleva aria-current. */
 export function DesglosePedidosTabla({ desglose, surtido, prov, tipo, enlace }: Props) {
   const grupos = GRUPOS.filter((g) => !surtido || g.clave === surtido);
   return (
     <div className="rtm-desglose-ped" data-testid="desglose-pedidos">
-      <table>
-        <caption className="rtm-solo-lectores">Desglose de pedidos por grupo, proveedor y tipo de venta</caption>
-        <thead>
-          <tr><th scope="col">Origen</th><th scope="col" className="rtm-num">Pedidos</th><th scope="col" className="rtm-num">Piezas</th><th scope="col" className="rtm-num">Facturado</th><th scope="col" className="rtm-num">Por cobrar</th><th scope="col" className="rtm-num">Utilidad</th></tr>
-        </thead>
+      <div role="table" aria-label="Desglose de pedidos por grupo, proveedor y tipo de venta" className="rtm-desglose-ped-tabla">
+        <div role="rowgroup">
+          <div role="row" className="rtm-desglose-ped-fila rtm-desglose-ped-cab">
+            <div role="columnheader">Origen</div>
+            {['Pedidos', 'Piezas', 'Facturado', 'Por cobrar', 'Utilidad'].map((t) => <div key={t} role="columnheader" className="rtm-num">{t}</div>)}
+          </div>
+        </div>
         {grupos.map((g) => {
           const total = buscarFila(desglose, 'surtido', g.clave);
           const filas = filasDeGrupo(desglose, g.clave);
           return (
-            <tbody key={g.clave} data-testid={`desglose-${g.clave}`}>
-              <tr className="rtm-desglose-grupo">
-                <th scope="row"><Link href={enlace({ surtido: g.clave, prov: '', tipo: '' })} aria-current={surtido === g.clave && !prov && !tipo ? 'true' : undefined}>{g.texto}</Link></th>
+            <div role="rowgroup" key={g.clave} data-testid={`desglose-${g.clave}`} className="rtm-desglose-ped-grupo-bloque">
+              <div role="row" className="rtm-desglose-ped-fila rtm-desglose-ped-grupo">
+                <div role="rowheader"><Link href={enlace({ surtido: g.clave, prov: '', tipo: '' })} aria-current={surtido === g.clave && !prov && !tipo ? 'true' : undefined}>{g.texto}</Link></div>
                 {celdas(total)}
-              </tr>
+              </div>
               {filas.map((r) => {
                 const activo = r.nivel === 'proveedor' ? prov === r.clave : tipo === r.clave;
                 const href = r.nivel === 'proveedor' ? enlace({ surtido: g.clave, prov: activo ? '' : r.clave, tipo: '' }) : enlace({ surtido: g.clave, tipo: activo ? '' : r.clave, prov: '' });
                 return (
-                  <tr key={r.id} className="rtm-desglose-fila" data-nivel={r.nivel}>
-                    <th scope="row"><Link href={href} aria-current={activo ? 'true' : undefined}>{r.texto}</Link>{r.nivel === 'tipo' && <small> tipo de venta</small>}</th>
+                  <div role="row" key={r.id} className="rtm-desglose-ped-fila rtm-desglose-ped-sub" data-nivel={r.nivel}>
+                    <div role="rowheader"><Link href={href} aria-current={activo ? 'true' : undefined}>{r.texto}</Link>{r.nivel === 'tipo' && <small> tipo de venta</small>}</div>
                     {celdas(r.fila)}
-                  </tr>
+                  </div>
                 );
               })}
-            </tbody>
+            </div>
           );
         })}
-      </table>
+      </div>
     </div>
   );
 }
 
 function celdas(f: DesglosePedidos | undefined) {
-  if (!f) return <td colSpan={5}><SinDato /></td>;
+  if (!f) return <div role="cell" className="rtm-desglose-ped-vacio"><SinDato /></div>;
   return (
     <>
-      <td className="rtm-num">{f.pedidos}</td>
-      <td className="rtm-num">{formatearPiezas(f.piezas)}</td>
-      <td className="rtm-num">{f.enviados ? formatearMoneda(f.facturado_cent) : <SinDato />}</td>
-      <td className="rtm-num">{f.enviados ? formatearMoneda(f.por_cobrar_cent) : <SinDato />}</td>
-      <td className="rtm-num">{f.utilidad_cent === null ? <SinDato /> : <>{formatearMoneda(f.utilidad_cent)}{f.utilidad_provisional ? <small> provisional</small> : null}</>}</td>
+      <div role="cell" className="rtm-num">{f.pedidos}</div>
+      <div role="cell" className="rtm-num">{formatearPiezas(f.piezas)}</div>
+      <div role="cell" className="rtm-num">{f.enviados ? formatearMoneda(f.facturado_cent) : <SinDato />}</div>
+      <div role="cell" className="rtm-num">{f.enviados ? formatearMoneda(f.por_cobrar_cent) : <SinDato />}</div>
+      <div role="cell" className="rtm-num">{f.utilidad_cent === null ? <SinDato /> : <>{formatearMoneda(f.utilidad_cent)}{f.utilidad_provisional ? <small> provisional</small> : null}</>}</div>
     </>
   );
 }

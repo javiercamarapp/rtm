@@ -26,14 +26,17 @@
 
 /* Pedidos: desglose compacto Bodega / Dropshipping (filtra la lista). */
 .rtm-desglose-ped { overflow-x: auto; border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); }
-.rtm-desglose-ped table { width: 100%; border-collapse: collapse; font-size: var(--rtm-t-pequeno); }
-.rtm-desglose-ped th, .rtm-desglose-ped td { padding: 3px 10px; text-align: left; white-space: nowrap; }
-.rtm-desglose-ped th.rtm-num, .rtm-desglose-ped td.rtm-num { text-align: right; }
-.rtm-desglose-ped thead th { font-size: var(--rtm-t-micro); letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-ink-3); font-weight: 500; }
-.rtm-desglose-ped tbody { border-top: 1px solid var(--rtm-borde-control); }
-.rtm-desglose-grupo > th, .rtm-desglose-grupo > td { font-weight: 600; }
-.rtm-desglose-fila > th { padding-left: 22px; font-weight: 400; }
+.rtm-desglose-ped-tabla { min-width: 640px; font-size: var(--rtm-t-pequeno); }
+.rtm-desglose-ped-fila { display: grid; grid-template-columns: minmax(170px, 1.7fr) repeat(5, minmax(76px, 1fr)); align-items: baseline; }
+.rtm-desglose-ped-fila > * { padding: 3px 10px; white-space: nowrap; text-align: left; }
+.rtm-desglose-ped-fila > .rtm-num { text-align: right; font-variant-numeric: tabular-nums; }
+.rtm-desglose-ped-vacio { grid-column: 2 / -1; text-align: right !important; }
+.rtm-desglose-ped-cab > * { font-size: var(--rtm-t-micro); letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-ink-3); font-weight: 500; }
+.rtm-desglose-ped-grupo-bloque { border-top: 1px solid var(--rtm-borde-control); }
+.rtm-desglose-ped-grupo > * { font-weight: 600; }
+.rtm-desglose-ped-sub > [role='rowheader'] { padding-left: 22px; font-weight: 400; }
 .rtm-desglose-ped small { color: var(--rtm-ink-3); font-size: var(--rtm-t-micro); }
 .rtm-desglose-ped a { color: var(--rtm-ink); text-decoration: none; }
 .rtm-desglose-ped a:hover { text-decoration: underline; }
+.rtm-desglose-ped a:focus-visible { outline: 2px solid var(--rtm-ink); outline-offset: 2px; border-radius: 2px; }
 .rtm-desglose-ped a[aria-current='true'] { text-decoration: underline; text-underline-offset: 3px; font-weight: 700; }
