@@ -1,7 +1,7 @@
 // Motor de PDF con huella estable (G11) y texto de WhatsApp (G1). Las cifras salen del documento del dueno (nota de Villa: 13,590.00 y 62 piezas),
 // no del codigo. Los datos del cliente son ILUSTRATIVOS.
 import { describe, expect, it } from 'vitest';
-import { pdfHojaInterna, pdfNotaCliente, huella, limpio, nuevoDocumento } from '@/infra/pdf/nota';
+import { pdfHojaInterna, pdfNotaCliente, huella, limpio, nuevoDocumento, tamanoQueCabe } from '@/infra/pdf/nota';
 import { textoNota } from '@/dominio/nota/texto';
 import type { NotaFuente } from '@/dominio/operacion/tipos';
 
@@ -118,5 +118,20 @@ describe('hoja interna', () => {
     expect(t).toContain('SOLO PARA SOCIOS');
     expect(t).toMatch(/Utilidad provisional/);
     expect(t).toContain('Sin costear');
+  });
+});
+
+describe('total a saldar con cifras enormes', () => {
+  it('etiqueta y valor nunca se tocan: con $99,999,999,999.99 la letra baja, con un total normal queda en 12 pt', async () => {
+    const { f } = await nuevoDocumento('prueba', '2026-11-10T18:00:00.000Z');
+    const ancho = 558 - 370;
+    expect(tamanoQueCabe(f.negrita, 'Total a saldar', '$13,590.00', 12, ancho)).toBe(12);
+    const s = tamanoQueCabe(f.negrita, 'Total a saldar', '$99,999,999,999.99', 12, ancho);
+    expect(s).toBeLessThan(12);
+    expect(f.negrita.widthOfTextAtSize('Total a saldar', s) + f.negrita.widthOfTextAtSize('$99,999,999,999.99', s) + 10).toBeLessThanOrEqual(ancho);
+  });
+  it('la nota con ese total se genera sin fallar', async () => {
+    const bytes = await pdfNotaCliente(villa({ total_cent: 9999999999999n }));
+    expect((await textoDe(bytes))).toContain('99,999,999,999.99');
   });
 });
