@@ -4,8 +4,13 @@ export type SeveridadAviso = 'C' | 'I' | 'F';
 export interface NotificacionCampana {
   id: number; nt: string; codigo: string; severidad: SeveridadAviso; titulo: string; entidad_tipo: string | null; entidad_id: number | null; estado: 'abierta' | 'resuelta' | 'descartada' | 'caducada';
   conteo: number; creado_at: string; requiere_accion: boolean; botones: string[]; leida: boolean; telegram: string | null; telegram_no_salio: boolean;
+  /** Solo en avisos ya cerrados (Resueltos recientes): cuando y por que se cerraron. */
+  resuelto_at?: string | null; resuelto_motivo?: string | null;
 }
-export interface ListaCampana { filtro: 'todas' | 'sin_leer'; pagina: number; hay_mas: boolean; sin_leer: number; notificaciones: NotificacionCampana[] }
+/** Contadores de TODO lo vigente (no de la pagina), calculados en la base con la regla de cada aviso. */
+export interface ResumenAvisos { criticas: number; importantes: number; informativas: number; piden_accion: number; vigentes: number; resueltos_recientes: number }
+export type FiltroAvisos = 'todas' | 'sin_leer' | 'resueltos';
+export interface ListaCampana { filtro: FiltroAvisos; pagina: number; hay_mas: boolean; sin_leer: number; resumen?: ResumenAvisos; notificaciones: NotificacionCampana[] }
 
 export interface ItemTuTurno {
   clase: 'aviso' | 'toma'; id: number; codigo: string; severidad: SeveridadAviso; titulo: string; entidad_tipo: string | null; entidad_id: number | null; creado_at: string; botones: string[];
