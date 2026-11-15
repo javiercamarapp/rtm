@@ -75,7 +75,7 @@ export default async function PaginaCostos({ searchParams }: { searchParams: Pro
           etiqueta="Cargos del mes"
           clave={(c) => c.id}
           filas={cargos}
-          vacio={{ titulo: 'Sin cargos', texto: 'Registra el primer cargo del mes con el formulario de abajo.' }}
+          vacio={{ titulo: 'Sin cargos del mes', texto: `Todavía no se ha cargado ningún costo de ${mes}, por eso los totales están en cero y no significan que el sistema no cueste. Cárgalos con: node scripts/costos/cargar-mes.mjs --mes ${mes} --aplicar (primero --verificar), o registra uno con el formulario de abajo.` }}
           columnas={[
             { id: 'f', titulo: 'Folio', ancho: 's', prioridadMovil: 'titulo', celda: (c) => <span data-testid={`cargo-folio-${c.id}`}>{c.folio}</span> },
             { id: 's', titulo: 'Servicio', celda: (c) => <LogoMarca slug={c.logo_slug} nombre={c.servicio} alto={18} /> },
