@@ -183,8 +183,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
 
       {vista === 'existencias' && (
         <>
-          <FiltroCatalogo etiquetaAria="Buscar y filtrar por marca" placeholder="Buscar modelo, marca o sabor" marcas={opcionesMarca} atajos={atajos} />
-          <div className="rtm-ba-barra-filtros">
+          <FiltroCatalogo etiquetaAria="Buscar y filtrar por marca" placeholder="Buscar modelo, marca o sabor" marcas={opcionesMarca} atajos={atajos}>
             <MenuFiltro nombre="Estado" testid="filtro-estado" opciones={[
               { href: chipLink({ estado: null, solo: null }), etiqueta: 'Todos', activa: !filtro && !soloCero && !soloApartado },
               ...FILTROS.map((f) => ({ href: chipLink({ estado: f.id, solo: null }), etiqueta: `${f.etiqueta} (${cuenta(f)})`, activa: filtro?.id === f.id })),
@@ -199,7 +198,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
               {soloCero && <input type="hidden" name="solo" value="cero" />}
               {soloApartado && <input type="hidden" name="solo" value="apartado" />}
             </FiltrosUrl>
-          </div>
+          </FiltroCatalogo>
 
           <Tarjeta plana className="rtm-a2-tabla" titulo="Existencias por modelo y sabor" descripcion={`${visibles.length} modelos · abre un modelo para ver sus sabores`}>
             <DataTable
