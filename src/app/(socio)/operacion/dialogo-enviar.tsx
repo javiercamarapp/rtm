@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type CSSProperties } from 'react';
+import { useId, useState } from 'react';
 import { formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { CampoMonto } from '@/ui/componentes/campos-dialogo';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
@@ -68,7 +68,7 @@ export function DialogoEnviar({ pedidoId, folio, renglones, avisosPendientes, et
               </select>
             </label>
           </div>
-          <div className="rtm-hoja-seccion" style={{ '--rtm-i': 1 } as CSSProperties}>
+          <div className="rtm-hoja-seccion rtm-i-1">
             <h3 className="rtm-hoja-seccion-titulo" aria-hidden="true">Guía</h3>
             <label className="rtm-etiqueta-campo">Paquetería<input className="rtm-campo" value={paqueteria} onChange={(e) => setPaqueteria(e.target.value)} placeholder="Castores" /></label>
             <label className="rtm-etiqueta-campo">Guía<input className="rtm-campo" value={numero} onChange={(e) => setNumero(e.target.value)} aria-label="Número de guía" /></label>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type CSSProperties, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { CampoMonto, Segmentado, TarjetasOpcion, type OpcionDialogo } from '@/ui/componentes/campos-dialogo';
 import { ConfirmDialog } from '@/ui/componentes/confirm-dialog';
 import { useExito } from '@/ui/componentes/dialogo-enterprise';
@@ -170,7 +170,7 @@ export function FormularioAccion({ boton, titulo, confirmar, accion, campos, fij
             const contenido = g.campos.map(campo);
             if (!conTitulos) return contenido;
             return (
-              <div key={i} className="rtm-hoja-seccion" role="group" aria-label={g.titulo ?? undefined} style={{ '--rtm-i': i } as CSSProperties}>
+              <div key={i} className={`rtm-hoja-seccion rtm-i-${Math.min(i, 6)}`} role="group" aria-label={g.titulo ?? undefined}>
                 {g.titulo && <h3 className="rtm-hoja-seccion-titulo" aria-hidden="true">{g.titulo}</h3>}
                 {contenido}
               </div>
