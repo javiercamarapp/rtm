@@ -24,15 +24,31 @@ const RUTA_DICCIONARIO = new URL('./alias-waka.json', import.meta.url);
 const lit = (v) => pg.escapeLiteral(String(v));
 const plano = (s) => String(s).trim().replace(/\s+/g, ' ').toLowerCase(); // los espacios cuentan: 'Waka So Pro' y 'Waka SoPro' son dos modelos distintos
 
-/** Pares { origen, destino } del diccionario: el alias y sus nombres sueltos, sin el que ya es el nombre del destino. */
+/**
+ * Pares { origen, destino, costoHistorico } del diccionario: el alias y sus nombres sueltos, sin el que ya es el nombre del destino.
+ * - Un alias sin destino (destino null) NO se une: es un caso ambiguo o pendiente del dueno.
+ * - `costo_vigente_desde`: ese origen va primero, para que su costo sea el que hereda el destino.
+ * - `costo_historico`: origenes cuyo costo vigente queda como historia en el origen (no se hereda ni bloquea por ser distinto).
+ */
 export function paresDeDiccionario(dic) {
   const pares = [];
   for (const a of dic.alias) {
-    for (const origen of [a.alias, ...(a.tambien ?? [])]) {
-      if (plano(origen) !== plano(a.destino) && !pares.some((p) => plano(p.origen) === plano(origen))) pares.push({ origen, destino: a.destino });
+    if (!a.destino) continue;
+    const primero = a.costo_vigente_desde ? [a.costo_vigente_desde] : [];
+    const historicos = new Set((a.costo_historico ?? []).map(plano));
+    const origenes = [...primero, a.alias, ...(a.tambien ?? [])];
+    for (const origen of origenes) {
+      if (plano(origen) !== plano(a.destino) && !pares.some((p) => plano(p.origen) === plano(origen))) {
+        pares.push({ origen, destino: a.destino, ...(historicos.has(plano(origen)) ? { costoHistorico: true } : {}) });
+      }
     }
   }
   return pares;
+}
+
+/** Textos ambiguos del diccionario (el agente pregunta; nunca se unen). */
+export function ambiguosDeDiccionario(dic) {
+  return (dic.ambiguos ?? []).map((x) => ({ texto: x.texto, alias: x.alias, opciones: x.opciones }));
 }
 
 export function cargarPares(ruta = RUTA_DICCIONARIO) {
@@ -47,7 +63,7 @@ export function bloqueosReales(bloqueosPlan) {
 
 /** SQL de UNA transaccion con la guarda de huella. Idempotente: un origen ya unido (o que no existe como modelo) solo se avisa. */
 export function sqlAplicar(pares, { omitirBloqueados = false } = {}) {
-  const valores = pares.map((p) => `(${lit(p.origen)}, ${lit(p.destino)})`).join(',\n      ');
+  const valores = pares.map((p) => `(${lit(p.origen)}, ${lit(p.destino)}, ${p.costoHistorico ? 'true' : 'false'})`).join(',\n      ');
   return `begin;
 select set_config('rtm.canal', 'importacion', true);
 do $alw$
@@ -57,7 +73,7 @@ declare
 begin
   for r in select * from (values
       ${valores}
-    ) as t(origen, destino) loop
+    ) as t(origen, destino, costo_historico) loop
     select id, nombre_canonico into o, v_on from catalogo.modelo where nombre_norm = catalogo.normalizar(r.origen);
     select id, nombre_canonico into d, v_dn from catalogo.modelo where nombre_norm = catalogo.normalizar(r.destino);
     if o is null then
@@ -83,14 +99,14 @@ begin
       for h in select k.proveedor_id, p.nombre as proveedor, k.costo_cent, greatest(k.vigente_desde, coalesce((select max(x.vigente_hasta) from catalogo.costo_proveedor x where x.modelo_id = d and x.proveedor_id = k.proveedor_id), k.vigente_desde)) as desde,
                       k.fuente, k.es_lista, k.motivo, k.supuesto
                  from catalogo.costo_proveedor k join catalogo.proveedor p on p.id = k.proveedor_id
-                where k.modelo_id = o and k.vigente_hasta is null
+                where k.modelo_id = o and k.vigente_hasta is null and not r.costo_historico
                   and not exists (select 1 from catalogo.costo_proveedor x where x.modelo_id = d and x.proveedor_id = k.proveedor_id and x.vigente_hasta is null)
                 order by k.proveedor_id loop
         perform catalogo.fijar_costo('alias-waka:costo:' || o || ':' || d || ':' || h.proveedor_id, h.proveedor, v_dn, h.costo_cent, h.desde,
                                      ${lit(NOTA_HERENCIA)} || ' desde ' || v_on || ' (fuente original: ' || h.fuente || ')', h.motivo, h.supuesto, h.es_lista);
         v_cost := v_cost + 1;
       end loop;
-      if exists (select 1 from catalogo.costo_proveedor k join catalogo.costo_proveedor x on x.modelo_id = d and x.proveedor_id = k.proveedor_id and x.vigente_hasta is null
+      if not r.costo_historico and exists (select 1 from catalogo.costo_proveedor k join catalogo.costo_proveedor x on x.modelo_id = d and x.proveedor_id = k.proveedor_id and x.vigente_hasta is null
                   where k.modelo_id = o and k.vigente_hasta is null and k.costo_cent <> x.costo_cent and x.fuente like ${lit(NOTA_HERENCIA + '%')}) then
         raise exception 'BLOQUEO: % -> %: otro alias del mismo destino ya heredo un costo distinto; confirma cual vale', r.origen, r.destino;
       end if;
@@ -168,6 +184,12 @@ export async function planDePar(c, par, heredado = new Map()) {
       and not exists (select 1 from catalogo.costo_proveedor x where x.modelo_id = $2 and x.proveedor_id = k.proveedor_id and x.vigente_hasta is null)`, [o.id, d.id])).rows;
   for (const k of costos) {
     const clave = `${d.id}|costo|${k.proveedor_id}`;
+    if (par.costoHistorico) {
+      // Su costo vigente queda como historia en el origen: solo se exige que el destino ya lo tenga (o lo herede un origen anterior del mismo destino).
+      if (heredado.has(clave)) res.lineas.push(`costo historico del proveedor ${k.proveedor_id} (${k.costo_cent} cent) queda en el origen; el destino conserva ${heredado.get(clave)} cent`);
+      else bloq.push(`su costo del proveedor ${k.proveedor_id} es historico pero el destino no tiene ninguno vigente: el origen que aporta el costo vigente debe ir antes`);
+      continue;
+    }
     if (heredado.has(clave) && heredado.get(clave) !== String(k.costo_cent)) bloq.push(`otro alias del mismo destino ya hereda un costo distinto para el proveedor ${k.proveedor_id}; confirma cual vale`);
     else { heredado.set(clave, String(k.costo_cent)); res.costos++; }
   }

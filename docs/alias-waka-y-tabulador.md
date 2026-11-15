@@ -4,7 +4,7 @@ Decision del dueno (14-nov): "Si, unir cada alias con su modelo por pufs" y "Opt
 
 ## 1. Union de alias Waka
 
-Diccionario: `scripts/catalogo/alias-waka.json` (alias, `tambien` = nombres sueltos del mismo producto, destino). Icon = 50K, Steel = 60K, SoPro = 15K, Smash Go = Waka Go = 10K, PA30000 = 30K, Elite = 40K, Burst = 36K, Blade = 33K, Optimus = 100K (corregido: no 80K), Slim = 12K, Jupiter = 50K Jupiter, Icon Slim = 20K.
+Diccionario: `scripts/catalogo/alias-waka.json` (alias, `tambien` = nombres sueltos del mismo producto, destino). Steel = 60K, Smash Go = Waka Go = 10K, PA30000 = 30K, Elite = 40K, Burst = 36K, Blade = 33K, Optimus = 100K (corregido: no 80K), Slim = 12K, Jupiter = 50K Jupiter, Icon Slim = 20K, Icon = Waka Icon 50K.
 
 ### Migracion `20261118100000_unificar_alias_waka.sql` (aditiva, reversible)
 - `catalogo.unificacion_modelo_aprobada`: los pares aprobados por el dueno (regla `alias-waka-2026-11-14`). RLS forzada, sin acceso directo.
@@ -28,8 +28,15 @@ node scripts/catalogo/unificar-alias-waka.mjs --sql-salida <archivo>     # para 
 ### Orden
 1. Desplegar la migracion por el flujo oficial. 2. `--verificar`. 3. Resolver bloqueos. 4. `--aplicar`. 5. `--verificar` otra vez (todo "ya estaba unido").
 
-### Casos que el dueno debe mirar
-Hay modelos por puffs duplicados que el diccionario no ordena unir: por ejemplo `Waka 50K` y `Waka Icon 50K`, `Waka 36K` y `Waka Burst 36K`, `Waka 15K` y `Waka DM 15K`, `Waka Sopro 30K` frente a `Waka 30K`. Los destinos son los del diccionario (nombre exacto por puffs); si el dueno prefiere otro destino se cambia `destino` en el JSON y la migracion (tabla de aprobados) antes de aplicar.
+### Segunda vuelta: respuestas del dueno (14-nov) y alias AMBIGUOS
+Migracion `20261118400000_alias_waka_ambiguos.sql` (la `20261118100000` ya esta aplicada y no se toca). Nada de esto se aplico en produccion.
+- **Ambiguos (no se unen; el agente pregunta)**: `Waka 50K` = Jupiter o Icon; `Waka 15K` = SoPro o DM; `Waka Sopro 30K` = Waka 30K o Titan 30K. En `alias-waka.json` viven en `ambiguos`; en la base son alias con `ambiguo = true` y sus candidatos en `catalogo.modelo_alias` (tambien `waka 50`, `waka 15` y `pro 30k`); en el codigo, `src/dominio/agente/alias_ambiguos.ts` (una prueba comprueba que el JSON y el codigo no se desvian). Un mensaje con "waka 50k" pregunta `Jupiter o Icon` (solo esas dos opciones; Blast ya no se ofrece). "waka 15k" ofrece `Waka SoPro 15K` (boton para el modelo 'Waka 15K') y `Waka DM 15K`.
+- El agente (`agente.catalogo_modelos`) deja de ofrecer como opcion el modelo generico cuyo nombre ES el texto ambiguo (`Waka 50K`, `Waka Sopro 30K`, y los marcadores `Waka 50`, `Waka 15`) mientras no tenga existencia; con existencia se sigue ofreciendo (nunca queda stock invisible).
+- Salen de `unificacion_modelo_aprobada` los pares con destino ambiguo (Icon, Waka Icon -> `Waka 50K`; Waka SoPro, Waka So Pro -> `Waka 15K`). Entran `Waka Icon`/`Icon` -> `Waka Icon 50K` (modelo propio, existe) y `Waka Burst 36K` -> `Waka 36K`.
+- `Waka SoPro` (alias) sigue apuntando al modelo `Waka 15K` (ya estaba en produccion), pero el modelo suelto `Waka So Pro` queda SIN unir: no existe un modelo `SoPro 15K` propio. Pendiente del dueno: renombrar `Waka 15K` a `Waka SoPro 15K` (entonces se une `Waka So Pro`) o crear ese modelo.
+- `Burst` a secas = Waka: el alias `burst` deja de ser ambiguo y apunta a `Waka 36K`; `Waka Burst` y `Burst` y `Waka Burst 36K` se unen a `Waka 36K`. `titan` apunta a `Waka Titan 30K` (antes al generico `Waka Sopro 30K`).
+- **Blade**: "waka blade 200 es el unico Waka 33K". En produccion el modelo con costo 200 es `Blade` (Karen, 20,000 centavos; fuente `chat_dueno_2026-11-10_supuesto`). Se une a `Waka Blade 33K` PRIMERO y aporta ese costo; `Waka Blade` (costo 175 de Karen y 215 de Isaac, carga historica) se une despues con `costo_historico`: su costo vigente NO se hereda ni bloquea, queda como historia en el origen (nada se borra).
+- Orden y bloqueos del script: igual que antes; `--verificar` ya muestra el costo historico que se conserva.
 
 ## 2. Carga del tabulador de precios
 
