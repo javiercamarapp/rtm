@@ -20,6 +20,7 @@ import { AccionesPedido } from './acciones-pedido';
 import { TarjetaWhatsApp } from '@/ui/componentes/tarjeta-whatsapp';
 import { mensajeNotaCliente } from '@/dominio/nota/mensaje';
 import { NotaCliente } from './nota-vista';
+import { textoAceptacion, textoRenglones } from '@/dominio/operacion/avisos_pedido';
 import { AnularDevolucionCliente, DevolverMercancia } from './devolucion-pedido';
 
 export const metadata: Metadata = { title: 'Pedido' };
@@ -33,7 +34,7 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
   const n = Number(id);
   if (!Number.isInteger(n) || n <= 0) notFound();
   const lector = await operacionDeSocio();
-  const [p, ctx, dev] = await Promise.all([lector.pedido(n), lector.contextoPagos(), lector.pedidoDevoluciones(n)]);
+  const [p, ctx, dev, vigentes] = await Promise.all([lector.pedido(n), lector.contextoPagos(), lector.pedidoDevoluciones(n), lector.avisosVigentesPedido(n).catch(() => null)]);
   if (!p) notFound();
 
   const notas = p.notas;
@@ -121,15 +122,18 @@ export default async function PaginaPedido({ params, searchParams }: { params: P
       {p.avisos.length > 0 && (
         <section className="rtm-seccion" aria-label="Avisos del pedido">
           <h2>Avisos</h2>
-          <ul className="rtm-avisos">
-            {p.avisos.map((a) => (
-              <li key={a.id} className="rtm-aviso" data-testid="aviso-pedido">
-                <strong>{AVISO_PEDIDO[a.codigo] ?? a.codigo}{a.nt ? ` · ${a.nt}` : ''}</strong>
-                <p>{a.detalle}</p>
-                <p>{a.decidido_por ? `Aceptado por ${a.decidido_por}` : 'No bloquea: se acepta con “Enviar de todos modos”.'}</p>
-              </li>
-            ))}
-          </ul>
+          {vigentes === null ? <SinDato /> : vigentes.length === 0 ? <p data-testid="sin-avisos-vigentes">Sin avisos vigentes.</p> : (
+            <ul className="rtm-avisos">
+              {vigentes.map((a) => (
+                <li key={`${a.codigo}-${a.detalle}`} className="rtm-aviso" data-testid="aviso-pedido">
+                  <strong>{AVISO_PEDIDO[a.codigo] ?? a.codigo}{a.nt ? ` · ${a.nt}` : ''}</strong>
+                  {textoRenglones(a) && <p>{textoRenglones(a)}</p>}
+                  <p>{a.detalle.charAt(0).toUpperCase() + a.detalle.slice(1)}</p>
+                  <p>{textoAceptacion(a)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 

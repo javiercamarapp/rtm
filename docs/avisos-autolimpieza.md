@@ -55,6 +55,25 @@ Lo cobrado es el precio de la última nota (o el del renglón si no hay nota). C
 
 Efecto esperado en producción (14-nov): hay 23 avisos abiertos `pedido_enviado_con_excepcion`; Javier cargó la lista de 31 combinaciones cliente por modelo cuyos precios cobrados coinciden. Tras aplicar la migración, `node scripts/notificaciones/resolver-vigentes.mjs --verificar` debe listar como "por resolver" los avisos cuyos renglones con alerta están todos cubiertos por esa lista con precio cobrado no menor; hasta 23. Siguen abiertos los que tengan otra causa viva: combinaciones sin precio de lista (11 aún sin cargar), cobrado por debajo de la lista, venta bajo costo, o diferencia con foto no vacía. Medición de solo lectura sobre producción al momento de escribir esto: 11 avisos `pedido_enviado_con_excepcion` abiertos, 5 se resolverían con la regla nueva (sin contar los que ya cierra el cobro completo ni modelos unificados) y 6 siguen por otra causa; el número exacto se confirma con `--verificar`.
 
+## Avisos de la ficha del pedido y conteos (migración `20261119400000_avisos_vigentes_pedido`)
+
+`operacion.pedido_aviso` es la foto de lo que se avisó al capturar el pedido y no se edita. La ficha (`/pedidos/[id]`, sección Avisos) y los conteos ya no la leen completa: usan lecturas nuevas que evalúan la causa **hoy**.
+
+- `api.avisos_vigentes_pedido(p_pedido)`: avisos cuya causa sigue, **agrupados por causa**: una tarjeta por causa con `renglones` (N renglones), `modelos` y quién los aceptó. `Aceptado por X` solo sale si se aceptaron todos los avisos del grupo.
+- `api.pedidos_avisos_vigentes()`: mapa pedido a cantidad de causas vigentes (solo pedidos con al menos una). La lista de pedidos, el KPI Con avisos, el chip Con avisos y el de Inicio ("con avisos" en Pedidos por enviar) sustituyen el conteo de la foto por este (se aplica en `lectorOperacionSupabase().pedidos()`).
+- Si no queda ninguna vigente, la ficha muestra "Sin avisos vigentes." (si el pedido nunca tuvo avisos, la sección no aparece).
+
+| Aviso | Sigue mientras |
+|---|---|
+| sin_precio_catalogo, foto vacía | no hay precio de lista vigente hoy (con `modelo.unificado_en`), o lo cobrado es menor a la lista (en ese caso se muestra como precio bajo la lista); se cierra si lo cobrado es igual o mayor |
+| sin_precio_catalogo, foto con precio | el pedido no está enviado y el modelo sigue sin disponibilidad |
+| precio_distinto_tabulador | lo cobrado (última nota) sigue distinto de la foto |
+| venta_bajo_costo | lo cobrado sigue a costo o por debajo |
+| existencia_insuficiente | el pedido no está enviado, el origen es bodega y lo disponible (sin contar la reserva del propio pedido) no alcanza para lo pendiente |
+| minimo_piezas | el pedido no está enviado, no tiene excepción de mínimo y suma menos que el mínimo |
+
+Los tres avisos de precio también se cierran si el pedido enviado ya está cobrado por completo (`aviso_excepcion_cierra_al_cobrar`). Un pedido anulado o cancelado no tiene avisos vigentes. Nada se edita: los avisos, las decisiones y la foto del renglón quedan como estaban.
+
 ## Parámetros (`catalogo.config`)
 
 - `aviso_info_retiro_dias` = 7
@@ -79,4 +98,5 @@ Conexión: `RTM_DB_URL` o la base local de `supabase status`. Nunca imprime la c
 - Una diferencia de conteo no puede explicarse después de cerrar (`conteo_linea` es de solo inserción): hoy solo se cierra con un conteo posterior que cuadre. Si el dueño quiere poder explicarla después, falta una tabla de explicaciones.
 - Un aviso reabierto no se reenvía por Telegram (solo reaparece en la campana).
 - `api.avisos_lista` (lo usa el agente) no se tocó: sigue listando por estado.
+- `api.pedidos_desglose` (campo `con_avisos`, hoy sin pantalla que lo muestre) y el botón Enviar de todos modos (`avisosPendientes`, que exige la base sobre todos los avisos del pedido) siguen contando la foto completa.
 - Aplicar la migración en producción y correr el script con `--verificar` primero queda a cargo del dueño.
