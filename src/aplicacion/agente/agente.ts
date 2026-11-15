@@ -452,6 +452,13 @@ export interface OperacionCompleta {
 export class AgenteTelegram {
   /** Conteo del mensaje en curso (lotes): una instancia atiende un update a la vez (la ruta crea una por peticion). */
   private tally = { ok: 0, rechazadas: 0 };
+  /**
+   * Estado del lote en curso (un mensaje con 2 o mas operaciones que escriben). Reglas (19-nov):
+   *  - ANTES de escribir se revisa que ninguna operacion tenga un dato faltante: si alguna lo tiene, se PAUSA el lote completo y no se registra ninguna.
+   *  - si una operacion deja una pregunta abierta ya en marcha, las siguientes se PAUSAN (no se procesan) y el aviso final las cuenta; nunca se pierden en silencio.
+   *  - los renglones iguales (antiduplicado) se acumulan y se preguntan UNA sola vez al final del lote.
+   */
+  private lote: { prefijo: string; duplicados: EstadoAccion[]; abierta: boolean; abiertaEn: number | null; actual: number; pausadas: number } | null = null;
   private readonly cfg: ConfigAgente;
   private readonly com: Comunicador;
   private readonly motor: MotorConversacion | null;
@@ -913,6 +920,56 @@ export class AgenteTelegram {
   // ------------------------------------------------------------------ acciones
 
   private async ejecutarAcciones(acciones: readonly Intencion[], ctx: ContextoMensaje, lote?: { lineas: number; partes: number; sinEntender: number }): Promise<ResultadoUpdate> {
+    const escrituras = acciones.filter((a) => esEscritura(a.tipo) && a.tipo !== 'deshacer').length;
+    const enLote = escrituras >= 2 && ctx.fuente === 'texto' && ctx.autor.rol === 'socio';
+    if (enLote) {
+      const faltantes = await this.datosFaltantesDelLote(acciones, ctx);
+      if (faltantes.length > 0) {
+        await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `lote_pausado:${faltantes.length}` });
+        await this.responder(ctx.autor, ctx.chats, F.lotePausado({ operaciones: escrituras, faltantes }));
+        return { estado: 'procesado', acciones: acciones.length };
+      }
+      this.lote = { prefijo: `tg:${ctx.updateId}:`, duplicados: [], abierta: false, abiertaEn: null, actual: 0, pausadas: 0 };
+    }
+    try {
+      const r = await this.ejecutarAccionesLote(acciones, ctx, lote);
+      if (this.lote !== null && this.lote.duplicados.length > 0) await this.preguntarLoteDuplicado(this.lote.duplicados, ctx.chats);
+      return r;
+    } finally {
+      this.lote = null;
+    }
+  }
+
+  /** Operaciones del lote cuyo cliente, modelo, sabor o proveedor no se resuelve solo en el catalogo. Solo lee: no escribe nada. */
+  private async datosFaltantesDelLote(acciones: readonly Intencion[], ctx: ContextoMensaje): Promise<Array<{ operacion: number; datos: string }>> {
+    const faltantes: Array<{ operacion: number; datos: string }> = [];
+    for (let i = 0; i < acciones.length; i++) {
+      const a = acciones[i]!;
+      if (a.tipo === 'aclarar') {
+        faltantes.push({ operacion: i + 1, datos: 'un dato que no pude leer' });
+        continue;
+      }
+      if (!esEscritura(a.tipo) || a.tipo === 'deshacer') continue;
+      // Solo lo que se sabe SIN preguntar: nombres que el catalogo no resuelve o resuelve a varios. Los datos que pide la conversacion (plazo, cuenta...) tienen valores por omision
+      // propios y no se adivinan aqui: si uno aparece a media ejecucion, `marcarPreguntaAbierta` pausa las operaciones que siguen y el aviso final las cuenta.
+      let datos: string[] = [];
+      const sal = await resolverAccion(a, ctx.autor, this.d.catalogo, {}, this.cfg.exigirSabor);
+      if (!sal.ok) datos = [sal.pregunta.campo];
+      if (datos.length > 0) faltantes.push({ operacion: i + 1, datos: datos.join(', ') });
+    }
+    return faltantes;
+  }
+
+  /** UNA sola pregunta para todos los renglones iguales del lote (no una por renglon). */
+  private async preguntarLoteDuplicado(estados: readonly EstadoAccion[], chats: ChatsRegistrados): Promise<void> {
+    const caduca = this.mas(this.cfg.caducaPreguntaDineroMin * 60_000);
+    const exclusivo = `lote:${estados[0]!.claveIdem}`;
+    const si = await this.boton1('Si, son distintos', 'confirmar_lote', ['socio'], chats.grupoSocios, caduca, exclusivo, { estados });
+    const no = await this.boton1('No, cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null);
+    await this.com.aGrupo(chats, F.preguntaLoteDuplicado({ renglones: estados.length }), { botones: [[si, no]] });
+  }
+
+  private async ejecutarAccionesLote(acciones: readonly Intencion[], ctx: ContextoMensaje, lote?: { lineas: number; partes: number; sinEntender: number }): Promise<ResultadoUpdate> {
     let hechas = 0;
     this.tally = { ok: 0, rechazadas: 0 };
     let escrituraBloqueada = false;
@@ -923,6 +980,15 @@ export class AgenteTelegram {
         await this.responder(ctx.autor, ctx.chats, P.aclaracion(a.pregunta, ctx.texto));
         hechas++;
         continue;
+      }
+
+      if (this.lote !== null && esEscritura(a.tipo) && a.tipo !== 'deshacer') {
+        if (this.lote.abierta) {
+          // Una operacion anterior dejo una pregunta abierta: esta no se procesa (se cuenta como pausada en el aviso final).
+          this.lote.pausadas++;
+          continue;
+        }
+        this.lote.actual = i + 1;
       }
 
       const permiso = permisoParaIntencion(ctx.autor.rol, a);
@@ -1081,9 +1147,10 @@ export class AgenteTelegram {
     // Un lote nunca pierde una linea en silencio: aviso final con lo registrado, lo preguntado y lo que no se entendio ni se registro.
     if (lote && !escrituraBloqueada && (lote.partes > 1 || (lote.lineas > 1 && acciones.length > 1))) {
       const registradas = this.tally.ok;
-      const noEntendidas = lote.sinEntender + Math.max(0, acciones.length - hechas) + this.tally.rechazadas;
+      const noEntendidas = lote.sinEntender + Math.max(0, acciones.length - hechas - (this.lote?.pausadas ?? 0)) + this.tally.rechazadas;
       const preguntadas = Math.max(0, hechas - registradas - this.tally.rechazadas);
-      await this.responder(ctx.autor, ctx.chats, F.resumenLote({ lineas: lote.lineas, registradas, preguntadas, sinEntender: noEntendidas, partes: lote.partes }));
+      const pausadas = this.lote?.pausadas ?? 0;
+      await this.responder(ctx.autor, ctx.chats, F.resumenLote({ lineas: lote.lineas, registradas, preguntadas, sinEntender: noEntendidas, partes: lote.partes, ...(pausadas > 0 && this.lote?.abiertaEn != null ? { pausadas, desdeOperacion: this.lote.abiertaEn } : {}) }));
     }
     return { estado: 'procesado', acciones: hechas };
   }
@@ -1227,6 +1294,12 @@ export class AgenteTelegram {
         return;
       }
       case 'pregunta': {
+        // Un renglon igual dentro de un lote NO hace su propia pregunta: se acumula y se pregunta UNA vez al final del lote.
+        if (r.clave === 'duplicado' && this.lote !== null && estado.claveIdem.startsWith(this.lote.prefijo)) {
+          this.lote.duplicados.push({ ...estado, duplicadoOk: true });
+          return;
+        }
+        if (r.clave !== 'duplicado') this.marcarPreguntaAbierta();
         // Duplicado y cobro mayor a lo que debe: PREGUNTA (nunca tope). La respuesta afirmativa vuelve a mandar la operacion con la bandera correspondiente.
         const siguiente: EstadoAccion = r.clave === 'duplicado' ? { ...estado, duplicadoOk: true } : r.clave === 'exceso' ? { ...estado, excesoOk: true } : { ...estado, confirmado: true };
         const si = await this.boton1(r.clave === 'duplicado' ? 'Si, es otro' : r.clave === 'exceso' ? 'Si, es anticipo' : 'Si, continuar', 'confirmar_accion', ['socio'], grupo.grupoSocios, this.mas(r.clave === 'duplicado' || r.clave === 'exceso' ? this.cfg.caducaPreguntaDineroMin * 60_000 : this.cfg.caducaPreguntaHoras * 3_600_000), `conf:${estado.claveIdem}`, siguiente satisfies EstadoAccion);
@@ -1330,6 +1403,7 @@ export class AgenteTelegram {
   private async presentarSalida(autor: Miembro, chats: ChatsRegistrados, chatId: number, s: SalidaConversacion): Promise<void> {
     switch (s.tipo) {
       case 'pregunta': {
+        this.marcarPreguntaAbierta();
         const caduca = this.mas(this.cfg.caducaPreguntaHoras * 3_600_000);
         const grupoExclusivo = `conv:${s.conversacionId}:${this.d.reloj().getTime()}`;
         const botones: BotonEnLinea[] = [];
@@ -1613,6 +1687,7 @@ export class AgenteTelegram {
       const opciones = opcionesFaltante(a.intencion);
       if (opciones === null) {
         await this.responder(estado.autor, chats, P.faltaDato(falta));
+        this.marcarPreguntaAbierta();
         return true;
       }
       // Estado de conversacion: las opciones viajan en tokens de un solo uso con expiracion; al elegir una se completa la accion y sigue el resumen.
@@ -1624,6 +1699,7 @@ export class AgenteTelegram {
       }
       botones.push([await this.boton1('Cancelar', 'cancelar', ['socio'], chats.grupoSocios, caduca, exclusivo, null)]);
       await this.com.aGrupo(chats, P.faltaDatoConOpciones(falta), { botones });
+      this.marcarPreguntaAbierta();
       return true;
     }
   }
@@ -1690,7 +1766,15 @@ export class AgenteTelegram {
 
   // ------------------------------------------------------------------ preguntas de aclaracion
 
+  private marcarPreguntaAbierta(): void {
+    if (this.lote !== null && !this.lote.abierta) {
+      this.lote.abierta = true;
+      this.lote.abiertaEn = this.lote.actual;
+    }
+  }
+
   private async preguntar(estado: EstadoAccion, p: PreguntaAbierta, chats: ChatsRegistrados): Promise<void> {
+    this.marcarPreguntaAbierta();
     if (estado.preguntasPrevias >= this.cfg.maxPreguntas) {
       await this.responder(estado.autor, chats, P.textoSimple('Ya hice demasiadas preguntas seguidas. Empieza de nuevo con un comando.'));
       return;
@@ -1816,6 +1900,15 @@ export class AgenteTelegram {
         if (!(await this.confirmaQuienDebe(e, miembro, chats, ctx, 'pregunta'))) return;
         await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Confirmado.'));
         await this.resolverYEjecutar({ ...e, confirmado: e.duplicadoOk === true || e.excesoOk === true ? e.confirmado : true }, chats);
+        return;
+      }
+      case 'confirmar_lote': {
+        const p = payload as { estados: EstadoAccion[] };
+        const primero = p.estados[0];
+        if (!primero) return;
+        if (!(await this.confirmaQuienDebe(primero, miembro, chats, ctx, 'pregunta'))) return;
+        await this.com.editar(chats, ctx.chatId, ctx.messageId, P.textoSimple('Confirmado: registro los renglones del lote.'));
+        for (const e of p.estados) await this.resolverYEjecutar({ ...e, confirmadoPor: miembro.persona }, chats);
         return;
       }
       case 'conv': {

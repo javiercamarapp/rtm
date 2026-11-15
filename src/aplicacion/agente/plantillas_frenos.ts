@@ -56,12 +56,36 @@ export function soloSociosEscritura(): MensajeListo {
   return { texto: 'Solo los socios cambian entre lectura y escritura.', registro: new RegistroCifras() };
 }
 
-/** Aviso obligatorio de lote: nunca se pierde una linea en silencio. */
-export function resumenLote(n: { lineas: number; registradas: number; preguntadas: number; sinEntender: number; partes: number }): MensajeListo {
+/** Aviso obligatorio de lote: nunca se pierde una linea en silencio. `pausadas` = operaciones que NO se procesaron porque una anterior dejo una pregunta abierta. */
+export function resumenLote(n: { lineas: number; registradas: number; preguntadas: number; sinEntender: number; partes: number; pausadas?: number; desdeOperacion?: number }): MensajeListo {
   const r = new RegistroCifras();
   const partes = n.partes > 1 ? ` Lo procese en ${r.config(n.partes)} partes.` : '';
+  const pausa =
+    n.pausadas !== undefined && n.pausadas > 0 && n.desdeOperacion !== undefined
+      ? ` Pause ${r.config(n.pausadas)} operaciones sin registrar porque la operacion ${r.config(n.desdeOperacion)} tiene una pregunta abierta: contestala o cancelala y reenvia esas operaciones.`
+      : '';
   return {
-    texto: `Recibi ${r.config(n.lineas)} lineas: registre ${r.config(n.registradas)}, pregunte ${r.config(n.preguntadas)}, no entendi ${r.config(n.sinEntender)}.${partes}`,
+    texto: `Recibi ${r.config(n.lineas)} lineas: registre ${r.config(n.registradas)}, pregunte ${r.config(n.preguntadas)}, no entendi ${r.config(n.sinEntender)}.${partes}${pausa}`,
+    registro: r,
+  };
+}
+
+/** Lote pausado COMPLETO antes de escribir: a alguna operacion le falta un dato. No se registro ninguna, asi que reenviarlo no duplica nada. */
+export function lotePausado(n: { operaciones: number; faltantes: ReadonlyArray<{ operacion: number; datos: string }> }): MensajeListo {
+  const r = new RegistroCifras();
+  const lista = n.faltantes.slice(0, 10).map((f) => `- operacion ${r.config(f.operacion)}: falta ${r.servidor(f.datos)}`);
+  const mas = n.faltantes.length > 10 ? [`- y ${r.config(n.faltantes.length - 10)} mas`] : [];
+  return {
+    texto: [`Pause el lote completo: no registre ninguna de las ${r.config(n.operaciones)} operaciones porque a ${r.config(n.faltantes.length)} les falta un dato.`, ...lista, ...mas, 'Completa esos datos y reenvia el lote completo (nada quedo registrado, no se duplica), o mandalas una por una.'].join('\n'),
+    registro: r,
+  };
+}
+
+/** UNA sola pregunta por lote para los renglones iguales (o iguales a un movimiento reciente). */
+export function preguntaLoteDuplicado(n: { renglones: number }): MensajeListo {
+  const r = new RegistroCifras();
+  return {
+    texto: `En este mensaje hay ${r.config(n.renglones)} renglones iguales a un movimiento que ya registre (o iguales entre si) y no los registre todavia. ¿Son movimientos distintos y los registro?`,
     registro: r,
   };
 }
