@@ -5,10 +5,12 @@ import { useMemo, useState } from 'react';
 import { normalizar } from '@/dominio/catalogo/normalizar';
 import { formatearMoneda, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
 import { ModeloTarjeta } from '@/ui/componentes/modelo';
+import { RenglonesTabla } from '@/ui/componentes/renglones-tabla';
 import type { CatalogoCompra } from '@/dominio/operacion/tipos';
 import { centavosDeTexto, useAccion } from '../../../operacion/usar-accion';
 
-interface Renglon { sku_id: number; modelo: string; sabor: string; pagadas: number; facturadas: number | null; costo: string; lista: bigint | null; motivo: string }
+const aCentavos = (t: string): bigint | null => { const c = centavosDeTexto(t); return c === null ? null : BigInt(c); };
+interface Renglon { sku_id: number; marca: string; modelo: string; sabor: string; pagadas: number; facturadas: number | null; costo: string; lista: bigint | null; motivo: string }
 const textoPesos = (c: bigint | null) => (c === null ? '' : formatearMoneda(c).replace('$', ''));
 
 export function FormularioCompra({ proveedor, catalogo, modeloInicial, disponibles }: { proveedor: string; catalogo: CatalogoCompra; modeloInicial?: string; disponibles?: string[] }) {
@@ -46,7 +48,7 @@ export function FormularioCompra({ proveedor, catalogo, modeloInicial, disponibl
     const distinto = c !== null && (sku.costo_cent === null || BigInt(c) !== sku.costo_cent);
     if (distinto && motivo.trim() === '') return setLocal('El costo no es el de lista: el motivo es obligatorio.');
     setLocal(null);
-    setRenglones((r) => [...r, { sku_id: sku.sku_id, modelo: sku.modelo, sabor: sku.sabor, pagadas: p, facturadas: f, costo: distinto ? costo : '', lista: sku.costo_cent, motivo: distinto ? motivo.trim() : '' }]);
+    setRenglones((r) => [...r, { sku_id: sku.sku_id, marca: sku.marca, modelo: sku.modelo, sabor: sku.sabor, pagadas: p, facturadas: f, costo: distinto ? costo : '', lista: sku.costo_cent, motivo: distinto ? motivo.trim() : '' }]);
     setPagadas('');
     setFacturadas('');
     setMotivo('');
@@ -90,14 +92,9 @@ export function FormularioCompra({ proveedor, catalogo, modeloInicial, disponibl
         </div>
         {sku && <p className="rtm-nota">Costo de lista vigente con {proveedor}: {sku.costo_cent === null ? 'sin costo vigente' : formatearMoneda(sku.costo_cent)}</p>}
         {renglones.length > 0 && (
-          <ul className="rtm-lineas-form" aria-label="Renglones agregados">
-            {renglones.map((r, i) => (
-              <li key={`${r.sku_id}-${i}`} className="rtm-acciones-fila">
-                <span>{nombreVape(r.modelo)} · {saborMayus(r.sabor)} · pagadas {r.pagadas}{r.facturadas !== null ? ` · facturadas ${r.facturadas}` : ''}{r.costo ? ` · costo $${r.costo} (${r.motivo})` : ' · costo de lista'}</span>
-                <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setRenglones((x) => x.filter((_, j) => j !== i))}>Quitar</button>
-              </li>
-            ))}
-          </ul>
+          <RenglonesTabla etiqueta="Renglones agregados" precios etiquetaPrecio="Costo unit." etiquetaImporte="Costo" testid="compra-renglones"
+            renglones={renglones.map((r, i) => ({ clave: `${r.sku_id}-${i}`, marca: r.marca, modelo: r.modelo, sabor: r.sabor, piezas: r.pagadas, precioCent: r.costo ? aCentavos(r.costo) : r.lista, detalle: [r.facturadas !== null ? `Facturadas ${r.facturadas}` : null, r.costo ? `Costo distinto: ${r.motivo}` : 'Costo de lista'].filter(Boolean).join(' · ') }))}
+            acciones={(_, i) => <button type="button" className="rtm-boton rtm-boton-chico" onClick={() => setRenglones((x) => x.filter((_y, j) => j !== i))}>Quitar</button>} />
         )}
       </section>
       <section className="rtm-seccion" aria-label="Guía y seguro">

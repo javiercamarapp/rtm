@@ -84,7 +84,7 @@ test('captura el pedido, copia la orden, registra el folio de Karen, paga en par
   await page.getByTestId('ds-modelo').selectOption({ label: `${MARCA} · ${MODELO}`.toUpperCase() });
   await page.getByTestId('ds-pegado').fill('Fresa 40\nMango 35\nUva 25');
   await page.getByTestId('ds-agregar-pegado').click();
-  await expect(page.getByTestId('ds-renglones').locator('li')).toHaveCount(3);
+  await expect(page.getByTestId('ds-renglones').getByRole('button', { name: 'Quitar' })).toHaveCount(3);
   await expect(page.getByTestId('prev-piezas')).toHaveText('100 pz');
   await expect(page.getByTestId('prev-costo')).toHaveText('$8,929.00');
   await expect(page.getByTestId('prev-venta')).toHaveText('$10,480.00');

@@ -30,7 +30,10 @@ test('pedido de 50 piezas donde salen 40: cobra solo 40, con nota, texto de What
   await page.getByTestId('piezas').fill('50');
   await expect(page.getByTestId('precio')).toHaveValue('150.00');
   await page.getByTestId('agregar-renglon').click();
-  await expect(page.getByRole('list', { name: 'Renglones agregados' })).toContainText('50 pz a $150.00');
+  const tabla = page.getByRole('table', { name: 'Renglones agregados' });
+  await expect(tabla).toContainText('50 pz');
+  await expect(tabla).toContainText('$150.00');
+  await expect(tabla).toContainText('$7,500.00');
   await expect(page.getByTestId('envio')).toHaveValue('300.00');
   await page.getByTestId('condicion-pago').selectOption('contado');
   await page.getByTestId('crear-pedido').click();
