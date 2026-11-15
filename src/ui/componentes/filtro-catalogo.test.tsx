@@ -17,6 +17,30 @@ const el = () => <FiltroCatalogo etiquetaAria="Filtrar" marcas={MARCAS} atajos={
 beforeEach(() => { reemplazo.mockClear(); parametros = new URLSearchParams(); vi.useFakeTimers(); });
 afterEach(() => { vi.useRealTimers(); while (montajes.length) montajes.pop()!.desmontar(); fijarModo(null); });
 
+describe('contrato: los nombres de marca de los filtros van en MAYUSCULAS', () => {
+  const mayus = (e: Element) => e.closest('.rtm-may-marca, .rtm-may') !== null || e.querySelector('.rtm-may-marca') !== null || e.textContent === e.textContent!.toLocaleUpperCase('es-MX');
+  const nombres = (m: Montaje) => [
+    ...m.cont.querySelectorAll('.rtm-fc-atajo'),
+    ...m.cont.querySelectorAll('.rtm-fc-chips button span'),
+    ...m.cont.querySelectorAll('.rtm-fc-panel li label > span'),
+  ];
+  it('atajos, chips seleccionados y lista del desplegable usan la presentacion en mayusculas (Waka se ve WAKA)', () => {
+    parametros = new URLSearchParams('marca=Waka,Nexa');
+    const m = abrir(montar(el(), 'reduced'));
+    act(() => m.cont.querySelector<HTMLButtonElement>('[data-testid="fc-marcas"]')!.click());
+    const hallados = nombres(m);
+    expect(hallados.length).toBeGreaterThanOrEqual(2 + 2 + 3);
+    const crudos = hallados.filter((e) => !mayus(e)).map((e) => e.textContent);
+    expect(crudos, 'Un chip de marca se renderiza sin mayusculas: usa la clase rtm-may-marca o marcaMayus').toEqual([]);
+  });
+  it('un atajo sin la clase ni el formateador FALLA el contrato (la prueba detecta el defecto)', () => {
+    const suelto = document.createElement('button');
+    suelto.className = 'rtm-fc-atajo';
+    suelto.textContent = 'Waka';
+    expect(mayus(suelto)).toBe(false);
+  });
+});
+
 describe('filtro compartido', () => {
   it('helpers: marcas de la URL y maximo 5 atajos por demanda', () => {
     expect(marcasDeParam('Waka, Geek Bar,Waka')).toEqual(['Waka', 'Geek Bar']);

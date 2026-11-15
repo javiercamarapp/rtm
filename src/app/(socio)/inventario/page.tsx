@@ -146,7 +146,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
           { etiqueta: 'Valor medio por pieza', valor: inv.totales.piezas > 0 ? formatearMoneda(inv.totales.valor_cent / BigInt(Math.max(inv.totales.piezas, 1))) : null },
           { etiqueta: 'Disponibles de las piezas', valor: inv.totales.piezas > 0 ? `${dec((conDato.reduce((a, x) => a + (x.disponible ?? 0), 0) / inv.totales.piezas) * 100, 1)} %` : null },
           { etiqueta: 'Marcas con existencia', valor: String(marcas.length) },
-          { etiqueta: 'Marca con más valor', valor: porMarca[0] ? `${porMarca[0].mc} · ${pctTexto(partePct(porMarca[0].v, totalValor)) ?? ''}` : null },
+          { etiqueta: 'Marca con más valor', valor: porMarca[0] ? `${marcaMayus(porMarca[0].mc)} · ${pctTexto(partePct(porMarca[0].v, totalValor)) ?? ''}` : null },
         ]} />
         </details>
       )}
@@ -164,7 +164,7 @@ export default async function PaginaInventario({ searchParams }: { searchParams:
               />
               <div className="rtm-a2-apilado">
                 <Tarjeta titulo="Valor por marca" descripcion="Parte del valor del inventario">
-                  <BarList etiquetaAria="Valor por marca" items={porMarca.map((x, i) => ({ id: x.mc, etiqueta: x.mc, texto: `${m(x.v)} · ${pz(x.pz)}`, pct: partePct(x.v, totalValor), href: undefined, nota: i === 0 ? undefined : undefined }))} />
+                  <BarList etiquetaAria="Valor por marca" items={porMarca.map((x, i) => ({ id: x.mc, etiqueta: marcaMayus(x.mc), texto: `${m(x.v)} · ${pz(x.pz)}`, pct: partePct(x.v, totalValor), href: undefined, nota: i === 0 ? undefined : undefined }))} />
                 </Tarjeta>
                 <Tarjeta titulo="Antigüedad por última entrada" descripcion="Piezas por tramo de días">
                   <BarList etiquetaAria="Antigüedad del inventario" items={[...TRAMOS.map((t) => ({ id: t.id, etiqueta: t.etiqueta, texto: `${pz(tramos.tramos.get(t.id)!.piezas)} · ${m(tramos.tramos.get(t.id)!.valor)}`, pct: partePct(tramos.tramos.get(t.id)!.piezas, inv.totales.piezas) })), ...(tramos.sinDato.sabores ? [{ id: 'sd', etiqueta: 'Sin entrada registrada', texto: pz(tramos.sinDato.piezas) ?? '', pct: null }] : [])]} />
