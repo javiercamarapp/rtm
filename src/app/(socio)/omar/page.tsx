@@ -6,7 +6,7 @@ import { sumarDias } from '@/dominio/calendario';
 import { etiquetaFecha, etiquetaFechaHora, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
 import { Aviso, Segmentado } from '@/ui/componentes/controles';
-import { BarList } from '@/ui/componentes/datos';
+import { BarList, ListaClaveValor } from '@/ui/componentes/datos';
 import { DataTable } from '@/ui/componentes/data-table';
 import { SinDato } from '@/ui/componentes/estado-texto';
 import { FilaRatios, KpiLinea } from '@/ui/componentes/kpi';
@@ -102,6 +102,11 @@ export default async function PaginaOmar({ searchParams }: { searchParams: Promi
       <Rejilla dividir="6-6">
         <Tarjeta titulo="Renta menos tomas igual al neto" descripcion="De lo que se devenga a lo que se liquida">
           <Cascada titulo="Cascada de la semana con Omar" descripcion={`Renta ${m(o.renta_cent)}, tomas ${m(o.tomas_cent)}, neto ${m(neto, true)}.`} pasos={pasos} unidad="Pesos" />
+          <ListaClaveValor items={[
+            { k: 'Renta devengada', v: m(o.renta_cent) },
+            { k: 'Tomas de Omar', v: m(o.tomas_cent) },
+            { k: 'Neto de la semana', v: <strong>{m(neto, true)}</strong> },
+          ]} />
         </Tarjeta>
         <div className="a3-pila">
           <Tarjeta titulo="Renta por modelo" descripcion="Piezas surtidas desde la bodega de Omar en la semana">

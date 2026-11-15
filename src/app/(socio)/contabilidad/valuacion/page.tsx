@@ -110,7 +110,17 @@ export default async function Pagina_({ searchParams }: { searchParams: Promise<
                   { id: 'u', etiqueta: 'Utilidad', valor: Number(v.v04_utilidad_empresa_cent), tipo: 'total', texto: m(v.v04_utilidad_empresa_cent) ?? '' },
                 ]} />
             )}
-          </Tarjeta>
+                    {!sd && (
+            <ListaClaveValor items={[
+              { k: 'Valuación', v: m(v.v01_valuacion_cent) },
+              { k: 'Deudas', v: m(v.v02_deudas_cent) },
+              { k: 'Diferencia', v: m(v.v03_diferencia_cent) },
+              { k: 'Capital aportado neto', v: m(v.v06_capital_aportado_cent) },
+              { k: 'Utilidades retenidas', v: m(v.v05_utilidades_retenidas_cent) },
+              { k: 'Utilidad de la empresa', v: <strong>{m(v.v04_utilidad_empresa_cent)}</strong> },
+            ]} />
+          )}
+        </Tarjeta>
         <Tarjeta plana className="rtm-a2-tabla" titulo="Deudas" descripcion="Lo que la sociedad debe al corte">
           <DataTable
             etiqueta="Deudas por renglón" clave={(x) => x.clave} filas={deudas} densidad="densa" plana primeraFija

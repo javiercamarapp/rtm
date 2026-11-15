@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { fotoDeModelo } from '@/config/fotos_karen';
 import { rutaFotoModelo } from '@/dominio/catalogo/fotos-modelos';
-import { marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
-import { agruparPorMarca, kpisStock, leerFiltrosStock, pasaFiltroStock, resumenPorMarca, ultimoCambio } from '@/dominio/proveedores/stock';
+import { etiquetaFechaHora, marcaMayus, nombreVape, saborMayus } from '@/dominio/formato';
+import { agruparPorMarca, kpisStock, leerFiltrosStock, lineaBase, pasaFiltroStock, resumenPorMarca, sinLineaBase, ultimoCambio } from '@/dominio/proveedores/stock';
 import { disponibles, estadoDisponibilidad, ETIQUETA_EVENTO, hace, tonoDeEvento, type EventoGlobal, type ModeloTablero } from '@/dominio/proveedores/tablero';
 import { FotoVape, IndicadorDisponibilidad } from '../inventario/tarjeta-vape';
 
@@ -36,8 +36,12 @@ function GraficaMarcas({ modelos }: { modelos: ModeloTablero[] }) {
   );
 }
 
-export function StockKaren({ modelos, eventos, ultimaLecturaOk, desactualizado, lecturaActiva, ahoraIso, busqueda }: PropsStockKaren) {
+export function StockKaren({ modelos: modelosCrudos, eventos: eventosCrudos, ultimaLecturaOk, desactualizado, lecturaActiva, ahoraIso, busqueda }: PropsStockKaren) {
   const ahora = new Date(ahoraIso);
+  // La primera lectura es la linea base: ni cuenta como nuevo ni aparece en cambios recientes.
+  const modelos = sinLineaBase(modelosCrudos);
+  const base = lineaBase(modelosCrudos);
+  const eventos = base === null ? eventosCrudos : eventosCrudos.filter((e) => Date.parse(e.en) > Date.parse(base));
   const f = leerFiltrosStock(busqueda);
   const marcas = [...new Set(modelos.map((m) => m.marca))].sort((a, b) => a.localeCompare(b, 'es'));
   const visibles = modelos.filter((m) => pasaFiltroStock(m, f));
@@ -69,6 +73,7 @@ export function StockKaren({ modelos, eventos, ultimaLecturaOk, desactualizado, 
         ))}
         <p className="rtm-st-visto" data-tono={desactualizado ? 'atencion' : undefined}>
           Visto por última vez {ultimaLecturaOk ? hace(ultimaLecturaOk, ahora) : SIN_DATO}{desactualizado && ultimaLecturaOk ? ' (dato viejo)' : ''}
+          {base && <span data-testid="linea-base-stock"> · Línea base cargada el {etiquetaFechaHora(base)}</span>}
         </p>
       </section>
 

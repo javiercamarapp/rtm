@@ -65,6 +65,16 @@ export default async function PaginaContabilidad() {
       <Rejilla dividir="6-6">
         <Tarjeta titulo="De la valuación a la utilidad" descripcion="Valuación − deudas − capital aportado − utilidades retenidas = utilidad de la empresa" acciones={dato ? <Estado tono={idOk ? 'ok' : 'malo'}>{idOk ? 'Cuadra' : 'No cuadra'}</Estado> : undefined}>
           {dato ? <Cascada titulo="Cascada de la valuación" descripcion={`Valuación ${m(v.v01_valuacion_cent)}, deudas ${m(v.v02_deudas_cent)}, capital ${m(v.v06_capital_aportado_cent)}, retenidas ${m(v.v05_utilidades_retenidas_cent)}; utilidad ${m(v.v04_utilidad_empresa_cent, true)}.`} pasos={pasos} unidad="Pesos" /> : <p className="a3-grafica-vacia"><strong>Sin dato</strong>La cascada aparece con el primer asiento.</p>}
+                  {dato && (
+            <ListaClaveValor items={[
+              { k: 'Valuación', v: m(v.v01_valuacion_cent) },
+              { k: 'Deudas', v: m(v.v02_deudas_cent) },
+              { k: 'Capital aportado neto', v: m(v.v06_capital_aportado_cent) },
+              { k: 'Utilidades retenidas', v: m(v.v05_utilidades_retenidas_cent) },
+              { k: 'Utilidad de la empresa', v: <strong>{m(v.v04_utilidad_empresa_cent, true)}</strong> },
+            ]} />
+          )}
+        
         </Tarjeta>
         <div className="a3-pila">
           <Tarjeta titulo="De qué se compone el activo" descripcion="Parte de la valuación">
