@@ -27,3 +27,7 @@
 .rtm-modelo-detalle { font-size: 12px; color: var(--rtm-ink-2); }
 .rtm-modelo-acciones { margin-left: auto; flex: none; }
 .rtm-modelo-tarjeta[data-tam='m'] { align-items: flex-start; gap: var(--rtm-e-4); }
+
+/* La miniatura nunca toca el nombre, ni siquiera en celdas donde el gap del contenedor no aplica. */
+.rtm-modelo-foto { margin-inline-end: 6px; }
+.rtm-modelo-foto[data-tam='m'] { margin-inline-end: 8px; }
