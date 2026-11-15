@@ -1,16 +1,11 @@
 import Link from 'next/link';
 
-/** Pantalla de carga: esqueleto con la forma de una pagina (titular y tres bloques). Sin animacion propia: solo tokens. */
+/** Pantalla de carga: una sola linea de texto con un punto discreto. Sin bloques vacios ni altura reservada, para que no haya saltos de layout. */
 export function PaginaCargando({ etiqueta = 'Cargando' }: { etiqueta?: string }) {
   return (
-    <div className="rtm-cargando" role="status" aria-live="polite" aria-busy="true" data-testid="pagina-cargando">
-      <span className="rtm-solo-lectores">{etiqueta}</span>
-      <span className="rtm-esqueleto rtm-cargando-eyebrow" aria-hidden="true" />
-      <span className="rtm-esqueleto rtm-cargando-titular" aria-hidden="true" />
-      <span className="rtm-esqueleto rtm-cargando-bloque" aria-hidden="true" />
-      <span className="rtm-esqueleto rtm-cargando-bloque" aria-hidden="true" />
-      <span className="rtm-esqueleto rtm-cargando-bloque" aria-hidden="true" />
-    </div>
+    <p className="rtm-cargando" role="status" aria-live="polite" aria-busy="true" data-testid="pagina-cargando">
+      <span className="rtm-punto-carga" aria-hidden="true" />{etiqueta}…
+    </p>
   );
 }
 

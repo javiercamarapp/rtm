@@ -134,11 +134,6 @@
 .rtm-g-insight-pie { display: flex; justify-content: space-between; align-items: center; gap: var(--rtm-e-3); flex-wrap: wrap; }
 .rtm-g-insight-enlace { font-size: 13px; font-weight: 600; }
 
-/* ---- Esqueleto con la forma final (estatico) ---- */
-.rtm-g-esq { fill: var(--rtm-fill-active); }
-.rtm-g-esq-trazo { stroke: var(--rtm-fill-active); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; fill: none; }
-.rtm-g-esqueleto { max-height: 220px; }
-
 /* ---- Catalogo ---- */
 .rtm-g-catalogo { display: grid; gap: var(--rtm-e-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); margin-top: var(--rtm-e-6); }
 .rtm-g-catalogo > * { min-width: 0; }
