@@ -44,7 +44,7 @@
 
 /* ---- KpiLinea ---- */
 .rtm-kpi-linea { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--rtm-borde-tarjeta); border-radius: var(--rtm-r-3); background: var(--rtm-surface); overflow: hidden; }
-.rtm-kpi-linea[data-n='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rtm-kpi-linea[data-n='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); } .rtm-kpi-linea[data-n='5'] { grid-template-columns: repeat(5, minmax(0, 1fr)); } .rtm-kpi-linea[data-n='6'] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.rtm-kpi-linea[data-n='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rtm-kpi-linea[data-n='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); } .rtm-kpi-linea[data-n='5'] { grid-template-columns: repeat(5, minmax(0, 1fr)); } .rtm-kpi-linea[data-n='6'] { grid-template-columns: repeat(6, minmax(0, 1fr)); } .rtm-kpi-linea[data-n='7'] { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .rtm-kpi-celda { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px var(--rtm-pad-tarjeta); color: inherit; text-decoration: none; border-left: var(--rtm-borde); border-top: var(--rtm-filete) solid transparent; }
 .rtm-kpi-celda:first-child { border-left: 0; }
 .rtm-kpi-celda { --rtm-kpi-color: var(--rtm-d-tinta); }

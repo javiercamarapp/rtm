@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { etiquetaFecha, formatearMoneda } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
-import { Aviso, BarraFiltros, Chip } from '@/ui/componentes/controles';
+import { AvisoLinea, BarraFiltros, Chip } from '@/ui/componentes/controles';
 import { FiltroPeriodo } from '@/ui/componentes/filtro-periodo';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
@@ -24,6 +24,7 @@ export default async function PaginaUtilidadDs({ searchParams }: { searchParams:
   const [d, h] = [desde ?? '-', hasta ?? '-'];
   const cif = (m: string, texto: string) => <CifraComprobada texto={texto} cifra={`dsu:${m}:${d}:${h}`} comprobacion="cuadra" />;
   const meses = [...rep.meses].reverse();
+  const avisoFuera = t.pedidos > 0 && t.reinvertida_cent < t.utilidad_cent;
   return (
     <Pagina ancho="tablero">
       <EncabezadoPagina
@@ -32,13 +33,17 @@ export default async function PaginaUtilidadDs({ searchParams }: { searchParams:
         descripcion="Utilidad = venta (con el envío cobrado) menos todo el costo del pedido: producto, envío del proveedor y costos directos. Mitad para cada socio."
       />
       <PestanasDs activa="utilidad" sinFolio={resumen.sin_folio_externo} filtros={(
-      <BarraFiltros etiquetaAria="Periodo" extras={desde || hasta ? <Chip href="/dropshipping/utilidad">Quitar filtros</Chip> : undefined}>
+      <BarraFiltros etiquetaAria="Periodo y avisos" extras={(avisoFuera || desde || hasta) ? (
+        <>
+          {avisoFuera && <AvisoLinea tono="info" titulo="Parte de la utilidad no está en el proveedor." texto={`${formatearMoneda(t.fuera_proveedor_cent)} está por cobrar o en poder de un socio.`} detalle="Solo lo depositado por encima del costo en la cuenta del proveedor cuenta como reinvertido." />}
+          {(desde || hasta) && <Chip href="/dropshipping/utilidad">Quitar filtros</Chip>}
+        </>
+      ) : undefined}>
         <form className="rtm-ds-filtros-linea" method="get" aria-label="Periodo">
           <FiltroPeriodo desde={desde} hasta={hasta} />
         </form>
       </BarraFiltros>
       )} />
-      {t.pedidos > 0 && t.reinvertida_cent < t.utilidad_cent && <Aviso tono="info" titulo="Parte de la utilidad no está en el proveedor.">{formatearMoneda(t.fuera_proveedor_cent)} de la utilidad está por cobrar o en poder de un socio; solo lo depositado por encima del costo en la cuenta del proveedor cuenta como reinvertido.</Aviso>}
       <KpiLinea
         etiquetaAria="Utilidad del periodo"
         celdas={[

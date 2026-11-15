@@ -4,7 +4,7 @@ import { exigirSocio } from '@/composicion/acceso';
 import { dropshippingDeSocio } from '@/composicion/dropshipping';
 import { etiquetaFecha, formatearMoneda, formatearPiezas } from '@/dominio/formato';
 import { CifraComprobada } from '@/ui/componentes/cifra';
-import { Aviso, BarraFiltros, Chip, ChipEstado } from '@/ui/componentes/controles';
+import { AvisoLinea, BarraFiltros, Chip, ChipEstado } from '@/ui/componentes/controles';
 import { FiltrosPlegables } from '@/ui/componentes/filtros-plegables';
 import { DataTable } from '@/ui/componentes/data-table';
 import { KpiLinea } from '@/ui/componentes/kpi';
@@ -44,7 +44,13 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
         descripcion={esMenudeo ? 'Tu menudeo en Playa del Carmen. Se cobra solo el costo; no generan utilidad ni restan a tu valuación ni a tu aportación neta.' : `Solo lectura: supervisas los pedidos de ${socio} (menudeo en Playa del Carmen) y confirmas o rechazas sus pagos reportados.`}
         acciones={esMenudeo ? <Link className="rtm-boton rtm-boton-primario" href="/dropshipping/nuevo" data-testid="nuevo-pedido-costo">Nuevo pedido a costo</Link> : undefined}
       />
-      <BarraFiltros etiquetaAria="Filtros" extras={hayFiltros ? <Chip href="/menudeo">Quitar filtros</Chip> : undefined}>
+      <BarraFiltros etiquetaAria="Filtros y avisos" extras={(t.sin_fecha > 0 || t.vencidos > 0 || hayFiltros) ? (
+        <>
+          {t.sin_fecha > 0 && <AvisoLinea tono="atencion" titulo="Sin fecha comprometida." texto={`${t.sin_fecha} ${t.sin_fecha === 1 ? 'pedido' : 'pedidos'} sin fecha comprometida de pago.`} detalle={esMenudeo ? 'Fíjala en cada pedido.' : undefined} testid="alerta-sin-fecha" />}
+          {t.vencidos > 0 && <AvisoLinea tono="error" titulo="Pedidos vencidos." texto={`${t.vencidos} ${t.vencidos === 1 ? 'pedido vencido' : 'pedidos vencidos'} por ${formatearMoneda(t.vencido_cent)}.`} detalle="Pasó la fecha comprometida y siguen pendientes de pago." testid="alerta-vencidos" />}
+          {hayFiltros && <Chip href="/menudeo">Quitar filtros</Chip>}
+        </>
+      ) : undefined}>
         <form className="rtm-ds-filtros-linea" method="get" aria-label="Filtrar pedidos">
           <FiltrosPlegables etiqueta="Filtros" titulo="Filtrar pedidos por periodo, proveedor y estado de pago" activos={[desde, hasta, proveedor, estadoPago].filter(Boolean).length}>
           <label className="rtm-etiqueta-campo">Desde<input className="rtm-campo" type="date" name="desde" defaultValue={desde ?? ''} /></label>
@@ -56,9 +62,8 @@ export default async function PaginaMenudeo({ searchParams }: { searchParams: Pr
         </form>
       </BarraFiltros>
 
-      {t.sin_fecha > 0 && <Aviso tono="atencion" titulo="Sin fecha comprometida."><span data-testid="alerta-sin-fecha">{t.sin_fecha} {t.sin_fecha === 1 ? 'pedido' : 'pedidos'} sin fecha comprometida de pago.</span>{esMenudeo ? ' Fíjala en cada pedido.' : ''}</Aviso>}
-      {t.vencidos > 0 && <Aviso tono="error" titulo="Pedidos vencidos."><span data-testid="alerta-vencidos">{t.vencidos} {t.vencidos === 1 ? 'pedido vencido' : 'pedidos vencidos'} por {formatearMoneda(t.vencido_cent)}: pasó la fecha comprometida y siguen pendientes de pago.</span></Aviso>}
       <KpiLinea
+        compacta
         etiquetaAria="Cifras de los pedidos a costo"
         celdas={[
           { id: 'pedidos', etiqueta: 'Pedidos', valor: String(t.pedidos), categoria: 1, nota: `${t.pedidos_pendientes} con pago pendiente` },
