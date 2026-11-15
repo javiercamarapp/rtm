@@ -44,14 +44,20 @@ describe('cargar-mes: plan del mes', () => {
   it('con la base vacia y sin tipo de cambio todo lo que cuesta queda como dato faltante y nada se inventa', () => {
     const a = plan(snap(), decl(), null);
     expect(a.filter((x) => x.tipo === 'cargo')).toHaveLength(0);
-    expect(a.filter((x) => x.tipo === 'faltante').map((x) => x.slug).sort()).toEqual(['claude_max', 'dominio', 'openrouter', 'supabase', 'vercel']);
+    expect(a.filter((x) => x.tipo === 'faltante').map((x) => x.slug).sort()).toEqual(['claude_max', 'dominio', 'openrouter', 'supabase']);
     expect(totales(a, snap().servicios).alMenos).toBe(true);
   });
-  it('vercel y supabase cobran la cuota del documento como minimo y abren el faltante', () => {
+  it('vercel vale 0: sin cargo y sin dato faltante, aun con tipo de cambio', () => {
     const a = plan();
-    const v = a.find((x) => x.tipo === 'cargo' && x.slug === 'vercel')!;
-    expect(v.cargo.montoCent).toBe(40_000n);
-    expect(v.cargo.comoSeriaCent).toBe(40_000n);
+    expect(a.some((x) => x.slug === 'vercel' && x.tipo === 'cargo')).toBe(false);
+    expect(a.some((x) => x.slug === 'vercel' && x.tipo === 'faltante')).toBe(false);
+    expect(a.find((x) => x.slug === 'vercel')!.tipo).toBe('sin_cargo');
+  });
+  it('supabase cobra la cuota del documento como minimo y abre el faltante', () => {
+    const a = plan();
+    const v = a.find((x) => x.tipo === 'cargo' && x.slug === 'supabase')!;
+    expect(v.cargo.montoCent).toBe(50_000n);
+    expect(v.cargo.comoSeriaCent).toBe(50_000n);
     expect(v.cargo.comoDeberiaCent).toBeNull();
     expect(a.some((x) => x.tipo === 'faltante' && x.slug === 'supabase')).toBe(true);
   });
@@ -71,25 +77,21 @@ describe('cargar-mes: plan del mes', () => {
     expect([o.cargo.etiqueta, o.cargo.estado, o.cargo.baseOrigMicro]).toEqual(['capturado', 'provisional', 1_230_000n]);
     expect(o.cargo.montoCent).toBe(2500n);
   });
-  it('claude: sin precio es faltante; 0 tokens de RTM no se cobra; con precio usa el techo al punto', () => {
-    const json = (rtm: number) => JSON.stringify({ mes: '2026-11', script_version: '1.0.0', metricas: Object.fromEntries(['entrada_salida_escritura_cache', 'solo_salida', 'todo_con_lectura_cache'].map((k) => [k, { tokens_rtm: rtm, tokens_cuenta: 60, pct_exacto_ppm: 0, pct_aplicado_ppm: 0 }])), rtm: { sesiones: 2 } });
-    const con = (rtm: number, extra: string[] = []) => declaradoDeArgs(parsearArgs(['--mes', '2026-11', '--claude-json', 'x.json', ...extra]), () => json(rtm));
-    expect(plan(snap(), con(10)).find((x) => x.slug === 'claude_max')!.tipo).toBe('faltante');
-    expect(plan(snap(), con(0, ['--claude-plan-usd', '100'])).find((x) => x.slug === 'claude_max')!.tipo).toBe('faltante');
-    const c = plan(snap(), con(10, ['--claude-plan-usd', '100'])).find((x) => x.slug === 'claude_max')!;
-    expect(c.cargo.pctAplicadoPpm).toBe(170_000n);
-    expect(c.cargo.pctExactoPpm).toBe(166_666n);
-    expect(c.cargo.fase).toBe('construccion');
-    expect(c.cargo.evidenciaTipo).toBe('script_local');
+  it('claude max: fijo en 20 USD declarados, directa, construccion, sin tokens', () => {
+    const c = plan().find((x) => x.slug === 'claude_max')!;
+    expect([c.tipo, c.cargo.baseOrigMicro, c.cargo.pctAplicadoPpm, c.cargo.fase, c.cargo.etiqueta, c.cargo.evidenciaTipo]).toEqual(['cargo', 20_000_000n, 1_000_000n, 'construccion', 'capturado', 'captura']);
+    expect(c.cargo.montoCent).toBe(40_000n);
+    expect(c.cargo.nota).toContain('declarado por el dueno: 20.00 USD de 200 prorrateados');
+    expect(plan(snap(), decl(['--claude-usd', '25'])).find((x) => x.slug === 'claude_max')!.cargo.baseOrigMicro).toBe(25_000_000n);
   });
   it('idempotente: un cargo vivo igual se omite y uno distinto es conflicto', () => {
-    const base = plan().find((x) => x.slug === 'vercel')!.cargo;
-    const vivo = (monto: string) => ({ id: '7', folio: 'K-0007', slug: 'vercel', base: base.baseOrigMicro.toString(), pct: base.pctAplicadoPpm.toString(), tc: base.tcMicro.toString(), monto });
-    expect(plan(snap({ cargos: [vivo('40000')] })).find((x) => x.slug === 'vercel' && x.tipo === 'cargo')!.estadoPrevio).toBe('ya_registrado');
-    expect(plan(snap({ cargos: [vivo('50000')] })).find((x) => x.slug === 'vercel' && x.tipo === 'cargo')!.estadoPrevio).toBe('conflicto');
+    const base = plan().find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.cargo;
+    const vivo = (monto: string) => ({ id: '7', folio: 'K-0007', slug: 'supabase', base: base.baseOrigMicro.toString(), pct: base.pctAplicadoPpm.toString(), tc: base.tcMicro.toString(), monto });
+    expect(plan(snap({ cargos: [vivo('50000')] })).find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.estadoPrevio).toBe('ya_registrado');
+    expect(plan(snap({ cargos: [vivo('60000')] })).find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.estadoPrevio).toBe('conflicto');
   });
   it('los argumentos de registrar_cargo son los 24 de la funcion oficial', () => {
-    expect(argsRegistrar('2026-11', plan().find((x) => x.slug === 'vercel')!.cargo)).toHaveLength(24);
+    expect(argsRegistrar('2026-11', plan().find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.cargo)).toHaveLength(24);
   });
 });
 
@@ -98,7 +100,7 @@ describe('cargar-mes: linea de comandos', () => {
     expect(() => parsearArgs([])).toThrow(/--mes/);
     expect(() => parsearArgs(['--mes', '2026-11', '--verificar', '--aplicar'])).toThrow();
     expect(() => parsearArgs(['--mes', '2026-11', '--aplicar', '--datos', 'x'])).toThrow();
-    expect(() => declaradoDeArgs(parsearArgs(['--mes', '2026-11', '--vercel-consumo', '1:2']))).toThrow(/factura/);
+    expect(() => declaradoDeArgs(parsearArgs(['--mes', '2026-11', '--supabase-horas', '1:2']))).toThrow(/factura/);
   });
   it('--verificar con instantanea no escribe y no imprime secretos', async () => {
     const out: string[] = [];
@@ -106,5 +108,10 @@ describe('cargar-mes: linea de comandos', () => {
     expect(code).toBe(0);
     expect(out.join('\n')).toContain('no se escribio nada');
     expect(out.join('\n')).toContain('al menos');
+  });
+  it('--tc-sugerido solo imprime la instruccion', async () => {
+    const out: string[] = [];
+    expect(await ejecutar(['--tc-sugerido'], { log: (t: string) => out.push(t), error: (t: string) => out.push(t) })).toBe(0);
+    expect(out.join(' ')).toContain('--tc N --tc-fecha');
   });
 });

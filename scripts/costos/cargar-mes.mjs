@@ -13,9 +13,10 @@
 // Fuentes por servicio (ver docs/costos-carga-mensual.md):
 //   openrouter / openrouter_comision / transcripcion  libro propio ia.llamada del mes (liquidadas); el rol 'audio' es la transcripcion. Sin libro:
 //                                                      dato faltante, salvo --openrouter-usd (consumo declarado de la llave de RTM, queda 'capturado').
-//   vercel / supabase       cuota del documento (US$20 / US$25) como MINIMO; la regla es el mayor entre cuota y consumo real. La API no desglosa por
-//                           proyecto: dato faltante, salvo --vercel-consumo RTM:TOTAL --vercel-factura-usd N (y --supabase-horas RTM:TOTAL --supabase-factura-usd N).
-//   claude_max              tokens de prorratear-claude.mjs (--claude-json archivo) x precio del plan declarado (--claude-plan-usd). Sin precio: dato faltante.
+//   vercel                  vale 0 por ahora (decision del dueno, 14-nov: plan sin costo): sin cargo y SIN dato faltante.
+//   supabase                cuota del documento (US$25) como MINIMO; la regla es el mayor entre cuota y consumo real. La API no desglosa por proyecto:
+//                           dato faltante, salvo --supabase-horas RTM:TOTAL --supabase-factura-usd N.
+//   claude_max              FIJO en US$20 al mes (decision del dueno: 20 de 200 prorrateados; --claude-usd N lo cambia). No usa el conteo de tokens por carpeta.
 //   dominio                 --dominio-anual-usd N (devengo de un doceavo). Sin costo declarado: dato faltante.
 //   higgsfield              --higgsfield-usd N (generaciones etiquetadas RTM). Sin dato: sin cargo.
 //   resend, telegram, github  gratuitos (declarado): sin cargo.
@@ -224,7 +225,8 @@ export function planificar({ mes, fecha, snap, declarado, tc }) {
   }
 
   // --- Plataformas compartidas: cuota del documento como minimo; mayor entre cuota y consumo real si se declara
-  for (const [slug, d] of [['vercel', declarado.vercel], ['supabase', declarado.supabase]]) {
+  acciones.push(sinCargo('vercel', 'plan sin costo por ahora, declarado por el dueno (14-nov): vale 0, sin dato faltante'));
+  for (const [slug, d] of [['supabase', declarado.supabase]]) {
     const s = servicio(slug);
     const cuota = s.cuotaMicro;
     if (cuota === null) {
@@ -241,27 +243,15 @@ export function planificar({ mes, fecha, snap, declarado, tc }) {
         baseOrigMicro: cuota, atribucion: { tipo: 'cuota_minima' }, etiqueta: 'proyeccion', evidenciaTipo: 'captura', evidenciaSha256: null,
         nota: 'Cuota del documento como minimo: sin consumo real de RTM (la API del proveedor no desglosa por proyecto).',
       });
-      if (hay) acciones.push(faltante(slug, `sin consumo real de RTM en ${slug === 'vercel' ? 'Vercel (equipo compartido)' : 'Supabase (horas de computo de la organizacion compartida)'}: se cobra la cuota del documento como minimo; el cargo real puede ser mayor`));
+      if (hay) acciones.push(faltante(slug, `sin consumo real de RTM en Supabase (horas de computo de la organizacion compartida): se cobra la cuota del documento como minimo; el cargo real puede ser mayor`));
     }
   }
 
-  // --- Claude Max (construccion, opcional)
-  const cj = declarado.claude;
-  if (!cj) {
-    acciones.push(faltante('claude_max', `sin conteo de tokens de ${mes}: corre scripts/costos/prorratear-claude.mjs --mes ${mes} y pasa --claude-json`));
-  } else if (cj.principal.tokensRtm === 0n) {
-    // Cero tokens de RTM con una cuenta activa casi siempre es un artefacto del criterio por carpeta (sesiones lanzadas desde otra carpeta), no consumo real.
-    acciones.push(faltante('claude_max', `el conteo por carpeta de proyecto da 0 tokens de RTM de ${cj.principal.tokensCuenta} de la cuenta: las sesiones no se lanzan desde la carpeta de RTM; falta definir como atribuir (no se cobra 0 ni la mensualidad completa)`));
-  } else if (declarado.claudePlanMicro === null) {
-    const p = cj.principal;
-    acciones.push(faltante('claude_max', `precio mensual del plan Claude Max no declarado (--claude-plan-usd); participacion medida de RTM ${p.tokensRtm}/${p.tokensCuenta} tokens`));
-  } else {
-    const p = cj.principal;
-    cargo('claude_max', {
-      baseOrigMicro: declarado.claudePlanMicro, atribucion: { tipo: 'participacion', consumoRtm: p.tokensRtm, consumoTotal: p.tokensCuenta }, etiqueta: 'estimado_prorrateado',
-      evidenciaTipo: 'script_local', evidenciaSha256: cj.sha256, nota: `Tokens (entrada + salida + escritura de cache) de proyectos RTM sobre la cuenta, script ${cj.scriptVersion}.`,
-    });
-  }
+  // --- Claude Max (construccion, opcional): monto fijo declarado por el dueno
+  cargo('claude_max', {
+    baseOrigMicro: declarado.claudeUsdMicro, atribucion: { tipo: 'directa' }, etiqueta: 'capturado', evidenciaTipo: 'captura', evidenciaSha256: null,
+    nota: `declarado por el dueno: ${textoMicro(declarado.claudeUsdMicro)} USD de 200 prorrateados (plan de 200 USD al mes; no se usa el conteo de tokens por carpeta)`,
+  });
 
   // --- Dominio (anual, devengo de un doceavo)
   if (declarado.dominioAnualMicro === null) {
@@ -311,35 +301,12 @@ export function totales(acciones, servicios) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------
-// Lectura del JSON de prorratear-claude.mjs
-// ---------------------------------------------------------------------------------------------------------------------------------------------
-export function leerClaudeJson(texto) {
-  const o = JSON.parse(texto);
-  if (!o || typeof o.mes !== 'string' || !RE_MES.test(o.mes)) throw new Error('JSON de Claude sin mes valido.');
-  const met = (k) => {
-    const m = o.metricas?.[k];
-    const e = (v) => {
-      if (typeof v === 'string' && /^\d+$/.test(v)) return BigInt(v);
-      if (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0) return BigInt(v);
-      throw new Error(`JSON de Claude: valor invalido en ${k}.`);
-    };
-    const tokensRtm = e(m?.tokens_rtm);
-    const tokensCuenta = e(m?.tokens_cuenta);
-    if (tokensRtm > tokensCuenta) throw new Error(`JSON de Claude: en ${k} los tokens de RTM exceden los de la cuenta.`);
-    return { tokensRtm, tokensCuenta, pctExactoPpm: m.pct_exacto_ppm, pctAplicadoPpm: m.pct_aplicado_ppm };
-  };
-  return {
-    mes: o.mes, scriptVersion: typeof o.script_version === 'string' ? o.script_version : 'desconocida', sha256: sha256(texto), sesiones: o.rtm?.sesiones ?? 0,
-    principal: met('entrada_salida_escritura_cache'), soloSalida: met('solo_salida'), conLecturaCache: met('todo_con_lectura_cache'),
-  };
-}
-
-// ---------------------------------------------------------------------------------------------------------------------------------------------
 // Argumentos
 // ---------------------------------------------------------------------------------------------------------------------------------------------
-const OPCIONES_CON_VALOR = ['mes', 'fecha', 'tc', 'tc-fecha', 'datos', 'claude-json', 'claude-plan-usd', 'openrouter-usd', 'dominio-anual-usd', 'higgsfield-usd',
-  'vercel-consumo', 'vercel-factura-usd', 'supabase-horas', 'supabase-factura-usd'];
-const OPCIONES_BANDERA = ['verificar', 'aplicar', 'si', 'reemplazar', 'ayuda'];
+const OPCIONES_CON_VALOR = ['mes', 'fecha', 'tc', 'tc-fecha', 'datos', 'claude-usd', 'openrouter-usd', 'dominio-anual-usd', 'higgsfield-usd',
+  'supabase-horas', 'supabase-factura-usd'];
+const OPCIONES_BANDERA = ['verificar', 'aplicar', 'si', 'reemplazar', 'ayuda', 'tc-sugerido'];
+export const CLAUDE_USD_POR_OMISION = 20_000_000n;
 
 export function parsearArgs(argv) {
   const o = {};
@@ -354,7 +321,7 @@ export function parsearArgs(argv) {
       o[k] = v;
     } else throw new Error(`Argumento desconocido: ${a}`);
   }
-  if (o.ayuda) return o;
+  if (o.ayuda || o['tc-sugerido']) return o;
   if (!o.mes || !RE_MES.test(o.mes)) throw new Error('Falta --mes AAAA-MM.');
   if (o.verificar && o.aplicar) throw new Error('Elige --verificar o --aplicar, no los dos.');
   if (!o.verificar && !o.aplicar) o.verificar = true;
@@ -381,18 +348,12 @@ const usdOpcional = (v, nombre) => {
   return m;
 };
 
-export function declaradoDeArgs(o, leerArchivo = (r) => readFileSync(r, 'utf8')) {
+export function declaradoDeArgs(o) {
   const plataforma = (consumo, factura, nc, nf) => ({ consumo: consumo ? par(consumo, nc) : null, facturaMicro: usdOpcional(factura, nf) });
-  const v = plataforma(o['vercel-consumo'], o['vercel-factura-usd'], '--vercel-consumo', '--vercel-factura-usd');
   const s = plataforma(o['supabase-horas'], o['supabase-factura-usd'], '--supabase-horas', '--supabase-factura-usd');
-  for (const [d, n] of [[v, 'vercel'], [s, 'supabase']]) if (Boolean(d.consumo) !== (d.facturaMicro !== null)) throw new Error(`Para ${n} declara el consumo (RTM:TOTAL) Y la factura del mes en dolares, o ninguno.`);
-  let claude = null;
-  if (o['claude-json']) {
-    claude = leerClaudeJson(leerArchivo(resolve(o['claude-json'])));
-    if (claude.mes !== o.mes) throw new Error(`El JSON de Claude es de ${claude.mes}, no de ${o.mes}.`);
-  }
+  for (const [d, n] of [[s, 'supabase']]) if (Boolean(d.consumo) !== (d.facturaMicro !== null)) throw new Error(`Para ${n} declara el consumo (RTM:TOTAL) Y la factura del mes en dolares, o ninguno.`);
   return {
-    openrouterMicro: usdOpcional(o['openrouter-usd'], '--openrouter-usd'), vercel: v, supabase: s, claude, claudePlanMicro: usdOpcional(o['claude-plan-usd'], '--claude-plan-usd'),
+    openrouterMicro: usdOpcional(o['openrouter-usd'], '--openrouter-usd'), supabase: s, claudeUsdMicro: usdOpcional(o['claude-usd'], '--claude-usd') ?? CLAUDE_USD_POR_OMISION,
     dominioAnualMicro: usdOpcional(o['dominio-anual-usd'], '--dominio-anual-usd'), higgsfieldMicro: usdOpcional(o['higgsfield-usd'], '--higgsfield-usd'),
   };
 }
@@ -510,7 +471,7 @@ export function argsRegistrar(mes, c) {
     t(c.exactoMxnE6), t(c.exactoPuroMxnE6), t(c.montoCent), t(c.comoSeriaCent), t(c.comoDeberiaCent), c.pagadoPor, c.cobrable, c.etiqueta, c.estado, c.evidenciaTipo, c.evidenciaSha256, c.nota];
 }
 
-export async function aplicarPlan(client, { mes, fecha, acciones, tc, tcOrigen, declarado, reemplazar }, log) {
+export async function aplicarPlan(client, { mes, fecha, acciones, tc, tcOrigen, reemplazar }, log) {
   const socio = (await client.query("select id from seguridad.usuario where rol = 'socio' and activo and socio_nombre = 'Javier'")).rows[0]?.id;
   if (!socio) throw new Error('No hay un usuario socio activo para Javier.');
   await client.query('begin');
@@ -519,11 +480,6 @@ export async function aplicarPlan(client, { mes, fecha, acciones, tc, tcOrigen, 
     if (tc && tcOrigen !== 'base') {
       await client.query('select costos.registrar_tipo_cambio($1, $2::date, $3::bigint, $4)', [`cargar-mes:tc:${tc.fecha}:${tc.fuente}`, tc.fecha, tc.tcMicro.toString(), tc.fuente]);
       log(`Tipo de cambio ${textoMicro(tc.tcMicro, 4)} (${tc.fuente}) del ${tc.fecha} registrado.`);
-    }
-    if (declarado.claude) {
-      for (const [metrica, m] of [['entrada_salida_escritura_cache', declarado.claude.principal], ['solo_salida', declarado.claude.soloSalida], ['todo_con_lectura_cache', declarado.claude.conLecturaCache]]) {
-        await client.query('select costos.importar_claude_uso($1, $2, $3::bigint, $4::bigint, $5::int, $6::int, $7::int, $8, $9)', [mes, metrica, m.tokensRtm.toString(), m.tokensCuenta.toString(), String(m.pctExactoPpm), String(m.pctAplicadoPpm), declarado.claude.sesiones, declarado.claude.sha256, declarado.claude.scriptVersion]);
-      }
     }
     let n = 0;
     for (const a of acciones) {
@@ -561,10 +517,10 @@ const AYUDA = `Uso: node scripts/costos/cargar-mes.mjs --mes AAAA-MM [--verifica
   --fecha AAAA-MM-DD            fecha del cargo (por omision hoy en Merida, o el ultimo dia si el mes ya paso)
   --tc N [--tc-fecha F]         tipo de cambio manual (MXN por USD); sin el se usa la base o Banxico (BANXICO_TOKEN)
   --datos archivo.json          (solo --verificar) instantanea de lectura en vez de conectar a la base
-  --claude-json archivo         salida de prorratear-claude.mjs;  --claude-plan-usd N  precio mensual del plan
+  --claude-usd N                monto fijo de Claude Max (por omision 20: declarado por el dueno)
+  --tc-sugerido                 solo imprime como declarar el tipo de cambio
   --openrouter-usd N            consumo de la llave de RTM en OpenRouter (si el libro ia.llamada esta vacio)
   --dominio-anual-usd N         costo anual del dominio;  --higgsfield-usd N  generaciones etiquetadas RTM
-  --vercel-consumo RTM:TOTAL --vercel-factura-usd N      consumo y factura real de Vercel (mayor entre cuota y consumo)
   --supabase-horas RTM:TOTAL --supabase-factura-usd N    horas de computo y factura real de Supabase
   --reemplazar                  anula (con reversa) y vuelve a registrar un cargo vivo con cifra distinta
   --si                          no pedir la confirmacion escrita en --aplicar`;
@@ -581,11 +537,15 @@ export async function ejecutar(argv, io = { log: console.log, error: console.err
       io.log(AYUDA);
       return 0;
     }
+    if (o['tc-sugerido']) {
+      io.log('Tipo de cambio: este script no inventa ni consulta uno sin credenciales. Declaralo con --tc N --tc-fecha AAAA-MM-DD (MXN por USD, FIX de Banxico del dia o el del recibo),\no define BANXICO_TOKEN para leer el FIX. Sin tipo de cambio nada en dolares se cobra: queda como dato faltante.');
+      return 0;
+    }
     const hoy = fechaNegocio(deps.ahora ?? new Date());
     if (o.mes > hoy.slice(0, 7)) throw new Error(`El mes ${o.mes} aun no empieza (hoy es ${hoy}).`);
     const fecha = o.fecha ?? (o.mes < hoy.slice(0, 7) ? ultimoDiaDelMes(o.mes) : hoy);
     if (fecha.slice(0, 7) !== o.mes) throw new Error('--fecha debe caer dentro de --mes.');
-    const declarado = declaradoDeArgs(o, deps.leerArchivo);
+    const declarado = declaradoDeArgs(o);
 
     let client = null;
     let filas;
@@ -632,7 +592,7 @@ export async function ejecutar(argv, io = { log: console.log, error: console.err
           return 1;
         }
       }
-      const n = await aplicarPlan(client, { mes: o.mes, fecha, acciones, tc, tcOrigen, declarado, reemplazar: Boolean(o.reemplazar) }, io.log);
+      const n = await aplicarPlan(client, { mes: o.mes, fecha, acciones, tc, tcOrigen, reemplazar: Boolean(o.reemplazar) }, io.log);
       io.log(`\nListo: ${n} cargos escritos. Revisa la pagina /costos?mes=${o.mes}.`);
       return 0;
     } finally {
