@@ -1,0 +1,213 @@
+[
+ {
+  "id": "n-100",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "cuanto nos deben en total",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "por_cobrar"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "consulta",
+      "consulta": "cartera"
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "n-101",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "por cobrar",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "por_cobrar"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "consulta",
+      "consulta": "cartera"
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "n-102",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "que pedidos vencen esta semana",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "vencimientos"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-103",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "quienes ya estan vencidos",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "vencimientos"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "consulta",
+      "consulta": "cartera"
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "n-104",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "que se esta vendiendo mas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "que_se_vende"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-105",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "lo mas vendido del mes",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "que_se_vende",
+     "periodo": "mes"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-106",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "cuanto debemos a proveedores",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "por_pagar"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-107",
+  "categoria": "consultas",
+  "autor": "angelo",
+  "texto": "como estamos",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "valuacion"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-108",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "cuanto me debe Memo Ficticio",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "saldo",
+     "sujeto": "memo ficticio"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-109",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "cuanto hay de orbita 20k",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "inventario",
+     "modelo": "orbita 20k"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-110",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "estado de cuenta de Javier",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "estado_cuenta_socio",
+     "sujeto": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-111",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "cuanto traigo de utilidad este mes",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "utilidad",
+     "periodo": "mes"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-112",
+  "categoria": "consultas",
+  "autor": "javier",
+  "texto": "me cuadras las cuentas",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "consulta",
+     "consulta": "cuadra"
+    }
+   ]
+  }
+ }
+]

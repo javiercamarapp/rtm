@@ -1,0 +1,218 @@
+[
+ {
+  "id": "n-143",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "apuntale 30 zafiro 5k mora azul a Lupita Muestra, me paga el viernes",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "lupita muestra",
+     "plazo": [
+      "viernes"
+     ],
+     "lineas": [
+      {
+       "m": "zafiro 5k",
+       "s": "mora azul",
+       "n": 30
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-144",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "pasale 40 nimbo 50k sandia hielo a Cliente Beta, fiado",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "cliente beta",
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "sandia hielo",
+       "n": 40
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-145",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "ya cayo la lana de Cliente Sur, 18,000",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago",
+     "cliente": "cliente sur",
+     "monto_pesos": 18000
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-146",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "me aventaron 9,500 los de Tienda La Esquina",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago",
+     "cliente": "tienda la esquina",
+     "monto_pesos": 9500
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-147",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "uber 250, lo pague yo",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "uber",
+     "monto_pesos": 250,
+     "pagado_por": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-148",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "la guia me salio en 380",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "gasto",
+     "gasto": "guia",
+     "monto_pesos": 380,
+     "pagado_por": "javier"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-149",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "ya llego lo de Karen a Merida",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra_estado",
+     "estado": "llego_merida"
+    }
+   ],
+   "alternativas": [
+    [
+     {
+      "tipo": "aclarar"
+     }
+    ]
+   ]
+  }
+ },
+ {
+  "id": "n-150",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "ya llego completa la C-0009",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "compra_recepcion",
+     "folio": "C-0009"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-151",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "tumba el pedido P-0044, el cliente ya no quiere",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido_cancelar",
+     "folio": "P-0044"
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-152",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "meti 15 mil pa la causa",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "aportacion",
+     "socio": "javier",
+     "monto_pesos": 15000
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-153",
+  "categoria": "jerga",
+  "autor": "angelo",
+  "texto": "ya salio lo de Cliente Norte, 12 nimbo 50k mango y 12 nimbo 50k uva, apuntalo a 8 dias",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pedido",
+     "cliente": "cliente norte",
+     "plazo": [
+      "8 dias"
+     ],
+     "lineas": [
+      {
+       "m": "nimbo 50k",
+       "s": "mango",
+       "n": 12
+      },
+      {
+       "m": "nimbo 50k",
+       "s": "uva",
+       "n": 12
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "n-154",
+  "categoria": "jerga",
+  "autor": "javier",
+  "texto": "le mande 5 mil a Isaac, de la sociedad",
+  "esperado": {
+   "acciones": [
+    {
+     "tipo": "pago_proveedor",
+     "proveedor": "isaac",
+     "monto_pesos": 5000,
+     "pagado_por": "sociedad"
+    }
+   ]
+  }
+ }
+]

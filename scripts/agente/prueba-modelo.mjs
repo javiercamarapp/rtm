@@ -11,12 +11,14 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 import { cifrasDeIntencion, cifrasDePrecios } from '../../src/aplicacion/agente/agente.ts';
-import { MAX_TOKENS_SALIDA_R1, SISTEMA_R1, VERSION_PROMPT, construirUsuarioR1, estimarTokensSolicitud } from '../../src/aplicacion/agente/prompt.ts';
+import { MAX_TOKENS_SALIDA_R1, SISTEMA_R1, VERSION_PROMPT, construirUsuarioR1, estimarTokensSolicitud, maxTokensSalidaPara } from '../../src/aplicacion/agente/prompt.ts';
 import { esquemaJsonDeRespuesta, validarRespuesta } from '../../src/aplicacion/agente/esquemas.ts';
 import { crearClienteOpenRouter } from '../../src/infra/agente/openrouter.ts';
 import { MODELOS, cadenaParaRol } from '../../src/dominio/agente/modelos.ts';
 import { detectarInyeccion } from '../../src/dominio/agente/entrada.ts';
-import { esMontoAmbiguo, valoresDeTexto } from '../../src/dominio/agente/cifras.ts';
+import { formaPagoEfectiva } from '../../src/dominio/agente/forma_pago.ts';
+import { cifrasSinProcedencia, esMontoAmbiguo, valoresDeTexto } from '../../src/dominio/agente/cifras.ts';
+import { foliosSinProcedencia, montosQueSeRepiten, textosConCifraAjena } from '../../src/dominio/agente/guardia_ampliada.ts';
 import { normalizar } from '../../src/dominio/catalogo/normalizar.ts';
 import { ErrorLlm } from '../../src/aplicacion/agente/puertos.ts';
 
@@ -33,7 +35,9 @@ const RAIZ_REPO = path.resolve(aqui, '..', '..');
 if (SALIDA === RAIZ_REPO || SALIDA.startsWith(RAIZ_REPO + path.sep)) throw new Error(`--salida no puede estar dentro del repo (${RAIZ_REPO}): los resultados llevan respuestas del modelo y no se versionan.`);
 fs.mkdirSync(SALIDA, { recursive: true });
 const TOPE_USD = Number(args.tope ?? 4);
-const MAX_SALIDA = Number(args['max-salida'] ?? MAX_TOKENS_SALIDA_R1);
+// Sin tope oculto de tokens: por omision la salida es proporcional al mensaje (maxTokensSalidaPara); --max-salida fija un valor.
+const MAX_SALIDA_FIJO = args['max-salida'] ? Number(args['max-salida']) : null;
+const MAX_SALIDA = MAX_SALIDA_FIJO ?? MAX_TOKENS_SALIDA_R1; // solo para --cadena-viva; las llamadas del banco usan maxTokensSalidaPara
 const CONCURRENCIA = 3;
 const PROVEEDORES = String(args.proveedores ?? 'haiku,luna,deepseek').split(',');
 // DeepSeek solo corre con endpoints de EE.UU. (lista blanca); el codigo de produccion hoy NO inyecta esta lista, asi que alli se omite (falla cerrado).
@@ -69,6 +73,7 @@ const n = (s) => normalizar(String(s ?? ''));
 const casan = (esp, real) => {
   const a = n(esp);
   const b = n(real);
+  if (a === '') return b === ''; // esperado null: el real tambien debe ser null
   return a === b || (b !== '' && (a.includes(b) || b.includes(a)));
 };
 
@@ -82,7 +87,7 @@ function vista(a) {
     piezas: a.piezas ?? null,
     monto_usd: typeof a.monto_usd_centavos === 'number' ? a.monto_usd_centavos / 100 : null,
     lineas,
-    plazo: a.cuando_texto ?? null,
+    plazo: a.cuando_texto ?? a.plazo_texto ?? null,
     origen: a.proveedor_origen ?? null,
     folio: a.pedido_folio ?? a.compra_folio ?? a.folio ?? null,
     consulta: a.consulta ?? null,
@@ -97,8 +102,30 @@ function vista(a) {
     servicio: a.servicio_texto ?? null,
     socio: a.socio ?? null,
     intencion: a.intencion ?? null,
+    // Intenciones ampliadas (carril interprete)
+    // forma de pago EFECTIVA: la que dijo el socio, o la que el codigo deriva del plazo ("a 8 dias" = credito)
+    forma_pago: a.tipo === 'pedido_ds' ? formaPagoEfectiva(a, new Date('2026-11-14T18:00:00Z')) : (a.forma_pago ?? null),
+    paqueteria: a.paqueteria ?? null,
+    folios: Array.isArray(a.folios) ? a.folios : null,
+    guias: Array.isArray(a.guias) ? a.guias.map((g) => [g.pedido_folio ?? null, g.guia_texto]) : null,
+    destino: a.destino ?? null,
+    via: a.via ?? null,
+    de_socio: a.de_socio ?? null,
+    a_socio: a.a_socio ?? null,
+    respuesta: a.respuesta ?? null,
+    clase: a.clase ?? null,
+    alias: a.alias_texto ?? null,
+    oficial: a.oficial_texto ?? null,
+    campo: a.campo ?? null,
+    valor: a.valor_texto ?? null,
+    marca: a.marca_texto ?? null,
+    costo_pesos: typeof a.costo_centavos === 'number' ? a.costo_centavos / 100 : null,
+    envio_pesos: typeof a.envio_cobrado_centavos === 'number' ? a.envio_cobrado_centavos / 100 : null,
+    folio_proveedor: a.folio_proveedor_texto ?? null,
   };
 }
+
+const normFolio = (f) => String(f ?? '').toLowerCase().replace(/\s+/g, '').replace(/^([a-z]+)-?0*(\d+)$/, '$1-$2');
 
 function cmpLineas(esp, real) {
   const usadas = new Set();
@@ -117,12 +144,27 @@ function compararAccion(esp, real) {
   const fallas = [];
   const fino = {};
   for (const [k, v] of Object.entries(esp)) {
-    if (['tipo', 'sin_destinatario', 'plazo_sin_campo', 'sin_fecha', 'parcial_ok', 'lineas', 'plazo', 'origen'].includes(k)) continue;
+    if (['tipo', 'sin_destinatario', 'plazo_sin_campo', 'sin_fecha', 'parcial_ok', 'lineas', 'plazo', 'origen', 'paqueteria', 'forma_pago', 'folios', 'guias'].includes(k)) continue;
     const r = real[k];
     if (typeof v === 'number') { if (typeof r !== 'number' || Math.abs(r - v) > 0.005) fallas.push(`${k}: esp ${v} real ${r}`); }
     else if (!casan(v, r)) fallas.push(`${k}: esp ${v} real ${r}`);
   }
   if (esp.origen !== undefined && esp.origen !== null && real.origen !== esp.origen) fallas.push(`origen: esp ${esp.origen} real ${real.origen}`);
+  if (esp.paqueteria !== undefined && real.paqueteria !== esp.paqueteria) fallas.push(`paqueteria: esp ${esp.paqueteria} real ${real.paqueteria}`);
+  if (esp.forma_pago !== undefined && real.forma_pago !== esp.forma_pago) fallas.push(`forma_pago: esp ${esp.forma_pago} real ${real.forma_pago}`);
+  if (esp.folios) {
+    const a = esp.folios.map(normFolio).sort().join(',');
+    const b = (real.folios ?? []).map(normFolio).sort().join(',');
+    if (a !== b) fallas.push(`folios: esp ${a} real ${b}`);
+  }
+  if (esp.guias) {
+    const clave = (g) => `${g[0] === null ? '' : normFolio(g[0])}|${n(g[1])}`;
+    const a = esp.guias.map(([f, g]) => `${f === null ? '' : normFolio(f)}|${n(g)}`).sort().join(';');
+    const b = (real.guias ?? []).map(clave).sort().join(';');
+    // un esperado sin folio (cliente) solo compara la guia
+    const soloGuia = (x) => x.split(';').map((t) => t.split('|')[1]).sort().join(';');
+    if (esp.guias.some(([f]) => f === null) ? soloGuia(a) !== soloGuia(b) : a !== b) fallas.push(`guias: esp ${a} real ${b}`);
+  }
   if (esp.lineas) {
     const c = cmpLineas(esp.lineas, real.lineas);
     fino.lineas = c.recall === 1 && c.sobran === 0;
@@ -191,30 +233,37 @@ function evaluar(caso, acciones, sospechaModelo) {
   return salida;
 }
 
-/** Guardia de cifras tal como la aplica agente.ts, separando alucinacion de error de escala (pesos en lugar de centavos). */
+/**
+ * Guardia de cifras tal como la aplica agente.ts (procedencia LIGADA a clase y escala), separando alucinacion de error de escala (pesos en lugar de centavos).
+ * `dinero_inventado` cuenta SOLO los campos de dinero sin procedencia: el criterio del dueno es 0.
+ */
 function auditarCifras(texto, acciones) {
   const enFuente = valoresDeTexto(texto);
-  const enPiezas = valoresDeTexto(texto, { paraPiezas: true });
   const textoPlano = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const r = { inventadas: [], escala: [], precios: [], ambiguas: [], ajenas_estricto: [] };
+  const enPiezas = valoresDeTexto(texto, { paraPiezas: true });
+  const r = { inventadas: [], escala: [], precios: [], ambiguas: [], ajenas_estricto: [], dinero_inventado: [], folios: [], textos: [], a_repetir: [] };
   for (const a of acciones) {
-    for (const c of cifrasDeIntencion(a)) {
-      if ((c.esPiezas ? enPiezas : enFuente).has(c.valor)) {
+    const cifras = cifrasDeIntencion(a);
+    for (const c of cifras) {
+      if (cifrasSinProcedencia(texto, [c]).length === 0) {
         if (c.esDinero && esMontoAmbiguo(texto, c.valor)) r.ambiguas.push(c.campo);
         continue;
       }
       // Error de escala: el modelo escribio pesos donde iban centavos (valor*100 si esta en el mensaje) o al reves.
-      if (enFuente.has(c.valor * 100n) || (c.valor % 100n === 0n && enFuente.has(c.valor / 100n))) r.escala.push(`${c.campo}=${c.valor}`);
-      else r.inventadas.push(`${c.campo}=${c.valor}`);
+      if (enFuente.has(c.valor * 100n) || (c.valor % 100n === 0n && enFuente.has(c.valor / 100n))) r.escala.push(`${a.tipo}.${c.campo}=${c.valor}`);
+      else r.inventadas.push(`${a.tipo}.${c.campo}=${c.valor}`);
+      if (c.esDinero) r.dinero_inventado.push(`${a.tipo}.${c.campo}=${c.valor}`);
     }
     r.precios.push(...cifrasDePrecios(a, texto));
-    // Regla estricta pedida: ningun numero en la salida sin presencia en el mensaje (se mira toda hoja numerica y los digitos de textos libres).
+    r.folios.push(...foliosSinProcedencia(a, texto).map((x) => `${a.tipo}.${x}`));
+    r.textos.push(...textosConCifraAjena(a, texto).map((x) => `${a.tipo}.${x}`));
+    r.a_repetir.push(...montosQueSeRepiten(texto, cifras).map((x) => `${a.tipo}.${x.campo}`));
+    // Regla estricta: ningun numero en la salida sin presencia en el mensaje (se mira toda hoja numerica y los digitos de textos libres).
     const visitar = (k, v) => {
       if (typeof v === 'number') {
         const big = BigInt(Math.round(v));
         if (!enFuente.has(big) && !enPiezas.has(big * 100n)) r.ajenas_estricto.push(`${a.tipo}.${k}=${v}`);
       } else if (typeof v === 'string' && !['fuente_cita', 'pregunta'].includes(k)) {
-        // Texto libre (modelo_texto, cliente_texto...): sus digitos deben estar tal cual en el mensaje ("Zafiro 5K" copia el 5 del nombre del modelo, no es una cantidad).
         for (const m of v.matchAll(/\d[\d.,]*/g)) {
           if (!textoPlano.includes(m[0].replace(/[.,]+$/, ''))) r.ajenas_estricto.push(`${a.tipo}.${k}="${m[0]}"`);
         }
@@ -229,7 +278,8 @@ function auditarCifras(texto, acciones) {
 async function llamar(proveedor, caso, { slugsOverride, usuarioExtra = '' } = {}) {
   const m = MODELOS[proveedor];
   const esquema = esquemaJsonDeRespuesta({ sinRangos: args.esquema === "ligero" });
-  const usuario = construirUsuarioR1({ autor: caso.autor, fuente: 'texto', texto: caso.texto, clientes: CLIENTES, modelos: MODELOS_CAT }) + usuarioExtra;
+  const usuario = construirUsuarioR1({ autor: caso.autor, fuente: caso.fuente ?? 'texto', texto: caso.texto, clientes: CLIENTES, modelos: MODELOS_CAT, preguntaPendiente: caso.pendiente ?? null }) + usuarioExtra;
+  const MAX_SALIDA = MAX_SALIDA_FIJO ?? maxTokensSalidaPara(usuario);
   const captura = { estado: null, cuerpo: null, ms: null, error: null };
   const cliente = crearClienteOpenRouter({
     apiKey: llave,
@@ -275,7 +325,7 @@ async function llamar(proveedor, caso, { slugsOverride, usuarioExtra = '' } = {}
     const acciones = Array.isArray(resp.contenido?.acciones) ? resp.contenido.acciones : [];
     reg.evaluacion = evaluar(caso, acciones, resp.contenido?.sospecha_inyeccion === true);
     // Como en produccion, las guardias de cifras corren sobre una respuesta que ya paso zod; si zod la rechaza no hay cifras que auditar (el agente reintenta una vez con los errores).
-    reg.cifras = v.ok ? auditarCifras(caso.texto, acciones) : { inventadas: [], escala: [], precios: [], ambiguas: [], ajenas_estricto: [] };
+    reg.cifras = v.ok ? auditarCifras(caso.texto, acciones) : { inventadas: [], escala: [], precios: [], ambiguas: [], ajenas_estricto: [], dinero_inventado: [], folios: [], textos: [], a_repetir: [] };
   } else {
     reg.zod_ok = false;
   }
@@ -332,6 +382,9 @@ function resumir(regs) {
       campos_ok: pct(conCampos.filter((r) => r.evaluacion.campos_ok).length, conCampos.length),
       inyeccion_marcada: pct(iny.filter((r) => r.evaluacion.inyeccion_ok).length, iny.length),
       cifras_inventadas_antes_de_guardia: conResp.reduce((s, r) => s + r.cifras.inventadas.length, 0),
+      cifras_de_dinero_inventadas: conResp.reduce((s, r) => s + (r.cifras.dinero_inventado?.length ?? 0), 0),
+      folios_inventados: conResp.reduce((s, r) => s + (r.cifras.folios?.length ?? 0), 0),
+      textos_con_cifra_ajena: conResp.reduce((s, r) => s + (r.cifras.textos?.length ?? 0), 0),
       errores_de_escala_pesos_por_centavos: conResp.reduce((s, r) => s + r.cifras.escala.length, 0),
       precios_sin_procedencia: conResp.reduce((s, r) => s + r.cifras.precios.length, 0),
       cifras_ajenas_regla_estricta: conResp.reduce((s, r) => s + r.cifras.ajenas_estricto.length, 0),
@@ -354,7 +407,7 @@ function resumir(regs) {
 // ------------------------------------------------------------------ principal
 const ARCH_RES = path.join(SALIDA, 'resultados.jsonl');
 const previos = fs.existsSync(ARCH_RES) && !args.nuevo ? fs.readFileSync(ARCH_RES, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
-const clave = (r) => `${r.proveedor}|${r.id}|${r.version_prompt}|${r.max_salida}`;
+const clave = (r) => `${r.proveedor}|${r.id}|${r.version_prompt}`;
 const hechos = new Set(previos.map(clave));
 const nuevos = [];
 
@@ -389,7 +442,7 @@ if (args['cadena-viva']) {
 for (const proveedor of PROVEEDORES) {
   if (!MODELOS[proveedor]) throw new Error(`proveedor desconocido: ${proveedor}`);
   cadenaParaRol('texto'); // valida politica
-  const tareas = banco.filter((c) => !hechos.has(clave({ proveedor, id: c.id, version_prompt: VERSION_PROMPT, max_salida: MAX_SALIDA })));
+  const tareas = banco.filter((c) => !hechos.has(clave({ proveedor, id: c.id, version_prompt: VERSION_PROMPT })));
   console.log(`[${proveedor}] ${tareas.length} llamadas pendientes de ${banco.length} (gasto acumulado US$${gasto.total_usd.toFixed(4)} de tope US$${TOPE_USD})`);
   await pool(tareas, args.humo ? 1 : CONCURRENCIA, async (caso) => {
     const reg = await llamarConReintento(proveedor, caso);
@@ -401,8 +454,8 @@ for (const proveedor of PROVEEDORES) {
   if (excedido()) { console.log(`TOPE ALCANZADO: US$${gasto.total_usd.toFixed(4)} >= US$${TOPE_USD}. Abortando.`); break; }
 }
 
-const todosRegs = [...previos, ...nuevos].filter((r) => banco.some((c) => c.id === r.id) && r.version_prompt === VERSION_PROMPT && r.max_salida === MAX_SALIDA);
+const todosRegs = [...previos, ...nuevos].filter((r) => banco.some((c) => c.id === r.id) && r.version_prompt === VERSION_PROMPT);
 const resumen = resumir(todosRegs);
-fs.writeFileSync(path.join(SALIDA, `resumen-${VERSION_PROMPT}-s${MAX_SALIDA}.json`), JSON.stringify(resumen, null, 1));
+fs.writeFileSync(path.join(SALIDA, `resumen-${VERSION_PROMPT}.json`), JSON.stringify(resumen, null, 1));
 console.log(JSON.stringify(resumen, null, 1));
 console.log(`GASTO REAL ACUMULADO: US$${gasto.total_usd.toFixed(5)} en ${gasto.llamadas} llamadas`);
