@@ -23,3 +23,17 @@
 /* La pagina es una rejilla de una columna: sin minmax(0, 1fr) un hijo ancho (formulario, texto copiable) ensancha toda la pagina en movil. */
 .rtm-pagina-v2 { grid-template-columns: minmax(0, 1fr); }
 .rtm-texto-copiable { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Pedidos: desglose compacto Bodega / Dropshipping (filtra la lista). */
+.rtm-desglose-ped { overflow-x: auto; border: 1px solid var(--rtm-borde-control); border-radius: var(--rtm-r-pildora); }
+.rtm-desglose-ped table { width: 100%; border-collapse: collapse; font-size: var(--rtm-t-pequeno); }
+.rtm-desglose-ped th, .rtm-desglose-ped td { padding: 3px 10px; text-align: left; white-space: nowrap; }
+.rtm-desglose-ped th.rtm-num, .rtm-desglose-ped td.rtm-num { text-align: right; }
+.rtm-desglose-ped thead th { font-size: var(--rtm-t-micro); letter-spacing: 0.04em; text-transform: uppercase; color: var(--rtm-ink-3); font-weight: 500; }
+.rtm-desglose-ped tbody { border-top: 1px solid var(--rtm-borde-control); }
+.rtm-desglose-grupo > th, .rtm-desglose-grupo > td { font-weight: 600; }
+.rtm-desglose-fila > th { padding-left: 22px; font-weight: 400; }
+.rtm-desglose-ped small { color: var(--rtm-ink-3); font-size: var(--rtm-t-micro); }
+.rtm-desglose-ped a { color: var(--rtm-ink); text-decoration: none; }
+.rtm-desglose-ped a:hover { text-decoration: underline; }
+.rtm-desglose-ped a[aria-current='true'] { text-decoration: underline; text-underline-offset: 3px; font-weight: 700; }

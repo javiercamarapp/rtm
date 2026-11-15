@@ -93,7 +93,7 @@ export default async function PaginaDropshipping({ searchParams }: { searchParam
           filas={r.por_origen}
           totales={{ etiqueta: 'Total', celdas: { p: String(total((c) => BigInt(c.pedidos))), z: formatearPiezas(Number(total((c) => BigInt(c.piezas)))), v: cif('venta', 'todos', formatearMoneda(total((c) => c.venta_cent))), c: cif('costo', 'todos', formatearMoneda(total((c) => c.costo_cent))), m: cif('margen', 'todos', formatearMoneda(total((c) => c.margen_cent))), x: formatearMoneda(total((c) => c.por_cobrar_cent)) } }}
           columnas={[
-            { id: 'o', titulo: 'Origen', prioridadMovil: 'titulo', ancho: 'xl', celda: (c) => <Link href={c.origen_surtido === 'dropshipping' ? '/dropshipping/pedidos' : '/pedidos?origen=inventario'}>{ORIGEN_SURTIDO[c.origen_surtido]}</Link> },
+            { id: 'o', titulo: 'Origen', prioridadMovil: 'titulo', ancho: 'xl', celda: (c) => <Link href={c.origen_surtido === 'dropshipping' ? '/dropshipping/pedidos' : '/pedidos?surtido=inventario_merida'}>{ORIGEN_SURTIDO[c.origen_surtido]}</Link> },
             { id: 'p', titulo: 'Pedidos', numerica: true, ancho: 's', prioridadMovil: 'normal', celda: (c) => String(c.pedidos) },
             { id: 'z', titulo: 'Piezas', numerica: true, ancho: 's', prioridadMovil: 'normal', celda: (c) => formatearPiezas(c.piezas) },
             { id: 'v', titulo: 'Venta', numerica: true, ancho: 'm', prioridadMovil: 'principal', celda: (c) => cif('venta', c.origen_surtido, formatearMoneda(c.venta_cent)) },
