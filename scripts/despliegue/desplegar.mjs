@@ -130,7 +130,8 @@ console.log(`\nAlias actual: ${hostDe(URL_PROD)} -> ${previo?.host ?? 'desconoci
 
 // 5. Build local y despliegue sin Git (0 builds de Vercel).
 paso('Traer ajustes de produccion', 'vercel', ['pull', '--yes', '--environment', 'production', '--scope', SCOPE], { stdio: ['ignore', 'ignore', 'inherit'] });
-paso('Build local (vercel build --prod)', 'vercel', ['build', '--prod', '--scope', SCOPE]);
+// El ~/.npmrc del usuario puede traer `allow-scripts`, que npm 11 rechaza en instalaciones de proyecto (EALLOWSCRIPTS) y rompe `vercel build`: el build ignora la config de usuario.
+paso('Build local (vercel build --prod)', 'vercel', ['build', '--prod', '--scope', SCOPE], { env: { ...process.env, NPM_CONFIG_USERCONFIG: '/dev/null' } });
 console.log('\n== Despliegue prebuilt');
 const dep = sh('vercel', ['deploy', '--prebuilt', '--prod', '--scope', SCOPE]);
 const nuevo = extraerUrlDespliegue(dep.stdout, dep.stderr);
