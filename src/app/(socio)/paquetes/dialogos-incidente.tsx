@@ -128,7 +128,7 @@ export function DialogoResolver({ incidente }: { incidente: Pick<IncidentePaquet
         <ConfirmDialog abierto={abierto} titulo={`Resolver ${incidente.folio}`} confirmar="Resolver" ocupado={ocupado} onConfirmar={confirmar} onCancelar={() => { setAbierto(false); setLocal(null); limpiarError(); }}>
           <label className="rtm-etiqueta-campo">Quién absorbe la pérdida
             <select className="rtm-campo" value={resp} onChange={(e) => setResp(e.target.value)} aria-label="Responsable">
-              <option value="sociedad">La sociedad (pérdida 50/50 en la utilidad)</option>
+              <option value="sociedad">La sociedad (pérdida en la utilidad)</option>
               <option value="socio">Un socio (le queda por cobrar)</option>
               {!salida && <option value="proveedor">El proveedor (reclamo)</option>}
               {salida && <option value="cliente">El cliente (no cambia nada)</option>}

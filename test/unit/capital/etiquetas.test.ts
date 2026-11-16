@@ -40,7 +40,7 @@ describe('etiquetas de capital (decision del dueno, 13-nov)', () => {
     expect(textoTurno('Javier', 1n, f)).not.toMatch(/deb|adeud|deuda/i);
   });
   it('la nota dice que aportar mas no da mas participacion y que la diferencia no es deuda', () => {
-    expect(NOTA_IGUALACION).toContain('siempre 50/50');
+    expect(NOTA_IGUALACION).not.toMatch(/50 ?\/ ?50|50 ?%/);
     expect(NOTA_IGUALACION).toContain('no da más participación');
     expect(NOTA_IGUALACION).toContain('no es una deuda ni un reembolso a favor del otro');
   });

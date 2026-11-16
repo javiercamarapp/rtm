@@ -56,7 +56,7 @@ export async function pdfActaCorte(c: CierreReparto, sello: SelloActa | null = n
         h.texto(socio, M, 11, { fuente: f.negrita });
         h.bajar(14);
         fila('Reembolso recibido', formatearMoneda(x.paga_reembolso_cent));
-        fila('Su parte de la utilidad (50/50 fijo)', formatearMoneda(x.utilidad_cent));
+        fila('Su parte de la utilidad', formatearMoneda(x.utilidad_cent));
         fila('Retira', formatearMoneda(d.retira));
         fila('Reinvierte (queda como inversion suya)', formatearMoneda(d.reinvierte));
         h.bajar(6);
@@ -80,7 +80,7 @@ export async function pdfActaCorte(c: CierreReparto, sello: SelloActa | null = n
       if (k.sin_valuacion) fila('ATENCION: sellada sin valuacion', k.motivo_sin_valuacion ?? 'sin motivo registrado');
       if (k.capital_contable_cent !== null) {
         fila('Capital contable al corte', formatearMoneda(k.capital_contable_cent), true);
-        for (const socio of Object.keys(k.valor_participacion_cent ?? {}).sort()) fila(`Valuacion personal de ${socio} (capital aportado + su 50 % de la utilidad - fondos en su poder)`, formatearMoneda(k.valor_participacion_cent![socio]!));
+        for (const socio of Object.keys(k.valor_participacion_cent ?? {}).sort()) fila(`Valuacion personal de ${socio} (capital aportado + su parte de la utilidad - fondos en su poder)`, formatearMoneda(k.valor_participacion_cent![socio]!));
       } else fila('Capital contable al corte', 'Sin dato');
       for (const socio of Object.keys(k.por_socio).sort()) {
         const x = k.por_socio[socio]!;

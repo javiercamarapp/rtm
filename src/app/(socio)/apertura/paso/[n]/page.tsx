@@ -155,7 +155,7 @@ export default async function PaginaPaso({ params }: { params: Promise<{ n: stri
             Activo menos pasivo menos capital es la diferencia: {formatearMoneda(v.puente_cent)}. {v.puente_cent === 0n ? 'La apertura cuadra sin diferencia.' : 'Queda en la cuenta puente 3990 hasta que los dos socios firmen una resolución.'}
           </p>
           {v.alertas.map((a) => <Aviso key={a} tono="atencion">{a}</Aviso>)}
-          <p className="rtm-nota">Resolución actual: <strong>{v.resolucion === 'mantener' ? 'mantener la diferencia en la cuenta 3990' : 'repartirla al capital 50/50'}</strong>{v.exige_justificacion ? ' · exige justificación escrita' : ''}.</p>
+          <p className="rtm-nota">Resolución actual: <strong>{v.resolucion === 'mantener' ? 'mantener la diferencia en la cuenta 3990' : 'repartirla al capital'}</strong>{v.exige_justificacion ? ' · exige justificación escrita' : ''}.</p>
           {editable && <Resolucion sesion={s.id} resolucion={s.resolucion} justificacion={s.justificacion} />}
         </Tarjeta>
         <Tarjeta plana titulo="Vista previa del asiento (no escribe)">

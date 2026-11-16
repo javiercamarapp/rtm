@@ -116,7 +116,7 @@ export default async function PaginaBalance({ searchParams }: { searchParams: Pr
             {tabla('capital', 'Capital', b.total_capital_cent, hayPrev ? p!.total_capital_cent : null, b.total_activo_cent, 'balance-capital', false)}
           </Rejilla>
           {val && val.cuenta.hay_movimientos && (
-            <Tarjeta plana titulo="Capital contable por socio" descripcion={`Al ${etiquetaFecha(hasta)}: cada socio con su capital aportado, sus utilidades acumuladas (siempre 50 % y 50 %) y sus retiros`} acciones={<Link className="rtm-boton" href="/socios">Cuenta de socios</Link>}>
+            <Tarjeta plana titulo="Capital contable por socio" descripcion={`Al ${etiquetaFecha(hasta)}: cada socio con su capital aportado, sus utilidades acumuladas y sus retiros`} acciones={<Link className="rtm-boton" href="/socios">Cuenta de socios</Link>}>
               <div data-testid="balance-capital-socios">
                 <DataTable
                   etiqueta="Capital contable por socio" densidad="densa" plana clave={(f) => f.clave} filas={filasCapitalPorSocio(val.cuenta, val.yo)}

@@ -75,12 +75,12 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
               { id: 'u', etiqueta: 'Utilidad neta del periodo', testid: 'acta-utilidad', valor: <CifraComprobada texto={m(c.utilidad_cent, c.utilidad_cent < 0n)} cifra={`cascada:utilidad:${c.periodo_ini}:${c.periodo_fin}`} comprobacion={estadoComprobacion(d.utilidad_cuadra)} />, categoria: 2, nota: c.utilidad_provisional ? 'Provisional' : `Arrastre previo ${m(c.arrastre_ini_cent, c.arrastre_ini_cent < 0n)}` },
               { id: 're', etiqueta: 'Reembolsos pagados', valor: m(s.reembolsos.pagado_cent), categoria: 6, nota: `Pendientes ${m(s.reembolsos.pendiente_cent)}` },
               { id: 'ef', etiqueta: 'Efectivo de la sociedad', valor: m(s.efectivo.total_cent), categoria: 1, nota: s.limitado_por_efectivo ? 'Reparto limitado por el efectivo' : `Comprometido ${m(s.efectivo.comprometido_cent)}` },
-              { id: 'rp', etiqueta: 'Utilidad repartida 50/50', testid: 'acta-repartible', valor: m(s.repartible_cent), categoria: 7, nota: `Pasa al siguiente periodo ${m(c.arrastre_fin_cent, c.arrastre_fin_cent < 0n)}` },
+              { id: 'rp', etiqueta: 'Utilidad repartida', testid: 'acta-repartible', valor: m(s.repartible_cent), categoria: 7, nota: `Pasa al siguiente periodo ${m(c.arrastre_fin_cent, c.arrastre_fin_cent < 0n)}` },
               { id: 'cc', etiqueta: 'Capital contable al corte', valor: k?.capital_contable_cent == null ? null : m(k.capital_contable_cent), categoria: 4, nota: k ? `Al ${etiquetaFecha(k.al_corte ?? c.periodo_fin)}, sellado` : 'Se sella al cerrarse el acta' },
               { id: 'va', etiqueta: 'Valuación personal de Angelo', valor: k?.valor_participacion_cent == null ? null : m(k.valor_participacion_cent.Angelo!), categoria: 5, nota: k?.valor_participacion_cent == null ? 'Al corte del acta' : `Javier ${m(k.valor_participacion_cent.Javier!)} · al corte, la misma de Capital por mes` },
             ]}
           />
-          <Tarjeta plana titulo="Por socio" descripcion="Su parte 50/50, lo que retira y lo que reinvierte; la reinversión queda como inversión suya">
+          <Tarjeta plana titulo="Por socio" descripcion="Su parte, lo que retira y lo que reinvierte; la reinversión queda como inversión suya">
             <div className="rtm-actas-tabla">
             <DataTable
               etiqueta="Acta por socio" densidad="densa" plana primeraFija clave={(f) => f.nombre} filas={filas}
@@ -88,7 +88,7 @@ export default async function PaginaActa({ params }: { params: Promise<{ id: str
               columnas={[
                 { id: 's', titulo: 'Socio', ancho: 'm', prioridadMovil: 'titulo' as const, celda: (f) => <Link href={`/socios/${f.nombre}/historial`} data-testid={`acta-historial-${f.nombre}`}>{f.nombre}</Link> },
                 { id: 'rb', titulo: 'Reembolso recibido', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.x?.paga_reembolso_cent ?? 0n) },
-                { id: 'p', titulo: 'Su parte (50/50)', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (f) => m(f.x?.utilidad_cent ?? 0n) },
+                { id: 'p', titulo: 'Su parte', numerica: true, ancho: 'm', prioridadMovil: 'normal' as const, celda: (f) => m(f.x?.utilidad_cent ?? 0n) },
                 { id: 'a', titulo: 'Retiros previos', numerica: true, ancho: 'm', secundaria: true, celda: (f) => m(f.x?.anticipo_cent ?? 0n) },
                 { id: 'd', titulo: 'Disponible', numerica: true, ancho: 'm', celda: (f) => <span className="a3-sin-corte"><CifraComprobada texto={m(f.disp)} cifra={`historial:parte:${c.id}:${f.nombre}`} comprobacion={estadoComprobacion(f.cuadra)} /></span> },
                 { id: 'r', titulo: 'Retira', numerica: true, ancho: 'm', celda: (f) => m(f.dec.retira) },

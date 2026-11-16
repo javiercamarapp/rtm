@@ -39,7 +39,7 @@ export async function pdfHistorialSocio(h: HistorialSocio): Promise<Uint8Array> 
     fila('Retirado total (retiros de utilidad + devolucion de aportaciones)', formatearMoneda(c.retirado_cent));
     fila('Utilidad recibida en actas', formatearMoneda(c.utilidad_asignada_cent));
     fila('Utilidad por distribuir', formatearMoneda(c.utilidad_por_distribuir_cent));
-    fila('Valuacion personal (capital aportado + su 50 % de la utilidad - fondos en su poder)', c.valor_cent === null ? 'Sin dato' : formatearMoneda(c.valor_cent), true);
+    fila('Valuacion personal (capital aportado + su parte de la utilidad - fondos en su poder)', c.valor_cent === null ? 'Sin dato' : formatearMoneda(c.valor_cent), true);
     fila('Aportacion neta (aportado menos fondos en su poder)', formatearMoneda(c.aportacion_neta_cent, { conSigno: true }));
     fila(c.igualados ? 'Aportaciones igualadas' : c.le_toca_aportar ? 'Diferencia a igualar (le toca aportar el siguiente pago)' : 'Diferencia a igualar del otro socio', formatearMoneda(c.diferencia_a_igualar_cent));
     fila('Reembolsos por cobrar', formatearMoneda(c.reembolso_pendiente_cent));
@@ -65,7 +65,7 @@ export async function pdfHistorialSocio(h: HistorialSocio): Promise<Uint8Array> 
     if (actas.length === 0) fila('Sin actas firmadas', '');
     for (const a of actas) fila(`${a.folio} · ${etiquetaFecha(a.periodo_ini)} al ${etiquetaFecha(a.periodo_fin)} · retira ${formatearMoneda(a.retira_cent)} · reinvierte ${formatearMoneda(a.reinvierte_cent)}`, formatearMoneda(a.parte_cent));
 
-    titulo('SU PARTE (50 %) POR MES');
+    titulo('SU PARTE POR MES');
     if (h.meses.length === 0) fila('Sin meses con actividad', '');
     for (const mes of [...h.meses].reverse()) fila(`${mes.ini.slice(0, 7)}${mes.parcial ? ' (en curso)' : ''} · ${mes.pedidos} pedidos`, formatearMoneda(mes.parte_cent, { conSigno: true }));
 

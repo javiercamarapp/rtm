@@ -335,8 +335,8 @@ function paginaCapital(a: Ayuda): PaginaModelo {
     acciones: [],
     graficas: [],
     tablas: [t.capital, t.capitalAcum, t.aportacionNeta, t.fondos, t.proveedores].filter((x): x is NonNullable<typeof x> => x !== undefined),
-    notas: ['La participación es siempre 50/50: la utilidad se reparte por mitades y aportar más no da más participación; el capital solo sube con lo que cada socio declara como inversión o reinversión.', 'Se busca que ambos tengan el mismo dinero invertido y que reinviertan lo mismo cada mes.', 'La utilidad reinvertida cuenta hasta donde la respalda la utilidad calculada; el resto es anticipo al proveedor, no utilidad.'],
-    implicacion: 'Sin retirar y reinvirtiendo, la utilidad retenida sube la valuación de cada socio; la participación sigue siendo 50/50.',
+    notas: ['Aportar más no da más participación; el capital solo sube con lo que cada socio declara como inversión o reinversión.', 'Se busca que ambos tengan el mismo dinero invertido y que reinviertan lo mismo cada mes.', 'La utilidad reinvertida cuenta hasta donde la respalda la utilidad calculada; el resto es anticipo al proveedor, no utilidad.'],
+    implicacion: 'Sin retirar y reinvirtiendo, la utilidad retenida sube la valuación de cada socio.',
     siguiente: 'Aportar el siguiente pago el socio con menos aportación neta, clasificar lo pagado a proveedores y revisar los fondos en poder de un socio.',
     procedencia: procedencia(a, 'libro contable, estado de resultados y balance', null, [], 'Calculado'),
   };
