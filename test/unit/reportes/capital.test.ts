@@ -44,11 +44,11 @@ describe('capital por socio en el reporte mensual', () => {
     expect(texto).not.toContain('retirados por ti');
     expect(texto).toContain('Pago PG-0001 en la cuenta de Javier');
   });
-  it('el acumulado usa los rotulos de la Cuenta de socios y la nota 50/50', () => {
+  it('el acumulado usa los rotulos de la Cuenta de socios y una nota sin la cifra 50/50', () => {
     const pg = construirReporte(conCapital()).paginas.find((x) => x.id === 'capital')!;
     const a = pg.tablas.find((x) => x.id === 'capitalAcum')!;
     expect(a.columnas).toEqual(['Socio', 'Capital aportado', 'Utilidades acumuladas', 'Retirado', 'Fondos de la sociedad en su poder', 'Valuación']);
-    expect(a.nota).toContain('50 % y 50 %');
+    expect(a.nota).not.toMatch(/50 ?\/ ?50|50 ?% y 50/);
   });
   it('trae valuacion, aportaciones, utilidad, reinvertida, retirada, proveedores y por clasificar, sin lenguaje de deuda en los fondos', () => {
     const r = construirReporte(conCapital());
@@ -61,10 +61,10 @@ describe('capital por socio en el reporte mensual', () => {
     const fondos = pg.tablas.find((x) => x.id === 'fondos')!;
     expect(JSON.stringify(fondos, (_k, v) => (typeof v === 'bigint' ? String(v) : v))).not.toMatch(/deb[eo]|adeud|deuda/i);
   });
-  it('el reporte dice a quien le toca aportar, que la participacion es 50/50 y alerta si la reinversion es distinta', () => {
+  it('el reporte dice a quien le toca aportar, y alerta si la reinversion es distinta', () => {
     const texto = reporteATexto(construirReporte(conCapital()));
     expect(texto).toContain('Le toca aportar el siguiente pago: Angelo por $11,240.00');
-    expect(texto).toContain('siempre 50/50');
+    expect(texto).not.toMatch(/50 ?\/ ?50|50 ?% y 50/);
     expect(texto).toContain('Reinversión distinta en el acta: Angelo $5,000.00 y Javier $2,000.00');
     expect(texto).not.toMatch(/% en libros|% de aportaciones/);
   });

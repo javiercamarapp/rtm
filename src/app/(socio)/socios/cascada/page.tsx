@@ -53,7 +53,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
         migaja={{ href: '/socios', texto: 'Cuenta de socios' }}
         eyebrow="Cascada de reparto"
         titulo={`${c.en_vivo ? 'Proyección en vivo del' : 'Reparto del'} ${etiquetaFecha(ini)} al ${etiquetaFecha(fin)}`}
-        descripcion="La empresa paga primero los reembolsos y solo lo que queda se reparte 50/50, limitado por el efectivo."
+        descripcion="La empresa paga primero los reembolsos y solo lo que queda se reparte, limitado por el efectivo."
         acciones={
           <>
             <nav className="rtm-seg" aria-label="Periodo">
@@ -81,7 +81,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
           { id: 'ef', etiqueta: '2. Efectivo disponible', valor: m(c.efectivo.total_cent), categoria: 1, partes: c.efectivo.total_cent > 0n ? [{ etiqueta: 'En poder de los socios', valor: Number(c.efectivo.en_poder_cent) }, { etiqueta: 'En la cuenta de la sociedad', valor: Number(c.efectivo.caja_cent) }] : undefined, nota: c.limitado_por_efectivo ? 'El reparto queda limitado por el efectivo' : `Socios ${m(c.efectivo.en_poder_cent)} · cuenta ${m(c.efectivo.caja_cent)}` },
           { id: 're', etiqueta: 'Reembolsos pagados', valor: m(c.reembolsos.pagado_cent), categoria: 6, progreso: c.reembolsos.pendiente_cent > 0n ? { pct: pct(c.reembolsos.pagado_cent, c.reembolsos.pendiente_cent) ?? 0 } : undefined, nota: `Pendientes ${m(c.reembolsos.pendiente_cent)}` },
           { id: 'ac', etiqueta: 'Utilidad acumulada', valor: m(c.utilidad_acumulada_cent, c.utilidad_acumulada_cent < 0n), categoria: 4, nota: `Periodo ${m(c.utilidad_cent, c.utilidad_cent < 0n)} más arrastre ${m(c.arrastre_ini_cent, c.arrastre_ini_cent < 0n)}` },
-          { id: 'rp', etiqueta: 'Utilidad repartible 50/50', valor: <span data-testid="repartible">{m(c.repartible_cent)}</span>, categoria: 7, nota: `Queda en la sociedad ${m(c.remanente_cent)}` },
+          { id: 'rp', etiqueta: 'Utilidad repartible', valor: <span data-testid="repartible">{m(c.repartible_cent)}</span>, categoria: 7, nota: `Queda en la sociedad ${m(c.remanente_cent)}` },
         ]}
       />
       <p className="rtm-nota" data-testid="efectivo-calculado">Efectivo total (calculado de las cajas, no tecleado): {m(c.efectivo.en_poder_cent)} en poder de los socios + {m(c.efectivo.caja_cent)} en las cajas de efectivo = <strong>{m(c.efectivo.total_cent)}</strong>. Comprometido (proveedores, dinero de clientes sin aplicar y reserva): {m(c.efectivo.comprometido_cent)}. Disponible para repartir: <strong>{m(c.efectivo.disponible_cent)}</strong>.{c.limitado_por_efectivo ? ' El reparto queda limitado por el efectivo.' : ''}</p>
@@ -104,7 +104,7 @@ export default async function PaginaCascada({ searchParams }: { searchParams: Pr
         <Tarjeta titulo="3. Orden de pago con ese efectivo" descripcion="Cada paso se paga con lo que dejó el anterior">
           <ListaClaveValor items={[
             { k: `a. Reembolsos (${m(c.reembolsos.pendiente_cent)} pendientes)`, v: m(c.reembolsos.pagado_cent) },
-            { k: `b. Utilidad repartible 50/50 (el capital aportado, ${m(c.aportaciones.pendiente_cent)}, no se devuelve solo)`, v: m(c.repartible_cent) },
+            { k: `b. Utilidad repartible (el capital aportado, ${m(c.aportaciones.pendiente_cent)}, no se devuelve solo)`, v: m(c.repartible_cent) },
             { k: 'Pasa al siguiente periodo', v: m(c.arrastre_fin_cent, c.arrastre_fin_cent < 0n) },
             { k: 'Efectivo que queda', v: <strong>{m(c.remanente_cent)}</strong> },
           ]} />

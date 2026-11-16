@@ -127,7 +127,7 @@ export interface CuentaSociosValuacion {
 
 export const otroSocio = (s: Socio): Socio => (s === 'Angelo' ? 'Javier' : 'Angelo');
 
-export const TEXTO_VALUACION_SUBE = 'Tu valuación sube con cada utilidad (siempre 50 % y 50 %) y baja solo cuando te pagas un retiro.';
+export const TEXTO_VALUACION_SUBE = 'Tu valuación sube con cada utilidad y baja solo cuando te pagas un retiro.';
 
 type Formato = (c: bigint) => string;
 
@@ -187,7 +187,7 @@ export function desgloseDiferencia(c: CuentaSociosValuacion, formato: Formato): 
       k.id === 'capital' ? `${menor} aportó menos capital (${formato(k.menor_cent)} contra ${formato(k.mayor_cent)})`
       : k.id === 'fondos' ? (pos ? `Fondos de la sociedad cobrados en la cuenta de ${menor}, pendientes de entregar` : `Fondos de la sociedad cobrados en la cuenta de ${mayor}, pendientes de entregar`)
       : k.id === 'retiros' ? (pos ? `${menor} se ha pagado más en retiros (${formato(k.menor_cent)} contra ${formato(k.mayor_cent)})` : `${mayor} se ha pagado más en retiros (${formato(k.mayor_cent)} contra ${formato(k.menor_cent)})`)
-      : 'Centavo suelto del reparto 50/50 de la utilidad';
+      : 'Centavo suelto del reparto de la utilidad';
     return { id: k.id, texto, montoCent: k.monto_cent };
   });
 }

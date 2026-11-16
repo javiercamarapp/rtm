@@ -163,7 +163,7 @@ export default async function PaginaSocios() {
             { id: 'x', titulo: '', ancho: 's', celda: (x) => (x.deshacible ? <BotonAccion chico texto="Deshacer" accion="anular_movimiento_socio" args={{ p_tipo: x.tipo, p_id: x.id }} motivo="Motivo" titulo="Deshacer captura" /> : null) },
           ]}
         />
-        <div className="a3-pie-tarjeta"><Pie>La empresa paga primero: gastos y capital se devuelven antes de repartir la utilidad 50/50.</Pie></div>
+        <div className="a3-pie-tarjeta"><Pie>La empresa paga primero: gastos y capital se devuelven antes de repartir la utilidad.</Pie></div>
       </Tarjeta>
 
       <Tarjeta titulo="Comprobaciones" descripcion="Detalle técnico del libro y la comparación por la compra">

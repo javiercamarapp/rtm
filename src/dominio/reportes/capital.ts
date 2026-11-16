@@ -28,7 +28,7 @@ function tablaAcumulado(p: PeriodoCapital): Tabla {
   return {
     id: 'capitalAcum', titulo: 'Capital acumulado desde el primer movimiento', columnas: COLUMNAS_ACUM,
     filas: [...p.socios.map(fila), [t('Total de los socios'), c(tot.capital_aportado_acum_cent), c(tot.valuacion_libro_cent + ret - tot.capital_aportado_acum_cent), c(ret), c(tot.fondos_en_poder_cent), c(tot.valuacion_cent)]],
-    nota: 'Siempre 50 % y 50 %. La valuación sube con cada utilidad y baja solo cuando un socio se paga un retiro.',
+    nota: 'La valuación sube con cada utilidad y baja solo cuando un socio se paga un retiro.',
   };
 }
 

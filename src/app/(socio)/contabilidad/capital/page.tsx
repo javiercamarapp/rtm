@@ -69,7 +69,7 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
       <Pagina ancho="tablero">
         <EncabezadoPagina eyebrow="Contabilidad · capital por socio" titulo={sd ? 'Todavía no hay capital que mostrar' : `Valuación de ${m(a.total.valuacion_cent)}`}
           descripcion="Por mes y por socio: aportaciones de capital, utilidad generada, reinvertida y retirada, fondos de la sociedad en poder de cada socio y valuación." />
-        <Ayuda resumen="Participación y cuadre">La participación es 50/50 y se busca que ambos tengan el mismo dinero invertido. Cada cifra cuadra contra el Estado de resultados, el Balance y el Libro.</Ayuda>
+        <Ayuda resumen="Participación y cuadre">Se busca que ambos tengan el mismo dinero invertido. Cada cifra cuadra contra el Estado de resultados, el Balance y el Libro.</Ayuda>
         <FiltrosUrl etiquetaAria="Periodo" restablecer="/contabilidad/capital" plegable={{ etiqueta: 'Periodo', activos: desdeP ? 1 : 0 }}>
           <Campo etiqueta="Desde"><input type="date" name="desde" defaultValue={desdeP ?? ''} max={hoyNeg()} /></Campo>
           <Campo etiqueta="Hasta"><input type="date" name="hasta" defaultValue={hastaP} max={hoyNeg()} /></Campo>
@@ -81,7 +81,7 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
             <KpiLinea etiquetaAria="Resumen de capital" celdas={[
               { id: 'v', etiqueta: 'Valuación total', valor: cifra(a.total.valuacion_cent, 'acum', 'valuacion', 'total', a.comprobaciones.find((x) => x.id === 'K1')?.ok), categoria: 1, nota: 'Menos fondos en poder de socios', testid: 'capital-valuacion' },
               { id: 'c', etiqueta: 'Aportaciones de capital', valor: cifra(a.total.aportaciones_capital_cent, 'acum', 'aportaciones', 'total'), categoria: 2, nota: 'Declaradas en el periodo' },
-              { id: 'u', etiqueta: 'Utilidad generada', valor: cifra(a.total.utilidad_generada_cent, 'acum', 'utilidad', 'total', a.comprobaciones.find((x) => x.id === 'K3')?.ok), categoria: 3, nota: '50/50 entre socios' },
+              { id: 'u', etiqueta: 'Utilidad generada', valor: cifra(a.total.utilidad_generada_cent, 'acum', 'utilidad', 'total', a.comprobaciones.find((x) => x.id === 'K3')?.ok), categoria: 3, nota: 'Entre socios' },
               { id: 'r', etiqueta: 'Reinvertida', valor: cifra(a.total.utilidad_reinvertida_cent, 'acum', 'reinvertida', 'total'), categoria: 4, nota: 'Acta y proveedor' },
               { id: 't', etiqueta: 'Retirada', valor: cifra(a.total.utilidad_retirada_cent, 'acum', 'retirada', 'total'), categoria: 5, nota: 'Utilidad sacada' },
               { id: 'f', etiqueta: 'Fondos en poder de socios', valor: cifra(a.total.fondos_en_poder_cent, d.meses.at(-1)?.mes ?? 'acum', 'fondos', 'total'), categoria: 6, nota: 'Al corte' },
@@ -92,13 +92,12 @@ export default async function PaginaCapital({ searchParams }: { searchParams: Pr
               <Tarjeta titulo="Aportaciones, utilidad y valuación" descripcion="Total de los socios al cierre de cada mes">
                 <GraficaCapital puntos={puntos} titulo="Aportaciones de capital, utilidad generada y valuación" descripcion={`Tres columnas por mes, ${puntos.length} ${puntos.length === 1 ? 'mes' : 'meses'}: aportaciones de capital acumuladas, utilidad generada acumulada y valuación al cierre.`} pie={`Periodo ${fecha(d.desde)} al ${fecha(d.hasta)} · Fuente: libro contable`} />
               </Tarjeta>
-              <Tarjeta titulo="Igualación de aportaciones" descripcion="Lo mismo invertido por los dos; participación siempre 50/50">
+              <Tarjeta titulo="Igualación de aportaciones" descripcion="Lo mismo invertido por los dos">
                 <p className="rtm-capital-turno" data-testid="turno-aportar">{sd ? null : <CifraComprobada texto={textoTurno(fin.turno_aportar, fin.diferencia_a_igualar_cent, m)} cifra={id(d.meses.at(-1)?.mes ?? 'acum', 'turno', 'total')} />}</p>
                 <DataTable etiqueta="Valuación y participación por socio" clave={(x) => x.socio} filas={fin.socios} densidad="densa" plana
                   columnas={[
                     { id: 's', titulo: 'Socio', prioridadMovil: 'titulo', celda: (x) => etiquetaSocio(x.socio, mio) },
-                    { id: 'p', titulo: 'Participación', numerica: true, celda: () => '50 %' },
-                    { id: 'v', titulo: 'Valuación', numerica: true, celda: (x) => cifra(x.valuacion_cent, d.meses.at(-1)?.mes ?? 'acum', 'valuacion', x.socio) },
+                                        { id: 'v', titulo: 'Valuación', numerica: true, celda: (x) => cifra(x.valuacion_cent, d.meses.at(-1)?.mes ?? 'acum', 'valuacion', x.socio) },
                     { id: 'i', titulo: 'Valuación si se igualaran las aportaciones (informativa)', etiquetaMovil: 'Si se igualaran', numerica: true, secundaria: true, celda: (x) => m(x.valuacion_si_igualados_cent) },
                   ]} />
                 <p className="rtm-capital-nota" data-testid="nota-igualacion">{NOTA_IGUALACION}</p>

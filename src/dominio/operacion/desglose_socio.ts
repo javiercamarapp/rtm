@@ -63,7 +63,7 @@ export function desglosarSocio(e: EstadoCuentaSocio): Desglose {
       {
         id: 'utilidad', titulo: 'Utilidad que le corresponde',
         lineas: [
-          { id: 'utilidad', etiqueta: 'Utilidad asignada (50 %)', cent: v(e.utilidad_asignada_cent), conSigno: true, explicacion: 'La mitad de la utilidad neta, ya descontados todos los gastos (incluidos los que pagaron los socios), según la cascada de reparto. El redondeo de un centavo va a favor de Javier.', comprobacion: 'sin_comprobar' },
+          { id: 'utilidad', etiqueta: 'Utilidad asignada', cent: v(e.utilidad_asignada_cent), conSigno: true, explicacion: 'Su parte de la utilidad neta, ya descontados todos los gastos (incluidos los que pagaron los socios), según la cascada de reparto. El redondeo de un centavo va a favor de Javier.', comprobacion: 'sin_comprobar' },
         ],
       },
       {

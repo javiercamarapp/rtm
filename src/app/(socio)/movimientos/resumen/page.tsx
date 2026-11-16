@@ -111,7 +111,7 @@ export default async function PaginaResumen({ searchParams }: { searchParams: Pr
           />
         </Tarjeta>
         <Tarjeta plana titulo="Utilidad acumulada por socio" descripcion="Su mitad, lo retirado y lo retenido en su poder">
-          <p className="rtm-nota" data-testid="utilidad-total">Utilidad total acumulada: <strong>{formatearMoneda(utilidad.utilidad_total_cent, { conSigno: true })}</strong>{utilidad.provisional ? ' · incluye pedidos con costo provisional' : ''}. Se reparte 50/50; el centavo impar va a Angelo.</p>
+          <p className="rtm-nota" data-testid="utilidad-total">Utilidad total acumulada: <strong>{formatearMoneda(utilidad.utilidad_total_cent, { conSigno: true })}</strong>{utilidad.provisional ? ' · incluye pedidos con costo provisional' : ''}. El centavo impar del reparto va a Angelo.</p>
           <DataTable
             etiqueta="Utilidad acumulada, retirado y retenido por socio"
             densidad="densa" plana

@@ -117,7 +117,7 @@ export function explicarCapital(d: CapitalPorMes, cifra: string, miSocio: Nombre
       return base(cifra, `Valuación ${quien}, al ${p.fin}`, v, f.valuacion ?? '',
         esTotal ? { via1: 'Valuaciones personales + fondos en poder', v1: v + fondos, via2: 'Capital contable (Balance)', v2: p.balance.total_capital_cent }
                 : { via1: 'Capital + utilidad antes de fondos', v1: libro, via2: 'Inicial + aportaciones + utilidad − retiros', v2: roll, tol: 1n },
-        [lin('Valuación al inicio (antes de fondos)', ini), lin('Aportaciones de capital', suma(filas.map((x) => x.aportaciones_capital_cent))), lin('Su 50 % de la utilidad generada', suma(filas.map((x) => x.utilidad_generada_cent))),
+        [lin('Valuación al inicio (antes de fondos)', ini), lin('Aportaciones de capital', suma(filas.map((x) => x.aportaciones_capital_cent))), lin('Su parte de la utilidad generada', suma(filas.map((x) => x.utilidad_generada_cent))),
          lin('Utilidad retirada', -suma(filas.map((x) => x.utilidad_retirada_cent))), lin('Devoluciones de capital', -suma(filas.map((x) => x.devoluciones_capital_cent))), lin('Redondeo y otros', suma(filas.map((x) => x.otros_cent))),
          lin('Fondos de la sociedad en su poder', -fondos), lin('Valuación al cierre', v),
          lin('Informativa: valuación si se igualaran las aportaciones', suma(filas.map((x) => x.valuacion_si_igualados_cent)))]);

@@ -25,7 +25,7 @@ describe('DialogoResolver', () => {
     const cont = montarEl(<DialogoResolver incidente={{ id: 4, folio: 'PQ-0004', sentido: 'salida' }} />);
     await clic(porTestid(cont, 'resolver-4'));
     expect(cont.textContent).toContain('Quién absorbe la pérdida');
-    expect(cont.textContent).toContain('La sociedad (pérdida 50/50 en la utilidad)');
+    expect(cont.textContent).toContain('La sociedad (pérdida en la utilidad)');
     expect(cont.textContent).not.toContain('El proveedor');
     await confirmar(cont);
     expect(correr).not.toHaveBeenCalled();

@@ -32,7 +32,7 @@ export function Resolucion({ sesion, resolucion, justificacion }: { sesion: numb
       campos={[
         { nombre: 'p_resolucion', etiqueta: 'Resolución', tipo: 'seleccion', defecto: resolucion, opciones: [
           { valor: 'mantener', texto: 'Mantenerla en la cuenta puente 3990' },
-          { valor: 'capital_50_50', texto: 'Repartirla al capital 50/50 (el centavo impar a Angelo)' },
+          { valor: 'capital_50_50', texto: 'Repartirla al capital (el centavo impar a Angelo)' },
         ] },
         { nombre: 'p_justificacion', etiqueta: 'Justificación escrita', tipo: 'texto', defecto: justificacion ?? '', ayuda: 'Obligatoria si la diferencia supera el 0.5 % del activo.' },
       ]}

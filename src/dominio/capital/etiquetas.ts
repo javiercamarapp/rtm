@@ -36,7 +36,7 @@ export function textoTurno(turno: NombreSocio | null, diferenciaCent: bigint, fo
   return turno === null || diferenciaCent === 0n ? 'Igualados' : `Le toca aportar el siguiente pago: ${turno} por ${formato(diferenciaCent)}`;
 }
 
-export const NOTA_IGUALACION = 'La participación es siempre 50/50. Aportar más no da más participación: la diferencia a igualar no es una deuda ni un reembolso a favor del otro, se resuelve con las siguientes aportaciones del que tiene menos, y así ambos tienen el mismo dinero invertido.';
+export const NOTA_IGUALACION = 'Aportar más no da más participación: la diferencia a igualar no es una deuda ni un reembolso a favor del otro, se resuelve con las siguientes aportaciones del que tiene menos, y así ambos tienen el mismo dinero invertido.';
 
 /** Reinversion del mes: igual para los dos o alerta informativa. null = nadie reinvirtio por acta. */
 export function textoReinversion(angeloCent: bigint, javierCent: bigint, formato: (c: bigint) => string): { igual: boolean; texto: string } | null {

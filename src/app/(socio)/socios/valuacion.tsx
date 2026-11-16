@@ -25,7 +25,7 @@ export function TarjetaValuacionSocio({ f, yo }: { f: FilaSocioValuacion; yo: So
       </div>
       <ul className="sv-rubros" aria-label={`Desglose de la valuación de ${f.socio}`}>
         <li><span>Capital aportado ({propio ? 'lo que invertiste' : 'lo que invirtió'})</span><span data-testid={`capital-${f.socio}`}><CifraComprobada texto={m(f.capital_aportado_cent)} cifra={`historial:invertido:${f.socio}`} comprobacion="cuadra" /></span></li>
-        <li><span>Utilidades acumuladas<small>Siempre 50 % y 50 %</small></span><span data-testid={`utilidades-${f.socio}`}><CifraComprobada texto={m(f.utilidades_acumuladas_cent)} cifra={`historial:utilidad:${f.socio}`} comprobacion="cuadra" /></span></li>
+        <li><span>Utilidades acumuladas</span><span data-testid={`utilidades-${f.socio}`}><CifraComprobada texto={m(f.utilidades_acumuladas_cent)} cifra={`historial:utilidad:${f.socio}`} comprobacion="cuadra" /></span></li>
         <li className="sv-resta"><span>Retirado ({propio ? 'lo que te has pagado' : 'lo que se ha pagado'})<small>Resta</small></span><span data-testid={`retirado-${f.socio}`}><CifraComprobada texto={m(f.retirado_cent)} cifra={`historial:retirado:${f.socio}`} comprobacion="cuadra" /></span></li>
         {f.fondos_en_poder_cent > 0n && <li className="sv-resta"><span>Fondos de la sociedad en {ver} poder<small>Resta: dinero de la sociedad que aún no entrega</small></span><span data-testid={`fondos-${f.socio}`}><CifraComprobada texto={m(f.fondos_en_poder_cent)} cifra={`socio:fondos:${f.socio}`} comprobacion="cuadra" /></span></li>}
         <li className="sv-total"><span>Valuación actual</span><span><CifraComprobada texto={m(f.valuacion_cent)} cifra={`historial:valor:${f.socio}`} comprobacion="cuadra" /></span></li>
@@ -44,7 +44,7 @@ export function ComparativaValuaciones({ c, yo }: { c: CuentaSociosValuacion; yo
   const alerta = alertaRetiros(c, m);
   const nota = notaDiferencias(c, m);
   return (
-    <Tarjeta titulo="Comparación entre los dos" descripcion="Siempre 50 % y 50 %: la inversión debe ser parecida, así que se comparan valuaciones" acciones={<Estado tono={k.igualados ? 'ok' : 'atencion'}>{k.igualados ? 'Igualados' : 'Por igualar'}</Estado>}>
+    <Tarjeta titulo="Comparación entre los dos" descripcion="La inversión debe ser parecida, así que se comparan valuaciones" acciones={<Estado tono={k.igualados ? 'ok' : 'atencion'}>{k.igualados ? 'Igualados' : 'Por igualar'}</Estado>}>
       <ul className="sv-rubros" aria-label="Comparación de valuaciones">
         <li><span>Diferencia de valuación</span><span data-testid="dif-valuacion"><CifraComprobada texto={m(k.diferencia_valuacion_cent)} cifra={`historial:valor:${k.mayor ?? 'Javier'}`} comprobacion="cuadra" /></span></li>
         <li><span>Diferencia de aportación<small>Aportado menos fondos en poder: la inversión neta de cada uno</small></span><span data-testid="dif-aportacion"><CifraComprobada texto={m(k.diferencia_aportacion_cent)} cifra={`historial:neta:${k.turno_aportacion_neta ?? 'Angelo'}`} comprobacion="cuadra" /></span></li>
