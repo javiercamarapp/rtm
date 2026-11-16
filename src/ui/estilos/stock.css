@@ -44,3 +44,71 @@
   .rtm-st-fila > :nth-child(n+3) { grid-column: 2; }
   .rtm-st-grafica li { grid-template-columns: 6rem 1fr 3.5rem; }
 }
+
+/* Acabado premium de la pagina de Stock de proveedores (16-nov): entrada escalonada, elevacion suave al pasar, barras que se llenan y pestanas con indicador. Solo tokens; se apaga con movimiento reducido o apagado. */
+@keyframes rtm-st-sube { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes rtm-st-llena { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.rtm-st-kpi { transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease; animation: rtm-st-sube 360ms ease both; }
+.rtm-st-kpi:nth-child(2) { animation-delay: 40ms; }
+.rtm-st-kpi:nth-child(3) { animation-delay: 80ms; }
+.rtm-st-kpi:nth-child(4) { animation-delay: 120ms; }
+.rtm-st-kpi:nth-child(5) { animation-delay: 160ms; }
+.rtm-st-kpi:hover { transform: translateY(-2px); border-color: var(--rtm-ink-3); box-shadow: 0 8px 22px color-mix(in srgb, var(--rtm-ink) 8%, transparent); }
+.rtm-st-kpi b { font-size: 22px; letter-spacing: -0.02em; }
+.rtm-st-fila { transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease; animation: rtm-st-sube 380ms ease both; }
+.rtm-st-fila:hover { transform: translateY(-1px); border-color: var(--rtm-ink-3); box-shadow: 0 6px 18px color-mix(in srgb, var(--rtm-ink) 7%, transparent); }
+.rtm-st-lista > li:nth-child(2) { animation-delay: 30ms; }
+.rtm-st-lista > li:nth-child(3) { animation-delay: 60ms; }
+.rtm-st-lista > li:nth-child(4) { animation-delay: 90ms; }
+.rtm-st-lista > li:nth-child(n+5) { animation-delay: 120ms; }
+.rtm-st-fila .rtm-kr-foto { border-radius: var(--rtm-r-3); transition: transform 260ms ease; }
+.rtm-st-fila:hover .rtm-kr-foto { transform: scale(1.04); }
+.rtm-st-marca-titulo { padding-bottom: var(--rtm-e-2); border-bottom: 1px solid var(--rtm-line); margin-top: var(--rtm-e-4); }
+.rtm-st-barra-r { transform-origin: left center; animation: rtm-st-llena 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.rtm-st-pestanas a { position: relative; transition: color 160ms ease; }
+.rtm-st-pestanas a::after { content: ''; position: absolute; left: 12%; right: 12%; bottom: -2px; height: 2px; border-radius: 2px; background: currentColor; transform: scaleX(0); transition: transform 220ms ease; }
+.rtm-st-pestanas a[aria-current='page']::after, .rtm-st-pestanas a:hover::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) { .rtm-st-kpi, .rtm-st-fila, .rtm-st-barra-r, .rtm-st-pestanas a::after, .rtm-st-fila .rtm-kr-foto { animation: none; transition: none; } .rtm-st-kpi:hover, .rtm-st-fila:hover { transform: none; } }
+:root[data-movimiento='off'] :is(.rtm-st-kpi, .rtm-st-fila, .rtm-st-barra-r, .rtm-st-pestanas a::after, .rtm-st-fila .rtm-kr-foto), :root[data-movimiento='reduced'] :is(.rtm-st-kpi, .rtm-st-fila, .rtm-st-barra-r, .rtm-st-pestanas a::after, .rtm-st-fila .rtm-kr-foto) { animation: none; transition: none; }
+
+/* ---- Pagina completa (16-nov, segunda pasada): bloques, grafica, linea de tiempo, filtros y panel de pedido ---- */
+@keyframes rtm-st-entra-lado { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+@keyframes rtm-st-pulso { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rtm-ink) 28%, transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
+.rtm-kr-bloque { transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease; animation: rtm-st-sube 420ms ease both; }
+.rtm-kr-bloque:hover { border-color: var(--rtm-ink-3); box-shadow: 0 10px 26px color-mix(in srgb, var(--rtm-ink) 7%, transparent); }
+.rtm-kr-dos > :nth-child(2) { animation-delay: 70ms; }
+.rtm-st-grafica li { animation: rtm-st-entra-lado 380ms ease both; transition: transform 160ms ease; }
+.rtm-st-grafica li:hover { transform: translateX(3px); }
+.rtm-st-grafica li:nth-child(2) { animation-delay: 30ms; } .rtm-st-grafica li:nth-child(3) { animation-delay: 60ms; } .rtm-st-grafica li:nth-child(4) { animation-delay: 90ms; }
+.rtm-st-grafica li:nth-child(5) { animation-delay: 120ms; } .rtm-st-grafica li:nth-child(n+6) { animation-delay: 150ms; }
+.rtm-st-barra { height: 8px; border-radius: 4px; }
+.rtm-kr-linea li { animation: rtm-st-entra-lado 360ms ease both; transition: transform 160ms ease; }
+.rtm-kr-linea li:hover { transform: translateX(3px); }
+.rtm-st-visto::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--rtm-ink); animation: rtm-st-pulso 2400ms ease-in-out infinite; vertical-align: middle; }
+.rtm-st-visto[data-tono='atencion']::before { background: var(--rtm-warn); }
+.rtm-st-filtros { animation: rtm-st-sube 380ms ease both; }
+.rtm-st-filtros .rtm-campo { transition: border-color 160ms ease, box-shadow 160ms ease; }
+.rtm-st-filtros .rtm-campo:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--rtm-ink) 14%, transparent); }
+.rtm-st-resumen { font-variant-numeric: tabular-nums; }
+.rtm-st-marca { animation: rtm-st-sube 420ms ease both; }
+.rtm-kr-vacio { animation: rtm-st-sube 420ms ease both; }
+/* Panel de pedido: el titulo y los modelos entran escalonados; el modelo abierto resalta; el pie sube con el total. */
+.rtm-os { animation: rtm-st-sube 460ms ease both; padding-top: var(--rtm-e-4); border-top: 1px solid var(--rtm-line); }
+.rtm-os-cab h2 { font-size: 22px; letter-spacing: -0.02em; }
+.rtm-os-modelo { animation: rtm-st-sube 360ms ease both; }
+.rtm-os-lista > li:nth-child(2) { animation-delay: 30ms; } .rtm-os-lista > li:nth-child(3) { animation-delay: 60ms; } .rtm-os-lista > li:nth-child(4) { animation-delay: 90ms; } .rtm-os-lista > li:nth-child(n+5) { animation-delay: 120ms; }
+.rtm-os-modelo:hover { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--rtm-ink) 7%, transparent); }
+.rtm-os-modelo[data-abierto] { box-shadow: 0 10px 28px color-mix(in srgb, var(--rtm-ink) 10%, transparent); }
+.rtm-os-sabores li { transition: background-color 140ms ease; }
+.rtm-os-sabores li:hover { background: var(--rtm-fill-hover, color-mix(in srgb, var(--rtm-ink) 4%, transparent)); }
+.rtm-os-sabores .rtm-campo { transition: border-color 140ms ease, box-shadow 140ms ease; }
+.rtm-os-sabores .rtm-campo:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--rtm-ink) 14%, transparent); }
+.rtm-os-pie b { font-size: 20px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.rtm-os-pie .rtm-boton-primario { transition: transform 160ms ease, box-shadow 160ms ease; }
+.rtm-os-pie .rtm-boton-primario:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 8px 20px color-mix(in srgb, var(--rtm-ink) 22%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .rtm-kr-bloque, .rtm-st-grafica li, .rtm-kr-linea li, .rtm-st-visto::before, .rtm-st-filtros, .rtm-st-marca, .rtm-kr-vacio, .rtm-os, .rtm-os-modelo { animation: none; transition: none; }
+  .rtm-kr-bloque:hover, .rtm-st-grafica li:hover, .rtm-kr-linea li:hover, .rtm-os-modelo:hover { transform: none; }
+}
+:root[data-movimiento='off'] :is(.rtm-kr-bloque, .rtm-st-grafica li, .rtm-kr-linea li, .rtm-st-visto::before, .rtm-st-filtros, .rtm-st-marca, .rtm-kr-vacio, .rtm-os, .rtm-os-modelo),
+:root[data-movimiento='reduced'] :is(.rtm-kr-bloque, .rtm-st-grafica li, .rtm-kr-linea li, .rtm-st-visto::before, .rtm-st-filtros, .rtm-st-marca, .rtm-kr-vacio, .rtm-os, .rtm-os-modelo) { animation: none; transition: none; }
