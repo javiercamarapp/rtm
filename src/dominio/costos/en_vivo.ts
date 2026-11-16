@@ -12,9 +12,15 @@ export interface LecturaOpenRouter {
   leidaEn: string;
 }
 
-/** Dolares (numero de la API) a millonesimas, redondeado. Lo no numerico o negativo es 0. */
+/** Dolares (numero de la API) a millonesimas, redondeado, SIN aritmetica de flotantes: se lee la representacion decimal del numero. Lo no numerico, negativo o en notacion cientifica es 0. */
 export function microDeUsd(v: unknown): bigint {
-  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? BigInt(Math.round(v * 1_000_000)) : 0n;
+  if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return 0n;
+  const t = String(v);
+  if (/e/i.test(t)) return 0n;
+  const [ent = '0', dec = ''] = t.split('.');
+  const frac = `${dec}0000000`;
+  const base = BigInt(ent) * 1_000_000n + BigInt(frac.slice(0, 6));
+  return frac[6]! >= '5' ? base + 1n : base;
 }
 
 /** Interpreta la respuesta de /api/v1/key. Devuelve null si no trae el bloque `data` con numeros de uso. */
