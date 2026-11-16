@@ -1,7 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { operacionDeSocio } from '@/composicion/operacion';
 import { proveedoresDeSocio, tableroDeSocio } from '@/composicion/proveedores';
+import { normalizar } from '@/dominio/catalogo/normalizar';
+import { armarModelosOrden } from '@/dominio/proveedores/orden';
 import { EncabezadoPagina, Pagina } from '@/ui/componentes/pagina';
+import '@/ui/estilos/orden-stock.css';
+import { OrdenDesdeStock } from './orden-desde-stock';
 import { StockKaren } from './stock-karen';
 
 export const metadata: Metadata = { title: 'Stock disponible de proveedores' };
@@ -16,6 +21,11 @@ export default async function PaginaStockProveedores({ searchParams }: { searchP
   const sp = await searchParams;
   const activo = sp['p'] === 'isaac' ? 'isaac' : 'karen';
   const [p, tablero] = activo === 'karen' ? await Promise.all([proveedoresDeSocio(), tableroDeSocio()]) : [null, null];
+  // Orden de compra: sabores del catalogo de compra del proveedor (con su costo vigente), marcando los disponibles segun la lectura (Karen); Isaac no tiene lectura: por confirmar.
+  const proveedorOrden = activo === 'karen' ? 'Karen' : 'Isaac';
+  const catalogo = await (await operacionDeSocio()).catalogoCompra(proveedorOrden).catch(() => null);
+  const disponibilidad = tablero ? new Map(tablero.modelos.filter((m) => m.canonico_nombre).map((m) => [normalizar(m.canonico_nombre!), new Set(m.sabores.filter((s) => s.disponible).map((s) => normalizar(s.sabor)))] as const)) : null;
+  const modelosOrden = catalogo ? armarModelosOrden(catalogo.skus, disponibilidad) : [];
 
   return (
     <Pagina ancho="tablero">
@@ -38,6 +48,7 @@ export default async function PaginaStockProveedores({ searchParams }: { searchP
           <Link className="rtm-boton" href="/proveedores">Ir a Proveedores</Link>
         </section>
       )}
+      {catalogo && <OrdenDesdeStock proveedor={proveedorOrden} modelos={modelosOrden} conLectura={disponibilidad !== null} />}
     </Pagina>
   );
 }

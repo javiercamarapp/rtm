@@ -22,6 +22,8 @@ export interface LectorCostos {
   aportaciones(socio: 'angelo' | 'javier'): Promise<AportacionesSocio>;
   /** Cifras costos:aportacion:AAAA-MM y costos:aportacion:total (dos vias, calculadas por la base). */
   explicarCifra(cifra: string): Promise<Explicacion>;
+  /** Libro propio de llamadas de IA del mes (liquidadas), en millonesimas de dolar. */
+  iaLibro(mes: string): Promise<{ mes: string; total_micro: number; llamadas: number; por_rol: Record<string, number>; ultima_at: string | null }>;
 }
 
 export function lectorCostosSupabase(): LectorCostos {
@@ -34,5 +36,6 @@ export function lectorCostosSupabase(): LectorCostos {
     tipoCambio: (f) => leer('costos_tipo_cambio', { p_fecha: f }),
     aportaciones: (s) => leer('costos_aportaciones', { p_socio: s }),
     explicarCifra: (cifra) => llamar('explicar_costos', { p_cifra: cifra }, explicacion),
+    iaLibro: (mes) => leer('costos_ia_libro', { p_mes: mes }),
   };
 }
