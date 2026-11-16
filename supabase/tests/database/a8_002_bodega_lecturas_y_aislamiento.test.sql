@@ -95,7 +95,7 @@ begin
   for f in select n.nspname, p.proname, p.oid, p.proargtypes::oid[] as tipos
              from pg_proc p join pg_namespace n on n.oid = p.pronamespace
             where n.nspname in ('api', 'omar') and has_function_privilege(current_user, p.oid, 'EXECUTE')
-              and p.proname not in ('mi_sesion', 'bodega_hoy_a_preparar', 'bodega_llegadas') order by 1, 2, 3 loop
+              and p.proname not in ('mi_sesion', 'bodega_hoy_a_preparar', 'bodega_llegadas', 'bodega_marcar_empacado') order by 1, 2, 3 loop
     v_args := coalesce((select string_agg('null::' || t::regtype::text, ', ' order by o) from unnest(f.tipos) with ordinality u(t, o)), '');
     v_n := v_n + 1;
     begin
@@ -131,7 +131,7 @@ reset role;
 
 -- Estatico: ninguna otra funcion admite 'bodega' en exigir_rol; ningun privilegio de tabla para anon/authenticated fuera de las 3 vistas de omar ------------
 select is((select coalesce(string_agg(n.nspname || '.' || p.proname, ',' order by p.proname), '') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-            where p.prosrc ~ 'exigir_rol\(array\[[^]]*''bodega''' and p.proname not in ('bodega_hoy_a_preparar', 'bodega_llegadas')), '', 'solo las dos lecturas de bodega admiten el rol bodega');
+            where p.prosrc ~ 'exigir_rol\(array\[[^]]*''bodega''' and p.proname not in ('bodega_hoy_a_preparar', 'bodega_llegadas', 'bodega_marcar_empacado')), '', 'solo las funciones propias de bodega admiten el rol bodega');
 select is((select coalesce(string_agg(n.nspname || '.' || c.relname, ',' order by c.relname), '') from pg_class c join pg_namespace n on n.oid = c.relnamespace
             where c.relkind in ('r', 'p', 'v', 'm', 'f') and n.nspname not in ('pg_catalog', 'information_schema', 'pg_toast', 'auth', 'storage', 'realtime', 'vault', 'extensions', 'graphql', 'graphql_public', 'supabase_functions', '_realtime', 'pgsodium', 'net', 'pgbouncer', 'pg_temp')
               and n.nspname !~ '^pg_' and (has_any_column_privilege('authenticated', c.oid, 'SELECT') or has_any_column_privilege('anon', c.oid, 'SELECT'))), 'omar.v_mercancia,omar.v_mi_cuenta,omar.v_mis_precios', 'tablas legibles por la API: solo las tres vistas cerradas de omar');

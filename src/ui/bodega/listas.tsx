@@ -1,5 +1,7 @@
 import { ETIQUETA_ESTADO_COMPRA, type ClientePorPreparar, type CompraPorRecibir, type LineaBodega, type Surtido } from '@/dominio/bodega/bodega';
 import { etiquetaFecha, formatearPiezas, nombreVape, saborMayus } from '@/dominio/formato';
+import type { ResultadoEmpaque } from '@/dominio/bodega/bodega';
+import { BotonEmpacar } from './boton-empacar';
 import { DataTable } from '../componentes/data-table';
 import { EstadoTexto } from '../componentes/estado-texto';
 import { ModelosSabores } from '../componentes/modelos-sabores';
@@ -15,7 +17,7 @@ function Lineas({ lineas }: { lineas: LineaBodega[] }) {
 }
 
 /** Un cliente con sus pedidos por preparar. Solo nombre del cliente, piezas por modelo y sabor, estado de empaque y zona. */
-export function TarjetaCliente({ c }: { c: ClientePorPreparar }) {
+export function TarjetaCliente({ c, empacar }: { c: ClientePorPreparar; empacar: (clave: string, folio: string) => Promise<ResultadoEmpaque> }) {
   return (
     <li className="bodega-cliente" data-testid="bodega-cliente">
       <div className="bodega-cliente-cab">
@@ -31,6 +33,7 @@ export function TarjetaCliente({ c }: { c: ClientePorPreparar }) {
             {p.zona && <span className="rtm-celda-sub">{p.zona}</span>}
           </div>
           <Lineas lineas={p.lineas} />
+          {!p.empacado && <BotonEmpacar folio={p.folio} accion={empacar} />}
         </div>
       ))}
     </li>

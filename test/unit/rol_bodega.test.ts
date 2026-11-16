@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { completarAcceso, completarConfirmacion } from '@/aplicacion/acceso/completar_acceso';
 import type { Autenticador, DepsAcceso, EstadoSesion } from '@/aplicacion/acceso/puertos';
+import { empacar } from '@/aplicacion/bodega/bodega';
 import { cambiarCorreo, cambiarEstado, darDeAlta, ErrorCuentas, type PuertoCuentas } from '@/aplicacion/cuentas/cuentas';
 import { ACCIONES, ACCIONES_BODEGA, CAPACIDADES, puede, puedeBodega, puedeOmar } from '@/dominio/capacidades';
 import { destinoSeguro, rutaPropiaSegura } from '@/dominio/acceso/ruta_segura';
@@ -166,5 +167,21 @@ describe('cuentas: correo endurecido (alineado con la base)', () => {
     const r = await cambiarCorreo(p, 'web:12345678-1234-1234-1234-123456789abc', 'A@Example.test', ' B@Example.test ', 'avisar a x@example.test');
     expect(r.ok).toBe(true);
     expect(visto).toEqual([['web:12345678-1234-1234-1234-123456789abc', 'a@example.test', 'b@example.test', 'avisar a [correo omitido]']]);
+  });
+});
+
+describe('bodega: marcar empacado', () => {
+  const CLAVE = 'web:12345678-1234-1234-1234-123456789abc';
+  it('valida clave y folio antes de llamar y traduce los errores', async () => {
+    let n = 0;
+    const ok = { marcarEmpacado: async () => { n += 1; } };
+    expect((await empacar(ok, 'x', 'P-0001')).ok).toBe(false);
+    expect((await empacar(ok, CLAVE, '1; drop')).ok).toBe(false);
+    expect(n).toBe(0);
+    expect((await empacar(ok, CLAVE, 'P-0001')).ok).toBe(true);
+    const r = await empacar({ marcarEmpacado: async () => { throw new Error('P0428'); } }, CLAVE, 'P-0001');
+    expect(!r.ok && r.mensaje).toMatch(/ya no está por preparar/);
+    const d = await empacar({ marcarEmpacado: async () => { throw new Error('boom: detalle tecnico'); } }, CLAVE, 'P-0001');
+    expect(!d.ok && d.mensaje).not.toMatch(/boom|tecnico/);
   });
 });

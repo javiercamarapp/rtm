@@ -54,3 +54,9 @@
 .rtm-tarjeta-v2 .bodega-lista > .bodega-cliente:first-child { border-top-width: 0; padding-top: 0; }
 .bodega-cliente-nombre { font-size: var(--rtm-t-seccion); }
 .bodega-cliente-total { font-size: var(--rtm-t-seccion); }
+.bodega-empacar { display: flex; align-items: center; gap: var(--rtm-e-2); flex-wrap: wrap; }
+/* Lista de surtido en movil: una fila compacta por modelo y sabor (la tabla apilada de DataTable ocupaba mucho alto). */
+@media (max-width: 640px) {
+  .bodega-app [data-testid='tabla-surtido'], .bodega-app .rtm-tabla-apilada { gap: 0; }
+  .bodega-app .rtm-tarjeta-v2[aria-label='Lista de surtido'] .rtm-celda-sub { display: inline; margin-left: var(--rtm-e-2); }
+}

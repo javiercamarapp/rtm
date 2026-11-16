@@ -3,6 +3,7 @@ import { hoyDeBodega } from '@/composicion/bodega';
 import { etiquetaFecha, formatearPiezas } from '@/dominio/formato';
 import { KpiLinea } from '@/ui/componentes/kpi';
 import { EncabezadoPagina, Pagina, Rejilla, Tarjeta } from '@/ui/componentes/pagina';
+import { empacarAccion } from '../acciones';
 import { ErrorLectura, TablaSurtido, TarjetaCliente } from '@/ui/bodega/listas';
 
 export const metadata: Metadata = { title: 'Hoy a preparar' };
@@ -34,7 +35,7 @@ export default async function PaginaHoyBodega() {
         <Tarjeta titulo="Por cliente" descripcion="Qué preparar para cada uno">
           {d.clientes.length === 0
             ? <p className="rtm-nota" data-testid="bodega-vacio">Sin pedidos por preparar.</p>
-            : <ul className="bodega-lista">{d.clientes.map((c) => <TarjetaCliente key={c.cliente} c={c} />)}</ul>}
+            : <ul className="bodega-lista">{d.clientes.map((c) => <TarjetaCliente key={c.cliente} c={c} empacar={empacarAccion} />)}</ul>}
         </Tarjeta>
         <Tarjeta plana titulo="Lista de surtido" descripcion="Todo junto, por modelo y sabor, contra lo que hay">
           <TablaSurtido surtido={d.surtido} />

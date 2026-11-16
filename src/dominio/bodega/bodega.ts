@@ -108,3 +108,5 @@ export function parsearLlegadas(v: unknown): Llegadas {
     porGuardar: lineas(f.por_guardar),
   };
 }
+
+export type ResultadoEmpaque = { ok: true } | { ok: false; mensaje: string };

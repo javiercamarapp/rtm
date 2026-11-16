@@ -50,7 +50,7 @@ Nunca devuelven precios, montos, costos, márgenes, saldos, cuentas por pagar, t
 
 ### Acciones: decisión
 
-Solo lectura. Marcar enviado (guía y costo real, renta devengada) y recibir compra (costo puesto, diferencias, asientos) mueven dinero. La única acción sin dinero es marcar empacado, pero `operacion.marcar_empacado` exige `socio`/`importacion` y habría que reimplementarla con otro rol. Si el dueño la quiere, es el siguiente paso natural: una función `api.bodega_marcar_empacado` propia, con idempotencia y auditoría. Hoy los socios, que son la bodega, usan Paquetes por hacer con su cuenta de socio.
+Lecturas y, desde la migración 20261114000400, solo "Marcar empacado" (ver abajo). Marcar enviado (guía y costo real, renta devengada) y recibir compra (costo puesto, diferencias, asientos) mueven dinero. La única acción sin dinero es marcar empacado, pero `operacion.marcar_empacado` exige `socio`/`importacion` y habría que reimplementarla con otro rol. Si el dueño la quiere, es el siguiente paso natural: una función `api.bodega_marcar_empacado` propia, con idempotencia y auditoría. Hoy los socios, que son la bodega, usan Paquetes por hacer con su cuenta de socio.
 
 ## Persona de bodega (`catalogo.persona_bodega`)
 
@@ -89,3 +89,9 @@ Decisión del dueño (14-nov): el correo de una cuenta de bodega puede ser provi
 - Auditoría con la huella (16 caracteres de un hash) de los dos correos; el correo nunca queda en claro, ni en la auditoría ni en `seguridad.operacion`; el motivo pierde lo que parezca un correo.
 - El usuario de Auth del correo nuevo lo crea `npm run acceso:cuentas` (o `:nube`): ese script ya atiende a toda cuenta creable activa que no tenga usuario de Auth, sin mandar correos. Hasta correrlo, la pantalla muestra «Falta crear su acceso».
 - Pruebas: pgTAP `a11_002_cuenta_cambiar_correo`, vitest en `test/unit/rol_bodega.test.ts` y Playwright `test/e2e/bodega.spec.ts` (cambia el correo, la sesión anterior cae, el nuevo entra a su vista).
+
+## Omar creable desde la web y "Marcar empacado" (migración 20261114000400)
+
+- Omar ya está activo, así que `omar` pasó a tipo creable desde la web (bajo privilegio, igual que bodega): un socio puede dar de alta y desactivar sus correos desde Cuentas. `socio` e `importacion` siguen bloqueados por CHECK, y un correo existente nunca cambia de tipo.
+- `api.bodega_marcar_empacado(clave, folio)`: la persona de bodega marca empacado un pedido confirmado que sale de la bodega. Solo fija `empacado_at` (sin dinero, sin enviar, sin tocar inventario), idempotente, con evento y auditoría. Marcar enviado y recibir compra siguen siendo solo de socio. Botón "Marcar empacado" en "Hoy a preparar".
+- Pruebas: pgTAP `a8_004_bodega_empacar`, `a8_001` actualizado, vitest y e2e. El sondeo de `a8_002` excluye esta función y sigue exigiendo 42501 en todas las demás.
