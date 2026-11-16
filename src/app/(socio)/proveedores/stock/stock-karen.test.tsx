@@ -23,6 +23,19 @@ const props = (o: Partial<PropsStockKaren> = {}): PropsStockKaren => ({
 });
 const render = (p: PropsStockKaren) => { const m = montar(<StockKaren {...p} />); montajes.push(m); return m; };
 
+describe('StockKaren con el catalogo de Isaac', () => {
+  it('usa el mismo formato y nombra a Isaac, con sabores disponibles y agotados', () => {
+    const m = render(props({ proveedor: 'Isaac', eventos: [], ultimaLecturaOk: null }));
+    const t = m.cont.textContent ?? '';
+    expect(t).toContain('ALFA 8000');
+    expect(t).toContain('SANDÍA');
+    expect(porTestid(m.cont, 'kpis-stock')?.getAttribute('aria-label')).toBe('Resumen del stock de Isaac');
+  });
+  it('sin modelos dice que no hay catalogo de Isaac', () => {
+    expect(render(props({ proveedor: 'Isaac', modelos: [], eventos: [] })).cont.textContent).toContain('Todavía no hay catálogo de Isaac');
+  });
+});
+
 describe('StockKaren', () => {
   it('agrupa por marca en MAYUSCULAS, muestra bodega, grafica y linea de tiempo, sin violaciones de axe', async () => {
     const m = render(props());

@@ -1,0 +1,496 @@
+{
+ "fuente": "Catalogo_Remate.pdf de Isaac (23 modelos, 24 paginas con portada) mas Waka Blast 45K por instruccion del dueno, leido a ojo pagina por pagina el 15-nov-2026. Sin precios.",
+ "proveedor": "Isaac",
+ "modelos": [
+  {
+   "pagina": 1,
+   "titulo": "LUSH 3300",
+   "marca": "LUSH",
+   "puffs": 3300,
+   "sabores": [
+    "Aloe White Grape Ice",
+    "Kiwi Passion Fruit Guava",
+    "Grape Gum",
+    "Lychee White Peach",
+    "Blue Razz",
+    "Orange Mango Guava",
+    "Zush Ice",
+    "Cool Mint",
+    "Strawberry Milk Tea",
+    "Lychee Watermelon Ice",
+    "Peach Mango Strawberry",
+    "Peach Pear",
+    "Honeydew Strawberry",
+    "Green Apple Drop",
+    "Cherry Lemon Drop"
+   ]
+  },
+  {
+   "pagina": 2,
+   "titulo": "EZZY OVAL 300",
+   "marca": "EZZY",
+   "puffs": 300,
+   "sabores": [
+    "Lychee Ice",
+    "Mango Lychee",
+    "Honeydew Ice",
+    "Orange Soda",
+    "Frozen Banana",
+    "Lush Ice",
+    "Icy Cola"
+   ]
+  },
+  {
+   "pagina": 3,
+   "titulo": "LUSH ALIEN 6000",
+   "marca": "LUSH",
+   "puffs": 6000,
+   "sabores": [
+    "Watermelon Peach Ice",
+    "Mint Cherry Lemon",
+    "Raspberry Strawberry",
+    "Peach Ice",
+    "Blue Razz Lemon Ice",
+    "Clear",
+    "Watermelon Kiwi Ice",
+    "Peach Blue Razz Ice",
+    "Guava Freeze",
+    "Lemon Orange",
+    "Sour Fruit Lemonade",
+    "Apple Grape Ice",
+    "Honeydew Cantaloupe Watermelon",
+    "Strawberry Peach Ice",
+    "Mixed Berry Ice",
+    "Peach Mango Watermelon Ice",
+    "Gold Tobacco",
+    "Reds Tobacco",
+    "Lychee Strawberry Ice",
+    "Mango Strawberry Honeydew",
+    "Strawberry Banana",
+    "Watermelon Ice",
+    "Cool Mint",
+    "White Gummy",
+    "Sweet Peppermint",
+    "Virginia Tobacco",
+    "Lychee Mango",
+    "Blue Razz Pomegranate",
+    "White Grape Ice"
+   ]
+  },
+  {
+   "pagina": 4,
+   "titulo": "AROMA KING 700",
+   "marca": "AROMA KING",
+   "puffs": 700,
+   "sabores": [
+    "Cool Mango",
+    "Strawberry Ice Cream",
+    "Cola",
+    "Mango Apple Pear",
+    "Menthol",
+    "Blue Razz",
+    "Peach Ice",
+    "Hawaiian Pog",
+    "Lemon Tart",
+    "Blueberry Bubble Gum",
+    "Blue Raspberry Cherry",
+    "Lychee Ice",
+    "Passion Fruit",
+    "Grape Bull",
+    "Red Apple Ice",
+    "Blackcurrant Ice",
+    "Banana Ice",
+    "Strawberry Ice",
+    "Unicorn Shake",
+    "Ice Candy",
+    "Cool Grape",
+    "Apple Ice",
+    "Blue Razz Bull",
+    "Blueberry Blackcurrant",
+    "Strawberry Bull",
+    "Pink Lemonade"
+   ]
+  },
+  {
+   "pagina": 5,
+   "titulo": "LUSH 1500",
+   "marca": "LUSH",
+   "puffs": 1500,
+   "sabores": [
+    "Guava Ice",
+    "Lychee Strawberry Ice",
+    "Strawberry Hibiscus",
+    "Lychee Peach Ice",
+    "Banana Ice",
+    "White Grape Ice",
+    "Strawberry Banana",
+    "Apple Ice",
+    "Honeydew Ice",
+    "Filipino Mango",
+    "Custard Lemon Pie",
+    "Honeydew Lemon Ice"
+   ]
+  },
+  {
+   "pagina": 6,
+   "titulo": "EBDESIGN TE6000",
+   "marca": "EBDESIGN",
+   "puffs": 6000,
+   "sabores": [
+    "Apple Peach",
+    "Grape Ice",
+    "Juicy Peach",
+    "Key West",
+    "Lemon Drop",
+    "Blue Razz Ice",
+    "Watermelon Ice",
+    "Strawberry Ice",
+    "Autumn",
+    "Hawaii Punch",
+    "Ice Mint",
+    "Clear"
+   ],
+   "nota": "Decision del dueno (15-nov): EBDESIGN TE6000 ES el mismo producto que Elf Bar TE6000 de Karen: un solo modelo canonico (Elf Bar TE6000), con los 27 sabores de Isaac conciliados (iguales se fusionan, parecidos a la cola). Distinto de ELFBAR BC5000.",
+   "mismo_que": "Elf Bar TE6000",
+   "marca_mismo_que": "Elfbar"
+  },
+  {
+   "pagina": 7,
+   "titulo": "PUFF BAR 300",
+   "marca": "PUFF BAR",
+   "puffs": 300,
+   "sabores": [
+    "Melon Ice",
+    "Tangerine Ice",
+    "Banana Ice",
+    "Blueberry Ice",
+    "Lychee Ice",
+    "Pineapple Lemonade",
+    "Guava Ice",
+    "Clear",
+    "Grape",
+    "Peach Ice"
+   ]
+  },
+  {
+   "pagina": 8,
+   "titulo": "ELFBAR BC5000",
+   "marca": "ELFBAR",
+   "puffs": 5000,
+   "sabores": [
+    "Tropical Spoal",
+    "Tropical Rainbow Blast",
+    "Blueberry Tobacco",
+    "Berry Mix",
+    "Rainbow Candy",
+    "Blueberry Pom Ice",
+    "Pineapple Orange Mint",
+    "Cherry Lemon Mint",
+    "Strawberry Tobacco",
+    "Nut Tobacco",
+    "Beach Day",
+    "Grape Energy",
+    "Mint Tobacco",
+    "Strawberry Ice",
+    "Tobacco",
+    "Watermelon Bubblegum",
+    "Cuba Cigar",
+    "Cranberry Grape",
+    "Sour Candy",
+    "Blue Cotton Candy",
+    "Strawberry Pear Orange Ice",
+    "Pineapple Mango Orange",
+    "Mandarin Lime",
+    "Dragon Fruit Banana Berry",
+    "Apple Peach",
+    "Pineapple Coconut Ice"
+   ],
+   "nota": "\"Tropical Spoal\" se deja tal cual: el banner trae ese nombre (verificado por el dueno)."
+  },
+  {
+   "pagina": 9,
+   "titulo": "LUSH TFN 2500",
+   "marca": "LUSH",
+   "puffs": 2500,
+   "sabores": [
+    "Oreo Milkshake"
+   ]
+  },
+  {
+   "pagina": 10,
+   "titulo": "SVL BX12000",
+   "marca": "SVL",
+   "puffs": 12000,
+   "sabores": [
+    "Mix Berry",
+    "Pomo Brzz",
+    "Blue Razz FAB",
+    "Triple Berry",
+    "Cherry Ice",
+    "Blue Sour Razz",
+    "Blue Razz Ice",
+    "Strawberry Ice",
+    "Strawberry Kiwi",
+    "Bubblegum Gummy Bear",
+    "Kiwi Dragon Passion Fruit",
+    "Peach Watermelon Twist"
+   ]
+  },
+  {
+   "pagina": 11,
+   "titulo": "DROP PLUS 2000",
+   "marca": "DROP PLUS",
+   "puffs": 2000,
+   "sabores": [
+    "Melon Kiwi Fruit",
+    "Hami Strawberry Mango",
+    "A Drink",
+    "Strawberry Kiwi Fruit",
+    "Energy Drinks",
+    "Strawberry Guava Grape",
+    "Yogurt Ice Cream",
+    "Blackberry Orange",
+    "Lemon Cake",
+    "Blackcurrant Grape"
+   ]
+  },
+  {
+   "pagina": 12,
+   "titulo": "LOST MARY 5000",
+   "marca": "LOST MARY",
+   "puffs": 5000,
+   "sabores": [
+    "Berry Crush Ice",
+    "Lemon Lime Sparkling",
+    "Strawberry Guava Mint",
+    "Green Grape Ice",
+    "Mango Pomelo Dragon Fruit",
+    "Black Lemonade",
+    "Rose Sour Plum Mint",
+    "Black Strawnana",
+    "Mexican Mango",
+    "Strawberry Banana",
+    "Light Snow Peppermint",
+    "Watermelon Lemon",
+    "Banana Raspberry Ice",
+    "Berry Passion Fruit Grape",
+    "Acai Berry Storm Ice",
+    "Lemon Lime",
+    "Sakura Berry Peach Ice",
+    "Blueberry Ice",
+    "Kiwi Passion Fruit Guava"
+   ]
+  },
+  {
+   "pagina": 13,
+   "titulo": "FUNKY REPUBLIC 7K",
+   "marca": "FUNKY REPUBLIC",
+   "puffs": 7000,
+   "nota": "Decision del dueno (15-nov): es de 7K puffs, modelo propio; NO es Funky Republic Fi 3K.",
+   "sabores": [
+    "Blue Red Mint",
+    "Watermelon Ice",
+    "Osk Ice",
+    "Pineapple Coconut Ice",
+    "Passion Fruit",
+    "Pomelo",
+    "Orange Starfruit Kiwi Ice",
+    "Mixed Fruit",
+    "Blossom",
+    "Spoal Cloudd",
+    "Watermelon Nana",
+    "Rainbow Cloudz",
+    "Tropical Island",
+    "Peach Pie",
+    "Blue Razz Ice"
+   ],
+   "forzar_nuevo": true
+  },
+  {
+   "pagina": 14,
+   "titulo": "MAX AIR 5000",
+   "marca": "MAX AIR",
+   "puffs": 5000,
+   "sabores": [
+    "Berry Lemon Ice",
+    "Summer Fruit",
+    "Sour Peach",
+    "Mango Freeze",
+    "Strawberry Mango",
+    "Strawberry Freeze",
+    "Lush Freeze",
+    "Black Sakura",
+    "Peach Freeze"
+   ]
+  },
+  {
+   "pagina": 15,
+   "titulo": "GEEK BAR B5000",
+   "marca": "GEEK BAR",
+   "puffs": 5000,
+   "sabores": [
+    "White Gummy Ice",
+    "Tobacco",
+    "Mint",
+    "Blue Razz Lemonade",
+    "Sour Apple Ice",
+    "Fuji Melon Ice",
+    "Juicy Peach Ice",
+    "Strawberry Watermelon Bubblegum",
+    "Grape Ice",
+    "Berry Trio Ice"
+   ]
+  },
+  {
+   "pagina": 16,
+   "titulo": "GEEK BAR 6000",
+   "marca": "GEEK BAR",
+   "puffs": 6000,
+   "sabores": [
+    "Rainbow Sugar",
+    "Lush Ice",
+    "Blue Razz",
+    "Peach Mint Iced Tea",
+    "Aloe Grape",
+    "Rose Lychee"
+   ],
+   "nota": "El banner escribe \"Los Ice\"; el dueno confirmo (15-nov) que es LUSH ICE."
+  },
+  {
+   "pagina": 17,
+   "titulo": "PUFF XXL 1600",
+   "marca": "PUFF",
+   "puffs": 1600,
+   "sabores": [
+    "Mango Orange Pomelo",
+    "Papaya Strawberry",
+    "Pineapple Grape",
+    "Aloe Mango Melon Ice"
+   ]
+  },
+  {
+   "pagina": 18,
+   "titulo": "HYPPE BAR 300",
+   "marca": "HYPPE BAR",
+   "puffs": 300,
+   "sabores": [
+    "Lychee Soda"
+   ]
+  },
+  {
+   "pagina": 19,
+   "titulo": "FOGX 320",
+   "marca": "FOGX",
+   "puffs": 320,
+   "sabores": [
+    "White Pineapple Ice",
+    "White Mango Ice",
+    "White Grape Ice"
+   ]
+  },
+  {
+   "pagina": 20,
+   "titulo": "AROMA KING 3000",
+   "marca": "AROMA KING",
+   "puffs": 3000,
+   "sabores": [
+    "Mango Apple Pear",
+    "Cool Mango",
+    "Cola",
+    "Hawaiian Pog",
+    "Banana Ice",
+    "Creamy Walnut",
+    "Monster",
+    "Strawberry Bull",
+    "Peach Ice",
+    "Blue Razz",
+    "Strawberry Ice Cream",
+    "Menthol",
+    "Cool Grape",
+    "Lemon Tart",
+    "Green Apple",
+    "Lychee Ice",
+    "Blueberry Blackcurrant",
+    "Grape Bull"
+   ]
+  },
+  {
+   "pagina": 21,
+   "titulo": "YEEZY 3000",
+   "marca": "YEEZY",
+   "puffs": 3000,
+   "sabores": [
+    "Rainbow Ice",
+    "Icy Mango",
+    "Pink Lemonade",
+    "Strawberry Donut",
+    "Watermelon Menthol",
+    "Banana Ice",
+    "Southern Peach Lemonade",
+    "Ocean Blue Lemonade",
+    "Blueberry Raspberry Lemon",
+    "Strawberry Watermelon Gum",
+    "Frosted Gummy Bear",
+    "Peach Ice",
+    "Apple",
+    "Strawberry Lemonade",
+    "Frozen Strawberry",
+    "Fantasy Love",
+    "Fire & Ice",
+    "Island Wave Lemonade",
+    "Mint",
+    "Cola",
+    "Strawberry Banana"
+   ]
+  },
+  {
+   "pagina": 22,
+   "titulo": "8K BIG AZZ 8000",
+   "marca": "8K BIG AZZ",
+   "puffs": 8000,
+   "sabores": [
+    "Lychee Banana",
+    "Watermelon Apple Ice",
+    "Guava Mango Ice",
+    "Strong Menthol",
+    "Aloe Grape",
+    "Blueberry Pomegranate",
+    "Lush Ice",
+    "Blue Raspberry Ice",
+    "Minty Mint",
+    "Red Energy",
+    "Apple Pear Ice",
+    "Peach Ice",
+    "Aloe Honeydew Ice",
+    "Guava Passion Fruit Ice"
+   ]
+  },
+  {
+   "pagina": 23,
+   "titulo": "WAVE AF 3300",
+   "marca": "WAVE AF",
+   "puffs": 3300,
+   "sabores": [
+    "Cool Breeze",
+    "Strawberry Kiwi",
+    "Lush Ice",
+    "White Grape",
+    "Strawberry Mango",
+    "Lychee Blueberry",
+    "Strawberry Ice Cream",
+    "Tropical Fruit",
+    "Jewel Mint"
+   ]
+  },
+  {
+   "pagina": null,
+   "titulo": "WAKA BLAST 45K",
+   "marca": "WAKA",
+   "puffs": 45000,
+   "sabores": [],
+   "forzar_nuevo": true,
+   "costo_isaac_mxn": 210,
+   "nota": "Instruccion del dueno (15-nov): Waka Blast = Waka 45K, precio 210, es de Isaac y es un modelo APARTE (no se une a Waka Blast ni a Waka Blast 50K). Sin sabores en el catalogo: se registra sin sabor. El 210 se registra como costo de lista de Isaac SUPUESTO (dato de palabra) hasta confirmar."
+  }
+ ]
+}

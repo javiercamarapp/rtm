@@ -7,7 +7,7 @@ La direccion de la tienda de Karen es privada: vive solo en la variable `INVENTA
 Ruta `/proveedores/stock` (solo socios; boton "Stock" en Proveedores). Muestra, por proveedor:
 
 - Karen: modelos por marca y modelo en MAYUSCULAS, sabores disponibles ahora, disponible si o no, foto del modelo, "visto por ultima vez", cambios recientes (nuevo, agotado, de regreso), grafica animada de disponibilidad por marca, cuanto tienes en bodega y enlace "Ver en Inventario". Filtros en una linea (busqueda, marca, disponibilidad, nuevos).
-- Isaac: estado vacio claro hasta que exista una fuente que se pueda leer.
+- Isaac: su catalogo Remate (modelos y sabores disponibles, mismo formato que Karen, sin lectura en vivo); estado vacio claro hasta que se cargue. Ver `docs/catalogo-isaac-y-karen-completo.md`.
 - Sin dato: donde no hay lectura se escribe "Sin dato".
 - Precios: el monitor NO lee ni guarda precios del proveedor (regla del repo y prueba pgTAP `033_karen_tablero`). Por eso la pagina no muestra precio de lista ni "cambio de precio"; Omar y bodega nunca ven costos. Si el dueno decide guardar precios de lista, habria que cambiar esa regla y crear una tabla solo para socios; no se hizo.
 

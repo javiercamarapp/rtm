@@ -4,7 +4,7 @@
 //   npx tsx scripts/proveedores/vigilar-karen.mjs --verificar   SOLO LECTURA: lee la tienda, dice que cambiaria (modelos nuevos, disponibilidad, fotos por bajar y por confirmar). No escribe en la base ni en el repo.
 //   npx tsx scripts/proveedores/vigilar-karen.mjs --aplicar     escribe por las funciones existentes (proveedores.guardar_estado, emitir_aviso, foto diaria), baja fotos faltantes y registra las dudosas en la cola.
 //
-// Opciones: --env-file=<ruta> (variable INVENTARIO_PROVEEDORES_FUENTE; si no, del entorno), --sin-fotos, --limite-fotos=N (default 12), --forzar (ignora la guarda de 1 pasada por hora).
+// Opciones: --catalogo (registra en el catalogo propio los modelos y sabores nuevos de la tienda, con existencia 0), --env-file=<ruta> (variable INVENTARIO_PROVEEDORES_FUENTE; si no, del entorno), --sin-fotos, --limite-fotos=N (default 12), --forzar (ignora la guarda de 1 pasada por hora).
 // Base: RTM_DB_URL (rol servidor o postgres). Nunca se imprime la direccion de la fuente ni la de la base.
 //
 // Reglas: respeta robots.txt, 1 pasada por hora (guarda), pausa >= 1.1 s entre peticiones, agente de usuario generico sin datos personales, sin sesion ni cookies, tope de 40 peticiones al dia.
@@ -64,12 +64,12 @@ export function asignarEnTabla(texto, id, ruta) {
 
 function argumentos(av) {
   const v = (n) => av.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
-  return { aplicar: av.includes('--aplicar'), verificar: av.includes('--verificar'), envFile: v('env-file'), sinFotos: av.includes('--sin-fotos'), limiteFotos: Number(v('limite-fotos') ?? 12), forzar: av.includes('--forzar') };
+  return { aplicar: av.includes('--aplicar'), verificar: av.includes('--verificar'), envFile: v('env-file'), sinFotos: av.includes('--sin-fotos'), catalogo: av.includes('--catalogo'), limiteFotos: Number(v('limite-fotos') ?? 12), forzar: av.includes('--forzar') };
 }
 
 async function principal() {
   const a = argumentos(process.argv.slice(2));
-  if (a.aplicar === a.verificar) { console.error('Uso: vigilar-karen.mjs --verificar | --aplicar [--env-file=ruta] [--sin-fotos] [--limite-fotos=N] [--forzar]'); return 2; }
+  if (a.aplicar === a.verificar) { console.error('Uso: vigilar-karen.mjs --verificar | --aplicar [--env-file=ruta] [--catalogo] [--sin-fotos] [--limite-fotos=N] [--forzar]'); return 2; }
   const fuente = leerFuente(a.envFile);
   if (!fuente) { console.error('Falta la variable privada INVENTARIO_PROVEEDORES_FUENTE (entorno o --env-file). No se hizo ninguna peticion.'); return 2; }
   if (!process.env.RTM_DB_URL) { console.error('Falta RTM_DB_URL (rol servidor). No se hizo ninguna peticion.'); return 2; }
@@ -128,10 +128,23 @@ async function principal() {
       console.log('Cambiaria:', Object.keys(porTipo).length ? JSON.stringify(porTipo) : 'nada nuevo');
       for (const av of capturados.avisos.slice(0, 15)) console.log(`  aviso interno: ${av.codigo}`);
     }
-    if (!['ok', 'inicial'].includes(r.estado) || a.sinFotos) return 0;
+    if (!['ok', 'inicial'].includes(r.estado)) return 0;
 
     // Fotos: reusa la lectura del catalogo que ya se hizo (sin otra peticion) y baja solo las que faltan.
     const productos = paginas.flatMap((p) => { try { return JSON.parse(p.cuerpo).products ?? []; } catch { return []; } });
+
+    // Catalogo propio: todo modelo y sabor de la tienda (disponible o agotado) queda registrado con existencia 0; lo dudoso se reporta y NO se toca. Sin peticiones extra.
+    if (a.catalogo && productos.length) {
+      try {
+        const { ejecutar, imprimir, leerReglas } = await import('./cargar-catalogo-proveedor.mjs');
+        const { itemsDeTienda } = await import('./plan-catalogo.mjs');
+        imprimir(await ejecutar({ url: process.env.RTM_DB_URL, fuente: 'karen', items: itemsDeTienda(productos), aplicar: a.aplicar, ...leerReglas() }), a.aplicar);
+      } catch (e) {
+        console.error(`Catalogo: no se registro (${String(e instanceof Error ? e.message : e).split('\n')[0]}). La lectura de la tienda ya quedo guardada.`);
+      }
+    }
+    if (a.sinFotos) return 0;
+
     const modelos = extraerModelos({ products: productos });
     const dirFotos = join(RAIZ, 'public', 'proveedores', 'karen');
     const existentes = readdirSync(dirFotos).filter((f) => f.endsWith('.webp')).map((f) => f.slice(0, -5));

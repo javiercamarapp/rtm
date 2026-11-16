@@ -1,0 +1,97 @@
+{
+ "fuente": "Confirmacion del dueno (15-nov, por relevo de otra sesion): los 10 modelos que estaban por confirmar en la tienda de Karen SON los modelos del catalogo indicados (correccion posterior del dueno: iPlay Big Max NO es IPLAY Max, ver `altas`). Se ligan (proveedores.modelo.canonico_id), sin crear modelos nuevos, sin unificar ni borrar candidatos. Los marcados `revisar` eran ambiguos entre varios candidatos y se eligio el mas probable: revisar la ligadura.",
+ "ligaduras": [
+  {
+   "handle": "iplay-x-box-pro-max-50-000",
+   "tienda": "iPlay X-Box Pro Max 50K",
+   "catalogoId": 82,
+   "catalogo": "IPLAY Box Pro Max 50K",
+   "revisar": false
+  },
+  {
+   "handle": "fifty-bar",
+   "tienda": "Fifty Bar 20K",
+   "catalogoId": 146,
+   "catalogo": "Fifty Bar",
+   "revisar": false
+  },
+  {
+   "handle": "snowwolf",
+   "tienda": "Snowwolf 8K",
+   "catalogoId": 147,
+   "catalogo": "Snowwolf",
+   "revisar": false
+  },
+  {
+   "handle": "instabar-be-70-000",
+   "tienda": "Instabar Be 70K",
+   "catalogoId": 145,
+   "catalogo": "Instabar 70K",
+   "revisar": false
+  },
+  {
+   "handle": "vape-iplay-x-box",
+   "tienda": "iPlay X-Box",
+   "catalogoId": 100,
+   "catalogo": "IPLAY Box 4K",
+   "revisar": false,
+   "nota": "Decision del dueno (15-nov): IPLAY Box es lo mismo que iPlay X-Box. NO se liga a 138 X-Box 50k (ese modelo es en realidad de 4K puffs y marca IPLAY; nombre/puffs por corregir, posible duplicado del 100, decide el dueno; no se renombra ni se fusiona)."
+  },
+  {
+   "handle": "vape-iplay-x-box-pro",
+   "tienda": "iPlay X-Box Pro",
+   "catalogoId": 98,
+   "catalogo": "IPLAY Box Pro 15K",
+   "revisar": false,
+   "candidatosSecundarios": [
+    100
+   ],
+   "confirmadaPorDueno": "15-nov"
+  },
+  {
+   "handle": "lost-mary-ultra-sonic-35k",
+   "tienda": "Lost Mary Ultrasonic 35K",
+   "catalogoId": 105,
+   "catalogo": "Lost Mary 35K",
+   "revisar": false,
+   "candidatosSecundarios": [
+    149
+   ],
+   "confirmadaPorDueno": "15-nov"
+  },
+  {
+   "handle": "waka-pro-30k",
+   "tienda": "Waka Pro 30K",
+   "catalogoId": 151,
+   "catalogo": "Waka 30K",
+   "revisar": false,
+   "candidatosSecundarios": [
+    87,
+    154,
+    155
+   ],
+   "confirmadaPorDueno": "15-nov"
+  },
+  {
+   "handle": "vape-waka-sopro-15-000",
+   "tienda": "Waka Sopro 15,000",
+   "catalogoId": 120,
+   "catalogo": "Waka 15K",
+   "revisar": false,
+   "candidatosSecundarios": [
+    90
+   ],
+   "nota": "segun el diccionario Waka (sopro = 15K); Waka DM 15K (90) queda como candidato secundario",
+   "confirmadaPorDueno": "15-nov"
+  }
+ ],
+ "altas": [
+  {
+   "handle": "big-max",
+   "tienda": "iPlay Big Max",
+   "nombre": "IPLAY BIG MAX",
+   "puffs": 1000,
+   "nota": "Decision del dueno (15-nov): iPlay Big Max es de 1000 puffs y NO es IPLAY Max (300 puffs). Modelo nuevo."
+  }
+ ]
+}

@@ -40,6 +40,13 @@ export async function pantallaProveedores(): Promise<PantallaProveedores> {
 }
 
 /** Tablero de "Lo que hay en Karen": modelos con sabores, ventas propias, cobertura y recomendaciones (cuentas hechas en SQL). */
+export async function tableroIsaac(): Promise<DatosTablero> {
+  const sb = await crearClienteServidor();
+  const { data, error } = await sb.rpc('prov_tablero_isaac');
+  if (error) throw new Error(`prov_tablero_isaac: ${error.message}`);
+  return data as DatosTablero;
+}
+
 export async function tableroKaren(): Promise<DatosTablero> {
   const sb = await crearClienteServidor();
   const { data, error } = await sb.rpc('prov_tablero');
