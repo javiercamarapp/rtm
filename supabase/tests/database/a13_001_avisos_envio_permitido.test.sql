@@ -1,0 +1,28 @@
+-- pgTAP a13_001: agente.avisos_envio_permitido() (arreglo de la tarea avisos-inventario): el rol servidor la ejecuta sin permiso sobre seguridad.interruptor; anon y authenticated no.
+begin;
+select no_plan();
+select is(has_table_privilege('servidor', 'seguridad.interruptor', 'SELECT'), false, 'servidor NO lee seguridad.interruptor directo (la causa del fallo)');
+insert into seguridad.interruptor (clave, activo) values ('telegram_envio', true), ('cron_pausado', false) on conflict (clave) do update set activo = excluded.activo;
+set local role servidor;
+select set_config('a13.v', agente.avisos_envio_permitido()::text, true);
+reset role;
+select is(current_setting('a13.v'), 'true', 'servidor: envio encendido y sin pausa -> permitido');
+update seguridad.interruptor set activo = false where clave = 'telegram_envio';
+set local role servidor;
+select set_config('a13.v', agente.avisos_envio_permitido()::text, true);
+reset role;
+select is(current_setting('a13.v'), 'false', 'envio apagado -> no permitido');
+update seguridad.interruptor set activo = true where clave = 'telegram_envio';
+update seguridad.interruptor set activo = true where clave = 'cron_pausado';
+set local role servidor;
+select set_config('a13.v', agente.avisos_envio_permitido()::text, true);
+reset role;
+select is(current_setting('a13.v'), 'false', 'cron pausado -> no permitido');
+set local role authenticated;
+select throws_ok($$select agente.avisos_envio_permitido()$$, '42501', null, 'authenticated no la ejecuta');
+reset role;
+set local role anon;
+select throws_ok($$select agente.avisos_envio_permitido()$$, '42501', null, 'anon no la ejecuta');
+reset role;
+select * from finish();
+rollback;

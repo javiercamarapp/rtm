@@ -41,12 +41,12 @@ describe('cargar-mes: aritmetica igual a la del dominio', () => {
 });
 
 describe('cargar-mes: plan del mes', () => {
-  it('sin tipo de cambio nada se convierte ni se inventa: Claude Max queda en USD 20 pendiente y no hay datos faltantes', () => {
+  it('sin tipo de cambio nada se convierte ni se inventa: Vercel, Supabase y Claude Max quedan en USD 20 pendientes y no hay datos faltantes', () => {
     const a = plan(snap(), decl(), null);
     expect(a.filter((x) => x.tipo === 'cargo')).toHaveLength(0);
     const p = a.filter((x) => x.tipo === 'pendiente_tc');
-    expect(p.map((x) => x.slug)).toEqual(['claude_max']);
-    expect(p[0].usdMicro).toBe(20_000_000n);
+    expect(p.map((x) => x.slug).sort()).toEqual(['claude_max', 'supabase', 'vercel']);
+    for (const x of p) expect(x.usdMicro).toBe(20_000_000n);
     expect(p[0].motivo).toContain('Sin tipo de cambio: falta capturarlo');
     expect(a.filter((x) => x.tipo === 'faltante')).toHaveLength(0);
   });
@@ -55,12 +55,18 @@ describe('cargar-mes: plan del mes', () => {
     expect(c.baseOrigMicro).toBe(20_000_000n);
     expect(c.montoCent).toBe(40_000n);
   });
-  it('vercel y supabase valen 0 sin consumo real: sin cargo y sin dato faltante', () => {
+  it('vercel y supabase son una cuota mensual fija de USD 20 (decision del dueno, 16-nov), sin dato faltante', () => {
     const a = plan();
     for (const slug of ['vercel', 'supabase']) {
-      expect(a.some((x) => x.slug === slug && (x.tipo === 'cargo' || x.tipo === 'faltante'))).toBe(false);
-      expect(a.find((x) => x.slug === slug)!.tipo).toBe('sin_cargo');
+      expect(a.some((x) => x.slug === slug && x.tipo === 'faltante')).toBe(false);
+      const c = a.find((x) => x.slug === slug && x.tipo === 'cargo')!.cargo;
+      expect(c.baseOrigMicro).toBe(20_000_000n);
     }
+  });
+  it('--vercel-usd y --supabase-usd cambian la cuota fija', () => {
+    const a = plan(snap(), decl(['--vercel-usd', '25', '--supabase-usd', '10']))!;
+    expect(a.find((x) => x.slug === 'vercel' && x.tipo === 'cargo')!.cargo.baseOrigMicro).toBe(25_000_000n);
+    expect(a.find((x) => x.slug === 'supabase' && x.tipo === 'cargo')!.cargo.baseOrigMicro).toBe(10_000_000n);
   });
   it('dominio, openrouter sin libro y el resto valen 0 sin dato faltante', () => {
     const a = plan();
