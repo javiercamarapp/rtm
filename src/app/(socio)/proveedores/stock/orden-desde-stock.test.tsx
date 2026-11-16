@@ -37,7 +37,7 @@ describe('OrdenDesdeStock', () => {
     const m = await abrir();
     escribir(porTestid(m.cont, 'os-cant-1'), '40');
     escribir(porTestid(m.cont, 'os-cant-2'), '25');
-    expect(porTestid(m.cont, 'os-piezas').textContent).toContain('65');
+    expect(porTestid(m.cont, 'os-piezas')?.textContent).toContain('65');
     await clic(porTestid(m.cont, 'os-generar'));
     expect(ejecutar).toHaveBeenCalledTimes(1);
     const [accion, args] = ejecutar.mock.calls[0]!;
