@@ -44,7 +44,7 @@ export default async function PaginaCompra({ params }: { params: Promise<{ id: s
         eyebrow={`Orden de compra ${c.folio}`}
         titulo={`Orden de compra a ${c.proveedor.nombre}`}
         descripcion={`Creada el ${etiquetaFecha(c.fecha_neg)}. El dinero se aplica al confirmar; las piezas suman al inventario cuando un socio confirma la recepción.`}
-        acciones={<AccionesCompra compra={c} />}
+        acciones={<><a className="rtm-boton" href={`/proveedores/compras/${c.id}/pdf`} target="_blank" rel="noopener" data-testid="pdf-orden">PDF de la orden</a><AccionesCompra compra={c} /></>}
       />
       <div className="rtm-acciones-fila" aria-label="Estado de la orden">
         <span data-testid="estado-oc"><Estado tono={ESTADO_COMPRA[c.estado].tono}>{ESTADO_COMPRA[c.estado].texto}</Estado></span>

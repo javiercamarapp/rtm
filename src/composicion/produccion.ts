@@ -174,7 +174,7 @@ export function manejadoresDeTareas(d: DepsProduccion): Record<string, Manejador
       if (!tg) return { estado: 'omitida', detalle: 'sin transporte de Telegram' };
       const ahora = ahoraDe(d)();
       // Como el reloj y la cobranza: sin telegram_envio (o con cron_pausado) no se evalua ni se envia nada.
-      const sw = await d.sql<{ ok: boolean }>("select coalesce((select activo from seguridad.interruptor where clave = 'telegram_envio'), false) and not coalesce((select activo from seguridad.interruptor where clave = 'cron_pausado'), false) as ok");
+      const sw = await d.sql<{ ok: boolean }>('select agente.avisos_envio_permitido() as ok');
       if (!sw[0]?.ok) return { estado: 'omitida', detalle: 'telegram_envio apagado o cron pausado' };
       await d.sql('select agente.avisos_inventario_evaluar(null::date, $1::text, $2::timestamptz)', ['emitir', ahora.toISOString()]);
       const chats = await new PuertoRelojCobranzaDb(d.sql).chats();

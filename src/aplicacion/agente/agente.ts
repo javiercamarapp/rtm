@@ -23,6 +23,7 @@ import { dijoSinFecha, interpretarFechaPago, type OpcionFecha } from '@/dominio/
 import { interpretarPlazo } from '@/dominio/agente/plazo_pedido';
 import { normalizar } from '@/dominio/catalogo/normalizar';
 import { Comunicador, verificarMensajeOmar } from './comunicador';
+import { corregirPromesasDePago } from '@/dominio/agente/promesa_pago';
 import { esquemaJsonDeRespuesta, validarRespuesta } from './esquemas';
 import { cifrasDeIntencionAmpliada, foliosSinProcedencia, montosQueSeRepiten, textosConCifraAjena } from '@/dominio/agente/guardia_ampliada';
 import { montoARepetir, textoExtraidoSinPuerta } from './plantillas_interprete';
@@ -853,7 +854,7 @@ export class AgenteTelegram {
     const guardada = await this.d.almacen.corrida(clave);
     if (guardada !== null) {
       const v = validarRespuesta(guardada);
-      if (v.ok) return v;
+      if (v.ok) return { ok: true, valor: corregirPromesasDePago(v.valor, ctx.texto) };
     }
     const [clientes, modelos] = await Promise.all([this.d.catalogo.clientes(), this.d.catalogo.modelos()]);
     const aprendido = this.d.aprendizaje && ctx.autor.rol === 'socio' ? await this.d.aprendizaje.contexto(ctx.texto) : '';
@@ -866,7 +867,7 @@ export class AgenteTelegram {
       const v = validarRespuesta(resp.contenido);
       if (v.ok) {
         await this.d.almacen.guardarCorrida(clave, resp.contenido);
-        return v;
+        return { ok: true, valor: corregirPromesasDePago(v.valor, ctx.texto) };
       }
       errores = v.errores;
       await this.d.almacen.registrarEvento({ tipo: 'validacion_fallida', miembro: ctx.autor.telegramUserId, detalle: `intento=${intento}` });
