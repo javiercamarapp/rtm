@@ -26,6 +26,7 @@ const SECCIONES = [
   { href: '/contactos', etiqueta: 'Contactos', icono: <IconoContactos /> },
   { href: '/inventario', etiqueta: 'Inventario', icono: <IconoInventario /> },
   { href: '/proveedores', etiqueta: 'Proveedores', icono: <IconoProveedores /> },
+  { href: '/proveedores/stock', etiqueta: 'Stock de proveedores', icono: <IconoInventario /> },
   { href: '/socios', etiqueta: 'Cuenta de socios', icono: <IconoSocios /> },
   { href: '/omar', etiqueta: 'Cuenta con Omar', icono: <IconoOmar /> },
   { href: '/pago-renta', etiqueta: 'Pago renta', icono: <IconoOmar /> },
@@ -39,8 +40,13 @@ const SECCIONES = [
 ] as const;
 
 function indiceActivo(ruta: string): number {
-  const i = SECCIONES.findIndex((s) => (s.href === '/' ? ruta === '/' : ruta === s.href || ruta.startsWith(`${s.href}/`)));
-  return i;
+  // La seccion mas especifica gana: /proveedores/stock enciende "Stock de proveedores" y no "Proveedores".
+  let mejor = -1;
+  SECCIONES.forEach((s, i) => {
+    const coincide = s.href === '/' ? ruta === '/' : ruta === s.href || ruta.startsWith(`${s.href}/`);
+    if (coincide && (mejor < 0 || s.href.length > SECCIONES[mejor]!.href.length)) mejor = i;
+  });
+  return mejor;
 }
 
 interface Props {

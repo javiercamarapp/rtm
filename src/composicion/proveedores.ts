@@ -5,6 +5,8 @@ import { ContextoNegocioDb, DatosListaDb, RepositorioProveedorDb } from '@/infra
 import { llamadaProveedoresSocio, pantallaProveedores, tableroKaren, type PantallaProveedores } from '@/infra/supabase/proveedores';
 import { sinLineaBase } from '@/dominio/proveedores/stock';
 import { bloqueoDeActualizar, type DatosTablero } from '@/dominio/proveedores/tablero';
+import { pdfOrdenCompra } from '@/infra/pdf/orden_compra';
+import { operacionDeSocio } from './operacion';
 import { lecturaManualDeProveedores } from './produccion';
 import { exigirSocio } from './acceso';
 
@@ -48,4 +50,12 @@ export async function actualizarAhoraDeSocio(): Promise<ResultadoActualizar> {
   if (cuerpo.estado === 'omitida') return { estado: 'bloqueada', motivo: 'omitida', mensaje: cuerpo.detalle === 'sin fuente configurada' ? 'La fuente de Karen no está configurada en el servidor.' : 'La lectura está apagada en el servidor.' };
   if (cuerpo.estado === 'error') return { estado: 'error' };
   return { estado: 'ok', detalle: cuerpo.detalle ?? 'ok' };
+}
+
+/** PDF de una orden de compra (renglones, cantidades, costos y total). Solo socios; null si la orden no existe. */
+export async function pdfOrdenCompraDeSocio(id: number): Promise<{ bytes: Uint8Array; nombre: string } | null> {
+  await exigirSocio();
+  const c = await (await operacionDeSocio()).compra(id);
+  if (!c) return null;
+  return { bytes: await pdfOrdenCompra(c, `${c.fecha_neg}T12:00:00.000Z`), nombre: `orden-compra-${c.folio}.pdf` };
 }
