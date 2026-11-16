@@ -1,5 +1,7 @@
 -- pgTAP: omar.mis_solicitudes, mis_liquidaciones y mis_paquetes (lecturas propias de Omar, sin folios de pedido ni de compra).
 begin;
+-- Estas pruebas fijan la compensacion SEMANAL de la renta (comportamiento anterior): se apaga el modo mensual del dia 15 dentro de la transaccion. La regla mensual se prueba en a12_001.
+update catalogo.config set valor = 'null'::jsonb where clave = 'omar_renta_dia_compensacion';
 select no_plan();
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values

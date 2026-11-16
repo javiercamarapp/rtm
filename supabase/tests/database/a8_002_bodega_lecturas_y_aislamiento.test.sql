@@ -134,7 +134,7 @@ select is((select coalesce(string_agg(n.nspname || '.' || p.proname, ',' order b
             where p.prosrc ~ 'exigir_rol\(array\[[^]]*''bodega''' and p.proname not in ('bodega_hoy_a_preparar', 'bodega_llegadas', 'bodega_marcar_empacado')), '', 'solo las funciones propias de bodega admiten el rol bodega');
 select is((select coalesce(string_agg(n.nspname || '.' || c.relname, ',' order by c.relname), '') from pg_class c join pg_namespace n on n.oid = c.relnamespace
             where c.relkind in ('r', 'p', 'v', 'm', 'f') and n.nspname not in ('pg_catalog', 'information_schema', 'pg_toast', 'auth', 'storage', 'realtime', 'vault', 'extensions', 'graphql', 'graphql_public', 'supabase_functions', '_realtime', 'pgsodium', 'net', 'pgbouncer', 'pg_temp')
-              and n.nspname !~ '^pg_' and (has_any_column_privilege('authenticated', c.oid, 'SELECT') or has_any_column_privilege('anon', c.oid, 'SELECT'))), 'omar.v_mercancia,omar.v_mi_cuenta,omar.v_mis_precios', 'tablas legibles por la API: solo las tres vistas cerradas de omar');
+              and n.nspname !~ '^pg_' and ((has_any_column_privilege('authenticated', c.oid, 'SELECT') and has_schema_privilege('authenticated', n.oid, 'USAGE')) or (has_any_column_privilege('anon', c.oid, 'SELECT') and has_schema_privilege('anon', n.oid, 'USAGE')))), 'omar.v_mercancia,omar.v_mi_cuenta,omar.v_mis_precios', 'tablas legibles por la API: solo las tres vistas cerradas de omar');
 
 select * from finish();
 rollback;

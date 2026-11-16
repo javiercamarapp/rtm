@@ -4,6 +4,8 @@
 -- Los casos que hoy NO cumplen (tope de 15 piezas, toma autorizada despues del corte, anular en semana cerrada) estan en 990_pendientes_de_correccion.
 -- ESCRITA SIN EJECUTAR (sin Docker). Datos sinteticos "N907".
 begin;
+-- Estas pruebas fijan la compensacion SEMANAL de la renta (comportamiento anterior): se apaga el modo mensual del dia 15 dentro de la transaccion. La regla mensual se prueba en a12_001.
+update catalogo.config set valor = 'null'::jsonb where clave = 'omar_renta_dia_compensacion';
 select no_plan();
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('n907.socio@example.test', 'socio', 'Javier', true);

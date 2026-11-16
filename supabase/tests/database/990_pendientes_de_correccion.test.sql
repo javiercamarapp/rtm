@@ -8,6 +8,8 @@
 -- es la opcion que la auditoria propone y esta senalado "(propuesto)".
 -- ESCRITA SIN EJECUTAR (sin Docker). Datos sinteticos "N990".
 begin;
+-- Estas pruebas fijan la compensacion SEMANAL de la renta (comportamiento anterior): se apaga el modo mensual del dia 15 dentro de la transaccion. La regla mensual se prueba en a12_001.
+update catalogo.config set valor = 'null'::jsonb where clave = 'omar_renta_dia_compensacion';
 select no_plan();
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('n990.angelo@example.test', 'socio', 'Angelo', true), ('n990.javier@example.test', 'socio', 'Javier', true);

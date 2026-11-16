@@ -1,5 +1,7 @@
 -- pgTAP: una toma autorizada despues del corte semanal se asienta en la semana abierta vigente (no se pierde); caducidad; inmutabilidad de la toma.
 begin;
+-- Estas pruebas fijan la compensacion SEMANAL de la renta (comportamiento anterior): se apaga el modo mensual del dia 15 dentro de la transaccion. La regla mensual se prueba en a12_001.
+update catalogo.config set valor = 'null'::jsonb where clave = 'omar_renta_dia_compensacion';
 select no_plan();
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('t23.socio@example.test', 'socio', 'Javier', true), ('t23.omar@example.test', 'omar', null, true);

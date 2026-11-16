@@ -1,6 +1,8 @@
 -- pgTAP F2: pagos de clientes con destino, cuentas por cobrar, dinero de la sociedad en poder de un socio (adenda 22),
 -- idempotencia del mismo mensaje y el modelo de Omar (renta, tomas, liquidacion semanal con corte el lunes; G6).
 begin;
+-- Estas pruebas fijan la compensacion SEMANAL de la renta (comportamiento anterior): se apaga el modo mensual del dia 15 dentro de la transaccion. La regla mensual se prueba en a12_001.
+update catalogo.config set valor = 'null'::jsonb where clave = 'omar_renta_dia_compensacion';
 select no_plan();
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('f2.pagos@example.test', 'socio', 'Angelo', true);

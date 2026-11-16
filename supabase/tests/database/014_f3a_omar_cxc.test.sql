@@ -1,6 +1,8 @@
 -- pgTAP F3a: cuenta con Omar (lectura para socios, casos G6, pendientes de autorizacion, vista de Omar cerrada), cuentas por cobrar completa (plazo, vencimiento,
 -- recargo, concentracion, texto de cobro, recordatorios) y "Explicar este numero" de las cifras nuevas. Fechas de Omar en 2028 para no depender de datos previos.
 begin;
+-- Estas pruebas fijan la compensacion SEMANAL de la renta (comportamiento anterior): se apaga el modo mensual del dia 15 dentro de la transaccion. La regla mensual se prueba en a12_001.
+update catalogo.config set valor = 'null'::jsonb where clave = 'omar_renta_dia_compensacion';
 select no_plan();
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('f3a.omar.socio@example.test', 'socio', 'Javier', true), ('f3a.omar.omar@example.test', 'omar', null, false);
