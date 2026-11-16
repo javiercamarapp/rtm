@@ -73,9 +73,9 @@ test('el socio da de alta un correo de bodega desde Cuentas y el acceso se crea 
   await altaUsuario({ correo: correoSocio, socio: 'Javier' });
   await entrarComo(page, correoSocio, '/cuentas');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('cuenta');
-  // Solo se ofrece el tipo bodega: nunca socio ni Omar.
+  // Solo se ofrecen tipos de bajo privilegio (bodega y Omar): nunca socio.
   const opciones = await page.getByTestId('campo-tipo-cuenta').locator('option').allTextContents();
-  expect(opciones).toEqual(['Bodega']);
+  expect(opciones).toEqual(['Bodega', 'Omar']);
   await page.getByTestId('crear-cuenta').click();
   await expect(page.getByText('Escribe el correo.')).toBeVisible();
   await page.getByTestId('campo-correo').fill(correoBodega);
@@ -85,6 +85,9 @@ test('el socio da de alta un correo de bodega desde Cuentas y el acceso se crea 
   await expect(page.getByRole('row').filter({ hasText: correoBodega })).toContainText('Activa');
   await expect(page.getByTestId('aviso-sin-acceso')).toBeVisible();
   await captura(page, info.project.name, 'claro', 'cuentas');
+  await page.evaluate(() => { document.documentElement.dataset.tema = 'oscuro'; });
+  await captura(page, info.project.name, 'oscuro', 'cuentas');
+  await page.evaluate(() => { document.documentElement.dataset.tema = 'claro'; });
   // Repetir el mismo alta no duplica.
   await page.getByTestId('campo-correo').fill(correoBodega);
   await page.getByTestId('crear-cuenta').click();
@@ -124,6 +127,13 @@ for (const tema of ['claro', 'oscuro'] as const) {
     // Sin desbordes a 390.
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
     await captura(page, info.project.name, tema, 'hoy');
+    if (tema === 'claro') {
+      // Bodega marca empacado el pedido del cliente A; el estado cambia y el boton desaparece. Repetir el clic no duplica.
+      await expect(a.getByTestId('marcar-empacado')).toHaveCount(1);
+      await a.getByTestId('marcar-empacado').click();
+      await expect(a).toContainText('Empacado');
+      await expect(a.getByTestId('marcar-empacado')).toHaveCount(0);
+    }
     await page.getByRole('link', { name: 'Llegadas' }).click();
     await expect(page).toHaveURL(/\/bodega\/llegadas$/);
     const compra = page.getByTestId('bodega-compra').filter({ hasText: `E2E-${SUF}` });
