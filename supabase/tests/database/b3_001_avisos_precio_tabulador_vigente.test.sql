@@ -2,6 +2,15 @@
 -- (pedido del dueño, 14-nov: "que se borren las notificaciones una vez se solucionen; que unicamente sigan si sigue el problema").
 -- Los esperados salen de la regla del dueño, no del codigo. Datos ficticios.
 begin;
+-- La persona de bodega es prerequisito de enviar pedidos (renta de Omar): una base limpia no la trae, asi que la prueba da de alta un cliente interno de prueba.
+do $$ begin
+  if not exists (select 1 from catalogo.persona_bodega) then
+    perform set_config('rtm.canal', 'importacion', true);
+    perform catalogo.asegurar_cliente('PB Bodega Prueba', 'Javier', 'credito_interno');
+    perform catalogo.asegurar_persona_bodega('PB Bodega Prueba', 'PB Bodega Prueba');
+    perform set_config('rtm.canal', '', true);
+  end if;
+end $$;
 select no_plan();
 
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('av.tab@example.test', 'socio', 'Javier', true);

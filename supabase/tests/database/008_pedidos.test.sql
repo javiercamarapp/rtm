@@ -7,8 +7,9 @@ insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) value
 insert into auth.users (id, instance_id, aud, role, email) values ('72222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'f2.pedidos@example.test');
 select set_config('request.jwt.claim.sub', '72222222-2222-2222-2222-222222222222', true);
 
-create temp table _f as select ultimo as p0 from seguridad.contador_folio where serie = 'P';
-create function pg_temp.fol(k int) returns text language sql as $$ select 'P-' || lpad(((select p0 from _f) + k)::text, 4, '0') $$;
+-- El folio del pedido ahora lleva las iniciales del cliente (decision del dueno, 14-nov): 'F2 Villa' -> FV-001, FV-002...
+create temp table _f as select coalesce((select ultimo from operacion.contador_folio_pedido where iniciales = 'FV'), 0) as p0;
+create function pg_temp.fol(k int) returns text language sql as $$ select 'FV-' || lpad(((select p0 from _f) + k)::text, 3, '0') $$;
 create function pg_temp.pid(p_clave text) returns bigint language sql as $$ select (resultado->>'pedido_id')::bigint from seguridad.operacion where clave = $1 $$;
 
 create function pg_temp.salidas() returns int language sql as $$ select coalesce(sum(-mi.cantidad), 0)::int from operacion.movimiento_inventario mi join catalogo.modelo m on m.id = mi.modelo_id where m.nombre_canonico like 'F2 %' and mi.tipo = 'salida_pedido' $$;
@@ -80,7 +81,7 @@ select is((select sha256 from operacion.nota_documento nd join operacion.nota n 
 select throws_ok($$update operacion.nota set total_cent = 1$$, '42501', null, 'la nota original no se actualiza');
 select throws_ok($$update operacion.pedido_linea set precio_cent = 1$$, '42501', null, 'T4: la linea de un pedido enviado es inmutable');
 select throws_ok($$select operacion.emitir_correccion('f2v1k0', pg_temp.pid('f2v1'), '')$$, '23502', null, 'la correccion exige motivo');
-select is((operacion.emitir_correccion('f2v1k', pg_temp.pid('f2v1'), 'envio de 350', null, 35000)->>'folio_documento'), pg_temp.fol(1) || '-C1', 'la correccion se llama P-xxxx-C1');
+select is((operacion.emitir_correccion('f2v1k', pg_temp.pid('f2v1'), 'envio de 350', null, 35000)->>'folio_documento'), pg_temp.fol(1) || '-C1', 'la correccion se llama FV-xxx-C1');
 select is((select total_cent from operacion.nota where folio_documento = pg_temp.fol(1)), 1359000::bigint, 'la original no cambia');
 select is((select total_cent from operacion.nota where folio_documento = pg_temp.fol(1) || '-C1'), 1364000::bigint, 'la correccion vale 13,640.00');
 select is((select corrige_nota_id from operacion.nota where folio_documento = pg_temp.fol(1) || '-C1'), (select id from operacion.nota where folio_documento = pg_temp.fol(1)), 'enlazada a la original');

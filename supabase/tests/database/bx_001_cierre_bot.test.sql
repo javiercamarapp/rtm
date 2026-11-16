@@ -1,6 +1,15 @@
 -- pgTAP cierre del carril del bot (revision independiente): el cobro respeta el pedido elegido, un cobro sin cliente se rechaza, un lote de gastos iguales de UN mensaje no es duplicado,
 -- las tablas de avisos de inventario tienen RLS habilitada y forzada. Datos sinteticos; no se envia nada. Hace rollback.
 begin;
+-- La persona de bodega es prerequisito de enviar pedidos (renta de Omar): una base limpia no la trae, asi que la prueba da de alta un cliente interno de prueba.
+do $$ begin
+  if not exists (select 1 from catalogo.persona_bodega) then
+    perform set_config('rtm.canal', 'importacion', true);
+    perform catalogo.asegurar_cliente('PB Bodega Prueba', 'Javier', 'credito_interno');
+    perform catalogo.asegurar_persona_bodega('PB Bodega Prueba', 'PB Bodega Prueba');
+    perform set_config('rtm.canal', '', true);
+  end if;
+end $$;
 select no_plan();
 select set_config('rtm.canal', 'importacion', true);
 select agente.registrar_miembro(5100001, 'angelo');

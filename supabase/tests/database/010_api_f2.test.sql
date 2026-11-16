@@ -32,7 +32,7 @@ select set_config('rtm.canal', '', true);
 select set_config('request.jwt.claim.sub', '51111111-1111-1111-1111-111111111111', true);
 set local role authenticated;
 select ok((api.crear_pedido('apx1', (select (x->>'id')::bigint from jsonb_array_elements(api.clientes_lista()) x where x->>'nombre' = 'Api Cliente'),
-  '[{"modelo":"Api Modelo 50K","sabor":"Fresa","piezas":40}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-10', null, 30)->>'folio') ~ '^P-\d{4}$', 'api.crear_pedido devuelve el folio');
+  '[{"modelo":"Api Modelo 50K","sabor":"Fresa","piezas":40}]'::jsonb, 'bodega_omar', null, 0, 0, 0, '2026-11-10', null, 30)->>'folio') ~ '^(?:[A-Z]{2}-\d{3}|P-\d{4})$', 'api.crear_pedido devuelve el folio (iniciales del cliente y consecutivo)');
 select ok(jsonb_array_length(api.pedidos_lista()) >= 1, 'api.pedidos_lista()');
 select is((api.pedido_detalle((select (x->>'id')::bigint from jsonb_array_elements(api.pedidos_lista()) x where x->>'cliente' = 'Api Cliente' limit 1))->>'estado'), 'borrador', 'api.pedido_detalle()');
 select ok((api.pedido_catalogo((select (x->>'id')::bigint from jsonb_array_elements(api.clientes_lista()) x where x->>'nombre' = 'Api Cliente'))->'skus') @> '[{"modelo":"Api Modelo 50K","precio_cent":15000}]'::jsonb, 'api.pedido_catalogo(): precio del tabulador y existencia');
@@ -81,7 +81,7 @@ reset role;
 
 -- anon: ninguna funcion nueva ----------------------------------------------------------------------------------------------------------------
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('api', 'operacion', 'catalogo') and p.prosecdef and has_function_privilege('anon', p.oid, 'EXECUTE')), 0, 'anon no ejecuta ninguna funcion de negocio');
-select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('operacion', 'catalogo') and has_function_privilege('authenticated', p.oid, 'EXECUTE')), 0, 'authenticated no ejecuta funciones de operacion ni catalogo directamente');
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('operacion', 'catalogo') and p.proname <> 'recargo_sugerido' and has_function_privilege('authenticated', p.oid, 'EXECUTE')), 0, 'authenticated no ejecuta funciones de operacion ni catalogo directamente (salvo recargo_sugerido, que la cobranza concede a proposito y cb_001 vigila)');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('api', 'operacion', 'catalogo') and not exists (select 1 from unnest(coalesce(p.proconfig, array[]::text[])) c where c like 'search_path=%') and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')), 0, 'toda funcion de negocio fija search_path');
 select * from finish();
 rollback;

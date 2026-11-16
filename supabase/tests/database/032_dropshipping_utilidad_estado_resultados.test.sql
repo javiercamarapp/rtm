@@ -68,7 +68,7 @@ select is(contabilidad.saldo('5100'), 102500::bigint, '(4) costo de ventas 1,025
 select is(contabilidad.saldo('1310'), 102500::bigint, '(4) y el inventario restante vale 1,025.00');
 
 -- Pedido de dropshipping con envio cobrado al cliente (ingreso), envio del proveedor (costo directo) y credito
-select operacion.ds_crear_pedido('pyl-ds', pg_temp.cli(), '[{"modelo":"PYL Modelo 25K","sabor":"Mango","piezas":40}]'::jsonb, 'karen_directo', null, '{}'::jsonb, 'cliente', null, '73266', 30000);
+select operacion.ds_crear_pedido('pyl-ds', pg_temp.cli(), '[{"modelo":"PYL Modelo 25K","sabor":"Mango","piezas":40}]'::jsonb, 'karen_directo', null, '{"semanas":1}'::jsonb, 'cliente', null, '73266', 30000);
 select operacion.confirmar_pedido('pyl-dsc', pg_temp.ped('pyl-ds:ped'));
 select operacion.enviar_pedido('pyl-dse', pg_temp.ped('pyl-ds:ped'), null, '{"paqueteria":"Castores","numero":"PYL-G1","costo_cent":25000,"pagada_por":"Angelo"}'::jsonb, null, true);
 create temp table _u as select x from jsonb_array_elements(api.ds_utilidad()->'filas') x where (x->>'pedido_id')::bigint = pg_temp.ped('pyl-ds:ped');

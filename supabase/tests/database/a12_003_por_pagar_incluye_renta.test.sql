@@ -1,6 +1,15 @@
 -- pgTAP: "Por pagar" incluye la renta de Omar como renglon aparte (migracion 20261114700100). Cifras hechas a mano, datos sinteticos "A12R".
 --   Karen: 20 piezas x 10.00 = 200.00 (20000 cent). Isaac: 10 piezas x 50.00 = 500.00 (50000). Renta: 20 piezas enviadas desde bodega x 2.00 = 40.00 (4000). Total 74000.
 begin;
+-- La persona de bodega es prerequisito de enviar pedidos (renta de Omar): una base limpia no la trae, asi que la prueba la da de alta como cliente interno de prueba.
+do $$ begin
+  if not exists (select 1 from catalogo.persona_bodega) then
+    perform set_config('rtm.canal', 'importacion', true);
+    perform catalogo.asegurar_cliente('A12P Bodega Prueba', 'Javier', 'credito_interno');
+    perform catalogo.asegurar_persona_bodega('A12P Bodega Prueba', 'A12P Bodega Prueba');
+    perform set_config('rtm.canal', '', true);
+  end if;
+end $$;
 select no_plan();
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('a12r.jav@example.test', 'socio', 'Javier', true), ('a12r.omar@example.test', 'omar', null, true);
 insert into auth.users (id, instance_id, aud, role, email) values

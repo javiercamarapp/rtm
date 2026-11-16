@@ -1,6 +1,15 @@
 -- pgTAP carril AVISOS DE INVENTARIO: evaluadores (reposicion con transito y minimo manual, agotado, compras, proveedores, clientes, pedidos), cola con enfriamiento,
 -- carga silenciosa, digest con techo y silencio, puente del monitor, minimo por conversacion y permisos. Datos sinteticos; no se envia nada; todo APAGADO por defecto.
 begin;
+-- La persona de bodega es prerequisito de enviar pedidos (renta de Omar): una base limpia no la trae, asi que la prueba da de alta un cliente interno de prueba.
+do $$ begin
+  if not exists (select 1 from catalogo.persona_bodega) then
+    perform set_config('rtm.canal', 'importacion', true);
+    perform catalogo.asegurar_cliente('PB Bodega Prueba', 'Javier', 'credito_interno');
+    perform catalogo.asegurar_persona_bodega('PB Bodega Prueba', 'PB Bodega Prueba');
+    perform set_config('rtm.canal', '', true);
+  end if;
+end $$;
 select no_plan();
 select set_config('rtm.canal', 'importacion', true);
 select agente.registrar_miembro(5100001, 'angelo');

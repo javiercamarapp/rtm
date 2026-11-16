@@ -36,6 +36,8 @@ begin
     ('c2222222-2222-2222-2222-222222222201', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'zz2.angelo@example.test'),
     ('c2222222-2222-2222-2222-222222222202', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'zz2.javier@example.test');
   perform pg_temp.como('Angelo');
+  -- Otros tests con COMMIT REAL (bg_002) dejan aportaciones de Angelo: la aportacion neta de este escenario suma esa parte previa que no es capital ni fondos (el capital y los fondos si se fijan en cifras exactas abajo).
+  perform set_config('zz2.base_ang', (coalesce(pg_temp.fila('Angelo', 'aportacion_neta_cent'), 0) - operacion.aportado_socio(pg_temp.sid('Angelo'), 'capital') + operacion.saldo_socio(pg_temp.sid('Angelo'), 'fondos'))::text, false);
   perform catalogo.asegurar_cliente('ZZ2 Cliente', 'Angelo');
   -- Numeros del dueno: aportado 118,161.91 (Javier) y 105,715.00 (Angelo); fondos de la sociedad en poder de Angelo 35,475.00.
   v_jav := 11816191 - operacion.aportado_socio(pg_temp.sid('Javier'), 'capital');
@@ -52,7 +54,7 @@ select pg_temp.como('Angelo');
 select is(pg_temp.fallas(), '', 'punto de partida confirmado: libro conciliado, C1..C24, K y Balance cuadran');
 select is(operacion.saldo_socio(pg_temp.sid('Angelo'), 'fondos'), 3547500::bigint, 'dueno: Angelo tiene 35,475.00 de fondos de la sociedad en su poder');
 select is(pg_temp.fila('Angelo', 'fondos_en_poder_cent'), 3547500::bigint, 'capital_por_mes: fondos en poder de Angelo 35,475.00');
-select is(pg_temp.fila('Angelo', 'aportacion_neta_cent'), 10571500::bigint - 3547500, 'capital_por_mes: su aportacion neta es lo aportado (105,715.00) menos esos fondos');
+select is(pg_temp.fila('Angelo', 'aportacion_neta_cent'), 10571500::bigint - 3547500 + current_setting('zz2.base_ang')::bigint, 'capital_por_mes: su aportacion neta es lo aportado (105,715.00) menos esos fondos');
 commit;
 
 -- 1) ENTREGA PARCIAL a la sociedad (la que manda la pantalla: aplica_a general).
@@ -99,7 +101,7 @@ commit;
 begin; select pg_temp.como('Angelo');
 select is(operacion.saldo_socio(pg_temp.sid('Angelo'), 'fondos'), 0::bigint, 'entrega total: Angelo ya no tiene fondos de la sociedad en su poder');
 select is(pg_temp.fila('Angelo', 'fondos_en_poder_cent'), 0::bigint, 'entrega total: desaparece el renglon pendiente de entregar (capital_por_mes)');
-select is(pg_temp.fila('Angelo', 'aportacion_neta_cent'), 10571500::bigint, 'dueno: la aportacion neta de Angelo sube a 105,715.00');
+select is(pg_temp.fila('Angelo', 'aportacion_neta_cent'), 10571500::bigint + current_setting('zz2.base_ang')::bigint, 'dueno: la aportacion neta de Angelo sube a 105,715.00');
 select is(pg_temp.fallas(), '', 'entrega total: todo cuadra tras el COMMIT');
 commit;
 
