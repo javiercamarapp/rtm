@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { costosDeSocio } from '@/composicion/costos';
+import { costosDeSocio, openRouterEnVivoDeSocio } from '@/composicion/costos';
+import { centavosDeUsdMicro, conciliarEnVivo } from '@/dominio/costos/en_vivo';
 import { fechaNeg } from '@/dominio/calendario';
 import { pesosDeExactoE6, textoMicro, textoPct } from '@/dominio/costos/entrada';
 import { formatearMoneda, etiquetaFecha } from '@/dominio/formato';
@@ -14,6 +15,7 @@ import { CifraComprobada } from '@/ui/componentes/cifra';
 import { RazonamientoServicios } from './razonamiento-servicios';
 import { AnularCargo, FormularioReembolso, FormularioTipoCambio } from './acciones-costos';
 import { FormularioCargo } from './formulario-cargo';
+import { ActualizarCada } from './actualizar-cada';
 import { ListaServicios } from './lista-servicios';
 import '@/ui/estilos/costos.css';
 
@@ -38,6 +40,12 @@ export default async function PaginaCostos({ searchParams }: { searchParams: Pro
   const aportadoTotal = resumen.aportacion_javier?.total_cent ?? cuenta.aportado_capital_cent ?? 0n;
   const aportaciones = (await lector.aportaciones('javier')).aportaciones;
   const pendientesTc = val?.pendientes_tc ?? [];
+  const vivo = await openRouterEnVivoDeSocio(mes).catch(() => null);
+  const libroMicro = vivo ? BigInt(vivo.libro.total_micro) : 0n;
+  const externoMicro = vivo?.externo ? (mes === hoy.slice(0, 7) ? vivo.externo.usoMesUsdMicro : null) : null;
+  const conc = externoMicro !== null ? conciliarEnVivo(libroMicro, externoMicro) : null;
+  const usd = (m: bigint) => `USD ${textoMicro(m, 4)}`;
+  const mxn = (m: bigint) => (tc ? dinero(centavosDeUsdMicro(m, BigInt(tc.tc_micro))) : null);
 
   return (
     <Pagina ancho="tablero">
@@ -69,6 +77,24 @@ export default async function PaginaCostos({ searchParams }: { searchParams: Pro
       </div>
       {faltan && <Aviso tono="atencion">Hay datos faltantes: {resumen.faltantes.map((f) => `${f.servicio} (${f.motivo})`).join(', ')}. El total dice "al menos" y el servicio queda en "Sin dato".</Aviso>}
       <p className="rtm-nota">Tipo de cambio de referencia: {tc ? `${textoMicro(BigInt(tc.tc_micro), 4)} del ${etiquetaFecha(tc.fecha)} (${tc.fuente === 'manual' ? 'capturado' : 'Banxico, FIX'})` : 'Sin dato: captúralo abajo antes de registrar un cargo en dólares.'}</p>
+
+      <Tarjeta titulo="OpenRouter en vivo" descripcion="Lo que OpenRouter dice que consumió la llave de RTM, contra el libro propio de llamadas; al cerrar el ciclo se concilia contra el cargo" acciones={<ActualizarCada segundos={60} />}>
+        {!vivo ? (
+          <p className="rtm-nota" data-testid="en-vivo-sin-dato">No se pudo leer el libro de llamadas. Intenta de nuevo en un momento.</p>
+        ) : (
+          <div className="rtm-en-vivo" data-testid="en-vivo-openrouter">
+            <KpiLinea
+              etiquetaAria="OpenRouter en vivo"
+              celdas={[
+                { id: 'ext', etiqueta: 'Consumo del mes según OpenRouter', valor: <span data-testid="en-vivo-externo">{externoMicro === null ? 'Sin dato' : usd(externoMicro)}</span>, categoria: 1, nota: externoMicro === null ? (vivo.externo ? 'Solo se compara el mes en curso' : 'No se pudo leer OpenRouter (sin llave o sin red)') : `${mxn(externoMicro) ?? 'Sin tipo de cambio'} · hoy ${usd(vivo.externo?.usoDiaUsdMicro ?? 0n)}` },
+                { id: 'lib', etiqueta: 'Libro propio del mes', valor: <span data-testid="en-vivo-libro">{usd(libroMicro)}</span>, categoria: 2, nota: `${vivo.libro.llamadas} ${vivo.libro.llamadas === 1 ? 'llamada' : 'llamadas'} liquidadas${mxn(libroMicro) ? ` · ${mxn(libroMicro)}` : ''}` },
+                { id: 'dif', etiqueta: 'Diferencia', valor: <span data-testid="en-vivo-diferencia">{conc ? usd(conc.diferenciaUsdMicro) : 'Sin dato'}</span>, categoria: 4, nota: conc ? (conc.estado === 'cuadra' ? 'Cuadra (tolerancia de 2 % o 5 centavos de dólar)' : 'Fuera de tolerancia: revisar llamadas que no pasaron por el libro') : 'Se concilia cuando se pueda leer OpenRouter' },
+              ]}
+            />
+            <p className="rtm-nota">{conc ? <EstadoTexto tono={conc.estado === 'cuadra' ? 'ok' : 'atencion'}>{conc.estado === 'cuadra' ? 'Conciliado en vivo' : 'No cuadra'}</EstadoTexto> : null} La lectura es de la llave de RTM únicamente (nunca el saldo ni lo de otros productos). Al terminar el ciclo, captura el cargo de OpenRouter abajo y se compara contra el consumo del mes.</p>
+          </div>
+        )}
+      </Tarjeta>
 
       <Tarjeta titulo="Por servicio" descripcion="Lo atribuido a cada servicio este mes. Elige uno para ver sus cargos y registrar uno nuevo.">
         <ListaServicios servicios={servicios} resumen={resumen.servicios} mes={mes} incluir={incluir} />

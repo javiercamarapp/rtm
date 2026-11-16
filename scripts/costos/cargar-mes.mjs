@@ -13,8 +13,8 @@
 // Fuentes por servicio (ver docs/costos-carga-mensual.md):
 //   openrouter / openrouter_comision / transcripcion  libro propio ia.llamada del mes (liquidadas); el rol 'audio' es la transcripcion. Sin libro:
 //                                                      dato faltante, salvo --openrouter-usd (consumo declarado de la llave de RTM, queda 'capturado').
-//   vercel                  vale 0 por ahora (plan equivalente): sin cargo y SIN dato faltante; con --vercel-consumo/--vercel-factura-usd aplica la misma regla de cuota base.
-//   supabase                vale 0 sin consumo real declarado (14-nov). Con --supabase-horas RTM:TOTAL --supabase-factura-usd N se cobra lo MAYOR (la cuota base es el piso; solo
+//   vercel                  cuota mensual FIJA de US$20 (decision del dueno, 16-nov; --vercel-usd N la cambia); con --vercel-consumo/--vercel-factura-usd aplica la regla de cuota base contra el consumo.
+//   supabase                cuota mensual FIJA de US$20 (decision del dueno, 16-nov; --supabase-usd N la cambia). Con --supabase-horas RTM:TOTAL --supabase-factura-usd N se cobra lo MAYOR (la cuota base es el piso; solo
 //                           cambia si costos.cuota_base fija la regla menor) entre la cuota base y el consumo real.
 //   claude_max              FIJO en US$20 al mes (decision del dueno: 20 de 200 prorrateados; --claude-usd N lo cambia). No usa el conteo de tokens por carpeta.
 //   dominio                 administrado en Vercel; --dominio-anual-usd N (devengo de un doceavo). Sin costo declarado vale 0.
@@ -248,7 +248,13 @@ export function planificar({ mes, fecha, snap, declarado, tc }) {
     const d = declarado[slug];
     const q = snap.cuotas?.[slug] ?? (s.cuotaMicro === null ? null : { regla: 'mayor', cuotaMicro: s.cuotaMicro });
     if (!d?.consumo || d.facturaMicro === null) {
-      acciones.push(sinCargo(slug, `vale 0: sin consumo real declarado (decision del dueno, 14-nov); con --${slug}-${slug === 'supabase' ? 'horas' : 'consumo'} RTM:TOTAL --${slug}-factura-usd N se cobra lo ${q?.regla ?? 'menor'} entre la cuota base y el consumo real`));
+      // Decision del dueno (16-nov): Vercel y Supabase cuestan una cuota mensual FIJA (US$20 cada uno por omision; --vercel-usd / --supabase-usd la cambian). Con consumo real declarado
+      // (--*-horas / --*-consumo y --*-factura-usd) sigue aplicando la regla de cuota base contra el consumo.
+      const fijo = declarado.plataformaFijaUsdMicro?.[slug] ?? PLATAFORMA_USD_POR_OMISION;
+      cargo(slug, {
+        baseOrigMicro: fijo, atribucion: { tipo: 'directa' }, etiqueta: 'capturado', evidenciaTipo: 'captura', evidenciaSha256: null,
+        nota: `cuota mensual fija declarada por el dueno: ${textoMicro(fijo)} USD al mes (16-nov); sin consumo real declarado.`,
+      });
       continue;
     }
     if (!q) {
@@ -319,9 +325,11 @@ export function totales(acciones, servicios) {
 // Argumentos
 // ---------------------------------------------------------------------------------------------------------------------------------------------
 const OPCIONES_CON_VALOR = ['mes', 'fecha', 'tc', 'tc-fecha', 'datos', 'claude-usd', 'openrouter-usd', 'dominio-anual-usd', 'higgsfield-usd',
-  'supabase-horas', 'supabase-factura-usd', 'vercel-consumo', 'vercel-factura-usd', 'fijar-cuota'];
+  'supabase-horas', 'supabase-factura-usd', 'vercel-consumo', 'vercel-factura-usd', 'vercel-usd', 'supabase-usd', 'fijar-cuota'];
 const OPCIONES_BANDERA = ['verificar', 'aplicar', 'si', 'reemplazar', 'ayuda', 'tc-sugerido'];
 export const CLAUDE_USD_POR_OMISION = 20_000_000n;
+/** Cuota mensual fija de Vercel y de Supabase (decision del dueno, 16-nov). */
+export const PLATAFORMA_USD_POR_OMISION = 20_000_000n;
 
 export function parsearArgs(argv) {
   const o = {};
@@ -370,6 +378,7 @@ export function declaradoDeArgs(o) {
   for (const [d, n] of [[s, 'supabase'], [v, 'vercel']]) if (Boolean(d.consumo) !== (d.facturaMicro !== null)) throw new Error(`Para ${n} declara el consumo (RTM:TOTAL) Y la factura del mes en dolares, o ninguno.`);
   return {
     openrouterMicro: usdOpcional(o['openrouter-usd'], '--openrouter-usd'), supabase: s, vercel: v, claudeUsdMicro: usdOpcional(o['claude-usd'], '--claude-usd') ?? CLAUDE_USD_POR_OMISION,
+    plataformaFijaUsdMicro: { vercel: usdOpcional(o['vercel-usd'], '--vercel-usd') ?? PLATAFORMA_USD_POR_OMISION, supabase: usdOpcional(o['supabase-usd'], '--supabase-usd') ?? PLATAFORMA_USD_POR_OMISION },
     dominioAnualMicro: usdOpcional(o['dominio-anual-usd'], '--dominio-anual-usd'), higgsfieldMicro: usdOpcional(o['higgsfield-usd'], '--higgsfield-usd'),
   };
 }
@@ -549,8 +558,9 @@ const AYUDA = `Uso: node scripts/costos/cargar-mes.mjs --mes AAAA-MM [--verifica
   --tc-sugerido                 solo imprime como declarar el tipo de cambio
   --openrouter-usd N            consumo de la llave de RTM en OpenRouter (si el libro ia.llamada esta vacio)
   --dominio-anual-usd N         costo anual del dominio;  --higgsfield-usd N  generaciones etiquetadas RTM
-  --supabase-horas RTM:TOTAL --supabase-factura-usd N    horas de computo y factura real de Supabase (consumo real; sin ellos vale 0)
-  --vercel-consumo RTM:TOTAL --vercel-factura-usd N       consumo y factura real de Vercel (sin ellos vale 0)
+  --supabase-horas RTM:TOTAL --supabase-factura-usd N    horas de computo y factura real de Supabase (sin ellos: cuota fija, 20 USD por omision)
+  --vercel-consumo RTM:TOTAL --vercel-factura-usd N       consumo y factura real de Vercel (sin ellos: cuota fija, 20 USD por omision)
+  --vercel-usd N --supabase-usd N                         cuota mensual fija (20 USD por omision cada una)
   --fijar-cuota SLUG:REGLA:USD:AAAA-MM-DD   cuota base de vercel o supabase con vigente_desde; REGLA = menor | mayor entre la cuota y el consumo real
   --reemplazar                  anula (con reversa) y vuelve a registrar un cargo vivo con cifra distinta
   --si                          no pedir la confirmacion escrita en --aplicar`;

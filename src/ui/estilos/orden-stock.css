@@ -1,0 +1,31 @@
+/* Orden de compra desde el stock del proveedor: lista por modelo con acordeon, cantidades por sabor y pie fijo con el total. Blanco y negro, solo tokens, movil primero. */
+.rtm-os { display: flex; flex-direction: column; gap: var(--rtm-e-3); margin-top: var(--rtm-e-4); padding-bottom: 84px; }
+.rtm-os-cab { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--rtm-e-3); }
+.rtm-os-cab h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.rtm-os-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rtm-e-3); min-width: 0; }
+.rtm-os-filtros .rtm-campo { min-width: min(100%, 240px); }
+.rtm-os-lista, .rtm-os-sabores { list-style: none; margin: 0; padding: 0; }
+.rtm-os-lista { display: flex; flex-direction: column; gap: var(--rtm-e-2); }
+.rtm-os-modelo { border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-ctl); background: var(--rtm-surface); overflow: hidden; transition: border-color 160ms ease, transform 160ms ease; }
+.rtm-os-modelo:hover { border-color: var(--rtm-ink-3); }
+.rtm-os-modelo[data-abierto] { border-color: var(--rtm-ink); }
+.rtm-os-cabecera { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 18px; align-items: center; gap: var(--rtm-e-3); width: 100%; padding: 12px var(--rtm-e-4); background: transparent; border: 0; color: inherit; text-align: left; cursor: pointer; }
+.rtm-os-nombre { display: flex; flex-direction: column; min-width: 0; }
+.rtm-os-nombre b { font-weight: 600; overflow-wrap: anywhere; }
+.rtm-os-meta { font-size: var(--rtm-t-pequeno); color: var(--rtm-ink-3); white-space: nowrap; }
+.rtm-os-pedidas { padding: 2px 10px; border-radius: var(--rtm-r-pildora); background: var(--rtm-ink); color: var(--rtm-surface); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; animation: rtm-os-pop 220ms ease; }
+.rtm-os-flecha { width: 8px; height: 8px; border-right: 1.5px solid var(--rtm-ink-3); border-bottom: 1.5px solid var(--rtm-ink-3); transform: rotate(45deg); transition: transform 200ms ease; }
+.rtm-os-modelo[data-abierto] .rtm-os-flecha { transform: rotate(-135deg); }
+.rtm-os-sabores { border-top: 1px solid var(--rtm-line); animation: rtm-os-abre 200ms ease; }
+.rtm-os-sabores li { display: flex; align-items: center; justify-content: space-between; gap: var(--rtm-e-3); padding: 8px var(--rtm-e-4); border-bottom: 1px solid var(--rtm-line); }
+.rtm-os-sabores li:last-child { border-bottom: 0; }
+.rtm-os-sabores li[data-agotado] { opacity: 0.55; }
+.rtm-os-sabores label { display: flex; flex-direction: column; min-width: 0; cursor: pointer; }
+.rtm-os-sabores .rtm-campo { width: 92px; text-align: right; }
+.rtm-os-vacio { padding: var(--rtm-e-5); text-align: center; color: var(--rtm-ink-3); border: 1px dashed var(--rtm-line); border-radius: var(--rtm-r-ctl); }
+.rtm-os-pie { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--rtm-e-3); padding: var(--rtm-e-3) var(--rtm-e-4); border: 1px solid var(--rtm-line); border-radius: var(--rtm-r-ctl); background: var(--rtm-chrome); transition: border-color 200ms ease, box-shadow 200ms ease; }
+.rtm-os-pie[data-activo] { border-color: var(--rtm-ink); box-shadow: 0 -6px 24px color-mix(in srgb, var(--rtm-ink) 10%, transparent); }
+@keyframes rtm-os-abre { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes rtm-os-pop { from { transform: scale(0.8); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .rtm-os-modelo, .rtm-os-flecha, .rtm-os-sabores, .rtm-os-pedidas, .rtm-os-pie { transition: none; animation: none; } }
+@media (max-width: 480px) { .rtm-os-cabecera { grid-template-columns: minmax(0, 1fr) auto 18px; } .rtm-os-meta { display: none; } }

@@ -5,7 +5,11 @@ import { describe, expect, it, vi } from 'vitest';
 import type { CargoVista, ResumenMesVista, ServicioVista } from '@/dominio/costos/vista';
 
 const estado = vi.hoisted(() => ({ lector: null as unknown }));
-vi.mock('@/composicion/costos', () => ({ costosDeSocio: async () => estado.lector }));
+vi.mock('@/composicion/costos', () => ({
+  costosDeSocio: async () => estado.lector,
+  openRouterEnVivoDeSocio: async () => ({ libro: { mes: '2026-11', total_micro: 2169, llamadas: 1, por_rol: { texto: 2169 }, ultima_at: null }, externo: { usoMesUsdMicro: 2169n, usoDiaUsdMicro: 2169n, usoSemanaUsdMicro: 2169n, usoTotalUsdMicro: 2169n, limiteUsdMicro: null, leidaEn: '2026-11-16T12:00:00.000Z' } }),
+}));
+vi.mock('@/app/(socio)/costos/actualizar-cada', () => ({ ActualizarCada: () => null }));
 vi.mock('@/app/(socio)/operacion/usar-accion', () => ({
   useAccion: () => ({ correr: async () => undefined, ocupado: false, error: null, aviso: null }),
   centavosDeTexto: () => null,
@@ -51,6 +55,14 @@ async function html(mes: string) {
 }
 
 describe('pagina de costos del sistema', () => {
+  it('muestra OpenRouter en vivo: consumo segun OpenRouter, libro propio y la diferencia conciliada', async () => {
+    estado.lector = lector(resumenVacio, []);
+    const h = await html(new Date().toISOString().slice(0, 7));
+    expect(h).toContain('OpenRouter en vivo');
+    expect(h).toContain('data-testid="en-vivo-externo"');
+    expect(h).toContain('USD 0.0021');
+    expect(h).toContain('Conciliado en vivo');
+  });
   it('sin cargos explica por que esta vacia y como cargarlos', async () => {
     estado.lector = lector(resumenVacio, []);
     const h = await html('2026-11');
