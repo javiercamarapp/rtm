@@ -18,6 +18,8 @@
 //   --con-correo-real     la prueba de humo pide un enlace al correo de Javier y confirma el envio en Resend
 // Registro: ~/.bodega-backups/despliegues.log (hora, commit, resultado `desplegado`/`revertido`/`humo-fallo`/`abortado`, URL anterior y nueva del alias). Nunca escribe secretos ni correos.
 import { spawnSync } from 'node:child_process';
+// El ~/.npmrc del usuario puede traer `allow-scripts`, que npm 11 rechaza en instalaciones de proyecto (EALLOWSCRIPTS): todo el flujo ignora la config de usuario de npm.
+process.env.NPM_CONFIG_USERCONFIG = '/dev/null';
 import { appendFileSync, chmodSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
