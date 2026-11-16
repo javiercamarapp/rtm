@@ -20,6 +20,8 @@
 import { spawnSync } from 'node:child_process';
 // El ~/.npmrc del usuario puede traer `allow-scripts`, que npm 11 rechaza en instalaciones de proyecto (EALLOWSCRIPTS): todo el flujo ignora la config de usuario de npm.
 process.env.NPM_CONFIG_USERCONFIG = '/dev/null';
+// `npm run` exporta la config de usuario a sus hijos como npm_config_*: se quita lo de allow-scripts para que vercel build no lo herede.
+for (const k of Object.keys(process.env)) if (/^npm_config_allow[-_]scripts$/i.test(k)) delete process.env[k];
 import { appendFileSync, chmodSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
