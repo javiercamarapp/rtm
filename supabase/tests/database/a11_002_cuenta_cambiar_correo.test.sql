@@ -1,5 +1,5 @@
 -- pgTAP a11_002: cambiar el correo de una cuenta de bodega. Desactiva el acceso anterior (corta sesiones), crea el nuevo del mismo tipo y nombre, validacion y forma canonica
--- iguales al alta, tope de 20, idempotencia, auditoria con huella (nunca el correo), solo socio, nunca socio ni Omar.
+-- iguales al alta, tope de 20, idempotencia, auditoria con huella (nunca el correo), solo socio, nunca socio (Omar ya es creable desde la web).
 begin;
 select no_plan();
 insert into seguridad.correo_permitido (correo, rol, socio_nombre, activo) values ('c112.socio@example.test', 'socio', 'Javier', true), ('c112.omar@example.test', 'omar', null, true);
@@ -47,13 +47,13 @@ select throws_ok($$select api.cuenta_cambiar_correo('c112-v2', 'c112.definitivo@
 select throws_ok($$select api.cuenta_cambiar_correo('c112-v3', 'c112.definitivo@example.test', 'c112.socio@example.test')$$, '23505', null, 'el correo nuevo ya es de un socio: conflicto');
 select throws_ok($$select api.cuenta_cambiar_correo('c112-v4', 'c112.noexiste@example.test', 'c112.x@example.test')$$, '22023', null, 'cuenta desconocida');
 select throws_ok($$select api.cuenta_cambiar_correo('c112-v5', 'c112.socio@example.test', 'c112.x@example.test')$$, '42501', null, 'nunca la cuenta de un socio');
-select throws_ok($$select api.cuenta_cambiar_correo('c112-v6', 'c112.omar@example.test', 'c112.x@example.test')$$, '42501', null, 'ni la de Omar');
+select throws_ok($$select api.cuenta_cambiar_correo('c112-v6', 'c112.socio@example.test', 'c112.x@example.test')$$, '42501', null, 'ni la de un socio (Omar ya es administrable desde la web)');
 select throws_ok($$select api.cuenta_cambiar_correo('c112-v7', 'c112.provisional@example.test', 'c112.y@example.test')$$, '22023', null, 'la cuenta desactivada no se cambia: primero se reactiva');
 select throws_ok($$select api.cuenta_cambiar_correo('', 'c112.definitivo@example.test', 'c112.z@example.test')$$, '22023', null, 'sin clave de idempotencia');
 
 -- Tope de 20 cuentas activas: el cambio no lo evade (la anterior deja de contar, la nueva cuenta).
 reset role;
-insert into seguridad.correo_permitido (correo, rol, activo) select 'c112.fill' || g || '@example.test', 'bodega', true from generate_series(1, 19) g;
+insert into seguridad.correo_permitido (correo, rol, activo) select 'c112.fill' || g || '@example.test', 'bodega', true from generate_series(1, 18) g;
 select is((select count(*)::int from seguridad.correo_permitido c join seguridad.tipo_cuenta t on t.rol = c.rol where t.creable_web and c.activo), 20, 'hay 20 activas');
 set local role authenticated;
 select is(api.cuenta_cambiar_correo('c112-t1', 'c112.fill1@example.test', 'c112.fill1b@example.test') ->> 'estado', 'cambiada', 'con 20 activas el cambio es neutro (una sale, una entra)');
